@@ -68,13 +68,13 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Choice<A, B> where
-    STA: DeepView<V = A::SVal>,
-    STB: DeepView<V = B::SVal>,
-    A: Serializer<STA>,
-    B: Serializer<STB>,
+impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA>,
+    B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match v {
             super::Sum::Inl(va) => self.0.ex_serialize(va, obuf),
             super::Sum::Inr(vb) => self.1.ex_serialize(vb, obuf),
@@ -168,12 +168,12 @@ impl<A, B, ST> Prepare<ST> for super::Alt<A, B, false> where
     }
 }
 
-impl<A, B, ST> Serializer<ST> for super::Alt<A, B, false> where
-    ST: DeepView<V = A::SVal> + Copy,
-    A: Serializer<ST> + Compliance<ST>,
-    B: Serializer<ST, SVal = A::SVal> + Consistency<Val = A::SVal>,
+impl<A, B, T> Serializer<T> for super::Alt<A, B, false> where
+    T: DeepView + Copy,
+    A: Serializer<T> + Compliance<T>,
+    B: Serializer<T> + Consistency<Val = T::V>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         if self.0.check_compliance(*v) {
             self.0.ex_serialize(v, obuf);
         } else {
@@ -210,13 +210,13 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Serializer<super::Sum<STA, STB>> for super::Sum<A, B> where
-    STA: DeepView<V = A::SVal>,
-    STB: DeepView<V = B::SVal>,
-    A: Serializer<STA>,
-    B: Serializer<STB>,
+impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA>,
+    B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &super::Sum<STA, STB>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.ex_serialize(vb, obuf),

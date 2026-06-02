@@ -56,18 +56,13 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> Serializer<BVal> for super::Preceded<
-    A,
-    AVal,
-    B,
-    CHECK,
-> where
+impl<A, AVal, B, T, const CHECK: bool> Serializer<T> for super::Preceded<A, AVal, B, CHECK> where
     AVal: SelfView,
-    BVal: DeepView<V = B::SVal>,
-    A: Serializer<AVal, SVal = AVal>,
-    B: Serializer<BVal>,
+    T: DeepView,
+    A: Serializer<AVal>,
+    B: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &BVal, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         proof {
             self.a_val.self_view();
         }

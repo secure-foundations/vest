@@ -29,11 +29,8 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
     }
 }
 
-impl<A, ST> Serializer<Option<ST>> for super::Opt<A> where
-    ST: DeepView<V = A::SVal>,
-    A: Serializer<ST>,
- {
-    fn ex_serialize(&self, v: &Option<ST>, obuf: &mut Vec<u8>) {
+impl<A, T> Serializer<Option<T>> for super::Opt<A> where T: DeepView, A: Serializer<T> {
+    fn ex_serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
         match v {
             Some(vv) => self.0.ex_serialize(vv, obuf),
             None => {},
@@ -87,13 +84,13 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Serializer<(Option<STA>, STB)> for super::Optional<A, B> where
-    STA: DeepView<V = A::SVal>,
-    STB: DeepView<V = B::SVal>,
-    A: Serializer<STA>,
-    B: Serializer<STB>,
+impl<A, B, TA, TB> Serializer<(Option<TA>, TB)> for super::Optional<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA>,
+    B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &(Option<STA>, STB), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(Option<TA>, TB), obuf: &mut Vec<u8>) {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).ex_serialize(v, obuf);
     }
 }

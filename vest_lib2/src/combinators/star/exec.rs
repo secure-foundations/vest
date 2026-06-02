@@ -225,9 +225,9 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
     }
 }
 
-pub fn serialize_slice<Inner, InnerST>(inner: &Inner, values: &[InnerST], obuf: &mut Vec<u8>) where
-    Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal>,
+pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>) where
+    T: DeepView,
+    Inner: Serializer<T>,
 
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
@@ -342,11 +342,8 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
     Ok(len)
 }
 
-impl<Inner, InnerST> Serializer<&[InnerST]> for super::Star<Inner> where
-    Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal>,
- {
-    fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
+impl<Inner, T> Serializer<&[T]> for super::Star<Inner> where T: DeepView, Inner: Serializer<T> {
+    fn ex_serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, *v, obuf);
     }
@@ -379,13 +376,13 @@ impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
     }
 }
 
-impl<A, B, AST, BST> Serializer<(&[AST], BST)> for super::Repeat<A, B> where
-    A: Serializer<AST> + Copy,
-    B: Serializer<BST> + Copy,
-    AST: DeepView<V = A::SVal>,
-    BST: DeepView<V = B::SVal>,
+impl<A, B, TA, TB> Serializer<(&[TA], TB)> for super::Repeat<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA> + Copy,
+    B: Serializer<TB> + Copy,
  {
-    fn ex_serialize(&self, v: &(&[AST], BST), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(&[TA], TB), obuf: &mut Vec<u8>) {
         crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
     }
 }
@@ -423,12 +420,12 @@ impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
     }
 }
 
-impl<Inner, N, InnerST> Serializer<&[InnerST]> for super::RepeatN<Inner, N> where
-    Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal>,
+impl<Inner, N, T> Serializer<&[T]> for super::RepeatN<Inner, N> where
+    T: DeepView,
+    Inner: Serializer<T>,
     N: AsLen,
  {
-    fn ex_serialize(&self, v: &&[InnerST], obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
         serialize_slice(&self.1, *v, obuf);
     }
 }
@@ -469,11 +466,11 @@ impl<Inner, N, InnerST> Prepare<&[InnerST]> for super::RepeatN<Inner, N> where
     }
 }
 
-impl<Inner, InnerST, const N: usize> Serializer<&[InnerST; N]> for super::Array<N, Inner> where
-    Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal>,
+impl<Inner, T, const N: usize> Serializer<&[T; N]> for super::Array<N, Inner> where
+    T: DeepView,
+    Inner: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &&[InnerST; N], obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &&[T; N], obuf: &mut Vec<u8>) {
         serialize_slice(&self.0, (*v).as_slice(), obuf);
     }
 }

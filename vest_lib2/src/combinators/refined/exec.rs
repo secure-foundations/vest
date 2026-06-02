@@ -51,12 +51,12 @@ pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined
 {
 }
 
-impl<A, PredFn, ST> Serializer<ST> for super::Refined<A, PredFn> where
-    ST: DeepView<V = A::SVal>,
-    A: Serializer<ST>,
-    PredFn: SpecPred<A::SVal>,
+impl<A, PredFn, T> Serializer<T> for super::Refined<A, PredFn> where
+    T: DeepView,
+    A: Serializer<T>,
+    PredFn: SpecPred<T::V>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
 }
@@ -117,11 +117,11 @@ impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
     }
 }
 
-impl<Inner, ST> Serializer<ST> for super::Const<Inner, ST> where
-    ST: DeepView<V = Inner::SVal>,
-    Inner: Serializer<ST, SVal = ST>,
+impl<Inner, T> Serializer<T> for super::Const<Inner, T> where
+    T: DeepView<V = T>,
+    Inner: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.0.ex_serialize(v, obuf);
     }
 }
@@ -246,13 +246,13 @@ impl<I, Tg, Of> Parser<I> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of, ST> Serializer<ST> for super::PrefixTagged<Tg, Of> where
-    Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
+impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
+    Tg: SpecByteLen + Serializer<Tg::T>,
     Tg::T: SelfView + Copy,
-    ST: DeepView<V = Of::SVal>,
-    Of: Serializer<ST>,
+    T: DeepView,
+    Of: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
@@ -336,13 +336,13 @@ impl<I, Of, Tg> Parser<I> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg, ST> Serializer<ST> for super::SuffixTagged<Of, Tg> where
-    Tg: SpecByteLen + Serializer<Tg::T, SVal = Tg::T>,
+impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
+    Tg: SpecByteLen + Serializer<Tg::T>,
     Tg::T: SelfView + Copy,
-    ST: DeepView<V = Of::SVal>,
-    Of: Serializer<ST>,
+    T: DeepView,
+    Of: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),

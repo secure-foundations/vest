@@ -41,7 +41,7 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
 }
 
 /// Executable serialization for one recursive unfolding.
-pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
+pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
     type EP: DeepView<V = Self::Param>;
 
     /// Execute one recursive unfolding, using `exec_rec` for all recursive positions in the body.
@@ -52,13 +52,12 @@ pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
         param: &Self::EP,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &ST,
+        v: &T,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&Self::EP, &ST, &mut Vec<u8>)
+    ) where Exec: Fn(&Self::EP, &T, &mut Vec<u8>)
         requires
-            forall|pp: &Self::EP, vv: &ST, out: &mut Vec<u8>|
-                call_requires(exec_rec, (pp, vv, out)),
-            forall|pp: &Self::EP, vv: &ST, out: &mut Vec<u8>|
+            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>| call_requires(exec_rec, (pp, vv, out)),
+            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
                 call_ensures(exec_rec, (pp, vv, out), ()) ==> final(out)@ == out@ + spec_rec(
                     pp.deep_view(),
                 ).3(vv.deep_view()),
@@ -71,7 +70,7 @@ pub trait SerializerRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
 }
 
 /// Executable pre-serialization analysis for one recursive unfolding.
-pub trait PrepareRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
+pub trait PrepareRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
     type EP: DeepView<V = Self::Param>;
 
     /// Execute one recursive unfolding, using `exec_rec` for all recursive positions in the body.
@@ -82,13 +81,13 @@ pub trait PrepareRecBody<ST>: SpecRecBody where ST: DeepView<V = Self::T> {
         param: &Self::EP,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: ST,
+        v: T,
     ) -> (checked: Result<usize, PreSerializeError>) where
-        Exec: Fn(&Self::EP, ST) -> Result<usize, PreSerializeError>,
+        Exec: Fn(&Self::EP, T) -> Result<usize, PreSerializeError>,
 
         requires
-            forall|pp: &Self::EP, vv: ST| call_requires(exec_rec, (pp, vv)),
-            forall|pp: &Self::EP, vv: ST, rr: Result<usize, PreSerializeError>|
+            forall|pp: &Self::EP, vv: T| call_requires(exec_rec, (pp, vv)),
+            forall|pp: &Self::EP, vv: T, rr: Result<usize, PreSerializeError>|
                 call_ensures(exec_rec, (pp, vv), rr) ==> (rr matches Ok(len) ==> {
                     &&& spec_rec(pp.deep_view()).0(vv.deep_view())
                     &&& len == spec_rec(pp.deep_view()).1(vv.deep_view())
@@ -144,10 +143,10 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.parse_body(param, Ghost(spec_callback), exec_callback, ibuf)
     }
 
-    fn serialize_gas<ST>(&self, gas: usize, param: &Param, v: &ST, obuf: &mut Vec<u8>) where
-        ST: DeepView<V = Body::T>,
+    fn serialize_gas<T>(&self, gas: usize, param: &Param, v: &T, obuf: &mut Vec<u8>) where
+        T: DeepView<V = Body::T>,
         Param: DeepView<V = Body::Param>,
-        Body: SerializerRecBody<ST, EP = Param>,
+        Body: SerializerRecBody<T, EP = Param>,
 
         ensures
             final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
@@ -157,7 +156,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             ),
         decreases gas,
     {
-        let exec_callback = |pp: &Param, vv: &ST, oo: &mut Vec<u8>| -> ()
+        let exec_callback = |pp: &Param, vv: &T, oo: &mut Vec<u8>| -> ()
             ensures
                 final(oo)@ == old(oo)@ + Self::spec_serialize_callback(gas as nat, pp.deep_view())(
                     vv.deep_view(),
@@ -172,13 +171,13 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.serialize_body(param, Ghost(spec_callback), exec_callback, v, obuf)
     }
 
-    fn prepare_gas<ST>(&self, gas: usize, param: &Param, v: ST) -> (checked: Result<
+    fn prepare_gas<T>(&self, gas: usize, param: &Param, v: T) -> (checked: Result<
         usize,
         PreSerializeError,
     >) where
-        ST: DeepView<V = Body::T>,
+        T: DeepView<V = Body::T>,
         Param: DeepView<V = Body::Param>,
-        Body: PrepareRecBody<ST, EP = Param>,
+        Body: PrepareRecBody<T, EP = Param>,
 
         ensures
             checked matches Ok(len) ==> {
@@ -187,7 +186,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             },
         decreases gas,
     {
-        let exec_callback = |pp: &Param, vv: ST| -> (rr: Result<usize, PreSerializeError>)
+        let exec_callback = |pp: &Param, vv: T| -> (rr: Result<usize, PreSerializeError>)
             ensures
                 rr matches Ok(len) ==> {
                     &&& Self::consistent_callback(gas as nat, pp.deep_view())(vv.deep_view())
@@ -223,26 +222,22 @@ impl<const LIMIT: usize, Body, Param, I> Parser<I> for super::FixWith<LIMIT, Bod
     }
 }
 
-impl<ST, const LIMIT: usize, Body, Param> Serializer<ST> for super::FixWith<
-    LIMIT,
-    Body,
-    Param,
-> where
-    ST: DeepView<V = Body::T>,
+impl<T, const LIMIT: usize, Body, Param> Serializer<T> for super::FixWith<LIMIT, Body, Param> where
+    T: DeepView<V = Body::T>,
     Param: DeepView<V = Body::Param>,
-    Body: SerializerRecBody<ST, EP = Param>,
+    Body: SerializerRecBody<T, EP = Param>,
  {
-    fn ex_serialize(&self, v: &ST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.serialize_gas(LIMIT, &self.1, v, obuf)
     }
 }
 
-impl<ST, const LIMIT: usize, Body, Param> Prepare<ST> for super::FixWith<LIMIT, Body, Param> where
-    ST: DeepView<V = Body::T>,
+impl<T, const LIMIT: usize, Body, Param> Prepare<T> for super::FixWith<LIMIT, Body, Param> where
+    T: DeepView<V = Body::T>,
     Param: DeepView<V = Body::Param>,
-    Body: PrepareRecBody<ST, EP = Param>,
+    Body: PrepareRecBody<T, EP = Param>,
  {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
         self.prepare_gas(LIMIT, &self.1, v)
     }
 }

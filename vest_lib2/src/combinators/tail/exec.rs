@@ -161,47 +161,47 @@ impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> +
     }
 }
 
-impl<A, AST> Serializer<&[AST]> for super::RepeatTillEnd<A> where
-    A: Serializer<AST> + Copy,
-    AST: DeepView<V = A::SVal> + Copy,
+impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
+    A: Serializer<T> + Copy,
+    T: DeepView + Copy,
  {
-    fn ex_serialize(&self, v: &&[AST], obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
         Star(self.0).ex_serialize(v, obuf);
     }
 }
 
-impl<A, AST> Compliance<&[AST]> for super::RepeatTillEnd<A> where
-    A: Compliance<AST> + Copy,
-    AST: DeepView + Copy,
+impl<A, T> Compliance<&[T]> for super::RepeatTillEnd<A> where
+    A: Compliance<T> + Copy,
+    T: DeepView + Copy,
  {
-    fn check_compliance(&self, v: &[AST]) -> (yes: bool) {
+    fn check_compliance(&self, v: &[T]) -> (yes: bool) {
         Repeat(self.0, super::Eof).check_compliance((v, ()))
     }
 }
 
-impl<A, AST> ByteLen<&[AST]> for super::RepeatTillEnd<A> where
-    A: ByteLen<AST> + Copy,
-    AST: DeepView + Copy,
+impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where
+    A: ByteLen<T> + Copy,
+    T: DeepView + Copy,
  {
-    fn length(&self, v: &[AST]) -> (len: usize) {
+    fn length(&self, v: &[T]) -> (len: usize) {
         Repeat(self.0, super::Eof).length((v, ()))
     }
 }
 
-impl<A, AST> Prepare<&[AST]> for super::RepeatTillEnd<A> where
-    A: Prepare<AST> + Copy,
-    AST: DeepView + Copy,
+impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where
+    A: Prepare<T> + Copy,
+    T: DeepView + Copy,
  {
-    fn prepare(&self, v: &[AST]) -> Result<usize, PreSerializeError> {
+    fn prepare(&self, v: &[T]) -> Result<usize, PreSerializeError> {
         Repeat(self.0, super::Eof).prepare((v, ()))
     }
 }
 
-impl<A, AST> Serializer<Option<AST>> for super::OptionalEnd<A> where
-    A: Serializer<AST>,
-    AST: DeepView<V = A::SVal> + Copy,
+impl<A, T> Serializer<Option<T>> for super::OptionalEnd<A> where
+    A: Serializer<T>,
+    T: DeepView + Copy,
  {
-    fn ex_serialize(&self, v: &Option<AST>, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
         Opt(&self.0).ex_serialize(v, obuf);
     }
 }

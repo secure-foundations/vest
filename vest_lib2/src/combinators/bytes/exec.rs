@@ -136,12 +136,12 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
     }
 }
 
-impl<Len, Inner, InnerST> Serializer<InnerST> for super::ExactLen<Inner, Len> where
+impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
     Len: AsLen,
-    Inner: Serializer<InnerST>,
-    InnerST: DeepView<V = Inner::SVal>,
+    T: DeepView,
+    Inner: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &InnerST, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.1.ex_serialize(v, obuf);
     }
 }

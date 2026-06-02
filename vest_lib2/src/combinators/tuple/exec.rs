@@ -45,13 +45,13 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Pair<A, B> where
-    STA: DeepView<V = A::SVal>,
-    STB: DeepView<V = B::SVal>,
-    A: Serializer<STA>,
-    B: Serializer<STB>,
+impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Pair<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA>,
+    B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &(STA, STB), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
         self.0.ex_serialize(&v.0, obuf);
         self.1.ex_serialize(&v.1, obuf);
     }
@@ -131,14 +131,14 @@ impl<I, A, B> Parser<I> for super::Bind<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Serializer<(STA, STB)> for super::Bind<A, B> where
-    STA: DeepView<V = A::SVal>,
-    STB: DeepView<V = <B::O as SpecSerializer>::SVal>,
-    A: Serializer<STA>,
-    B::O: Serializer<STB>,
-    B: MapRef<STA, Input = A::SVal>,
+impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Bind<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<TA>,
+    B::O: Serializer<TB>,
+    B: MapRef<TA, Input = TA::V>,
  {
-    fn ex_serialize(&self, v: &(STA, STB), obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
         let next = self.1.map(&v.0);
         self.0.ex_serialize(&v.0, obuf);
         next.ex_serialize(&v.1, obuf);

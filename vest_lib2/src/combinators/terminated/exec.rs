@@ -56,18 +56,13 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
     }
 }
 
-impl<A, B, BVal, AVal, const CHECK: bool> Serializer<AVal> for super::Terminated<
-    A,
-    B,
-    BVal,
-    CHECK,
-> where
-    AVal: DeepView<V = A::SVal>,
+impl<A, B, BVal, T, const CHECK: bool> Serializer<T> for super::Terminated<A, B, BVal, CHECK> where
+    T: DeepView,
     BVal: SelfView,
-    A: Serializer<AVal>,
-    B: Serializer<BVal, SVal = BVal>,
+    A: Serializer<T>,
+    B: Serializer<BVal>,
  {
-    fn ex_serialize(&self, v: &AVal, obuf: &mut Vec<u8>) {
+    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         proof {
             self.b_val.self_view();
         }
