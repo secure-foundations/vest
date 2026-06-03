@@ -296,7 +296,7 @@ mod tests {
         assert_eq!(names.spec, "PayloadWithHeaderSpec");
         assert_eq!(names.inner, "PayloadWithHeaderInner");
         assert_eq!(names.fmt, "PayloadWithHeaderFmt");
-        assert_eq!(names.spec_ctor_ident().to_string(), "inner");
+        assert_eq!(names.spec_ctor_ident().to_string(), "spec_inner");
     }
 
     #[test]
@@ -362,10 +362,10 @@ mod tests {
         let ctx = ctx_for(&defs);
         let code = code_gen(&defs, &ctx);
         assert!(code.contains("pub struct Header"));
-        assert!(code.contains("pub struct HeaderSpec"));
         assert!(code.contains("pub struct HeaderFmt"));
+        assert!(code.contains("pub type HeaderFmtSpec"));
         assert!(code.contains("impl HeaderFmt"));
-        assert!(code.contains("pub open spec fn inner"));
+        assert!(code.contains("pub open spec fn spec_inner"));
     }
 
     #[test]
@@ -445,6 +445,6 @@ mod tests {
         let code = code_gen(&defs, &ctx);
         assert!(code.contains("pub enum Pick"));
         assert!(code.contains("impl PickFmt"));
-        assert!(code.contains("pub open spec fn inner"));
+        assert!(code.contains("pub open spec fn spec_inner"));
     }
 }
