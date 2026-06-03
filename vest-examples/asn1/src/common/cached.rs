@@ -168,7 +168,7 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for Cached<T> where
         usize,
         SerializeError,
     >) {
-        self.0.serialize(v, data, pos)
+        self.0.serialize(v, &mut *data, pos)
     }
 }
 

@@ -89,7 +89,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OctetString {
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let bytes = *v;
-        new_octet_string_inner().serialize((bytes.len() as LengthValue, &bytes), data, pos)
+        new_octet_string_inner().serialize((bytes.len() as LengthValue, &bytes), &mut *data, pos)
     }
 }
 

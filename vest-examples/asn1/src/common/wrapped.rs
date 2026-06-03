@@ -254,7 +254,7 @@ macro_rules! wrap_combinator_impls {
                 #[inline(always)]
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
                     $(let $field_name: $field_type = self.$field_name;)*
-                    $inner_expr.serialize(v, data, pos)
+                    $inner_expr.serialize(v, &mut *data, pos)
                 }
             }
         }

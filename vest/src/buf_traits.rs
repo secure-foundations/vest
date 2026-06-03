@@ -62,9 +62,9 @@ pub trait VestOutput<I>: View<V = Seq<u8>> where I: View<V = Seq<u8>> {
         requires
             0 <= i + input@.len() <= old(self)@.len() <= usize::MAX,
         ensures
-            self@.len() == old(self)@.len() && self@ == old(self)@.subrange(0, i as int).add(
+            final(self)@.len() == old(self)@.len() && final(self)@ == old(self)@.subrange(0, i as int).add(
                 input@,
-            ).add(old(self)@.subrange(i + input@.len(), self@.len() as int)),
+            ).add(old(self)@.subrange(i + input@.len(), final(self)@.len() as int)),
     ;
 }
 
@@ -76,7 +76,7 @@ pub trait VestPublicOutput<I>: VestOutput<I> where I: View<V = Seq<u8>> {
         requires
             i < old(self)@.len(),
         ensures
-            self@ == old(self)@.update(i as int, value),
+            final(self)@ == old(self)@.update(i as int, value),
     ;
 
     /// Copy `input` to `self` starting at index `i`. (Same as `set_range` but with byte slice input.)
@@ -84,9 +84,9 @@ pub trait VestPublicOutput<I>: VestOutput<I> where I: View<V = Seq<u8>> {
         requires
             0 <= i + input@.len() <= old(self)@.len() <= usize::MAX,
         ensures
-            self@.len() == old(self)@.len() && self@ == old(self)@.subrange(0, i as int).add(
+            final(self)@.len() == old(self)@.len() && final(self)@ == old(self)@.subrange(0, i as int).add(
                 input@,
-            ).add(old(self)@.subrange(i + input@.len(), self@.len() as int)),
+            ).add(old(self)@.subrange(i + input@.len(), final(self)@.len() as int)),
     ;
 }
 

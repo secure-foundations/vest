@@ -432,7 +432,7 @@ impl<'a, T> Combinator<'a, &'a [u8], Vec<u8>> for ASN1<T> where
             self.0.lemma_view_preserves_tag();
         }
 
-        (ASN1Tag, &self.0).serialize((self.0.tag(), v), data, pos)
+        (ASN1Tag, &self.0).serialize((self.0.tag(), v), &mut *data, pos)
     }
 }
 

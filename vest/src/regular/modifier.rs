@@ -656,7 +656,7 @@ impl<'x, I, O, Inner, P> Combinator<'x, I, O> for Refined<Inner, P> where
 
     fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
         // we know `v` is well-formed, so we can skip the predicate check
-        self.inner.serialize(v, data, pos)
+        self.inner.serialize(v, &mut *data, pos)
     }
 }
 

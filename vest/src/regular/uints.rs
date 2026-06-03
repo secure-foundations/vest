@@ -403,9 +403,9 @@ pub trait FromToBytes where Self: ViewReflex + core::marker::Sized + Copy {
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
-            old(s)@.len() == s@.len(),
+            old(s)@.len() == final(s)@.len(),
             self.spec_to_le_bytes().len() == size_of::<Self>(),
-            s@ == seq_splice(old(s)@, pos, self.spec_to_le_bytes()),
+            final(s)@ == seq_splice(old(s)@, pos, self.spec_to_le_bytes()),
     ;
 
     /// Converts a sequence of bytes to an integer in big-endian byte order.
@@ -424,9 +424,9 @@ pub trait FromToBytes where Self: ViewReflex + core::marker::Sized + Copy {
         requires
             old(s)@.len() - pos >= size_of::<Self>(),
         ensures
-            old(s)@.len() == s@.len(),
+            old(s)@.len() == final(s)@.len(),
             self.spec_to_be_bytes().len() == size_of::<Self>(),
-            s@ == seq_splice(old(s)@, pos, self.spec_to_be_bytes()),
+            final(s)@ == seq_splice(old(s)@, pos, self.spec_to_be_bytes()),
     ;
 
     /// Compares two integers for equality.
@@ -1004,9 +1004,9 @@ impl u24 {
             o == self.spec_as_u32(),
     {
         let mut bytes = [0;4];
-        bytes.set(1, self.0[0]);
-        bytes.set(2, self.0[1]);
-        bytes.set(3, self.0[2]);
+        bytes[1] = self.0[0];
+        bytes[2] = self.0[1];
+        bytes[3] = self.0[2];
         u32::ex_from_be_bytes(bytes.as_slice())
     }
 }
@@ -1103,7 +1103,7 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Le {
         <_ as Combinator<&[u8], Vec<u8>>>::serialize(
             &Fixed::<3>,
             &[v.0[2], v.0[1], v.0[0]].as_slice(),
-            data,
+            &mut *data,
             pos,
         )
     }
@@ -1203,7 +1203,7 @@ impl<'x> Combinator<'x, &[u8], Vec<u8>> for U24Be {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), data, pos)
+        <_ as Combinator<&[u8], Vec<u8>>>::serialize(&Fixed::<3>, &v.0.as_slice(), &mut *data, pos)
     }
 }
 

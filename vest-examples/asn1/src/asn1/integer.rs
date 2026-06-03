@@ -106,7 +106,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for Integer {
         proof {
             lemma_min_num_bytes_signed(v);
         }
-        new_integer_inner().serialize((min_num_bytes_signed_exec(v) as LengthValue, v), data, pos)
+        new_integer_inner().serialize((min_num_bytes_signed_exec(v) as LengthValue, v), &mut *data, pos)
     }
 }
 

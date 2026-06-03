@@ -283,10 +283,10 @@ pub trait Combinator<'x, I, O>: View where
             pos <= old(buf)@.len() <= usize::MAX,
         ensures
             res matches Ok(n) ==> {
-                &&& buf@.len() == old(buf)@.len()
-                &&& pos <= usize::MAX - n && pos + n <= buf@.len()
+                &&& final(buf)@.len() == old(buf)@.len()
+                &&& pos <= usize::MAX - n && pos + n <= final(buf)@.len()
                 &&& n == self@.spec_serialize(v@).len()
-                &&& buf@ == seq_splice(old(buf)@, pos, self@.spec_serialize(v@))
+                &&& final(buf)@ == seq_splice(old(buf)@, pos, self@.spec_serialize(v@))
             },
     ;
 }

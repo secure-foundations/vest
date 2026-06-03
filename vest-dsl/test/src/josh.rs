@@ -28,7 +28,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -148,7 +148,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstTagCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type TstTagCombinatorAlias = U8;
 
@@ -192,14 +192,14 @@ pub fn serialize_tst_tag<'a>(v: <TstTagCombinator as Combinator<'a, &'a [u8], Ve
         spec_tst_tag().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_tst_tag().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tst_tag().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_tst_tag().spec_serialize(v@))
         },
 {
     let combinator = tst_tag();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn tst_tag_len<'a>(v: <TstTagCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -347,7 +347,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for MydataCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type MydataCombinatorAlias = Mapped<MydataCombinator1, MydataMapper>;
 
@@ -399,14 +399,14 @@ pub fn serialize_mydata<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec
         spec_mydata().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_mydata().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_mydata().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_mydata().spec_serialize(v@))
         },
 {
     let combinator = mydata();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn mydata_len<'a>(v: <MydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1039,7 +1039,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstMydataCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type TstMydataCombinatorAlias = Mapped<TstMydataCombinator30, TstMydataMapper>;
 
@@ -1089,14 +1089,14 @@ pub fn serialize_tst_mydata<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u
 
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_tst_mydata(tag@).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tst_mydata(tag@).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_tst_mydata(tag@).spec_serialize(v@))
         },
 {
     let combinator = tst_mydata( tag );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }
 
 pub fn tst_mydata_len<'a>(v: <TstMydataCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, tag: u8) -> (serialize_len: usize)
@@ -1238,7 +1238,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for TstCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type TstCombinatorAlias = Mapped<Pair<TstTagCombinator, TstMydataCombinator, TstCont0>, TstMapper>;
 
@@ -1305,14 +1305,14 @@ pub fn serialize_tst<'a>(v: <TstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>
         spec_tst().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_tst().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_tst().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_tst().spec_serialize(v@))
         },
 {
     let combinator = tst();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn tst_len<'a>(v: <TstCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -1647,7 +1647,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PairStressCombinator {
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+    { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
 }
 pub type PairStressCombinatorAlias = Mapped<PairStressCombinator14, PairStressMapper>;
 
@@ -1699,14 +1699,14 @@ pub fn serialize_pair_stress<'a>(v: <PairStressCombinator as Combinator<'a, &'a 
         spec_pair_stress().wf(v@),
     ensures
         o matches Ok(n) ==> {
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_pair_stress().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_pair_stress().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_pair_stress().spec_serialize(v@))
         },
 {
     let combinator = pair_stress();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }
 
 pub fn pair_stress_len<'a>(v: <PairStressCombinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

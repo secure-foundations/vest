@@ -177,7 +177,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for BigInt {
         proof {
             use_type_invariant(&v);
         }
-        new_big_int_inner().serialize(&v.0, data, pos)
+        new_big_int_inner().serialize(&v.0, &mut *data, pos)
     }
 }
 

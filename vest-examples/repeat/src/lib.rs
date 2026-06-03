@@ -233,7 +233,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for OpaqueU16Combinator {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos)
     }
 }
 
@@ -396,7 +396,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdCombinator {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos)
     }
 }
 
@@ -507,7 +507,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListListCombinator {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos)
     }
 }
 
@@ -736,7 +736,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ResponderIdListCombinator {
         usize,
         SerializeError,
     >) {
-        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos)
+        <_ as Combinator<&'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos)
     }
 }
 

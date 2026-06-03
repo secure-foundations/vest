@@ -236,11 +236,11 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for ObjectIdentifier {
         let mut rest_arcs_clone = Clone::clone(&v.0.0);
         let rest_arcs = RepeatResult(rest_arcs_clone.split_off(2));
 
-        let len = (U8, Repeat(Base128UInt)).serialize((&first_byte, &rest_arcs), data, pos)?;
+        let len = (U8, Repeat(Base128UInt)).serialize((&first_byte, &rest_arcs), &mut *data, pos)?;
 
         let ghost rest_arcs_spec = rest_arcs@;
         let length_value: LengthValue = len;
-        let len2 = new_object_identifier_inner().serialize((length_value, (&first_byte, &rest_arcs)), data, pos)?;
+        let len2 = new_object_identifier_inner().serialize((length_value, (&first_byte, &rest_arcs)), &mut *data, pos)?;
 
         if pos.checked_add(len2).is_some() && pos + len2 <= data.len() {
             proof {

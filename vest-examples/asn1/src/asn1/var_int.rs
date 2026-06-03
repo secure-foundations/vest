@@ -1047,7 +1047,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for VarInt {
             VarUInt::lemma_mask_fits(self.0, v as VarUIntResult);
         };
 
-        VarUInt(self.0).serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0), data, pos)
+        VarUInt(self.0).serialize((v as VarUIntResult) & n_byte_max_unsigned!(self.0), &mut *data, pos)
     }
 }
 

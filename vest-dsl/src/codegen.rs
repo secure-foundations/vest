@@ -662,7 +662,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for {name}Combinator {{
     fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
     {{ <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }}
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }}
+    {{ <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }}
 }}
 "#
                     )
@@ -3731,7 +3731,7 @@ macro_rules! impl_wrapper_combinator {
                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
-                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, data, pos) }
+                { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
             }
         } // verus!
     };
@@ -3918,14 +3918,14 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
         spec_{name}().wf(v@),
     ensures
         o matches Ok(n) ==> {{
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_{name}().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
         }},
 {{
     let combinator = {name}();
-    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, data, pos)
+    <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&combinator, v, &mut *data, pos)
 }}
 
 pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)
@@ -4067,14 +4067,14 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
 {serialize_requires}
     ensures
         o matches Ok(n) ==> {{
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_{name}({args_view}).spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_{name}({args_view}).spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_{name}({args_view}).spec_serialize(v@))
         }},
 {{
     let combinator = {name}( {args} );
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }}
 
 pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType, {exec_params}) -> (serialize_len: usize)
@@ -4150,14 +4150,14 @@ pub fn serialize_{name}<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'
         spec_{name}().wf(v@),
     ensures
         o matches Ok(n) ==> {{
-            &&& data@.len() == old(data)@.len()
-            &&& pos <= usize::MAX - n && pos + n <= data@.len()
+            &&& final(data)@.len() == old(data)@.len()
+            &&& pos <= usize::MAX - n && pos + n <= final(data)@.len()
             &&& n == spec_{name}().spec_serialize(v@).len()
-            &&& data@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
+            &&& final(data)@ == seq_splice(old(data)@, pos, spec_{name}().spec_serialize(v@))
         }},
 {{
     let combinator = {name}();
-    combinator.serialize(v, data, pos)
+    combinator.serialize(v, &mut *data, pos)
 }}
 
 pub fn {name}_len<'a>(v: <{upper_caml_name}Combinator as Combinator<'a, &'a [u8], Vec<u8>>>::SType) -> (serialize_len: usize)

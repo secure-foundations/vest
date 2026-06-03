@@ -112,7 +112,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for PrintableString {
         Refined {
             inner: UTF8String,
             predicate: PrintableStringPred,
-        }.serialize(v, data, pos)
+        }.serialize(v, &mut *data, pos)
     }
 }
 

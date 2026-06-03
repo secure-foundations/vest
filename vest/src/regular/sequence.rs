@@ -515,7 +515,7 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Preceded<Fst, Snd> where
         usize,
         SerializeError,
     > {
-        (&self.0, &self.1).serialize(((), v), data, pos)
+        (&self.0, &self.1).serialize(((), v), &mut *data, pos)
     }
 }
 
@@ -627,7 +627,7 @@ impl<'x, I, O, Fst, Snd> Combinator<'x, I, O> for Terminated<Fst, Snd> where
         usize,
         SerializeError,
     > {
-        (&self.0, &self.1).serialize((v, ()), data, pos)
+        (&self.0, &self.1).serialize((v, ()), &mut *data, pos)
     }
 }
 

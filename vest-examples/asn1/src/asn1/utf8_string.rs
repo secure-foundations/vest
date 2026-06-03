@@ -136,7 +136,7 @@ impl<'a> Combinator<'a, &'a [u8], Vec<u8>> for UTF8String {
     #[inline(always)]
     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (res: Result<usize, SerializeError>) {
         let s = str_to_utf8(*v);
-        let n = Length.serialize(s.len() as LengthValue, data, pos)?;
+        let n = Length.serialize(s.len() as LengthValue, &mut *data, pos)?;
 
         if pos.checked_add(n).is_none() {
             return Err(SerializeError::Other("Size overflow".to_string()));
