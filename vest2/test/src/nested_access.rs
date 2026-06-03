@@ -19,13 +19,13 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `nested_complex`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedComplex<'i> {
     pub flag: u32,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct NestedComplexSpec {
     pub flag: u32,
     pub data: Seq<u8>,
@@ -42,8 +42,8 @@ impl<'i> DeepView for NestedComplex<'i> {
 }
 
 # [doc = "data type for `generic_header`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct GenericHeader {
     pub next_type: u8,
     pub reserved: u8,
@@ -63,13 +63,13 @@ impl DeepView for GenericHeader {
 }
 
 # [doc = "data type for `combined_example`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CombinedExample<'i> {
     pub header: GenericHeader,
     pub body: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CombinedExampleSpec {
     pub header: GenericHeaderSpec,
     pub body: Seq<u8>,
@@ -86,13 +86,13 @@ impl<'i> DeepView for CombinedExample<'i> {
 }
 
 # [doc = "data type for `payload_with_header`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PayloadWithHeader<'i> {
     pub hdr: GenericHeader,
     pub body: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct PayloadWithHeaderSpec {
     pub hdr: GenericHeaderSpec,
     pub body: Seq<u8>,
@@ -109,7 +109,7 @@ impl<'i> DeepView for PayloadWithHeader<'i> {
 }
 
 # [doc = "data type for `final_msg`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct FinalMsg<'i> {
     pub total_len: u32,
     pub body: CombinedExample<'i>,
@@ -117,7 +117,7 @@ pub struct FinalMsg<'i> {
     pub nested: NestedComplex<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct FinalMsgSpec {
     pub total_len: u32,
     pub body: CombinedExampleSpec,
@@ -141,8 +141,8 @@ impl<'i> DeepView for FinalMsg<'i> {
 }
 
 # [doc = "data type for `outer_header`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct OuterHeader {
     pub magic: u32,
     pub inner: GenericHeader,
@@ -161,13 +161,13 @@ impl DeepView for OuterHeader {
 }
 
 # [doc = "data type for `deep_nested`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct DeepNested<'i> {
     pub outer: OuterHeader,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct DeepNestedSpec {
     pub outer: OuterHeaderSpec,
     pub data: Seq<u8>,
@@ -187,13 +187,13 @@ impl<'i> DeepView for DeepNested<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `nested_complex`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedComplexFmt<'i> {
     hdr_payload: PayloadWithHeader<'i>,
 }
 
 impl<'i> NestedComplexFmt<'i> {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         PayloadWithHeaderFmt.consistent(self.hdr_payload.deep_view())
     }
@@ -239,7 +239,7 @@ impl<'i> NestedComplexFmt<'i> {
 }
 
 # [doc = "named format combinator for `generic_header`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct GenericHeaderFmt;
 
 pub type GenericHeaderFmtSpec = Named<
@@ -274,13 +274,13 @@ impl GenericHeaderFmt {
 }
 
 # [doc = "named format combinator for `combined_example`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CombinedExampleFmt {
     total_len: u32,
 }
 
 impl CombinedExampleFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.total_len >= 65535 && self.total_len <= 4294967295
     }
@@ -330,7 +330,7 @@ impl CombinedExampleFmt {
 }
 
 # [doc = "named format combinator for `payload_with_header`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct PayloadWithHeaderFmt;
 
 pub type PayloadWithHeaderFmtSpec = Named<
@@ -368,7 +368,7 @@ impl PayloadWithHeaderFmt {
 }
 
 # [doc = "named format combinator for `final_msg`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct FinalMsgFmt;
 
 pub type FinalMsgFmtSpec = Named<
@@ -420,7 +420,7 @@ impl FinalMsgFmt {
 }
 
 # [doc = "named format combinator for `outer_header`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct OuterHeaderFmt;
 
 pub type OuterHeaderFmtSpec = Named<
@@ -452,7 +452,7 @@ impl OuterHeaderFmt {
 }
 
 # [doc = "named format combinator for `deep_nested`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct DeepNestedFmt;
 
 pub type DeepNestedFmtSpec = Named<
@@ -538,7 +538,7 @@ mod derived_specs {
     impl SpecParser for GenericHeaderFmt {
         type PVal = GenericHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             GenericHeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -555,7 +555,7 @@ mod derived_specs {
     impl SpecSerializerDps for GenericHeaderFmt {
         type SValue = GenericHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             GenericHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -564,7 +564,7 @@ mod derived_specs {
     impl SpecSerializer for GenericHeaderFmt {
         type SVal = GenericHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             GenericHeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -573,7 +573,7 @@ mod derived_specs {
     impl SpecByteLen for GenericHeaderFmt {
         type T = GenericHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             GenericHeaderFmt::spec_inner().byte_len(v)
         }
@@ -582,7 +582,7 @@ mod derived_specs {
     impl SpecParser for CombinedExampleFmt {
         type PVal = CombinedExampleSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CombinedExampleFmt::spec_inner(self.total_len_spec()).spec_parse(ibuf)
         }
@@ -599,7 +599,7 @@ mod derived_specs {
     impl SpecSerializerDps for CombinedExampleFmt {
         type SValue = CombinedExampleSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CombinedExampleFmt::spec_inner(self.total_len_spec()).spec_serialize_dps(v, obuf)
         }
@@ -608,7 +608,7 @@ mod derived_specs {
     impl SpecSerializer for CombinedExampleFmt {
         type SVal = CombinedExampleSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CombinedExampleFmt::spec_inner(self.total_len_spec()).spec_serialize(v)
         }
@@ -617,7 +617,7 @@ mod derived_specs {
     impl SpecByteLen for CombinedExampleFmt {
         type T = CombinedExampleSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CombinedExampleFmt::spec_inner(self.total_len_spec()).byte_len(v)
         }
@@ -626,7 +626,7 @@ mod derived_specs {
     impl SpecParser for PayloadWithHeaderFmt {
         type PVal = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             PayloadWithHeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -643,7 +643,7 @@ mod derived_specs {
     impl SpecSerializerDps for PayloadWithHeaderFmt {
         type SValue = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             PayloadWithHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -652,7 +652,7 @@ mod derived_specs {
     impl SpecSerializer for PayloadWithHeaderFmt {
         type SVal = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             PayloadWithHeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -661,7 +661,7 @@ mod derived_specs {
     impl SpecByteLen for PayloadWithHeaderFmt {
         type T = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             PayloadWithHeaderFmt::spec_inner().byte_len(v)
         }
@@ -670,7 +670,7 @@ mod derived_specs {
     impl SpecParser for FinalMsgFmt {
         type PVal = FinalMsgSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             FinalMsgFmt::spec_inner().spec_parse(ibuf)
         }
@@ -687,7 +687,7 @@ mod derived_specs {
     impl SpecSerializerDps for FinalMsgFmt {
         type SValue = FinalMsgSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             FinalMsgFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -696,7 +696,7 @@ mod derived_specs {
     impl SpecSerializer for FinalMsgFmt {
         type SVal = FinalMsgSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             FinalMsgFmt::spec_inner().spec_serialize(v)
         }
@@ -705,7 +705,7 @@ mod derived_specs {
     impl SpecByteLen for FinalMsgFmt {
         type T = FinalMsgSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             FinalMsgFmt::spec_inner().byte_len(v)
         }
@@ -714,7 +714,7 @@ mod derived_specs {
     impl SpecParser for OuterHeaderFmt {
         type PVal = OuterHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             OuterHeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -731,7 +731,7 @@ mod derived_specs {
     impl SpecSerializerDps for OuterHeaderFmt {
         type SValue = OuterHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             OuterHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -740,7 +740,7 @@ mod derived_specs {
     impl SpecSerializer for OuterHeaderFmt {
         type SVal = OuterHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             OuterHeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -749,7 +749,7 @@ mod derived_specs {
     impl SpecByteLen for OuterHeaderFmt {
         type T = OuterHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             OuterHeaderFmt::spec_inner().byte_len(v)
         }
@@ -758,7 +758,7 @@ mod derived_specs {
     impl SpecParser for DeepNestedFmt {
         type PVal = DeepNestedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             DeepNestedFmt::spec_inner().spec_parse(ibuf)
         }
@@ -775,7 +775,7 @@ mod derived_specs {
     impl SpecSerializerDps for DeepNestedFmt {
         type SValue = DeepNestedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             DeepNestedFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -784,7 +784,7 @@ mod derived_specs {
     impl SpecSerializer for DeepNestedFmt {
         type SVal = DeepNestedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             DeepNestedFmt::spec_inner().spec_serialize(v)
         }
@@ -793,7 +793,7 @@ mod derived_specs {
     impl SpecByteLen for DeepNestedFmt {
         type T = DeepNestedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             DeepNestedFmt::spec_inner().byte_len(v)
         }
@@ -1574,9 +1574,9 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, flag) = (Const(U32Le, 0)).parse(&rest)?;
+            let (n1, flag) = Const(U32Le, 0).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied((self.hdr_payload.hdr.payload_length - 8))).parse(&rest)?;
+            let (n2, data) = Varied((self.hdr_payload.hdr.payload_length - 8)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedComplex { flag, data };
@@ -1595,8 +1595,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedComplex { flag, data } = v;
-            (Const(U32Le, 0)).serialize(flag, obuf);
-            (Varied((self.hdr_payload.hdr.payload_length - 8))).serialize(data, obuf);
+            Const(U32Le, 0).serialize(flag, obuf);
+            Varied((self.hdr_payload.hdr.payload_length - 8)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1613,11 +1613,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, next_type) = (U8).parse(&rest)?;
+            let (n1, next_type) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, reserved) = (U8).parse(&rest)?;
+            let (n2, reserved) = U8.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, payload_length) = (U32Le).parse(&rest)?;
+            let (n3, payload_length) = U32Le.parse(&rest)?;
             if !(payload_length >= 8 && payload_length <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1629,15 +1629,15 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<GenericHeader> for GenericHeaderFmt {
+    impl<'i> Serializer<GenericHeader> for GenericHeaderFmt {
         fn serialize(&self, v: &GenericHeader, obuf: &mut Vec<u8>) {
             reveal(<GenericHeaderFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let GenericHeader { next_type, reserved, payload_length } = v;
-            (U8).serialize(next_type, obuf);
-            (U8).serialize(reserved, obuf);
-            (U32Le).serialize(payload_length, obuf);
+            U8.serialize(next_type, obuf);
+            U8.serialize(reserved, obuf);
+            U32Le.serialize(payload_length, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1658,9 +1658,9 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, header) = (GenericHeaderFmt).parse(&rest)?;
+            let (n1, header) = GenericHeaderFmt.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = (Varied((self.total_len - header.payload_length))).parse(&rest)?;
+            let (n2, body) = Varied((self.total_len - header.payload_length)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CombinedExample { header, body };
@@ -1679,8 +1679,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CombinedExample { header, body } = v;
-            (GenericHeaderFmt).serialize(header, obuf);
-            (Varied((self.total_len - header.payload_length))).serialize(body, obuf);
+            GenericHeaderFmt.serialize(header, obuf);
+            Varied((self.total_len - header.payload_length)).serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1697,9 +1697,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = (GenericHeaderFmt).parse(&rest)?;
+            let (n1, hdr) = GenericHeaderFmt.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = (Varied((hdr.payload_length - 4))).parse(&rest)?;
+            let (n2, body) = Varied((hdr.payload_length - 4)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PayloadWithHeader { hdr, body };
@@ -1714,8 +1714,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { hdr, body } = v;
-            (GenericHeaderFmt).serialize(hdr, obuf);
-            (Varied((hdr.payload_length - 4))).serialize(body, obuf);
+            GenericHeaderFmt.serialize(hdr, obuf);
+            Varied((hdr.payload_length - 4)).serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1732,16 +1732,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, total_len) = (U32Le).parse(&rest)?;
+            let (n1, total_len) = U32Le.parse(&rest)?;
             if !(total_len >= 16777215 && total_len <= 4294967295) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, body) = (CombinedExampleFmt { total_len: total_len }).parse(&rest)?;
+            let (n2, body) = CombinedExampleFmt { total_len: total_len }.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, hdr_payload) = (PayloadWithHeaderFmt).parse(&rest)?;
+            let (n3, hdr_payload) = PayloadWithHeaderFmt.parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, nested) = (NestedComplexFmt { hdr_payload: hdr_payload }).parse(&rest)?;
+            let (n4, nested) = NestedComplexFmt { hdr_payload: hdr_payload }.parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = FinalMsg { total_len, body, hdr_payload, nested };
@@ -1756,10 +1756,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let FinalMsg { total_len, body, hdr_payload, nested } = v;
-            (U32Le).serialize(total_len, obuf);
-            (CombinedExampleFmt { total_len: *total_len }).serialize(body, obuf);
-            (PayloadWithHeaderFmt).serialize(hdr_payload, obuf);
-            (NestedComplexFmt { hdr_payload: *hdr_payload }).serialize(nested, obuf);
+            U32Le.serialize(total_len, obuf);
+            CombinedExampleFmt { total_len: *total_len }.serialize(body, obuf);
+            PayloadWithHeaderFmt.serialize(hdr_payload, obuf);
+            NestedComplexFmt { hdr_payload: *hdr_payload }.serialize(nested, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1776,9 +1776,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, magic) = (U32Le).parse(&rest)?;
+            let (n1, magic) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, inner) = (GenericHeaderFmt).parse(&rest)?;
+            let (n2, inner) = GenericHeaderFmt.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OuterHeader { magic, inner };
@@ -1787,14 +1787,14 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<OuterHeader> for OuterHeaderFmt {
+    impl<'i> Serializer<OuterHeader> for OuterHeaderFmt {
         fn serialize(&self, v: &OuterHeader, obuf: &mut Vec<u8>) {
             reveal(<OuterHeaderFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let OuterHeader { magic, inner } = v;
-            (U32Le).serialize(magic, obuf);
-            (GenericHeaderFmt).serialize(inner, obuf);
+            U32Le.serialize(magic, obuf);
+            GenericHeaderFmt.serialize(inner, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1811,9 +1811,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, outer) = (OuterHeaderFmt).parse(&rest)?;
+            let (n1, outer) = OuterHeaderFmt.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied((outer.inner.payload_length - 8))).parse(&rest)?;
+            let (n2, data) = Varied((outer.inner.payload_length - 8)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = DeepNested { outer, data };
@@ -1828,8 +1828,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let DeepNested { outer, data } = v;
-            (OuterHeaderFmt).serialize(outer, obuf);
-            (Varied((outer.inner.payload_length - 8))).serialize(data, obuf);
+            OuterHeaderFmt.serialize(outer, obuf);
+            Varied((outer.inner.payload_length - 8)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

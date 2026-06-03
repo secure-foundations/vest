@@ -20,7 +20,7 @@ verus! {
 // ============================================================
 # [doc = "data type for `my_typed_enum`."]
 # [repr (u16)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum MyTypedEnum {
     X = 1,
     Y = 2,
@@ -56,7 +56,7 @@ impl SelfView for MyTypedEnum {
 
 # [doc = "data type for `my_enum`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum MyEnum {
     A = 1,
     B = 2,
@@ -91,8 +91,8 @@ impl SelfView for MyEnum {
 }
 
 # [doc = "data type for `typed_enum_constraints`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct TypedEnumConstraints {
     pub foo: MyTypedEnum,
     pub bar: MyTypedEnum,
@@ -116,8 +116,8 @@ impl DeepView for TypedEnumConstraints {
 }
 
 # [doc = "data type for `enum_constraints`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct EnumConstraints {
     pub foo: MyEnum,
     pub bar: MyEnum,
@@ -141,7 +141,7 @@ impl DeepView for EnumConstraints {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `my_typed_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct MyTypedEnumFmt;
 
 pub type MyTypedEnumFmtSpec = Named<
@@ -180,7 +180,7 @@ impl MyTypedEnumFmt {
 }
 
 # [doc = "named format combinator for `my_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct MyEnumFmt;
 
 pub type MyEnumFmtSpec = Named<
@@ -219,7 +219,7 @@ impl MyEnumFmt {
 }
 
 # [doc = "named format combinator for `typed_enum_constraints`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TypedEnumConstraintsFmt;
 
 pub type TypedEnumConstraintsFmtSpec = Named<
@@ -276,7 +276,7 @@ impl TypedEnumConstraintsFmt {
 }
 
 # [doc = "named format combinator for `enum_constraints`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct EnumConstraintsFmt;
 
 pub type EnumConstraintsFmtSpec = Named<
@@ -337,7 +337,7 @@ mod derived_specs {
     impl SpecParser for MyTypedEnumFmt {
         type PVal = MyTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             MyTypedEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -354,7 +354,7 @@ mod derived_specs {
     impl SpecSerializerDps for MyTypedEnumFmt {
         type SValue = MyTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             MyTypedEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -363,7 +363,7 @@ mod derived_specs {
     impl SpecSerializer for MyTypedEnumFmt {
         type SVal = MyTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             MyTypedEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -372,7 +372,7 @@ mod derived_specs {
     impl SpecByteLen for MyTypedEnumFmt {
         type T = MyTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             MyTypedEnumFmt::spec_inner().byte_len(v)
         }
@@ -381,7 +381,7 @@ mod derived_specs {
     impl SpecParser for MyEnumFmt {
         type PVal = MyEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             MyEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -398,7 +398,7 @@ mod derived_specs {
     impl SpecSerializerDps for MyEnumFmt {
         type SValue = MyEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             MyEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -407,7 +407,7 @@ mod derived_specs {
     impl SpecSerializer for MyEnumFmt {
         type SVal = MyEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             MyEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -416,7 +416,7 @@ mod derived_specs {
     impl SpecByteLen for MyEnumFmt {
         type T = MyEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             MyEnumFmt::spec_inner().byte_len(v)
         }
@@ -425,7 +425,7 @@ mod derived_specs {
     impl SpecParser for TypedEnumConstraintsFmt {
         type PVal = TypedEnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TypedEnumConstraintsFmt::spec_inner().spec_parse(ibuf)
         }
@@ -442,7 +442,7 @@ mod derived_specs {
     impl SpecSerializerDps for TypedEnumConstraintsFmt {
         type SValue = TypedEnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TypedEnumConstraintsFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -451,7 +451,7 @@ mod derived_specs {
     impl SpecSerializer for TypedEnumConstraintsFmt {
         type SVal = TypedEnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TypedEnumConstraintsFmt::spec_inner().spec_serialize(v)
         }
@@ -460,7 +460,7 @@ mod derived_specs {
     impl SpecByteLen for TypedEnumConstraintsFmt {
         type T = TypedEnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TypedEnumConstraintsFmt::spec_inner().byte_len(v)
         }
@@ -469,7 +469,7 @@ mod derived_specs {
     impl SpecParser for EnumConstraintsFmt {
         type PVal = EnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             EnumConstraintsFmt::spec_inner().spec_parse(ibuf)
         }
@@ -486,7 +486,7 @@ mod derived_specs {
     impl SpecSerializerDps for EnumConstraintsFmt {
         type SValue = EnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             EnumConstraintsFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -495,7 +495,7 @@ mod derived_specs {
     impl SpecSerializer for EnumConstraintsFmt {
         type SVal = EnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             EnumConstraintsFmt::spec_inner().spec_serialize(v)
         }
@@ -504,7 +504,7 @@ mod derived_specs {
     impl SpecByteLen for EnumConstraintsFmt {
         type T = EnumConstraintsSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             EnumConstraintsFmt::spec_inner().byte_len(v)
         }
@@ -975,7 +975,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<MyTypedEnum> for MyTypedEnumFmt {
+    impl<'i> Serializer<MyTypedEnum> for MyTypedEnumFmt {
         fn serialize(&self, v: &MyTypedEnum, obuf: &mut Vec<u8>) {
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -1014,7 +1014,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<MyEnum> for MyEnumFmt {
+    impl<'i> Serializer<MyEnum> for MyEnumFmt {
         fn serialize(&self, v: &MyEnum, obuf: &mut Vec<u8>) {
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -1041,22 +1041,22 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = (MyTypedEnumFmt).parse(&rest)?;
+            let (n1, foo) = MyTypedEnumFmt.parse(&rest)?;
             if !(foo == MyTypedEnum::X) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = (MyTypedEnumFmt).parse(&rest)?;
+            let (n2, bar) = MyTypedEnumFmt.parse(&rest)?;
             if !(!(bar == MyTypedEnum::Y)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = (MyTypedEnumFmt).parse(&rest)?;
+            let (n3, baz) = MyTypedEnumFmt.parse(&rest)?;
             if !(baz == MyTypedEnum::X || baz == MyTypedEnum::Z) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
-            let (n4, tag) = (Const(MyTypedEnumFmt, MyTypedEnum::X)).parse(&rest)?;
+            let (n4, tag) = Const(MyTypedEnumFmt, MyTypedEnum::X).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TypedEnumConstraints { foo, bar, baz, tag };
@@ -1065,16 +1065,16 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<TypedEnumConstraints> for TypedEnumConstraintsFmt {
+    impl<'i> Serializer<TypedEnumConstraints> for TypedEnumConstraintsFmt {
         fn serialize(&self, v: &TypedEnumConstraints, obuf: &mut Vec<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let TypedEnumConstraints { foo, bar, baz, tag } = v;
-            (MyTypedEnumFmt).serialize(foo, obuf);
-            (MyTypedEnumFmt).serialize(bar, obuf);
-            (MyTypedEnumFmt).serialize(baz, obuf);
-            (Const(MyTypedEnumFmt, MyTypedEnum::X)).serialize(tag, obuf);
+            MyTypedEnumFmt.serialize(foo, obuf);
+            MyTypedEnumFmt.serialize(bar, obuf);
+            MyTypedEnumFmt.serialize(baz, obuf);
+            Const(MyTypedEnumFmt, MyTypedEnum::X).serialize(tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1091,22 +1091,22 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = (MyEnumFmt).parse(&rest)?;
+            let (n1, foo) = MyEnumFmt.parse(&rest)?;
             if !(foo == MyEnum::A) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = (MyEnumFmt).parse(&rest)?;
+            let (n2, bar) = MyEnumFmt.parse(&rest)?;
             if !(!(bar == MyEnum::B)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = (MyEnumFmt).parse(&rest)?;
+            let (n3, baz) = MyEnumFmt.parse(&rest)?;
             if !(baz == MyEnum::A || baz == MyEnum::C) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
-            let (n4, tag) = (Const(MyEnumFmt, MyEnum::A)).parse(&rest)?;
+            let (n4, tag) = Const(MyEnumFmt, MyEnum::A).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = EnumConstraints { foo, bar, baz, tag };
@@ -1115,16 +1115,16 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<EnumConstraints> for EnumConstraintsFmt {
+    impl<'i> Serializer<EnumConstraints> for EnumConstraintsFmt {
         fn serialize(&self, v: &EnumConstraints, obuf: &mut Vec<u8>) {
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let EnumConstraints { foo, bar, baz, tag } = v;
-            (MyEnumFmt).serialize(foo, obuf);
-            (MyEnumFmt).serialize(bar, obuf);
-            (MyEnumFmt).serialize(baz, obuf);
-            (Const(MyEnumFmt, MyEnum::A)).serialize(tag, obuf);
+            MyEnumFmt.serialize(foo, obuf);
+            MyEnumFmt.serialize(bar, obuf);
+            MyEnumFmt.serialize(baz, obuf);
+            Const(MyEnumFmt, MyEnum::A).serialize(tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

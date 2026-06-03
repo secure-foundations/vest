@@ -19,13 +19,13 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `script`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Script<'i> {
     pub l: u64,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ScriptSpec {
     pub l: u64,
     pub data: Seq<u8>,
@@ -42,13 +42,13 @@ impl<'i> DeepView for Script<'i> {
 }
 
 # [doc = "data type for `txout`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Txout<'i> {
     pub value: u64,
     pub script_pubkey: Script<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct TxoutSpec {
     pub value: u64,
     pub script_pubkey: ScriptSpec,
@@ -65,13 +65,13 @@ impl<'i> DeepView for Txout<'i> {
 }
 
 # [doc = "data type for `outpoint`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Outpoint<'i> {
     pub hash: &'i [u8],
     pub index: u32,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct OutpointSpec {
     pub hash: Seq<u8>,
     pub index: u32,
@@ -88,13 +88,13 @@ impl<'i> DeepView for Outpoint<'i> {
 }
 
 # [doc = "data type for `script_sig`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ScriptSig<'i> {
     pub l: u64,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ScriptSigSpec {
     pub l: u64,
     pub data: Seq<u8>,
@@ -111,13 +111,13 @@ impl<'i> DeepView for ScriptSig<'i> {
 }
 
 # [doc = "data type for `witness_component`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct WitnessComponent<'i> {
     pub l: u64,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct WitnessComponentSpec {
     pub l: u64,
     pub data: Seq<u8>,
@@ -134,13 +134,13 @@ impl<'i> DeepView for WitnessComponent<'i> {
 }
 
 # [doc = "data type for `witness`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct Witness<'i> {
     pub count: u64,
     pub data: Vec<WitnessComponent<'i>>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct WitnessSpec {
     pub count: u64,
     pub data: Seq<WitnessComponentSpec>,
@@ -157,14 +157,14 @@ impl<'i> DeepView for Witness<'i> {
 }
 
 # [doc = "data type for `txin`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Txin<'i> {
     pub previous_output: Outpoint<'i>,
     pub script_sig: ScriptSig<'i>,
     pub sequence: u32,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct TxinSpec {
     pub previous_output: OutpointSpec,
     pub script_sig: ScriptSigSpec,
@@ -186,8 +186,8 @@ impl<'i> DeepView for Txin<'i> {
 }
 
 # [doc = "data type for `lock_time`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum LockTime {
     BlockNo(u32),
     Timestamp(u32),
@@ -206,7 +206,7 @@ impl DeepView for LockTime {
 }
 
 # [doc = "data type for `tx_nonsegwit`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct TxNonsegwit<'i> {
     pub txins: Vec<Txin<'i>>,
     pub txout_count: u64,
@@ -214,7 +214,7 @@ pub struct TxNonsegwit<'i> {
     pub lock_time: LockTime,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct TxNonsegwitSpec {
     pub txins: Seq<TxinSpec>,
     pub txout_count: u64,
@@ -238,7 +238,7 @@ impl<'i> DeepView for TxNonsegwit<'i> {
 }
 
 # [doc = "data type for `tx_segwit`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct TxSegwit<'i> {
     pub flag: u8,
     pub txin_count: u64,
@@ -249,7 +249,7 @@ pub struct TxSegwit<'i> {
     pub lock_time: LockTime,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct TxSegwitSpec {
     pub flag: u8,
     pub txin_count: u64,
@@ -282,13 +282,13 @@ impl<'i> DeepView for TxSegwit<'i> {
 }
 
 # [doc = "data type for `tx_rem`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub enum TxRem<'i> {
     Variant1(TxSegwit<'i>),
     Default(TxNonsegwit<'i>),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum TxRemSpec {
     Variant1(TxSegwitSpec),
     Default(TxNonsegwitSpec),
@@ -308,14 +308,14 @@ impl<'i> DeepView for TxRem<'i> {
 }
 
 # [doc = "data type for `tx`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct Tx<'i> {
     pub version: u32,
     pub txin_count: u64,
     pub rem: TxRem<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct TxSpec {
     pub version: u32,
     pub txin_count: u64,
@@ -337,7 +337,7 @@ impl<'i> DeepView for Tx<'i> {
 }
 
 # [doc = "data type for `block`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct Block<'i> {
     pub version: u32,
     pub prev_block: &'i [u8],
@@ -349,7 +349,7 @@ pub struct Block<'i> {
     pub txs: Vec<Tx<'i>>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct BlockSpec {
     pub version: u32,
     pub prev_block: Seq<u8>,
@@ -384,7 +384,7 @@ impl<'i> DeepView for Block<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `script`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ScriptFmt;
 
 pub type ScriptFmtSpec = Named<
@@ -416,7 +416,7 @@ impl ScriptFmt {
 }
 
 # [doc = "named format combinator for `txout`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxoutFmt;
 
 pub type TxoutFmtSpec = Named<Mapped<Pair<U64Le, ScriptFmt>, FnSpecMapper<TxoutInner, TxoutSpec>>>;
@@ -446,7 +446,7 @@ impl TxoutFmt {
 }
 
 # [doc = "named format combinator for `outpoint`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct OutpointFmt;
 
 pub type OutpointFmtSpec = Named<
@@ -478,7 +478,7 @@ impl OutpointFmt {
 }
 
 # [doc = "named format combinator for `script_sig`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ScriptSigFmt;
 
 pub type ScriptSigFmtSpec = Named<
@@ -513,7 +513,7 @@ impl ScriptSigFmt {
 }
 
 # [doc = "named format combinator for `witness_component`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct WitnessComponentFmt;
 
 pub type WitnessComponentFmtSpec = Named<
@@ -548,7 +548,7 @@ impl WitnessComponentFmt {
 }
 
 # [doc = "named format combinator for `witness`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct WitnessFmt;
 
 pub type WitnessFmtSpec = Named<
@@ -583,7 +583,7 @@ impl WitnessFmt {
 }
 
 # [doc = "named format combinator for `txin`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxinFmt;
 
 pub type TxinFmtSpec = Named<
@@ -615,7 +615,7 @@ impl TxinFmt {
 }
 
 # [doc = "named format combinator for `lock_time`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct LockTimeFmt;
 
 pub type LockTimeFmtSpec = Named<
@@ -657,13 +657,13 @@ impl LockTimeFmt {
 }
 
 # [doc = "named format combinator for `tx_nonsegwit`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxNonsegwitFmt {
     txin_count: u64,
 }
 
 impl TxNonsegwitFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -718,7 +718,7 @@ impl TxNonsegwitFmt {
 }
 
 # [doc = "named format combinator for `tx_segwit`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxSegwitFmt;
 
 pub type TxSegwitFmtSpec = Named<
@@ -813,13 +813,13 @@ impl TxSegwitFmt {
 }
 
 # [doc = "named format combinator for `tx_rem`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxRemFmt {
     txin_count: u64,
 }
 
 impl TxRemFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -869,7 +869,7 @@ impl TxRemFmt {
 }
 
 # [doc = "named format combinator for `tx`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct TxFmt;
 
 pub type TxFmtSpec = Named<
@@ -907,7 +907,7 @@ impl TxFmt {
 }
 
 # [doc = "named format combinator for `block`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct BlockFmt;
 
 pub type BlockFmtSpec = Named<
@@ -1016,7 +1016,7 @@ mod derived_specs {
     impl SpecParser for ScriptFmt {
         type PVal = ScriptSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ScriptFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1033,7 +1033,7 @@ mod derived_specs {
     impl SpecSerializerDps for ScriptFmt {
         type SValue = ScriptSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ScriptFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1042,7 +1042,7 @@ mod derived_specs {
     impl SpecSerializer for ScriptFmt {
         type SVal = ScriptSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ScriptFmt::spec_inner().spec_serialize(v)
         }
@@ -1051,7 +1051,7 @@ mod derived_specs {
     impl SpecByteLen for ScriptFmt {
         type T = ScriptSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ScriptFmt::spec_inner().byte_len(v)
         }
@@ -1060,7 +1060,7 @@ mod derived_specs {
     impl SpecParser for TxoutFmt {
         type PVal = TxoutSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxoutFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1077,7 +1077,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxoutFmt {
         type SValue = TxoutSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxoutFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1086,7 +1086,7 @@ mod derived_specs {
     impl SpecSerializer for TxoutFmt {
         type SVal = TxoutSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxoutFmt::spec_inner().spec_serialize(v)
         }
@@ -1095,7 +1095,7 @@ mod derived_specs {
     impl SpecByteLen for TxoutFmt {
         type T = TxoutSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxoutFmt::spec_inner().byte_len(v)
         }
@@ -1104,7 +1104,7 @@ mod derived_specs {
     impl SpecParser for OutpointFmt {
         type PVal = OutpointSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             OutpointFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1121,7 +1121,7 @@ mod derived_specs {
     impl SpecSerializerDps for OutpointFmt {
         type SValue = OutpointSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             OutpointFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1130,7 +1130,7 @@ mod derived_specs {
     impl SpecSerializer for OutpointFmt {
         type SVal = OutpointSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             OutpointFmt::spec_inner().spec_serialize(v)
         }
@@ -1139,7 +1139,7 @@ mod derived_specs {
     impl SpecByteLen for OutpointFmt {
         type T = OutpointSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             OutpointFmt::spec_inner().byte_len(v)
         }
@@ -1148,7 +1148,7 @@ mod derived_specs {
     impl SpecParser for ScriptSigFmt {
         type PVal = ScriptSigSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ScriptSigFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1165,7 +1165,7 @@ mod derived_specs {
     impl SpecSerializerDps for ScriptSigFmt {
         type SValue = ScriptSigSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ScriptSigFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1174,7 +1174,7 @@ mod derived_specs {
     impl SpecSerializer for ScriptSigFmt {
         type SVal = ScriptSigSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ScriptSigFmt::spec_inner().spec_serialize(v)
         }
@@ -1183,7 +1183,7 @@ mod derived_specs {
     impl SpecByteLen for ScriptSigFmt {
         type T = ScriptSigSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ScriptSigFmt::spec_inner().byte_len(v)
         }
@@ -1192,7 +1192,7 @@ mod derived_specs {
     impl SpecParser for WitnessComponentFmt {
         type PVal = WitnessComponentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             WitnessComponentFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1209,7 +1209,7 @@ mod derived_specs {
     impl SpecSerializerDps for WitnessComponentFmt {
         type SValue = WitnessComponentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             WitnessComponentFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1218,7 +1218,7 @@ mod derived_specs {
     impl SpecSerializer for WitnessComponentFmt {
         type SVal = WitnessComponentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             WitnessComponentFmt::spec_inner().spec_serialize(v)
         }
@@ -1227,7 +1227,7 @@ mod derived_specs {
     impl SpecByteLen for WitnessComponentFmt {
         type T = WitnessComponentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             WitnessComponentFmt::spec_inner().byte_len(v)
         }
@@ -1236,7 +1236,7 @@ mod derived_specs {
     impl SpecParser for WitnessFmt {
         type PVal = WitnessSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             WitnessFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1253,7 +1253,7 @@ mod derived_specs {
     impl SpecSerializerDps for WitnessFmt {
         type SValue = WitnessSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             WitnessFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1262,7 +1262,7 @@ mod derived_specs {
     impl SpecSerializer for WitnessFmt {
         type SVal = WitnessSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             WitnessFmt::spec_inner().spec_serialize(v)
         }
@@ -1271,7 +1271,7 @@ mod derived_specs {
     impl SpecByteLen for WitnessFmt {
         type T = WitnessSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             WitnessFmt::spec_inner().byte_len(v)
         }
@@ -1280,7 +1280,7 @@ mod derived_specs {
     impl SpecParser for TxinFmt {
         type PVal = TxinSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxinFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1297,7 +1297,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxinFmt {
         type SValue = TxinSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxinFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1306,7 +1306,7 @@ mod derived_specs {
     impl SpecSerializer for TxinFmt {
         type SVal = TxinSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxinFmt::spec_inner().spec_serialize(v)
         }
@@ -1315,7 +1315,7 @@ mod derived_specs {
     impl SpecByteLen for TxinFmt {
         type T = TxinSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxinFmt::spec_inner().byte_len(v)
         }
@@ -1324,7 +1324,7 @@ mod derived_specs {
     impl SpecParser for LockTimeFmt {
         type PVal = LockTimeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             LockTimeFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1341,7 +1341,7 @@ mod derived_specs {
     impl SpecSerializerDps for LockTimeFmt {
         type SValue = LockTimeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             LockTimeFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1350,7 +1350,7 @@ mod derived_specs {
     impl SpecSerializer for LockTimeFmt {
         type SVal = LockTimeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             LockTimeFmt::spec_inner().spec_serialize(v)
         }
@@ -1359,7 +1359,7 @@ mod derived_specs {
     impl SpecByteLen for LockTimeFmt {
         type T = LockTimeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             LockTimeFmt::spec_inner().byte_len(v)
         }
@@ -1368,7 +1368,7 @@ mod derived_specs {
     impl SpecParser for TxNonsegwitFmt {
         type PVal = TxNonsegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxNonsegwitFmt::spec_inner(self.txin_count_spec()).spec_parse(ibuf)
         }
@@ -1385,7 +1385,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxNonsegwitFmt {
         type SValue = TxNonsegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxNonsegwitFmt::spec_inner(self.txin_count_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1394,7 +1394,7 @@ mod derived_specs {
     impl SpecSerializer for TxNonsegwitFmt {
         type SVal = TxNonsegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxNonsegwitFmt::spec_inner(self.txin_count_spec()).spec_serialize(v)
         }
@@ -1403,7 +1403,7 @@ mod derived_specs {
     impl SpecByteLen for TxNonsegwitFmt {
         type T = TxNonsegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxNonsegwitFmt::spec_inner(self.txin_count_spec()).byte_len(v)
         }
@@ -1412,7 +1412,7 @@ mod derived_specs {
     impl SpecParser for TxSegwitFmt {
         type PVal = TxSegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxSegwitFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1429,7 +1429,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxSegwitFmt {
         type SValue = TxSegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxSegwitFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1438,7 +1438,7 @@ mod derived_specs {
     impl SpecSerializer for TxSegwitFmt {
         type SVal = TxSegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxSegwitFmt::spec_inner().spec_serialize(v)
         }
@@ -1447,7 +1447,7 @@ mod derived_specs {
     impl SpecByteLen for TxSegwitFmt {
         type T = TxSegwitSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxSegwitFmt::spec_inner().byte_len(v)
         }
@@ -1456,7 +1456,7 @@ mod derived_specs {
     impl SpecParser for TxRemFmt {
         type PVal = TxRemSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxRemFmt::spec_inner(self.txin_count_spec()).spec_parse(ibuf)
         }
@@ -1473,7 +1473,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxRemFmt {
         type SValue = TxRemSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxRemFmt::spec_inner(self.txin_count_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1482,7 +1482,7 @@ mod derived_specs {
     impl SpecSerializer for TxRemFmt {
         type SVal = TxRemSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxRemFmt::spec_inner(self.txin_count_spec()).spec_serialize(v)
         }
@@ -1491,7 +1491,7 @@ mod derived_specs {
     impl SpecByteLen for TxRemFmt {
         type T = TxRemSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxRemFmt::spec_inner(self.txin_count_spec()).byte_len(v)
         }
@@ -1500,7 +1500,7 @@ mod derived_specs {
     impl SpecParser for TxFmt {
         type PVal = TxSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             TxFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1517,7 +1517,7 @@ mod derived_specs {
     impl SpecSerializerDps for TxFmt {
         type SValue = TxSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             TxFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1526,7 +1526,7 @@ mod derived_specs {
     impl SpecSerializer for TxFmt {
         type SVal = TxSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             TxFmt::spec_inner().spec_serialize(v)
         }
@@ -1535,7 +1535,7 @@ mod derived_specs {
     impl SpecByteLen for TxFmt {
         type T = TxSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             TxFmt::spec_inner().byte_len(v)
         }
@@ -1544,7 +1544,7 @@ mod derived_specs {
     impl SpecParser for BlockFmt {
         type PVal = BlockSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             BlockFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1561,7 +1561,7 @@ mod derived_specs {
     impl SpecSerializerDps for BlockFmt {
         type SValue = BlockSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             BlockFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1570,7 +1570,7 @@ mod derived_specs {
     impl SpecSerializer for BlockFmt {
         type SVal = BlockSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             BlockFmt::spec_inner().spec_serialize(v)
         }
@@ -1579,7 +1579,7 @@ mod derived_specs {
     impl SpecByteLen for BlockFmt {
         type T = BlockSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             BlockFmt::spec_inner().byte_len(v)
         }
@@ -2992,9 +2992,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, data) = Varied(l).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Script { l, data };
@@ -3009,8 +3009,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Script { l, data } = v;
-            (VarInt::<true>).serialize(l, obuf);
-            (Varied(l)).serialize(data, obuf);
+            VarInt::<true>.serialize(l, obuf);
+            Varied(l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3027,9 +3027,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, value) = (U64Le).parse(&rest)?;
+            let (n1, value) = U64Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_pubkey) = (ScriptFmt).parse(&rest)?;
+            let (n2, script_pubkey) = ScriptFmt.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Txout { value, script_pubkey };
@@ -3044,8 +3044,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Txout { value, script_pubkey } = v;
-            (U64Le).serialize(value, obuf);
-            (ScriptFmt).serialize(script_pubkey, obuf);
+            U64Le.serialize(value, obuf);
+            ScriptFmt.serialize(script_pubkey, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3062,9 +3062,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hash) = (Fixed::<32>).parse(&rest)?;
+            let (n1, hash) = Fixed::<32>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, index) = (U32Le).parse(&rest)?;
+            let (n2, index) = U32Le.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Outpoint { hash, index };
@@ -3079,8 +3079,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Outpoint { hash, index } = v;
-            (Fixed::<32>).serialize(hash, obuf);
-            (U32Le).serialize(index, obuf);
+            Fixed::<32>.serialize(hash, obuf);
+            U32Le.serialize(index, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3097,9 +3097,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, data) = Varied(l).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ScriptSig { l, data };
@@ -3114,8 +3114,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ScriptSig { l, data } = v;
-            (VarInt::<true>).serialize(l, obuf);
-            (Varied(l)).serialize(data, obuf);
+            VarInt::<true>.serialize(l, obuf);
+            Varied(l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3132,9 +3132,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, data) = Varied(l).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = WitnessComponent { l, data };
@@ -3149,8 +3149,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let WitnessComponent { l, data } = v;
-            (VarInt::<true>).serialize(l, obuf);
-            (Varied(l)).serialize(data, obuf);
+            VarInt::<true>.serialize(l, obuf);
+            Varied(l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3167,9 +3167,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, count) = (VarInt::<true>).parse(&rest)?;
+            let (n1, count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (RepeatN(count, WitnessComponentFmt)).parse(&rest)?;
+            let (n2, data) = RepeatN(count, WitnessComponentFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Witness { count, data };
@@ -3184,8 +3184,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Witness { count, data } = v;
-            (VarInt::<true>).serialize(count, obuf);
-            (RepeatN(count, WitnessComponentFmt)).serialize(data, obuf);
+            VarInt::<true>.serialize(count, obuf);
+            RepeatN(count, WitnessComponentFmt).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3202,11 +3202,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, previous_output) = (OutpointFmt).parse(&rest)?;
+            let (n1, previous_output) = OutpointFmt.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_sig) = (ScriptSigFmt).parse(&rest)?;
+            let (n2, script_sig) = ScriptSigFmt.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, sequence) = (U32Le).parse(&rest)?;
+            let (n3, sequence) = U32Le.parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Txin { previous_output, script_sig, sequence };
@@ -3221,9 +3221,9 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Txin { previous_output, script_sig, sequence } = v;
-            (OutpointFmt).serialize(previous_output, obuf);
-            (ScriptSigFmt).serialize(script_sig, obuf);
-            (U32Le).serialize(sequence, obuf);
+            OutpointFmt.serialize(previous_output, obuf);
+            ScriptSigFmt.serialize(script_sig, obuf);
+            U32Le.serialize(sequence, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3252,7 +3252,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<LockTime> for LockTimeFmt {
+    impl<'i> Serializer<LockTime> for LockTimeFmt {
         fn serialize(&self, v: &LockTime, obuf: &mut Vec<u8>) {
             reveal(<LockTimeFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -3285,13 +3285,13 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, txins) = (RepeatN(self.txin_count, TxinFmt)).parse(&rest)?;
+            let (n1, txins) = RepeatN(self.txin_count, TxinFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txout_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
+            let (n3, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, lock_time) = (LockTimeFmt).parse(&rest)?;
+            let (n4, lock_time) = LockTimeFmt.parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TxNonsegwit { txins, txout_count, txouts, lock_time };
@@ -3310,10 +3310,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
-            (RepeatN(self.txin_count, TxinFmt)).serialize(txins, obuf);
-            (VarInt::<true>).serialize(txout_count, obuf);
-            (RepeatN(txout_count, TxoutFmt)).serialize(txouts, obuf);
-            (LockTimeFmt).serialize(lock_time, obuf);
+            RepeatN(self.txin_count, TxinFmt).serialize(txins, obuf);
+            VarInt::<true>.serialize(txout_count, obuf);
+            RepeatN(txout_count, TxoutFmt).serialize(txouts, obuf);
+            LockTimeFmt.serialize(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3330,19 +3330,19 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, flag) = (Const(U8, 1)).parse(&rest)?;
+            let (n1, flag) = Const(U8, 1).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txins) = (RepeatN(txin_count, TxinFmt)).parse(&rest)?;
+            let (n3, txins) = RepeatN(txin_count, TxinFmt).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, txout_count) = (VarInt::<true>).parse(&rest)?;
+            let (n4, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
+            let (n5, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, witness) = (RepeatN(txin_count, WitnessFmt)).parse(&rest)?;
+            let (n6, witness) = RepeatN(txin_count, WitnessFmt).parse(&rest)?;
             let rest = rest.skip(n6);
-            let (n7, lock_time) = (LockTimeFmt).parse(&rest)?;
+            let (n7, lock_time) = LockTimeFmt.parse(&rest)?;
             let rest = rest.skip(n7);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7;
             let final_v = TxSegwit {
@@ -3365,13 +3365,13 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
-            (Const(U8, 1)).serialize(flag, obuf);
-            (VarInt::<true>).serialize(txin_count, obuf);
-            (RepeatN(txin_count, TxinFmt)).serialize(txins, obuf);
-            (VarInt::<true>).serialize(txout_count, obuf);
-            (RepeatN(txout_count, TxoutFmt)).serialize(txouts, obuf);
-            (RepeatN(txin_count, WitnessFmt)).serialize(witness, obuf);
-            (LockTimeFmt).serialize(lock_time, obuf);
+            Const(U8, 1).serialize(flag, obuf);
+            VarInt::<true>.serialize(txin_count, obuf);
+            RepeatN(txin_count, TxinFmt).serialize(txins, obuf);
+            VarInt::<true>.serialize(txout_count, obuf);
+            RepeatN(txout_count, TxoutFmt).serialize(txouts, obuf);
+            RepeatN(txin_count, WitnessFmt).serialize(witness, obuf);
+            LockTimeFmt.serialize(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3441,11 +3441,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, version) = (U32Le).parse(&rest)?;
+            let (n1, version) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, rem) = (TxRemFmt { txin_count: txin_count }).parse(&rest)?;
+            let (n3, rem) = TxRemFmt { txin_count: txin_count }.parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Tx { version, txin_count, rem };
@@ -3460,9 +3460,9 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Tx { version, txin_count, rem } = v;
-            (U32Le).serialize(version, obuf);
-            (VarInt::<true>).serialize(txin_count, obuf);
-            (TxRemFmt { txin_count: *txin_count }).serialize(rem, obuf);
+            U32Le.serialize(version, obuf);
+            VarInt::<true>.serialize(txin_count, obuf);
+            TxRemFmt { txin_count: *txin_count }.serialize(rem, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3479,21 +3479,21 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, version) = (U32Le).parse(&rest)?;
+            let (n1, version) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, prev_block) = (Fixed::<32>).parse(&rest)?;
+            let (n2, prev_block) = Fixed::<32>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, merkle_root) = (Fixed::<32>).parse(&rest)?;
+            let (n3, merkle_root) = Fixed::<32>.parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, timestamp) = (U32Le).parse(&rest)?;
+            let (n4, timestamp) = U32Le.parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, bits) = (U32Le).parse(&rest)?;
+            let (n5, bits) = U32Le.parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, nonce) = (U32Le).parse(&rest)?;
+            let (n6, nonce) = U32Le.parse(&rest)?;
             let rest = rest.skip(n6);
-            let (n7, tx_count) = (VarInt::<true>).parse(&rest)?;
+            let (n7, tx_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n7);
-            let (n8, txs) = (RepeatN(tx_count, TxFmt)).parse(&rest)?;
+            let (n8, txs) = RepeatN(tx_count, TxFmt).parse(&rest)?;
             let rest = rest.skip(n8);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8;
             let final_v = Block {
@@ -3518,14 +3518,14 @@ mod exec_impls {
 
             let Block { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } =
                 v;
-            (U32Le).serialize(version, obuf);
-            (Fixed::<32>).serialize(prev_block, obuf);
-            (Fixed::<32>).serialize(merkle_root, obuf);
-            (U32Le).serialize(timestamp, obuf);
-            (U32Le).serialize(bits, obuf);
-            (U32Le).serialize(nonce, obuf);
-            (VarInt::<true>).serialize(tx_count, obuf);
-            (RepeatN(tx_count, TxFmt)).serialize(txs, obuf);
+            U32Le.serialize(version, obuf);
+            Fixed::<32>.serialize(prev_block, obuf);
+            Fixed::<32>.serialize(merkle_root, obuf);
+            U32Le.serialize(timestamp, obuf);
+            U32Le.serialize(bits, obuf);
+            U32Le.serialize(nonce, obuf);
+            VarInt::<true>.serialize(tx_count, obuf);
+            RepeatN(tx_count, TxFmt).serialize(txs, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

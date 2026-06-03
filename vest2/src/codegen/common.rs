@@ -117,6 +117,142 @@ impl CodeWriter {
         self.buf
     }
 
+    pub(crate) fn if_block(&mut self, cond: impl AsRef<str>, f: impl FnOnce(&mut Self)) {
+        self.block(format!("if {}", cond.as_ref()), f);
+    }
+
+    pub(crate) fn record_constructor_stmt(
+        &mut self,
+        lhs: &str,
+        name: &str,
+        fields: &[impl AsRef<str>],
+    ) {
+        if fields.is_empty() {
+            self.line(format!("let {} = {} {{}};", lhs, name));
+        } else {
+            self.line(format!("let {} = {} {{", lhs, name));
+            self.write_record_fields(fields);
+            self.line("};");
+        }
+    }
+
+    pub(crate) fn record_destructure_stmt(
+        &mut self,
+        name: &str,
+        fields: &[impl AsRef<str>],
+        rhs: &str,
+    ) {
+        self.write_line_inner("let ");
+        if fields.is_empty() {
+            self.line(format!("{} {{}} = {};", name, rhs));
+        } else {
+            self.write_line_inner(&format!("{} {{", name));
+            self.buf.push('\n');
+            self.needs_indent = true;
+            self.write_record_fields(fields);
+            self.line(format!("}} = {};", rhs));
+        }
+    }
+
+    pub(crate) fn match_block_stmt(
+        &mut self,
+        lhs: Option<&str>,
+        header: &str,
+        f: impl FnOnce(&mut Self),
+    ) {
+        if let Some(l) = lhs {
+            self.write_line_inner(&format!("let {} = ", l));
+        }
+        self.line(format!("match {} {{", header));
+        self.indented(f);
+        if lhs.is_some() {
+            self.line("};");
+        } else {
+            self.line("}");
+        }
+    }
+
+    fn write_record_fields(&mut self, fields: &[impl AsRef<str>]) {
+        self.indented(|w| {
+            for field in fields {
+                let field_ref = field.as_ref().trim();
+                if !field_ref.is_empty() {
+                    w.line(format!("{},", field_ref));
+                }
+            }
+        });
+    }
+
+    pub(crate) fn call_chain_stmt(
+        &mut self,
+        lhs: Option<&str>,
+        recv: &str,
+        method: &str,
+        args: &[impl AsRef<str>],
+        suffix: Option<&str>,
+    ) {
+        let mut prefix = String::new();
+        if let Some(l) = lhs {
+            prefix.push_str("let ");
+            prefix.push_str(l);
+            prefix.push_str(" = ");
+        }
+
+        let mut single_line_args = String::new();
+        for (idx, arg) in args.iter().enumerate() {
+            if idx > 0 {
+                single_line_args.push_str(", ");
+            }
+            single_line_args.push_str(arg.as_ref().trim());
+        }
+
+        let call_part = if recv.is_empty() {
+            format!("{}({})", method, single_line_args)
+        } else if method.is_empty() {
+            recv.to_string()
+        } else {
+            format!("{}.{}({})", recv, method, single_line_args)
+        };
+
+        let total_single_line = format!("{}{}{}", prefix, call_part, suffix.unwrap_or(""));
+        if total_single_line.len() <= 80 && !recv.contains('\n') {
+            self.line(total_single_line);
+        } else {
+            if !prefix.is_empty() {
+                self.write_line_inner(&prefix);
+            }
+            if !recv.is_empty() {
+                let recv_trimmed = recv.trim();
+                self.push_multiline(recv_trimmed);
+                if !method.is_empty() {
+                    let chained_call =
+                        format!(".{}({}){}", method, single_line_args, suffix.unwrap_or(""));
+                    if chained_call.len() <= 80 {
+                        self.line(chained_call);
+                        return;
+                    }
+                    self.line(format!(".{}(", method));
+                }
+            } else {
+                self.line(format!("{}(", method));
+            }
+            if !method.is_empty() {
+                self.indented(|w| {
+                    for arg in args {
+                        w.line(format!("{},", arg.as_ref().trim()));
+                    }
+                });
+                self.line(format!("){}", suffix.unwrap_or("")));
+            } else if let Some(s) = suffix {
+                self.line(s);
+            }
+        }
+    }
+
+    pub(crate) fn reveal_stmt(&mut self, spec: &str) {
+        self.line(format!("reveal({});", spec));
+    }
+
     fn write_line_inner(&mut self, line: &str) {
         if line.is_empty() {
             return;
@@ -129,8 +265,67 @@ impl CodeWriter {
     }
 }
 
+pub(crate) fn cleanup_verus_spacing(input: &str) -> String {
+    let mut s = input.to_string();
+
+    for (from, to) in [
+        (" . ", "."),
+        (":: ", "::"),
+        (" ::", "::"),
+        ("? ;", "?;"),
+        ("& 'i", "&'i"),
+        ("& mut", "&mut"),
+        ("& [", "&["),
+        (" , ", ", "),
+        (" ,", ","),
+        (" : ", ": "),
+        (" ( )", "()"),
+        (" ()", "()"),
+        ("reveal (", "reveal("),
+        ("reveal (<", "reveal(<"),
+        (" >::", ">::"),
+        ("> ::", ">::"),
+        ("< 'i >", "<'i>"),
+        (" <'", "<'"),
+        ("Vec < u8 >", "Vec<u8>"),
+        ("Result <", "Result<"),
+        ("PResult <", "PResult<"),
+        ("Box <", "Box<"),
+        ("dyn std ::", "dyn std::"),
+        ("std ::", "std::"),
+        ("error ::", "error::"),
+        ("Error >", "Error>"),
+        ("Self ::", "Self::"),
+        ("self .", "self."),
+        ("rest .", "rest."),
+        ("ibuf .", "ibuf."),
+        ("obuf .", "obuf."),
+        ("ParseError ::", "ParseError::"),
+        ("PreSerializeError ::", "PreSerializeError::"),
+        ("* v", "*v"),
+        ("* length", "*length"),
+        ("* msg_type", "*msg_type"),
+        ("* tag", "*tag"),
+        ("* len", "*len"),
+        ("* total_len", "*total_len"),
+        ("* hdr_payload", "*hdr_payload"),
+        ("* ext_len", "*ext_len"),
+        ("* extension_type", "*extension_type"),
+        ("* label_ident", "*label_ident"),
+        ("as usize )", "as usize)"),
+        ("as u8 )", "as u8)"),
+        ("as u16 )", "as u16)"),
+        ("as u32 )", "as u32)"),
+        ("as u64 )", "as u64)"),
+    ] {
+        s = s.replace(from, to);
+    }
+
+    s
+}
+
 pub(crate) fn render_ts(ts: TokenStream) -> String {
-    format_verus_snippet(&ts.to_string())
+    cleanup_verus_spacing(&format_verus_snippet(&ts.to_string()))
 }
 
 pub(crate) fn format_verus_snippet(input: &str) -> String {

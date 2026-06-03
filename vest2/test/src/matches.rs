@@ -19,13 +19,13 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `msg5_content`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Msg5Content<'i> {
     Variant1(u16),
     Default(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum Msg5ContentSpec {
     Variant1(u16),
     Default(Seq<u8>),
@@ -55,8 +55,8 @@ pub type ServerHello = u32;
 pub type ServerHelloSpec = u32;
 
 # [doc = "data type for `msg1_payload`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum Msg1Payload {
     Variant1(HelloRetryRequest),
     Default(ServerHello),
@@ -75,13 +75,13 @@ impl DeepView for Msg1Payload {
 }
 
 # [doc = "data type for `msg4_content`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Msg4Content<'i> {
     Variant1(u16),
     Default(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum Msg4ContentSpec {
     Variant1(u16),
     Default(Seq<u8>),
@@ -101,7 +101,7 @@ impl<'i> DeepView for Msg4Content<'i> {
 }
 
 # [doc = "data type for `msg3_content`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Msg3Content<'i> {
     Variant1(u16),
     Variant2(u32),
@@ -109,7 +109,7 @@ pub enum Msg3Content<'i> {
     Default(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum Msg3ContentSpec {
     Variant1(u16),
     Variant2(u32),
@@ -133,13 +133,13 @@ impl<'i> DeepView for Msg3Content<'i> {
 }
 
 # [doc = "data type for `msg3`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg3<'i> {
     pub i: u8,
     pub content: Msg3Content<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct Msg3Spec {
     pub i: u8,
     pub content: Msg3ContentSpec,
@@ -156,13 +156,13 @@ impl<'i> DeepView for Msg3<'i> {
 }
 
 # [doc = "data type for `msg5`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg5<'i> {
     pub i: u64,
     pub content: Msg5Content<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct Msg5Spec {
     pub i: u64,
     pub content: Msg5ContentSpec,
@@ -179,8 +179,8 @@ impl<'i> DeepView for Msg5<'i> {
 }
 
 # [doc = "data type for `msg2_content`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum Msg2Content {
     Variant1(u16),
     Default(u32),
@@ -199,13 +199,13 @@ impl DeepView for Msg2Content {
 }
 
 # [doc = "data type for `msg1`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg1<'i> {
     pub b: &'i [u8],
     pub payload: Msg1Payload,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct Msg1Spec {
     pub b: Seq<u8>,
     pub payload: Msg1PayloadSpec,
@@ -222,13 +222,13 @@ impl<'i> DeepView for Msg1<'i> {
 }
 
 # [doc = "data type for `msg2`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg2<'i> {
     pub b: &'i [u8],
     pub content: Msg2Content,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct Msg2Spec {
     pub b: Seq<u8>,
     pub content: Msg2ContentSpec,
@@ -245,13 +245,13 @@ impl<'i> DeepView for Msg2<'i> {
 }
 
 # [doc = "data type for `msg4`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg4<'i> {
     pub i: u32,
     pub content: Msg4Content<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct Msg4Spec {
     pub i: u32,
     pub content: Msg4ContentSpec,
@@ -271,13 +271,13 @@ impl<'i> DeepView for Msg4<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `msg5_content`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg5ContentFmt {
     i: u64,
 }
 
 impl Msg5ContentFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -327,7 +327,7 @@ impl Msg5ContentFmt {
 }
 
 # [doc = "named format combinator for `hello_retry_request`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct HelloRetryRequestFmt;
 
 pub type HelloRetryRequestFmtSpec = Named<U16Le>;
@@ -340,7 +340,7 @@ impl HelloRetryRequestFmt {
 }
 
 # [doc = "named format combinator for `server_hello`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ServerHelloFmt;
 
 pub type ServerHelloFmtSpec = Named<U32Le>;
@@ -353,13 +353,13 @@ impl ServerHelloFmt {
 }
 
 # [doc = "named format combinator for `msg1_payload`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg1PayloadFmt<'i> {
     b: &'i [u8],
 }
 
 impl<'i> Msg1PayloadFmt<'i> {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -445,13 +445,13 @@ impl<'i> Msg1PayloadFmt<'i> {
 }
 
 # [doc = "named format combinator for `msg4_content`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg4ContentFmt {
     i: u32,
 }
 
 impl Msg4ContentFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -501,13 +501,13 @@ impl Msg4ContentFmt {
 }
 
 # [doc = "named format combinator for `msg3_content`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg3ContentFmt {
     i: u8,
 }
 
 impl Msg3ContentFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -566,7 +566,7 @@ impl Msg3ContentFmt {
 }
 
 # [doc = "named format combinator for `msg3`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg3Fmt;
 
 pub type Msg3FmtSpec = Named<
@@ -598,7 +598,7 @@ impl Msg3Fmt {
 }
 
 # [doc = "named format combinator for `msg5`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg5Fmt;
 
 pub type Msg5FmtSpec = Named<
@@ -630,13 +630,13 @@ impl Msg5Fmt {
 }
 
 # [doc = "named format combinator for `msg2_content`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg2ContentFmt<'i> {
     b: &'i [u8],
 }
 
 impl<'i> Msg2ContentFmt<'i> {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -686,7 +686,7 @@ impl<'i> Msg2ContentFmt<'i> {
 }
 
 # [doc = "named format combinator for `msg1`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg1Fmt;
 
 pub type Msg1FmtSpec = Named<
@@ -721,7 +721,7 @@ impl Msg1Fmt {
 }
 
 # [doc = "named format combinator for `msg2`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg2Fmt;
 
 pub type Msg2FmtSpec = Named<
@@ -756,7 +756,7 @@ impl Msg2Fmt {
 }
 
 # [doc = "named format combinator for `msg4`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct Msg4Fmt;
 
 pub type Msg4FmtSpec = Named<
@@ -796,7 +796,7 @@ mod derived_specs {
     impl SpecParser for Msg5ContentFmt {
         type PVal = Msg5ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg5ContentFmt::spec_inner(self.i_spec()).spec_parse(ibuf)
         }
@@ -813,7 +813,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg5ContentFmt {
         type SValue = Msg5ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg5ContentFmt::spec_inner(self.i_spec()).spec_serialize_dps(v, obuf)
         }
@@ -822,7 +822,7 @@ mod derived_specs {
     impl SpecSerializer for Msg5ContentFmt {
         type SVal = Msg5ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg5ContentFmt::spec_inner(self.i_spec()).spec_serialize(v)
         }
@@ -831,7 +831,7 @@ mod derived_specs {
     impl SpecByteLen for Msg5ContentFmt {
         type T = Msg5ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg5ContentFmt::spec_inner(self.i_spec()).byte_len(v)
         }
@@ -840,7 +840,7 @@ mod derived_specs {
     impl SpecParser for HelloRetryRequestFmt {
         type PVal = HelloRetryRequestSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             HelloRetryRequestFmt::spec_inner().spec_parse(ibuf)
         }
@@ -857,7 +857,7 @@ mod derived_specs {
     impl SpecSerializerDps for HelloRetryRequestFmt {
         type SValue = HelloRetryRequestSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             HelloRetryRequestFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -866,7 +866,7 @@ mod derived_specs {
     impl SpecSerializer for HelloRetryRequestFmt {
         type SVal = HelloRetryRequestSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             HelloRetryRequestFmt::spec_inner().spec_serialize(v)
         }
@@ -875,7 +875,7 @@ mod derived_specs {
     impl SpecByteLen for HelloRetryRequestFmt {
         type T = HelloRetryRequestSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             HelloRetryRequestFmt::spec_inner().byte_len(v)
         }
@@ -884,7 +884,7 @@ mod derived_specs {
     impl SpecParser for ServerHelloFmt {
         type PVal = ServerHelloSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ServerHelloFmt::spec_inner().spec_parse(ibuf)
         }
@@ -901,7 +901,7 @@ mod derived_specs {
     impl SpecSerializerDps for ServerHelloFmt {
         type SValue = ServerHelloSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ServerHelloFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -910,7 +910,7 @@ mod derived_specs {
     impl SpecSerializer for ServerHelloFmt {
         type SVal = ServerHelloSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ServerHelloFmt::spec_inner().spec_serialize(v)
         }
@@ -919,7 +919,7 @@ mod derived_specs {
     impl SpecByteLen for ServerHelloFmt {
         type T = ServerHelloSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ServerHelloFmt::spec_inner().byte_len(v)
         }
@@ -968,7 +968,7 @@ mod derived_specs {
     impl SpecParser for Msg4ContentFmt {
         type PVal = Msg4ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg4ContentFmt::spec_inner(self.i_spec()).spec_parse(ibuf)
         }
@@ -985,7 +985,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg4ContentFmt {
         type SValue = Msg4ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg4ContentFmt::spec_inner(self.i_spec()).spec_serialize_dps(v, obuf)
         }
@@ -994,7 +994,7 @@ mod derived_specs {
     impl SpecSerializer for Msg4ContentFmt {
         type SVal = Msg4ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg4ContentFmt::spec_inner(self.i_spec()).spec_serialize(v)
         }
@@ -1003,7 +1003,7 @@ mod derived_specs {
     impl SpecByteLen for Msg4ContentFmt {
         type T = Msg4ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg4ContentFmt::spec_inner(self.i_spec()).byte_len(v)
         }
@@ -1012,7 +1012,7 @@ mod derived_specs {
     impl SpecParser for Msg3ContentFmt {
         type PVal = Msg3ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg3ContentFmt::spec_inner(self.i_spec()).spec_parse(ibuf)
         }
@@ -1029,7 +1029,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg3ContentFmt {
         type SValue = Msg3ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg3ContentFmt::spec_inner(self.i_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1038,7 +1038,7 @@ mod derived_specs {
     impl SpecSerializer for Msg3ContentFmt {
         type SVal = Msg3ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg3ContentFmt::spec_inner(self.i_spec()).spec_serialize(v)
         }
@@ -1047,7 +1047,7 @@ mod derived_specs {
     impl SpecByteLen for Msg3ContentFmt {
         type T = Msg3ContentSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg3ContentFmt::spec_inner(self.i_spec()).byte_len(v)
         }
@@ -1056,7 +1056,7 @@ mod derived_specs {
     impl SpecParser for Msg3Fmt {
         type PVal = Msg3Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg3Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1073,7 +1073,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg3Fmt {
         type SValue = Msg3Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg3Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1082,7 +1082,7 @@ mod derived_specs {
     impl SpecSerializer for Msg3Fmt {
         type SVal = Msg3Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg3Fmt::spec_inner().spec_serialize(v)
         }
@@ -1091,7 +1091,7 @@ mod derived_specs {
     impl SpecByteLen for Msg3Fmt {
         type T = Msg3Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg3Fmt::spec_inner().byte_len(v)
         }
@@ -1100,7 +1100,7 @@ mod derived_specs {
     impl SpecParser for Msg5Fmt {
         type PVal = Msg5Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg5Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1117,7 +1117,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg5Fmt {
         type SValue = Msg5Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg5Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1126,7 +1126,7 @@ mod derived_specs {
     impl SpecSerializer for Msg5Fmt {
         type SVal = Msg5Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg5Fmt::spec_inner().spec_serialize(v)
         }
@@ -1135,7 +1135,7 @@ mod derived_specs {
     impl SpecByteLen for Msg5Fmt {
         type T = Msg5Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg5Fmt::spec_inner().byte_len(v)
         }
@@ -1184,7 +1184,7 @@ mod derived_specs {
     impl SpecParser for Msg1Fmt {
         type PVal = Msg1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg1Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1201,7 +1201,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg1Fmt {
         type SValue = Msg1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg1Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1210,7 +1210,7 @@ mod derived_specs {
     impl SpecSerializer for Msg1Fmt {
         type SVal = Msg1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg1Fmt::spec_inner().spec_serialize(v)
         }
@@ -1219,7 +1219,7 @@ mod derived_specs {
     impl SpecByteLen for Msg1Fmt {
         type T = Msg1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg1Fmt::spec_inner().byte_len(v)
         }
@@ -1228,7 +1228,7 @@ mod derived_specs {
     impl SpecParser for Msg2Fmt {
         type PVal = Msg2Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg2Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1245,7 +1245,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg2Fmt {
         type SValue = Msg2Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg2Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1254,7 +1254,7 @@ mod derived_specs {
     impl SpecSerializer for Msg2Fmt {
         type SVal = Msg2Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg2Fmt::spec_inner().spec_serialize(v)
         }
@@ -1263,7 +1263,7 @@ mod derived_specs {
     impl SpecByteLen for Msg2Fmt {
         type T = Msg2Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg2Fmt::spec_inner().byte_len(v)
         }
@@ -1272,7 +1272,7 @@ mod derived_specs {
     impl SpecParser for Msg4Fmt {
         type PVal = Msg4Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Msg4Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1289,7 +1289,7 @@ mod derived_specs {
     impl SpecSerializerDps for Msg4Fmt {
         type SValue = Msg4Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Msg4Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1298,7 +1298,7 @@ mod derived_specs {
     impl SpecSerializer for Msg4Fmt {
         type SVal = Msg4Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Msg4Fmt::spec_inner().spec_serialize(v)
         }
@@ -1307,7 +1307,7 @@ mod derived_specs {
     impl SpecByteLen for Msg4Fmt {
         type T = Msg4Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Msg4Fmt::spec_inner().byte_len(v)
         }
@@ -2505,18 +2505,18 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (U16Le).parse(ibuf)?;
+            let (n, v) = U16Le.parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl Serializer<HelloRetryRequest> for HelloRetryRequestFmt {
+    impl<'i> Serializer<HelloRetryRequest> for HelloRetryRequestFmt {
         fn serialize(&self, v: &HelloRetryRequest, obuf: &mut Vec<u8>) {
             reveal(<HelloRetryRequestFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (U16Le).serialize(v, obuf);
+            U16Le.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2533,18 +2533,18 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (U32Le).parse(ibuf)?;
+            let (n, v) = U32Le.parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl Serializer<ServerHello> for ServerHelloFmt {
+    impl<'i> Serializer<ServerHello> for ServerHelloFmt {
         fn serialize(&self, v: &ServerHello, obuf: &mut Vec<u8>) {
             reveal(<ServerHelloFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (U32Le).serialize(v, obuf);
+            U32Le.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2804,9 +2804,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = (U8).parse(&rest)?;
+            let (n1, i) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = (Msg3ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = Msg3ContentFmt { i: i }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg3 { i, content };
@@ -2821,8 +2821,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Msg3 { i, content } = v;
-            (U8).serialize(i, obuf);
-            (Msg3ContentFmt { i: *i }).serialize(content, obuf);
+            U8.serialize(i, obuf);
+            Msg3ContentFmt { i: *i }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2839,9 +2839,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = (VarInt::<true>).parse(&rest)?;
+            let (n1, i) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = (Msg5ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = Msg5ContentFmt { i: i }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg5 { i, content };
@@ -2856,8 +2856,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Msg5 { i, content } = v;
-            (VarInt::<true>).serialize(i, obuf);
-            (Msg5ContentFmt { i: *i }).serialize(content, obuf);
+            VarInt::<true>.serialize(i, obuf);
+            Msg5ContentFmt { i: *i }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2927,9 +2927,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, b) = (Fixed::<32>).parse(&rest)?;
+            let (n1, b) = Fixed::<32>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = (Msg1PayloadFmt { b: b }).parse(&rest)?;
+            let (n2, payload) = Msg1PayloadFmt { b: b }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg1 { b, payload };
@@ -2944,8 +2944,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Msg1 { b, payload } = v;
-            (Fixed::<32>).serialize(b, obuf);
-            (Msg1PayloadFmt { b: *b }).serialize(payload, obuf);
+            Fixed::<32>.serialize(b, obuf);
+            Msg1PayloadFmt { b: *b }.serialize(payload, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2962,9 +2962,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, b) = (Fixed::<3>).parse(&rest)?;
+            let (n1, b) = Fixed::<3>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = (Msg2ContentFmt { b: b }).parse(&rest)?;
+            let (n2, content) = Msg2ContentFmt { b: b }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg2 { b, content };
@@ -2979,8 +2979,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Msg2 { b, content } = v;
-            (Fixed::<3>).serialize(b, obuf);
-            (Msg2ContentFmt { b: *b }).serialize(content, obuf);
+            Fixed::<3>.serialize(b, obuf);
+            Msg2ContentFmt { b: *b }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2997,9 +2997,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = (U24Le).parse(&rest)?;
+            let (n1, i) = U24Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = (Msg4ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = Msg4ContentFmt { i: i }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg4 { i, content };
@@ -3014,8 +3014,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let Msg4 { i, content } = v;
-            (U24Le).serialize(i, obuf);
-            (Msg4ContentFmt { i: *i }).serialize(content, obuf);
+            U24Le.serialize(i, obuf);
+            Msg4ContentFmt { i: *i }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

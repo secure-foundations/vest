@@ -19,8 +19,8 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `a_typed_choose`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum ATypedChoose {
     X(u8),
     Y(u16),
@@ -41,7 +41,7 @@ impl DeepView for ATypedChoose {
 
 # [doc = "data type for `a_typed_open_enum`."]
 # [repr (u32)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum ATypedOpenEnum {
     P = 0,
     Q = 1,
@@ -77,8 +77,8 @@ impl SelfView for ATypedOpenEnum {
 }
 
 # [doc = "data type for `a_non_dependent_choose`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum ANonDependentChoose {
     Variant1(u8),
     Variant2(u8),
@@ -98,8 +98,8 @@ impl DeepView for ANonDependentChoose {
 }
 
 # [doc = "data type for `a_regular_choose`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum ARegularChoose {
     A(u8),
     B(u16),
@@ -120,7 +120,7 @@ impl DeepView for ARegularChoose {
 
 # [doc = "data type for `a_mixed_typed_enum`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum AMixedTypedEnum {
     M = 0,
     N = 1,
@@ -156,7 +156,7 @@ impl SelfView for AMixedTypedEnum {
 
 # [doc = "data type for `a_closed_enum`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum AClosedEnum {
     A = 0,
     B = 1,
@@ -192,7 +192,7 @@ impl SelfView for AClosedEnum {
 
 # [doc = "data type for `a_typed_closed_enum`."]
 # [repr (u16)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum ATypedClosedEnum {
     X = 0,
     Y = 1,
@@ -228,7 +228,7 @@ impl SelfView for ATypedClosedEnum {
 
 # [doc = "data type for `an_open_enum`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum AnOpenEnum {
     A = 0,
     B = 1,
@@ -264,7 +264,7 @@ impl SelfView for AnOpenEnum {
 }
 
 # [doc = "data type for `a_typed_choose_with_default`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ATypedChooseWithDefault<'i> {
     P(u8),
     Q(u16),
@@ -272,7 +272,7 @@ pub enum ATypedChooseWithDefault<'i> {
     Default(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum ATypedChooseWithDefaultSpec {
     P(u8),
     Q(u16),
@@ -298,7 +298,7 @@ impl<'i> DeepView for ATypedChooseWithDefault<'i> {
 }
 
 # [doc = "data type for `a_choose_with_default`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum AChooseWithDefault<'i> {
     A(u8),
     B(u16),
@@ -306,7 +306,7 @@ pub enum AChooseWithDefault<'i> {
     Default(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum AChooseWithDefaultSpec {
     A(u8),
     B(u16),
@@ -333,13 +333,13 @@ impl<'i> DeepView for AChooseWithDefault<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `a_typed_choose`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ATypedChooseFmt {
     e: ATypedClosedEnum,
 }
 
 impl ATypedChooseFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         ATypedClosedEnumFmt.consistent(self.e.deep_view())
     }
@@ -392,7 +392,7 @@ impl ATypedChooseFmt {
 }
 
 # [doc = "named format combinator for `a_typed_open_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ATypedOpenEnumFmt;
 
 pub type ATypedOpenEnumFmtSpec = Named<
@@ -441,7 +441,7 @@ impl ATypedOpenEnumFmt {
 }
 
 # [doc = "named format combinator for `a_non_dependent_choose`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ANonDependentChooseFmt;
 
 pub type ANonDependentChooseFmtSpec = Named<
@@ -488,13 +488,13 @@ impl ANonDependentChooseFmt {
 }
 
 # [doc = "named format combinator for `a_regular_choose`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ARegularChooseFmt {
     e: AClosedEnum,
 }
 
 impl ARegularChooseFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AClosedEnumFmt.consistent(self.e.deep_view())
     }
@@ -547,7 +547,7 @@ impl ARegularChooseFmt {
 }
 
 # [doc = "named format combinator for `a_mixed_typed_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AMixedTypedEnumFmt;
 
 pub type AMixedTypedEnumFmtSpec = Named<
@@ -586,7 +586,7 @@ impl AMixedTypedEnumFmt {
 }
 
 # [doc = "named format combinator for `a_closed_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AClosedEnumFmt;
 
 pub type AClosedEnumFmtSpec = Named<
@@ -625,7 +625,7 @@ impl AClosedEnumFmt {
 }
 
 # [doc = "named format combinator for `a_typed_closed_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ATypedClosedEnumFmt;
 
 pub type ATypedClosedEnumFmtSpec = Named<
@@ -667,7 +667,7 @@ impl ATypedClosedEnumFmt {
 }
 
 # [doc = "named format combinator for `an_open_enum`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AnOpenEnumFmt;
 
 pub type AnOpenEnumFmtSpec = Named<
@@ -716,13 +716,13 @@ impl AnOpenEnumFmt {
 }
 
 # [doc = "named format combinator for `a_typed_choose_with_default`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ATypedChooseWithDefaultFmt {
     e: ATypedOpenEnum,
 }
 
 impl ATypedChooseWithDefaultFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         ATypedOpenEnumFmt.consistent(self.e.deep_view())
     }
@@ -781,13 +781,13 @@ impl ATypedChooseWithDefaultFmt {
 }
 
 # [doc = "named format combinator for `a_choose_with_default`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AChooseWithDefaultFmt {
     e: AnOpenEnum,
 }
 
 impl AChooseWithDefaultFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AnOpenEnumFmt.consistent(self.e.deep_view())
     }
@@ -854,7 +854,7 @@ mod derived_specs {
     impl SpecParser for ATypedChooseFmt {
         type PVal = ATypedChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ATypedChooseFmt::spec_inner(self.e_spec()).spec_parse(ibuf)
         }
@@ -871,7 +871,7 @@ mod derived_specs {
     impl SpecSerializerDps for ATypedChooseFmt {
         type SValue = ATypedChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ATypedChooseFmt::spec_inner(self.e_spec()).spec_serialize_dps(v, obuf)
         }
@@ -880,7 +880,7 @@ mod derived_specs {
     impl SpecSerializer for ATypedChooseFmt {
         type SVal = ATypedChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ATypedChooseFmt::spec_inner(self.e_spec()).spec_serialize(v)
         }
@@ -889,7 +889,7 @@ mod derived_specs {
     impl SpecByteLen for ATypedChooseFmt {
         type T = ATypedChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ATypedChooseFmt::spec_inner(self.e_spec()).byte_len(v)
         }
@@ -898,7 +898,7 @@ mod derived_specs {
     impl SpecParser for ATypedOpenEnumFmt {
         type PVal = ATypedOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ATypedOpenEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -915,7 +915,7 @@ mod derived_specs {
     impl SpecSerializerDps for ATypedOpenEnumFmt {
         type SValue = ATypedOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ATypedOpenEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -924,7 +924,7 @@ mod derived_specs {
     impl SpecSerializer for ATypedOpenEnumFmt {
         type SVal = ATypedOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ATypedOpenEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -933,7 +933,7 @@ mod derived_specs {
     impl SpecByteLen for ATypedOpenEnumFmt {
         type T = ATypedOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ATypedOpenEnumFmt::spec_inner().byte_len(v)
         }
@@ -942,7 +942,7 @@ mod derived_specs {
     impl SpecParser for ANonDependentChooseFmt {
         type PVal = ANonDependentChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ANonDependentChooseFmt::spec_inner().spec_parse(ibuf)
         }
@@ -959,7 +959,7 @@ mod derived_specs {
     impl SpecSerializerDps for ANonDependentChooseFmt {
         type SValue = ANonDependentChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ANonDependentChooseFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -968,7 +968,7 @@ mod derived_specs {
     impl SpecSerializer for ANonDependentChooseFmt {
         type SVal = ANonDependentChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ANonDependentChooseFmt::spec_inner().spec_serialize(v)
         }
@@ -977,7 +977,7 @@ mod derived_specs {
     impl SpecByteLen for ANonDependentChooseFmt {
         type T = ANonDependentChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ANonDependentChooseFmt::spec_inner().byte_len(v)
         }
@@ -986,7 +986,7 @@ mod derived_specs {
     impl SpecParser for ARegularChooseFmt {
         type PVal = ARegularChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ARegularChooseFmt::spec_inner(self.e_spec()).spec_parse(ibuf)
         }
@@ -1003,7 +1003,7 @@ mod derived_specs {
     impl SpecSerializerDps for ARegularChooseFmt {
         type SValue = ARegularChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ARegularChooseFmt::spec_inner(self.e_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1012,7 +1012,7 @@ mod derived_specs {
     impl SpecSerializer for ARegularChooseFmt {
         type SVal = ARegularChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ARegularChooseFmt::spec_inner(self.e_spec()).spec_serialize(v)
         }
@@ -1021,7 +1021,7 @@ mod derived_specs {
     impl SpecByteLen for ARegularChooseFmt {
         type T = ARegularChooseSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ARegularChooseFmt::spec_inner(self.e_spec()).byte_len(v)
         }
@@ -1030,7 +1030,7 @@ mod derived_specs {
     impl SpecParser for AMixedTypedEnumFmt {
         type PVal = AMixedTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AMixedTypedEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1047,7 +1047,7 @@ mod derived_specs {
     impl SpecSerializerDps for AMixedTypedEnumFmt {
         type SValue = AMixedTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AMixedTypedEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1056,7 +1056,7 @@ mod derived_specs {
     impl SpecSerializer for AMixedTypedEnumFmt {
         type SVal = AMixedTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AMixedTypedEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -1065,7 +1065,7 @@ mod derived_specs {
     impl SpecByteLen for AMixedTypedEnumFmt {
         type T = AMixedTypedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AMixedTypedEnumFmt::spec_inner().byte_len(v)
         }
@@ -1074,7 +1074,7 @@ mod derived_specs {
     impl SpecParser for AClosedEnumFmt {
         type PVal = AClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AClosedEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1091,7 +1091,7 @@ mod derived_specs {
     impl SpecSerializerDps for AClosedEnumFmt {
         type SValue = AClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AClosedEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1100,7 +1100,7 @@ mod derived_specs {
     impl SpecSerializer for AClosedEnumFmt {
         type SVal = AClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AClosedEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -1109,7 +1109,7 @@ mod derived_specs {
     impl SpecByteLen for AClosedEnumFmt {
         type T = AClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AClosedEnumFmt::spec_inner().byte_len(v)
         }
@@ -1118,7 +1118,7 @@ mod derived_specs {
     impl SpecParser for ATypedClosedEnumFmt {
         type PVal = ATypedClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ATypedClosedEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1135,7 +1135,7 @@ mod derived_specs {
     impl SpecSerializerDps for ATypedClosedEnumFmt {
         type SValue = ATypedClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ATypedClosedEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1144,7 +1144,7 @@ mod derived_specs {
     impl SpecSerializer for ATypedClosedEnumFmt {
         type SVal = ATypedClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ATypedClosedEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -1153,7 +1153,7 @@ mod derived_specs {
     impl SpecByteLen for ATypedClosedEnumFmt {
         type T = ATypedClosedEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ATypedClosedEnumFmt::spec_inner().byte_len(v)
         }
@@ -1162,7 +1162,7 @@ mod derived_specs {
     impl SpecParser for AnOpenEnumFmt {
         type PVal = AnOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AnOpenEnumFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1179,7 +1179,7 @@ mod derived_specs {
     impl SpecSerializerDps for AnOpenEnumFmt {
         type SValue = AnOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AnOpenEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1188,7 +1188,7 @@ mod derived_specs {
     impl SpecSerializer for AnOpenEnumFmt {
         type SVal = AnOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AnOpenEnumFmt::spec_inner().spec_serialize(v)
         }
@@ -1197,7 +1197,7 @@ mod derived_specs {
     impl SpecByteLen for AnOpenEnumFmt {
         type T = AnOpenEnumSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AnOpenEnumFmt::spec_inner().byte_len(v)
         }
@@ -1206,7 +1206,7 @@ mod derived_specs {
     impl SpecParser for ATypedChooseWithDefaultFmt {
         type PVal = ATypedChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ATypedChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_parse(ibuf)
         }
@@ -1223,7 +1223,7 @@ mod derived_specs {
     impl SpecSerializerDps for ATypedChooseWithDefaultFmt {
         type SValue = ATypedChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ATypedChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1232,7 +1232,7 @@ mod derived_specs {
     impl SpecSerializer for ATypedChooseWithDefaultFmt {
         type SVal = ATypedChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ATypedChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_serialize(v)
         }
@@ -1241,7 +1241,7 @@ mod derived_specs {
     impl SpecByteLen for ATypedChooseWithDefaultFmt {
         type T = ATypedChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ATypedChooseWithDefaultFmt::spec_inner(self.e_spec()).byte_len(v)
         }
@@ -1250,7 +1250,7 @@ mod derived_specs {
     impl SpecParser for AChooseWithDefaultFmt {
         type PVal = AChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_parse(ibuf)
         }
@@ -1267,7 +1267,7 @@ mod derived_specs {
     impl SpecSerializerDps for AChooseWithDefaultFmt {
         type SValue = AChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1276,7 +1276,7 @@ mod derived_specs {
     impl SpecSerializer for AChooseWithDefaultFmt {
         type SVal = AChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AChooseWithDefaultFmt::spec_inner(self.e_spec()).spec_serialize(v)
         }
@@ -1285,7 +1285,7 @@ mod derived_specs {
     impl SpecByteLen for AChooseWithDefaultFmt {
         type T = AChooseWithDefaultSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AChooseWithDefaultFmt::spec_inner(self.e_spec()).byte_len(v)
         }
@@ -2349,7 +2349,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<ATypedChoose> for ATypedChooseFmt {
+    impl<'i> Serializer<ATypedChoose> for ATypedChooseFmt {
         fn serialize(&self, v: &ATypedChoose, obuf: &mut Vec<u8>) {
             reveal(<ATypedChooseFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -2398,7 +2398,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<ATypedOpenEnum> for ATypedOpenEnumFmt {
+    impl<'i> Serializer<ATypedOpenEnum> for ATypedOpenEnumFmt {
         fn serialize(&self, v: &ATypedOpenEnum, obuf: &mut Vec<u8>) {
             reveal(<ATypedOpenEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -2444,7 +2444,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<ANonDependentChoose> for ANonDependentChooseFmt {
+    impl<'i> Serializer<ANonDependentChoose> for ANonDependentChooseFmt {
         fn serialize(&self, v: &ANonDependentChoose, obuf: &mut Vec<u8>) {
             reveal(<ANonDependentChooseFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -2499,7 +2499,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<ARegularChoose> for ARegularChooseFmt {
+    impl<'i> Serializer<ARegularChoose> for ARegularChooseFmt {
         fn serialize(&self, v: &ARegularChoose, obuf: &mut Vec<u8>) {
             reveal(<ARegularChooseFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -2548,7 +2548,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<AMixedTypedEnum> for AMixedTypedEnumFmt {
+    impl<'i> Serializer<AMixedTypedEnum> for AMixedTypedEnumFmt {
         fn serialize(&self, v: &AMixedTypedEnum, obuf: &mut Vec<u8>) {
             reveal(<AMixedTypedEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -2587,7 +2587,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<AClosedEnum> for AClosedEnumFmt {
+    impl<'i> Serializer<AClosedEnum> for AClosedEnumFmt {
         fn serialize(&self, v: &AClosedEnum, obuf: &mut Vec<u8>) {
             reveal(<AClosedEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -2626,7 +2626,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<ATypedClosedEnum> for ATypedClosedEnumFmt {
+    impl<'i> Serializer<ATypedClosedEnum> for ATypedClosedEnumFmt {
         fn serialize(&self, v: &ATypedClosedEnum, obuf: &mut Vec<u8>) {
             reveal(<ATypedClosedEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -2665,7 +2665,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<AnOpenEnum> for AnOpenEnumFmt {
+    impl<'i> Serializer<AnOpenEnum> for AnOpenEnumFmt {
         fn serialize(&self, v: &AnOpenEnum, obuf: &mut Vec<u8>) {
             reveal(<AnOpenEnumFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;

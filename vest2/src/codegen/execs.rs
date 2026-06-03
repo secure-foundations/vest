@@ -124,116 +124,66 @@ impl<'a> Analysis<'a> {
         emit_serializer: impl Fn(&mut CodeWriter),
     ) -> String {
         let info = self.info(name);
-        let fmt_ident = format_ident!("{}", info.names.fmt);
         let exec_ty = self.nominal_type(name, TypeMode::Exec);
-        let spec_ty = self.nominal_type(name, TypeMode::Spec);
         let param_lt = self.wrapper_generics(param_defns);
-        let needs_lt = info.needs_lifetime || param_lt.to_string().contains("'i");
         let fmt_has_lt = param_lt.to_string().contains("'i");
-
-        // Determine lifetimes for the impl blocks
-        let (parser_lt, _parser_self_lt, pt_lt) = if needs_lt {
-            (quote! { 'i }, quote! { <'i> }, quote! { <'i> })
+        let fmt_ident_str = if fmt_has_lt {
+            format!("{}<'i>", info.names.fmt)
         } else {
-            (quote! {}, quote! {}, quote! {})
+            info.names.fmt.clone()
         };
-
-        // Collect fmt struct self fields for param instantiation
-        let self_fields: Vec<TokenStream> = param_defns
-            .iter()
-            .map(|p| match p {
-                ParamDefn::Dependent { name, .. } => {
-                    let ident = format_ident!("{}", name);
-                    quote! { self.#ident }
-                }
-            })
-            .collect();
-
-        let _ = self_fields; // used inside closures below
+        let reveal_fmt = &info.names.fmt;
+        let exec_ty_str = render_ts(exec_ty);
 
         let mut out = CodeWriter::new();
 
         // --- Parser impl ---
         {
-            let impl_header = if fmt_has_lt {
-                render_ts(quote! {
-                    impl<'i> Parser<&'i [u8]> for #fmt_ident <'i>
-                })
-            } else {
-                render_ts(quote! {
-                    impl<'i> Parser<&'i [u8]> for #fmt_ident
-                })
-            };
-            out.push_multiline(format!("{} {{", impl_header.trim_end_matches('{')));
-            out.indented(|w| {
-                let pt = quote! { #exec_ty };
-                w.line(render_ts(quote! { type PT = #pt; }));
+            out.block(format!("impl<'i> Parser<&'i [u8]> for {}", fmt_ident_str), |w| {
+                w.line(format!("type PT = {};", exec_ty_str));
                 w.blank_line();
-                w.block(
-                    "fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>",
-                    |w| {
-                        w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
-                        w.line(
-                            "broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;",
-                        );
-                        w.blank_line();
-                        let reveal_line = render_ts(quote! {
-                            reveal(<#fmt_ident as SpecParser>::spec_parse);
-                        });
-                        w.line(reveal_line);
-                        w.line("let _ = ibuf.len();");
-                        w.line("let rest = *ibuf;");
-                        w.blank_line();
-                        self.emit_param_invariant_opening(w, param_defns);
-                        emit_parser(w);
-                    },
-                );
+                w.block("fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>", |w| {
+                    w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
+                    w.line("broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;");
+                    w.blank_line();
+                    w.reveal_stmt(&format!("<{} as SpecParser>::spec_parse", reveal_fmt));
+                    w.line("let _ = ibuf.len();");
+                    w.line("let rest = *ibuf;");
+                    w.blank_line();
+                    self.emit_param_invariant_opening(w, param_defns);
+                    emit_parser(w);
+                });
             });
-            out.line("}");
             out.blank_line();
         }
 
         // --- Serializer impl ---
         {
-            let impl_header = if needs_lt {
-                if fmt_has_lt {
-                    render_ts(quote! {
-                        impl<'i> Serializer<#exec_ty> for #fmt_ident <'i>
-                    })
-                } else {
-                    render_ts(quote! {
-                        impl<'i> Serializer<#exec_ty> for #fmt_ident
-                    })
-                }
-            } else {
-                render_ts(quote! {
-                    impl Serializer<#exec_ty> for #fmt_ident
-                })
-            };
-            out.push_multiline(format!("{} {{", impl_header.trim_end_matches('{')));
-            out.indented(|w| {
-                w.block(
-                    render_ts(quote! {
-                        fn serialize(&self, v: &#exec_ty, obuf: &mut Vec<u8>)
-                    }),
-                    |w| {
-                        let reveal_ser = render_ts(quote! {
-                            reveal(<#fmt_ident as SpecSerializer>::spec_serialize);
-                        });
-                        w.line(reveal_ser);
-                        self.emit_param_invariant_opening(w, param_defns);
-                        w.line("let ghost old_obuf = obuf@;");
-                        w.blank_line();
-                        emit_serializer(w);
-                        w.blank_line();
-                        let assert_line = render_ts(quote! {
-                            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
-                        });
-                        w.line(assert_line);
-                    },
-                );
-            });
-            out.line("}");
+            out.block(
+                format!("impl<'i> Serializer<{}> for {}", exec_ty_str, fmt_ident_str),
+                |w| {
+                    w.block(
+                        format!(
+                            "fn serialize(&self, v: &{}, obuf: &mut Vec<u8>)",
+                            exec_ty_str
+                        ),
+                        |w| {
+                            w.reveal_stmt(&format!(
+                                "<{} as SpecSerializer>::spec_serialize",
+                                reveal_fmt
+                            ));
+                            self.emit_param_invariant_opening(w, param_defns);
+                            w.line("let ghost old_obuf = obuf@;");
+                            w.blank_line();
+                            emit_serializer(w);
+                            w.blank_line();
+                            w.line(
+                                "assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));",
+                            );
+                        },
+                    );
+                },
+            );
             out.blank_line();
         }
 
@@ -278,9 +228,6 @@ impl<'a> Analysis<'a> {
         //     out.line("}");
         // }
 
-        let _ = spec_ty;
-        let _ = pt_lt;
-        let _ = parser_lt;
         out.finish()
     }
 }
@@ -303,33 +250,39 @@ impl<'a> Analysis<'a> {
 
         for (i, field) in fields.iter().enumerate() {
             let n_var = format!("n{}", i + 1);
-            let n_var_tok: TokenStream = n_var.parse().unwrap();
             match field {
                 StructField::Const { label, combinator } => {
-                    let label_ident = format_ident!("{}", label);
                     let fmt_expr =
                         self.exec_const_fmt_expr(combinator, param_defns, CodegenMode::Parse);
-                    w.line(render_ts(quote! {
-                        let (#n_var_tok, #label_ident) = (#fmt_expr).parse(&rest)?;
-                    }));
+                    let fmt_str = render_ts(quote! { #fmt_expr });
+                    w.call_chain_stmt(
+                        Some(&format!("({}, {})", n_var, label)),
+                        &fmt_str,
+                        "parse",
+                        &["&rest"],
+                        Some("?;"),
+                    );
                     w.line(format!("let rest = rest.skip({});", n_var));
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
-                    let label_ident = format_ident!("{}", label);
                     let fmt_expr =
                         self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
-                    w.line(render_ts(quote! {
-                        let (#n_var_tok, #label_ident) = (#fmt_expr).parse(&rest)?;
-                    }));
+                    let fmt_str = render_ts(quote! { #fmt_expr });
+                    w.call_chain_stmt(
+                        Some(&format!("({}, {})", n_var, label)),
+                        &fmt_str,
+                        "parse",
+                        &["&rest"],
+                        Some("?;"),
+                    );
+                    let label_ident = format_ident!("{}", label);
                     if let Some(pred) =
                         self.gen_constraint_pred(combinator, quote! { #label_ident })
                     {
-                        w.line(render_ts(quote! {
-                            if !(#pred) {
-                                return Err(ParseError::predicate_failed());
-                            }
-                        }));
+                        w.if_block(format!("!({})", render_ts(pred)), |w| {
+                            w.line("return Err(ParseError::predicate_failed());");
+                        });
                     }
                     w.line(format!("let rest = rest.skip({});", n_var));
                     if i == fields.len() - 1 {
@@ -337,9 +290,7 @@ impl<'a> Analysis<'a> {
                             self.ctx.resolve_alias(combinator),
                             Combinator::Option(_) | Combinator::Vec(_)
                         ) {
-                            w.line(render_ts(quote! {
-                                let _ = (Eof).parse(&rest)?;
-                            }));
+                            w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
                         }
                     }
                 }
@@ -356,7 +307,7 @@ impl<'a> Analysis<'a> {
         w.line(format!("let total_n = {};", total_n_expr));
 
         // Collect all field names for struct init
-        let struct_field_toks: Vec<TokenStream> = fields
+        let struct_field_names: Vec<String> = fields
             .iter()
             .map(|f| {
                 let label = match f {
@@ -364,17 +315,12 @@ impl<'a> Analysis<'a> {
                     | StructField::Dependent { label, .. }
                     | StructField::Ordinary { label, .. } => label,
                 };
-                let ident = format_ident!("{}", label);
-                quote! { #ident }
+                label.to_string()
             })
             .collect();
 
-        w.line(render_ts(quote! {
-            let final_v = #exec_ident { #(#struct_field_toks),* };
-        }));
-        w.line(render_ts(quote! {
-            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-        }));
+        w.record_constructor_stmt("final_v", &exec_ident.to_string(), &struct_field_names);
+        w.line("assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));");
         w.line("Ok((total_n, final_v))");
     }
 
@@ -389,7 +335,7 @@ impl<'a> Analysis<'a> {
         let fields = &comb.0;
 
         // Destructure the value
-        let field_pats: Vec<TokenStream> = fields
+        let struct_field_names: Vec<String> = fields
             .iter()
             .map(|f| {
                 let label = match f {
@@ -397,36 +343,40 @@ impl<'a> Analysis<'a> {
                     | StructField::Dependent { label, .. }
                     | StructField::Ordinary { label, .. } => label,
                 };
-                let ident = format_ident!("{}", label);
-                quote! { #ident }
+                label.to_string()
             })
             .collect();
-        w.line(render_ts(quote! {
-            let #exec_ident { #(#field_pats),* } = v;
-        }));
+        w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
 
         for field in fields {
             match field {
                 StructField::Const { label, combinator } => {
-                    let label_ident = format_ident!("{}", label);
                     let fmt_expr =
                         self.exec_const_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                    // For const fields, serialize the stored value
-                    w.line(render_ts(quote! {
-                        (#fmt_expr).serialize(#label_ident, obuf);
-                    }));
+                    let fmt_str = render_ts(quote! { #fmt_expr });
+                    w.call_chain_stmt(
+                        None,
+                        &fmt_str,
+                        "serialize",
+                        &[label, "obuf"].as_slice(),
+                        Some(";"),
+                    );
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
-                    let label_ident = format_ident!("{}", label);
                     let fmt_expr = self.exec_combinator_fmt_expr(
                         combinator,
                         param_defns,
                         CodegenMode::Serialize,
                     );
-                    let ser_line =
-                        self.exec_serialize_value(quote! { #label_ident }, fmt_expr, combinator);
-                    w.line(render_ts(ser_line));
+                    let fmt_str = render_ts(quote! { #fmt_expr });
+                    w.call_chain_stmt(
+                        None,
+                        &fmt_str,
+                        "serialize",
+                        &[label, "obuf"].as_slice(),
+                        Some(";"),
+                    );
                 }
             }
         }
@@ -518,29 +468,27 @@ impl<'a> Analysis<'a> {
 
         if let Some(dep) = &comb.depend_id {
             // Dependent choice: match on the selector field
-            let dep_tok = format_ident!("{}", dep);
-
             let match_arms: Vec<TokenStream> =
                 self.choice_parser_arms(comb, &variant_names, &exec_ident, dep, param_defns);
-            w.line(render_ts(quote! {
-                let (n, v) = match self.#dep_tok {
-                    #(#match_arms)*
-                };
-            }));
-            w.line(render_ts(quote! {
-                assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
-            }));
+            w.match_block_stmt(Some("(n, v)"), &format!("self.{}", dep), |w| {
+                for arm in match_arms {
+                    w.push_multiline(render_ts(arm));
+                }
+            });
+            w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
             w.line("Ok((n, v))");
         } else {
             // Non-dependent choice: delegate to the spec fmt combinator
             let branches: TokenStream =
                 self.choice_parse_arms_nondep(comb, &variant_names, &exec_ident, param_defns);
-            w.line(render_ts(quote! {
-                let (n, v) = #branches?;
-            }));
-            w.line(render_ts(quote! {
-                assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
-            }));
+            w.call_chain_stmt(
+                Some("(n, v)"),
+                &render_ts(branches),
+                "",
+                &[] as &[&str],
+                Some("?;"),
+            );
+            w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
             w.line("Ok((n, v))");
         }
     }
@@ -762,12 +710,12 @@ impl<'a> Analysis<'a> {
                 dep,
                 param_defns,
             );
-            w.line(render_ts(quote! {
-                match (#dep_expr, v) {
-                    #(#arms)*
-                    _ => {},
+            w.match_block_stmt(None, &format!("({}, v)", render_ts(dep_expr)), |w| {
+                for arm in arms {
+                    w.push_multiline(render_ts(arm));
                 }
-            }));
+                w.line("_ => {},");
+            });
             return;
         }
 
@@ -800,16 +748,16 @@ impl<'a> Analysis<'a> {
                     self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
                 let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
                 quote! {
-                    #exec_ident::#variant_ident(v) => { #ser },
+                    #exec_ident::#variant_ident(v) => { #ser }
                 }
             })
             .collect();
 
-        w.line(render_ts(quote! {
-            match v {
-                #(#arms)*
+        w.match_block_stmt(None, "v", |w| {
+            for arm in arms {
+                w.push_multiline(render_ts(arm));
             }
-        }));
+        });
     }
 
     fn choice_serializer_arms_dep(
@@ -833,13 +781,13 @@ impl<'a> Analysis<'a> {
                         let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
                         if pat == "_" {
                             quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser },
+                                (_, #exec_ident::#variant_ident(v)) => { #ser }
                             }
                         } else {
                             let pat_ident = format_ident!("{}", pat);
                             let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
                             quote! {
-                                (#enum_ty::#pat_ident, #exec_ident::#variant_ident(v)) => { #ser },
+                                (#enum_ty::#pat_ident, #exec_ident::#variant_ident(v)) => { #ser }
                             }
                         }
                     })
@@ -855,14 +803,14 @@ impl<'a> Analysis<'a> {
                     match pat {
                         None => {
                             quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser },
+                                (_, #exec_ident::#variant_ident(v)) => { #ser }
                             }
                         }
                         Some(elem) => match elem {
                             vestir::ConstraintElem::Single(v) => {
                                 let lit = proc_macro2::Literal::i128_unsuffixed(*v);
                                 quote! {
-                                    (#lit, #exec_ident::#variant_ident(v)) => { #ser },
+                                    (#lit, #exec_ident::#variant_ident(v)) => { #ser }
                                 }
                             }
                             vestir::ConstraintElem::Range {
@@ -872,13 +820,13 @@ impl<'a> Analysis<'a> {
                                 let s = proc_macro2::Literal::i128_unsuffixed(*start);
                                 let e = proc_macro2::Literal::i128_unsuffixed(*end);
                                 quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if x >= #s && x <= #e => { #ser },
+                                    (x, #exec_ident::#variant_ident(v)) if x >= #s && x <= #e => { #ser }
                                 }
                             }
                             _ => {
                                 let cond = self.render_constraint_elem_exec(elem, quote! { x });
                                 quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if #cond => { #ser },
+                                    (x, #exec_ident::#variant_ident(v)) if #cond => { #ser }
                                 }
                             }
                         },
@@ -895,13 +843,13 @@ impl<'a> Analysis<'a> {
                     match pat {
                         ConstArray::Wildcard => {
                             quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser },
+                                (_, #exec_ident::#variant_ident(v)) => { #ser }
                             }
                         }
                         _ => {
                             let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
                             quote! {
-                                (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => { #ser },
+                                (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => { #ser }
                             }
                         }
                     }
@@ -949,16 +897,16 @@ impl<'a> Analysis<'a> {
                     self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
                 let prep = self.exec_prepare_field(format_ident!("v"), fmt_expr, combinator);
                 quote! {
-                    #exec_ident::#variant_ident(v) => #prep,
+                    #exec_ident::#variant_ident(v) => #prep
                 }
             })
             .collect();
 
-        w.line(render_ts(quote! {
-            match v {
-                #(#arms)*
+        w.match_block_stmt(None, "v", |w| {
+            for arm in arms {
+                w.push_multiline(render_ts(arm));
             }
-        }));
+        });
     }
 }
 
@@ -977,9 +925,13 @@ impl<'a> Analysis<'a> {
         };
         let prim_expr = self.int_combinator_expr(inferred);
 
-        w.line(render_ts(quote! {
-            let (n, v) = #prim_expr.parse(&rest)?;
-        }));
+        w.call_chain_stmt(
+            Some("(n, v)"),
+            &render_ts(prim_expr),
+            "parse",
+            &["&rest"],
+            Some("?;"),
+        );
 
         let known_arms: Vec<TokenStream> = variants
             .iter()
@@ -996,12 +948,13 @@ impl<'a> Analysis<'a> {
             quote! { x => #exec_ident::Unknown(x), }
         };
 
-        w.line(render_ts(quote! {
-            let enum_val = match v {
-                #(#known_arms)*
-                #default_arm
-            };
-        }));
+        w.match_block_stmt(Some("enum_val"), "v", |w| {
+            for arm in known_arms {
+                w.line(render_ts(arm));
+            }
+            w.line(render_ts(default_arm));
+        });
+
         w.line(render_ts(quote! {
             assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
         }));
@@ -1033,15 +986,22 @@ impl<'a> Analysis<'a> {
             quote! { #exec_ident::Unknown(x) => x, }
         };
 
-        w.line(render_ts(quote! {
-            let tag = match *v {
-                #(#known_arms)*
-                #default_arm
-            };
-        }));
-        w.line(render_ts(quote! {
-            #prim_expr.serialize(&tag, obuf);
-        }));
+        w.match_block_stmt(Some("tag"), "*v", |w| {
+            for arm in known_arms {
+                w.line(render_ts(arm));
+            }
+            if !exhaustive {
+                w.line(render_ts(default_arm));
+            }
+        });
+
+        w.call_chain_stmt(
+            None,
+            &render_ts(prim_expr),
+            "serialize",
+            &["&tag", "obuf"],
+            Some(";"),
+        );
     }
 
     fn emit_enum_prepare_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
@@ -1069,15 +1029,16 @@ impl<'a> Analysis<'a> {
             quote! { #exec_ident::Unknown(x) => x, }
         };
 
-        w.line(render_ts(quote! {
-            let tag = match *v {
-                #(#known_arms)*
-                #default_arm
-            };
-        }));
-        w.line(render_ts(quote! {
-            #prim_expr.prepare(tag)
-        }));
+        w.match_block_stmt(Some("tag"), "*v", |w| {
+            for arm in known_arms {
+                w.line(render_ts(arm));
+            }
+            if !exhaustive {
+                w.line(render_ts(default_arm));
+            }
+        });
+
+        w.call_chain_stmt(None, &render_ts(prim_expr), "prepare", &["tag"], None);
     }
 }
 
@@ -1094,28 +1055,26 @@ impl<'a> Analysis<'a> {
     ) {
         let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
 
-        w.line(render_ts(quote! {
-            let (n, v) = (#fmt_expr).parse(ibuf)?;
-        }));
+        w.call_chain_stmt(
+            Some("(n, v)"),
+            &render_ts(quote! { #fmt_expr }),
+            "parse",
+            &["ibuf"],
+            Some("?;"),
+        );
         if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-            w.line(render_ts(quote! {
-                if !(#pred) {
-                    return Err(ParseError::predicate_failed());
-                }
-            }));
+            w.if_block(format!("!({})", render_ts(pred)), |w| {
+                w.line("return Err(ParseError::predicate_failed());");
+            });
         }
         if matches!(
             self.ctx.resolve_alias(combinator),
             Combinator::Option(_) | Combinator::Vec(_)
         ) {
-            w.line(render_ts(quote! {
-                let rest = ibuf.skip(n);
-                let _ = (Eof).parse(&rest)?;
-            }));
+            w.line("let rest = ibuf.skip(n);");
+            w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
         }
-        w.line(render_ts(quote! {
-            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
-        }));
+        w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
         w.line("Ok((n, v))");
     }
 
@@ -1129,19 +1088,25 @@ impl<'a> Analysis<'a> {
         if let Some(invocation) = self.direct_alias(combinator) {
             let target_args =
                 self.exec_invocation_fmt_expr(invocation, param_defns, CodegenMode::Serialize);
-            w.line(render_ts(quote! {
-                (#target_args).serialize(v, obuf);
-            }));
+            w.call_chain_stmt(
+                None,
+                &render_ts(quote! { #target_args }),
+                "serialize",
+                &["v", "obuf"],
+                Some(";"),
+            );
             return;
         }
         let fmt_expr =
             self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
         let _ = name;
-        w.line(render_ts(self.exec_serialize_value(
-            quote! { v },
-            fmt_expr,
-            combinator,
-        )));
+        w.call_chain_stmt(
+            None,
+            &render_ts(quote! { #fmt_expr }),
+            "serialize",
+            &["v", "obuf"],
+            Some(";"),
+        );
     }
 
     fn emit_combinator_prepare_body(
@@ -1154,17 +1119,25 @@ impl<'a> Analysis<'a> {
         if let Some(invocation) = self.direct_alias(combinator) {
             let target_args =
                 self.exec_invocation_fmt_expr(invocation, param_defns, CodegenMode::Serialize);
-            w.line(render_ts(quote! {
-                (#target_args).prepare(v)
-            }));
+            w.call_chain_stmt(
+                None,
+                &render_ts(quote! { #target_args }),
+                "prepare",
+                &["v"],
+                None,
+            );
             return;
         }
         let fmt_expr =
             self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
         let _ = name;
-        w.line(render_ts(quote! {
-            (#fmt_expr).prepare(v)
-        }));
+        w.call_chain_stmt(
+            None,
+            &render_ts(quote! { #fmt_expr }),
+            "prepare",
+            &["v"],
+            None,
+        );
     }
 }
 

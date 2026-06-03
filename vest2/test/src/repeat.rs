@@ -19,13 +19,13 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `opaque_u16`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct OpaqueU16<'i> {
     pub l: u16,
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct OpaqueU16Spec {
     pub l: u16,
     pub data: Seq<u8>,
@@ -52,13 +52,13 @@ pub type ResponderId<'i> = OpaqueU16<'i>;
 pub type ResponderIdSpec = OpaqueU16Spec;
 
 # [doc = "data type for `responder_id_list`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct ResponderIdList<'i> {
     pub l: u16,
     pub list: Vec<ResponderId<'i>>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ResponderIdListSpec {
     pub l: u16,
     pub list: Seq<ResponderIdSpec>,
@@ -75,13 +75,13 @@ impl<'i> DeepView for ResponderIdList<'i> {
 }
 
 # [doc = "data type for `repeat_dyn`."]
-# [derive (Debug , PartialEq , Eq , Clone)]
+# [derive (Debug, PartialEq, Eq, Clone)]
 pub struct RepeatDyn<'i> {
     pub l: u64,
     pub data: Vec<ResponderIdList<'i>>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct RepeatDynSpec {
     pub l: u64,
     pub data: Seq<ResponderIdListSpec>,
@@ -101,7 +101,7 @@ impl<'i> DeepView for RepeatDyn<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `opaque_u16`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct OpaqueU16Fmt;
 
 pub type OpaqueU16FmtSpec = Named<
@@ -136,7 +136,7 @@ impl OpaqueU16Fmt {
 }
 
 # [doc = "named format combinator for `repeat_fix`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct RepeatFixFmt;
 
 pub type RepeatFixFmtSpec = Named<Array<32, U16Le>>;
@@ -149,7 +149,7 @@ impl RepeatFixFmt {
 }
 
 # [doc = "named format combinator for `responder_id`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ResponderIdFmt;
 
 pub type ResponderIdFmtSpec = Named<OpaqueU16Fmt>;
@@ -162,7 +162,7 @@ impl ResponderIdFmt {
 }
 
 # [doc = "named format combinator for `responder_id_list`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ResponderIdListFmt;
 
 pub type ResponderIdListFmtSpec = Named<
@@ -203,7 +203,7 @@ impl ResponderIdListFmt {
 }
 
 # [doc = "named format combinator for `repeat_dyn`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct RepeatDynFmt;
 
 pub type RepeatDynFmtSpec = Named<
@@ -246,7 +246,7 @@ mod derived_specs {
     impl SpecParser for OpaqueU16Fmt {
         type PVal = OpaqueU16Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             OpaqueU16Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -263,7 +263,7 @@ mod derived_specs {
     impl SpecSerializerDps for OpaqueU16Fmt {
         type SValue = OpaqueU16Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             OpaqueU16Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -272,7 +272,7 @@ mod derived_specs {
     impl SpecSerializer for OpaqueU16Fmt {
         type SVal = OpaqueU16Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             OpaqueU16Fmt::spec_inner().spec_serialize(v)
         }
@@ -281,7 +281,7 @@ mod derived_specs {
     impl SpecByteLen for OpaqueU16Fmt {
         type T = OpaqueU16Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             OpaqueU16Fmt::spec_inner().byte_len(v)
         }
@@ -290,7 +290,7 @@ mod derived_specs {
     impl SpecParser for RepeatFixFmt {
         type PVal = RepeatFixSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             RepeatFixFmt::spec_inner().spec_parse(ibuf)
         }
@@ -307,7 +307,7 @@ mod derived_specs {
     impl SpecSerializerDps for RepeatFixFmt {
         type SValue = RepeatFixSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             RepeatFixFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -316,7 +316,7 @@ mod derived_specs {
     impl SpecSerializer for RepeatFixFmt {
         type SVal = RepeatFixSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             RepeatFixFmt::spec_inner().spec_serialize(v)
         }
@@ -325,7 +325,7 @@ mod derived_specs {
     impl SpecByteLen for RepeatFixFmt {
         type T = RepeatFixSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             RepeatFixFmt::spec_inner().byte_len(v)
         }
@@ -334,7 +334,7 @@ mod derived_specs {
     impl SpecParser for ResponderIdFmt {
         type PVal = ResponderIdSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ResponderIdFmt::spec_inner().spec_parse(ibuf)
         }
@@ -351,7 +351,7 @@ mod derived_specs {
     impl SpecSerializerDps for ResponderIdFmt {
         type SValue = ResponderIdSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ResponderIdFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -360,7 +360,7 @@ mod derived_specs {
     impl SpecSerializer for ResponderIdFmt {
         type SVal = ResponderIdSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ResponderIdFmt::spec_inner().spec_serialize(v)
         }
@@ -369,7 +369,7 @@ mod derived_specs {
     impl SpecByteLen for ResponderIdFmt {
         type T = ResponderIdSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ResponderIdFmt::spec_inner().byte_len(v)
         }
@@ -378,7 +378,7 @@ mod derived_specs {
     impl SpecParser for ResponderIdListFmt {
         type PVal = ResponderIdListSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ResponderIdListFmt::spec_inner().spec_parse(ibuf)
         }
@@ -395,7 +395,7 @@ mod derived_specs {
     impl SpecSerializerDps for ResponderIdListFmt {
         type SValue = ResponderIdListSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ResponderIdListFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -404,7 +404,7 @@ mod derived_specs {
     impl SpecSerializer for ResponderIdListFmt {
         type SVal = ResponderIdListSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ResponderIdListFmt::spec_inner().spec_serialize(v)
         }
@@ -413,7 +413,7 @@ mod derived_specs {
     impl SpecByteLen for ResponderIdListFmt {
         type T = ResponderIdListSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ResponderIdListFmt::spec_inner().byte_len(v)
         }
@@ -422,7 +422,7 @@ mod derived_specs {
     impl SpecParser for RepeatDynFmt {
         type PVal = RepeatDynSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             RepeatDynFmt::spec_inner().spec_parse(ibuf)
         }
@@ -439,7 +439,7 @@ mod derived_specs {
     impl SpecSerializerDps for RepeatDynFmt {
         type SValue = RepeatDynSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             RepeatDynFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -448,7 +448,7 @@ mod derived_specs {
     impl SpecSerializer for RepeatDynFmt {
         type SVal = RepeatDynSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             RepeatDynFmt::spec_inner().spec_serialize(v)
         }
@@ -457,7 +457,7 @@ mod derived_specs {
     impl SpecByteLen for RepeatDynFmt {
         type T = RepeatDynSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             RepeatDynFmt::spec_inner().byte_len(v)
         }
@@ -1022,12 +1022,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (U16Le).parse(&rest)?;
+            let (n1, l) = U16Le.parse(&rest)?;
             if !(l >= 1 && l <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, data) = Varied(l).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OpaqueU16 { l, data };
@@ -1042,8 +1042,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let OpaqueU16 { l, data } = v;
-            (U16Le).serialize(l, obuf);
-            (Varied(l)).serialize(data, obuf);
+            U16Le.serialize(l, obuf);
+            Varied(l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1060,18 +1060,18 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (Array::<32, _>(U16Le)).parse(ibuf)?;
+            let (n, v) = Array::<32, _>(U16Le).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl Serializer<RepeatFix> for RepeatFixFmt {
+    impl<'i> Serializer<RepeatFix> for RepeatFixFmt {
         fn serialize(&self, v: &RepeatFix, obuf: &mut Vec<u8>) {
             reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (Array::<32, _>(U16Le)).serialize(v, obuf);
+            Array::<32, _>(U16Le).serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1088,7 +1088,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (OpaqueU16Fmt).parse(ibuf)?;
+            let (n, v) = OpaqueU16Fmt.parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -1099,7 +1099,7 @@ mod exec_impls {
             reveal(<ResponderIdFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (OpaqueU16Fmt).serialize(v, obuf);
+            OpaqueU16Fmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1116,12 +1116,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (U16Le).parse(&rest)?;
+            let (n1, l) = U16Le.parse(&rest)?;
             if !(l >= 0 && l <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = (ExactLen(l, Star(ResponderIdFmt))).parse(&rest)?;
+            let (n2, list) = ExactLen(l, Star(ResponderIdFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList { l, list };
@@ -1136,8 +1136,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ResponderIdList { l, list } = v;
-            (U16Le).serialize(l, obuf);
-            (ExactLen(l, Star(ResponderIdFmt))).serialize(list, obuf);
+            U16Le.serialize(l, obuf);
+            ExactLen(l, Star(ResponderIdFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1154,9 +1154,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (RepeatN(l, ResponderIdListFmt)).parse(&rest)?;
+            let (n2, data) = RepeatN(l, ResponderIdListFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = RepeatDyn { l, data };
@@ -1171,8 +1171,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let RepeatDyn { l, data } = v;
-            (VarInt::<true>).serialize(l, obuf);
-            (RepeatN(l, ResponderIdListFmt)).serialize(data, obuf);
+            VarInt::<true>.serialize(l, obuf);
+            RepeatN(l, ResponderIdListFmt).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

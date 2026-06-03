@@ -19,8 +19,8 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `header`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct Header {
     pub len: u16,
     pub flags: u8,
@@ -44,8 +44,8 @@ pub type HeaderAlias = Header;
 pub type HeaderAliasSpec = HeaderSpec;
 
 # [doc = "data type for `fixed_choice`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum FixedChoice {
     Variant1(u16),
     Default(u16),
@@ -64,12 +64,12 @@ impl DeepView for FixedChoice {
 }
 
 # [doc = "data type for `simple_sub`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct SimpleSub<'i> {
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct SimpleSubSpec {
     pub data: Seq<u8>,
 }
@@ -85,12 +85,12 @@ impl<'i> DeepView for SimpleSub<'i> {
 }
 
 # [doc = "data type for `alias_size`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct AliasSize<'i> {
     pub bytes: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct AliasSizeSpec {
     pub bytes: Seq<u8>,
 }
@@ -106,12 +106,12 @@ impl<'i> DeepView for AliasSize<'i> {
 }
 
 # [doc = "data type for `multi_arith`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MultiArith<'i> {
     pub body: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct MultiArithSpec {
     pub body: Seq<u8>,
 }
@@ -127,12 +127,12 @@ impl<'i> DeepView for MultiArith<'i> {
 }
 
 # [doc = "data type for `size_arith`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct SizeArith<'i> {
     pub bytes: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct SizeArithSpec {
     pub bytes: Seq<u8>,
 }
@@ -148,12 +148,12 @@ impl<'i> DeepView for SizeArith<'i> {
 }
 
 # [doc = "data type for `payload_with_header`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PayloadWithHeader<'i> {
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct PayloadWithHeaderSpec {
     pub data: Seq<u8>,
 }
@@ -169,12 +169,12 @@ impl<'i> DeepView for PayloadWithHeader<'i> {
 }
 
 # [doc = "data type for `mixed_const`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MixedConst<'i> {
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct MixedConstSpec {
     pub data: Seq<u8>,
 }
@@ -195,12 +195,12 @@ pub type ChoiceTag<'i> = &'i [u8];
 pub type ChoiceTagSpec = Seq<u8>;
 
 # [doc = "data type for `named_size`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NamedSize<'i> {
     pub bytes: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct NamedSizeSpec {
     pub bytes: Seq<u8>,
 }
@@ -216,12 +216,12 @@ impl<'i> DeepView for NamedSize<'i> {
 }
 
 # [doc = "data type for `choice_format_size`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ChoiceFormatSize<'i> {
     pub bytes: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ChoiceFormatSizeSpec {
     pub bytes: Seq<u8>,
 }
@@ -237,8 +237,8 @@ impl<'i> DeepView for ChoiceFormatSize<'i> {
 }
 
 # [doc = "data type for `choice_arrays_folded_body`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum ChoiceArraysFoldedBody {
     Variant1(u8),
     Variant2(u16),
@@ -258,13 +258,13 @@ impl DeepView for ChoiceArraysFoldedBody {
 }
 
 # [doc = "data type for `choice_arrays_folded`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ChoiceArraysFolded<'i> {
     pub tag: ChoiceTag<'i>,
     pub body: ChoiceArraysFoldedBody,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ChoiceArraysFoldedSpec {
     pub tag: ChoiceTagSpec,
     pub body: ChoiceArraysFoldedBodySpec,
@@ -281,12 +281,12 @@ impl<'i> DeepView for ChoiceArraysFolded<'i> {
 }
 
 # [doc = "data type for `paren_expr`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ParenExpr<'i> {
     pub data: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct ParenExprSpec {
     pub data: Seq<u8>,
 }
@@ -302,13 +302,13 @@ impl<'i> DeepView for ParenExpr<'i> {
 }
 
 # [doc = "data type for `primitive_sizes`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PrimitiveSizes<'i> {
     pub byte: &'i [u8],
     pub word: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct PrimitiveSizesSpec {
     pub byte: Seq<u8>,
     pub word: Seq<u8>,
@@ -328,7 +328,7 @@ impl<'i> DeepView for PrimitiveSizes<'i> {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `header`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct HeaderFmt;
 
 pub type HeaderFmtSpec = Named<
@@ -363,7 +363,7 @@ impl HeaderFmt {
 }
 
 # [doc = "named format combinator for `header_alias`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct HeaderAliasFmt;
 
 pub type HeaderAliasFmtSpec = Named<HeaderFmt>;
@@ -376,13 +376,13 @@ impl HeaderAliasFmt {
 }
 
 # [doc = "named format combinator for `fixed_choice`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct FixedChoiceFmt {
     tag: u8,
 }
 
 impl FixedChoiceFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -432,13 +432,13 @@ impl FixedChoiceFmt {
 }
 
 # [doc = "named format combinator for `simple_sub`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct SimpleSubFmt {
     len: u16,
 }
 
 impl SimpleSubFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.len >= 4 && self.len <= 65535
     }
@@ -479,7 +479,7 @@ impl SimpleSubFmt {
 }
 
 # [doc = "named format combinator for `alias_size`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AliasSizeFmt;
 
 pub type AliasSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<AliasSizeInner, AliasSizeSpec>>>;
@@ -509,14 +509,14 @@ impl AliasSizeFmt {
 }
 
 # [doc = "named format combinator for `multi_arith`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct MultiArithFmt {
     total: u16,
     hdr_len: u16,
 }
 
 impl MultiArithFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.total >= 263 && self.hdr_len >= 0 && self.hdr_len <= 255
     }
@@ -563,7 +563,7 @@ impl MultiArithFmt {
 }
 
 # [doc = "named format combinator for `size_arith`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct SizeArithFmt;
 
 pub type SizeArithFmtSpec = Named<Mapped<Fixed<4>, FnSpecMapper<SizeArithInner, SizeArithSpec>>>;
@@ -593,13 +593,13 @@ impl SizeArithFmt {
 }
 
 # [doc = "named format combinator for `payload_with_header`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct PayloadWithHeaderFmt {
     hdr: Header,
 }
 
 impl PayloadWithHeaderFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         HeaderFmt.consistent(self.hdr.deep_view())
     }
@@ -642,13 +642,13 @@ impl PayloadWithHeaderFmt {
 }
 
 # [doc = "named format combinator for `mixed_const`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct MixedConstFmt {
     len: u16,
 }
 
 impl MixedConstFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.len >= 4 && self.len <= 65535
     }
@@ -691,7 +691,7 @@ impl MixedConstFmt {
 }
 
 # [doc = "named format combinator for `choice_tag`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ChoiceTagFmt;
 
 pub type ChoiceTagFmtSpec = Named<Fixed<2>>;
@@ -704,7 +704,7 @@ impl ChoiceTagFmt {
 }
 
 # [doc = "named format combinator for `named_size`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NamedSizeFmt;
 
 pub type NamedSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<NamedSizeInner, NamedSizeSpec>>>;
@@ -734,7 +734,7 @@ impl NamedSizeFmt {
 }
 
 # [doc = "named format combinator for `choice_format_size`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ChoiceFormatSizeFmt;
 
 pub type ChoiceFormatSizeFmtSpec = Named<
@@ -766,13 +766,13 @@ impl ChoiceFormatSizeFmt {
 }
 
 # [doc = "named format combinator for `choice_arrays_folded_body`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ChoiceArraysFoldedBodyFmt<'i> {
     tag: ChoiceTag<'i>,
 }
 
 impl<'i> ChoiceArraysFoldedBodyFmt<'i> {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -828,7 +828,7 @@ impl<'i> ChoiceArraysFoldedBodyFmt<'i> {
 }
 
 # [doc = "named format combinator for `choice_arrays_folded`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ChoiceArraysFoldedFmt;
 
 pub type ChoiceArraysFoldedFmtSpec = Named<
@@ -866,7 +866,7 @@ impl ChoiceArraysFoldedFmt {
 }
 
 # [doc = "named format combinator for `paren_expr`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct ParenExprFmt {
     a: u16,
     b: u16,
@@ -874,7 +874,7 @@ pub struct ParenExprFmt {
 }
 
 impl ParenExprFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.a >= 255 && self.a <= 65530 && self.b >= 0 && self.b <= 255 && self.c == 1
     }
@@ -923,7 +923,7 @@ impl ParenExprFmt {
 }
 
 # [doc = "named format combinator for `primitive_sizes`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct PrimitiveSizesFmt;
 
 pub type PrimitiveSizesFmtSpec = Named<
@@ -963,7 +963,7 @@ mod derived_specs {
     impl SpecParser for HeaderFmt {
         type PVal = HeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             HeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -980,7 +980,7 @@ mod derived_specs {
     impl SpecSerializerDps for HeaderFmt {
         type SValue = HeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             HeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -989,7 +989,7 @@ mod derived_specs {
     impl SpecSerializer for HeaderFmt {
         type SVal = HeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             HeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -998,7 +998,7 @@ mod derived_specs {
     impl SpecByteLen for HeaderFmt {
         type T = HeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             HeaderFmt::spec_inner().byte_len(v)
         }
@@ -1007,7 +1007,7 @@ mod derived_specs {
     impl SpecParser for HeaderAliasFmt {
         type PVal = HeaderAliasSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             HeaderAliasFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1024,7 +1024,7 @@ mod derived_specs {
     impl SpecSerializerDps for HeaderAliasFmt {
         type SValue = HeaderAliasSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             HeaderAliasFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1033,7 +1033,7 @@ mod derived_specs {
     impl SpecSerializer for HeaderAliasFmt {
         type SVal = HeaderAliasSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             HeaderAliasFmt::spec_inner().spec_serialize(v)
         }
@@ -1042,7 +1042,7 @@ mod derived_specs {
     impl SpecByteLen for HeaderAliasFmt {
         type T = HeaderAliasSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             HeaderAliasFmt::spec_inner().byte_len(v)
         }
@@ -1051,7 +1051,7 @@ mod derived_specs {
     impl SpecParser for FixedChoiceFmt {
         type PVal = FixedChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             FixedChoiceFmt::spec_inner(self.tag_spec()).spec_parse(ibuf)
         }
@@ -1068,7 +1068,7 @@ mod derived_specs {
     impl SpecSerializerDps for FixedChoiceFmt {
         type SValue = FixedChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             FixedChoiceFmt::spec_inner(self.tag_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1077,7 +1077,7 @@ mod derived_specs {
     impl SpecSerializer for FixedChoiceFmt {
         type SVal = FixedChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             FixedChoiceFmt::spec_inner(self.tag_spec()).spec_serialize(v)
         }
@@ -1086,7 +1086,7 @@ mod derived_specs {
     impl SpecByteLen for FixedChoiceFmt {
         type T = FixedChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             FixedChoiceFmt::spec_inner(self.tag_spec()).byte_len(v)
         }
@@ -1095,7 +1095,7 @@ mod derived_specs {
     impl SpecParser for SimpleSubFmt {
         type PVal = SimpleSubSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             SimpleSubFmt::spec_inner(self.len_spec()).spec_parse(ibuf)
         }
@@ -1112,7 +1112,7 @@ mod derived_specs {
     impl SpecSerializerDps for SimpleSubFmt {
         type SValue = SimpleSubSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             SimpleSubFmt::spec_inner(self.len_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1121,7 +1121,7 @@ mod derived_specs {
     impl SpecSerializer for SimpleSubFmt {
         type SVal = SimpleSubSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             SimpleSubFmt::spec_inner(self.len_spec()).spec_serialize(v)
         }
@@ -1130,7 +1130,7 @@ mod derived_specs {
     impl SpecByteLen for SimpleSubFmt {
         type T = SimpleSubSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             SimpleSubFmt::spec_inner(self.len_spec()).byte_len(v)
         }
@@ -1139,7 +1139,7 @@ mod derived_specs {
     impl SpecParser for AliasSizeFmt {
         type PVal = AliasSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AliasSizeFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1156,7 +1156,7 @@ mod derived_specs {
     impl SpecSerializerDps for AliasSizeFmt {
         type SValue = AliasSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AliasSizeFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1165,7 +1165,7 @@ mod derived_specs {
     impl SpecSerializer for AliasSizeFmt {
         type SVal = AliasSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AliasSizeFmt::spec_inner().spec_serialize(v)
         }
@@ -1174,7 +1174,7 @@ mod derived_specs {
     impl SpecByteLen for AliasSizeFmt {
         type T = AliasSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AliasSizeFmt::spec_inner().byte_len(v)
         }
@@ -1183,7 +1183,7 @@ mod derived_specs {
     impl SpecParser for MultiArithFmt {
         type PVal = MultiArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             MultiArithFmt::spec_inner(self.total_spec(), self.hdr_len_spec()).spec_parse(ibuf)
         }
@@ -1200,7 +1200,7 @@ mod derived_specs {
     impl SpecSerializerDps for MultiArithFmt {
         type SValue = MultiArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             MultiArithFmt::spec_inner(self.total_spec(), self.hdr_len_spec()).spec_serialize_dps(
                 v,
@@ -1212,7 +1212,7 @@ mod derived_specs {
     impl SpecSerializer for MultiArithFmt {
         type SVal = MultiArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             MultiArithFmt::spec_inner(self.total_spec(), self.hdr_len_spec()).spec_serialize(v)
         }
@@ -1221,7 +1221,7 @@ mod derived_specs {
     impl SpecByteLen for MultiArithFmt {
         type T = MultiArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             MultiArithFmt::spec_inner(self.total_spec(), self.hdr_len_spec()).byte_len(v)
         }
@@ -1230,7 +1230,7 @@ mod derived_specs {
     impl SpecParser for SizeArithFmt {
         type PVal = SizeArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             SizeArithFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1247,7 +1247,7 @@ mod derived_specs {
     impl SpecSerializerDps for SizeArithFmt {
         type SValue = SizeArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             SizeArithFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1256,7 +1256,7 @@ mod derived_specs {
     impl SpecSerializer for SizeArithFmt {
         type SVal = SizeArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             SizeArithFmt::spec_inner().spec_serialize(v)
         }
@@ -1265,7 +1265,7 @@ mod derived_specs {
     impl SpecByteLen for SizeArithFmt {
         type T = SizeArithSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             SizeArithFmt::spec_inner().byte_len(v)
         }
@@ -1274,7 +1274,7 @@ mod derived_specs {
     impl SpecParser for PayloadWithHeaderFmt {
         type PVal = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             PayloadWithHeaderFmt::spec_inner(self.hdr_spec()).spec_parse(ibuf)
         }
@@ -1291,7 +1291,7 @@ mod derived_specs {
     impl SpecSerializerDps for PayloadWithHeaderFmt {
         type SValue = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             PayloadWithHeaderFmt::spec_inner(self.hdr_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1300,7 +1300,7 @@ mod derived_specs {
     impl SpecSerializer for PayloadWithHeaderFmt {
         type SVal = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             PayloadWithHeaderFmt::spec_inner(self.hdr_spec()).spec_serialize(v)
         }
@@ -1309,7 +1309,7 @@ mod derived_specs {
     impl SpecByteLen for PayloadWithHeaderFmt {
         type T = PayloadWithHeaderSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             PayloadWithHeaderFmt::spec_inner(self.hdr_spec()).byte_len(v)
         }
@@ -1318,7 +1318,7 @@ mod derived_specs {
     impl SpecParser for MixedConstFmt {
         type PVal = MixedConstSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             MixedConstFmt::spec_inner(self.len_spec()).spec_parse(ibuf)
         }
@@ -1335,7 +1335,7 @@ mod derived_specs {
     impl SpecSerializerDps for MixedConstFmt {
         type SValue = MixedConstSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             MixedConstFmt::spec_inner(self.len_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1344,7 +1344,7 @@ mod derived_specs {
     impl SpecSerializer for MixedConstFmt {
         type SVal = MixedConstSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             MixedConstFmt::spec_inner(self.len_spec()).spec_serialize(v)
         }
@@ -1353,7 +1353,7 @@ mod derived_specs {
     impl SpecByteLen for MixedConstFmt {
         type T = MixedConstSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             MixedConstFmt::spec_inner(self.len_spec()).byte_len(v)
         }
@@ -1362,7 +1362,7 @@ mod derived_specs {
     impl SpecParser for ChoiceTagFmt {
         type PVal = ChoiceTagSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ChoiceTagFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1379,7 +1379,7 @@ mod derived_specs {
     impl SpecSerializerDps for ChoiceTagFmt {
         type SValue = ChoiceTagSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ChoiceTagFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1388,7 +1388,7 @@ mod derived_specs {
     impl SpecSerializer for ChoiceTagFmt {
         type SVal = ChoiceTagSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ChoiceTagFmt::spec_inner().spec_serialize(v)
         }
@@ -1397,7 +1397,7 @@ mod derived_specs {
     impl SpecByteLen for ChoiceTagFmt {
         type T = ChoiceTagSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ChoiceTagFmt::spec_inner().byte_len(v)
         }
@@ -1406,7 +1406,7 @@ mod derived_specs {
     impl SpecParser for NamedSizeFmt {
         type PVal = NamedSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NamedSizeFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1423,7 +1423,7 @@ mod derived_specs {
     impl SpecSerializerDps for NamedSizeFmt {
         type SValue = NamedSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NamedSizeFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1432,7 +1432,7 @@ mod derived_specs {
     impl SpecSerializer for NamedSizeFmt {
         type SVal = NamedSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NamedSizeFmt::spec_inner().spec_serialize(v)
         }
@@ -1441,7 +1441,7 @@ mod derived_specs {
     impl SpecByteLen for NamedSizeFmt {
         type T = NamedSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NamedSizeFmt::spec_inner().byte_len(v)
         }
@@ -1450,7 +1450,7 @@ mod derived_specs {
     impl SpecParser for ChoiceFormatSizeFmt {
         type PVal = ChoiceFormatSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ChoiceFormatSizeFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1467,7 +1467,7 @@ mod derived_specs {
     impl SpecSerializerDps for ChoiceFormatSizeFmt {
         type SValue = ChoiceFormatSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ChoiceFormatSizeFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1476,7 +1476,7 @@ mod derived_specs {
     impl SpecSerializer for ChoiceFormatSizeFmt {
         type SVal = ChoiceFormatSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ChoiceFormatSizeFmt::spec_inner().spec_serialize(v)
         }
@@ -1485,7 +1485,7 @@ mod derived_specs {
     impl SpecByteLen for ChoiceFormatSizeFmt {
         type T = ChoiceFormatSizeSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ChoiceFormatSizeFmt::spec_inner().byte_len(v)
         }
@@ -1534,7 +1534,7 @@ mod derived_specs {
     impl SpecParser for ChoiceArraysFoldedFmt {
         type PVal = ChoiceArraysFoldedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ChoiceArraysFoldedFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1551,7 +1551,7 @@ mod derived_specs {
     impl SpecSerializerDps for ChoiceArraysFoldedFmt {
         type SValue = ChoiceArraysFoldedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ChoiceArraysFoldedFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1560,7 +1560,7 @@ mod derived_specs {
     impl SpecSerializer for ChoiceArraysFoldedFmt {
         type SVal = ChoiceArraysFoldedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ChoiceArraysFoldedFmt::spec_inner().spec_serialize(v)
         }
@@ -1569,7 +1569,7 @@ mod derived_specs {
     impl SpecByteLen for ChoiceArraysFoldedFmt {
         type T = ChoiceArraysFoldedSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ChoiceArraysFoldedFmt::spec_inner().byte_len(v)
         }
@@ -1578,7 +1578,7 @@ mod derived_specs {
     impl SpecParser for ParenExprFmt {
         type PVal = ParenExprSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ParenExprFmt::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).spec_parse(ibuf)
         }
@@ -1595,7 +1595,7 @@ mod derived_specs {
     impl SpecSerializerDps for ParenExprFmt {
         type SValue = ParenExprSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ParenExprFmt::spec_inner(
                 self.a_spec(),
@@ -1608,7 +1608,7 @@ mod derived_specs {
     impl SpecSerializer for ParenExprFmt {
         type SVal = ParenExprSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ParenExprFmt::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).spec_serialize(v)
         }
@@ -1617,7 +1617,7 @@ mod derived_specs {
     impl SpecByteLen for ParenExprFmt {
         type T = ParenExprSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ParenExprFmt::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).byte_len(v)
         }
@@ -1626,7 +1626,7 @@ mod derived_specs {
     impl SpecParser for PrimitiveSizesFmt {
         type PVal = PrimitiveSizesSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             PrimitiveSizesFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1643,7 +1643,7 @@ mod derived_specs {
     impl SpecSerializerDps for PrimitiveSizesFmt {
         type SValue = PrimitiveSizesSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             PrimitiveSizesFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1652,7 +1652,7 @@ mod derived_specs {
     impl SpecSerializer for PrimitiveSizesFmt {
         type SVal = PrimitiveSizesSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             PrimitiveSizesFmt::spec_inner().spec_serialize(v)
         }
@@ -1661,7 +1661,7 @@ mod derived_specs {
     impl SpecByteLen for PrimitiveSizesFmt {
         type T = PrimitiveSizesSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             PrimitiveSizesFmt::spec_inner().byte_len(v)
         }
@@ -3396,12 +3396,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = (U16Le).parse(&rest)?;
+            let (n1, len) = U16Le.parse(&rest)?;
             if !(len >= 3 && len <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, flags) = (U8).parse(&rest)?;
+            let (n2, flags) = U8.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Header { len, flags };
@@ -3410,14 +3410,14 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<Header> for HeaderFmt {
+    impl<'i> Serializer<Header> for HeaderFmt {
         fn serialize(&self, v: &Header, obuf: &mut Vec<u8>) {
             reveal(<HeaderFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let Header { len, flags } = v;
-            (U16Le).serialize(len, obuf);
-            (U8).serialize(flags, obuf);
+            U16Le.serialize(len, obuf);
+            U8.serialize(flags, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3434,18 +3434,18 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (HeaderFmt).parse(ibuf)?;
+            let (n, v) = HeaderFmt.parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl Serializer<HeaderAlias> for HeaderAliasFmt {
+    impl<'i> Serializer<HeaderAlias> for HeaderAliasFmt {
         fn serialize(&self, v: &HeaderAlias, obuf: &mut Vec<u8>) {
             reveal(<HeaderAliasFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (HeaderFmt).serialize(v, obuf);
+            HeaderFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3481,7 +3481,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<FixedChoice> for FixedChoiceFmt {
+    impl<'i> Serializer<FixedChoice> for FixedChoiceFmt {
         fn serialize(&self, v: &FixedChoice, obuf: &mut Vec<u8>) {
             reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -3519,7 +3519,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = (Varied(((self.len - 3) - 1))).parse(&rest)?;
+            let (n1, data) = Varied(((self.len - 3) - 1)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = SimpleSub { data };
@@ -3538,7 +3538,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let SimpleSub { data } = v;
-            (Varied(((self.len - 3) - 1))).serialize(data, obuf);
+            Varied(((self.len - 3) - 1)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3555,7 +3555,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = (Fixed::<3>).parse(&rest)?;
+            let (n1, bytes) = Fixed::<3>.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = AliasSize { bytes };
@@ -3570,7 +3570,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let AliasSize { bytes } = v;
-            (Fixed::<3>).serialize(bytes, obuf);
+            Fixed::<3>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3591,7 +3591,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, body) = (Varied(((self.total - self.hdr_len) - 8))).parse(&rest)?;
+            let (n1, body) = Varied(((self.total - self.hdr_len) - 8)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MultiArith { body };
@@ -3610,7 +3610,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let MultiArith { body } = v;
-            (Varied(((self.total - self.hdr_len) - 8))).serialize(body, obuf);
+            Varied(((self.total - self.hdr_len) - 8)).serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3627,7 +3627,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = (Fixed::<4>).parse(&rest)?;
+            let (n1, bytes) = Fixed::<4>.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = SizeArith { bytes };
@@ -3642,7 +3642,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let SizeArith { bytes } = v;
-            (Fixed::<4>).serialize(bytes, obuf);
+            Fixed::<4>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3663,7 +3663,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = (Varied((self.hdr.len - 3))).parse(&rest)?;
+            let (n1, data) = Varied((self.hdr.len - 3)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = PayloadWithHeader { data };
@@ -3682,7 +3682,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { data } = v;
-            (Varied((self.hdr.len - 3))).serialize(data, obuf);
+            Varied((self.hdr.len - 3)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3703,7 +3703,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = (Varied(((self.len - 4) + 2))).parse(&rest)?;
+            let (n1, data) = Varied(((self.len - 4) + 2)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MixedConst { data };
@@ -3722,7 +3722,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let MixedConst { data } = v;
-            (Varied(((self.len - 4) + 2))).serialize(data, obuf);
+            Varied(((self.len - 4) + 2)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3739,7 +3739,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = (Fixed::<2>).parse(ibuf)?;
+            let (n, v) = Fixed::<2>.parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -3750,7 +3750,7 @@ mod exec_impls {
             reveal(<ChoiceTagFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
-            (Fixed::<2>).serialize(v, obuf);
+            Fixed::<2>.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3767,7 +3767,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = (Fixed::<3>).parse(&rest)?;
+            let (n1, bytes) = Fixed::<3>.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = NamedSize { bytes };
@@ -3782,7 +3782,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NamedSize { bytes } = v;
-            (Fixed::<3>).serialize(bytes, obuf);
+            Fixed::<3>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3799,7 +3799,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = (Fixed::<2>).parse(&rest)?;
+            let (n1, bytes) = Fixed::<2>.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ChoiceFormatSize { bytes };
@@ -3814,7 +3814,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ChoiceFormatSize { bytes } = v;
-            (Fixed::<2>).serialize(bytes, obuf);
+            Fixed::<2>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3891,9 +3891,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = (ChoiceTagFmt).parse(&rest)?;
+            let (n1, tag) = ChoiceTagFmt.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = (ChoiceArraysFoldedBodyFmt { tag: tag }).parse(&rest)?;
+            let (n2, body) = ChoiceArraysFoldedBodyFmt { tag: tag }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ChoiceArraysFolded { tag, body };
@@ -3908,8 +3908,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ChoiceArraysFolded { tag, body } = v;
-            (ChoiceTagFmt).serialize(tag, obuf);
-            (ChoiceArraysFoldedBodyFmt { tag: *tag }).serialize(body, obuf);
+            ChoiceTagFmt.serialize(tag, obuf);
+            ChoiceArraysFoldedBodyFmt { tag: *tag }.serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3930,7 +3930,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = (Varied(((self.a - self.b) + self.c))).parse(&rest)?;
+            let (n1, data) = Varied(((self.a - self.b) + self.c)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ParenExpr { data };
@@ -3949,7 +3949,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ParenExpr { data } = v;
-            (Varied(((self.a - self.b) + self.c))).serialize(data, obuf);
+            Varied(((self.a - self.b) + self.c)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3966,9 +3966,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, byte) = (Fixed::<1>).parse(&rest)?;
+            let (n1, byte) = Fixed::<1>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, word) = (Fixed::<2>).parse(&rest)?;
+            let (n2, word) = Fixed::<2>.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PrimitiveSizes { byte, word };
@@ -3983,8 +3983,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let PrimitiveSizes { byte, word } = v;
-            (Fixed::<1>).serialize(byte, obuf);
-            (Fixed::<2>).serialize(word, obuf);
+            Fixed::<1>.serialize(byte, obuf);
+            Fixed::<2>.serialize(word, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

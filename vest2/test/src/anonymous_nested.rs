@@ -19,13 +19,13 @@ verus! {
 // Data Types
 // ============================================================
 # [doc = "data type for `capture_param_and_local_x_a_payload`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureParamAndLocalXAPayload<'i> {
     C(&'i [u8]),
     D(&'i [u8]),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum CaptureParamAndLocalXAPayloadSpec {
     C(Seq<u8>),
     D(Seq<u8>),
@@ -49,13 +49,13 @@ impl<'i> DeepView for CaptureParamAndLocalXAPayload<'i> {
 }
 
 # [doc = "data type for `capture_param_and_local_x_a`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureParamAndLocalXA<'i> {
     pub len: u8,
     pub payload: CaptureParamAndLocalXAPayload<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureParamAndLocalXASpec {
     pub len: u8,
     pub payload: CaptureParamAndLocalXAPayloadSpec,
@@ -72,8 +72,8 @@ impl<'i> DeepView for CaptureParamAndLocalXA<'i> {
 }
 
 # [doc = "data type for `capture_param_and_local_x_b_y`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum CaptureParamAndLocalXBY {
     Variant1(u8),
     Default(u16),
@@ -92,8 +92,8 @@ impl DeepView for CaptureParamAndLocalXBY {
 }
 
 # [doc = "data type for `capture_param_and_local_x_b`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct CaptureParamAndLocalXB {
     pub tag: u8,
     pub y: CaptureParamAndLocalXBY,
@@ -112,13 +112,13 @@ impl DeepView for CaptureParamAndLocalXB {
 }
 
 # [doc = "data type for `capture_param_and_local_x`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureParamAndLocalX<'i> {
     A(CaptureParamAndLocalXA<'i>),
     B(CaptureParamAndLocalXB),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum CaptureParamAndLocalXSpec {
     A(CaptureParamAndLocalXASpec),
     B(CaptureParamAndLocalXBSpec),
@@ -138,8 +138,8 @@ impl<'i> DeepView for CaptureParamAndLocalX<'i> {
 }
 
 # [doc = "data type for `nested_inner_choice_x_a`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum NestedInnerChoiceXA {
     C(u8),
     D(u16),
@@ -158,13 +158,13 @@ impl DeepView for NestedInnerChoiceXA {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload_body_choice1`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1<'i> {
     pub count: u8,
     pub items: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1Spec {
     pub count: u8,
     pub items: Seq<u8>,
@@ -184,13 +184,13 @@ impl<'i> DeepView for CaptureOuterAndLocalPayloadBodyChoice1<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload_body`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureOuterAndLocalPayloadBody<'i> {
     Variant1(&'i [u8]),
     Default(CaptureOuterAndLocalPayloadBodyChoice1<'i>),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum CaptureOuterAndLocalPayloadBodySpec {
     Variant1(Seq<u8>),
     Default(CaptureOuterAndLocalPayloadBodyChoice1Spec),
@@ -217,13 +217,13 @@ impl<'i> DeepView for CaptureOuterAndLocalPayloadBody<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local_payload`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocalPayload<'i> {
     pub tag: u8,
     pub body: CaptureOuterAndLocalPayloadBody<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureOuterAndLocalPayloadSpec {
     pub tag: u8,
     pub body: CaptureOuterAndLocalPayloadBodySpec,
@@ -240,13 +240,13 @@ impl<'i> DeepView for CaptureOuterAndLocalPayload<'i> {
 }
 
 # [doc = "data type for `capture_outer_and_local`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocal<'i> {
     pub frame_len: u8,
     pub payload: CaptureOuterAndLocalPayload<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureOuterAndLocalSpec {
     pub frame_len: u8,
     pub payload: CaptureOuterAndLocalPayloadSpec,
@@ -266,13 +266,13 @@ impl<'i> DeepView for CaptureOuterAndLocal<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper_value_choice0`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0<'i> {
     pub len: u8,
     pub bytes: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0Spec {
     pub len: u8,
     pub bytes: Seq<u8>,
@@ -292,13 +292,13 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapperValueChoice0<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper_value`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureLocalInAnonStructWrapperValue<'i> {
     Variant1(CaptureLocalInAnonStructWrapperValueChoice0<'i>),
     Default(u16),
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub enum CaptureLocalInAnonStructWrapperValueSpec {
     Variant1(CaptureLocalInAnonStructWrapperValueChoice0Spec),
     Default(u16),
@@ -325,8 +325,8 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapperValue<'i> {
 }
 
 # [doc = "data type for `nested_inner_choice_x`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub enum NestedInnerChoiceX {
     A(NestedInnerChoiceXA),
     B(u32),
@@ -345,8 +345,8 @@ impl DeepView for NestedInnerChoiceX {
 }
 
 # [doc = "data type for `nested_inner_choice`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
-# [verifier :: ext_equal]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+# [verifier::ext_equal]
 pub struct NestedInnerChoice {
     pub x: NestedInnerChoiceX,
 }
@@ -364,12 +364,12 @@ impl DeepView for NestedInnerChoice {
 }
 
 # [doc = "data type for `capture_param_and_local`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureParamAndLocal<'i> {
     pub x: CaptureParamAndLocalX<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureParamAndLocalSpec {
     pub x: CaptureParamAndLocalXSpec,
 }
@@ -385,13 +385,13 @@ impl<'i> DeepView for CaptureParamAndLocal<'i> {
 }
 
 # [doc = "data type for `nested_inner_struct_val`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedInnerStructVal<'i> {
     pub x: u8,
     pub y: &'i [u8],
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct NestedInnerStructValSpec {
     pub x: u8,
     pub y: Seq<u8>,
@@ -408,13 +408,13 @@ impl<'i> DeepView for NestedInnerStructVal<'i> {
 }
 
 # [doc = "data type for `nested_inner_struct`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedInnerStruct<'i> {
     pub len: u32,
     pub val: NestedInnerStructVal<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct NestedInnerStructSpec {
     pub len: u32,
     pub val: NestedInnerStructValSpec,
@@ -432,7 +432,7 @@ impl<'i> DeepView for NestedInnerStruct<'i> {
 
 # [doc = "data type for `c_or_d`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum COrD {
     C = 1,
     D = 2,
@@ -466,13 +466,13 @@ impl SelfView for COrD {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct_wrapper`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapper<'i> {
     pub tag: u8,
     pub value: CaptureLocalInAnonStructWrapperValue<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureLocalInAnonStructWrapperSpec {
     pub tag: u8,
     pub value: CaptureLocalInAnonStructWrapperValueSpec,
@@ -492,12 +492,12 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapper<'i> {
 }
 
 # [doc = "data type for `capture_local_in_anon_struct`."]
-# [derive (Debug , PartialEq , Eq , Clone , Copy)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStruct<'i> {
     pub wrapper: CaptureLocalInAnonStructWrapper<'i>,
 }
 
-# [verifier :: ext_equal]
+# [verifier::ext_equal]
 pub struct CaptureLocalInAnonStructSpec {
     pub wrapper: CaptureLocalInAnonStructWrapperSpec,
 }
@@ -514,7 +514,7 @@ impl<'i> DeepView for CaptureLocalInAnonStruct<'i> {
 
 # [doc = "data type for `a_or_b`."]
 # [repr (u8)]
-# [derive (Debug , PartialEq , Eq , Clone , Copy , Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
 pub enum AOrB {
     A = 1,
     B = 2,
@@ -551,14 +551,14 @@ impl SelfView for AOrB {
 // Format Specifications
 // ============================================================
 # [doc = "named format combinator for `capture_param_and_local_x_a_payload`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalXAPayloadFmt {
     choice2: COrD,
     len: u8,
 }
 
 impl CaptureParamAndLocalXAPayloadFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -620,13 +620,13 @@ impl CaptureParamAndLocalXAPayloadFmt {
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_a`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalXAFmt {
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalXAFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -672,13 +672,13 @@ impl CaptureParamAndLocalXAFmt {
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_b_y`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalXBYFmt {
     tag: u8,
 }
 
 impl CaptureParamAndLocalXBYFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -728,7 +728,7 @@ impl CaptureParamAndLocalXBYFmt {
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x_b`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalXBFmt;
 
 pub type CaptureParamAndLocalXBFmtSpec = Named<
@@ -763,14 +763,14 @@ impl CaptureParamAndLocalXBFmt {
 }
 
 # [doc = "named format combinator for `capture_param_and_local_x`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalXFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalXFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -830,13 +830,13 @@ impl CaptureParamAndLocalXFmt {
 }
 
 # [doc = "named format combinator for `nested_inner_choice_x_a`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedInnerChoiceXAFmt {
     choice2: COrD,
 }
 
 impl NestedInnerChoiceXAFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -886,7 +886,7 @@ impl NestedInnerChoiceXAFmt {
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload_body_choice1`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1Fmt;
 
 pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named<
@@ -926,14 +926,14 @@ impl CaptureOuterAndLocalPayloadBodyChoice1Fmt {
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload_body`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyFmt {
     frame_len: u8,
     tag: u8,
 }
 
 impl CaptureOuterAndLocalPayloadBodyFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.frame_len >= 1
     }
@@ -992,13 +992,13 @@ impl CaptureOuterAndLocalPayloadBodyFmt {
 }
 
 # [doc = "named format combinator for `capture_outer_and_local_payload`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadFmt {
     frame_len: u8,
 }
 
 impl CaptureOuterAndLocalPayloadFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.frame_len >= 1
     }
@@ -1044,7 +1044,7 @@ impl CaptureOuterAndLocalPayloadFmt {
 }
 
 # [doc = "named format combinator for `capture_outer_and_local`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureOuterAndLocalFmt;
 
 pub type CaptureOuterAndLocalFmtSpec = Named<
@@ -1086,7 +1086,7 @@ impl CaptureOuterAndLocalFmt {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value_choice0`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0Fmt;
 
 pub type CaptureLocalInAnonStructWrapperValueChoice0FmtSpec = Named<
@@ -1127,13 +1127,13 @@ impl CaptureLocalInAnonStructWrapperValueChoice0Fmt {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueFmt {
     tag: u8,
 }
 
 impl CaptureLocalInAnonStructWrapperValueFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -1191,14 +1191,14 @@ impl CaptureLocalInAnonStructWrapperValueFmt {
 }
 
 # [doc = "named format combinator for `nested_inner_choice_x`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedInnerChoiceXFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl NestedInnerChoiceXFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -1255,14 +1255,14 @@ impl NestedInnerChoiceXFmt {
 }
 
 # [doc = "named format combinator for `nested_inner_choice`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedInnerChoiceFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl NestedInnerChoiceFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -1309,14 +1309,14 @@ impl NestedInnerChoiceFmt {
 }
 
 # [doc = "named format combinator for `capture_param_and_local`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureParamAndLocalFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalFmt {
-    # [verifier :: type_invariant]
+    # [verifier::type_invariant]
     spec fn wf(&self) -> bool {
         AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -1369,7 +1369,7 @@ impl CaptureParamAndLocalFmt {
 }
 
 # [doc = "named format combinator for `nested_inner_struct_val`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedInnerStructValFmt;
 
 pub type NestedInnerStructValFmtSpec = Named<
@@ -1401,7 +1401,7 @@ impl NestedInnerStructValFmt {
 }
 
 # [doc = "named format combinator for `nested_inner_struct`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct NestedInnerStructFmt;
 
 pub type NestedInnerStructFmtSpec = Named<
@@ -1436,7 +1436,7 @@ impl NestedInnerStructFmt {
 }
 
 # [doc = "named format combinator for `c_or_d`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct COrDFmt;
 
 pub type COrDFmtSpec = Named<
@@ -1473,7 +1473,7 @@ impl COrDFmt {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct_wrapper`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperFmt;
 
 pub type CaptureLocalInAnonStructWrapperFmtSpec = Named<
@@ -1510,7 +1510,7 @@ impl CaptureLocalInAnonStructWrapperFmt {
 }
 
 # [doc = "named format combinator for `capture_local_in_anon_struct`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct CaptureLocalInAnonStructFmt;
 
 pub type CaptureLocalInAnonStructFmtSpec = Named<
@@ -1545,7 +1545,7 @@ impl CaptureLocalInAnonStructFmt {
 }
 
 # [doc = "named format combinator for `a_or_b`."]
-# [derive (Clone , Copy)]
+# [derive (Clone, Copy)]
 pub struct AOrBFmt;
 
 pub type AOrBFmtSpec = Named<
@@ -1590,7 +1590,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXAPayloadFmt {
         type PVal = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalXAPayloadFmt::spec_inner(
                 self.choice2_spec(),
@@ -1613,7 +1613,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXAPayloadFmt {
         type SValue = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalXAPayloadFmt::spec_inner(
                 self.choice2_spec(),
@@ -1625,7 +1625,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXAPayloadFmt {
         type SVal = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalXAPayloadFmt::spec_inner(
                 self.choice2_spec(),
@@ -1637,7 +1637,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXAPayloadFmt {
         type T = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalXAPayloadFmt::spec_inner(
                 self.choice2_spec(),
@@ -1649,7 +1649,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXAFmt {
         type PVal = CaptureParamAndLocalXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalXAFmt::spec_inner(self.choice2_spec()).spec_parse(ibuf)
         }
@@ -1666,7 +1666,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXAFmt {
         type SValue = CaptureParamAndLocalXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalXAFmt::spec_inner(self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1675,7 +1675,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXAFmt {
         type SVal = CaptureParamAndLocalXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalXAFmt::spec_inner(self.choice2_spec()).spec_serialize(v)
         }
@@ -1684,7 +1684,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXAFmt {
         type T = CaptureParamAndLocalXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalXAFmt::spec_inner(self.choice2_spec()).byte_len(v)
         }
@@ -1693,7 +1693,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXBYFmt {
         type PVal = CaptureParamAndLocalXBYSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalXBYFmt::spec_inner(self.tag_spec()).spec_parse(ibuf)
         }
@@ -1710,7 +1710,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXBYFmt {
         type SValue = CaptureParamAndLocalXBYSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalXBYFmt::spec_inner(self.tag_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1719,7 +1719,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXBYFmt {
         type SVal = CaptureParamAndLocalXBYSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalXBYFmt::spec_inner(self.tag_spec()).spec_serialize(v)
         }
@@ -1728,7 +1728,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXBYFmt {
         type T = CaptureParamAndLocalXBYSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalXBYFmt::spec_inner(self.tag_spec()).byte_len(v)
         }
@@ -1737,7 +1737,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXBFmt {
         type PVal = CaptureParamAndLocalXBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalXBFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1754,7 +1754,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXBFmt {
         type SValue = CaptureParamAndLocalXBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalXBFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1763,7 +1763,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXBFmt {
         type SVal = CaptureParamAndLocalXBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalXBFmt::spec_inner().spec_serialize(v)
         }
@@ -1772,7 +1772,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXBFmt {
         type T = CaptureParamAndLocalXBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalXBFmt::spec_inner().byte_len(v)
         }
@@ -1781,7 +1781,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXFmt {
         type PVal = CaptureParamAndLocalXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalXFmt::spec_inner(
                 self.choice1_spec(),
@@ -1804,7 +1804,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXFmt {
         type SValue = CaptureParamAndLocalXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalXFmt::spec_inner(
                 self.choice1_spec(),
@@ -1816,7 +1816,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXFmt {
         type SVal = CaptureParamAndLocalXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalXFmt::spec_inner(
                 self.choice1_spec(),
@@ -1828,7 +1828,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXFmt {
         type T = CaptureParamAndLocalXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalXFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(
                 v,
@@ -1839,7 +1839,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceXAFmt {
         type PVal = NestedInnerChoiceXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NestedInnerChoiceXAFmt::spec_inner(self.choice2_spec()).spec_parse(ibuf)
         }
@@ -1856,7 +1856,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceXAFmt {
         type SValue = NestedInnerChoiceXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NestedInnerChoiceXAFmt::spec_inner(self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -1865,7 +1865,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceXAFmt {
         type SVal = NestedInnerChoiceXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NestedInnerChoiceXAFmt::spec_inner(self.choice2_spec()).spec_serialize(v)
         }
@@ -1874,7 +1874,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceXAFmt {
         type T = NestedInnerChoiceXASpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NestedInnerChoiceXAFmt::spec_inner(self.choice2_spec()).byte_len(v)
         }
@@ -1883,7 +1883,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type PVal = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureOuterAndLocalPayloadBodyChoice1Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -1900,7 +1900,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type SValue = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureOuterAndLocalPayloadBodyChoice1Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1909,7 +1909,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type SVal = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureOuterAndLocalPayloadBodyChoice1Fmt::spec_inner().spec_serialize(v)
         }
@@ -1918,7 +1918,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type T = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureOuterAndLocalPayloadBodyChoice1Fmt::spec_inner().byte_len(v)
         }
@@ -1927,7 +1927,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadBodyFmt {
         type PVal = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureOuterAndLocalPayloadBodyFmt::spec_inner(
                 self.frame_len_spec(),
@@ -1950,7 +1950,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyFmt {
         type SValue = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureOuterAndLocalPayloadBodyFmt::spec_inner(
                 self.frame_len_spec(),
@@ -1962,7 +1962,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadBodyFmt {
         type SVal = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureOuterAndLocalPayloadBodyFmt::spec_inner(
                 self.frame_len_spec(),
@@ -1974,7 +1974,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadBodyFmt {
         type T = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureOuterAndLocalPayloadBodyFmt::spec_inner(
                 self.frame_len_spec(),
@@ -1986,7 +1986,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadFmt {
         type PVal = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureOuterAndLocalPayloadFmt::spec_inner(self.frame_len_spec()).spec_parse(ibuf)
         }
@@ -2003,7 +2003,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadFmt {
         type SValue = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureOuterAndLocalPayloadFmt::spec_inner(self.frame_len_spec()).spec_serialize_dps(
                 v,
@@ -2015,7 +2015,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadFmt {
         type SVal = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureOuterAndLocalPayloadFmt::spec_inner(self.frame_len_spec()).spec_serialize(v)
         }
@@ -2024,7 +2024,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadFmt {
         type T = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureOuterAndLocalPayloadFmt::spec_inner(self.frame_len_spec()).byte_len(v)
         }
@@ -2033,7 +2033,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalFmt {
         type PVal = CaptureOuterAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureOuterAndLocalFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2050,7 +2050,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalFmt {
         type SValue = CaptureOuterAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureOuterAndLocalFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2059,7 +2059,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalFmt {
         type SVal = CaptureOuterAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureOuterAndLocalFmt::spec_inner().spec_serialize(v)
         }
@@ -2068,7 +2068,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalFmt {
         type T = CaptureOuterAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureOuterAndLocalFmt::spec_inner().byte_len(v)
         }
@@ -2077,7 +2077,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type PVal = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureLocalInAnonStructWrapperValueChoice0Fmt::spec_inner().spec_parse(ibuf)
         }
@@ -2094,7 +2094,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type SValue = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperValueChoice0Fmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2103,7 +2103,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type SVal = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperValueChoice0Fmt::spec_inner().spec_serialize(v)
         }
@@ -2112,7 +2112,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type T = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureLocalInAnonStructWrapperValueChoice0Fmt::spec_inner().byte_len(v)
         }
@@ -2121,7 +2121,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperValueFmt {
         type PVal = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureLocalInAnonStructWrapperValueFmt::spec_inner(self.tag_spec()).spec_parse(ibuf)
         }
@@ -2138,7 +2138,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperValueFmt {
         type SValue = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperValueFmt::spec_inner(self.tag_spec()).spec_serialize_dps(
                 v,
@@ -2150,7 +2150,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperValueFmt {
         type SVal = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperValueFmt::spec_inner(self.tag_spec()).spec_serialize(v)
         }
@@ -2159,7 +2159,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperValueFmt {
         type T = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureLocalInAnonStructWrapperValueFmt::spec_inner(self.tag_spec()).byte_len(v)
         }
@@ -2168,7 +2168,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceXFmt {
         type PVal = NestedInnerChoiceXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NestedInnerChoiceXFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(
                 ibuf,
@@ -2189,7 +2189,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceXFmt {
         type SValue = NestedInnerChoiceXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NestedInnerChoiceXFmt::spec_inner(
                 self.choice1_spec(),
@@ -2201,7 +2201,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceXFmt {
         type SVal = NestedInnerChoiceXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NestedInnerChoiceXFmt::spec_inner(
                 self.choice1_spec(),
@@ -2213,7 +2213,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceXFmt {
         type T = NestedInnerChoiceXSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NestedInnerChoiceXFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
@@ -2222,7 +2222,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceFmt {
         type PVal = NestedInnerChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NestedInnerChoiceFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(
                 ibuf,
@@ -2241,7 +2241,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceFmt {
         type SValue = NestedInnerChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NestedInnerChoiceFmt::spec_inner(
                 self.choice1_spec(),
@@ -2253,7 +2253,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceFmt {
         type SVal = NestedInnerChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NestedInnerChoiceFmt::spec_inner(
                 self.choice1_spec(),
@@ -2265,7 +2265,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceFmt {
         type T = NestedInnerChoiceSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NestedInnerChoiceFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
@@ -2274,7 +2274,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalFmt {
         type PVal = CaptureParamAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureParamAndLocalFmt::spec_inner(
                 self.choice1_spec(),
@@ -2297,7 +2297,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalFmt {
         type SValue = CaptureParamAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureParamAndLocalFmt::spec_inner(
                 self.choice1_spec(),
@@ -2309,7 +2309,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalFmt {
         type SVal = CaptureParamAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureParamAndLocalFmt::spec_inner(
                 self.choice1_spec(),
@@ -2321,7 +2321,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalFmt {
         type T = CaptureParamAndLocalSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureParamAndLocalFmt::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(
                 v,
@@ -2332,7 +2332,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerStructValFmt {
         type PVal = NestedInnerStructValSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NestedInnerStructValFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2349,7 +2349,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerStructValFmt {
         type SValue = NestedInnerStructValSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NestedInnerStructValFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2358,7 +2358,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerStructValFmt {
         type SVal = NestedInnerStructValSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NestedInnerStructValFmt::spec_inner().spec_serialize(v)
         }
@@ -2367,7 +2367,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerStructValFmt {
         type T = NestedInnerStructValSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NestedInnerStructValFmt::spec_inner().byte_len(v)
         }
@@ -2376,7 +2376,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerStructFmt {
         type PVal = NestedInnerStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             NestedInnerStructFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2393,7 +2393,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerStructFmt {
         type SValue = NestedInnerStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             NestedInnerStructFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2402,7 +2402,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerStructFmt {
         type SVal = NestedInnerStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             NestedInnerStructFmt::spec_inner().spec_serialize(v)
         }
@@ -2411,7 +2411,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerStructFmt {
         type T = NestedInnerStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             NestedInnerStructFmt::spec_inner().byte_len(v)
         }
@@ -2420,7 +2420,7 @@ mod derived_specs {
     impl SpecParser for COrDFmt {
         type PVal = COrDSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             COrDFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2437,7 +2437,7 @@ mod derived_specs {
     impl SpecSerializerDps for COrDFmt {
         type SValue = COrDSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             COrDFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2446,7 +2446,7 @@ mod derived_specs {
     impl SpecSerializer for COrDFmt {
         type SVal = COrDSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             COrDFmt::spec_inner().spec_serialize(v)
         }
@@ -2455,7 +2455,7 @@ mod derived_specs {
     impl SpecByteLen for COrDFmt {
         type T = COrDSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             COrDFmt::spec_inner().byte_len(v)
         }
@@ -2464,7 +2464,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperFmt {
         type PVal = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureLocalInAnonStructWrapperFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2481,7 +2481,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperFmt {
         type SValue = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2490,7 +2490,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperFmt {
         type SVal = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureLocalInAnonStructWrapperFmt::spec_inner().spec_serialize(v)
         }
@@ -2499,7 +2499,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperFmt {
         type T = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureLocalInAnonStructWrapperFmt::spec_inner().byte_len(v)
         }
@@ -2508,7 +2508,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructFmt {
         type PVal = CaptureLocalInAnonStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CaptureLocalInAnonStructFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2525,7 +2525,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructFmt {
         type SValue = CaptureLocalInAnonStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CaptureLocalInAnonStructFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2534,7 +2534,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructFmt {
         type SVal = CaptureLocalInAnonStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CaptureLocalInAnonStructFmt::spec_inner().spec_serialize(v)
         }
@@ -2543,7 +2543,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructFmt {
         type T = CaptureLocalInAnonStructSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CaptureLocalInAnonStructFmt::spec_inner().byte_len(v)
         }
@@ -2552,7 +2552,7 @@ mod derived_specs {
     impl SpecParser for AOrBFmt {
         type PVal = AOrBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             AOrBFmt::spec_inner().spec_parse(ibuf)
         }
@@ -2569,7 +2569,7 @@ mod derived_specs {
     impl SpecSerializerDps for AOrBFmt {
         type SValue = AOrBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             AOrBFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -2578,7 +2578,7 @@ mod derived_specs {
     impl SpecSerializer for AOrBFmt {
         type SVal = AOrBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             AOrBFmt::spec_inner().spec_serialize(v)
         }
@@ -2587,7 +2587,7 @@ mod derived_specs {
     impl SpecByteLen for AOrBFmt {
         type T = AOrBSpec;
 
-        # [verifier :: opaque]
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             AOrBFmt::spec_inner().byte_len(v)
         }
@@ -5044,12 +5044,12 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, len) = (U8).parse(&rest)?;
+            let (n1, len) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = (CaptureParamAndLocalXAPayloadFmt {
+            let (n2, payload) = CaptureParamAndLocalXAPayloadFmt {
                 choice2: self.choice2,
                 len: len,
-            }).parse(&rest)?;
+            }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXA { len, payload };
@@ -5068,8 +5068,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXA { len, payload } = v;
-            (U8).serialize(len, obuf);
-            (CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len }).serialize(
+            U8.serialize(len, obuf);
+            CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len }.serialize(
                 payload,
                 obuf,
             );
@@ -5108,7 +5108,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<CaptureParamAndLocalXBY> for CaptureParamAndLocalXBYFmt {
+    impl<'i> Serializer<CaptureParamAndLocalXBY> for CaptureParamAndLocalXBYFmt {
         fn serialize(&self, v: &CaptureParamAndLocalXBY, obuf: &mut Vec<u8>) {
             reveal(<CaptureParamAndLocalXBYFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -5142,9 +5142,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = (U8).parse(&rest)?;
+            let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = (CaptureParamAndLocalXBYFmt { tag: tag }).parse(&rest)?;
+            let (n2, y) = CaptureParamAndLocalXBYFmt { tag: tag }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXB { tag, y };
@@ -5153,14 +5153,14 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<CaptureParamAndLocalXB> for CaptureParamAndLocalXBFmt {
+    impl<'i> Serializer<CaptureParamAndLocalXB> for CaptureParamAndLocalXBFmt {
         fn serialize(&self, v: &CaptureParamAndLocalXB, obuf: &mut Vec<u8>) {
             reveal(<CaptureParamAndLocalXBFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXB { tag, y } = v;
-            (U8).serialize(tag, obuf);
-            (CaptureParamAndLocalXBYFmt { tag: *tag }).serialize(y, obuf);
+            U8.serialize(tag, obuf);
+            CaptureParamAndLocalXBYFmt { tag: *tag }.serialize(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5251,7 +5251,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<NestedInnerChoiceXA> for NestedInnerChoiceXAFmt {
+    impl<'i> Serializer<NestedInnerChoiceXA> for NestedInnerChoiceXAFmt {
         fn serialize(&self, v: &NestedInnerChoiceXA, obuf: &mut Vec<u8>) {
             reveal(<NestedInnerChoiceXAFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -5285,9 +5285,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, count) = (U8).parse(&rest)?;
+            let (n1, count) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, items) = (Varied(count)).parse(&rest)?;
+            let (n2, items) = Varied(count).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocalPayloadBodyChoice1 { count, items };
@@ -5304,8 +5304,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
-            (U8).serialize(count, obuf);
-            (Varied(count)).serialize(items, obuf);
+            U8.serialize(count, obuf);
+            Varied(count).serialize(items, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5381,12 +5381,12 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, tag) = (U8).parse(&rest)?;
+            let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = (CaptureOuterAndLocalPayloadBodyFmt {
+            let (n2, body) = CaptureOuterAndLocalPayloadBodyFmt {
                 frame_len: self.frame_len,
                 tag: tag,
-            }).parse(&rest)?;
+            }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocalPayload { tag, body };
@@ -5405,8 +5405,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayload { tag, body } = v;
-            (U8).serialize(tag, obuf);
-            (CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag }).serialize(
+            U8.serialize(tag, obuf);
+            CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag }.serialize(
                 body,
                 obuf,
             );
@@ -5426,15 +5426,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, frame_len) = (U8).parse(&rest)?;
+            let (n1, frame_len) = U8.parse(&rest)?;
             if !(frame_len >= 1) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, payload) = (ExactLen(
+            let (n2, payload) = ExactLen(
                 frame_len,
                 CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
-            )).parse(&rest)?;
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocal { frame_len, payload };
@@ -5449,11 +5449,11 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocal { frame_len, payload } = v;
-            (U8).serialize(frame_len, obuf);
-            (ExactLen(
-                frame_len,
-                CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
-            )).serialize(payload, obuf);
+            U8.serialize(frame_len, obuf);
+            ExactLen(frame_len, CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len }).serialize(
+                payload,
+                obuf,
+            );
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5470,9 +5470,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = (U8).parse(&rest)?;
+            let (n1, len) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, bytes) = (Varied(len)).parse(&rest)?;
+            let (n2, bytes) = Varied(len).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes };
@@ -5495,8 +5495,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
-            (U8).serialize(len, obuf);
-            (Varied(len)).serialize(bytes, obuf);
+            U8.serialize(len, obuf);
+            Varied(len).serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5587,7 +5587,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<NestedInnerChoiceX> for NestedInnerChoiceXFmt {
+    impl<'i> Serializer<NestedInnerChoiceX> for NestedInnerChoiceXFmt {
         fn serialize(&self, v: &NestedInnerChoiceX, obuf: &mut Vec<u8>) {
             reveal(<NestedInnerChoiceXFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -5625,10 +5625,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = (NestedInnerChoiceXFmt {
+            let (n1, x) = NestedInnerChoiceXFmt {
                 choice1: self.choice1,
                 choice2: self.choice2,
-            }).parse(&rest)?;
+            }.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = NestedInnerChoice { x };
@@ -5637,7 +5637,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<NestedInnerChoice> for NestedInnerChoiceFmt {
+    impl<'i> Serializer<NestedInnerChoice> for NestedInnerChoiceFmt {
         fn serialize(&self, v: &NestedInnerChoice, obuf: &mut Vec<u8>) {
             reveal(<NestedInnerChoiceFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -5647,7 +5647,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerChoice { x } = v;
-            (NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 }).serialize(
+            NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 }.serialize(
                 x,
                 obuf,
             );
@@ -5671,10 +5671,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = (CaptureParamAndLocalXFmt {
+            let (n1, x) = CaptureParamAndLocalXFmt {
                 choice1: self.choice1,
                 choice2: self.choice2,
-            }).parse(&rest)?;
+            }.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureParamAndLocal { x };
@@ -5693,7 +5693,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocal { x } = v;
-            (CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 }).serialize(
+            CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 }.serialize(
                 x,
                 obuf,
             );
@@ -5713,9 +5713,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, x) = (U8).parse(&rest)?;
+            let (n1, x) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = (Tail).parse(&rest)?;
+            let (n2, y) = Tail.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedInnerStructVal { x, y };
@@ -5730,8 +5730,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerStructVal { x, y } = v;
-            (U8).serialize(x, obuf);
-            (Tail).serialize(y, obuf);
+            U8.serialize(x, obuf);
+            Tail.serialize(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5748,9 +5748,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = (U32Le).parse(&rest)?;
+            let (n1, len) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, val) = (ExactLen(len, NestedInnerStructValFmt)).parse(&rest)?;
+            let (n2, val) = ExactLen(len, NestedInnerStructValFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedInnerStruct { len, val };
@@ -5765,8 +5765,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerStruct { len, val } = v;
-            (U32Le).serialize(len, obuf);
-            (ExactLen(len, NestedInnerStructValFmt)).serialize(val, obuf);
+            U32Le.serialize(len, obuf);
+            ExactLen(len, NestedInnerStructValFmt).serialize(val, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5794,7 +5794,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<COrD> for COrDFmt {
+    impl<'i> Serializer<COrD> for COrDFmt {
         fn serialize(&self, v: &COrD, obuf: &mut Vec<u8>) {
             reveal(<COrDFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
@@ -5820,9 +5820,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = (U8).parse(&rest)?;
+            let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, value) = (CaptureLocalInAnonStructWrapperValueFmt { tag: tag }).parse(&rest)?;
+            let (n2, value) = CaptureLocalInAnonStructWrapperValueFmt { tag: tag }.parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureLocalInAnonStructWrapper { tag, value };
@@ -5839,8 +5839,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapper { tag, value } = v;
-            (U8).serialize(tag, obuf);
-            (CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }).serialize(value, obuf);
+            U8.serialize(tag, obuf);
+            CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }.serialize(value, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5857,7 +5857,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, wrapper) = (CaptureLocalInAnonStructWrapperFmt).parse(&rest)?;
+            let (n1, wrapper) = CaptureLocalInAnonStructWrapperFmt.parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureLocalInAnonStruct { wrapper };
@@ -5872,7 +5872,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStruct { wrapper } = v;
-            (CaptureLocalInAnonStructWrapperFmt).serialize(wrapper, obuf);
+            CaptureLocalInAnonStructWrapperFmt.serialize(wrapper, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5900,7 +5900,7 @@ mod exec_impls {
         }
     }
 
-    impl Serializer<AOrB> for AOrBFmt {
+    impl<'i> Serializer<AOrB> for AOrBFmt {
         fn serialize(&self, v: &AOrB, obuf: &mut Vec<u8>) {
             reveal(<AOrBFmt as SpecSerializer>::spec_serialize);
             let ghost old_obuf = obuf@;
