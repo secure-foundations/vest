@@ -209,7 +209,7 @@ impl<'i> NestedComplexFmt<'i> {
 
 pub type NestedComplexFmtSpec = Named<
     Mapped<
-        Pair<Const<U32Le, u32>, Varied<usize>>,
+        Pair<Const<U32Le, u32>, Varied<u32>>,
         FnSpecMapper<NestedComplexInner, NestedComplexSpec>,
     >,
 >;
@@ -220,10 +220,7 @@ impl<'i> NestedComplexFmt<'i> {
         Named(
             "nested_complex",
             Mapped {
-                inner: Pair(
-                    Const(U32Le, 0),
-                    Varied((((hdr_payload.hdr.payload_length as usize) - 8) as usize)),
-                ),
+                inner: Pair(Const(U32Le, 0), Varied(((hdr_payload.hdr.payload_length - 8) as u32))),
                 mapper: (
                     |parsed: NestedComplexInner| -> NestedComplexSpec
                         {
@@ -299,7 +296,7 @@ impl CombinedExampleFmt {
 
 pub type CombinedExampleFmtSpec = Named<
     Mapped<
-        Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<usize>>,
+        Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<u32>>,
         FnSpecMapper<CombinedExampleInner, CombinedExampleSpec>,
     >,
 >;
@@ -313,9 +310,7 @@ impl CombinedExampleFmt {
                 inner: Bind(
                     GenericHeaderFmt,
                     |header: GenericHeaderSpec|
-                        Varied(
-                            (((total_len as usize) - (header.payload_length as usize)) as usize),
-                        ),
+                        Varied(((total_len - header.payload_length) as u32)),
                 ),
                 mapper: (
                     |parsed: CombinedExampleInner| -> CombinedExampleSpec
@@ -340,7 +335,7 @@ pub struct PayloadWithHeaderFmt;
 
 pub type PayloadWithHeaderFmtSpec = Named<
     Mapped<
-        Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<usize>>,
+        Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<u32>>,
         FnSpecMapper<PayloadWithHeaderInner, PayloadWithHeaderSpec>,
     >,
 >;
@@ -353,7 +348,7 @@ impl PayloadWithHeaderFmt {
             Mapped {
                 inner: Bind(
                     GenericHeaderFmt,
-                    |hdr: GenericHeaderSpec| Varied((((hdr.payload_length as usize) - 4) as usize)),
+                    |hdr: GenericHeaderSpec| Varied(((hdr.payload_length - 4) as u32)),
                 ),
                 mapper: (
                     |parsed: PayloadWithHeaderInner| -> PayloadWithHeaderSpec
@@ -462,7 +457,7 @@ pub struct DeepNestedFmt;
 
 pub type DeepNestedFmtSpec = Named<
     Mapped<
-        Bind<OuterHeaderFmt, spec_fn(OuterHeaderSpec) -> Varied<usize>>,
+        Bind<OuterHeaderFmt, spec_fn(OuterHeaderSpec) -> Varied<u32>>,
         FnSpecMapper<DeepNestedInner, DeepNestedSpec>,
     >,
 >;
@@ -475,8 +470,7 @@ impl DeepNestedFmt {
             Mapped {
                 inner: Bind(
                     OuterHeaderFmt,
-                    |outer: OuterHeaderSpec|
-                        Varied((((outer.inner.payload_length as usize) - 8) as usize)),
+                    |outer: OuterHeaderSpec| Varied(((outer.inner.payload_length - 8) as u32)),
                 ),
                 mapper: (
                     |parsed: DeepNestedInner| -> DeepNestedSpec

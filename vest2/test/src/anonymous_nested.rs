@@ -578,7 +578,7 @@ impl CaptureParamAndLocalXAPayloadFmt {
 
 pub type CaptureParamAndLocalXAPayloadFmtSpec = Named<
     Mapped<
-        Sum<Varied<usize>, Varied<usize>>,
+        Sum<Varied<u8>, Varied<u8>>,
         FnSpecMapper<CaptureParamAndLocalXAPayloadInner, CaptureParamAndLocalXAPayloadSpec>,
     >,
 >;
@@ -593,8 +593,8 @@ impl CaptureParamAndLocalXAPayloadFmt {
             "capture_param_and_local_x_a_payload",
             Mapped {
                 inner: match choice2 {
-                    COrDSpec::C => L(Varied((len as usize))),
-                    COrDSpec::D => R(Varied((len as usize))),
+                    COrDSpec::C => L(Varied(len)),
+                    COrDSpec::D => R(Varied(len)),
                 },
                 mapper: (
                     |parsed: CaptureParamAndLocalXAPayloadInner|
@@ -891,7 +891,7 @@ pub struct CaptureOuterAndLocalPayloadBodyChoice1Fmt;
 
 pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named<
     Mapped<
-        Bind<U8, spec_fn(u8) -> Varied<usize>>,
+        Bind<U8, spec_fn(u8) -> Varied<u8>>,
         FnSpecMapper<
             CaptureOuterAndLocalPayloadBodyChoice1Inner,
             CaptureOuterAndLocalPayloadBodyChoice1Spec,
@@ -905,7 +905,7 @@ impl CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         Named(
             "capture_outer_and_local_payload_body_choice1",
             Mapped {
-                inner: Bind(U8, |count: u8| Varied((count as usize))),
+                inner: Bind(U8, |count: u8| Varied(count)),
                 mapper: (
                     |parsed: CaptureOuterAndLocalPayloadBodyChoice1Inner|
                      -> CaptureOuterAndLocalPayloadBodyChoice1Spec
@@ -953,7 +953,7 @@ impl CaptureOuterAndLocalPayloadBodyFmt {
 
 pub type CaptureOuterAndLocalPayloadBodyFmtSpec = Named<
     Mapped<
-        Sum<Varied<usize>, CaptureOuterAndLocalPayloadBodyChoice1Fmt>,
+        Sum<Varied<u8>, CaptureOuterAndLocalPayloadBodyChoice1Fmt>,
         FnSpecMapper<CaptureOuterAndLocalPayloadBodyInner, CaptureOuterAndLocalPayloadBodySpec>,
     >,
 >;
@@ -965,7 +965,7 @@ impl CaptureOuterAndLocalPayloadBodyFmt {
             "capture_outer_and_local_payload_body",
             Mapped {
                 inner: match tag {
-                    0 => L(Varied((((frame_len as usize) - 1) as usize))),
+                    0 => L(Varied(((frame_len - 1) as u8))),
                     _ => R(CaptureOuterAndLocalPayloadBodyChoice1Fmt),
                 },
                 mapper: (
@@ -1051,7 +1051,7 @@ pub type CaptureOuterAndLocalFmtSpec = Named<
     Mapped<
         Bind<
             Refined<U8, PredFnSpec<u8>>,
-            spec_fn(u8) -> ExactLen<CaptureOuterAndLocalPayloadFmt, usize>,
+            spec_fn(u8) -> ExactLen<CaptureOuterAndLocalPayloadFmt, u8>,
         >,
         FnSpecMapper<CaptureOuterAndLocalInner, CaptureOuterAndLocalSpec>,
     >,
@@ -1066,10 +1066,7 @@ impl CaptureOuterAndLocalFmt {
                 inner: Bind(
                     Refined(U8, |x: u8| x >= 1),
                     |frame_len: u8|
-                        ExactLen(
-                            (frame_len as usize),
-                            CaptureOuterAndLocalPayloadFmt::spec(frame_len),
-                        ),
+                        ExactLen(frame_len, CaptureOuterAndLocalPayloadFmt::spec(frame_len)),
                 ),
                 mapper: (
                     |parsed: CaptureOuterAndLocalInner| -> CaptureOuterAndLocalSpec
@@ -1094,7 +1091,7 @@ pub struct CaptureLocalInAnonStructWrapperValueChoice0Fmt;
 
 pub type CaptureLocalInAnonStructWrapperValueChoice0FmtSpec = Named<
     Mapped<
-        Bind<U8, spec_fn(u8) -> Varied<usize>>,
+        Bind<U8, spec_fn(u8) -> Varied<u8>>,
         FnSpecMapper<
             CaptureLocalInAnonStructWrapperValueChoice0Inner,
             CaptureLocalInAnonStructWrapperValueChoice0Spec,
@@ -1108,7 +1105,7 @@ impl CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         Named(
             "capture_local_in_anon_struct_wrapper_value_choice0",
             Mapped {
-                inner: Bind(U8, |len: u8| Varied((len as usize))),
+                inner: Bind(U8, |len: u8| Varied(len)),
                 mapper: (
                     |parsed: CaptureLocalInAnonStructWrapperValueChoice0Inner|
                      -> CaptureLocalInAnonStructWrapperValueChoice0Spec
@@ -1409,7 +1406,7 @@ pub struct NestedInnerStructFmt;
 
 pub type NestedInnerStructFmtSpec = Named<
     Mapped<
-        Bind<U32Le, spec_fn(u32) -> ExactLen<NestedInnerStructValFmt, usize>>,
+        Bind<U32Le, spec_fn(u32) -> ExactLen<NestedInnerStructValFmt, u32>>,
         FnSpecMapper<NestedInnerStructInner, NestedInnerStructSpec>,
     >,
 >;
@@ -1420,7 +1417,7 @@ impl NestedInnerStructFmt {
         Named(
             "nested_inner_struct",
             Mapped {
-                inner: Bind(U32Le, |len: u32| ExactLen((len as usize), NestedInnerStructValFmt)),
+                inner: Bind(U32Le, |len: u32| ExactLen(len, NestedInnerStructValFmt)),
                 mapper: (
                     |parsed: NestedInnerStructInner| -> NestedInnerStructSpec
                         {

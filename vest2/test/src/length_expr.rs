@@ -452,9 +452,7 @@ impl SimpleSubFmt {
     }
 }
 
-pub type SimpleSubFmtSpec = Named<
-    Mapped<Varied<usize>, FnSpecMapper<SimpleSubInner, SimpleSubSpec>>,
->;
+pub type SimpleSubFmtSpec = Named<Mapped<Varied<u16>, FnSpecMapper<SimpleSubInner, SimpleSubSpec>>>;
 
 impl SimpleSubFmt {
     # [doc = "specification constructor for `simple_sub`."]
@@ -462,7 +460,7 @@ impl SimpleSubFmt {
         Named(
             "simple_sub",
             Mapped {
-                inner: Varied((((((len as usize) - 3) as usize) - 1) as usize)),
+                inner: Varied(((((len - 3) as u16) - 1) as u16)),
                 mapper: (
                     |parsed: SimpleSubInner| -> SimpleSubSpec
                         {
@@ -537,7 +535,7 @@ impl MultiArithFmt {
 }
 
 pub type MultiArithFmtSpec = Named<
-    Mapped<Varied<usize>, FnSpecMapper<MultiArithInner, MultiArithSpec>>,
+    Mapped<Varied<u16>, FnSpecMapper<MultiArithInner, MultiArithSpec>>,
 >;
 
 impl MultiArithFmt {
@@ -546,7 +544,7 @@ impl MultiArithFmt {
         Named(
             "multi_arith",
             Mapped {
-                inner: Varied((((((total as usize) - (hdr_len as usize)) as usize) - 8) as usize)),
+                inner: Varied(((((total - hdr_len) as u16) - 8) as u16)),
                 mapper: (
                     |parsed: MultiArithInner| -> MultiArithSpec
                         {
@@ -616,7 +614,7 @@ impl PayloadWithHeaderFmt {
 }
 
 pub type PayloadWithHeaderFmtSpec = Named<
-    Mapped<Varied<usize>, FnSpecMapper<PayloadWithHeaderInner, PayloadWithHeaderSpec>>,
+    Mapped<Varied<u16>, FnSpecMapper<PayloadWithHeaderInner, PayloadWithHeaderSpec>>,
 >;
 
 impl PayloadWithHeaderFmt {
@@ -625,7 +623,7 @@ impl PayloadWithHeaderFmt {
         Named(
             "payload_with_header",
             Mapped {
-                inner: Varied((((hdr.len as usize) - 3) as usize)),
+                inner: Varied(((hdr.len - 3) as u16)),
                 mapper: (
                     |parsed: PayloadWithHeaderInner| -> PayloadWithHeaderSpec
                         {
@@ -665,7 +663,7 @@ impl MixedConstFmt {
 }
 
 pub type MixedConstFmtSpec = Named<
-    Mapped<Varied<usize>, FnSpecMapper<MixedConstInner, MixedConstSpec>>,
+    Mapped<Varied<u16>, FnSpecMapper<MixedConstInner, MixedConstSpec>>,
 >;
 
 impl MixedConstFmt {
@@ -674,7 +672,7 @@ impl MixedConstFmt {
         Named(
             "mixed_const",
             Mapped {
-                inner: Varied((((((len as usize) - 4) as usize) + 2) as usize)),
+                inner: Varied(((((len - 4) as u16) + 2) as u16)),
                 mapper: (
                     |parsed: MixedConstInner| -> MixedConstSpec
                         {
@@ -898,9 +896,7 @@ impl ParenExprFmt {
     }
 }
 
-pub type ParenExprFmtSpec = Named<
-    Mapped<Varied<usize>, FnSpecMapper<ParenExprInner, ParenExprSpec>>,
->;
+pub type ParenExprFmtSpec = Named<Mapped<Varied<u16>, FnSpecMapper<ParenExprInner, ParenExprSpec>>>;
 
 impl ParenExprFmt {
     # [doc = "specification constructor for `paren_expr`."]
@@ -908,7 +904,7 @@ impl ParenExprFmt {
         Named(
             "paren_expr",
             Mapped {
-                inner: Varied((((((a as usize) - (b as usize)) as usize) + (c as usize)) as usize)),
+                inner: Varied(((((a - b) as u16) + c) as u16)),
                 mapper: (
                     |parsed: ParenExprInner| -> ParenExprSpec
                         {

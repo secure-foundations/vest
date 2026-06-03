@@ -2909,14 +2909,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque0FfffFmt ;
 
-    pub type Opaque0FfffFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque0FfffInner , Opaque0FfffSpec >> > ;
+    pub type Opaque0FfffFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> Varied < u16 > > , FnSpecMapper < Opaque0FfffInner , Opaque0FfffSpec >> > ;
 
     impl Opaque0FfffFmt {
         # [doc = "specification constructor for `opaque_0_ffff`."] pub open spec fn spec_inner () -> Opaque0FfffFmtSpec {
             Named ("opaque_0_ffff" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | Varied ((l as usize))) ,
+                | l : u16 | Varied (l)) ,
                 mapper : (| parsed : Opaque0FfffInner | -> Opaque0FfffSpec {
                     let (l ,
                     data) = parsed ;
@@ -3120,7 +3120,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SignatureSchemeListFmt ;
 
-    pub type SignatureSchemeListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SignatureSchemeFmt > , usize > > , FnSpecMapper < SignatureSchemeListInner , SignatureSchemeListSpec >> > ;
+    pub type SignatureSchemeListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SignatureSchemeFmt > , u16 > > , FnSpecMapper < SignatureSchemeListInner , SignatureSchemeListSpec >> > ;
 
     impl SignatureSchemeListFmt {
         # [doc = "specification constructor for `signature_scheme_list`."] pub open spec fn spec_inner () -> SignatureSchemeListFmtSpec {
@@ -3128,7 +3128,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65534) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (SignatureSchemeFmt))) ,
                 mapper : (| parsed : SignatureSchemeListInner | -> SignatureSchemeListSpec {
                     let (l ,
@@ -3159,7 +3159,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque1FfffFmt ;
 
-    pub type Opaque1FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque1FfffInner , Opaque1FfffSpec >> > ;
+    pub type Opaque1FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < u16 > > , FnSpecMapper < Opaque1FfffInner , Opaque1FfffSpec >> > ;
 
     impl Opaque1FfffFmt {
         # [doc = "specification constructor for `opaque_1_ffff`."] pub open spec fn spec_inner () -> Opaque1FfffFmtSpec {
@@ -3167,7 +3167,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 1 && x <= 65535) ,
-                | l : u16 | Varied ((l as usize))) ,
+                | l : u16 | Varied (l)) ,
                 mapper : (| parsed : Opaque1FfffInner | -> Opaque1FfffSpec {
                     let (l ,
                     data) = parsed ;
@@ -3211,7 +3211,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateAuthoritiesExtensionFmt ;
 
-    pub type CertificateAuthoritiesExtensionFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < DistinguishedNameFmt > , usize > > , FnSpecMapper < CertificateAuthoritiesExtensionInner , CertificateAuthoritiesExtensionSpec >> > ;
+    pub type CertificateAuthoritiesExtensionFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < DistinguishedNameFmt > , u16 > > , FnSpecMapper < CertificateAuthoritiesExtensionInner , CertificateAuthoritiesExtensionSpec >> > ;
 
     impl CertificateAuthoritiesExtensionFmt {
         # [doc = "specification constructor for `certificate_authorities_extension`."] pub open spec fn spec_inner () -> CertificateAuthoritiesExtensionFmtSpec {
@@ -3219,7 +3219,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 3 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (DistinguishedNameFmt))) ,
                 mapper : (| parsed : CertificateAuthoritiesExtensionInner | -> CertificateAuthoritiesExtensionSpec {
                     let (l ,
@@ -3264,14 +3264,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ResponderIdListFmt ;
 
-    pub type ResponderIdListFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < ResponderIdFmt > , usize > > , FnSpecMapper < ResponderIdListInner , ResponderIdListSpec >> > ;
+    pub type ResponderIdListFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < ResponderIdFmt > , u16 > > , FnSpecMapper < ResponderIdListInner , ResponderIdListSpec >> > ;
 
     impl ResponderIdListFmt {
         # [doc = "specification constructor for `responder_id_list`."] pub open spec fn spec_inner () -> ResponderIdListFmtSpec {
             Named ("responder_id_list" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (ResponderIdFmt))) ,
                 mapper : (| parsed : ResponderIdListInner | -> ResponderIdListSpec {
                     let (l ,
@@ -3391,7 +3391,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SignedCertificateTimestampListFmt ;
 
-    pub type SignedCertificateTimestampListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SerializedSctFmt > , usize > > , FnSpecMapper < SignedCertificateTimestampListInner , SignedCertificateTimestampListSpec >> > ;
+    pub type SignedCertificateTimestampListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SerializedSctFmt > , u16 > > , FnSpecMapper < SignedCertificateTimestampListInner , SignedCertificateTimestampListSpec >> > ;
 
     impl SignedCertificateTimestampListFmt {
         # [doc = "specification constructor for `signed_certificate_timestamp_list`."] pub open spec fn spec_inner () -> SignedCertificateTimestampListFmtSpec {
@@ -3399,7 +3399,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 1 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (SerializedSctFmt))) ,
                 mapper : (| parsed : SignedCertificateTimestampListInner | -> SignedCertificateTimestampListSpec {
                     let (l ,
@@ -3430,7 +3430,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque1FfFmt ;
 
-    pub type Opaque1FfFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < Opaque1FfInner , Opaque1FfSpec >> > ;
+    pub type Opaque1FfFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < u8 > > , FnSpecMapper < Opaque1FfInner , Opaque1FfSpec >> > ;
 
     impl Opaque1FfFmt {
         # [doc = "specification constructor for `opaque_1_ff`."] pub open spec fn spec_inner () -> Opaque1FfFmtSpec {
@@ -3438,7 +3438,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 1 && x <= 255) ,
-                | l : u8 | Varied ((l as usize))) ,
+                | l : u8 | Varied (l)) ,
                 mapper : (| parsed : Opaque1FfInner | -> Opaque1FfSpec {
                     let (l ,
                     data) = parsed ;
@@ -3505,14 +3505,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct OidFilterExtensionFmt ;
 
-    pub type OidFilterExtensionFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < OidFilterFmt > , usize > > , FnSpecMapper < OidFilterExtensionInner , OidFilterExtensionSpec >> > ;
+    pub type OidFilterExtensionFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < OidFilterFmt > , u16 > > , FnSpecMapper < OidFilterExtensionInner , OidFilterExtensionSpec >> > ;
 
     impl OidFilterExtensionFmt {
         # [doc = "specification constructor for `oid_filter_extension`."] pub open spec fn spec_inner () -> OidFilterExtensionFmtSpec {
             Named ("oid_filter_extension" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (OidFilterFmt))) ,
                 mapper : (| parsed : OidFilterExtensionInner | -> OidFilterExtensionSpec {
                     let (l ,
@@ -3564,7 +3564,7 @@ verus! {
         }
     }
 
-    pub type CertificateRequestExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SignatureSchemeListFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < SignatureSchemeListFmt , Sum < CertificateStatusRequestFmt , Sum < SignedCertificateTimestampListFmt , Sum < OidFilterExtensionFmt , Varied < usize > > > > > > > , FnSpecMapper < CertificateRequestExtensionExtensionDataInner , CertificateRequestExtensionExtensionDataSpec >> > ;
+    pub type CertificateRequestExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SignatureSchemeListFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < SignatureSchemeListFmt , Sum < CertificateStatusRequestFmt , Sum < SignedCertificateTimestampListFmt , Sum < OidFilterExtensionFmt , Varied < u16 > > > > > > > , FnSpecMapper < CertificateRequestExtensionExtensionDataInner , CertificateRequestExtensionExtensionDataSpec >> > ;
 
     impl CertificateRequestExtensionExtensionDataFmt {
         # [doc = "specification constructor for `certificate_request_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -3578,7 +3578,7 @@ verus! {
                     ExtensionTypeSpec :: StatusRequest => R (R (R (L (CertificateStatusRequestFmt)))) ,
                     ExtensionTypeSpec :: SignedCertificateTimeStamp => R (R (R (R (L (SignedCertificateTimestampListFmt))))) ,
                     ExtensionTypeSpec :: OidFilters => R (R (R (R (R (L (OidFilterExtensionFmt)))))) ,
-                    _ => R (R (R (R (R (R (Varied ((ext_len as usize)))))))) ,
+                    _ => R (R (R (R (R (R (Varied (ext_len))))))) ,
                 }
                 ,
                 mapper : (| parsed : CertificateRequestExtensionExtensionDataInner | -> CertificateRequestExtensionExtensionDataSpec {
@@ -3615,7 +3615,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateRequestExtensionFmt ;
 
-    pub type CertificateRequestExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateRequestExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateRequestExtensionInner , CertificateRequestExtensionSpec >> > ;
+    pub type CertificateRequestExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateRequestExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < CertificateRequestExtensionInner , CertificateRequestExtensionSpec >> > ;
 
     impl CertificateRequestExtensionFmt {
         # [doc = "specification constructor for `certificate_request_extension`."] pub open spec fn spec_inner () -> CertificateRequestExtensionFmtSpec {
@@ -3623,7 +3623,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 CertificateRequestExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : CertificateRequestExtensionInner | -> CertificateRequestExtensionSpec {
@@ -3697,7 +3697,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SessionIdFmt ;
 
-    pub type SessionIdFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < SessionIdInner , SessionIdSpec >> > ;
+    pub type SessionIdFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < u8 > > , FnSpecMapper < SessionIdInner , SessionIdSpec >> > ;
 
     impl SessionIdFmt {
         # [doc = "specification constructor for `session_id`."] pub open spec fn spec_inner () -> SessionIdFmtSpec {
@@ -3705,7 +3705,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 0 && x <= 32) ,
-                | l : u8 | Varied ((l as usize))) ,
+                | l : u8 | Varied (l)) ,
                 mapper : (| parsed : SessionIdInner | -> SessionIdSpec {
                     let (l ,
                     id) = parsed ;
@@ -3976,7 +3976,7 @@ verus! {
         }
     }
 
-    pub type HelloRetryExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SupportedVersionsServerFmt , Sum < CookieFmt , Sum < NamedGroupFmt , Varied < usize > > > > , FnSpecMapper < HelloRetryExtensionExtensionDataInner , HelloRetryExtensionExtensionDataSpec >> > ;
+    pub type HelloRetryExtensionExtensionDataFmtSpec = Named < Mapped < Sum < SupportedVersionsServerFmt , Sum < CookieFmt , Sum < NamedGroupFmt , Varied < u16 > > > > , FnSpecMapper < HelloRetryExtensionExtensionDataInner , HelloRetryExtensionExtensionDataSpec >> > ;
 
     impl HelloRetryExtensionExtensionDataFmt {
         # [doc = "specification constructor for `hello_retry_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -3987,7 +3987,7 @@ verus! {
                     ExtensionTypeSpec :: SupportedVersions => L (SupportedVersionsServerFmt) ,
                     ExtensionTypeSpec :: Cookie => R (L (CookieFmt)) ,
                     ExtensionTypeSpec :: KeyShare => R (R (L (NamedGroupFmt))) ,
-                    _ => R (R (R (Varied ((ext_len as usize))))) ,
+                    _ => R (R (R (Varied (ext_len)))) ,
                 }
                 ,
                 mapper : (| parsed : HelloRetryExtensionExtensionDataInner | -> HelloRetryExtensionExtensionDataSpec {
@@ -4018,7 +4018,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct HelloRetryExtensionFmt ;
 
-    pub type HelloRetryExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < HelloRetryExtensionExtensionDataFmt , usize > > > , FnSpecMapper < HelloRetryExtensionInner , HelloRetryExtensionSpec >> > ;
+    pub type HelloRetryExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < HelloRetryExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < HelloRetryExtensionInner , HelloRetryExtensionSpec >> > ;
 
     impl HelloRetryExtensionFmt {
         # [doc = "specification constructor for `hello_retry_extension`."] pub open spec fn spec_inner () -> HelloRetryExtensionFmtSpec {
@@ -4026,7 +4026,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 HelloRetryExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : HelloRetryExtensionInner | -> HelloRetryExtensionSpec {
@@ -4062,7 +4062,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct HelloRetryExtensionsFmt ;
 
-    pub type HelloRetryExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < HelloRetryExtensionFmt > , usize > > , FnSpecMapper < HelloRetryExtensionsInner , HelloRetryExtensionsSpec >> > ;
+    pub type HelloRetryExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < HelloRetryExtensionFmt > , u16 > > , FnSpecMapper < HelloRetryExtensionsInner , HelloRetryExtensionsSpec >> > ;
 
     impl HelloRetryExtensionsFmt {
         # [doc = "specification constructor for `hello_retry_extensions`."] pub open spec fn spec_inner () -> HelloRetryExtensionsFmtSpec {
@@ -4070,7 +4070,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 6 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (HelloRetryExtensionFmt))) ,
                 mapper : (| parsed : HelloRetryExtensionsInner | -> HelloRetryExtensionsSpec {
                     let (l ,
@@ -4264,7 +4264,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ServerNameListFmt ;
 
-    pub type ServerNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ServerNameFmt > , usize > > , FnSpecMapper < ServerNameListInner , ServerNameListSpec >> > ;
+    pub type ServerNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ServerNameFmt > , u16 > > , FnSpecMapper < ServerNameListInner , ServerNameListSpec >> > ;
 
     impl ServerNameListFmt {
         # [doc = "specification constructor for `server_name_list`."] pub open spec fn spec_inner () -> ServerNameListFmtSpec {
@@ -4272,7 +4272,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 1 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (ServerNameFmt))) ,
                 mapper : (| parsed : ServerNameListInner | -> ServerNameListSpec {
                     let (l ,
@@ -4347,7 +4347,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct NamedGroupListFmt ;
 
-    pub type NamedGroupListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NamedGroupFmt > , usize > > , FnSpecMapper < NamedGroupListInner , NamedGroupListSpec >> > ;
+    pub type NamedGroupListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NamedGroupFmt > , u16 > > , FnSpecMapper < NamedGroupListInner , NamedGroupListSpec >> > ;
 
     impl NamedGroupListFmt {
         # [doc = "specification constructor for `named_group_list`."] pub open spec fn spec_inner () -> NamedGroupListFmtSpec {
@@ -4355,7 +4355,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (NamedGroupFmt))) ,
                 mapper : (| parsed : NamedGroupListInner | -> NamedGroupListSpec {
                     let (l ,
@@ -4428,7 +4428,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct EcPointFormatListFmt ;
 
-    pub type EcPointFormatListFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < EcPointFormatFmt > , usize > > , FnSpecMapper < EcPointFormatListInner , EcPointFormatListSpec >> > ;
+    pub type EcPointFormatListFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < EcPointFormatFmt > , u8 > > , FnSpecMapper < EcPointFormatListInner , EcPointFormatListSpec >> > ;
 
     impl EcPointFormatListFmt {
         # [doc = "specification constructor for `ec_point_format_list`."] pub open spec fn spec_inner () -> EcPointFormatListFmtSpec {
@@ -4436,7 +4436,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 1 && x <= 255) ,
-                | l : u8 | ExactLen ((l as usize) ,
+                | l : u8 | ExactLen (l ,
                 RepeatTillEnd (EcPointFormatFmt))) ,
                 mapper : (| parsed : EcPointFormatListInner | -> EcPointFormatListSpec {
                     let (l ,
@@ -4481,7 +4481,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SrtpProtectionProfilesFmt ;
 
-    pub type SrtpProtectionProfilesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SrtpProtectionProfileFmt > , usize > > , FnSpecMapper < SrtpProtectionProfilesInner , SrtpProtectionProfilesSpec >> > ;
+    pub type SrtpProtectionProfilesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SrtpProtectionProfileFmt > , u16 > > , FnSpecMapper < SrtpProtectionProfilesInner , SrtpProtectionProfilesSpec >> > ;
 
     impl SrtpProtectionProfilesFmt {
         # [doc = "specification constructor for `srtp_protection_profiles`."] pub open spec fn spec_inner () -> SrtpProtectionProfilesFmtSpec {
@@ -4489,7 +4489,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (SrtpProtectionProfileFmt))) ,
                 mapper : (| parsed : SrtpProtectionProfilesInner | -> SrtpProtectionProfilesSpec {
                     let (l ,
@@ -4574,7 +4574,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ProtocolNameListFmt ;
 
-    pub type ProtocolNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ProtocolNameFmt > , usize > > , FnSpecMapper < ProtocolNameListInner , ProtocolNameListSpec >> > ;
+    pub type ProtocolNameListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ProtocolNameFmt > , u16 > > , FnSpecMapper < ProtocolNameListInner , ProtocolNameListSpec >> > ;
 
     impl ProtocolNameListFmt {
         # [doc = "specification constructor for `protocol_name_list`."] pub open spec fn spec_inner () -> ProtocolNameListFmtSpec {
@@ -4582,7 +4582,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (ProtocolNameFmt))) ,
                 mapper : (| parsed : ProtocolNameListInner | -> ProtocolNameListSpec {
                     let (l ,
@@ -4653,7 +4653,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ClientCertTypeClientExtensionFmt ;
 
-    pub type ClientCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , usize > > , FnSpecMapper < ClientCertTypeClientExtensionInner , ClientCertTypeClientExtensionSpec >> > ;
+    pub type ClientCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , u8 > > , FnSpecMapper < ClientCertTypeClientExtensionInner , ClientCertTypeClientExtensionSpec >> > ;
 
     impl ClientCertTypeClientExtensionFmt {
         # [doc = "specification constructor for `client_cert_type_client_extension`."] pub open spec fn spec_inner () -> ClientCertTypeClientExtensionFmtSpec {
@@ -4661,7 +4661,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 1 && x <= 255) ,
-                | l : u8 | ExactLen ((l as usize) ,
+                | l : u8 | ExactLen (l ,
                 RepeatTillEnd (CertificateTypeFmt))) ,
                 mapper : (| parsed : ClientCertTypeClientExtensionInner | -> ClientCertTypeClientExtensionSpec {
                     let (l ,
@@ -4692,7 +4692,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ServerCertTypeClientExtensionFmt ;
 
-    pub type ServerCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , usize > > , FnSpecMapper < ServerCertTypeClientExtensionInner , ServerCertTypeClientExtensionSpec >> > ;
+    pub type ServerCertTypeClientExtensionFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < CertificateTypeFmt > , u8 > > , FnSpecMapper < ServerCertTypeClientExtensionInner , ServerCertTypeClientExtensionSpec >> > ;
 
     impl ServerCertTypeClientExtensionFmt {
         # [doc = "specification constructor for `server_cert_type_client_extension`."] pub open spec fn spec_inner () -> ServerCertTypeClientExtensionFmtSpec {
@@ -4700,7 +4700,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 1 && x <= 255) ,
-                | l : u8 | ExactLen ((l as usize) ,
+                | l : u8 | ExactLen (l ,
                 RepeatTillEnd (CertificateTypeFmt))) ,
                 mapper : (| parsed : ServerCertTypeClientExtensionInner | -> ServerCertTypeClientExtensionSpec {
                     let (l ,
@@ -4763,7 +4763,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct KeyShareEntryFmt ;
 
-    pub type KeyShareEntryFmtSpec = Named < Mapped < Bind < NamedGroupFmt , spec_fn (NamedGroupSpec) -> Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > > , FnSpecMapper < KeyShareEntryInner , KeyShareEntrySpec >> > ;
+    pub type KeyShareEntryFmtSpec = Named < Mapped < Bind < NamedGroupFmt , spec_fn (NamedGroupSpec) -> Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < u16 > > > , FnSpecMapper < KeyShareEntryInner , KeyShareEntrySpec >> > ;
 
     impl KeyShareEntryFmt {
         # [doc = "specification constructor for `key_share_entry`."] pub open spec fn spec_inner () -> KeyShareEntryFmtSpec {
@@ -4772,7 +4772,7 @@ verus! {
                 inner : Bind (NamedGroupFmt ,
                 | group : NamedGroupSpec | Bind (Refined (U16Be ,
                 | x : u16 | x >= 1 && x <= 65535) ,
-                | l : u16 | Varied ((l as usize)))) ,
+                | l : u16 | Varied (l))) ,
                 mapper : (| parsed : KeyShareEntryInner | -> KeyShareEntrySpec {
                     let (group ,
                     (l ,
@@ -4827,7 +4827,7 @@ verus! {
         }
     }
 
-    pub type SeverHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < ServerNameListFmt , Sum < MaxFragmentLengthFmt , Sum < CertificateStatusRequestFmt , Sum < NamedGroupListFmt , Sum < EcPointFormatListFmt , Sum < SignatureSchemeListFmt , Sum < SrtpProtectionProfilesFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < SignedCertificateTimestampListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < Varied < usize > , Sum < EmptyFmt , Sum < EmptyFmt , Sum < EmptyFmt , Sum < PreSharedKeyServerExtensionFmt , Sum < SupportedVersionsServerFmt , Sum < KeyShareEntryFmt , Varied < usize > > > > > > > > > > > > > > > > > > > > , FnSpecMapper < SeverHelloExtensionExtensionDataInner , SeverHelloExtensionExtensionDataSpec >> > ;
+    pub type SeverHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < ServerNameListFmt , Sum < MaxFragmentLengthFmt , Sum < CertificateStatusRequestFmt , Sum < NamedGroupListFmt , Sum < EcPointFormatListFmt , Sum < SignatureSchemeListFmt , Sum < SrtpProtectionProfilesFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < SignedCertificateTimestampListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < Varied < u16 > , Sum < EmptyFmt , Sum < EmptyFmt , Sum < EmptyFmt , Sum < PreSharedKeyServerExtensionFmt , Sum < SupportedVersionsServerFmt , Sum < KeyShareEntryFmt , Varied < u16 > > > > > > > > > > > > > > > > > > > > , FnSpecMapper < SeverHelloExtensionExtensionDataInner , SeverHelloExtensionExtensionDataSpec >> > ;
 
     impl SeverHelloExtensionExtensionDataFmt {
         # [doc = "specification constructor for `sever_hello_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -4847,14 +4847,14 @@ verus! {
                     ExtensionTypeSpec :: SignedCertificateTimeStamp => R (R (R (R (R (R (R (R (R (L (SignedCertificateTimestampListFmt)))))))))) ,
                     ExtensionTypeSpec :: ClientCertificateType => R (R (R (R (R (R (R (R (R (R (L (ClientCertTypeClientExtensionFmt))))))))))) ,
                     ExtensionTypeSpec :: ServerCertificateType => R (R (R (R (R (R (R (R (R (R (R (L (ServerCertTypeClientExtensionFmt)))))))))))) ,
-                    ExtensionTypeSpec :: Padding => R (R (R (R (R (R (R (R (R (R (R (R (L (Varied ((ext_len as usize))))))))))))))) ,
+                    ExtensionTypeSpec :: Padding => R (R (R (R (R (R (R (R (R (R (R (R (L (Varied (ext_len)))))))))))))) ,
                     ExtensionTypeSpec :: EncryptThenMac => R (R (R (R (R (R (R (R (R (R (R (R (R (L (EmptyFmt)))))))))))))) ,
                     ExtensionTypeSpec :: ExtendedMasterSecret => R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (EmptyFmt))))))))))))))) ,
                     ExtensionTypeSpec :: SessionTicket => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (EmptyFmt)))))))))))))))) ,
                     ExtensionTypeSpec :: PreSharedKey => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (PreSharedKeyServerExtensionFmt))))))))))))))))) ,
                     ExtensionTypeSpec :: SupportedVersions => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (SupportedVersionsServerFmt)))))))))))))))))) ,
                     ExtensionTypeSpec :: KeyShare => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (KeyShareEntryFmt))))))))))))))))))) ,
-                    _ => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (Varied ((ext_len as usize))))))))))))))))))))) ,
+                    _ => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (Varied (ext_len)))))))))))))))))))) ,
                 }
                 ,
                 mapper : (| parsed : SeverHelloExtensionExtensionDataInner | -> SeverHelloExtensionExtensionDataSpec {
@@ -4917,7 +4917,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SeverHelloExtensionFmt ;
 
-    pub type SeverHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < SeverHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < SeverHelloExtensionInner , SeverHelloExtensionSpec >> > ;
+    pub type SeverHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < SeverHelloExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < SeverHelloExtensionInner , SeverHelloExtensionSpec >> > ;
 
     impl SeverHelloExtensionFmt {
         # [doc = "specification constructor for `sever_hello_extension`."] pub open spec fn spec_inner () -> SeverHelloExtensionFmtSpec {
@@ -4925,7 +4925,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 SeverHelloExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : SeverHelloExtensionInner | -> SeverHelloExtensionSpec {
@@ -4961,7 +4961,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ServerExtensionsFmt ;
 
-    pub type ServerExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SeverHelloExtensionFmt > , usize > > , FnSpecMapper < ServerExtensionsInner , ServerExtensionsSpec >> > ;
+    pub type ServerExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < SeverHelloExtensionFmt > , u16 > > , FnSpecMapper < ServerExtensionsInner , ServerExtensionsSpec >> > ;
 
     impl ServerExtensionsFmt {
         # [doc = "specification constructor for `server_extensions`."] pub open spec fn spec_inner () -> ServerExtensionsFmtSpec {
@@ -4969,7 +4969,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 6 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (SeverHelloExtensionFmt))) ,
                 mapper : (| parsed : ServerExtensionsInner | -> ServerExtensionsSpec {
                     let (l ,
@@ -5190,7 +5190,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CipherSuiteListFmt ;
 
-    pub type CipherSuiteListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CipherSuiteFmt > , usize > > , FnSpecMapper < CipherSuiteListInner , CipherSuiteListSpec >> > ;
+    pub type CipherSuiteListFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CipherSuiteFmt > , u16 > > , FnSpecMapper < CipherSuiteListInner , CipherSuiteListSpec >> > ;
 
     impl CipherSuiteListFmt {
         # [doc = "specification constructor for `cipher_suite_list`."] pub open spec fn spec_inner () -> CipherSuiteListFmtSpec {
@@ -5198,7 +5198,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65534) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (CipherSuiteFmt))) ,
                 mapper : (| parsed : CipherSuiteListInner | -> CipherSuiteListSpec {
                     let (l ,
@@ -5229,7 +5229,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct SupportedVersionsClientFmt ;
 
-    pub type SupportedVersionsClientFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < ProtocolVersionFmt > , usize > > , FnSpecMapper < SupportedVersionsClientInner , SupportedVersionsClientSpec >> > ;
+    pub type SupportedVersionsClientFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < ProtocolVersionFmt > , u8 > > , FnSpecMapper < SupportedVersionsClientInner , SupportedVersionsClientSpec >> > ;
 
     impl SupportedVersionsClientFmt {
         # [doc = "specification constructor for `supported_versions_client`."] pub open spec fn spec_inner () -> SupportedVersionsClientFmtSpec {
@@ -5237,7 +5237,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 2 && x <= 254) ,
-                | l : u8 | ExactLen ((l as usize) ,
+                | l : u8 | ExactLen (l ,
                 RepeatTillEnd (ProtocolVersionFmt))) ,
                 mapper : (| parsed : SupportedVersionsClientInner | -> SupportedVersionsClientSpec {
                     let (l ,
@@ -5268,14 +5268,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct KeyShareClientHelloFmt ;
 
-    pub type KeyShareClientHelloFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < KeyShareEntryFmt > , usize > > , FnSpecMapper < KeyShareClientHelloInner , KeyShareClientHelloSpec >> > ;
+    pub type KeyShareClientHelloFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < KeyShareEntryFmt > , u16 > > , FnSpecMapper < KeyShareClientHelloInner , KeyShareClientHelloSpec >> > ;
 
     impl KeyShareClientHelloFmt {
         # [doc = "specification constructor for `key_share_client_hello`."] pub open spec fn spec_inner () -> KeyShareClientHelloFmtSpec {
             Named ("key_share_client_hello" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (KeyShareEntryFmt))) ,
                 mapper : (| parsed : KeyShareClientHelloInner | -> KeyShareClientHelloSpec {
                     let (l ,
@@ -5346,7 +5346,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct PskKeyExchangeModesFmt ;
 
-    pub type PskKeyExchangeModesFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < PskKeyExchangeModeFmt > , usize > > , FnSpecMapper < PskKeyExchangeModesInner , PskKeyExchangeModesSpec >> > ;
+    pub type PskKeyExchangeModesFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> ExactLen < RepeatTillEnd < PskKeyExchangeModeFmt > , u8 > > , FnSpecMapper < PskKeyExchangeModesInner , PskKeyExchangeModesSpec >> > ;
 
     impl PskKeyExchangeModesFmt {
         # [doc = "specification constructor for `psk_key_exchange_modes`."] pub open spec fn spec_inner () -> PskKeyExchangeModesFmtSpec {
@@ -5354,7 +5354,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 1 && x <= 255) ,
-                | l : u8 | ExactLen ((l as usize) ,
+                | l : u8 | ExactLen (l ,
                 RepeatTillEnd (PskKeyExchangeModeFmt))) ,
                 mapper : (| parsed : PskKeyExchangeModesInner | -> PskKeyExchangeModesSpec {
                     let (l ,
@@ -5422,7 +5422,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct PskIdentitiesFmt ;
 
-    pub type PskIdentitiesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskIdentityFmt > , usize > > , FnSpecMapper < PskIdentitiesInner , PskIdentitiesSpec >> > ;
+    pub type PskIdentitiesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskIdentityFmt > , u16 > > , FnSpecMapper < PskIdentitiesInner , PskIdentitiesSpec >> > ;
 
     impl PskIdentitiesFmt {
         # [doc = "specification constructor for `psk_identities`."] pub open spec fn spec_inner () -> PskIdentitiesFmtSpec {
@@ -5430,7 +5430,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 7 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (PskIdentityFmt))) ,
                 mapper : (| parsed : PskIdentitiesInner | -> PskIdentitiesSpec {
                     let (l ,
@@ -5461,7 +5461,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct PskBinderEntryFmt ;
 
-    pub type PskBinderEntryFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < PskBinderEntryInner , PskBinderEntrySpec >> > ;
+    pub type PskBinderEntryFmtSpec = Named < Mapped < Bind < Refined < U8 , PredFnSpec < u8 >> , spec_fn (u8) -> Varied < u8 > > , FnSpecMapper < PskBinderEntryInner , PskBinderEntrySpec >> > ;
 
     impl PskBinderEntryFmt {
         # [doc = "specification constructor for `psk_binder_entry`."] pub open spec fn spec_inner () -> PskBinderEntryFmtSpec {
@@ -5469,7 +5469,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U8 ,
                 | x : u8 | x >= 32 && x <= 255) ,
-                | l : u8 | Varied ((l as usize))) ,
+                | l : u8 | Varied (l)) ,
                 mapper : (| parsed : PskBinderEntryInner | -> PskBinderEntrySpec {
                     let (l ,
                     entries) = parsed ;
@@ -5499,7 +5499,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct PskBinderEntriesFmt ;
 
-    pub type PskBinderEntriesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskBinderEntryFmt > , usize > > , FnSpecMapper < PskBinderEntriesInner , PskBinderEntriesSpec >> > ;
+    pub type PskBinderEntriesFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < PskBinderEntryFmt > , u16 > > , FnSpecMapper < PskBinderEntriesInner , PskBinderEntriesSpec >> > ;
 
     impl PskBinderEntriesFmt {
         # [doc = "specification constructor for `psk_binder_entries`."] pub open spec fn spec_inner () -> PskBinderEntriesFmtSpec {
@@ -5507,7 +5507,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 33 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (PskBinderEntryFmt))) ,
                 mapper : (| parsed : PskBinderEntriesInner | -> PskBinderEntriesSpec {
                     let (l ,
@@ -5628,7 +5628,7 @@ verus! {
         }
     }
 
-    pub type ClientHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < ServerNameListFmt , Sum < SignatureSchemeListFmt , Sum < NamedGroupListFmt , Sum < CertificateStatusRequestFmt , Sum < ProtocolNameListFmt , Sum < SupportedVersionsClientFmt , Sum < KeyShareClientHelloFmt , Sum < PskKeyExchangeModesFmt , Sum < PreSharedKeyClientExtensionFmt , Sum < MaxFragmentLengthFmt , Sum < HeartbeatModeFmt , Sum < SignedCertificateTimestampListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < Varied < usize > , Sum < CookieFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < OidFilterExtensionFmt , Sum < SignatureSchemeListFmt , Tail > > > > > > > > > > > > > > > > > > > , FnSpecMapper < ClientHelloExtensionExtensionDataInner , ClientHelloExtensionExtensionDataSpec >> > ;
+    pub type ClientHelloExtensionExtensionDataFmtSpec = Named < Mapped < Sum < ServerNameListFmt , Sum < SignatureSchemeListFmt , Sum < NamedGroupListFmt , Sum < CertificateStatusRequestFmt , Sum < ProtocolNameListFmt , Sum < SupportedVersionsClientFmt , Sum < KeyShareClientHelloFmt , Sum < PskKeyExchangeModesFmt , Sum < PreSharedKeyClientExtensionFmt , Sum < MaxFragmentLengthFmt , Sum < HeartbeatModeFmt , Sum < SignedCertificateTimestampListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < Varied < u16 > , Sum < CookieFmt , Sum < CertificateAuthoritiesExtensionFmt , Sum < OidFilterExtensionFmt , Sum < SignatureSchemeListFmt , Tail > > > > > > > > > > > > > > > > > > > , FnSpecMapper < ClientHelloExtensionExtensionDataInner , ClientHelloExtensionExtensionDataSpec >> > ;
 
     impl ClientHelloExtensionExtensionDataFmt {
         # [doc = "specification constructor for `client_hello_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -5650,7 +5650,7 @@ verus! {
                     ExtensionTypeSpec :: SignedCertificateTimeStamp => R (R (R (R (R (R (R (R (R (R (R (L (SignedCertificateTimestampListFmt)))))))))))) ,
                     ExtensionTypeSpec :: ClientCertificateType => R (R (R (R (R (R (R (R (R (R (R (R (L (ClientCertTypeClientExtensionFmt))))))))))))) ,
                     ExtensionTypeSpec :: ServerCertificateType => R (R (R (R (R (R (R (R (R (R (R (R (R (L (ServerCertTypeClientExtensionFmt)))))))))))))) ,
-                    ExtensionTypeSpec :: Padding => R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (Varied ((ext_len as usize))))))))))))))))) ,
+                    ExtensionTypeSpec :: Padding => R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (Varied (ext_len)))))))))))))))) ,
                     ExtensionTypeSpec :: Cookie => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (CookieFmt)))))))))))))))) ,
                     ExtensionTypeSpec :: CertificateAuthorities => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (CertificateAuthoritiesExtensionFmt))))))))))))))))) ,
                     ExtensionTypeSpec :: OidFilters => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (OidFilterExtensionFmt)))))))))))))))))) ,
@@ -5718,7 +5718,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ClientHelloExtensionFmt ;
 
-    pub type ClientHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < ClientHelloExtensionExtensionDataFmt , usize > > > , FnSpecMapper < ClientHelloExtensionInner , ClientHelloExtensionSpec >> > ;
+    pub type ClientHelloExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < ClientHelloExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < ClientHelloExtensionInner , ClientHelloExtensionSpec >> > ;
 
     impl ClientHelloExtensionFmt {
         # [doc = "specification constructor for `client_hello_extension`."] pub open spec fn spec_inner () -> ClientHelloExtensionFmtSpec {
@@ -5726,7 +5726,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 ClientHelloExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : ClientHelloExtensionInner | -> ClientHelloExtensionSpec {
@@ -5762,7 +5762,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct ClientExtensionsFmt ;
 
-    pub type ClientExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ClientHelloExtensionFmt > , usize > > , FnSpecMapper < ClientExtensionsInner , ClientExtensionsSpec >> > ;
+    pub type ClientExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < ClientHelloExtensionFmt > , u16 > > , FnSpecMapper < ClientExtensionsInner , ClientExtensionsSpec >> > ;
 
     impl ClientExtensionsFmt {
         # [doc = "specification constructor for `client_extensions`."] pub open spec fn spec_inner () -> ClientExtensionsFmtSpec {
@@ -5770,7 +5770,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 8 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (ClientHelloExtensionFmt))) ,
                 mapper : (| parsed : ClientExtensionsInner | -> ClientExtensionsSpec {
                     let (l ,
@@ -5859,14 +5859,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque0FfFmt ;
 
-    pub type Opaque0FfFmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Varied < usize > > , FnSpecMapper < Opaque0FfInner , Opaque0FfSpec >> > ;
+    pub type Opaque0FfFmtSpec = Named < Mapped < Bind < U8 , spec_fn (u8) -> Varied < u8 > > , FnSpecMapper < Opaque0FfInner , Opaque0FfSpec >> > ;
 
     impl Opaque0FfFmt {
         # [doc = "specification constructor for `opaque_0_ff`."] pub open spec fn spec_inner () -> Opaque0FfFmtSpec {
             Named ("opaque_0_ff" ,
             Mapped {
                 inner : Bind (U8 ,
-                | l : u8 | Varied ((l as usize))) ,
+                | l : u8 | Varied (l)) ,
                 mapper : (| parsed : Opaque0FfInner | -> Opaque0FfSpec {
                     let (l ,
                     data) = parsed ;
@@ -5949,7 +5949,7 @@ verus! {
         }
     }
 
-    pub type NewSessionTicketExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EarlyDataIndicationNewSessionTicketFmt , Varied < usize > > , FnSpecMapper < NewSessionTicketExtensionExtensionDataInner , NewSessionTicketExtensionExtensionDataSpec >> > ;
+    pub type NewSessionTicketExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EarlyDataIndicationNewSessionTicketFmt , Varied < u16 > > , FnSpecMapper < NewSessionTicketExtensionExtensionDataInner , NewSessionTicketExtensionExtensionDataSpec >> > ;
 
     impl NewSessionTicketExtensionExtensionDataFmt {
         # [doc = "specification constructor for `new_session_ticket_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -5958,7 +5958,7 @@ verus! {
             Mapped {
                 inner : match extension_type {
                     ExtensionTypeSpec :: EarlyData => L (EarlyDataIndicationNewSessionTicketFmt) ,
-                    _ => R (Varied ((ext_len as usize))) ,
+                    _ => R (Varied (ext_len)) ,
                 }
                 ,
                 mapper : (| parsed : NewSessionTicketExtensionExtensionDataInner | -> NewSessionTicketExtensionExtensionDataSpec {
@@ -5985,7 +5985,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct NewSessionTicketExtensionFmt ;
 
-    pub type NewSessionTicketExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < NewSessionTicketExtensionExtensionDataFmt , usize > > > , FnSpecMapper < NewSessionTicketExtensionInner , NewSessionTicketExtensionSpec >> > ;
+    pub type NewSessionTicketExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < NewSessionTicketExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < NewSessionTicketExtensionInner , NewSessionTicketExtensionSpec >> > ;
 
     impl NewSessionTicketExtensionFmt {
         # [doc = "specification constructor for `new_session_ticket_extension`."] pub open spec fn spec_inner () -> NewSessionTicketExtensionFmtSpec {
@@ -5993,7 +5993,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 NewSessionTicketExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : NewSessionTicketExtensionInner | -> NewSessionTicketExtensionSpec {
@@ -6029,7 +6029,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct NewSessionTicketExtensionsFmt ;
 
-    pub type NewSessionTicketExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NewSessionTicketExtensionFmt > , usize > > , FnSpecMapper < NewSessionTicketExtensionsInner , NewSessionTicketExtensionsSpec >> > ;
+    pub type NewSessionTicketExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < NewSessionTicketExtensionFmt > , u16 > > , FnSpecMapper < NewSessionTicketExtensionsInner , NewSessionTicketExtensionsSpec >> > ;
 
     impl NewSessionTicketExtensionsFmt {
         # [doc = "specification constructor for `new_session_ticket_extensions`."] pub open spec fn spec_inner () -> NewSessionTicketExtensionsFmtSpec {
@@ -6037,7 +6037,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 0 && x <= 65534) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (NewSessionTicketExtensionFmt))) ,
                 mapper : (| parsed : NewSessionTicketExtensionsInner | -> NewSessionTicketExtensionsSpec {
                     let (l ,
@@ -6141,7 +6141,7 @@ verus! {
         }
     }
 
-    pub type EncryptedExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EmptyFmt , Sum < MaxFragmentLengthFmt , Sum < NamedGroupListFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < EmptyFmt , Varied < usize > > > > > > > > > , FnSpecMapper < EncryptedExtensionExtensionDataInner , EncryptedExtensionExtensionDataSpec >> > ;
+    pub type EncryptedExtensionExtensionDataFmtSpec = Named < Mapped < Sum < EmptyFmt , Sum < MaxFragmentLengthFmt , Sum < NamedGroupListFmt , Sum < HeartbeatModeFmt , Sum < ProtocolNameListFmt , Sum < ClientCertTypeClientExtensionFmt , Sum < ServerCertTypeClientExtensionFmt , Sum < EmptyFmt , Varied < u16 > > > > > > > > > , FnSpecMapper < EncryptedExtensionExtensionDataInner , EncryptedExtensionExtensionDataSpec >> > ;
 
     impl EncryptedExtensionExtensionDataFmt {
         # [doc = "specification constructor for `encrypted_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -6157,7 +6157,7 @@ verus! {
                     ExtensionTypeSpec :: ClientCertificateType => R (R (R (R (R (L (ClientCertTypeClientExtensionFmt)))))) ,
                     ExtensionTypeSpec :: ServerCertificateType => R (R (R (R (R (R (L (ServerCertTypeClientExtensionFmt))))))) ,
                     ExtensionTypeSpec :: EarlyData => R (R (R (R (R (R (R (L (EmptyFmt)))))))) ,
-                    _ => R (R (R (R (R (R (R (R (Varied ((ext_len as usize)))))))))) ,
+                    _ => R (R (R (R (R (R (R (R (Varied (ext_len))))))))) ,
                 }
                 ,
                 mapper : (| parsed : EncryptedExtensionExtensionDataInner | -> EncryptedExtensionExtensionDataSpec {
@@ -6198,7 +6198,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct EncryptedExtensionFmt ;
 
-    pub type EncryptedExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < EncryptedExtensionExtensionDataFmt , usize > > > , FnSpecMapper < EncryptedExtensionInner , EncryptedExtensionSpec >> > ;
+    pub type EncryptedExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < EncryptedExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < EncryptedExtensionInner , EncryptedExtensionSpec >> > ;
 
     impl EncryptedExtensionFmt {
         # [doc = "specification constructor for `encrypted_extension`."] pub open spec fn spec_inner () -> EncryptedExtensionFmtSpec {
@@ -6206,7 +6206,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 EncryptedExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : EncryptedExtensionInner | -> EncryptedExtensionSpec {
@@ -6242,14 +6242,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct EncryptedExtensionsFmt ;
 
-    pub type EncryptedExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < EncryptedExtensionFmt > , usize > > , FnSpecMapper < EncryptedExtensionsInner , EncryptedExtensionsSpec >> > ;
+    pub type EncryptedExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < EncryptedExtensionFmt > , u16 > > , FnSpecMapper < EncryptedExtensionsInner , EncryptedExtensionsSpec >> > ;
 
     impl EncryptedExtensionsFmt {
         # [doc = "specification constructor for `encrypted_extensions`."] pub open spec fn spec_inner () -> EncryptedExtensionsFmtSpec {
             Named ("encrypted_extensions" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (EncryptedExtensionFmt))) ,
                 mapper : (| parsed : EncryptedExtensionsInner | -> EncryptedExtensionsSpec {
                     let (l ,
@@ -6280,7 +6280,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque1FfffffFmt ;
 
-    pub type Opaque1FfffffFmtSpec = Named < Mapped < Bind < Refined < U24Be , PredFnSpec < u32 >> , spec_fn (u32) -> Varied < usize > > , FnSpecMapper < Opaque1FfffffInner , Opaque1FfffffSpec >> > ;
+    pub type Opaque1FfffffFmtSpec = Named < Mapped < Bind < Refined < U24Be , PredFnSpec < u32 >> , spec_fn (u32) -> Varied < u32 > > , FnSpecMapper < Opaque1FfffffInner , Opaque1FfffffSpec >> > ;
 
     impl Opaque1FfffffFmt {
         # [doc = "specification constructor for `opaque_1_ffffff`."] pub open spec fn spec_inner () -> Opaque1FfffffFmtSpec {
@@ -6288,7 +6288,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U24Be ,
                 | x : u32 | x >= 1 && x <= 16777215) ,
-                | l : u32 | Varied ((l as usize))) ,
+                | l : u32 | Varied (l)) ,
                 mapper : (| parsed : Opaque1FfffffInner | -> Opaque1FfffffSpec {
                     let (l ,
                     data) = parsed ;
@@ -6391,7 +6391,7 @@ verus! {
         }
     }
 
-    pub type CertificateExtensionExtensionDataFmtSpec = Named < Mapped < Sum < CertificateStatusFmt , Sum < SignedCertificateTimestampListFmt , Varied < usize > > > , FnSpecMapper < CertificateExtensionExtensionDataInner , CertificateExtensionExtensionDataSpec >> > ;
+    pub type CertificateExtensionExtensionDataFmtSpec = Named < Mapped < Sum < CertificateStatusFmt , Sum < SignedCertificateTimestampListFmt , Varied < u16 > > > , FnSpecMapper < CertificateExtensionExtensionDataInner , CertificateExtensionExtensionDataSpec >> > ;
 
     impl CertificateExtensionExtensionDataFmt {
         # [doc = "specification constructor for `certificate_extension_extension_data`."] pub open spec fn spec_inner (ext_len : u16 ,
@@ -6401,7 +6401,7 @@ verus! {
                 inner : match extension_type {
                     ExtensionTypeSpec :: StatusRequest => L (CertificateStatusFmt) ,
                     ExtensionTypeSpec :: SignedCertificateTimeStamp => R (L (SignedCertificateTimestampListFmt)) ,
-                    _ => R (R (Varied ((ext_len as usize)))) ,
+                    _ => R (R (Varied (ext_len))) ,
                 }
                 ,
                 mapper : (| parsed : CertificateExtensionExtensionDataInner | -> CertificateExtensionExtensionDataSpec {
@@ -6430,7 +6430,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateExtensionFmt ;
 
-    pub type CertificateExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateExtensionExtensionDataFmt , usize > > > , FnSpecMapper < CertificateExtensionInner , CertificateExtensionSpec >> > ;
+    pub type CertificateExtensionFmtSpec = Named < Mapped < Bind < ExtensionTypeFmt , spec_fn (ExtensionTypeSpec) -> Bind < U16Be , spec_fn (u16) -> ExactLen < CertificateExtensionExtensionDataFmt , u16 > > > , FnSpecMapper < CertificateExtensionInner , CertificateExtensionSpec >> > ;
 
     impl CertificateExtensionFmt {
         # [doc = "specification constructor for `certificate_extension`."] pub open spec fn spec_inner () -> CertificateExtensionFmtSpec {
@@ -6438,7 +6438,7 @@ verus! {
             Mapped {
                 inner : Bind (ExtensionTypeFmt ,
                 | extension_type : ExtensionTypeSpec | Bind (U16Be ,
-                | ext_len : u16 | ExactLen ((ext_len as usize) ,
+                | ext_len : u16 | ExactLen (ext_len ,
                 CertificateExtensionExtensionDataFmt :: spec (ext_len ,
                 extension_type)))) ,
                 mapper : (| parsed : CertificateExtensionInner | -> CertificateExtensionSpec {
@@ -6474,14 +6474,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateExtensionsFmt ;
 
-    pub type CertificateExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateExtensionFmt > , usize > > , FnSpecMapper < CertificateExtensionsInner , CertificateExtensionsSpec >> > ;
+    pub type CertificateExtensionsFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateExtensionFmt > , u16 > > , FnSpecMapper < CertificateExtensionsInner , CertificateExtensionsSpec >> > ;
 
     impl CertificateExtensionsFmt {
         # [doc = "specification constructor for `certificate_extensions`."] pub open spec fn spec_inner () -> CertificateExtensionsFmtSpec {
             Named ("certificate_extensions" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (CertificateExtensionFmt))) ,
                 mapper : (| parsed : CertificateExtensionsInner | -> CertificateExtensionsSpec {
                     let (l ,
@@ -6549,14 +6549,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateListFmt ;
 
-    pub type CertificateListFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> ExactLen < RepeatTillEnd < CertificateEntryOpaqueFmt > , usize > > , FnSpecMapper < CertificateListInner , CertificateListSpec >> > ;
+    pub type CertificateListFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> ExactLen < RepeatTillEnd < CertificateEntryOpaqueFmt > , u32 > > , FnSpecMapper < CertificateListInner , CertificateListSpec >> > ;
 
     impl CertificateListFmt {
         # [doc = "specification constructor for `certificate_list`."] pub open spec fn spec_inner () -> CertificateListFmtSpec {
             Named ("certificate_list" ,
             Mapped {
                 inner : Bind (U24Be ,
-                | l : u32 | ExactLen ((l as usize) ,
+                | l : u32 | ExactLen (l ,
                 RepeatTillEnd (CertificateEntryOpaqueFmt))) ,
                 mapper : (| parsed : CertificateListInner | -> CertificateListSpec {
                     let (l ,
@@ -6624,7 +6624,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct CertificateRequestExtensionsFmt ;
 
-    pub type CertificateRequestExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateRequestExtensionFmt > , usize > > , FnSpecMapper < CertificateRequestExtensionsInner , CertificateRequestExtensionsSpec >> > ;
+    pub type CertificateRequestExtensionsFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> ExactLen < RepeatTillEnd < CertificateRequestExtensionFmt > , u16 > > , FnSpecMapper < CertificateRequestExtensionsInner , CertificateRequestExtensionsSpec >> > ;
 
     impl CertificateRequestExtensionsFmt {
         # [doc = "specification constructor for `certificate_request_extensions`."] pub open spec fn spec_inner () -> CertificateRequestExtensionsFmtSpec {
@@ -6632,7 +6632,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65535) ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (CertificateRequestExtensionFmt))) ,
                 mapper : (| parsed : CertificateRequestExtensionsInner | -> CertificateRequestExtensionsSpec {
                     let (l ,
@@ -6752,7 +6752,7 @@ verus! {
         }
     }
 
-    pub type FinishedFmtSpec = Named < Mapped < Sum < Fixed < 12 > , Sum < Fixed < 20 > , Sum < Fixed < 32 > , Sum < Fixed < 48 > , Sum < Fixed < 64 > , Varied < usize > > > > > > , FnSpecMapper < FinishedInner , FinishedSpec >> > ;
+    pub type FinishedFmtSpec = Named < Mapped < Sum < Fixed < 12 > , Sum < Fixed < 20 > , Sum < Fixed < 32 > , Sum < Fixed < 48 > , Sum < Fixed < 64 > , Varied < u32 > > > > > > , FnSpecMapper < FinishedInner , FinishedSpec >> > ;
 
     impl FinishedFmt {
         # [doc = "specification constructor for `finished`."] pub open spec fn spec_inner (size : u32) -> FinishedFmtSpec {
@@ -6764,7 +6764,7 @@ verus! {
                     32 => R (R (L (Fixed :: < 32 >))) ,
                     48 => R (R (R (L (Fixed :: < 48 >)))) ,
                     64 => R (R (R (R (L (Fixed :: < 64 >))))) ,
-                    _ => R (R (R (R (R (Varied ((size as usize))))))) ,
+                    _ => R (R (R (R (R (Varied (size)))))) ,
                 }
                 ,
                 mapper : (| parsed : FinishedInner | -> FinishedSpec {
@@ -6945,7 +6945,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct HandshakeFmt ;
 
-    pub type HandshakeFmtSpec = Named < Mapped < Bind < HandshakeTypeFmt , spec_fn (HandshakeTypeSpec) -> Bind < U24Be , spec_fn (u32) -> ExactLen < HandshakeMsgFmt , usize > > > , FnSpecMapper < HandshakeInner , HandshakeSpec >> > ;
+    pub type HandshakeFmtSpec = Named < Mapped < Bind < HandshakeTypeFmt , spec_fn (HandshakeTypeSpec) -> Bind < U24Be , spec_fn (u32) -> ExactLen < HandshakeMsgFmt , u32 > > > , FnSpecMapper < HandshakeInner , HandshakeSpec >> > ;
 
     impl HandshakeFmt {
         # [doc = "specification constructor for `handshake`."] pub open spec fn spec_inner () -> HandshakeFmtSpec {
@@ -6953,7 +6953,7 @@ verus! {
             Mapped {
                 inner : Bind (HandshakeTypeFmt ,
                 | msg_type : HandshakeTypeSpec | Bind (U24Be ,
-                | length : u32 | ExactLen ((length as usize) ,
+                | length : u32 | ExactLen (length ,
                 HandshakeMsgFmt :: spec (length ,
                 msg_type)))) ,
                 mapper : (| parsed : HandshakeInner | -> HandshakeSpec {
@@ -7037,14 +7037,14 @@ verus! {
         }
     }
 
-    pub type PaddingExtensionFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < ZeroByteFmt > , usize > > , FnSpecMapper < PaddingExtensionInner , PaddingExtensionSpec >> > ;
+    pub type PaddingExtensionFmtSpec = Named < Mapped < Bind < U16Be , spec_fn (u16) -> ExactLen < RepeatTillEnd < ZeroByteFmt > , u16 > > , FnSpecMapper < PaddingExtensionInner , PaddingExtensionSpec >> > ;
 
     impl PaddingExtensionFmt {
         # [doc = "specification constructor for `padding_extension`."] pub open spec fn spec_inner (ext_len : u16) -> PaddingExtensionFmtSpec {
             Named ("padding_extension" ,
             Mapped {
                 inner : Bind (U16Be ,
-                | l : u16 | ExactLen ((l as usize) ,
+                | l : u16 | ExactLen (l ,
                 RepeatTillEnd (ZeroByteFmt))) ,
                 mapper : (| parsed : PaddingExtensionInner | -> PaddingExtensionSpec {
                     let (l ,
@@ -7360,12 +7360,12 @@ verus! {
         }
     }
 
-    pub type FinishedOpaqueFmtSpec = Named < Varied < usize > > ;
+    pub type FinishedOpaqueFmtSpec = Named < Varied < u32 > > ;
 
     impl FinishedOpaqueFmt {
         # [doc = "specification constructor for `finished_opaque`."] pub open spec fn spec_inner (digest_size : u32) -> FinishedOpaqueFmtSpec {
             Named ("finished_opaque" ,
-            Varied ((digest_size as usize)))
+            Varied (digest_size))
         }
     }
 
@@ -7374,7 +7374,7 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque2FfffFmt ;
 
-    pub type Opaque2FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < usize > > , FnSpecMapper < Opaque2FfffInner , Opaque2FfffSpec >> > ;
+    pub type Opaque2FfffFmtSpec = Named < Mapped < Bind < Refined < U16Be , PredFnSpec < u16 >> , spec_fn (u16) -> Varied < u16 > > , FnSpecMapper < Opaque2FfffInner , Opaque2FfffSpec >> > ;
 
     impl Opaque2FfffFmt {
         # [doc = "specification constructor for `opaque_2_ffff`."] pub open spec fn spec_inner () -> Opaque2FfffFmtSpec {
@@ -7382,7 +7382,7 @@ verus! {
             Mapped {
                 inner : Bind (Refined (U16Be ,
                 | x : u16 | x >= 2 && x <= 65535) ,
-                | l : u16 | Varied ((l as usize))) ,
+                | l : u16 | Varied (l)) ,
                 mapper : (| parsed : Opaque2FfffInner | -> Opaque2FfffSpec {
                     let (l ,
                     data) = parsed ;
@@ -7722,14 +7722,14 @@ verus! {
     # [derive (Clone , Copy)]
     pub struct Opaque0FfffffFmt ;
 
-    pub type Opaque0FfffffFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> Varied < usize > > , FnSpecMapper < Opaque0FfffffInner , Opaque0FfffffSpec >> > ;
+    pub type Opaque0FfffffFmtSpec = Named < Mapped < Bind < U24Be , spec_fn (u32) -> Varied < u32 > > , FnSpecMapper < Opaque0FfffffInner , Opaque0FfffffSpec >> > ;
 
     impl Opaque0FfffffFmt {
         # [doc = "specification constructor for `opaque_0_ffffff`."] pub open spec fn spec_inner () -> Opaque0FfffffFmtSpec {
             Named ("opaque_0_ffffff" ,
             Mapped {
                 inner : Bind (U24Be ,
-                | l : u32 | Varied ((l as usize))) ,
+                | l : u32 | Varied (l)) ,
                 mapper : (| parsed : Opaque0FfffffInner | -> Opaque0FfffffSpec {
                     let (l ,
                     data) = parsed ;

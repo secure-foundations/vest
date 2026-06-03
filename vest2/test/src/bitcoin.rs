@@ -388,10 +388,7 @@ impl<'i> DeepView for Block<'i> {
 pub struct ScriptFmt;
 
 pub type ScriptFmtSpec = Named<
-    Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> Varied<usize>>,
-        FnSpecMapper<ScriptInner, ScriptSpec>,
-    >,
+    Mapped<Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>, FnSpecMapper<ScriptInner, ScriptSpec>>,
 >;
 
 impl ScriptFmt {
@@ -400,7 +397,7 @@ impl ScriptFmt {
         Named(
             "script",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied((l as usize))),
+                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
                 mapper: (
                     |parsed: ScriptInner| -> ScriptSpec
                         {
@@ -486,7 +483,7 @@ pub struct ScriptSigFmt;
 
 pub type ScriptSigFmtSpec = Named<
     Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> Varied<usize>>,
+        Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
         FnSpecMapper<ScriptSigInner, ScriptSigSpec>,
     >,
 >;
@@ -497,7 +494,7 @@ impl ScriptSigFmt {
         Named(
             "script_sig",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied((l as usize))),
+                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
                 mapper: (
                     |parsed: ScriptSigInner| -> ScriptSigSpec
                         {
@@ -521,7 +518,7 @@ pub struct WitnessComponentFmt;
 
 pub type WitnessComponentFmtSpec = Named<
     Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> Varied<usize>>,
+        Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
         FnSpecMapper<WitnessComponentInner, WitnessComponentSpec>,
     >,
 >;
@@ -532,7 +529,7 @@ impl WitnessComponentFmt {
         Named(
             "witness_component",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied((l as usize))),
+                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
                 mapper: (
                     |parsed: WitnessComponentInner| -> WitnessComponentSpec
                         {
@@ -556,7 +553,7 @@ pub struct WitnessFmt;
 
 pub type WitnessFmtSpec = Named<
     Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<WitnessComponentFmt, usize>>,
+        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<WitnessComponentFmt, u64>>,
         FnSpecMapper<WitnessInner, WitnessSpec>,
     >,
 >;
@@ -567,10 +564,7 @@ impl WitnessFmt {
         Named(
             "witness",
             Mapped {
-                inner: Bind(
-                    VarInt::<true>,
-                    |count: u64| RepeatN((count as usize), WitnessComponentFmt),
-                ),
+                inner: Bind(VarInt::<true>, |count: u64| RepeatN(count, WitnessComponentFmt)),
                 mapper: (
                     |parsed: WitnessInner| -> WitnessSpec
                         {
@@ -686,8 +680,8 @@ impl TxNonsegwitFmt {
 pub type TxNonsegwitFmtSpec = Named<
     Mapped<
         Pair<
-            RepeatN<TxinFmt, usize>,
-            Bind<VarInt<true>, spec_fn(u64) -> Pair<RepeatN<TxoutFmt, usize>, LockTimeFmt>>,
+            RepeatN<TxinFmt, u64>,
+            Bind<VarInt<true>, spec_fn(u64) -> Pair<RepeatN<TxoutFmt, u64>, LockTimeFmt>>,
         >,
         FnSpecMapper<TxNonsegwitInner, TxNonsegwitSpec>,
     >,
@@ -700,11 +694,10 @@ impl TxNonsegwitFmt {
             "tx_nonsegwit",
             Mapped {
                 inner: Pair(
-                    RepeatN((txin_count as usize), TxinFmt),
+                    RepeatN(txin_count, TxinFmt),
                     Bind(
                         VarInt::<true>,
-                        |txout_count: u64|
-                            Pair(RepeatN((txout_count as usize), TxoutFmt), LockTimeFmt),
+                        |txout_count: u64| Pair(RepeatN(txout_count, TxoutFmt), LockTimeFmt),
                     ),
                 ),
                 mapper: (
@@ -735,12 +728,12 @@ pub type TxSegwitFmtSpec = Named<
             Bind<
                 VarInt<true>,
                 spec_fn(u64) -> Pair<
-                    RepeatN<TxinFmt, usize>,
+                    RepeatN<TxinFmt, u64>,
                     Bind<
                         VarInt<true>,
                         spec_fn(u64) -> Pair<
-                            RepeatN<TxoutFmt, usize>,
-                            Pair<RepeatN<WitnessFmt, usize>, LockTimeFmt>,
+                            RepeatN<TxoutFmt, u64>,
+                            Pair<RepeatN<WitnessFmt, u64>, LockTimeFmt>,
                         >,
                     >,
                 >,
@@ -762,16 +755,13 @@ impl TxSegwitFmt {
                         VarInt::<true>,
                         |txin_count: u64|
                             Pair(
-                                RepeatN((txin_count as usize), TxinFmt),
+                                RepeatN(txin_count, TxinFmt),
                                 Bind(
                                     VarInt::<true>,
                                     |txout_count: u64|
                                         Pair(
-                                            RepeatN((txout_count as usize), TxoutFmt),
-                                            Pair(
-                                                RepeatN((txin_count as usize), WitnessFmt),
-                                                LockTimeFmt,
-                                            ),
+                                            RepeatN(txout_count, TxoutFmt),
+                                            Pair(RepeatN(txin_count, WitnessFmt), LockTimeFmt),
                                         ),
                                 ),
                             ),
@@ -932,7 +922,7 @@ pub type BlockFmtSpec = Named<
                         U32Le,
                         Pair<
                             U32Le,
-                            Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> RepeatN<TxFmt, usize>>>,
+                            Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> RepeatN<TxFmt, u64>>>,
                         >,
                     >,
                 >,
@@ -962,7 +952,7 @@ impl BlockFmt {
                                         U32Le,
                                         Bind(
                                             VarInt::<true>,
-                                            |tx_count: u64| RepeatN((tx_count as usize), TxFmt),
+                                            |tx_count: u64| RepeatN(tx_count, TxFmt),
                                         ),
                                     ),
                                 ),

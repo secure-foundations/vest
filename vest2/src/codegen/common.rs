@@ -52,114 +52,6 @@ pub(crate) struct Analysis<'a> {
     pub(crate) infos: HashMap<String, FormatInfo>,
 }
 
-impl<'a> Analysis<'a> {
-    pub(crate) fn render_length_expr_with<F>(
-        &self,
-        len: &LengthExpr,
-        render_dep: &F,
-        cast_ty: Option<&TokenStream>,
-    ) -> TokenStream
-    where
-        F: Fn(&str) -> TokenStream,
-    {
-        match &len.kind {
-            vestir::LengthExprKind::Const(n) => {
-                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                quote! { #lit }
-            }
-            vestir::LengthExprKind::Dependent(name) => render_dep(name),
-            vestir::LengthExprKind::SizeOf(name) => {
-                let expr = if let Some(n) = self.ctx.static_sizes.get(name) {
-                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                    quote! { #lit }
-                } else {
-                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
-                    quote! { <#fmt_ident as StaticByteLen>::static_byte_len() }
-                };
-                match cast_ty {
-                    Some(ty) => quote! { (#expr as #ty) },
-                    None => expr,
-                }
-            }
-            vestir::LengthExprKind::BinOp { op, left, right } => {
-                let left = self.render_length_expr_with(left, render_dep, cast_ty);
-                let right = self.render_length_expr_with(right, render_dep, cast_ty);
-                let expr = match op {
-                    vestir::ArithOp::Add => quote! { (#left + #right) },
-                    vestir::ArithOp::Sub => quote! { (#left - #right) },
-                    vestir::ArithOp::Mul => quote! { (#left * #right) },
-                    vestir::ArithOp::Div => quote! { (#left / #right) },
-                };
-                match cast_ty {
-                    Some(ty) => quote! { (#expr as #ty) },
-                    None => expr,
-                }
-            }
-        }
-    }
-
-    pub(crate) fn render_const_array_expr(
-        &self,
-        array: &ConstArray,
-        mode: TypeMode,
-    ) -> TokenStream {
-        match array {
-            ConstArray::Char(bytes) => {
-                let elems = bytes
-                    .iter()
-                    .map(|b| {
-                        let hex_str = match mode {
-                            TypeMode::Exec => format!("0x{:02x}", *b),
-                            TypeMode::Spec => format!("0x{:02x}u8", *b),
-                        };
-                        hex_str.parse::<TokenStream>().unwrap()
-                    })
-                    .collect::<Vec<_>>();
-                quote! { [#(#elems),*] }
-            }
-            ConstArray::Int(values) => {
-                let elems = values
-                    .iter()
-                    .map(|v| {
-                        if (0..=u8::MAX as i128).contains(v) {
-                            let hex_str = match mode {
-                                TypeMode::Exec => format!("0x{:02x}", *v as u8),
-                                TypeMode::Spec => format!("0x{:02x}u8", *v as u8),
-                            };
-                            hex_str.parse::<TokenStream>().unwrap()
-                        } else {
-                            panic!("integer literal {} is too large to fit in a byte", v);
-                        }
-                    })
-                    .collect::<Vec<_>>();
-                quote! { [#(#elems),*] }
-            }
-            ConstArray::Repeat(value, len) => {
-                let value_stream = if (0..=u8::MAX as i128).contains(value) {
-                    let hex_str = match mode {
-                        TypeMode::Exec => format!("0x{:02x}", *value as u8),
-                        TypeMode::Spec => format!("0x{:02x}u8", *value as u8),
-                    };
-                    hex_str.parse::<TokenStream>().unwrap()
-                } else {
-                    let hex_str = if *value < 0 {
-                        format!("-0x{:x}", value.abs())
-                    } else {
-                        format!("0x{:x}", *value)
-                    };
-                    hex_str.parse::<TokenStream>().unwrap()
-                };
-                let len_stream = syn_usize(*len);
-                quote! { [#value_stream; #len_stream] }
-            }
-            ConstArray::Wildcard => match mode {
-                TypeMode::Spec => quote! { arbitrary() },
-                TypeMode::Exec => quote! { [0u8; 0] },
-            },
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TypeMode {
     Exec,
@@ -694,6 +586,108 @@ impl<'a> Analysis<'a> {
                 self.nominal_type(&enum_comb.combinator.func, mode)
             }
             ConstCombinator::ConstCombinatorInvocation(name) => self.nominal_type(name, mode),
+        }
+    }
+
+    pub(crate) fn render_length_expr_with<F>(
+        &self,
+        len: &LengthExpr,
+        render_dep: &F,
+        cast_ty: Option<&TokenStream>,
+    ) -> TokenStream
+    where
+        F: Fn(&str) -> TokenStream,
+    {
+        match &len.kind {
+            vestir::LengthExprKind::Const(n) => {
+                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                quote! { #lit }
+            }
+            vestir::LengthExprKind::Dependent(name) => render_dep(name),
+            vestir::LengthExprKind::SizeOf(name) => {
+                if let Some(n) = self.ctx.static_sizes.get(name) {
+                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                    quote! { #lit }
+                } else {
+                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
+                    quote! { <#fmt_ident as StaticByteLen>::static_byte_len() }
+                }
+            }
+            vestir::LengthExprKind::BinOp { op, left, right } => {
+                let left = self.render_length_expr_with(left, render_dep, cast_ty);
+                let right = self.render_length_expr_with(right, render_dep, cast_ty);
+                let expr = match op {
+                    vestir::ArithOp::Add => quote! { (#left + #right) },
+                    vestir::ArithOp::Sub => quote! { (#left - #right) },
+                    vestir::ArithOp::Mul => quote! { (#left * #right) },
+                    vestir::ArithOp::Div => quote! { (#left / #right) },
+                };
+                match cast_ty {
+                    Some(ty) => quote! { (#expr as #ty) },
+                    None => expr,
+                }
+            }
+        }
+    }
+
+    pub(crate) fn render_const_array_expr(
+        &self,
+        array: &ConstArray,
+        mode: TypeMode,
+    ) -> TokenStream {
+        match array {
+            ConstArray::Char(bytes) => {
+                let elems = bytes
+                    .iter()
+                    .map(|b| {
+                        let hex_str = match mode {
+                            TypeMode::Exec => format!("0x{:02x}", *b),
+                            TypeMode::Spec => format!("0x{:02x}u8", *b),
+                        };
+                        hex_str.parse::<TokenStream>().unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                quote! { [#(#elems),*] }
+            }
+            ConstArray::Int(values) => {
+                let elems = values
+                    .iter()
+                    .map(|v| {
+                        if (0..=u8::MAX as i128).contains(v) {
+                            let hex_str = match mode {
+                                TypeMode::Exec => format!("0x{:02x}", *v as u8),
+                                TypeMode::Spec => format!("0x{:02x}u8", *v as u8),
+                            };
+                            hex_str.parse::<TokenStream>().unwrap()
+                        } else {
+                            panic!("integer literal {} is too large to fit in a byte", v);
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                quote! { [#(#elems),*] }
+            }
+            ConstArray::Repeat(value, len) => {
+                let value_stream = if (0..=u8::MAX as i128).contains(value) {
+                    let hex_str = match mode {
+                        TypeMode::Exec => format!("0x{:02x}", *value as u8),
+                        TypeMode::Spec => format!("0x{:02x}u8", *value as u8),
+                    };
+                    hex_str.parse::<TokenStream>().unwrap()
+                } else {
+                    let hex_str = if *value < 0 {
+                        format!("-0x{:x}", value.abs())
+                    } else {
+                        format!("0x{:x}", *value)
+                    };
+                    hex_str.parse::<TokenStream>().unwrap()
+                };
+                let len_stream = syn_usize(*len);
+                quote! { [#value_stream; #len_stream] }
+            }
+            ConstArray::Wildcard => match mode {
+                TypeMode::Spec => quote! { arbitrary() },
+                TypeMode::Exec => quote! { [0u8; 0] },
+            },
         }
     }
 

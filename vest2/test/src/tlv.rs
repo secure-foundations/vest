@@ -519,7 +519,7 @@ impl MsgAltContentFmt {
 
 pub type MsgAltContentFmtSpec = Named<
     Mapped<
-        Sum<Msg1Fmt, Sum<Msg2Fmt, Sum<Msg3Fmt, Varied<usize>>>>,
+        Sum<Msg1Fmt, Sum<Msg2Fmt, Sum<Msg3Fmt, Varied<u16>>>>,
         FnSpecMapper<MsgAltContentInner, MsgAltContentSpec>,
     >,
 >;
@@ -534,7 +534,7 @@ impl MsgAltContentFmt {
                     1 => L(Msg1Fmt),
                     2 => R(L(Msg2Fmt)),
                     3 => R(R(L(Msg3Fmt))),
-                    _ => R(R(R(Varied((len as usize))))),
+                    _ => R(R(R(Varied(len)))),
                 },
                 mapper: (
                     |parsed: MsgAltContentInner| -> MsgAltContentSpec
@@ -567,7 +567,7 @@ pub struct MsgAltFmt;
 
 pub type MsgAltFmtSpec = Named<
     Mapped<
-        Bind<U8, spec_fn(u8) -> Bind<U16Le, spec_fn(u16) -> ExactLen<MsgAltContentFmt, usize>>>,
+        Bind<U8, spec_fn(u8) -> Bind<U16Le, spec_fn(u16) -> ExactLen<MsgAltContentFmt, u16>>>,
         FnSpecMapper<MsgAltInner, MsgAltSpec>,
     >,
 >;
@@ -581,10 +581,7 @@ impl MsgAltFmt {
                 inner: Bind(
                     U8,
                     |tag: u8|
-                        Bind(
-                            U16Le,
-                            |len: u16| ExactLen((len as usize), MsgAltContentFmt::spec(len, tag)),
-                        ),
+                        Bind(U16Le, |len: u16| ExactLen(len, MsgAltContentFmt::spec(len, tag))),
                 ),
                 mapper: (
                     |parsed: MsgAltInner| -> MsgAltSpec
@@ -650,7 +647,7 @@ pub type MsgFmtSpec = Named<
     Mapped<
         Bind<
             MsgTypeFmt,
-            spec_fn(MsgTypeSpec) -> Bind<U16Le, spec_fn(u16) -> ExactLen<MsgContentFmt, usize>>,
+            spec_fn(MsgTypeSpec) -> Bind<U16Le, spec_fn(u16) -> ExactLen<MsgContentFmt, u16>>,
         >,
         FnSpecMapper<MsgInner, MsgSpec>,
     >,
@@ -665,7 +662,7 @@ impl MsgFmt {
                 inner: Bind(
                     MsgTypeFmt,
                     |tag: MsgTypeSpec|
-                        Bind(U16Le, |len: u16| ExactLen((len as usize), MsgContentFmt::spec(tag))),
+                        Bind(U16Le, |len: u16| ExactLen(len, MsgContentFmt::spec(tag))),
                 ),
                 mapper: (
                     |parsed: MsgInner| -> MsgSpec

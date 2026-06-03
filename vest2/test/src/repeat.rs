@@ -106,7 +106,7 @@ pub struct OpaqueU16Fmt;
 
 pub type OpaqueU16FmtSpec = Named<
     Mapped<
-        Bind<Refined<U16Le, PredFnSpec<u16>>, spec_fn(u16) -> Varied<usize>>,
+        Bind<Refined<U16Le, PredFnSpec<u16>>, spec_fn(u16) -> Varied<u16>>,
         FnSpecMapper<OpaqueU16Inner, OpaqueU16Spec>,
     >,
 >;
@@ -117,10 +117,7 @@ impl OpaqueU16Fmt {
         Named(
             "opaque_u16",
             Mapped {
-                inner: Bind(
-                    Refined(U16Le, |x: u16| x >= 1 && x <= 65535),
-                    |l: u16| Varied((l as usize)),
-                ),
+                inner: Bind(Refined(U16Le, |x: u16| x >= 1 && x <= 65535), |l: u16| Varied(l)),
                 mapper: (
                     |parsed: OpaqueU16Inner| -> OpaqueU16Spec
                         {
@@ -172,7 +169,7 @@ pub type ResponderIdListFmtSpec = Named<
     Mapped<
         Bind<
             Refined<U16Le, PredFnSpec<u16>>,
-            spec_fn(u16) -> ExactLen<RepeatTillEnd<ResponderIdFmt>, usize>,
+            spec_fn(u16) -> ExactLen<RepeatTillEnd<ResponderIdFmt>, u16>,
         >,
         FnSpecMapper<ResponderIdListInner, ResponderIdListSpec>,
     >,
@@ -186,7 +183,7 @@ impl ResponderIdListFmt {
             Mapped {
                 inner: Bind(
                     Refined(U16Le, |x: u16| x >= 0 && x <= 65535),
-                    |l: u16| ExactLen((l as usize), RepeatTillEnd(ResponderIdFmt)),
+                    |l: u16| ExactLen(l, RepeatTillEnd(ResponderIdFmt)),
                 ),
                 mapper: (
                     |parsed: ResponderIdListInner| -> ResponderIdListSpec
@@ -211,7 +208,7 @@ pub struct RepeatDynFmt;
 
 pub type RepeatDynFmtSpec = Named<
     Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<ResponderIdListFmt, usize>>,
+        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<ResponderIdListFmt, u64>>,
         FnSpecMapper<RepeatDynInner, RepeatDynSpec>,
     >,
 >;
@@ -222,7 +219,7 @@ impl RepeatDynFmt {
         Named(
             "repeat_dyn",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| RepeatN((l as usize), ResponderIdListFmt)),
+                inner: Bind(VarInt::<true>, |l: u64| RepeatN(l, ResponderIdListFmt)),
                 mapper: (
                     |parsed: RepeatDynInner| -> RepeatDynSpec
                         {

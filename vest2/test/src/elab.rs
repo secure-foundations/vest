@@ -215,12 +215,12 @@ impl Content0Fmt {
     }
 }
 
-pub type Content0FmtSpec = Named<Varied<usize>>;
+pub type Content0FmtSpec = Named<Varied<u32>>;
 
 impl Content0Fmt {
     # [doc = "specification constructor for `content_0`."]
     pub open spec fn spec_inner(num: u32) -> Content0FmtSpec {
-        Named("content_0", Varied((num as usize)))
+        Named("content_0", Varied(num))
     }
 }
 
@@ -449,7 +449,7 @@ pub type MsgCFmtSpec = Named<
     Mapped<
         Bind<
             ContentTypeFmt,
-            spec_fn(ContentTypeSpec) -> Bind<U24Be, spec_fn(u32) -> ExactLen<MsgCF4Fmt, usize>>,
+            spec_fn(ContentTypeSpec) -> Bind<U24Be, spec_fn(u32) -> ExactLen<MsgCF4Fmt, u32>>,
         >,
         FnSpecMapper<MsgCInner, MsgCSpec>,
     >,
@@ -464,7 +464,7 @@ impl MsgCFmt {
                 inner: Bind(
                     ContentTypeFmt,
                     |f2: ContentTypeSpec|
-                        Bind(U24Be, |f3: u32| ExactLen((f3 as usize), MsgCF4Fmt::spec(f2, f3))),
+                        Bind(U24Be, |f3: u32| ExactLen(f3, MsgCF4Fmt::spec(f2, f3))),
                 ),
                 mapper: (
                     |parsed: MsgCInner| -> MsgCSpec
