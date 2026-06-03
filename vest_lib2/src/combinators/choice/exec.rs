@@ -74,10 +74,10 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match v {
-            super::Sum::Inl(va) => self.0.ex_serialize(va, obuf),
-            super::Sum::Inr(vb) => self.1.ex_serialize(vb, obuf),
+            super::Sum::Inl(va) => self.0.serialize(va, obuf),
+            super::Sum::Inr(vb) => self.1.serialize(vb, obuf),
         }
     }
 }
@@ -173,11 +173,11 @@ impl<A, B, T> Serializer<T> for super::Alt<A, B, false> where
     A: Serializer<T> + Compliance<T>,
     B: Serializer<T> + Consistency<Val = T::V>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         if self.0.check_compliance(*v) {
-            self.0.ex_serialize(v, obuf);
+            self.0.serialize(v, obuf);
         } else {
-            self.1.ex_serialize(v, obuf);
+            self.1.serialize(v, obuf);
         }
     }
 }
@@ -216,10 +216,10 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match (self, v) {
-            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.ex_serialize(va, obuf),
-            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.ex_serialize(vb, obuf),
+            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.serialize(va, obuf),
+            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.serialize(vb, obuf),
             _ => (),
         }
     }

@@ -56,7 +56,12 @@ pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
         obuf: &mut Vec<u8>,
     ) where Exec: Fn(&Self::EP, &T, &mut Vec<u8>)
         requires
-            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>| call_requires(exec_rec, (pp, vv, out)),
+            Self::spec_body(param.deep_view(), spec_rec).consistent(v.deep_view()),
+            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
+                spec_rec(pp.deep_view()).0(vv.deep_view()) ==> call_requires(
+                    exec_rec,
+                    (pp, vv, out),
+                ),
             forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
                 call_ensures(exec_rec, (pp, vv, out), ()) ==> final(out)@ == out@ + spec_rec(
                     pp.deep_view(),
@@ -148,6 +153,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         Param: DeepView<V = Body::Param>,
         Body: SerializerRecBody<T, EP = Param>,
 
+        requires
+            Self::consistent_gas(gas as nat, param.deep_view(), v.deep_view()),
         ensures
             final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
                 gas as nat,
@@ -157,6 +164,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         decreases gas,
     {
         let exec_callback = |pp: &Param, vv: &T, oo: &mut Vec<u8>| -> ()
+            requires
+                Self::consistent_callback(gas as nat, pp.deep_view())(vv.deep_view()),
             ensures
                 final(oo)@ == old(oo)@ + Self::spec_serialize_callback(gas as nat, pp.deep_view())(
                     vv.deep_view(),
@@ -227,7 +236,7 @@ impl<T, const LIMIT: usize, Body, Param> Serializer<T> for super::FixWith<LIMIT,
     Param: DeepView<V = Body::Param>,
     Body: SerializerRecBody<T, EP = Param>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.serialize_gas(LIMIT, &self.1, v, obuf)
     }
 }

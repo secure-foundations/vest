@@ -26,7 +26,7 @@ impl<I: InputBuf> Parser<I> for super::Tail {
 }
 
 impl<'s> Serializer<&'s [u8]> for super::Tail {
-    fn ex_serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(*v);
     }
 }
@@ -63,7 +63,7 @@ impl<I: InputBuf> Parser<I> for super::Eof {
 }
 
 impl Serializer<()> for super::Eof {
-    fn ex_serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
+    fn serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
     }
 }
 
@@ -165,8 +165,8 @@ impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
     A: Serializer<T> + Copy,
     T: DeepView + Copy,
  {
-    fn ex_serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
-        Star(self.0).ex_serialize(v, obuf);
+    fn serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
+        Star(self.0).serialize(v, obuf);
     }
 }
 
@@ -201,8 +201,8 @@ impl<A, T> Serializer<Option<T>> for super::OptionalEnd<A> where
     A: Serializer<T>,
     T: DeepView + Copy,
  {
-    fn ex_serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
-        Opt(&self.0).ex_serialize(v, obuf);
+    fn serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
+        Opt(&self.0).serialize(v, obuf);
     }
 }
 

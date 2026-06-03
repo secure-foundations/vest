@@ -51,9 +51,9 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Pair<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
-        self.0.ex_serialize(&v.0, obuf);
-        self.1.ex_serialize(&v.1, obuf);
+    fn serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
+        self.0.serialize(&v.0, obuf);
+        self.1.serialize(&v.1, obuf);
     }
 }
 
@@ -138,10 +138,10 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Bind<A, B> where
     B::O: Serializer<TB>,
     B: MapRef<TA, Input = TA::V>,
  {
-    fn ex_serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
         let next = self.1.map(&v.0);
-        self.0.ex_serialize(&v.0, obuf);
-        next.ex_serialize(&v.1, obuf);
+        self.0.serialize(&v.0, obuf);
+        next.serialize(&v.1, obuf);
     }
 }
 

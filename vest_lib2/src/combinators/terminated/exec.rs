@@ -62,13 +62,13 @@ impl<A, B, BVal, T, const CHECK: bool> Serializer<T> for super::Terminated<A, B,
     A: Serializer<T>,
     B: Serializer<BVal>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         proof {
             self.b_val.self_view();
         }
         // Pair(&self.a, &self.b).ex_serialize(&(*v, self.b_val), obuf);
-        self.a.ex_serialize(v, obuf);
-        self.b.ex_serialize(&self.b_val, obuf);
+        self.a.serialize(v, obuf);
+        self.b.serialize(&self.b_val, obuf);
     }
 }
 

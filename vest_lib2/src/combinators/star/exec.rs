@@ -229,6 +229,8 @@ pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>
     T: DeepView,
     Inner: Serializer<T>,
 
+    requires
+        (super::Star(*inner)).consistent(values.deep_view()),
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
 {
@@ -236,14 +238,17 @@ pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>
 
     for i in 0..values.len()
         invariant
+            (super::Star(*inner)).consistent(values.deep_view()),
             obuf@ == old_obuf + spec_serialize_seq(inner, values.deep_view().take(i as int)),
     {
         proof {
+            reveal(<super::Star::<_> as Consistency>::consistent);
             let vs = values.deep_view();
-            assert(vs.take(i + 1) == vs.take(i as int).push(vs[i as int]));
-            assert(vs.take(i as int).push(vs[i as int]).drop_last() == vs.take(i as int));
+            let i = i as int;
+            assert(vs.take(i + 1) == vs.take(i as int).push(vs[i]));
+            assert(vs.take(i).push(vs[i]).drop_last() == vs.take(i));
         }
-        inner.ex_serialize(&values[i], obuf);
+        inner.serialize(&values[i], obuf);
     }
 }
 
@@ -343,7 +348,7 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
 }
 
 impl<Inner, T> Serializer<[T]> for super::Star<Inner> where T: DeepView, Inner: Serializer<T> {
-    fn ex_serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, v, obuf);
     }
@@ -424,7 +429,7 @@ impl<Inner, N, T> Serializer<[T]> for super::RepeatN<Inner, N> where
     Inner: Serializer<T>,
     N: AsLen,
  {
-    fn ex_serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
         serialize_slice(&self.1, v, obuf);
     }
 }
@@ -469,7 +474,7 @@ impl<Inner, T, const N: usize> Serializer<[T; N]> for super::Array<N, Inner> whe
     T: DeepView,
     Inner: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &[T; N], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[T; N], obuf: &mut Vec<u8>) {
         serialize_slice(&self.0, v, obuf);
     }
 }

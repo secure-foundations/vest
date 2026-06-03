@@ -370,30 +370,30 @@ impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
 }
 
 impl<const MINIMAL: bool> Serializer<u64> for VarInt<MINIMAL> {
-    fn ex_serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
         let ghost old_obuf = obuf@;
 
         match *v {
             0..0xFD => {
                 let val = *v as u8;
-                U8.ex_serialize(&val, obuf);
+                U8.serialize(&val, obuf);
             },
             0xFD..=0xFFFF => {
                 let tag = VARINT_TAG_U16;
                 let val = *v as u16;
-                U8.ex_serialize(&tag, obuf);
-                U16Le.ex_serialize(&val, obuf);
+                U8.serialize(&tag, obuf);
+                U16Le.serialize(&val, obuf);
             },
             0x1_0000..=0xFFFF_FFFF => {
                 let tag = VARINT_TAG_U32;
                 let val = *v as u32;
-                U8.ex_serialize(&tag, obuf);
-                U32Le.ex_serialize(&val, obuf);
+                U8.serialize(&tag, obuf);
+                U32Le.serialize(&val, obuf);
             },
             _ => {
                 let tag = VARINT_TAG_U64;
-                U8.ex_serialize(&tag, obuf);
-                U64Le.ex_serialize(v, obuf);
+                U8.serialize(&tag, obuf);
+                U64Le.serialize(v, obuf);
             },
         }
 

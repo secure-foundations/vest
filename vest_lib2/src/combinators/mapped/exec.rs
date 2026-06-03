@@ -76,14 +76,14 @@ impl<Inner, M, MRev, T, InnerPT> Serializer<T> for super::Mapped<Inner, BiMap<M,
     MRev: SpecMap<Input = T::V, Output = Inner::SVal> + Map<T, O = InnerPT>,
     Inner: Serializer<InnerPT>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let inner_v: InnerPT = self.mapper.1.map(*v);
         proof {
             assert(self.spec_serialize(v.deep_view()) == self.inner.spec_serialize(
                 inner_v.deep_view(),
             ));
         }
-        self.inner.ex_serialize(&inner_v, obuf);
+        self.inner.serialize(&inner_v, obuf);
     }
 }
 

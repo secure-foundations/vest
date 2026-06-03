@@ -27,8 +27,8 @@ impl<I, Inner> Parser<I> for super::Named<Inner> where I: View<V = Seq<u8>>, Inn
 }
 
 impl<T, Inner> Serializer<T> for super::Named<Inner> where T: DeepView, Inner: Serializer<T> {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.1.ex_serialize(v, obuf);
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        self.1.serialize(v, obuf);
     }
 }
 

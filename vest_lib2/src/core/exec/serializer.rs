@@ -6,20 +6,16 @@ use vstd::prelude::*;
 
 verus! {
 
-pub trait Serializer<T>: SpecSerializer<SVal = T::V> where T: DeepView + ?Sized {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>)
-        ensures
-            final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
-    ;
-
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) where Self: Consistency<Val = Self::SVal>
+pub trait Serializer<T> where
+    Self: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    T: DeepView + ?Sized,
+ {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>)
         requires
             self.consistent(v.deep_view()),
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
-    {
-        self.ex_serialize(v, obuf);
-    }
+    ;
 }
 
 pub trait Compliance<T>: Consistency<Val = T::V> where T: DeepView {
@@ -108,8 +104,8 @@ impl<S: Consistency> Consistency for &S {
 }
 
 impl<T, S> Serializer<T> for &S where T: DeepView, S: Serializer<T> {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        (*self).ex_serialize(v, obuf)
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        (*self).serialize(v, obuf)
     }
 }
 

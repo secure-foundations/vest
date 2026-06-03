@@ -56,8 +56,8 @@ impl<A, PredFn, T> Serializer<T> for super::Refined<A, PredFn> where
     A: Serializer<T>,
     PredFn: SpecPred<T::V>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.0.ex_serialize(v, obuf);
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        self.0.serialize(v, obuf);
     }
 }
 
@@ -121,8 +121,8 @@ impl<Inner, T> Serializer<T> for super::Const<Inner, T> where
     T: DeepView<V = T>,
     Inner: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.0.ex_serialize(v, obuf);
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        self.0.serialize(v, obuf);
     }
 }
 
@@ -158,7 +158,7 @@ impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inne
 }
 
 impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
     }
 }
@@ -252,13 +252,13 @@ impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
     T: DeepView,
     Of: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
             a_val: self.1,
         };
-        fmt.ex_serialize(v, obuf);
+        fmt.serialize(v, obuf);
     }
 }
 
@@ -342,13 +342,13 @@ impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
     T: DeepView,
     Of: Serializer<T>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),
             b_val: self.2,
         };
-        fmt.ex_serialize(v, obuf);
+        fmt.serialize(v, obuf);
     }
 }
 

@@ -7,6 +7,7 @@ use crate::core::exec::{
     },
     ParseError,
 };
+use crate::core::spec::SpecByteLen;
 use crate::core::spec::SpecParser;
 use vstd::prelude::*;
 
@@ -25,7 +26,7 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
 }
 
 impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
-    fn ex_serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
     }
 }
@@ -71,7 +72,7 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
 }
 
 impl<Len: AsLen> Serializer<[u8]> for super::Varied<Len> {
-    fn ex_serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
     }
 }
@@ -144,10 +145,10 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
 impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     T: DeepView + ?Sized,
-    Inner: Serializer<T>,
+    Inner: Serializer<T> + SpecByteLen<T = T::V>,
  {
-    fn ex_serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.1.ex_serialize(v, obuf);
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        self.1.serialize(v, obuf);
     }
 }
 

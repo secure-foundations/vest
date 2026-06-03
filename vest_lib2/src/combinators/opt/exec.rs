@@ -30,9 +30,9 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
 }
 
 impl<A, T> Serializer<Option<T>> for super::Opt<A> where T: DeepView, A: Serializer<T> {
-    fn ex_serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
         match v {
-            Some(vv) => self.0.ex_serialize(vv, obuf),
+            Some(vv) => self.0.serialize(vv, obuf),
             None => {},
         }
     }
@@ -90,8 +90,8 @@ impl<A, B, TA, TB> Serializer<(Option<TA>, TB)> for super::Optional<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
-    fn ex_serialize(&self, v: &(Option<TA>, TB), obuf: &mut Vec<u8>) {
-        crate::combinators::Pair(super::Opt(&self.0), &self.1).ex_serialize(v, obuf);
+    fn serialize(&self, v: &(Option<TA>, TB), obuf: &mut Vec<u8>) {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).serialize(v, obuf);
     }
 }
 
