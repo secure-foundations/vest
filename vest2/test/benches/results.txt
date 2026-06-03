@@ -1,0 +1,77 @@
+Loaded 1000 Bitcoin blocks
+Benchmarking bitcoin_parse/generated_parser: Warming up for 3.0000 s
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 16.1s, or reduce sample count to 30.
+bitcoin_parse/generated_parser
+                        time:   [161.25 ms 161.41 ms 161.59 ms]
+                        thrpt:  [4.0637 GiB/s 4.0680 GiB/s 4.0721 GiB/s]
+                 change:
+                        time:   [-7.9119% -7.0645% -6.3546%] (p = 0.00 < 0.05)
+                        thrpt:  [+6.7858% +7.6016% +8.5916%]
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+Benchmarking bitcoin_parse/bitcoin_library: Warming up for 3.0000 s
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 47.8s, or reduce sample count to 10.
+bitcoin_parse/bitcoin_library
+                        time:   [478.04 ms 478.78 ms 479.72 ms]
+                        thrpt:  [1.3688 GiB/s 1.3715 GiB/s 1.3736 GiB/s]
+                 change:
+                        time:   [-51.246% -50.909% -50.591%] (p = 0.00 < 0.05)
+                        thrpt:  [+102.39% +103.70% +105.11%]
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Loaded 302 TLS handshake messages
+Retained 204 / 302 messages (74915 bytes)
+tls_parse/generated_parser
+                        time:   [82.206 µs 82.400 µs 82.606 µs]
+                        thrpt:  [864.89 MiB/s 867.05 MiB/s 869.10 MiB/s]
+                 change:
+                        time:   [-15.442% -10.302% -5.9707%] (p = 0.00 < 0.05)
+                        thrpt:  [+6.3498% +11.485% +18.262%]
+                        Performance has improved.
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+tls_parse/rustls_library
+                        time:   [107.92 µs 108.16 µs 108.41 µs]
+                        thrpt:  [659.04 MiB/s 660.54 MiB/s 662.02 MiB/s]
+                 change:
+                        time:   [-2.7510% -1.6086% -0.8607%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.8682% +1.6349% +2.8288%]
+                        Change within noise threshold.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking bitcoin_serialize/generated_serializer: Warming up for 3.0000 s
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 10.0s, or reduce sample count to 50.
+bitcoin_serialize/generated_serializer
+                        time:   [88.735 ms 88.865 ms 89.006 ms]
+                        thrpt:  [7.3775 GiB/s 7.3892 GiB/s 7.4000 GiB/s]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+Benchmarking bitcoin_serialize/bitcoin_library: Warming up for 3.0000 s
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 8.4s, or reduce sample count to 50.
+bitcoin_serialize/bitcoin_library
+                        time:   [79.472 ms 79.572 ms 79.675 ms]
+                        thrpt:  [8.2415 GiB/s 8.2522 GiB/s 8.2626 GiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+Retained 204 / 302 messages for serialization bench (74915 bytes)
+tls_serialize/generated_serializer
+                        time:   [24.915 µs 24.953 µs 24.998 µs]
+                        thrpt:  [2.7910 GiB/s 2.7960 GiB/s 2.8003 GiB/s]
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+tls_serialize/rustls_library
+                        time:   [30.903 µs 30.951 µs 31.006 µs]
+                        thrpt:  [2.2502 GiB/s 2.2542 GiB/s 2.2577 GiB/s]
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) high mild
+  3 (3.00%) high severe
