@@ -48,13 +48,10 @@ impl<'a> Analysis<'a> {
             name,
             param_defns,
             |w| {
-                self.emit_combinator_parser_body(w, name, combinator, param_defns);
+                self.emit_combinator_parser_body(w, combinator, param_defns);
             },
             |w| {
                 self.emit_combinator_serializer_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_combinator_prepare_body(w, name, combinator, param_defns);
             },
         )
     }
@@ -74,9 +71,6 @@ impl<'a> Analysis<'a> {
             |w| {
                 self.emit_struct_serializer_body(w, name, combinator, param_defns);
             },
-            |w| {
-                self.emit_struct_prepare_body(w, name, combinator, param_defns);
-            },
         )
     }
 
@@ -94,9 +88,6 @@ impl<'a> Analysis<'a> {
             },
             |w| {
                 self.emit_choice_serializer_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_choice_prepare_body(w, name, combinator, param_defns);
             },
         )
     }
@@ -116,9 +107,6 @@ impl<'a> Analysis<'a> {
             |w| {
                 self.emit_enum_serializer_body(w, name, combinator);
             },
-            |w| {
-                self.emit_enum_prepare_body(w, name, combinator);
-            },
         )
     }
 }
@@ -134,7 +122,6 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
         emit_parser: impl Fn(&mut CodeWriter),
         emit_serializer: impl Fn(&mut CodeWriter),
-        _emit_prepare: impl Fn(&mut CodeWriter),
     ) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
@@ -569,7 +556,7 @@ impl<'a> Analysis<'a> {
         match &comb.choices {
             Choices::Enums(branches) => {
                 // Find the enum type from the dep field
-                let enum_ty = self.resolve_dep_enum_type(dep, comb, param_defns);
+                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
                 branches
                     .iter()
                     .zip(variant_names.iter())
@@ -835,7 +822,7 @@ impl<'a> Analysis<'a> {
     ) -> Vec<TokenStream> {
         match &comb.choices {
             Choices::Enums(branches) => {
-                let enum_ty = self.resolve_dep_enum_type(dep, comb, param_defns);
+                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
                 branches
                     .iter()
                     .zip(variant_names.iter())
@@ -1102,7 +1089,6 @@ impl<'a> Analysis<'a> {
     fn emit_combinator_parser_body(
         &self,
         w: &mut CodeWriter,
-        _name: &str,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) {
@@ -1211,7 +1197,7 @@ impl<'a> Analysis<'a> {
         }
 
         match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(c) => self.exec_constraint_int_fmt(c, param_defns),
+            Combinator::ConstraintInt(c) => self.exec_constraint_int_fmt(c),
             Combinator::ConstraintEnum(c) => self.exec_constraint_enum_fmt(c, param_defns, mode),
             Combinator::Wrap(wrap) => {
                 let mut body_expr =
@@ -1331,7 +1317,6 @@ impl<'a> Analysis<'a> {
     fn exec_constraint_int_fmt(
         &self,
         c: &ConstraintIntCombinator,
-        _param_defns: &[ParamDefn],
     ) -> TokenStream {
         self.int_combinator_expr(&c.combinator)
     }
@@ -1607,7 +1592,6 @@ impl<'a> Analysis<'a> {
     fn resolve_dep_enum_type(
         &self,
         dep: &str,
-        _choice_comb: &ChoiceCombinator,
         param_defns: &[ParamDefn],
     ) -> Option<TokenStream> {
         let base = dep.split('.').last().unwrap_or(dep);

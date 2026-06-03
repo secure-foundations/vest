@@ -192,9 +192,9 @@ impl<'a> Analysis<'a> {
             } => self.gen_top_level_proofs_section(name, param_defns),
             Definition::CombinatorDef {
                 name,
-                combinator,
+                combinator: _,
                 param_defns,
-            } => self.gen_proofs_section(name, combinator, param_defns),
+            } => self.gen_proofs_section(name, param_defns),
             Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(proofs): emit const-format proof wrappers for {}\n",
                 self.info(name).names.exec

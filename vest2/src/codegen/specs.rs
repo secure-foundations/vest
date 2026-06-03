@@ -327,7 +327,6 @@ impl<'a> Analysis<'a> {
         &self,
         lhs: &Combinator,
         rhs: &Combinator,
-        _owner_name: Option<&str>,
     ) -> RenderedSpec {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
@@ -361,7 +360,7 @@ impl<'a> Analysis<'a> {
 
     fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
         match combinator {
-            Combinator::AndThen(lhs, rhs) => return self.render_and_then_spec(lhs, rhs, None),
+            Combinator::AndThen(lhs, rhs) => return self.render_and_then_spec(lhs, rhs),
             Combinator::Invocation(invocation) => return self.render_invocation_spec(invocation),
             _ => {}
         }
