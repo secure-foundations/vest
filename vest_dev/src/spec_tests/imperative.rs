@@ -275,19 +275,20 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
 }
 
 impl<'i> Serializer<BtcTx<'i>> for TxSegwitFmt {
-    fn ex_serialize(&self, v: &BtcTx<'i>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &BtcTx<'i>, obuf: &mut Vec<u8>) {
         reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
+        reveal(<TxSegwitFmt as Consistency>::consistent);
 
         let ghost old_obuf = obuf@;
         let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
-        U8.ex_serialize(&1u8, obuf);
-        U8.ex_serialize(txin_cnt, obuf);
-        Varied(*txin_cnt).ex_serialize(txin, obuf);
-        U8.ex_serialize(txout_cnt, obuf);
-        RepeatN(*txout_cnt, U16Le).ex_serialize(txout, obuf);
-        RepeatN(*txin_cnt, U16Le).ex_serialize(witness, obuf);
+        U8.serialize(&1u8, obuf);
+        U8.serialize(txin_cnt, obuf);
+        Varied(*txin_cnt).serialize(txin, obuf);
+        U8.serialize(txout_cnt, obuf);
+        RepeatN(*txout_cnt, U16Le).serialize(txout, obuf);
+        RepeatN(*txin_cnt, U16Le).serialize(witness, obuf);
 
-        U8.ex_serialize(locktime, obuf);
+        U8.serialize(locktime, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -558,7 +559,7 @@ impl<'i> Parser<&'i [u8]> for MsgTyFmt {
 }
 
 impl<'i> Serializer<MsgTy> for MsgTyFmt {
-    fn ex_serialize(&self, v: &MsgTy, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &MsgTy, obuf: &mut Vec<u8>) {
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
         let ghost old_obuf = obuf@;
         let tag = match v {
@@ -567,7 +568,7 @@ impl<'i> Serializer<MsgTy> for MsgTyFmt {
             MsgTy::TYPE3 => 3u8,
             MsgTy::TYPE4 => 4u8,
         };
-        U8.ex_serialize(&tag, obuf);
+        U8.serialize(&tag, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -988,11 +989,14 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
 }
 
 impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
-    fn ex_serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
         reveal(<TLVFmt as SpecSerializer>::spec_serialize);
+        reveal(<TLVFmt as Consistency>::consistent);
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
+        reveal(<MsgTyFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
+        reveal(<TLVPayloadFmt as Consistency>::consistent);
         let ghost old_obuf = obuf@;
         let tag = match v {
             TLVMsg::V1(_) => MsgTy::TYPE1,
@@ -1000,18 +1004,18 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
             TLVMsg::V3(_) => MsgTy::TYPE3,
             TLVMsg::V4(_) => MsgTy::TYPE4,
         };
-        MsgTyFmt.ex_serialize(&tag, obuf);
+        MsgTyFmt.serialize(&tag, obuf);
         // Strategy 0:
         // call `TLVPayloadFmt { tag }.length()` to get the length of the payload, and serialize it before serializing the payload.
-        // However, this means we have to strengthen the pre-condition of `ex_serialize` to require
+        // However, this means we have to strengthen the pre-condition of `serialize` to require
         // `self.byte_len(v.deep_view()) <= usize::MAX`, which is not ideal.
 
         // Strategy 1: in-place update
         // // record the offset of the length field in the output buffer
         // let offset = obuf.len();
-        // U8.ex_serialize(0u8, obuf); // placeholder for length
+        // U8.serialize(0u8, obuf); // placeholder for length
         // let old_len = obuf.len();
-        // TLVPayloadFmt { tag }.ex_serialize(v, obuf);
+        // TLVPayloadFmt { tag }.serialize(v, obuf);
         // let new_len = obuf.len();
         // // Update the length field in the output buffer
         // let actual_len = (new_len - old_len) as u8;
@@ -1019,12 +1023,12 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
 
         // Strategy 2: re-allocation
         let mut payload_buf = Vec::new();
-        TLVPayloadFmt { tag }.ex_serialize(v, &mut payload_buf);
+        TLVPayloadFmt { tag }.serialize(v, &mut payload_buf);
         proof {
             TLVPayloadFmt { tag }.lemma_serialize_len(v.deep_view());
         }
         let payload_len = payload_buf.len() as u8;
-        U8.ex_serialize(&payload_len, obuf);
+        U8.serialize(&payload_len, obuf);
         obuf.extend_from_slice(&payload_buf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
@@ -1089,15 +1093,16 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
 }
 
 impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
-    fn ex_serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
+    fn serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
+        reveal(<TLVPayloadFmt as Consistency>::consistent);
 
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
-            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.ex_serialize(v, obuf),
-            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.ex_serialize(*v, obuf),
-            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.ex_serialize(v, obuf),
-            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.ex_serialize(v, obuf),
+            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.serialize(v, obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.serialize(*v, obuf),
+            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.serialize(v, obuf),
+            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.serialize(v, obuf),
             _ => {},
         }
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));

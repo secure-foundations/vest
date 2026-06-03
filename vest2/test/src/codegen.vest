@@ -26,7 +26,7 @@ a_type = enum {
 
 msg4 = {
   @t: a_type,
-  v: choose(@t) {
+  val: choose(@t) {
     A => msg1,
     B => msg2,
     C => msg3,

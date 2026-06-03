@@ -1,7 +1,7 @@
 generic_header = {
     next_type: u8,
     reserved: u8,
-    @payload_length: u16 | { 8..0xffff },
+    @payload_length: u32 | { 8..0xffff },
 }
 
 payload_with_header = {

@@ -18,12 +18,6 @@ alias_size = {
     bytes: [u8; |header_alias|],
 }
 
-header_bytes = [u8; |header|] >>= header
-
-reinterpret_size = {
-    bytes: [u8; |header_bytes|],
-}
-
 fixed_choice(@tag: u8) = choose(@tag) {
     0 => u16,
     _ => u16,
@@ -52,7 +46,7 @@ simple_sub(@len: u16 | { 4..0xffff }) = {
     data: [u8; @len - |header| - |u8|],
 }
 
-multi_arith(@total: u32 | { 263..0xffffffff }, @hdr_len: u8 | { 0..255 }) = {
+multi_arith(@total: u16 | { 263.. }, @hdr_len: u16 | { 0..255 }) = {
     body: [u8; @total - @hdr_len - 8],
 }
 
@@ -64,7 +58,7 @@ multi_arith(@total: u32 | { 263..0xffffffff }, @hdr_len: u8 | { 0..255 }) = {
 //     chunks: [u8; @total / 4],
 // }
 
-paren_expr(@a: u16 | { 255..0xfffa }, @b: u8 | { 0..255 }, @c: u8 | { 1 }) = {
+paren_expr(@a: u16 | { 255..0xfffa }, @b: u16 | { 0..255 }, @c: u16 | { 1 }) = {
     data: [u8; (@a - @b) + @c],
 }
 

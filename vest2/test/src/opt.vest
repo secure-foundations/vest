@@ -14,7 +14,11 @@ optmsg = Option<msg>
 //   y: Option<msg2(@x)>,
 // }
 
-a = wrap(u8 = 1, u8 = 2, [u8; 10], u8 = 3)
+const_10 = {
+  reserved: [u8; 10],
+}
+
+a = wrap(u8 = 1, u8 = 2, const_10, u8 = 3)
 
 b = {
   x: [u8; 10],
@@ -22,7 +26,7 @@ b = {
 }
 
 tagged_mix = {
-  x: Option<wrap(u8 = 10, [u8; 1])>,
+  x: Option<wrap(u8 = 10, const_10)>,
   y: Vec<wrap(u8 = 11, a)>,
   z: Option<wrap(u8 = 12, b)>,
   w: Vec<wrap(u8 = 13, msg)>,

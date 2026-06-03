@@ -147,7 +147,7 @@ impl<'i> ParserRecBody<&'i [u8]> for NestedBracesBody {
     }
 }
 
-impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
+impl SerializerRecBody<NestedBracesT> for NestedBracesBody {
     type EP = ();
 
     fn serialize_body<Exec>(
@@ -155,17 +155,17 @@ impl<'s> SerializerRecBody<&'s NestedBracesT> for NestedBracesBody {
         _param: &(),
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &&'s NestedBracesT,
+        v: &NestedBracesT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&(), &&'s NestedBracesT, &mut Vec<u8>) {
+    ) where Exec: Fn(&(), &NestedBracesT, &mut Vec<u8>) {
         match v {
             NestedBracesT::Eps => {
-                U8.ex_serialize(&0x00u8, obuf);
+                U8.serialize(&0x00u8, obuf);
             },
             NestedBracesT::Brace(inner) => {
-                U8.ex_serialize(&0x7Bu8, obuf);
-                exec_rec(&(), &&**inner, obuf);
-                U8.ex_serialize(&0x7Du8, obuf);
+                U8.serialize(&0x7Bu8, obuf);
+                exec_rec(&(), inner, obuf);
+                U8.serialize(&0x7Du8, obuf);
             },
         }
     }
@@ -365,7 +365,7 @@ impl<'i> ParserRecBody<&'i [u8]> for TaggedChainBody {
     }
 }
 
-impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
+impl SerializerRecBody<TaggedChainT> for TaggedChainBody {
     type EP = u8;
 
     fn serialize_body<Exec>(
@@ -373,17 +373,17 @@ impl<'s> SerializerRecBody<&'s TaggedChainT> for TaggedChainBody {
         current_tag: &u8,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &&'s TaggedChainT,
+        v: &TaggedChainT,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&u8, &&'s TaggedChainT, &mut Vec<u8>) {
+    ) where Exec: Fn(&u8, &TaggedChainT, &mut Vec<u8>) {
         match v {
             TaggedChainT::End => {
-                U8.ex_serialize(&0x00u8, obuf);
+                U8.serialize(&0x00u8, obuf);
             },
             TaggedChainT::Step(next_tag, tail) => {
-                U8.ex_serialize(current_tag, obuf);
-                U8.ex_serialize(next_tag, obuf);
-                exec_rec(next_tag, &&**tail, obuf);
+                U8.serialize(current_tag, obuf);
+                U8.serialize(next_tag, obuf);
+                exec_rec(next_tag, tail, obuf);
             },
         }
     }

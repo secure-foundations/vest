@@ -63,11 +63,6 @@ verus! {
         C28 = 28 ,
         C29 = 29 ,
         C30 = 30 ,
-        C31 = 31 ,
-        C32 = 32 ,
-        C33 = 33 ,
-        C34 = 34 ,
-        C35 = 35 ,
         Unknown (u8) ,
     }
     pub type TstTagSpec = TstTag ;
@@ -149,11 +144,6 @@ verus! {
         C28 (Mydata < 'i >) ,
         C29 (Mydata < 'i >) ,
         C30 (Mydata < 'i >) ,
-        C31 (Mydata < 'i >) ,
-        C32 (Mydata < 'i >) ,
-        C33 (Mydata < 'i >) ,
-        C34 (Mydata < 'i >) ,
-        C35 (Mydata < 'i >) ,
         Default (& 'i [u8]) ,
     }
     # [verifier :: ext_equal]
@@ -189,14 +179,9 @@ verus! {
         C28 (MydataSpec) ,
         C29 (MydataSpec) ,
         C30 (MydataSpec) ,
-        C31 (MydataSpec) ,
-        C32 (MydataSpec) ,
-        C33 (MydataSpec) ,
-        C34 (MydataSpec) ,
-        C35 (MydataSpec) ,
         Default (Seq < u8 >) ,
     }
-    pub type TstMydataInner = Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Seq < u8 > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > ;
+    pub type TstMydataInner = Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Sum < MydataSpec , Seq < u8 > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > ;
     impl < 'i > DeepView for TstMydata < 'i > {
         type V = TstMydataSpec ;
         open spec fn deep_view (& self) -> Self :: V {
@@ -232,11 +217,6 @@ verus! {
                 TstMydata :: C28 (v) => TstMydataSpec :: C28 (v . deep_view ()) ,
                 TstMydata :: C29 (v) => TstMydataSpec :: C29 (v . deep_view ()) ,
                 TstMydata :: C30 (v) => TstMydataSpec :: C30 (v . deep_view ()) ,
-                TstMydata :: C31 (v) => TstMydataSpec :: C31 (v . deep_view ()) ,
-                TstMydata :: C32 (v) => TstMydataSpec :: C32 (v . deep_view ()) ,
-                TstMydata :: C33 (v) => TstMydataSpec :: C33 (v . deep_view ()) ,
-                TstMydata :: C34 (v) => TstMydataSpec :: C34 (v . deep_view ()) ,
-                TstMydata :: C35 (v) => TstMydataSpec :: C35 (v . deep_view ()) ,
                 TstMydata :: Default (v) => TstMydataSpec :: Default (v . deep_view ()) ,
             }
         }
@@ -264,6 +244,38 @@ verus! {
         }
     }
 
+    # [doc = "data type for `pair_stress`."]
+    # [derive (Debug , PartialEq , Eq , Clone , Copy)]
+    # [verifier :: ext_equal]
+    pub struct PairStress {
+        pub f1 : u8 ,
+        pub f2 : u16 ,
+        pub f3 : u32 ,
+        pub f4 : u8 ,
+        pub f5 : u8 ,
+        pub f6 : u8 ,
+        pub f7 : u8 ,
+        pub f8 : u8 ,
+        pub f9 : u8 ,
+        pub f10 : u8 ,
+        pub f11 : u8 ,
+        pub f12 : u8 ,
+        pub f13 : u8 ,
+        pub f14 : u8 ,
+        pub f15 : u8 ,
+        pub f16 : u8 ,
+        pub f17 : u8 ,
+        pub f18 : u8 ,
+    }
+    pub type PairStressSpec = PairStress ;
+    pub type PairStressInner = (u8 , (u16 , (u32 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , (u8 , u8))))))))))))))))) ;
+    impl DeepView for PairStress {
+        type V = Self ;
+        open spec fn deep_view (& self) -> Self :: V {
+            * self
+        }
+    }
+
     // ============================================================
     // Format Specifications
     // ============================================================
@@ -278,9 +290,9 @@ verus! {
             Named ("tst_tag" ,
             Mapped {
                 inner : Choice (Refined (U8 ,
-                | x : u8 | x == 0 || x == 1 || x == 2 || x == 3 || x == 4 || x == 5 || x == 6 || x == 7 || x == 8 || x == 9 || x == 10 || x == 11 || x == 12 || x == 13 || x == 14 || x == 15 || x == 16 || x == 17 || x == 18 || x == 19 || x == 20 || x == 21 || x == 22 || x == 23 || x == 24 || x == 25 || x == 26 || x == 27 || x == 28 || x == 29 || x == 30 || x == 31 || x == 32 || x == 33 || x == 34 || x == 35) ,
+                | x : u8 | x == 0 || x == 1 || x == 2 || x == 3 || x == 4 || x == 5 || x == 6 || x == 7 || x == 8 || x == 9 || x == 10 || x == 11 || x == 12 || x == 13 || x == 14 || x == 15 || x == 16 || x == 17 || x == 18 || x == 19 || x == 20 || x == 21 || x == 22 || x == 23 || x == 24 || x == 25 || x == 26 || x == 27 || x == 28 || x == 29 || x == 30) ,
                 Refined (U8 ,
-                | x : u8 | x != 0 && x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 26 && x != 27 && x != 28 && x != 29 && x != 30 && x != 31 && x != 32 && x != 33 && x != 34 && x != 35)) ,
+                | x : u8 | x != 0 && x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 26 && x != 27 && x != 28 && x != 29 && x != 30)) ,
                 mapper : (| parsed : TstTagInner | -> TstTagSpec {
                     match parsed {
                         L (x) => match x {
@@ -315,11 +327,6 @@ verus! {
                             28 => TstTagSpec :: C28 ,
                             29 => TstTagSpec :: C29 ,
                             30 => TstTagSpec :: C30 ,
-                            31 => TstTagSpec :: C31 ,
-                            32 => TstTagSpec :: C32 ,
-                            33 => TstTagSpec :: C33 ,
-                            34 => TstTagSpec :: C34 ,
-                            35 => TstTagSpec :: C35 ,
                             _ => arbitrary () ,
                         }
                         ,
@@ -360,11 +367,6 @@ verus! {
                         TstTagSpec :: C28 => L (28) ,
                         TstTagSpec :: C29 => L (29) ,
                         TstTagSpec :: C30 => L (30) ,
-                        TstTagSpec :: C31 => L (31) ,
-                        TstTagSpec :: C32 => L (32) ,
-                        TstTagSpec :: C33 => L (33) ,
-                        TstTagSpec :: C34 => L (34) ,
-                        TstTagSpec :: C35 => L (35) ,
                         TstTagSpec :: Unknown (x) => R (x) ,
                     }
                 }
@@ -431,7 +433,7 @@ verus! {
         }
     }
 
-    pub type TstMydataFmtSpec = Named < Mapped < Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Tail > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > , FnSpecMapper < TstMydataInner , TstMydataSpec >> > ;
+    pub type TstMydataFmtSpec = Named < Mapped < Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Sum < MydataFmt , Tail > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > , FnSpecMapper < TstMydataInner , TstMydataSpec >> > ;
 
     impl TstMydataFmt {
         # [doc = "specification constructor for `tst_mydata`."] pub open spec fn spec_inner (tag : TstTagSpec) -> TstMydataFmtSpec {
@@ -469,12 +471,7 @@ verus! {
                     TstTagSpec :: C28 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt))))))))))))))))))))))))))))) ,
                     TstTagSpec :: C29 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt)))))))))))))))))))))))))))))) ,
                     TstTagSpec :: C30 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt))))))))))))))))))))))))))))))) ,
-                    TstTagSpec :: C31 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt)))))))))))))))))))))))))))))))) ,
-                    TstTagSpec :: C32 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt))))))))))))))))))))))))))))))))) ,
-                    TstTagSpec :: C33 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt)))))))))))))))))))))))))))))))))) ,
-                    TstTagSpec :: C34 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt))))))))))))))))))))))))))))))))))) ,
-                    TstTagSpec :: C35 => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (MydataFmt)))))))))))))))))))))))))))))))))))) ,
-                    _ => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (Tail)))))))))))))))))))))))))))))))))))) ,
+                    _ => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (Tail))))))))))))))))))))))))))))))) ,
                 }
                 ,
                 mapper : (| parsed : TstMydataInner | -> TstMydataSpec {
@@ -510,12 +507,7 @@ verus! {
                         R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))) => TstMydataSpec :: C28 (v) ,
                         R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))) => TstMydataSpec :: C29 (v) ,
                         R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))) => TstMydataSpec :: C30 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))) => TstMydataSpec :: C31 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))))) => TstMydataSpec :: C32 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))))) => TstMydataSpec :: C33 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))))))) => TstMydataSpec :: C34 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))))))) => TstMydataSpec :: C35 (v) ,
-                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (v)))))))))))))))))))))))))))))))))))) => TstMydataSpec :: Default (v) ,
+                        R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (v))))))))))))))))))))))))))))))) => TstMydataSpec :: Default (v) ,
                     }
                 }
                 ,
@@ -552,12 +544,7 @@ verus! {
                         TstMydataSpec :: C28 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))) ,
                         TstMydataSpec :: C29 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))) ,
                         TstMydataSpec :: C30 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: C31 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: C32 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: C33 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: C34 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v))))))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: C35 (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (L (v)))))))))))))))))))))))))))))))))))) ,
-                        TstMydataSpec :: Default (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (v)))))))))))))))))))))))))))))))))))) ,
+                        TstMydataSpec :: Default (v) => R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (R (v))))))))))))))))))))))))))))))) ,
                     }
                 }
                 )
@@ -596,6 +583,123 @@ verus! {
                     = value ;
                     (tag ,
                     mydata)
+                }
+                )
+            }
+            )
+        }
+    }
+
+
+    # [doc = "named format combinator for `pair_stress`."]
+    # [derive (Clone , Copy)]
+    pub struct PairStressFmt ;
+
+    pub type PairStressFmtSpec = Named < Mapped < Pair < U8 , Pair < U16Le , Pair < U32Le , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , Pair < U8 , U8 > > > > > > > > > > > > > > > > > , FnSpecMapper < PairStressInner , PairStressSpec >> > ;
+
+    impl PairStressFmt {
+        # [doc = "specification constructor for `pair_stress`."] pub open spec fn spec_inner () -> PairStressFmtSpec {
+            Named ("pair_stress" ,
+            Mapped {
+                inner : Pair (U8 ,
+                Pair (U16Le ,
+                Pair (U32Le ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                Pair (U8 ,
+                U8))))))))))))))))) ,
+                mapper : (| parsed : PairStressInner | -> PairStressSpec {
+                    let (f1 ,
+                    (f2 ,
+                    (f3 ,
+                    (f4 ,
+                    (f5 ,
+                    (f6 ,
+                    (f7 ,
+                    (f8 ,
+                    (f9 ,
+                    (f10 ,
+                    (f11 ,
+                    (f12 ,
+                    (f13 ,
+                    (f14 ,
+                    (f15 ,
+                    (f16 ,
+                    (f17 ,
+                    f18))))))))))))))))) = parsed ;
+                    PairStressSpec {
+                        f1 ,
+                        f2 ,
+                        f3 ,
+                        f4 ,
+                        f5 ,
+                        f6 ,
+                        f7 ,
+                        f8 ,
+                        f9 ,
+                        f10 ,
+                        f11 ,
+                        f12 ,
+                        f13 ,
+                        f14 ,
+                        f15 ,
+                        f16 ,
+                        f17 ,
+                        f18
+                    }
+                }
+                ,
+                | value : PairStressSpec | -> PairStressInner {
+                    let PairStressSpec {
+                        f1 ,
+                        f2 ,
+                        f3 ,
+                        f4 ,
+                        f5 ,
+                        f6 ,
+                        f7 ,
+                        f8 ,
+                        f9 ,
+                        f10 ,
+                        f11 ,
+                        f12 ,
+                        f13 ,
+                        f14 ,
+                        f15 ,
+                        f16 ,
+                        f17 ,
+                        f18
+                    }
+                    = value ;
+                    (f1 ,
+                    (f2 ,
+                    (f3 ,
+                    (f4 ,
+                    (f5 ,
+                    (f6 ,
+                    (f7 ,
+                    (f8 ,
+                    (f9 ,
+                    (f10 ,
+                    (f11 ,
+                    (f12 ,
+                    (f13 ,
+                    (f14 ,
+                    (f15 ,
+                    (f16 ,
+                    (f17 ,
+                    f18)))))))))))))))))
                 }
                 )
             }
@@ -762,6 +866,45 @@ verus! {
             # [verifier :: opaque] open spec fn byte_len (& self ,
             v : Self :: T) -> nat {
                 TstFmt :: spec_inner () . byte_len (v)
+            }
+        }
+
+        impl SpecParser for PairStressFmt {
+            type PVal = PairStressSpec ;
+            # [verifier :: opaque] open spec fn spec_parse (& self ,
+            ibuf : Seq < u8 >) -> Option < (int ,
+            Self :: PVal) > {
+                PairStressFmt :: spec_inner () . spec_parse (ibuf)
+            }
+        }
+        impl Consistency for PairStressFmt {
+            type Val = PairStressSpec ;
+            open spec fn consistent (& self ,
+            v : Self :: Val) -> bool {
+                PairStressFmt :: spec_inner () . consistent (v)
+            }
+        }
+        impl SpecSerializerDps for PairStressFmt {
+            type SValue = PairStressSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize_dps (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) -> Seq < u8 > {
+                PairStressFmt :: spec_inner () . spec_serialize_dps (v ,
+                obuf)
+            }
+        }
+        impl SpecSerializer for PairStressFmt {
+            type SVal = PairStressSpec ;
+            # [verifier :: opaque] open spec fn spec_serialize (& self ,
+            v : Self :: SVal) -> Seq < u8 > {
+                PairStressFmt :: spec_inner () . spec_serialize (v)
+            }
+        }
+        impl SpecByteLen for PairStressFmt {
+            type T = PairStressSpec ;
+            # [verifier :: opaque] open spec fn byte_len (& self ,
+            v : Self :: T) -> nat {
+                PairStressFmt :: spec_inner () . byte_len (v)
             }
         }
     }
@@ -1170,6 +1313,122 @@ verus! {
                 fmt . lemma_serialize_equiv_on_empty (v) ;
             }
         }
+
+        impl SafeParser for PairStressFmt {
+            proof fn lemma_parse_safe (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                PairStressFmt :: spec_inner () . lemma_parse_safe (ibuf) ;
+            }
+        }
+        impl Productive for PairStressFmt {
+            open spec fn productive_inv (& self) -> bool {
+                PairStressFmt :: spec_inner () . productive_inv ()
+            }
+            proof fn lemma_productive (& self ,
+            s : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . productive_inv ()) ;
+                fmt . lemma_productive (s) ;
+            }
+        }
+        impl SoundParser for PairStressFmt {
+            proof fn lemma_parse_sound_consumption (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                reveal (< PairStressFmt as SpecByteLen > :: byte_len) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_consumption (ibuf) ;
+            }
+            proof fn lemma_parse_sound_value (& self ,
+            ibuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                reveal (< PairStressFmt as Consistency > :: consistent) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . sound_inv ()) ;
+                fmt . lemma_parse_sound_value (ibuf) ;
+            }
+        }
+        impl NonTailFmt for PairStressFmt {
+            proof fn lemma_serialize_dps_prepend (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_prepend (v ,
+                obuf) ;
+            }
+            proof fn lemma_serialize_dps_len (& self ,
+            v : Self :: SValue ,
+            obuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< PairStressFmt as SpecByteLen > :: byte_len) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . serialize_dps_inv ()) ;
+                fmt . lemma_serialize_dps_len (v ,
+                obuf) ;
+            }
+        }
+        impl GoodSerializer for PairStressFmt {
+            proof fn lemma_serialize_len (& self ,
+            v : Self :: SVal) {
+                reveal (< PairStressFmt as SpecSerializer > :: spec_serialize) ;
+                reveal (< PairStressFmt as SpecByteLen > :: byte_len) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . serialize_inv ()) ;
+                fmt . lemma_serialize_len (v) ;
+            }
+        }
+        impl SPRoundTripDps for PairStressFmt {
+            proof fn theorem_serialize_dps_parse_roundtrip (& self ,
+            v : Self :: T ,
+            obuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                reveal (< PairStressFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< PairStressFmt as Consistency > :: consistent) ;
+                reveal (< PairStressFmt as SpecByteLen > :: byte_len) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . unambiguous ()) ;
+                fmt . theorem_serialize_dps_parse_roundtrip (v ,
+                obuf) ;
+            }
+        }
+        impl NonMalleable for PairStressFmt {
+            proof fn lemma_parse_non_malleable (& self ,
+            buf1 : Seq < u8 > ,
+            buf2 : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . nonmal_inv ()) ;
+                fmt . lemma_parse_non_malleable (buf1 ,
+                buf2) ;
+            }
+        }
+        impl EquivSerializersGeneral for PairStressFmt {
+            proof fn lemma_serialize_equiv (& self ,
+            v : Self :: SVal ,
+            obuf : Seq < u8 >) {
+                reveal (< PairStressFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< PairStressFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . equiv_general_inv ()) ;
+                fmt . lemma_serialize_equiv (v ,
+                obuf) ;
+            }
+        }
+        impl EquivSerializers for PairStressFmt {
+            proof fn lemma_serialize_equiv_on_empty (& self ,
+            v : Self :: SVal) {
+                reveal (< PairStressFmt as SpecSerializerDps > :: spec_serialize_dps) ;
+                reveal (< PairStressFmt as SpecSerializer > :: spec_serialize) ;
+                let fmt = PairStressFmt :: spec_inner () ;
+                assert (fmt . equiv_inv ()) ;
+                fmt . lemma_serialize_equiv_on_empty (v) ;
+            }
+        }
     }
 
     // ============================================================
@@ -1222,16 +1481,57 @@ verus! {
             28 => TstTag :: C28 ,
             29 => TstTag :: C29 ,
             30 => TstTag :: C30 ,
-            31 => TstTag :: C31 ,
-            32 => TstTag :: C32 ,
-            33 => TstTag :: C33 ,
-            34 => TstTag :: C34 ,
-            35 => TstTag :: C35 ,
             x => TstTag :: Unknown (x) ,
         }
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , enum_val . deep_view ()))) ;
                 Ok((n, enum_val))
+            }
+        }
+
+        impl Serializer < TstTag > for TstTagFmt {
+            fn serialize (& self , v : & TstTag , obuf : & mut Vec < u8 >) {
+                reveal (< TstTagFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            TstTag :: C0 => 0 ,
+            TstTag :: C1 => 1 ,
+            TstTag :: C2 => 2 ,
+            TstTag :: C3 => 3 ,
+            TstTag :: C4 => 4 ,
+            TstTag :: C5 => 5 ,
+            TstTag :: C6 => 6 ,
+            TstTag :: C7 => 7 ,
+            TstTag :: C8 => 8 ,
+            TstTag :: C9 => 9 ,
+            TstTag :: C10 => 10 ,
+            TstTag :: C11 => 11 ,
+            TstTag :: C12 => 12 ,
+            TstTag :: C13 => 13 ,
+            TstTag :: C14 => 14 ,
+            TstTag :: C15 => 15 ,
+            TstTag :: C16 => 16 ,
+            TstTag :: C17 => 17 ,
+            TstTag :: C18 => 18 ,
+            TstTag :: C19 => 19 ,
+            TstTag :: C20 => 20 ,
+            TstTag :: C21 => 21 ,
+            TstTag :: C22 => 22 ,
+            TstTag :: C23 => 23 ,
+            TstTag :: C24 => 24 ,
+            TstTag :: C25 => 25 ,
+            TstTag :: C26 => 26 ,
+            TstTag :: C27 => 27 ,
+            TstTag :: C28 => 28 ,
+            TstTag :: C29 => 29 ,
+            TstTag :: C30 => 30 ,
+            TstTag :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -1260,6 +1560,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Mydata < 'i > > for MydataFmt {
+            fn serialize (& self , v : & Mydata < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< MydataFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Mydata {
+            foo ,
+            bar
+        }
+        = v ;
+                (Fixed :: < 2 >) . serialize (foo , obuf) ;
+                (Fixed :: < 2 >) . serialize (bar , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -1498,41 +1815,6 @@ verus! {
                 TstMydata :: C30 (v))
             }
             ,
-            TstTag :: C31 => {
-                let (n ,
-                v) = (MydataFmt) . parse (& rest) ? ;
-                (n ,
-                TstMydata :: C31 (v))
-            }
-            ,
-            TstTag :: C32 => {
-                let (n ,
-                v) = (MydataFmt) . parse (& rest) ? ;
-                (n ,
-                TstMydata :: C32 (v))
-            }
-            ,
-            TstTag :: C33 => {
-                let (n ,
-                v) = (MydataFmt) . parse (& rest) ? ;
-                (n ,
-                TstMydata :: C33 (v))
-            }
-            ,
-            TstTag :: C34 => {
-                let (n ,
-                v) = (MydataFmt) . parse (& rest) ? ;
-                (n ,
-                TstMydata :: C34 (v))
-            }
-            ,
-            TstTag :: C35 => {
-                let (n ,
-                v) = (MydataFmt) . parse (& rest) ? ;
-                (n ,
-                TstMydata :: C35 (v))
-            }
-            ,
             _ => {
                 let (n ,
                 v) = (Tail) . parse (& rest) ? ;
@@ -1544,6 +1826,217 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < TstMydata < 'i > > for TstMydataFmt {
+            fn serialize (& self , v : & TstMydata < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< TstMydataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . tag , v) {
+            (TstTag :: C0 ,
+            TstMydata :: C0 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C1 ,
+            TstMydata :: C1 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C2 ,
+            TstMydata :: C2 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C3 ,
+            TstMydata :: C3 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C4 ,
+            TstMydata :: C4 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C5 ,
+            TstMydata :: C5 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C6 ,
+            TstMydata :: C6 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C7 ,
+            TstMydata :: C7 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C8 ,
+            TstMydata :: C8 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C9 ,
+            TstMydata :: C9 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C10 ,
+            TstMydata :: C10 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C11 ,
+            TstMydata :: C11 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C12 ,
+            TstMydata :: C12 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C13 ,
+            TstMydata :: C13 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C14 ,
+            TstMydata :: C14 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C15 ,
+            TstMydata :: C15 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C16 ,
+            TstMydata :: C16 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C17 ,
+            TstMydata :: C17 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C18 ,
+            TstMydata :: C18 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C19 ,
+            TstMydata :: C19 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C20 ,
+            TstMydata :: C20 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C21 ,
+            TstMydata :: C21 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C22 ,
+            TstMydata :: C22 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C23 ,
+            TstMydata :: C23 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C24 ,
+            TstMydata :: C24 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C25 ,
+            TstMydata :: C25 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C26 ,
+            TstMydata :: C26 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C27 ,
+            TstMydata :: C27 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C28 ,
+            TstMydata :: C28 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C29 ,
+            TstMydata :: C29 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (TstTag :: C30 ,
+            TstMydata :: C30 (v)) => {
+                (MydataFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            TstMydata :: Default (v)) => {
+                (Tail) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -1575,6 +2068,151 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Tst < 'i > > for TstFmt {
+            fn serialize (& self , v : & Tst < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< TstFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Tst {
+            tag ,
+            mydata
+        }
+        = v ;
+                (TstTagFmt) . serialize (tag , obuf) ;
+                (TstMydataFmt {
+            tag : * tag
+        }
+        ) . serialize (mydata , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
+
+
+        impl < 'i > Parser < & 'i [u8] > for PairStressFmt {
+            type PT = PairStress ;
+
+            fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+                broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+                broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+
+                reveal (< PairStressFmt as SpecParser > :: spec_parse) ;
+                let _ = ibuf.len();
+                let rest = *ibuf;
+
+                let (n1 , f1) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n1);
+                let (n2 , f2) = (U16Le) . parse (& rest) ? ;
+                let rest = rest.skip(n2);
+                let (n3 , f3) = (U32Le) . parse (& rest) ? ;
+                let rest = rest.skip(n3);
+                let (n4 , f4) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n4);
+                let (n5 , f5) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n5);
+                let (n6 , f6) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n6);
+                let (n7 , f7) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n7);
+                let (n8 , f8) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n8);
+                let (n9 , f9) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n9);
+                let (n10 , f10) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n10);
+                let (n11 , f11) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n11);
+                let (n12 , f12) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n12);
+                let (n13 , f13) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n13);
+                let (n14 , f14) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n14);
+                let (n15 , f15) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n15);
+                let (n16 , f16) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n16);
+                let (n17 , f17) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n17);
+                let (n18 , f18) = (U8) . parse (& rest) ? ;
+                let rest = rest.skip(n18);
+                let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10 + n11 + n12 + n13 + n14 + n15 + n16 + n17 + n18;
+                let final_v = PairStress {
+            f1 ,
+            f2 ,
+            f3 ,
+            f4 ,
+            f5 ,
+            f6 ,
+            f7 ,
+            f8 ,
+            f9 ,
+            f10 ,
+            f11 ,
+            f12 ,
+            f13 ,
+            f14 ,
+            f15 ,
+            f16 ,
+            f17 ,
+            f18
+        }
+        ;
+                assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
+                Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < PairStress > for PairStressFmt {
+            fn serialize (& self , v : & PairStress , obuf : & mut Vec < u8 >) {
+                reveal (< PairStressFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PairStress {
+            f1 ,
+            f2 ,
+            f3 ,
+            f4 ,
+            f5 ,
+            f6 ,
+            f7 ,
+            f8 ,
+            f9 ,
+            f10 ,
+            f11 ,
+            f12 ,
+            f13 ,
+            f14 ,
+            f15 ,
+            f16 ,
+            f17 ,
+            f18
+        }
+        = v ;
+                (U8) . serialize (f1 , obuf) ;
+                (U16Le) . serialize (f2 , obuf) ;
+                (U32Le) . serialize (f3 , obuf) ;
+                (U8) . serialize (f4 , obuf) ;
+                (U8) . serialize (f5 , obuf) ;
+                (U8) . serialize (f6 , obuf) ;
+                (U8) . serialize (f7 , obuf) ;
+                (U8) . serialize (f8 , obuf) ;
+                (U8) . serialize (f9 , obuf) ;
+                (U8) . serialize (f10 , obuf) ;
+                (U8) . serialize (f11 , obuf) ;
+                (U8) . serialize (f12 , obuf) ;
+                (U8) . serialize (f13 , obuf) ;
+                (U8) . serialize (f14 , obuf) ;
+                (U8) . serialize (f15 , obuf) ;
+                (U8) . serialize (f16 , obuf) ;
+                (U8) . serialize (f17 , obuf) ;
+                (U8) . serialize (f18 , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 

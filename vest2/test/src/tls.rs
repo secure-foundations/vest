@@ -26188,6 +26188,22 @@ verus! {
             }
         }
 
+        impl Serializer < AlertLevel > for AlertLevelFmt {
+            fn serialize (& self , v : & AlertLevel , obuf : & mut Vec < u8 >) {
+                reveal (< AlertLevelFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            AlertLevel :: Warning => 1 ,
+            AlertLevel :: Fatal => 2 ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for EmptyFmt {
@@ -26207,6 +26223,17 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < Empty < 'i > > for EmptyFmt {
+            fn serialize (& self , v : & Empty < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< EmptyFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Fixed :: < 0 >) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for Opaque0FfffFmt {
@@ -26222,7 +26249,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque0Ffff {
@@ -26232,6 +26259,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque0Ffff < 'i > > for Opaque0FfffFmt {
+            fn serialize (& self , v : & Opaque0Ffff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque0FfffFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque0Ffff {
+            l ,
+            data
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26251,6 +26295,17 @@ verus! {
                 let (n , v) = (Opaque0FfffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < OcspExtensions < 'i > > for OcspExtensionsFmt {
+            fn serialize (& self , v : & OcspExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OcspExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque0FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26303,6 +26358,47 @@ verus! {
             }
         }
 
+        impl Serializer < ExtensionType > for ExtensionTypeFmt {
+            fn serialize (& self , v : & ExtensionType , obuf : & mut Vec < u8 >) {
+                reveal (< ExtensionTypeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            ExtensionType :: ServerName => 0 ,
+            ExtensionType :: MaxFragmentLength => 1 ,
+            ExtensionType :: StatusRequest => 5 ,
+            ExtensionType :: SupportedGroups => 10 ,
+            ExtensionType :: ECPointFormats => 11 ,
+            ExtensionType :: SignatureAlgorithms => 13 ,
+            ExtensionType :: UseSRTP => 14 ,
+            ExtensionType :: Heartbeat => 15 ,
+            ExtensionType :: ApplicationLayerProtocolNegotiation => 16 ,
+            ExtensionType :: SignedCertificateTimeStamp => 18 ,
+            ExtensionType :: ClientCertificateType => 19 ,
+            ExtensionType :: ServerCertificateType => 20 ,
+            ExtensionType :: Padding => 21 ,
+            ExtensionType :: EncryptThenMac => 22 ,
+            ExtensionType :: ExtendedMasterSecret => 23 ,
+            ExtensionType :: SessionTicket => 35 ,
+            ExtensionType :: PreSharedKey => 41 ,
+            ExtensionType :: EarlyData => 42 ,
+            ExtensionType :: SupportedVersions => 43 ,
+            ExtensionType :: Cookie => 44 ,
+            ExtensionType :: PskKeyExchangeModes => 45 ,
+            ExtensionType :: CertificateAuthorities => 47 ,
+            ExtensionType :: OidFilters => 48 ,
+            ExtensionType :: PostHandshakeAuth => 49 ,
+            ExtensionType :: SignatureAlgorithmsCert => 50 ,
+            ExtensionType :: KeyShare => 51 ,
+            ExtensionType :: Unknown (x) => x ,
+        }
+        ;
+                U16Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SignatureSchemeFmt {
@@ -26344,6 +26440,39 @@ verus! {
             }
         }
 
+        impl Serializer < SignatureScheme > for SignatureSchemeFmt {
+            fn serialize (& self , v : & SignatureScheme , obuf : & mut Vec < u8 >) {
+                reveal (< SignatureSchemeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            SignatureScheme :: RSA_PKCS1_MD5 => 257 ,
+            SignatureScheme :: RSA_PKCS1_SHA1 => 513 ,
+            SignatureScheme :: ECDSA_MD5 => 259 ,
+            SignatureScheme :: ECDSA_SHA1 => 515 ,
+            SignatureScheme :: RSA_PKCS1_SHA256 => 1025 ,
+            SignatureScheme :: RSA_PKCS1_SHA384 => 1281 ,
+            SignatureScheme :: RSA_PKCS1_SHA512 => 1537 ,
+            SignatureScheme :: ECDSA_SECP256R1_SHA256 => 1027 ,
+            SignatureScheme :: ECDSA_SECP384R1_SHA384 => 1283 ,
+            SignatureScheme :: ECDSA_SECP521R1_SHA512 => 1539 ,
+            SignatureScheme :: RSA_PSS_RSAE_SHA256 => 2052 ,
+            SignatureScheme :: RSA_PSS_RSAE_SHA384 => 2053 ,
+            SignatureScheme :: RSA_PSS_RSAE_SHA512 => 2054 ,
+            SignatureScheme :: ED25519 => 2055 ,
+            SignatureScheme :: ED448 => 2056 ,
+            SignatureScheme :: RSA_PSS_PSS_SHA256 => 2057 ,
+            SignatureScheme :: RSA_PSS_PSS_SHA384 => 2058 ,
+            SignatureScheme :: RSA_PSS_PSS_SHA512 => 2059 ,
+            SignatureScheme :: Unknown (x) => x ,
+        }
+        ;
+                U16Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SignatureSchemeListFmt {
@@ -26362,7 +26491,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (SignatureSchemeFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (SignatureSchemeFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = SignatureSchemeList {
@@ -26372,6 +26501,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < SignatureSchemeList > for SignatureSchemeListFmt {
+            fn serialize (& self , v : & SignatureSchemeList , obuf : & mut Vec < u8 >) {
+                reveal (< SignatureSchemeListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SignatureSchemeList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (SignatureSchemeFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26393,7 +26539,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque1Ffff {
@@ -26403,6 +26549,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque1Ffff < 'i > > for Opaque1FfffFmt {
+            fn serialize (& self , v : & Opaque1Ffff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque1FfffFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque1Ffff {
+            l ,
+            data
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26425,6 +26588,17 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < DistinguishedName < 'i > > for DistinguishedNameFmt {
+            fn serialize (& self , v : & DistinguishedName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< DistinguishedNameFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateAuthoritiesExtensionFmt {
@@ -26443,7 +26617,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (DistinguishedNameFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (DistinguishedNameFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = CertificateAuthoritiesExtension {
@@ -26453,6 +26627,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateAuthoritiesExtension < 'i > > for CertificateAuthoritiesExtensionFmt {
+            fn serialize (& self , v : & CertificateAuthoritiesExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateAuthoritiesExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateAuthoritiesExtension {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (DistinguishedNameFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26475,6 +26666,17 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ResponderId < 'i > > for ResponderIdFmt {
+            fn serialize (& self , v : & ResponderId < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ResponderIdFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ResponderIdListFmt {
@@ -26490,7 +26692,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (ResponderIdFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (ResponderIdFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ResponderIdList {
@@ -26500,6 +26702,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ResponderIdList < 'i > > for ResponderIdListFmt {
+            fn serialize (& self , v : & ResponderIdList < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ResponderIdListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ResponderIdList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ResponderIdFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26531,6 +26750,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < OscpStatusRequest < 'i > > for OscpStatusRequestFmt {
+            fn serialize (& self , v : & OscpStatusRequest < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OscpStatusRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let OscpStatusRequest {
+            responder_id_list ,
+            extensions
+        }
+        = v ;
+                (ResponderIdListFmt) . serialize (responder_id_list , obuf) ;
+                (OcspExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateStatusRequestFmt {
@@ -26559,6 +26795,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < CertificateStatusRequest < 'i > > for CertificateStatusRequestFmt {
+            fn serialize (& self , v : & CertificateStatusRequest < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateStatusRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateStatusRequest {
+            status_type ,
+            request
+        }
+        = v ;
+                (Const (U8 , 1)) . serialize (status_type , obuf) ;
+                (OscpStatusRequestFmt) . serialize (request , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SerializedSctFmt {
@@ -26575,6 +26828,17 @@ verus! {
                 let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < SerializedSct < 'i > > for SerializedSctFmt {
+            fn serialize (& self , v : & SerializedSct < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SerializedSctFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26596,7 +26860,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (SerializedSctFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (SerializedSctFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = SignedCertificateTimestampList {
@@ -26606,6 +26870,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < SignedCertificateTimestampList < 'i > > for SignedCertificateTimestampListFmt {
+            fn serialize (& self , v : & SignedCertificateTimestampList < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SignedCertificateTimestampListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SignedCertificateTimestampList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (SerializedSctFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26627,7 +26908,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque1Ff {
@@ -26637,6 +26918,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque1Ff < 'i > > for Opaque1FfFmt {
+            fn serialize (& self , v : & Opaque1Ff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque1FfFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque1Ff {
+            l ,
+            data
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26668,6 +26966,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < OidFilter < 'i > > for OidFilterFmt {
+            fn serialize (& self , v : & OidFilter < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OidFilterFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let OidFilter {
+            certificate_extension_oid ,
+            certificate_extension_values
+        }
+        = v ;
+                (Opaque1FfFmt) . serialize (certificate_extension_oid , obuf) ;
+                (Opaque0FfffFmt) . serialize (certificate_extension_values , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for OidFilterExtensionFmt {
@@ -26683,7 +26998,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (OidFilterFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (OidFilterFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = OidFilterExtension {
@@ -26693,6 +27008,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < OidFilterExtension < 'i > > for OidFilterExtensionFmt {
+            fn serialize (& self , v : & OidFilterExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OidFilterExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let OidFilterExtension {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (OidFilterFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26758,7 +27090,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 CertificateRequestExtensionExtensionData :: Default (v))
             }
@@ -26767,6 +27099,67 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateRequestExtensionExtensionData < 'i > > for CertificateRequestExtensionExtensionDataFmt {
+            fn serialize (& self , v : & CertificateRequestExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateRequestExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: SignatureAlgorithms ,
+            CertificateRequestExtensionExtensionData :: SignatureAlgorithms (v)) => {
+                (SignatureSchemeListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: CertificateAuthorities ,
+            CertificateRequestExtensionExtensionData :: CertificateAuthorities (v)) => {
+                (CertificateAuthoritiesExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignatureAlgorithmsCert ,
+            CertificateRequestExtensionExtensionData :: SignatureAlgorithmsCert (v)) => {
+                (SignatureSchemeListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: StatusRequest ,
+            CertificateRequestExtensionExtensionData :: StatusRequest (v)) => {
+                (CertificateStatusRequestFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignedCertificateTimeStamp ,
+            CertificateRequestExtensionExtensionData :: SignedCertificateTimeStamp (v)) => {
+                (SignedCertificateTimestampListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: OidFilters ,
+            CertificateRequestExtensionExtensionData :: OidFilters (v)) => {
+                (OidFilterExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            CertificateRequestExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26787,7 +27180,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , CertificateRequestExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , CertificateRequestExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -26802,6 +27195,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateRequestExtension < 'i > > for CertificateRequestExtensionFmt {
+            fn serialize (& self , v : & CertificateRequestExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateRequestExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateRequestExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , CertificateRequestExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26829,6 +27245,22 @@ verus! {
             }
         }
 
+        impl Serializer < NameType > for NameTypeFmt {
+            fn serialize (& self , v : & NameType , obuf : & mut Vec < u8 >) {
+                reveal (< NameTypeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            NameType :: HostName => 0 ,
+            NameType :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SessionIdFmt {
@@ -26847,7 +27279,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , id) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , id) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = SessionId {
@@ -26857,6 +27289,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < SessionId < 'i > > for SessionIdFmt {
+            fn serialize (& self , v : & SessionId < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SessionIdFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SessionId {
+            l ,
+            id
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (id , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -26888,6 +27337,26 @@ verus! {
             }
         }
 
+        impl Serializer < CipherSuite > for CipherSuiteFmt {
+            fn serialize (& self , v : & CipherSuite , obuf : & mut Vec < u8 >) {
+                reveal (< CipherSuiteFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            CipherSuite :: TLS_AES_128_GCM_SHA256 => 4865 ,
+            CipherSuite :: TLS_AES_256_GCM_SHA384 => 4866 ,
+            CipherSuite :: TLS_CHACHA20_POLY1305_SHA256 => 4867 ,
+            CipherSuite :: TLS_AES_128_CCM_SHA256 => 4868 ,
+            CipherSuite :: TLS_AES_128_CCM_8_SHA256 => 4869 ,
+            CipherSuite :: Unknown (x) => x ,
+        }
+        ;
+                U16Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ProtocolVersionFmt {
@@ -26916,6 +27385,26 @@ verus! {
             }
         }
 
+        impl Serializer < ProtocolVersion > for ProtocolVersionFmt {
+            fn serialize (& self , v : & ProtocolVersion , obuf : & mut Vec < u8 >) {
+                reveal (< ProtocolVersionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            ProtocolVersion :: SSLv3 => 768 ,
+            ProtocolVersion :: TLSv1_0 => 769 ,
+            ProtocolVersion :: TLSv1_1 => 770 ,
+            ProtocolVersion :: TLSv1_2 => 771 ,
+            ProtocolVersion :: TLSv1_3 => 772 ,
+            ProtocolVersion :: Unknown (x) => x ,
+        }
+        ;
+                U16Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SupportedVersionsServerFmt {
@@ -26935,6 +27424,17 @@ verus! {
             }
         }
 
+        impl Serializer < SupportedVersionsServer > for SupportedVersionsServerFmt {
+            fn serialize (& self , v : & SupportedVersionsServer , obuf : & mut Vec < u8 >) {
+                reveal (< SupportedVersionsServerFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (ProtocolVersionFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CookieFmt {
@@ -26951,6 +27451,17 @@ verus! {
                 let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < Cookie < 'i > > for CookieFmt {
+            fn serialize (& self , v : & Cookie < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CookieFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27009,6 +27520,53 @@ verus! {
             }
         }
 
+        impl Serializer < NamedGroup > for NamedGroupFmt {
+            fn serialize (& self , v : & NamedGroup , obuf : & mut Vec < u8 >) {
+                reveal (< NamedGroupFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            NamedGroup :: Sect163k1 => 1 ,
+            NamedGroup :: Sect163r1 => 2 ,
+            NamedGroup :: Sect163r2 => 3 ,
+            NamedGroup :: Sect193r1 => 4 ,
+            NamedGroup :: Sect193r2 => 5 ,
+            NamedGroup :: Sect233k1 => 6 ,
+            NamedGroup :: Sect233r1 => 7 ,
+            NamedGroup :: Sect239k1 => 8 ,
+            NamedGroup :: Sect283k1 => 9 ,
+            NamedGroup :: Sect283r1 => 10 ,
+            NamedGroup :: Sect409k1 => 11 ,
+            NamedGroup :: Sect409r1 => 12 ,
+            NamedGroup :: Sect571k1 => 13 ,
+            NamedGroup :: Sect571r1 => 14 ,
+            NamedGroup :: Secp160k1 => 15 ,
+            NamedGroup :: Secp160r1 => 16 ,
+            NamedGroup :: Secp160r2 => 17 ,
+            NamedGroup :: Secp192k1 => 18 ,
+            NamedGroup :: Secp192r1 => 19 ,
+            NamedGroup :: Secp224k1 => 20 ,
+            NamedGroup :: Secp224r1 => 21 ,
+            NamedGroup :: Secp256k1 => 22 ,
+            NamedGroup :: Secp256r1 => 23 ,
+            NamedGroup :: Secp384r1 => 24 ,
+            NamedGroup :: Secp521r1 => 25 ,
+            NamedGroup :: X25519 => 29 ,
+            NamedGroup :: X448 => 30 ,
+            NamedGroup :: Ffdhe2048 => 256 ,
+            NamedGroup :: Ffdhe3072 => 257 ,
+            NamedGroup :: Ffdhe4096 => 258 ,
+            NamedGroup :: Ffdhe6144 => 259 ,
+            NamedGroup :: Ffdhe8192 => 260 ,
+            NamedGroup :: Unknown (x) => x ,
+        }
+        ;
+                U16Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for HelloRetryExtensionExtensionDataFmt {
@@ -27050,7 +27608,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 HelloRetryExtensionExtensionData :: Default (v))
             }
@@ -27059,6 +27617,49 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < HelloRetryExtensionExtensionData < 'i > > for HelloRetryExtensionExtensionDataFmt {
+            fn serialize (& self , v : & HelloRetryExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HelloRetryExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: SupportedVersions ,
+            HelloRetryExtensionExtensionData :: SupportedVersions (v)) => {
+                (SupportedVersionsServerFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Cookie ,
+            HelloRetryExtensionExtensionData :: Cookie (v)) => {
+                (CookieFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: KeyShare ,
+            HelloRetryExtensionExtensionData :: KeyShare (v)) => {
+                (NamedGroupFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            HelloRetryExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27079,7 +27680,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , HelloRetryExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , HelloRetryExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -27094,6 +27695,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < HelloRetryExtension < 'i > > for HelloRetryExtensionFmt {
+            fn serialize (& self , v : & HelloRetryExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HelloRetryExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let HelloRetryExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , HelloRetryExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27115,7 +27739,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (HelloRetryExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (HelloRetryExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = HelloRetryExtensions {
@@ -27125,6 +27749,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < HelloRetryExtensions < 'i > > for HelloRetryExtensionsFmt {
+            fn serialize (& self , v : & HelloRetryExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HelloRetryExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let HelloRetryExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (HelloRetryExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27162,6 +27803,27 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < HelloRetryRequest < 'i > > for HelloRetryRequestFmt {
+            fn serialize (& self , v : & HelloRetryRequest < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HelloRetryRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let HelloRetryRequest {
+            legacy_session_id_echo ,
+            cipher_suite ,
+            legacy_compression_method ,
+            extensions
+        }
+        = v ;
+                (SessionIdFmt) . serialize (legacy_session_id_echo , obuf) ;
+                (CipherSuiteFmt) . serialize (cipher_suite , obuf) ;
+                (Const (U8 , 0)) . serialize (legacy_compression_method , obuf) ;
+                (HelloRetryExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for HostNameFmt {
@@ -27181,6 +27843,17 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < HostName < 'i > > for HostNameFmt {
+            fn serialize (& self , v : & HostName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HostNameFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for UnknownNameFmt {
@@ -27197,6 +27870,17 @@ verus! {
                 let (n , v) = (Opaque1FfffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < UnknownName < 'i > > for UnknownNameFmt {
+            fn serialize (& self , v : & UnknownName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< UnknownNameFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27239,6 +27923,37 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ServerNameName < 'i > > for ServerNameNameFmt {
+            fn serialize (& self , v : & ServerNameName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ServerNameNameFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . name_type , v) {
+            (NameType :: HostName ,
+            ServerNameName :: HostName (v)) => {
+                (HostNameFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            ServerNameName :: Default (v)) => {
+                (UnknownNameFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ServerNameFmt {
@@ -27270,6 +27985,26 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ServerName < 'i > > for ServerNameFmt {
+            fn serialize (& self , v : & ServerName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ServerNameFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerName {
+            name_type ,
+            name
+        }
+        = v ;
+                (NameTypeFmt) . serialize (name_type , obuf) ;
+                (ServerNameNameFmt {
+            name_type : * name_type
+        }
+        ) . serialize (name , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ServerNameListFmt {
@@ -27288,7 +28023,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (ServerNameFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (ServerNameFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ServerNameList {
@@ -27298,6 +28033,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ServerNameList < 'i > > for ServerNameListFmt {
+            fn serialize (& self , v : & ServerNameList < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ServerNameListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerNameList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ServerNameFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27328,6 +28080,25 @@ verus! {
             }
         }
 
+        impl Serializer < MaxFragmentLength > for MaxFragmentLengthFmt {
+            fn serialize (& self , v : & MaxFragmentLength , obuf : & mut Vec < u8 >) {
+                reveal (< MaxFragmentLengthFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            MaxFragmentLength :: Pow2_9 => 1 ,
+            MaxFragmentLength :: Pow2_10 => 2 ,
+            MaxFragmentLength :: Pow2_11 => 3 ,
+            MaxFragmentLength :: Pow2_12 => 4 ,
+            MaxFragmentLength :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for NamedGroupListFmt {
@@ -27346,7 +28117,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (NamedGroupFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (NamedGroupFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = NamedGroupList {
@@ -27356,6 +28127,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < NamedGroupList > for NamedGroupListFmt {
+            fn serialize (& self , v : & NamedGroupList , obuf : & mut Vec < u8 >) {
+                reveal (< NamedGroupListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let NamedGroupList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (NamedGroupFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27385,6 +28173,24 @@ verus! {
             }
         }
 
+        impl Serializer < EcPointFormat > for EcPointFormatFmt {
+            fn serialize (& self , v : & EcPointFormat , obuf : & mut Vec < u8 >) {
+                reveal (< EcPointFormatFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            EcPointFormat :: Uncompressed => 0 ,
+            EcPointFormat :: AnsiX962CompressedPrime => 1 ,
+            EcPointFormat :: AnsiX962CompressedChar2 => 2 ,
+            EcPointFormat :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for EcPointFormatListFmt {
@@ -27403,7 +28209,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (EcPointFormatFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (EcPointFormatFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = EcPointFormatList {
@@ -27413,6 +28219,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < EcPointFormatList > for EcPointFormatListFmt {
+            fn serialize (& self , v : & EcPointFormatList , obuf : & mut Vec < u8 >) {
+                reveal (< EcPointFormatListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let EcPointFormatList {
+            l ,
+            list
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (ExactLen (l , Star (EcPointFormatFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27435,6 +28258,17 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < SrtpProtectionProfile < 'i > > for SrtpProtectionProfileFmt {
+            fn serialize (& self , v : & SrtpProtectionProfile < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SrtpProtectionProfileFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Fixed :: < 2 >) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for SrtpProtectionProfilesFmt {
@@ -27453,7 +28287,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (SrtpProtectionProfileFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (SrtpProtectionProfileFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = SrtpProtectionProfiles {
@@ -27463,6 +28297,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < SrtpProtectionProfiles < 'i > > for SrtpProtectionProfilesFmt {
+            fn serialize (& self , v : & SrtpProtectionProfiles < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SrtpProtectionProfilesFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SrtpProtectionProfiles {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (SrtpProtectionProfileFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27491,6 +28342,23 @@ verus! {
             }
         }
 
+        impl Serializer < HeartbeatMode > for HeartbeatModeFmt {
+            fn serialize (& self , v : & HeartbeatMode , obuf : & mut Vec < u8 >) {
+                reveal (< HeartbeatModeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            HeartbeatMode :: PeerAllowedToSend => 1 ,
+            HeartbeatMode :: PeerNotAllowedToSend => 2 ,
+            HeartbeatMode :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ProtocolNameFmt {
@@ -27507,6 +28375,17 @@ verus! {
                 let (n , v) = (Opaque1FfFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < ProtocolName < 'i > > for ProtocolNameFmt {
+            fn serialize (& self , v : & ProtocolName < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ProtocolNameFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27528,7 +28407,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (ProtocolNameFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (ProtocolNameFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ProtocolNameList {
@@ -27538,6 +28417,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ProtocolNameList < 'i > > for ProtocolNameListFmt {
+            fn serialize (& self , v : & ProtocolNameList < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ProtocolNameListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ProtocolNameList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ProtocolNameFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27566,6 +28462,23 @@ verus! {
             }
         }
 
+        impl Serializer < CertificateType > for CertificateTypeFmt {
+            fn serialize (& self , v : & CertificateType , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateTypeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            CertificateType :: X509 => 0 ,
+            CertificateType :: RawPublicKey => 2 ,
+            CertificateType :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ClientCertTypeClientExtensionFmt {
@@ -27584,7 +28497,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateTypeFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CertificateTypeFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ClientCertTypeClientExtension {
@@ -27594,6 +28507,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < ClientCertTypeClientExtension > for ClientCertTypeClientExtensionFmt {
+            fn serialize (& self , v : & ClientCertTypeClientExtension , obuf : & mut Vec < u8 >) {
+                reveal (< ClientCertTypeClientExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ClientCertTypeClientExtension {
+            l ,
+            list
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CertificateTypeFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27615,7 +28545,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateTypeFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CertificateTypeFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ServerCertTypeClientExtension {
@@ -27625,6 +28555,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < ServerCertTypeClientExtension > for ServerCertTypeClientExtensionFmt {
+            fn serialize (& self , v : & ServerCertTypeClientExtension , obuf : & mut Vec < u8 >) {
+                reveal (< ServerCertTypeClientExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerCertTypeClientExtension {
+            l ,
+            list
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CertificateTypeFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27653,6 +28600,21 @@ verus! {
             }
         }
 
+        impl Serializer < PreSharedKeyServerExtension > for PreSharedKeyServerExtensionFmt {
+            fn serialize (& self , v : & PreSharedKeyServerExtension , obuf : & mut Vec < u8 >) {
+                reveal (< PreSharedKeyServerExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PreSharedKeyServerExtension {
+            selected_identity
+        }
+        = v ;
+                (U16Be) . serialize (selected_identity , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for KeyShareEntryFmt {
@@ -27673,7 +28635,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n2);
-                let (n3 , key_exchange) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n3 , key_exchange) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n3);
                 let total_n = n1 + n2 + n3;
                 let final_v = KeyShareEntry {
@@ -27684,6 +28646,25 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < KeyShareEntry < 'i > > for KeyShareEntryFmt {
+            fn serialize (& self , v : & KeyShareEntry < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< KeyShareEntryFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let KeyShareEntry {
+            group ,
+            l ,
+            key_exchange
+        }
+        = v ;
+                (NamedGroupFmt) . serialize (group , obuf) ;
+                (U16Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (key_exchange , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27791,7 +28772,7 @@ verus! {
             ,
             ExtensionType :: Padding => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 SeverHelloExtensionExtensionData :: Padding (v))
             }
@@ -27840,7 +28821,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 SeverHelloExtensionExtensionData :: Default (v))
             }
@@ -27849,6 +28830,145 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < SeverHelloExtensionExtensionData < 'i > > for SeverHelloExtensionExtensionDataFmt {
+            fn serialize (& self , v : & SeverHelloExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SeverHelloExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: ServerName ,
+            SeverHelloExtensionExtensionData :: ServerName (v)) => {
+                (ServerNameListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: MaxFragmentLength ,
+            SeverHelloExtensionExtensionData :: MaxFragmentLength (v)) => {
+                (MaxFragmentLengthFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: StatusRequest ,
+            SeverHelloExtensionExtensionData :: StatusRequest (v)) => {
+                (CertificateStatusRequestFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SupportedGroups ,
+            SeverHelloExtensionExtensionData :: SupportedGroups (v)) => {
+                (NamedGroupListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ECPointFormats ,
+            SeverHelloExtensionExtensionData :: ECPointFormats (v)) => {
+                (EcPointFormatListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignatureAlgorithms ,
+            SeverHelloExtensionExtensionData :: SignatureAlgorithms (v)) => {
+                (SignatureSchemeListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: UseSRTP ,
+            SeverHelloExtensionExtensionData :: UseSRTP (v)) => {
+                (SrtpProtectionProfilesFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Heartbeat ,
+            SeverHelloExtensionExtensionData :: Heartbeat (v)) => {
+                (HeartbeatModeFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ApplicationLayerProtocolNegotiation ,
+            SeverHelloExtensionExtensionData :: ApplicationLayerProtocolNegotiation (v)) => {
+                (ProtocolNameListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignedCertificateTimeStamp ,
+            SeverHelloExtensionExtensionData :: SignedCertificateTimeStamp (v)) => {
+                (SignedCertificateTimestampListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ClientCertificateType ,
+            SeverHelloExtensionExtensionData :: ClientCertificateType (v)) => {
+                (ClientCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ServerCertificateType ,
+            SeverHelloExtensionExtensionData :: ServerCertificateType (v)) => {
+                (ServerCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Padding ,
+            SeverHelloExtensionExtensionData :: Padding (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: EncryptThenMac ,
+            SeverHelloExtensionExtensionData :: EncryptThenMac (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ExtendedMasterSecret ,
+            SeverHelloExtensionExtensionData :: ExtendedMasterSecret (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SessionTicket ,
+            SeverHelloExtensionExtensionData :: SessionTicket (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: PreSharedKey ,
+            SeverHelloExtensionExtensionData :: PreSharedKey (v)) => {
+                (PreSharedKeyServerExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SupportedVersions ,
+            SeverHelloExtensionExtensionData :: SupportedVersions (v)) => {
+                (SupportedVersionsServerFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: KeyShare ,
+            SeverHelloExtensionExtensionData :: KeyShare (v)) => {
+                (KeyShareEntryFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            SeverHelloExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27869,7 +28989,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , SeverHelloExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , SeverHelloExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -27884,6 +29004,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < SeverHelloExtension < 'i > > for SeverHelloExtensionFmt {
+            fn serialize (& self , v : & SeverHelloExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< SeverHelloExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SeverHelloExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , SeverHelloExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27905,7 +29048,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (SeverHelloExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (SeverHelloExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ServerExtensions {
@@ -27915,6 +29058,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ServerExtensions < 'i > > for ServerExtensionsFmt {
+            fn serialize (& self , v : & ServerExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ServerExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (SeverHelloExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27949,6 +29109,27 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ServerHello < 'i > > for ServerHelloFmt {
+            fn serialize (& self , v : & ServerHello < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ServerHelloFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerHello {
+            legacy_session_id_echo ,
+            cipher_suite ,
+            legacy_compression_method ,
+            extensions
+        }
+        = v ;
+                (SessionIdFmt) . serialize (legacy_session_id_echo , obuf) ;
+                (CipherSuiteFmt) . serialize (cipher_suite , obuf) ;
+                (Const (U8 , 0)) . serialize (legacy_compression_method , obuf) ;
+                (ServerExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -27991,6 +29172,37 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ShOrHrrPayload < 'i > > for ShOrHrrPayloadFmt < 'i > {
+            fn serialize (& self , v : & ShOrHrrPayload < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ShOrHrrPayloadFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . random , v) {
+            (x ,
+            ShOrHrrPayload :: Variant1 (v)) if x . deep_eq (& [0xcf , 0x21 , 0xad , 0x74 , 0xe5 , 0x9a , 0x61 , 0x11 , 0xbe , 0x1d , 0x8c , 0x02 , 0x1e , 0x65 , 0xb8 , 0x91 , 0xc2 , 0xa2 , 0x11 , 0x16 , 0x7a , 0xbb , 0x8c , 0x5e , 0x07 , 0x9e , 0x09 , 0xe2 , 0xc8 , 0xa8 , 0x33 , 0x9c]) => {
+                (HelloRetryRequestFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            ShOrHrrPayload :: Default (v)) => {
+                (ServerHelloFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ShOrHrrFmt {
@@ -28022,6 +29234,28 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ShOrHrr < 'i > > for ShOrHrrFmt {
+            fn serialize (& self , v : & ShOrHrr < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ShOrHrrFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ShOrHrr {
+            legacy_version ,
+            random ,
+            payload
+        }
+        = v ;
+                (Const (U16Be , 771)) . serialize (legacy_version , obuf) ;
+                (Fixed :: < 32 >) . serialize (random , obuf) ;
+                (ShOrHrrPayloadFmt {
+            random : * random
+        }
+        ) . serialize (payload , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28058,6 +29292,30 @@ verus! {
             }
         }
 
+        impl Serializer < HandshakeType > for HandshakeTypeFmt {
+            fn serialize (& self , v : & HandshakeType , obuf : & mut Vec < u8 >) {
+                reveal (< HandshakeTypeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            HandshakeType :: ClientHello => 1 ,
+            HandshakeType :: ServerHello => 2 ,
+            HandshakeType :: NewSessionTicket => 4 ,
+            HandshakeType :: EndOfEarlyData => 5 ,
+            HandshakeType :: EncryptedExtensions => 8 ,
+            HandshakeType :: Certificate => 11 ,
+            HandshakeType :: CertificateRequest => 13 ,
+            HandshakeType :: CertificateVerify => 15 ,
+            HandshakeType :: Finished => 20 ,
+            HandshakeType :: KeyUpdate => 24 ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CipherSuiteListFmt {
@@ -28076,7 +29334,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CipherSuiteFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CipherSuiteFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = CipherSuiteList {
@@ -28086,6 +29344,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < CipherSuiteList > for CipherSuiteListFmt {
+            fn serialize (& self , v : & CipherSuiteList , obuf : & mut Vec < u8 >) {
+                reveal (< CipherSuiteListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CipherSuiteList {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CipherSuiteFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28107,7 +29382,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (ProtocolVersionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (ProtocolVersionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = SupportedVersionsClient {
@@ -28117,6 +29392,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < SupportedVersionsClient > for SupportedVersionsClientFmt {
+            fn serialize (& self , v : & SupportedVersionsClient , obuf : & mut Vec < u8 >) {
+                reveal (< SupportedVersionsClientFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let SupportedVersionsClient {
+            l ,
+            list
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ProtocolVersionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28135,7 +29427,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (KeyShareEntryFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (KeyShareEntryFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = KeyShareClientHello {
@@ -28145,6 +29437,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < KeyShareClientHello < 'i > > for KeyShareClientHelloFmt {
+            fn serialize (& self , v : & KeyShareClientHello < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< KeyShareClientHelloFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let KeyShareClientHello {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (KeyShareEntryFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28173,6 +29482,23 @@ verus! {
             }
         }
 
+        impl Serializer < PskKeyExchangeMode > for PskKeyExchangeModeFmt {
+            fn serialize (& self , v : & PskKeyExchangeMode , obuf : & mut Vec < u8 >) {
+                reveal (< PskKeyExchangeModeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            PskKeyExchangeMode :: PSK_KE => 0 ,
+            PskKeyExchangeMode :: PSK_DHE_KE => 1 ,
+            PskKeyExchangeMode :: Unknown (x) => x ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for PskKeyExchangeModesFmt {
@@ -28191,7 +29517,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (PskKeyExchangeModeFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (PskKeyExchangeModeFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = PskKeyExchangeModes {
@@ -28201,6 +29527,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < PskKeyExchangeModes > for PskKeyExchangeModesFmt {
+            fn serialize (& self , v : & PskKeyExchangeModes , obuf : & mut Vec < u8 >) {
+                reveal (< PskKeyExchangeModesFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PskKeyExchangeModes {
+            l ,
+            list
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (ExactLen (l , Star (PskKeyExchangeModeFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28232,6 +29575,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < PskIdentity < 'i > > for PskIdentityFmt {
+            fn serialize (& self , v : & PskIdentity < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< PskIdentityFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PskIdentity {
+            identity ,
+            obfuscated_ticket_age
+        }
+        = v ;
+                (Opaque1FfffFmt) . serialize (identity , obuf) ;
+                (U32Be) . serialize (obfuscated_ticket_age , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for PskIdentitiesFmt {
@@ -28250,7 +29610,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (PskIdentityFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (PskIdentityFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = PskIdentities {
@@ -28260,6 +29620,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < PskIdentities < 'i > > for PskIdentitiesFmt {
+            fn serialize (& self , v : & PskIdentities < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< PskIdentitiesFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PskIdentities {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (PskIdentityFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28281,7 +29658,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , entries) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , entries) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = PskBinderEntry {
@@ -28291,6 +29668,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < PskBinderEntry < 'i > > for PskBinderEntryFmt {
+            fn serialize (& self , v : & PskBinderEntry < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< PskBinderEntryFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PskBinderEntry {
+            l ,
+            entries
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (entries , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28312,7 +29706,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (PskBinderEntryFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (PskBinderEntryFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = PskBinderEntries {
@@ -28322,6 +29716,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < PskBinderEntries < 'i > > for PskBinderEntriesFmt {
+            fn serialize (& self , v : & PskBinderEntries < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< PskBinderEntriesFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PskBinderEntries {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (PskBinderEntryFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28353,6 +29764,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < OfferedPsks < 'i > > for OfferedPsksFmt {
+            fn serialize (& self , v : & OfferedPsks < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OfferedPsksFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let OfferedPsks {
+            identities ,
+            binders
+        }
+        = v ;
+                (PskIdentitiesFmt) . serialize (identities , obuf) ;
+                (PskBinderEntriesFmt) . serialize (binders , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for PreSharedKeyClientExtensionFmt {
@@ -28375,6 +29803,21 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < PreSharedKeyClientExtension < 'i > > for PreSharedKeyClientExtensionFmt {
+            fn serialize (& self , v : & PreSharedKeyClientExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< PreSharedKeyClientExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let PreSharedKeyClientExtension {
+            offers
+        }
+        = v ;
+                (OfferedPsksFmt) . serialize (offers , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28496,7 +29939,7 @@ verus! {
             ,
             ExtensionType :: Padding => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 ClientHelloExtensionExtensionData :: Padding (v))
             }
@@ -28543,6 +29986,145 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ClientHelloExtensionExtensionData < 'i > > for ClientHelloExtensionExtensionDataFmt {
+            fn serialize (& self , v : & ClientHelloExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ClientHelloExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: ServerName ,
+            ClientHelloExtensionExtensionData :: ServerName (v)) => {
+                (ServerNameListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignatureAlgorithms ,
+            ClientHelloExtensionExtensionData :: SignatureAlgorithms (v)) => {
+                (SignatureSchemeListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SupportedGroups ,
+            ClientHelloExtensionExtensionData :: SupportedGroups (v)) => {
+                (NamedGroupListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: StatusRequest ,
+            ClientHelloExtensionExtensionData :: StatusRequest (v)) => {
+                (CertificateStatusRequestFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ApplicationLayerProtocolNegotiation ,
+            ClientHelloExtensionExtensionData :: ApplicationLayerProtocolNegotiation (v)) => {
+                (ProtocolNameListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SupportedVersions ,
+            ClientHelloExtensionExtensionData :: SupportedVersions (v)) => {
+                (SupportedVersionsClientFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: KeyShare ,
+            ClientHelloExtensionExtensionData :: KeyShare (v)) => {
+                (KeyShareClientHelloFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: PskKeyExchangeModes ,
+            ClientHelloExtensionExtensionData :: PskKeyExchangeModes (v)) => {
+                (PskKeyExchangeModesFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: PreSharedKey ,
+            ClientHelloExtensionExtensionData :: PreSharedKey (v)) => {
+                (PreSharedKeyClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: MaxFragmentLength ,
+            ClientHelloExtensionExtensionData :: MaxFragmentLength (v)) => {
+                (MaxFragmentLengthFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Heartbeat ,
+            ClientHelloExtensionExtensionData :: Heartbeat (v)) => {
+                (HeartbeatModeFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignedCertificateTimeStamp ,
+            ClientHelloExtensionExtensionData :: SignedCertificateTimeStamp (v)) => {
+                (SignedCertificateTimestampListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ClientCertificateType ,
+            ClientHelloExtensionExtensionData :: ClientCertificateType (v)) => {
+                (ClientCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ServerCertificateType ,
+            ClientHelloExtensionExtensionData :: ServerCertificateType (v)) => {
+                (ServerCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Padding ,
+            ClientHelloExtensionExtensionData :: Padding (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Cookie ,
+            ClientHelloExtensionExtensionData :: Cookie (v)) => {
+                (CookieFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: CertificateAuthorities ,
+            ClientHelloExtensionExtensionData :: CertificateAuthorities (v)) => {
+                (CertificateAuthoritiesExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: OidFilters ,
+            ClientHelloExtensionExtensionData :: OidFilters (v)) => {
+                (OidFilterExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignatureAlgorithmsCert ,
+            ClientHelloExtensionExtensionData :: SignatureAlgorithmsCert (v)) => {
+                (SignatureSchemeListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            ClientHelloExtensionExtensionData :: Default (v)) => {
+                (Tail) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ClientHelloExtensionFmt {
@@ -28560,7 +30142,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , ClientHelloExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , ClientHelloExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -28575,6 +30157,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ClientHelloExtension < 'i > > for ClientHelloExtensionFmt {
+            fn serialize (& self , v : & ClientHelloExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ClientHelloExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ClientHelloExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , ClientHelloExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28596,7 +30201,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (ClientHelloExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (ClientHelloExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = ClientExtensions {
@@ -28606,6 +30211,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < ClientExtensions < 'i > > for ClientExtensionsFmt {
+            fn serialize (& self , v : & ClientExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ClientExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ClientExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ClientHelloExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28649,6 +30271,31 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < ClientHello < 'i > > for ClientHelloFmt {
+            fn serialize (& self , v : & ClientHello < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ClientHelloFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ClientHello {
+            legacy_version ,
+            random ,
+            legacy_session_id ,
+            cipher_suites ,
+            legacy_compression_methods ,
+            extensions
+        }
+        = v ;
+                (Const (U16Be , 771)) . serialize (legacy_version , obuf) ;
+                (Fixed :: < 32 >) . serialize (random , obuf) ;
+                (SessionIdFmt) . serialize (legacy_session_id , obuf) ;
+                (CipherSuiteListFmt) . serialize (cipher_suites , obuf) ;
+                (Opaque1FfFmt) . serialize (legacy_compression_methods , obuf) ;
+                (ClientExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for Opaque0FfFmt {
@@ -28664,7 +30311,7 @@ verus! {
 
                 let (n1 , l) = (U8) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque0Ff {
@@ -28674,6 +30321,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque0Ff < 'i > > for Opaque0FfFmt {
+            fn serialize (& self , v : & Opaque0Ff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque0FfFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque0Ff {
+            l ,
+            data
+        }
+        = v ;
+                (U8) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28699,6 +30363,21 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < EarlyDataIndicationNewSessionTicket > for EarlyDataIndicationNewSessionTicketFmt {
+            fn serialize (& self , v : & EarlyDataIndicationNewSessionTicket , obuf : & mut Vec < u8 >) {
+                reveal (< EarlyDataIndicationNewSessionTicketFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let EarlyDataIndicationNewSessionTicket {
+            max_early_data_size
+        }
+        = v ;
+                (U32Be) . serialize (max_early_data_size , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28729,7 +30408,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 NewSessionTicketExtensionExtensionData :: Default (v))
             }
@@ -28738,6 +30417,37 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < NewSessionTicketExtensionExtensionData < 'i > > for NewSessionTicketExtensionExtensionDataFmt {
+            fn serialize (& self , v : & NewSessionTicketExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< NewSessionTicketExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: EarlyData ,
+            NewSessionTicketExtensionExtensionData :: EarlyData (v)) => {
+                (EarlyDataIndicationNewSessionTicketFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            NewSessionTicketExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28758,7 +30468,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , NewSessionTicketExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , NewSessionTicketExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -28773,6 +30483,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < NewSessionTicketExtension < 'i > > for NewSessionTicketExtensionFmt {
+            fn serialize (& self , v : & NewSessionTicketExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< NewSessionTicketExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let NewSessionTicketExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , NewSessionTicketExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28794,7 +30527,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (NewSessionTicketExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (NewSessionTicketExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = NewSessionTicketExtensions {
@@ -28804,6 +30537,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < NewSessionTicketExtensions < 'i > > for NewSessionTicketExtensionsFmt {
+            fn serialize (& self , v : & NewSessionTicketExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< NewSessionTicketExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let NewSessionTicketExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (NewSessionTicketExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28841,6 +30591,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < NewSessionTicket < 'i > > for NewSessionTicketFmt {
+            fn serialize (& self , v : & NewSessionTicket < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< NewSessionTicketFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let NewSessionTicket {
+            ticket_lifetime ,
+            ticket_age_add ,
+            ticket_nonce ,
+            ticket ,
+            extensions
+        }
+        = v ;
+                (U32Be) . serialize (ticket_lifetime , obuf) ;
+                (U32Be) . serialize (ticket_age_add , obuf) ;
+                (Opaque0FfFmt) . serialize (ticket_nonce , obuf) ;
+                (Opaque1FfffFmt) . serialize (ticket , obuf) ;
+                (NewSessionTicketExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28920,7 +30693,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 EncryptedExtensionExtensionData :: Default (v))
             }
@@ -28929,6 +30702,79 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < EncryptedExtensionExtensionData < 'i > > for EncryptedExtensionExtensionDataFmt {
+            fn serialize (& self , v : & EncryptedExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< EncryptedExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: ServerName ,
+            EncryptedExtensionExtensionData :: ServerName (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: MaxFragmentLength ,
+            EncryptedExtensionExtensionData :: MaxFragmentLength (v)) => {
+                (MaxFragmentLengthFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SupportedGroups ,
+            EncryptedExtensionExtensionData :: SupportedGroups (v)) => {
+                (NamedGroupListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: Heartbeat ,
+            EncryptedExtensionExtensionData :: Heartbeat (v)) => {
+                (HeartbeatModeFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ApplicationLayerProtocolNegotiation ,
+            EncryptedExtensionExtensionData :: ApplicationLayerProtocolNegotiation (v)) => {
+                (ProtocolNameListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ClientCertificateType ,
+            EncryptedExtensionExtensionData :: ClientCertificateType (v)) => {
+                (ClientCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: ServerCertificateType ,
+            EncryptedExtensionExtensionData :: ServerCertificateType (v)) => {
+                (ServerCertTypeClientExtensionFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: EarlyData ,
+            EncryptedExtensionExtensionData :: EarlyData (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            EncryptedExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28949,7 +30795,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , EncryptedExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , EncryptedExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -28964,6 +30810,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < EncryptedExtension < 'i > > for EncryptedExtensionFmt {
+            fn serialize (& self , v : & EncryptedExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< EncryptedExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let EncryptedExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , EncryptedExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -28982,7 +30851,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (EncryptedExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (EncryptedExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = EncryptedExtensions {
@@ -28992,6 +30861,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < EncryptedExtensions < 'i > > for EncryptedExtensionsFmt {
+            fn serialize (& self , v : & EncryptedExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< EncryptedExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let EncryptedExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (EncryptedExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29013,7 +30899,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque1Ffffff {
@@ -29023,6 +30909,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque1Ffffff < 'i > > for Opaque1FfffffFmt {
+            fn serialize (& self , v : & Opaque1Ffffff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque1FfffffFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque1Ffffff {
+            l ,
+            data
+        }
+        = v ;
+                (U24Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29042,6 +30945,17 @@ verus! {
                 let (n , v) = (Opaque1FfffffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < OcspResponse < 'i > > for OcspResponseFmt {
+            fn serialize (& self , v : & OcspResponse < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< OcspResponseFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque1FfffffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29070,6 +30984,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateStatus < 'i > > for CertificateStatusFmt {
+            fn serialize (& self , v : & CertificateStatus < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateStatusFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateStatus {
+            status_type ,
+            response
+        }
+        = v ;
+                (Const (U8 , 1)) . serialize (status_type , obuf) ;
+                (OcspResponseFmt) . serialize (response , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29107,7 +31038,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . ext_len as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . ext_len)) . parse (& rest) ? ;
                 (n ,
                 CertificateExtensionExtensionData :: Default (v))
             }
@@ -29116,6 +31047,43 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateExtensionExtensionData < 'i > > for CertificateExtensionExtensionDataFmt {
+            fn serialize (& self , v : & CertificateExtensionExtensionData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateExtensionExtensionDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . extension_type , v) {
+            (ExtensionType :: StatusRequest ,
+            CertificateExtensionExtensionData :: StatusRequest (v)) => {
+                (CertificateStatusFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (ExtensionType :: SignedCertificateTimeStamp ,
+            CertificateExtensionExtensionData :: SignedCertificateTimeStamp (v)) => {
+                (SignedCertificateTimestampListFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            CertificateExtensionExtensionData :: Default (v)) => {
+                (Varied (self . ext_len)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29136,7 +31104,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , ext_len) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , extension_data) = (ExactLen ((ext_len as usize) , CertificateExtensionExtensionDataFmt {
+                let (n3 , extension_data) = (ExactLen (ext_len , CertificateExtensionExtensionDataFmt {
             ext_len : ext_len ,
             extension_type : extension_type
         }
@@ -29151,6 +31119,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateExtension < 'i > > for CertificateExtensionFmt {
+            fn serialize (& self , v : & CertificateExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateExtension {
+            extension_type ,
+            ext_len ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (U16Be) . serialize (ext_len , obuf) ;
+                (ExactLen (ext_len , CertificateExtensionExtensionDataFmt {
+            ext_len : * ext_len ,
+            extension_type : * extension_type
+        }
+        )) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29169,7 +31160,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CertificateExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = CertificateExtensions {
@@ -29179,6 +31170,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateExtensions < 'i > > for CertificateExtensionsFmt {
+            fn serialize (& self , v : & CertificateExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CertificateExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29210,6 +31218,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < CertificateEntryOpaque < 'i > > for CertificateEntryOpaqueFmt {
+            fn serialize (& self , v : & CertificateEntryOpaque < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateEntryOpaqueFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateEntryOpaque {
+            cert_data ,
+            extensions
+        }
+        = v ;
+                (Opaque1FfffffFmt) . serialize (cert_data , obuf) ;
+                (CertificateExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateListFmt {
@@ -29225,7 +31250,7 @@ verus! {
 
                 let (n1 , l) = (U24Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateEntryOpaqueFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CertificateEntryOpaqueFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = CertificateList {
@@ -29235,6 +31260,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateList < 'i > > for CertificateListFmt {
+            fn serialize (& self , v : & CertificateList < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateListFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateList {
+            l ,
+            list
+        }
+        = v ;
+                (U24Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CertificateEntryOpaqueFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29266,6 +31308,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < Certificate < 'i > > for CertificateFmt {
+            fn serialize (& self , v : & Certificate < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Certificate {
+            certificate_request_context ,
+            certificate_list
+        }
+        = v ;
+                (Opaque0FfFmt) . serialize (certificate_request_context , obuf) ;
+                (CertificateListFmt) . serialize (certificate_list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateRequestExtensionsFmt {
@@ -29284,7 +31343,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , list) = (ExactLen ((l as usize) , Star (CertificateRequestExtensionFmt))) . parse (& rest) ? ;
+                let (n2 , list) = (ExactLen (l , Star (CertificateRequestExtensionFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = CertificateRequestExtensions {
@@ -29294,6 +31353,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateRequestExtensions < 'i > > for CertificateRequestExtensionsFmt {
+            fn serialize (& self , v : & CertificateRequestExtensions < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateRequestExtensionsFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateRequestExtensions {
+            l ,
+            list
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (CertificateRequestExtensionFmt))) . serialize (list , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29325,6 +31401,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < CertificateRequest < 'i > > for CertificateRequestFmt {
+            fn serialize (& self , v : & CertificateRequest < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateRequest {
+            certificate_request_context ,
+            extensions
+        }
+        = v ;
+                (Opaque0FfFmt) . serialize (certificate_request_context , obuf) ;
+                (CertificateRequestExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateVerifyFmt {
@@ -29350,6 +31443,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < CertificateVerify < 'i > > for CertificateVerifyFmt {
+            fn serialize (& self , v : & CertificateVerify < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateVerifyFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let CertificateVerify {
+            algorithm ,
+            signature
+        }
+        = v ;
+                (SignatureSchemeFmt) . serialize (algorithm , obuf) ;
+                (Opaque0FfffFmt) . serialize (signature , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29408,7 +31518,7 @@ verus! {
             ,
             _ => {
                 let (n ,
-                v) = (Varied ((self . size as usize))) . parse (& rest) ? ;
+                v) = (Varied (self . size)) . parse (& rest) ? ;
                 (n ,
                 Finished :: Default (v))
             }
@@ -29417,6 +31527,61 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < Finished < 'i > > for FinishedFmt {
+            fn serialize (& self , v : & Finished < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< FinishedFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . size , v) {
+            (12 ,
+            Finished :: Variant1 (v)) => {
+                (Fixed :: < 12 >) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (20 ,
+            Finished :: Variant2 (v)) => {
+                (Fixed :: < 20 >) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (32 ,
+            Finished :: Variant3 (v)) => {
+                (Fixed :: < 32 >) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (48 ,
+            Finished :: Variant4 (v)) => {
+                (Fixed :: < 48 >) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (64 ,
+            Finished :: Variant5 (v)) => {
+                (Fixed :: < 64 >) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            Finished :: Default (v)) => {
+                (Varied (self . size)) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29445,6 +31610,22 @@ verus! {
             }
         }
 
+        impl Serializer < KeyUpdateRequest > for KeyUpdateRequestFmt {
+            fn serialize (& self , v : & KeyUpdateRequest , obuf : & mut Vec < u8 >) {
+                reveal (< KeyUpdateRequestFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            KeyUpdateRequest :: UpdateNotRequested => 0 ,
+            KeyUpdateRequest :: UpdateRequested => 1 ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for KeyUpdateFmt {
@@ -29467,6 +31648,21 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < KeyUpdate > for KeyUpdateFmt {
+            fn serialize (& self , v : & KeyUpdate , obuf : & mut Vec < u8 >) {
+                reveal (< KeyUpdateFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let KeyUpdate {
+            request_update
+        }
+        = v ;
+                (KeyUpdateRequestFmt) . serialize (request_update , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29568,6 +31764,88 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < HandshakeMsg < 'i > > for HandshakeMsgFmt {
+            fn serialize (& self , v : & HandshakeMsg < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HandshakeMsgFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . msg_type , v) {
+            (HandshakeType :: ClientHello ,
+            HandshakeMsg :: ClientHello (v)) => {
+                (ClientHelloFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: ServerHello ,
+            HandshakeMsg :: ServerHello (v)) => {
+                (ShOrHrrFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: NewSessionTicket ,
+            HandshakeMsg :: NewSessionTicket (v)) => {
+                (NewSessionTicketFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: EndOfEarlyData ,
+            HandshakeMsg :: EndOfEarlyData (v)) => {
+                (EmptyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: EncryptedExtensions ,
+            HandshakeMsg :: EncryptedExtensions (v)) => {
+                (EncryptedExtensionsFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: Certificate ,
+            HandshakeMsg :: Certificate (v)) => {
+                (CertificateFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: CertificateRequest ,
+            HandshakeMsg :: CertificateRequest (v)) => {
+                (CertificateRequestFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: CertificateVerify ,
+            HandshakeMsg :: CertificateVerify (v)) => {
+                (CertificateVerifyFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: Finished ,
+            HandshakeMsg :: Finished (v)) => {
+                (FinishedFmt {
+                    size : self . length
+                }
+                ) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (HandshakeType :: KeyUpdate ,
+            HandshakeMsg :: KeyUpdate (v)) => {
+                (KeyUpdateFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for HandshakeFmt {
@@ -29585,7 +31863,7 @@ verus! {
                 let rest = rest.skip(n1);
                 let (n2 , length) = (U24Be) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
-                let (n3 , msg) = (ExactLen ((length as usize) , HandshakeMsgFmt {
+                let (n3 , msg) = (ExactLen (length , HandshakeMsgFmt {
             length : length ,
             msg_type : msg_type
         }
@@ -29600,6 +31878,29 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Handshake < 'i > > for HandshakeFmt {
+            fn serialize (& self , v : & Handshake < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< HandshakeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Handshake {
+            msg_type ,
+            length ,
+            msg
+        }
+        = v ;
+                (HandshakeTypeFmt) . serialize (msg_type , obuf) ;
+                (U24Be) . serialize (length , obuf) ;
+                (ExactLen (length , HandshakeMsgFmt {
+            length : * length ,
+            msg_type : * msg_type
+        }
+        )) . serialize (msg , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29628,6 +31929,21 @@ verus! {
             }
         }
 
+        impl Serializer < ZeroByte > for ZeroByteFmt {
+            fn serialize (& self , v : & ZeroByte , obuf : & mut Vec < u8 >) {
+                reveal (< ZeroByteFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ZeroByte {
+            zero
+        }
+        = v ;
+                (Const (U8 , 0)) . serialize (zero , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for PaddingExtensionFmt {
@@ -29647,7 +31963,7 @@ verus! {
 
                 let (n1 , l) = (U16Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , padding) = (ExactLen ((l as usize) , Star (ZeroByteFmt))) . parse (& rest) ? ;
+                let (n2 , padding) = (ExactLen (l , Star (ZeroByteFmt))) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = PaddingExtension {
@@ -29657,6 +31973,27 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < PaddingExtension > for PaddingExtensionFmt {
+            fn serialize (& self , v : & PaddingExtension , obuf : & mut Vec < u8 >) {
+                reveal (< PaddingExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                let PaddingExtension {
+            l ,
+            padding
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (ExactLen (l , Star (ZeroByteFmt))) . serialize (padding , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29688,6 +32025,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < Extension < 'i > > for ExtensionFmt {
+            fn serialize (& self , v : & Extension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< ExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Extension {
+            extension_type ,
+            extension_data
+        }
+        = v ;
+                (ExtensionTypeFmt) . serialize (extension_type , obuf) ;
+                (Opaque0FfffFmt) . serialize (extension_data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ClientCertTypeServerExtensionFmt {
@@ -29710,6 +32064,21 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < ClientCertTypeServerExtension > for ClientCertTypeServerExtensionFmt {
+            fn serialize (& self , v : & ClientCertTypeServerExtension , obuf : & mut Vec < u8 >) {
+                reveal (< ClientCertTypeServerExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ClientCertTypeServerExtension {
+            client_certificate_type
+        }
+        = v ;
+                (CertificateTypeFmt) . serialize (client_certificate_type , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29741,6 +32110,25 @@ verus! {
             }
         }
 
+        impl Serializer < ContentType > for ContentTypeFmt {
+            fn serialize (& self , v : & ContentType , obuf : & mut Vec < u8 >) {
+                reveal (< ContentTypeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            ContentType :: Invalid => 0 ,
+            ContentType :: ChangeCipherSpec => 20 ,
+            ContentType :: Alert => 21 ,
+            ContentType :: Handshake => 22 ,
+            ContentType :: ApplicationData => 23 ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for TlsPlaintextFmt {
@@ -29769,6 +32157,25 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < TlsPlaintext < 'i > > for TlsPlaintextFmt {
+            fn serialize (& self , v : & TlsPlaintext < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< TlsPlaintextFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let TlsPlaintext {
+            content_type ,
+            legacy_record_version ,
+            fragment
+        }
+        = v ;
+                (ContentTypeFmt) . serialize (content_type , obuf) ;
+                (ProtocolVersionFmt) . serialize (legacy_record_version , obuf) ;
+                (Opaque0FfffFmt) . serialize (fragment , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29822,6 +32229,47 @@ verus! {
             }
         }
 
+        impl Serializer < AlertDescription > for AlertDescriptionFmt {
+            fn serialize (& self , v : & AlertDescription , obuf : & mut Vec < u8 >) {
+                reveal (< AlertDescriptionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            AlertDescription :: CloseNotify => 0 ,
+            AlertDescription :: UnexpectedMessage => 10 ,
+            AlertDescription :: BadRecordMac => 20 ,
+            AlertDescription :: RecordOverflow => 22 ,
+            AlertDescription :: HandshakeFailure => 40 ,
+            AlertDescription :: BadCertificate => 42 ,
+            AlertDescription :: UnsupportedCertificate => 43 ,
+            AlertDescription :: CertificateRevoked => 44 ,
+            AlertDescription :: CertificateExpired => 45 ,
+            AlertDescription :: CertificateUnknown => 46 ,
+            AlertDescription :: IllegalParameter => 47 ,
+            AlertDescription :: UnknownCA => 48 ,
+            AlertDescription :: AccessDenied => 49 ,
+            AlertDescription :: DecodeError => 50 ,
+            AlertDescription :: DecryptError => 51 ,
+            AlertDescription :: ProtocolVersion => 70 ,
+            AlertDescription :: InsufficientSecurity => 71 ,
+            AlertDescription :: InternalError => 80 ,
+            AlertDescription :: InappropriateFallback => 86 ,
+            AlertDescription :: UserCanceled => 90 ,
+            AlertDescription :: MissingExtension => 109 ,
+            AlertDescription :: UnsupportedExtension => 110 ,
+            AlertDescription :: UnrecognizedName => 112 ,
+            AlertDescription :: BadCertificateStatusResponse => 113 ,
+            AlertDescription :: UnknownPSKIdentity => 115 ,
+            AlertDescription :: CertificateRequired => 116 ,
+            AlertDescription :: NoApplicationProtocol => 120 ,
+        }
+        ;
+                U8 . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for UseSrtpDataFmt {
@@ -29850,6 +32298,23 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < UseSrtpData < 'i > > for UseSrtpDataFmt {
+            fn serialize (& self , v : & UseSrtpData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< UseSrtpDataFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let UseSrtpData {
+            profiles ,
+            srtp_mki
+        }
+        = v ;
+                (SrtpProtectionProfilesFmt) . serialize (profiles , obuf) ;
+                (Opaque0FfFmt) . serialize (srtp_mki , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for FinishedOpaqueFmt {
@@ -29867,9 +32332,24 @@ verus! {
                     use_type_invariant(self);
                 }
 
-                let (n , v) = (Varied ((self . digest_size as usize))) . parse (ibuf) ? ;
+                let (n , v) = (Varied (self . digest_size)) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < FinishedOpaque < 'i > > for FinishedOpaqueFmt {
+            fn serialize (& self , v : & FinishedOpaque < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< FinishedOpaqueFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                (Varied (self . digest_size)) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29891,7 +32371,7 @@ verus! {
             return Err (ParseError :: predicate_failed ()) ;
         }
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque2Ffff {
@@ -29901,6 +32381,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque2Ffff < 'i > > for Opaque2FfffFmt {
+            fn serialize (& self , v : & Opaque2Ffff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque2FfffFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque2Ffff {
+            l ,
+            data
+        }
+        = v ;
+                (U16Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -29932,6 +32429,23 @@ verus! {
             }
         }
 
+        impl Serializer < Alert > for AlertFmt {
+            fn serialize (& self , v : & Alert , obuf : & mut Vec < u8 >) {
+                reveal (< AlertFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Alert {
+            level ,
+            description
+        }
+        = v ;
+                (AlertLevelFmt) . serialize (level , obuf) ;
+                (AlertDescriptionFmt) . serialize (description , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for ServerCertTypeServerExtensionFmt {
@@ -29957,6 +32471,21 @@ verus! {
             }
         }
 
+        impl Serializer < ServerCertTypeServerExtension > for ServerCertTypeServerExtensionFmt {
+            fn serialize (& self , v : & ServerCertTypeServerExtension , obuf : & mut Vec < u8 >) {
+                reveal (< ServerCertTypeServerExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let ServerCertTypeServerExtension {
+            server_certificate_type
+        }
+        = v ;
+                (CertificateTypeFmt) . serialize (server_certificate_type , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for UnknownExtensionFmt {
@@ -29973,6 +32502,17 @@ verus! {
                 let (n , v) = (Opaque0FfffFmt) . parse (ibuf) ? ;
                 assert (self . spec_parse (ibuf @) == Some ((n as int , v . deep_view ()))) ;
                 Ok((n, v))
+            }
+        }
+
+        impl < 'i > Serializer < UnknownExtension < 'i > > for UnknownExtensionFmt {
+            fn serialize (& self , v : & UnknownExtension < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< UnknownExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                (Opaque0FfffFmt) . serialize (v , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -30005,6 +32545,27 @@ verus! {
             }
         }
 
+        impl Serializer < DigestSize > for DigestSizeFmt {
+            fn serialize (& self , v : & DigestSize , obuf : & mut Vec < u8 >) {
+                reveal (< DigestSizeFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let tag = match * v {
+            DigestSize :: Hash12 => 12 ,
+            DigestSize :: Hash20 => 20 ,
+            DigestSize :: Sha256 => 32 ,
+            DigestSize :: Sha384 => 48 ,
+            DigestSize :: Sha512 => 64 ,
+            DigestSize :: Max => 16777215 ,
+            DigestSize :: Unknown (x) => x ,
+        }
+        ;
+                U24Be . serialize (& tag , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for HeartbeatExtensionFmt {
@@ -30027,6 +32588,21 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl Serializer < HeartbeatExtension > for HeartbeatExtensionFmt {
+            fn serialize (& self , v : & HeartbeatExtension , obuf : & mut Vec < u8 >) {
+                reveal (< HeartbeatExtensionFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let HeartbeatExtension {
+            mode
+        }
+        = v ;
+                (HeartbeatModeFmt) . serialize (mode , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
@@ -30076,6 +32652,43 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < CertificateEntryData < 'i > > for CertificateEntryDataFmt {
+            fn serialize (& self , v : & CertificateEntryData < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateEntryDataFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                match (self . cert_type , v) {
+            (CertificateType :: X509 ,
+            CertificateEntryData :: X509 (v)) => {
+                (Opaque1FfffffFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (CertificateType :: RawPublicKey ,
+            CertificateEntryData :: RawPublicKey (v)) => {
+                (Opaque1FfffffFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            (_ ,
+            CertificateEntryData :: Default (v)) => {
+                (Opaque1FfffffFmt) . serialize (v ,
+                obuf) ;
+            }
+            ,
+            _ => {
+            }
+            ,
+        }
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for CertificateEntryFmt {
@@ -30111,6 +32724,30 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < CertificateEntry < 'i > > for CertificateEntryFmt {
+            fn serialize (& self , v : & CertificateEntry < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< CertificateEntryFmt as SpecSerializer > :: spec_serialize) ;
+                proof {
+                    use_type_invariant(self);
+                }
+
+                let ghost old_obuf = obuf@;
+
+                let CertificateEntry {
+            data ,
+            extensions
+        }
+        = v ;
+                (CertificateEntryDataFmt {
+            cert_type : self . cert_type
+        }
+        ) . serialize (data , obuf) ;
+                (CertificateExtensionsFmt) . serialize (extensions , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for TlsCiphertextFmt {
@@ -30142,6 +32779,25 @@ verus! {
             }
         }
 
+        impl < 'i > Serializer < TlsCiphertext < 'i > > for TlsCiphertextFmt {
+            fn serialize (& self , v : & TlsCiphertext < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< TlsCiphertextFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let TlsCiphertext {
+            opaque_type ,
+            version ,
+            encrypted_record
+        }
+        = v ;
+                (ContentTypeFmt) . serialize (opaque_type , obuf) ;
+                (ProtocolVersionFmt) . serialize (version , obuf) ;
+                (Opaque0FfffFmt) . serialize (encrypted_record , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
+            }
+        }
+
 
 
         impl < 'i > Parser < & 'i [u8] > for Opaque0FfffffFmt {
@@ -30157,7 +32813,7 @@ verus! {
 
                 let (n1 , l) = (U24Be) . parse (& rest) ? ;
                 let rest = rest.skip(n1);
-                let (n2 , data) = (Varied ((l as usize))) . parse (& rest) ? ;
+                let (n2 , data) = (Varied (l)) . parse (& rest) ? ;
                 let rest = rest.skip(n2);
                 let total_n = n1 + n2;
                 let final_v = Opaque0Ffffff {
@@ -30167,6 +32823,23 @@ verus! {
         ;
                 assert (self . spec_parse (ibuf @) == Some ((total_n as int , final_v . deep_view ()))) ;
                 Ok((total_n, final_v))
+            }
+        }
+
+        impl < 'i > Serializer < Opaque0Ffffff < 'i > > for Opaque0FfffffFmt {
+            fn serialize (& self , v : & Opaque0Ffffff < 'i > , obuf : & mut Vec < u8 >) {
+                reveal (< Opaque0FfffffFmt as SpecSerializer > :: spec_serialize) ;
+                let ghost old_obuf = obuf@;
+
+                let Opaque0Ffffff {
+            l ,
+            data
+        }
+        = v ;
+                (U24Be) . serialize (l , obuf) ;
+                (Varied (l)) . serialize (data , obuf) ;
+
+                assert (obuf @ == old_obuf + self . spec_serialize (v . deep_view ())) ;
             }
         }
 
