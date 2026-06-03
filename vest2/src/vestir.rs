@@ -1,4 +1,3 @@
-use crate::ast;
 use itertools::Itertools;
 use std::{
     collections::{HashMap, HashSet},
@@ -228,20 +227,15 @@ pub enum ArithOp {
     Div,
 }
 
-impl From<ast::ArithOp> for ArithOp {
-    fn from(op: ast::ArithOp) -> Self {
-        match op {
-            ast::ArithOp::Add => ArithOp::Add,
-            ast::ArithOp::Sub => ArithOp::Sub,
-            ast::ArithOp::Mul => ArithOp::Mul,
-            ast::ArithOp::Div => ArithOp::Div,
-        }
-    }
-}
-
 /// Length expression for array sizes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum LengthExpr {
+pub struct LengthExpr {
+    pub ty: IntCombinator,
+    pub kind: LengthExprKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum LengthExprKind {
     Const(usize),
     Dependent(String),
     SizeOf(String),
@@ -652,11 +646,11 @@ impl Display for ArrayCombinator {
 
 impl Display for LengthExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LengthExpr::Const(n) => write!(f, "{}", n),
-            LengthExpr::Dependent(s) => write!(f, "@{}", s),
-            LengthExpr::SizeOf(name) => write!(f, "|{}|", name),
-            LengthExpr::BinOp { op, left, right } => {
+        match &self.kind {
+            LengthExprKind::Const(n) => write!(f, "{}", n),
+            LengthExprKind::Dependent(s) => write!(f, "@{}", s),
+            LengthExprKind::SizeOf(name) => write!(f, "|{}|", name),
+            LengthExprKind::BinOp { op, left, right } => {
                 let op_str = match op {
                     ArithOp::Add => "+",
                     ArithOp::Sub => "-",
@@ -783,15 +777,22 @@ pub mod lowering {
     use crate::type_check::resolve_enum_type;
     use crate::vestir as ir;
 
-    #[inline]
-    fn id<'i>(x: ast::Identifier<'i>) -> String {
-        x.name
+    pub fn lower_checked_definitions<'i>(
+        ast: &'i [ast::Definition<'i>],
+        global_ctx: &'i crate::type_check::GlobalCtx<'i>,
+    ) -> Vec<ir::Definition> {
+        let lowerer = CheckedLowerer { global_ctx };
+        ast.iter()
+            .map(|defn| lowerer.lower_definition(defn))
+            .collect()
     }
 
-    // ---------- Top-level ----------
+    struct CheckedLowerer<'a, 'i> {
+        global_ctx: &'a crate::type_check::GlobalCtx<'i>,
+    }
 
-    impl<'i> From<ast::Definition<'i>> for ir::Definition {
-        fn from(d: ast::Definition<'i>) -> Self {
+    impl<'a, 'i> CheckedLowerer<'a, 'i> {
+        fn lower_definition(&self, d: &ast::Definition<'i>) -> ir::Definition {
             match d {
                 ast::Definition::Combinator {
                     name,
@@ -799,35 +800,37 @@ pub mod lowering {
                     combinator,
                     ..
                 } => {
-                    let name_str = id(name);
-                    let params: Vec<ir::ParamDefn> =
-                        param_defns.into_iter().map(Into::into).collect();
-                    match combinator.inner {
+                    let name_str = name.name.clone();
+                    let params: Vec<ir::ParamDefn> = param_defns
+                        .iter()
+                        .map(|param| self.lower_param_defn(param, param_defns, &[]))
+                        .collect();
+                    match &combinator.inner {
                         ast::CombinatorInner::Struct(s) if combinator.and_then.is_none() => {
                             ir::Definition::StructDef {
                                 name: name_str,
                                 param_defns: params,
-                                combinator: s.into(),
+                                combinator: self.lower_struct_combinator(s, param_defns, &[]),
                             }
                         }
                         ast::CombinatorInner::Choice(c) if combinator.and_then.is_none() => {
                             ir::Definition::ChoiceDef {
                                 name: name_str,
                                 param_defns: params,
-                                combinator: c.into(),
+                                combinator: self.lower_choice_combinator(c, param_defns, &[]),
                             }
                         }
                         ast::CombinatorInner::Enum(e) if combinator.and_then.is_none() => {
                             ir::Definition::EnumDef {
                                 name: name_str,
                                 param_defns: params,
-                                combinator: e.into(),
+                                combinator: self.lower_enum_combinator(e),
                             }
                         }
                         _ => ir::Definition::CombinatorDef {
                             name: name_str,
                             param_defns: params,
-                            combinator: combinator.into(),
+                            combinator: self.lower_combinator(combinator, param_defns, &[]),
                         },
                     }
                 }
@@ -836,72 +839,64 @@ pub mod lowering {
                     const_combinator,
                     ..
                 } => ir::Definition::ConstCombinatorDef {
-                    name: id(name),
-                    const_combinator: const_combinator.into(),
+                    name: name.name.clone(),
+                    const_combinator: self.lower_const_combinator(const_combinator),
                 },
-                ast::Definition::Endianess(e) => ir::Definition::Endianess(e.into()),
+                ast::Definition::Endianess(e) => {
+                    ir::Definition::Endianess(self.lower_endianess(*e))
+                }
                 ast::Definition::MacroDefn { .. } => unreachable!(
                     "Macro definitions should have been expanded before lowering to IR"
                 ),
             }
         }
-    }
 
-    impl From<ast::Endianess> for ir::Endianess {
-        fn from(e: ast::Endianess) -> Self {
-            match e {
-                ast::Endianess::Little => ir::Endianess::Little,
-                ast::Endianess::Big => ir::Endianess::Big,
-            }
-        }
-    }
-
-    // ---------- Params / ParamDefns ----------
-
-    impl<'i> From<ast::ParamDefn<'i>> for ir::ParamDefn {
-        fn from(p: ast::ParamDefn<'i>) -> Self {
+        fn lower_param_defn(
+            &self,
+            p: &ast::ParamDefn<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::ParamDefn {
             match p {
                 ast::ParamDefn::Dependent {
                     name, combinator, ..
                 } => ir::ParamDefn::Dependent {
-                    name: id(name),
-                    combinator: combinator.into(),
+                    name: name.name.clone(),
+                    combinator: self.lower_combinator_inner(combinator, param_defns, local_deps),
                 },
             }
         }
-    }
 
-    impl<'i> From<ast::Param<'i>> for ir::Param {
-        fn from(p: ast::Param<'i>) -> Self {
-            match p {
-                ast::Param::Dependent(i) => ir::Param::Dependent(id(i)),
-            }
-        }
-    }
-
-    // ---------- Combinators ----------
-
-    /// Convert an `ast::Combinator` into the unified `ir::Combinator`.
-    /// If the AST node has an `and_then`, wrap the result in `AndThen`.
-    impl<'i> From<ast::Combinator<'i>> for ir::Combinator {
-        fn from(c: ast::Combinator<'i>) -> Self {
-            let lhs: ir::Combinator = c.inner.into();
-            match c.and_then {
+        fn lower_combinator(
+            &self,
+            c: &ast::Combinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::Combinator {
+            let lhs = self.lower_combinator_inner(&c.inner, param_defns, local_deps);
+            match &c.and_then {
                 None => lhs,
-                Some(rhs) => ir::Combinator::AndThen(Box::new(lhs), Box::new((*rhs).into())),
+                Some(rhs) => ir::Combinator::AndThen(
+                    Box::new(lhs),
+                    Box::new(self.lower_combinator(rhs, param_defns, local_deps)),
+                ),
             }
         }
-    }
 
-    impl<'i> From<ast::CombinatorInner<'i>> for ir::Combinator {
-        fn from(ci: ast::CombinatorInner<'i>) -> Self {
+        fn lower_combinator_inner(
+            &self,
+            ci: &ast::CombinatorInner<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::Combinator {
             use ast::CombinatorInner as A;
             match ci {
-                A::ConstraintInt(x) => ir::Combinator::ConstraintInt(x.into()),
-                A::ConstraintEnum(x) => ir::Combinator::ConstraintEnum(x.into()),
-                // Struct / Choice / Enum never appear inline in the elaborated IR —
-                // they are always lifted to top-level definitions by `elab.rs`.
-                // If we encounter them here, it means the input wasn't elaborated.
+                A::ConstraintInt(x) => {
+                    ir::Combinator::ConstraintInt(self.lower_constraint_int_combinator(x))
+                }
+                A::ConstraintEnum(x) => {
+                    ir::Combinator::ConstraintEnum(self.lower_constraint_enum_combinator(x))
+                }
                 A::Struct(x) => panic!(
                     "Inline Struct in lowering — input must be elaborated first: {:?}",
                     x
@@ -914,317 +909,521 @@ pub mod lowering {
                     "Inline Enum in lowering — input must be elaborated first: {:?}",
                     x
                 ),
-                A::Wrap(x) => ir::Combinator::Wrap(x.into()),
-                A::Vec(x) => ir::Combinator::Vec(x.into()),
-                A::Array(x) => ir::Combinator::Array(x.into()),
-                A::Bytes(x) => ir::Combinator::Bytes(x.into()),
-                A::Tail(_x) => ir::Combinator::Tail(ir::TailCombinator),
-                A::Option(x) => {
-                    ir::Combinator::Option(ir::OptionCombinator(Box::new((*x.0).clone().into())))
+                A::Wrap(x) => {
+                    ir::Combinator::Wrap(self.lower_wrap_combinator(x, param_defns, local_deps))
                 }
-                A::Invocation(x) => ir::Combinator::Invocation(x.into()),
+                A::Vec(x) => {
+                    ir::Combinator::Vec(self.lower_vec_combinator(x, param_defns, local_deps))
+                }
+                A::Array(x) => {
+                    ir::Combinator::Array(self.lower_array_combinator(x, param_defns, local_deps))
+                }
+                A::Bytes(x) => {
+                    ir::Combinator::Bytes(self.lower_bytes_combinator(x, param_defns, local_deps))
+                }
+                A::Tail(_) => ir::Combinator::Tail(ir::TailCombinator),
+                A::Option(x) => ir::Combinator::Option(ir::OptionCombinator(Box::new(
+                    self.lower_combinator(&x.0, param_defns, local_deps),
+                ))),
+                A::Invocation(x) => ir::Combinator::Invocation(self.lower_invocation(x)),
                 A::MacroInvocation { .. } => unreachable!(
                     "Macro invocations should have been expanded before lowering to IR"
                 ),
             }
         }
-    }
 
-    // ---------- Ints / Constraints ----------
-
-    impl<'i> From<ast::ConstraintIntCombinator<'i>> for ir::ConstraintIntCombinator {
-        fn from(x: ast::ConstraintIntCombinator<'i>) -> Self {
-            ir::ConstraintIntCombinator {
-                combinator: x.combinator.into(),
-                constraint: x.constraint.map(Into::into),
-            }
-        }
-    }
-
-    impl<'i> From<ast::ConstraintEnumCombinator<'i>> for ir::ConstraintEnumCombinator {
-        fn from(x: ast::ConstraintEnumCombinator<'i>) -> Self {
-            ir::ConstraintEnumCombinator {
-                combinator: x.combinator.into(),
-                constraint: x.constraint.into(),
-            }
-        }
-    }
-
-    impl From<ast::IntCombinator> for ir::IntCombinator {
-        fn from(i: ast::IntCombinator) -> Self {
-            match i {
-                ast::IntCombinator::Signed(n) => ir::IntCombinator::Signed(n),
-                ast::IntCombinator::Unsigned(n) => ir::IntCombinator::Unsigned(n),
-                ast::IntCombinator::BtcVarint => ir::IntCombinator::BtcVarint,
-                ast::IntCombinator::ULEB128 => ir::IntCombinator::ULEB128,
-            }
-        }
-    }
-
-    impl<'i> From<ast::IntConstraint<'i>> for ir::IntConstraint {
-        fn from(c: ast::IntConstraint<'i>) -> Self {
-            match c {
-                ast::IntConstraint::Single { elem, .. } => ir::IntConstraint::Single(elem.into()),
-                ast::IntConstraint::Set(v) => {
-                    ir::IntConstraint::Set(v.into_iter().map(Into::into).collect())
+        fn lower_struct_combinator(
+            &self,
+            s: &ast::StructCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::StructCombinator {
+            let mut visible = local_deps.to_vec();
+            let mut fields = Vec::with_capacity(s.fields.len());
+            for field in &s.fields {
+                match field {
+                    ast::StructField::Dependent {
+                        label, combinator, ..
+                    } => {
+                        fields.push(ir::StructField::Dependent {
+                            label: label.name.clone(),
+                            combinator: self.lower_combinator(combinator, param_defns, &visible),
+                        });
+                        visible.push((label.name.clone(), combinator.clone()));
+                    }
+                    ast::StructField::Const {
+                        label, combinator, ..
+                    } => {
+                        fields.push(ir::StructField::Const {
+                            label: label.name.clone(),
+                            combinator: self.lower_const_combinator(combinator),
+                        });
+                    }
+                    ast::StructField::Ordinary {
+                        label, combinator, ..
+                    } => {
+                        fields.push(ir::StructField::Ordinary {
+                            label: label.name.clone(),
+                            combinator: self.lower_combinator(combinator, param_defns, &visible),
+                        });
+                    }
                 }
-                ast::IntConstraint::Neg(b) => ir::IntConstraint::Neg(Box::new((*b).into())),
             }
+            ir::StructCombinator(fields)
         }
-    }
 
-    impl<'i> From<ast::EnumConstraint<'i>> for ir::EnumConstraint {
-        fn from(c: ast::EnumConstraint<'i>) -> Self {
-            match c {
-                ast::EnumConstraint::Single { elem, .. } => ir::EnumConstraint::Single(id(elem)),
-                ast::EnumConstraint::Set(v) => {
-                    ir::EnumConstraint::Set(v.into_iter().map(id).collect())
-                }
-                ast::EnumConstraint::Neg(b) => ir::EnumConstraint::Neg(Box::new((*b).into())),
-            }
-        }
-    }
-
-    impl<'i> From<ast::ConstraintElem<'i>> for ir::ConstraintElem {
-        fn from(e: ast::ConstraintElem<'i>) -> Self {
-            match e {
-                ast::ConstraintElem::Range { start, end, .. } => {
-                    ir::ConstraintElem::Range { start, end }
-                }
-                ast::ConstraintElem::Single { elem, .. } => ir::ConstraintElem::Single(elem),
-            }
-        }
-    }
-
-    // ---------- Struct ----------
-
-    impl<'i> From<ast::StructCombinator<'i>> for ir::StructCombinator {
-        fn from(s: ast::StructCombinator<'i>) -> Self {
-            ir::StructCombinator(s.fields.into_iter().map(Into::into).collect())
-        }
-    }
-
-    impl<'i> From<ast::StructField<'i>> for ir::StructField {
-        fn from(f: ast::StructField<'i>) -> Self {
-            match f {
-                ast::StructField::Dependent {
-                    label, combinator, ..
-                } => ir::StructField::Dependent {
-                    label: id(label),
-                    combinator: combinator.into(),
-                },
-                ast::StructField::Const {
-                    label, combinator, ..
-                } => ir::StructField::Const {
-                    label: id(label),
-                    combinator: combinator.into(),
-                },
-                ast::StructField::Ordinary {
-                    label, combinator, ..
-                } => ir::StructField::Ordinary {
-                    label: id(label),
-                    combinator: combinator.into(),
-                },
-            }
-        }
-    }
-
-    // ---------- Wrap ----------
-
-    impl<'i> From<ast::WrapCombinator<'i>> for ir::WrapCombinator {
-        fn from(w: ast::WrapCombinator<'i>) -> Self {
+        fn lower_wrap_combinator(
+            &self,
+            w: &ast::WrapCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::WrapCombinator {
             ir::WrapCombinator {
-                prior: w.prior.into_iter().map(Into::into).collect(),
-                combinator: Box::new((*w.combinator).into()),
-                post: w.post.into_iter().map(Into::into).collect(),
+                prior: w
+                    .prior
+                    .iter()
+                    .map(|c| self.lower_const_combinator(c))
+                    .collect(),
+                combinator: Box::new(self.lower_combinator(&w.combinator, param_defns, local_deps)),
+                post: w
+                    .post
+                    .iter()
+                    .map(|c| self.lower_const_combinator(c))
+                    .collect(),
             }
         }
-    }
 
-    // ---------- Enum ----------
-
-    impl<'i> From<ast::EnumCombinator<'i>> for ir::EnumCombinator {
-        fn from(e: ast::EnumCombinator<'i>) -> Self {
+        fn lower_enum_combinator(&self, e: &ast::EnumCombinator<'i>) -> ir::EnumCombinator {
             match e {
                 ast::EnumCombinator::Exhaustive { enums, .. } => ir::EnumCombinator::Exhaustive {
-                    enums: enums.clone().into_iter().map(Into::into).collect(),
-                    inferred: resolve_enum_type(&enums).into(),
+                    enums: enums.iter().map(|e| self.lower_enum(e)).collect(),
+                    inferred: self.lower_int_combinator(&resolve_enum_type(enums)),
                 },
                 ast::EnumCombinator::NonExhaustive { enums, .. } => {
                     ir::EnumCombinator::NonExhaustive {
-                        enums: enums.clone().into_iter().map(Into::into).collect(),
-                        inferred: resolve_enum_type(&enums).into(),
+                        enums: enums.iter().map(|e| self.lower_enum(e)).collect(),
+                        inferred: self.lower_int_combinator(&resolve_enum_type(enums)),
                     }
                 }
             }
         }
-    }
 
-    impl<'i> From<ast::Enum<'i>> for ir::Enum {
-        fn from(e: ast::Enum<'i>) -> Self {
-            ir::Enum {
-                name: id(e.name),
-                value: e.value,
-            }
-        }
-    }
-
-    // ---------- Choice ----------
-
-    impl<'i> From<ast::ChoiceCombinator<'i>> for ir::ChoiceCombinator {
-        fn from(c: ast::ChoiceCombinator<'i>) -> Self {
+        fn lower_choice_combinator(
+            &self,
+            c: &ast::ChoiceCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::ChoiceCombinator {
             ir::ChoiceCombinator {
-                depend_id: c.depend_id.map(id),
-                choices: c.choices.into(),
-            }
-        }
-    }
-
-    impl<'i> From<ast::Choices<'i>> for ir::Choices {
-        fn from(ch: ast::Choices<'i>) -> Self {
-            match ch {
-                ast::Choices::Enums(v) => {
-                    ir::Choices::Enums(v.into_iter().map(|(i, c)| (id(i), c.into())).collect())
-                }
-                ast::Choices::Ints(v) => ir::Choices::Ints(
-                    v.into_iter()
-                        .map(|(ce, c)| (ce.map(Into::into), c.into()))
-                        .collect(),
-                ),
-                ast::Choices::Arrays(v) => {
-                    ir::Choices::Arrays(v.into_iter().map(|(a, c)| (a.into(), c.into())).collect())
-                }
-            }
-        }
-    }
-
-    // ---------- Vec ----------
-
-    impl<'i> From<ast::VecCombinator<'i>> for ir::VecCombinator {
-        fn from(v: ast::VecCombinator<'i>) -> Self {
-            match v {
-                ast::VecCombinator::Vec(b) => ir::VecCombinator::Vec(Box::new((*b).into())),
-            }
-        }
-    }
-
-    // ---------- Array / Bytes / Tail / Option ----------
-
-    impl<'i> From<ast::ArrayCombinator<'i>> for ir::ArrayCombinator {
-        fn from(a: ast::ArrayCombinator<'i>) -> Self {
-            ir::ArrayCombinator {
-                combinator: Box::new((*a.combinator).into()),
-                len: a.len.into(),
-            }
-        }
-    }
-
-    impl<'i> From<ast::LengthExpr<'i>> for ir::LengthExpr {
-        fn from(l: ast::LengthExpr<'i>) -> Self {
-            match l {
-                ast::LengthExpr::Const { value, .. } => ir::LengthExpr::Const(value),
-                ast::LengthExpr::Dependent(d) => ir::LengthExpr::Dependent(d.full_path()),
-                ast::LengthExpr::SizeOf { format_name, .. } => {
-                    ir::LengthExpr::SizeOf(format_name.name)
-                }
-                ast::LengthExpr::BinOp {
-                    op, left, right, ..
-                } => ir::LengthExpr::BinOp {
-                    op: op.into(),
-                    left: Box::new((*left).into()),
-                    right: Box::new((*right).into()),
+                depend_id: c.depend_id.as_ref().map(|dep| dep.name.clone()),
+                choices: match &c.choices {
+                    ast::Choices::Enums(v) => ir::Choices::Enums(
+                        v.iter()
+                            .map(|(i, c)| {
+                                (
+                                    i.name.clone(),
+                                    self.lower_combinator(c, param_defns, local_deps),
+                                )
+                            })
+                            .collect(),
+                    ),
+                    ast::Choices::Ints(v) => ir::Choices::Ints(
+                        v.iter()
+                            .map(|(ce, c)| {
+                                (
+                                    ce.as_ref().map(|elem| self.lower_constraint_elem(elem)),
+                                    self.lower_combinator(c, param_defns, local_deps),
+                                )
+                            })
+                            .collect(),
+                    ),
+                    ast::Choices::Arrays(v) => ir::Choices::Arrays(
+                        v.iter()
+                            .map(|(a, c)| {
+                                (
+                                    self.lower_const_array(a),
+                                    self.lower_combinator(c, param_defns, local_deps),
+                                )
+                            })
+                            .collect(),
+                    ),
                 },
             }
         }
-    }
 
-    impl<'i> From<ast::BytesCombinator<'i>> for ir::BytesCombinator {
-        fn from(b: ast::BytesCombinator<'i>) -> Self {
-            ir::BytesCombinator { len: b.len.into() }
-        }
-    }
-
-    impl<'i> From<ast::TailCombinator<'i>> for ir::TailCombinator {
-        fn from(_: ast::TailCombinator<'i>) -> Self {
-            ir::TailCombinator
-        }
-    }
-
-    impl<'i> From<ast::OptionCombinator<'i>> for ir::OptionCombinator {
-        fn from(o: ast::OptionCombinator<'i>) -> Self {
-            ir::OptionCombinator(Box::new((*o.0).into()))
-        }
-    }
-
-    impl<'i> From<ast::CombinatorInvocation<'i>> for ir::CombinatorInvocation {
-        fn from(ci: ast::CombinatorInvocation<'i>) -> Self {
-            ir::CombinatorInvocation {
-                func: id(ci.func),
-                args: ci.args.into_iter().map(Into::into).collect(),
+        fn lower_vec_combinator(
+            &self,
+            v: &ast::VecCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::VecCombinator {
+            match v {
+                ast::VecCombinator::Vec(b) => ir::VecCombinator::Vec(Box::new(
+                    self.lower_combinator(b, param_defns, local_deps),
+                )),
             }
         }
-    }
 
-    // ---------- Consts ----------
+        fn lower_array_combinator(
+            &self,
+            a: &ast::ArrayCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::ArrayCombinator {
+            ir::ArrayCombinator {
+                combinator: Box::new(self.lower_combinator(&a.combinator, param_defns, local_deps)),
+                len: self.lower_length_expr(&a.len, param_defns, local_deps),
+            }
+        }
 
-    impl<'i> From<ast::ConstCombinator<'i>> for ir::ConstCombinator {
-        fn from(c: ast::ConstCombinator<'i>) -> Self {
+        fn lower_bytes_combinator(
+            &self,
+            b: &ast::BytesCombinator<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::BytesCombinator {
+            ir::BytesCombinator {
+                len: self.lower_length_expr(&b.len, param_defns, local_deps),
+            }
+        }
+
+        fn lower_length_expr(
+            &self,
+            len: &ast::LengthExpr<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::LengthExpr {
+            let ty = self.infer_length_expr_ty(len, param_defns, local_deps);
+            let kind = match len {
+                ast::LengthExpr::Const { value, .. } => ir::LengthExprKind::Const(*value),
+                ast::LengthExpr::Dependent(dep) => ir::LengthExprKind::Dependent(dep.full_path()),
+                ast::LengthExpr::SizeOf { format_name, .. } => {
+                    ir::LengthExprKind::SizeOf(format_name.name.clone())
+                }
+                ast::LengthExpr::BinOp {
+                    op, left, right, ..
+                } => ir::LengthExprKind::BinOp {
+                    op: self.lower_arith_op(*op),
+                    left: Box::new(self.lower_length_expr(left, param_defns, local_deps)),
+                    right: Box::new(self.lower_length_expr(right, param_defns, local_deps)),
+                },
+            };
+            ir::LengthExpr { ty, kind }
+        }
+
+        fn infer_length_expr_ty(
+            &self,
+            len: &ast::LengthExpr<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::IntCombinator {
+            match len {
+                ast::LengthExpr::Const { value, .. } => self.const_length_ty(*value),
+                ast::LengthExpr::Dependent(dep) => {
+                    self.dependent_length_ty(dep, param_defns, local_deps)
+                }
+                ast::LengthExpr::SizeOf { format_name, .. } => {
+                    let size = self
+                        .global_ctx
+                        .static_sizes
+                        .get(&format_name.name)
+                        .copied()
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "size-of target `{}` should have a static size after type checking",
+                                format_name.name
+                            )
+                        });
+                    self.const_length_ty(size)
+                }
+                ast::LengthExpr::BinOp { left, right, .. } => self.promote_length_ty(
+                    self.infer_length_expr_ty(left, param_defns, local_deps),
+                    self.infer_length_expr_ty(right, param_defns, local_deps),
+                ),
+            }
+        }
+
+        fn dependent_length_ty(
+            &self,
+            dep: &ast::DependentId<'i>,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::IntCombinator {
+            let combinator = self
+                .resolve_length_dep_combinator(&dep.full_path(), param_defns, local_deps)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "unresolved length dependency `@{}` after type checking",
+                        dep.full_path()
+                    )
+                });
+            match self.global_ctx.resolve(&combinator) {
+                ast::CombinatorInner::ConstraintInt(ast::ConstraintIntCombinator {
+                    combinator,
+                    ..
+                }) => Self::length_carrier_ty(combinator),
+                other => panic!(
+                    "length dependency `@{}` should resolve to an unsigned int, got {:?}",
+                    dep.full_path(),
+                    other
+                ),
+            }
+        }
+
+        fn resolve_length_dep_combinator(
+            &self,
+            name: &str,
+            param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> Option<ast::Combinator<'i>> {
+            let parts: Vec<&str> = name.split('.').collect();
+            let root = *parts.first()?;
+            let mut current =
+                if let Some((_, combinator)) = local_deps.iter().rev().find(|(n, _)| n == root) {
+                    combinator.clone()
+                } else {
+                    param_defns.iter().find_map(|param| match param {
+                        ast::ParamDefn::Dependent {
+                            name,
+                            combinator,
+                            span,
+                        } if name.name == root => Some(ast::Combinator {
+                            inner: combinator.clone(),
+                            and_then: None,
+                            span: *span,
+                        }),
+                        _ => None,
+                    })?
+                };
+
+            for field_name in parts.iter().skip(1) {
+                let ast::CombinatorInner::Struct(struct_comb) = self.global_ctx.resolve(&current)
+                else {
+                    return None;
+                };
+                current = struct_comb.fields.iter().find_map(|field| match field {
+                    ast::StructField::Dependent {
+                        label, combinator, ..
+                    } if label.name == *field_name => Some(combinator.clone()),
+                    _ => None,
+                })?;
+            }
+
+            Some(current)
+        }
+
+        fn const_length_ty(&self, value: usize) -> ir::IntCombinator {
+            if value <= u8::MAX as usize {
+                ir::IntCombinator::Unsigned(8)
+            } else if value <= u16::MAX as usize {
+                ir::IntCombinator::Unsigned(16)
+            } else if value <= u32::MAX as usize {
+                ir::IntCombinator::Unsigned(32)
+            } else {
+                ir::IntCombinator::Unsigned(64)
+            }
+        }
+
+        fn promote_length_ty(
+            &self,
+            left: ir::IntCombinator,
+            right: ir::IntCombinator,
+        ) -> ir::IntCombinator {
+            match Self::length_rank(&left).max(Self::length_rank(&right)) {
+                0 => ir::IntCombinator::Unsigned(8),
+                1 => ir::IntCombinator::Unsigned(16),
+                2 => ir::IntCombinator::Unsigned(32),
+                3 => ir::IntCombinator::Unsigned(64),
+                rank => panic!("invalid length rank {rank}"),
+            }
+        }
+
+        fn length_rank(ty: &ir::IntCombinator) -> u8 {
+            match ty {
+                ir::IntCombinator::Unsigned(8) => 0,
+                ir::IntCombinator::Unsigned(16) => 1,
+                ir::IntCombinator::Unsigned(24) | ir::IntCombinator::Unsigned(32) => 2,
+                ir::IntCombinator::Unsigned(64)
+                | ir::IntCombinator::BtcVarint
+                | ir::IntCombinator::ULEB128 => 3,
+                other => panic!("invalid length-carrier type {:?}", other),
+            }
+        }
+
+        fn length_carrier_ty(combinator: &ast::IntCombinator) -> ir::IntCombinator {
+            match combinator {
+                ast::IntCombinator::Unsigned(8) => ir::IntCombinator::Unsigned(8),
+                ast::IntCombinator::Unsigned(16) => ir::IntCombinator::Unsigned(16),
+                ast::IntCombinator::Unsigned(24) | ast::IntCombinator::Unsigned(32) => {
+                    ir::IntCombinator::Unsigned(32)
+                }
+                ast::IntCombinator::Unsigned(64)
+                | ast::IntCombinator::BtcVarint
+                | ast::IntCombinator::ULEB128 => ir::IntCombinator::Unsigned(64),
+                other => panic!("invalid integer type for length expression: {:?}", other),
+            }
+        }
+
+        fn lower_endianess(&self, e: ast::Endianess) -> ir::Endianess {
+            match e {
+                ast::Endianess::Little => ir::Endianess::Little,
+                ast::Endianess::Big => ir::Endianess::Big,
+            }
+        }
+
+        fn lower_arith_op(&self, op: ast::ArithOp) -> ir::ArithOp {
+            match op {
+                ast::ArithOp::Add => ir::ArithOp::Add,
+                ast::ArithOp::Sub => ir::ArithOp::Sub,
+                ast::ArithOp::Mul => ir::ArithOp::Mul,
+                ast::ArithOp::Div => ir::ArithOp::Div,
+            }
+        }
+
+        fn lower_int_combinator(&self, i: &ast::IntCombinator) -> ir::IntCombinator {
+            match i {
+                ast::IntCombinator::Signed(n) => ir::IntCombinator::Signed(*n),
+                ast::IntCombinator::Unsigned(n) => ir::IntCombinator::Unsigned(*n),
+                ast::IntCombinator::BtcVarint => ir::IntCombinator::BtcVarint,
+                ast::IntCombinator::ULEB128 => ir::IntCombinator::ULEB128,
+            }
+        }
+
+        fn lower_constraint_elem(&self, e: &ast::ConstraintElem<'i>) -> ir::ConstraintElem {
+            match e {
+                ast::ConstraintElem::Range { start, end, .. } => ir::ConstraintElem::Range {
+                    start: *start,
+                    end: *end,
+                },
+                ast::ConstraintElem::Single { elem, .. } => ir::ConstraintElem::Single(*elem),
+            }
+        }
+
+        fn lower_int_constraint(&self, c: &ast::IntConstraint<'i>) -> ir::IntConstraint {
             match c {
-                ast::ConstCombinator::ConstBytes(x) => ir::ConstCombinator::ConstBytes(x.into()),
-                ast::ConstCombinator::ConstInt(x) => ir::ConstCombinator::ConstInt(x.into()),
-                ast::ConstCombinator::ConstEnum(x) => ir::ConstCombinator::ConstEnum(x.into()),
-                ast::ConstCombinator::ConstCombinatorInvocation { name, .. } => {
-                    ir::ConstCombinator::ConstCombinatorInvocation(id(name))
+                ast::IntConstraint::Single { elem, .. } => {
+                    ir::IntConstraint::Single(self.lower_constraint_elem(elem))
+                }
+                ast::IntConstraint::Set(v) => ir::IntConstraint::Set(
+                    v.iter()
+                        .map(|elem| self.lower_constraint_elem(elem))
+                        .collect(),
+                ),
+                ast::IntConstraint::Neg(b) => {
+                    ir::IntConstraint::Neg(Box::new(self.lower_int_constraint(b)))
                 }
             }
         }
-    }
 
-    impl<'i> From<ast::ConstBytesCombinator<'i>> for ir::ConstBytesCombinator {
-        fn from(c: ast::ConstBytesCombinator<'i>) -> Self {
-            ir::ConstBytesCombinator {
-                len: c.len,
-                values: c.values.into(),
+        fn lower_enum_constraint(&self, c: &ast::EnumConstraint<'i>) -> ir::EnumConstraint {
+            match c {
+                ast::EnumConstraint::Single { elem, .. } => {
+                    ir::EnumConstraint::Single(elem.name.clone())
+                }
+                ast::EnumConstraint::Set(v) => {
+                    ir::EnumConstraint::Set(v.iter().map(|elem| elem.name.clone()).collect())
+                }
+                ast::EnumConstraint::Neg(b) => {
+                    ir::EnumConstraint::Neg(Box::new(self.lower_enum_constraint(b)))
+                }
             }
         }
-    }
 
-    impl<'i> From<ast::ConstEnumCombinator<'i>> for ir::ConstEnumCombinator {
-        fn from(c: ast::ConstEnumCombinator<'i>) -> Self {
-            ir::ConstEnumCombinator {
-                combinator: c.combinator.into(),
-                variant: id(c.variant),
+        fn lower_constraint_int_combinator(
+            &self,
+            x: &ast::ConstraintIntCombinator<'i>,
+        ) -> ir::ConstraintIntCombinator {
+            ir::ConstraintIntCombinator {
+                combinator: self.lower_int_combinator(&x.combinator),
+                constraint: x.constraint.as_ref().map(|c| self.lower_int_constraint(c)),
             }
         }
-    }
 
-    impl<'i> From<ast::ConstArray<'i>> for ir::ConstArray {
-        fn from(a: ast::ConstArray<'i>) -> Self {
+        fn lower_constraint_enum_combinator(
+            &self,
+            x: &ast::ConstraintEnumCombinator<'i>,
+        ) -> ir::ConstraintEnumCombinator {
+            ir::ConstraintEnumCombinator {
+                combinator: self.lower_invocation(&x.combinator),
+                constraint: self.lower_enum_constraint(&x.constraint),
+            }
+        }
+
+        fn lower_param(&self, p: &ast::Param<'i>) -> ir::Param {
+            match p {
+                ast::Param::Dependent(i) => ir::Param::Dependent(i.name.clone()),
+            }
+        }
+
+        fn lower_invocation(&self, ci: &ast::CombinatorInvocation<'i>) -> ir::CombinatorInvocation {
+            ir::CombinatorInvocation {
+                func: ci.func.name.clone(),
+                args: ci.args.iter().map(|p| self.lower_param(p)).collect(),
+            }
+        }
+
+        fn lower_enum(&self, e: &ast::Enum<'i>) -> ir::Enum {
+            ir::Enum {
+                name: e.name.name.clone(),
+                value: e.value,
+            }
+        }
+
+        fn lower_const_array(&self, a: &ast::ConstArray<'i>) -> ir::ConstArray {
             match a {
-                ast::ConstArray::Char { chars, .. } => ir::ConstArray::Char(chars),
-                ast::ConstArray::Int { ints, .. } => ir::ConstArray::Int(ints),
+                ast::ConstArray::Char { chars, .. } => ir::ConstArray::Char(chars.clone()),
+                ast::ConstArray::Int { ints, .. } => ir::ConstArray::Int(ints.clone()),
                 ast::ConstArray::Repeat { repeat, count, .. } => {
-                    ir::ConstArray::Repeat(repeat, count)
+                    ir::ConstArray::Repeat(*repeat, *count)
                 }
                 ast::ConstArray::Wildcard => ir::ConstArray::Wildcard,
             }
         }
-    }
 
-    impl<'i> From<ast::ConstIntCombinator<'i>> for ir::ConstIntCombinator {
-        fn from(c: ast::ConstIntCombinator<'i>) -> Self {
+        fn lower_const_bytes_combinator(
+            &self,
+            c: &ast::ConstBytesCombinator<'i>,
+        ) -> ir::ConstBytesCombinator {
+            ir::ConstBytesCombinator {
+                len: c.len,
+                values: self.lower_const_array(&c.values),
+            }
+        }
+
+        fn lower_const_enum_combinator(
+            &self,
+            c: &ast::ConstEnumCombinator<'i>,
+        ) -> ir::ConstEnumCombinator {
+            ir::ConstEnumCombinator {
+                combinator: self.lower_invocation(&c.combinator),
+                variant: c.variant.name.clone(),
+            }
+        }
+
+        fn lower_const_int_combinator(
+            &self,
+            c: &ast::ConstIntCombinator<'i>,
+        ) -> ir::ConstIntCombinator {
             ir::ConstIntCombinator {
-                combinator: c.combinator.into(),
+                combinator: self.lower_int_combinator(&c.combinator),
                 value: c.value,
             }
         }
-    }
 
-    impl<'i> From<crate::type_check::ConstCombinatorSig<'i>> for ir::ConstCombinatorSig {
-        fn from(src: crate::type_check::ConstCombinatorSig<'i>) -> Self {
-            ir::ConstCombinatorSig {
-                name: src.name.name,
-                resolved_combinator: src.resolved_combinator.into(),
+        fn lower_const_combinator(&self, c: &ast::ConstCombinator<'i>) -> ir::ConstCombinator {
+            match c {
+                ast::ConstCombinator::ConstBytes(x) => {
+                    ir::ConstCombinator::ConstBytes(self.lower_const_bytes_combinator(x))
+                }
+                ast::ConstCombinator::ConstInt(x) => {
+                    ir::ConstCombinator::ConstInt(self.lower_const_int_combinator(x))
+                }
+                ast::ConstCombinator::ConstEnum(x) => {
+                    ir::ConstCombinator::ConstEnum(self.lower_const_enum_combinator(x))
+                }
+                ast::ConstCombinator::ConstCombinatorInvocation { name, .. } => {
+                    ir::ConstCombinator::ConstCombinatorInvocation(name.name.clone())
+                }
             }
         }
     }
@@ -1233,20 +1432,52 @@ pub mod lowering {
         fn from(src: &crate::type_check::GlobalCtx<'i>) -> Self {
             use std::collections::{HashMap, HashSet};
 
-            let combinators: HashSet<ir::CombinatorSig> =
-                src.combinators.iter().cloned().map(Into::into).collect();
+            let lowerer = CheckedLowerer { global_ctx: src };
+            let combinators: HashSet<ir::CombinatorSig> = src
+                .combinators
+                .iter()
+                .map(|sig| {
+                    let name = sig.name.name.clone();
+                    let resolved_combinator = match &sig.resolved_combinator {
+                        ast::CombinatorInner::Struct(_)
+                        | ast::CombinatorInner::Choice(_)
+                        | ast::CombinatorInner::Enum(_) => {
+                            ir::Combinator::Invocation(ir::CombinatorInvocation {
+                                func: name.clone(),
+                                args: vec![],
+                            })
+                        }
+                        _ => lowerer.lower_combinator_inner(
+                            &sig.resolved_combinator,
+                            sig.param_defns,
+                            &[],
+                        ),
+                    };
+                    ir::CombinatorSig {
+                        name,
+                        param_defns: sig
+                            .param_defns
+                            .iter()
+                            .map(|param| lowerer.lower_param_defn(param, sig.param_defns, &[]))
+                            .collect(),
+                        resolved_combinator,
+                    }
+                })
+                .collect();
 
             let const_combinators: HashSet<ir::ConstCombinatorSig> = src
                 .const_combinators
                 .iter()
-                .cloned()
-                .map(Into::into)
+                .map(|sig| ir::ConstCombinatorSig {
+                    name: sig.name.name.clone(),
+                    resolved_combinator: lowerer.lower_const_combinator(&sig.resolved_combinator),
+                })
                 .collect();
 
             let enums: HashMap<String, ir::EnumCombinator> = src
                 .enums
                 .iter()
-                .map(|(k, v)| (k.to_string(), v.clone().into()))
+                .map(|(k, v)| (k.to_string(), lowerer.lower_enum_combinator(v)))
                 .collect();
 
             ir::GlobalCtx {
@@ -1254,28 +1485,6 @@ pub mod lowering {
                 const_combinators,
                 enums,
                 static_sizes: src.static_sizes.clone(),
-            }
-        }
-    }
-
-    impl<'i> From<crate::type_check::CombinatorSig<'i>> for ir::CombinatorSig {
-        fn from(src: crate::type_check::CombinatorSig<'i>) -> Self {
-            let name = src.name.name.clone();
-            let resolved_combinator = match src.resolved_combinator {
-                ast::CombinatorInner::Struct(_)
-                | ast::CombinatorInner::Choice(_)
-                | ast::CombinatorInner::Enum(_) => {
-                    ir::Combinator::Invocation(ir::CombinatorInvocation {
-                        func: name.clone(),
-                        args: vec![],
-                    })
-                }
-                _ => src.resolved_combinator.into(),
-            };
-            ir::CombinatorSig {
-                name,
-                param_defns: src.param_defns.iter().cloned().map(Into::into).collect(),
-                resolved_combinator,
             }
         }
     }

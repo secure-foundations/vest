@@ -68,11 +68,7 @@ pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>>
                     // if there is no output file specified, use the same name as the name of input vest file
 
                     println!("📝 Generating the verus file...");
-                    let ir: Vec<vestir::Definition> = ast
-                        .clone()
-                        .into_iter()
-                        .map(vestir::Definition::from)
-                        .collect();
+                    let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
                     let code = codegen::code_gen(&ir, &(&ctx).into());
                     println!("👏 Done!");
 

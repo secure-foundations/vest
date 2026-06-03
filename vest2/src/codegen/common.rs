@@ -53,6 +53,51 @@ pub(crate) struct Analysis<'a> {
 }
 
 impl<'a> Analysis<'a> {
+    pub(crate) fn render_length_expr_with<F>(
+        &self,
+        len: &LengthExpr,
+        render_dep: &F,
+        cast_ty: Option<&TokenStream>,
+    ) -> TokenStream
+    where
+        F: Fn(&str) -> TokenStream,
+    {
+        match &len.kind {
+            vestir::LengthExprKind::Const(n) => {
+                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                quote! { #lit }
+            }
+            vestir::LengthExprKind::Dependent(name) => render_dep(name),
+            vestir::LengthExprKind::SizeOf(name) => {
+                let expr = if let Some(n) = self.ctx.static_sizes.get(name) {
+                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
+                    quote! { #lit }
+                } else {
+                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
+                    quote! { <#fmt_ident as StaticByteLen>::static_byte_len() }
+                };
+                match cast_ty {
+                    Some(ty) => quote! { (#expr as #ty) },
+                    None => expr,
+                }
+            }
+            vestir::LengthExprKind::BinOp { op, left, right } => {
+                let left = self.render_length_expr_with(left, render_dep, cast_ty);
+                let right = self.render_length_expr_with(right, render_dep, cast_ty);
+                let expr = match op {
+                    vestir::ArithOp::Add => quote! { (#left + #right) },
+                    vestir::ArithOp::Sub => quote! { (#left - #right) },
+                    vestir::ArithOp::Mul => quote! { (#left * #right) },
+                    vestir::ArithOp::Div => quote! { (#left / #right) },
+                };
+                match cast_ty {
+                    Some(ty) => quote! { (#expr as #ty) },
+                    None => expr,
+                }
+            }
+        }
+    }
+
     pub(crate) fn render_const_array_expr(
         &self,
         array: &ConstArray,
@@ -420,11 +465,11 @@ impl<'a> Analysis<'a> {
     }
 
     pub(crate) fn eval_const_length_expr(&self, len: &LengthExpr) -> Option<usize> {
-        match len {
-            LengthExpr::Const(n) => Some(*n),
-            LengthExpr::Dependent(_) => None,
-            LengthExpr::SizeOf(name) => self.ctx.static_sizes.get(name).copied(),
-            LengthExpr::BinOp { op, left, right } => {
+        match &len.kind {
+            vestir::LengthExprKind::Const(n) => Some(*n),
+            vestir::LengthExprKind::Dependent(_) => None,
+            vestir::LengthExprKind::SizeOf(name) => self.ctx.static_sizes.get(name).copied(),
+            vestir::LengthExprKind::BinOp { op, left, right } => {
                 let left = self.eval_const_length_expr(left)?;
                 let right = self.eval_const_length_expr(right)?;
                 match op {

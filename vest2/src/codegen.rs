@@ -239,7 +239,8 @@ mod tests {
     use super::*;
     use crate::vestir::{
         self, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstraintIntCombinator,
-        Definition, GlobalCtx, IntCombinator, LengthExpr, StructCombinator, StructField,
+        Definition, GlobalCtx, IntCombinator, LengthExpr, LengthExprKind, StructCombinator,
+        StructField,
     };
     use std::collections::HashMap;
 
@@ -289,6 +290,22 @@ mod tests {
         }
     }
 
+    fn const_len(n: usize) -> LengthExpr {
+        let ty = if n <= u8::MAX as usize {
+            IntCombinator::Unsigned(8)
+        } else if n <= u16::MAX as usize {
+            IntCombinator::Unsigned(16)
+        } else if n <= u32::MAX as usize {
+            IntCombinator::Unsigned(32)
+        } else {
+            IntCombinator::Unsigned(64)
+        };
+        LengthExpr {
+            ty,
+            kind: LengthExprKind::Const(n),
+        }
+    }
+
     #[test]
     fn names_are_camel_cased() {
         let names = common::format_names("payload_with_header");
@@ -304,9 +321,7 @@ mod tests {
         let defs = vec![Definition::CombinatorDef {
             name: "msg".to_string(),
             param_defns: vec![],
-            combinator: Combinator::Bytes(vestir::BytesCombinator {
-                len: LengthExpr::Const(4),
-            }),
+            combinator: Combinator::Bytes(vestir::BytesCombinator { len: const_len(4) }),
         }];
         let ctx = ctx_for(&defs);
         let analysis = Analysis::new(&defs, &ctx);
@@ -319,9 +334,7 @@ mod tests {
             Definition::CombinatorDef {
                 name: "bytes4".to_string(),
                 param_defns: vec![],
-                combinator: Combinator::Bytes(vestir::BytesCombinator {
-                    len: LengthExpr::Const(4),
-                }),
+                combinator: Combinator::Bytes(vestir::BytesCombinator { len: const_len(4) }),
             },
             Definition::CombinatorDef {
                 name: "wrapper".to_string(),
@@ -373,9 +386,7 @@ mod tests {
         let defs = vec![Definition::CombinatorDef {
             name: "msg".to_string(),
             param_defns: vec![],
-            combinator: Combinator::Bytes(vestir::BytesCombinator {
-                len: LengthExpr::Const(4),
-            }),
+            combinator: Combinator::Bytes(vestir::BytesCombinator { len: const_len(4) }),
         }];
         let ctx = ctx_for(&defs);
         let code = code_gen(&defs, &ctx);
@@ -428,15 +439,11 @@ mod tests {
                 choices: Choices::Ints(vec![
                     (
                         Some(vestir::ConstraintElem::Single(1)),
-                        Combinator::Bytes(vestir::BytesCombinator {
-                            len: LengthExpr::Const(1),
-                        }),
+                        Combinator::Bytes(vestir::BytesCombinator { len: const_len(1) }),
                     ),
                     (
                         Some(vestir::ConstraintElem::Single(2)),
-                        Combinator::Bytes(vestir::BytesCombinator {
-                            len: LengthExpr::Const(2),
-                        }),
+                        Combinator::Bytes(vestir::BytesCombinator { len: const_len(2) }),
                     ),
                 ]),
             },

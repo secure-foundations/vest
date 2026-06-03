@@ -3,8 +3,8 @@ use super::common::{
 };
 use crate::vestir::{
     self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, ConstraintElem,
-    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, IntCombinator, LengthExpr,
-    Param, ParamDefn, StructCombinator, StructField,
+    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, IntCombinator, Param,
+    ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -323,19 +323,20 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    fn render_and_then_spec(
-        &self,
-        lhs: &Combinator,
-        rhs: &Combinator,
-    ) -> RenderedSpec {
+    fn render_and_then_spec(&self, lhs: &Combinator, rhs: &Combinator) -> RenderedSpec {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
-                let len_expr = self.render_length_expr_usize(&bytes.len);
+                let len_ty = self.int_type(&bytes.len.ty, TypeMode::Spec);
+                let len_expr = self.render_length_expr_with(
+                    &bytes.len,
+                    &|name| path_tokens(name),
+                    Some(&len_ty),
+                );
                 let inner = self.render_spec_combinator(rhs);
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
                 RenderedSpec::new(
-                    quote! { ExactLen<#inner_ty, usize> },
+                    quote! { ExactLen<#inner_ty, #len_ty> },
                     quote! { ExactLen(#len_expr, #inner_expr) },
                     inner.value_ty,
                     inner.has_value,
@@ -432,9 +433,14 @@ impl<'a> Analysis<'a> {
                 RenderedSpec::new(quote! { Fixed<#n> }, quote! { Fixed::<#n> }, value_ty, true)
             }
             None => {
-                let len = self.render_length_expr_usize(&bytes.len);
+                let len_ty = self.int_type(&bytes.len.ty, TypeMode::Spec);
+                let len = self.render_length_expr_with(
+                    &bytes.len,
+                    &|name| path_tokens(name),
+                    Some(&len_ty),
+                );
                 RenderedSpec::new(
-                    quote! { Varied<usize> },
+                    quote! { Varied<#len_ty> },
                     quote! { Varied(#len) },
                     value_ty,
                     true,
@@ -478,9 +484,14 @@ impl<'a> Analysis<'a> {
                 )
             }
             None => {
-                let len = self.render_length_expr_usize(&array_comb.len);
+                let len_ty = self.int_type(&array_comb.len.ty, TypeMode::Spec);
+                let len = self.render_length_expr_with(
+                    &array_comb.len,
+                    &|name| path_tokens(name),
+                    Some(&len_ty),
+                );
                 RenderedSpec::new(
-                    quote! { RepeatN<#inner_ty, usize> },
+                    quote! { RepeatN<#inner_ty, #len_ty> },
                     quote! { RepeatN(#len, #inner_expr) },
                     value_ty,
                     true,
@@ -1251,38 +1262,6 @@ impl<'a> Analysis<'a> {
                     expr: quote! { #fmt_ident::#inner_ident() },
                     value_ty,
                     value_expr,
-                }
-            }
-        }
-    }
-
-    fn render_length_expr_usize(&self, len: &LengthExpr) -> TokenStream {
-        match len {
-            LengthExpr::Const(n) => {
-                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                quote! { #lit }
-            }
-            LengthExpr::Dependent(name) => {
-                let path = path_tokens(name);
-                quote! { (#path as usize) }
-            }
-            LengthExpr::SizeOf(name) => {
-                if let Some(n) = self.ctx.static_sizes.get(name) {
-                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                    quote! { #lit }
-                } else {
-                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
-                    quote! { (<#fmt_ident as StaticByteLen>::static_byte_len() as usize) }
-                }
-            }
-            LengthExpr::BinOp { op, left, right } => {
-                let left = self.render_length_expr_usize(left);
-                let right = self.render_length_expr_usize(right);
-                match op {
-                    vestir::ArithOp::Add => quote! { ((#left + #right) as usize) },
-                    vestir::ArithOp::Sub => quote! { ((#left - #right) as usize) },
-                    vestir::ArithOp::Mul => quote! { ((#left * #right) as usize) },
-                    vestir::ArithOp::Div => quote! { ((#left / #right) as usize) },
                 }
             }
         }

@@ -1,8 +1,8 @@
 use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
     self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator,
-    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, LengthExpr, Param,
-    ParamDefn, StructCombinator, StructField,
+    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, Param, ParamDefn,
+    StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -1227,7 +1227,11 @@ impl<'a> Analysis<'a> {
                         quote! { Array::<#n_tok, _>(#inner_expr) }
                     }
                     None => {
-                        let len_expr = self.exec_length_expr(len, param_defns, mode);
+                        let len_expr = self.render_length_expr_with(
+                            len,
+                            &|name| self.resolve_dep(name, param_defns),
+                            None,
+                        );
                         quote! { RepeatN(#len_expr, #inner_expr) }
                     }
                 }
@@ -1238,7 +1242,11 @@ impl<'a> Analysis<'a> {
                     quote! { Fixed::<#n_tok> }
                 }
                 None => {
-                    let len_expr = self.exec_length_expr(&bytes.len, param_defns, mode);
+                    let len_expr = self.render_length_expr_with(
+                        &bytes.len,
+                        &|name| self.resolve_dep(name, param_defns),
+                        None,
+                    );
                     quote! { Varied(#len_expr) }
                 }
             },
@@ -1260,7 +1268,11 @@ impl<'a> Analysis<'a> {
     ) -> TokenStream {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
-                let len_expr = self.exec_length_expr(&bytes.len, param_defns, mode);
+                let len_expr = self.render_length_expr_with(
+                    &bytes.len,
+                    &|name| self.resolve_dep(name, param_defns),
+                    None,
+                );
                 let inner_expr = self.exec_combinator_fmt_expr(rhs, param_defns, mode);
                 quote! { ExactLen(#len_expr, #inner_expr) }
             }
@@ -1314,10 +1326,7 @@ impl<'a> Analysis<'a> {
         quote! { #fmt_ident { #(#field_inits),* } }
     }
 
-    fn exec_constraint_int_fmt(
-        &self,
-        c: &ConstraintIntCombinator,
-    ) -> TokenStream {
+    fn exec_constraint_int_fmt(&self, c: &ConstraintIntCombinator) -> TokenStream {
         self.int_combinator_expr(&c.combinator)
     }
 
@@ -1328,43 +1337,6 @@ impl<'a> Analysis<'a> {
         mode: CodegenMode,
     ) -> TokenStream {
         self.exec_invocation_fmt_expr(&c.combinator, param_defns, mode)
-    }
-
-    fn exec_length_expr(
-        &self,
-        len: &LengthExpr,
-        param_defns: &[ParamDefn],
-        mode: CodegenMode,
-    ) -> TokenStream {
-        match len {
-            LengthExpr::Const(n) => {
-                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                quote! { #lit }
-            }
-            LengthExpr::Dependent(name) => {
-                let path = self.resolve_dep(name, param_defns);
-                quote! { #path }
-            }
-            LengthExpr::SizeOf(name) => {
-                if let Some(n) = self.ctx.static_sizes.get(name) {
-                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                    quote! { #lit }
-                } else {
-                    let fmt_spec_ident = format_ident!("{}Spec", self.info(name).names.fmt);
-                    quote! { (<#fmt_spec_ident as StaticByteLen>::static_byte_len()) }
-                }
-            }
-            LengthExpr::BinOp { op, left, right } => {
-                let left = self.exec_length_expr(left, param_defns, mode);
-                let right = self.exec_length_expr(right, param_defns, mode);
-                match op {
-                    vestir::ArithOp::Add => quote! { (#left + #right) },
-                    vestir::ArithOp::Sub => quote! { (#left - #right) },
-                    vestir::ArithOp::Mul => quote! { (#left * #right) },
-                    vestir::ArithOp::Div => quote! { (#left / #right) },
-                }
-            }
-        }
     }
 
     /// Build the exec format expression for a ConstCombinator.
@@ -1589,11 +1561,7 @@ impl<'a> Analysis<'a> {
     }
 
     /// Try to resolve the enum type of a dependent field `dep` in the struct or params context.
-    fn resolve_dep_enum_type(
-        &self,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Option<TokenStream> {
+    fn resolve_dep_enum_type(&self, dep: &str, param_defns: &[ParamDefn]) -> Option<TokenStream> {
         let base = dep.split('.').last().unwrap_or(dep);
         // Search in all struct defs for a Dependent field with this name
         for def in self.defs {
