@@ -4980,9 +4980,6 @@ mod exec_impls {
         type PT = CaptureParamAndLocalXAPayload<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5026,6 +5023,24 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CaptureParamAndLocalXAPayload<'i>> for CaptureParamAndLocalXAPayloadFmt {
+        fn prepare(&self, v: &CaptureParamAndLocalXAPayload<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureParamAndLocalXAPayloadFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.choice2, v) {
+                (COrD::C, CaptureParamAndLocalXAPayload::C(v)) => (Varied(self.len)).prepare(v),
+                (COrD::D, CaptureParamAndLocalXAPayload::D(v)) => (Varied(self.len)).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -5078,13 +5093,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureParamAndLocalXA<'i>> for CaptureParamAndLocalXAFmt {
+        fn prepare(&self, v: &CaptureParamAndLocalXA<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let CaptureParamAndLocalXA { len, payload } = v;
+            let l1 = (U8).prepare(len)?;
+            let l2 = (CaptureParamAndLocalXAPayloadFmt {
+                choice2: self.choice2,
+                len: *len,
+            }).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureParamAndLocalXBYFmt {
         type PT = CaptureParamAndLocalXBY;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CaptureParamAndLocalXBYFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5131,6 +5161,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureParamAndLocalXBY> for CaptureParamAndLocalXBYFmt {
+        fn prepare(&self, v: &CaptureParamAndLocalXBY) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureParamAndLocalXBYFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (0, CaptureParamAndLocalXBY::Variant1(v)) => (U8).prepare(v),
+                (x, CaptureParamAndLocalXBY::Default(v)) if !(x == 0) => (U16Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureParamAndLocalXBFmt {
         type PT = CaptureParamAndLocalXB;
 
@@ -5166,13 +5211,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureParamAndLocalXB> for CaptureParamAndLocalXBFmt {
+        fn prepare(&self, v: &CaptureParamAndLocalXB) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
+            let CaptureParamAndLocalXB { tag, y } = v;
+            let l1 = (U8).prepare(tag)?;
+            let l2 = (CaptureParamAndLocalXBYFmt { tag: *tag }).prepare(y)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureParamAndLocalXFmt {
         type PT = CaptureParamAndLocalX<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CaptureParamAndLocalXFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5221,13 +5274,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureParamAndLocalX<'i>> for CaptureParamAndLocalXFmt {
+        fn prepare(&self, v: &CaptureParamAndLocalX<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureParamAndLocalXFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.choice1, v) {
+                (AOrB::A, CaptureParamAndLocalX::A(v)) => (CaptureParamAndLocalXAFmt {
+                    choice2: self.choice2,
+                }).prepare(v),
+                (AOrB::B, CaptureParamAndLocalX::B(v)) => (CaptureParamAndLocalXBFmt).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for NestedInnerChoiceXAFmt {
         type PT = NestedInnerChoiceXA;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<NestedInnerChoiceXAFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5274,6 +5341,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NestedInnerChoiceXA> for NestedInnerChoiceXAFmt {
+        fn prepare(&self, v: &NestedInnerChoiceXA) -> Result<usize, PreSerializeError> {
+            reveal(<NestedInnerChoiceXAFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.choice2, v) {
+                (COrD::C, NestedInnerChoiceXA::C(v)) => (U8).prepare(v),
+                (COrD::D, NestedInnerChoiceXA::D(v)) => (U16Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type PT = CaptureOuterAndLocalPayloadBodyChoice1<'i>;
 
@@ -5311,13 +5393,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<
+        CaptureOuterAndLocalPayloadBodyChoice1<'i>,
+    > for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+        fn prepare(&self, v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
+            let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
+            let l1 = (U8).prepare(count)?;
+            let l2 = (Varied(count)).prepare(items)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureOuterAndLocalPayloadBodyFmt {
         type PT = CaptureOuterAndLocalPayloadBody<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5363,6 +5458,27 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CaptureOuterAndLocalPayloadBody<'i>> for CaptureOuterAndLocalPayloadBodyFmt {
+        fn prepare(&self, v: &CaptureOuterAndLocalPayloadBody<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) => (Varied(
+                    (self.frame_len - 1),
+                )).prepare(v),
+                (x, CaptureOuterAndLocalPayloadBody::Default(v)) if !(x == 0) => (
+                CaptureOuterAndLocalPayloadBodyChoice1Fmt).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -5415,6 +5531,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureOuterAndLocalPayload<'i>> for CaptureOuterAndLocalPayloadFmt {
+        fn prepare(&self, v: &CaptureOuterAndLocalPayload<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let CaptureOuterAndLocalPayload { tag, body } = v;
+            let l1 = (U8).prepare(tag)?;
+            let l2 = (CaptureOuterAndLocalPayloadBodyFmt {
+                frame_len: self.frame_len,
+                tag: *tag,
+            }).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureOuterAndLocalFmt {
         type PT = CaptureOuterAndLocal<'i>;
 
@@ -5456,6 +5590,26 @@ mod exec_impls {
             );
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CaptureOuterAndLocal<'i>> for CaptureOuterAndLocalFmt {
+        fn prepare(&self, v: &CaptureOuterAndLocal<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
+            let CaptureOuterAndLocal { frame_len, payload } = v;
+            let l1 = {
+                if !(*frame_len >= 1) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U8).prepare(frame_len)
+                }
+            }?;
+            let l2 = (ExactLen(
+                frame_len,
+                CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
+            )).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -5502,13 +5656,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<
+        CaptureLocalInAnonStructWrapperValueChoice0<'i>,
+    > for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
+        fn prepare(&self, v: &CaptureLocalInAnonStructWrapperValueChoice0<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
+            let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
+            let l1 = (U8).prepare(len)?;
+            let l2 = (Varied(len)).prepare(bytes)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureLocalInAnonStructWrapperValueFmt {
         type PT = CaptureLocalInAnonStructWrapperValue<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5557,13 +5724,32 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<
+        CaptureLocalInAnonStructWrapperValue<'i>,
+    > for CaptureLocalInAnonStructWrapperValueFmt {
+        fn prepare(&self, v: &CaptureLocalInAnonStructWrapperValue<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => (
+                CaptureLocalInAnonStructWrapperValueChoice0Fmt).prepare(v),
+                (x, CaptureLocalInAnonStructWrapperValue::Default(v)) if !(x == 0) => (
+                U16Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for NestedInnerChoiceXFmt {
         type PT = NestedInnerChoiceX;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<NestedInnerChoiceXFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5607,6 +5793,23 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<NestedInnerChoiceX> for NestedInnerChoiceXFmt {
+        fn prepare(&self, v: &NestedInnerChoiceX) -> Result<usize, PreSerializeError> {
+            reveal(<NestedInnerChoiceXFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.choice1, v) {
+                (AOrB::A, NestedInnerChoiceX::A(v)) => (NestedInnerChoiceXAFmt {
+                    choice2: self.choice2,
+                }).prepare(v),
+                (AOrB::B, NestedInnerChoiceX::B(v)) => (U32Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -5656,6 +5859,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NestedInnerChoice> for NestedInnerChoiceFmt {
+        fn prepare(&self, v: &NestedInnerChoice) -> Result<usize, PreSerializeError> {
+            reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let NestedInnerChoice { x } = v;
+            let l1 = (NestedInnerChoiceXFmt {
+                choice1: self.choice1,
+                choice2: self.choice2,
+            }).prepare(x)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureParamAndLocalFmt {
         type PT = CaptureParamAndLocal<'i>;
 
@@ -5702,6 +5922,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureParamAndLocal<'i>> for CaptureParamAndLocalFmt {
+        fn prepare(&self, v: &CaptureParamAndLocal<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let CaptureParamAndLocal { x } = v;
+            let l1 = (CaptureParamAndLocalXFmt {
+                choice1: self.choice1,
+                choice2: self.choice2,
+            }).prepare(x)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for NestedInnerStructValFmt {
         type PT = NestedInnerStructVal<'i>;
 
@@ -5734,6 +5971,17 @@ mod exec_impls {
             Tail.serialize(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<NestedInnerStructVal<'i>> for NestedInnerStructValFmt {
+        fn prepare(&self, v: &NestedInnerStructVal<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
+            let NestedInnerStructVal { x, y } = v;
+            let l1 = (U8).prepare(x)?;
+            let l2 = (Tail).prepare(y)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -5772,13 +6020,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NestedInnerStruct<'i>> for NestedInnerStructFmt {
+        fn prepare(&self, v: &NestedInnerStruct<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
+            let NestedInnerStruct { len, val } = v;
+            let l1 = (U32Le).prepare(len)?;
+            let l2 = (ExactLen(len, NestedInnerStructValFmt)).prepare(val)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for COrDFmt {
         type PT = COrD;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<COrDFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5806,6 +6062,18 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<COrD> for COrDFmt {
+        fn prepare(&self, v: &COrD) -> Result<usize, PreSerializeError> {
+            reveal(<COrDFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                COrD::C => 1,
+                COrD::D => 2,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -5846,6 +6114,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureLocalInAnonStructWrapper<'i>> for CaptureLocalInAnonStructWrapperFmt {
+        fn prepare(&self, v: &CaptureLocalInAnonStructWrapper<'i>) -> Result<
+            usize,
+            PreSerializeError,
+        > {
+            reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
+            let CaptureLocalInAnonStructWrapper { tag, value } = v;
+            let l1 = (U8).prepare(tag)?;
+            let l2 = (CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }).prepare(value)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for CaptureLocalInAnonStructFmt {
         type PT = CaptureLocalInAnonStruct<'i>;
 
@@ -5878,13 +6160,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CaptureLocalInAnonStruct<'i>> for CaptureLocalInAnonStructFmt {
+        fn prepare(&self, v: &CaptureLocalInAnonStruct<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
+            let CaptureLocalInAnonStruct { wrapper } = v;
+            let l1 = (CaptureLocalInAnonStructWrapperFmt).prepare(wrapper)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AOrBFmt {
         type PT = AOrB;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AOrBFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -5912,6 +6201,18 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<AOrB> for AOrBFmt {
+        fn prepare(&self, v: &AOrB) -> Result<usize, PreSerializeError> {
+            reveal(<AOrBFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AOrB::A => 1,
+                AOrB::B => 2,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 

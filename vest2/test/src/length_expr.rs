@@ -3423,13 +3423,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Header> for HeaderFmt {
+        fn prepare(&self, v: &Header) -> Result<usize, PreSerializeError> {
+            reveal(<HeaderFmt as SpecByteLen>::byte_len);
+            let Header { len, flags } = v;
+            let l1 = {
+                if !(*len >= 3 && *len <= 65535) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U16Le).prepare(len)
+                }
+            }?;
+            let l2 = (U8).prepare(flags)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for HeaderAliasFmt {
         type PT = HeaderAlias;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HeaderAliasFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3451,13 +3465,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HeaderAlias> for HeaderAliasFmt {
+        fn prepare(&self, v: &HeaderAlias) -> Result<usize, PreSerializeError> {
+            reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
+            HeaderFmt.prepare(v)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for FixedChoiceFmt {
         type PT = FixedChoice;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3504,6 +3522,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<FixedChoice> for FixedChoiceFmt {
+        fn prepare(&self, v: &FixedChoice) -> Result<usize, PreSerializeError> {
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (0, FixedChoice::Variant1(v)) => (U16Le).prepare(v),
+                (x, FixedChoice::Default(v)) if !(x == 0) => (U16Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for SimpleSubFmt {
         type PT = SimpleSub<'i>;
 
@@ -3544,6 +3577,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SimpleSub<'i>> for SimpleSubFmt {
+        fn prepare(&self, v: &SimpleSub<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let SimpleSub { data } = v;
+            let l1 = (Varied(((self.len - 3) - 1))).prepare(data)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AliasSizeFmt {
         type PT = AliasSize<'i>;
 
@@ -3573,6 +3620,16 @@ mod exec_impls {
             Fixed::<3>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<AliasSize<'i>> for AliasSizeFmt {
+        fn prepare(&self, v: &AliasSize<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
+            let AliasSize { bytes } = v;
+            let l1 = (Fixed::<3>).prepare(bytes)?;
+            let total_len = l1;
+            Ok(total_len)
         }
     }
 
@@ -3616,6 +3673,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MultiArith<'i>> for MultiArithFmt {
+        fn prepare(&self, v: &MultiArith<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MultiArithFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let MultiArith { body } = v;
+            let l1 = (Varied(((self.total - self.hdr_len) - 8))).prepare(body)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for SizeArithFmt {
         type PT = SizeArith<'i>;
 
@@ -3645,6 +3716,16 @@ mod exec_impls {
             Fixed::<4>.serialize(bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<SizeArith<'i>> for SizeArithFmt {
+        fn prepare(&self, v: &SizeArith<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SizeArithFmt as SpecByteLen>::byte_len);
+            let SizeArith { bytes } = v;
+            let l1 = (Fixed::<4>).prepare(bytes)?;
+            let total_len = l1;
+            Ok(total_len)
         }
     }
 
@@ -3688,6 +3769,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
+        fn prepare(&self, v: &PayloadWithHeader<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let PayloadWithHeader { data } = v;
+            let l1 = (Varied((self.hdr.len - 3))).prepare(data)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MixedConstFmt {
         type PT = MixedConst<'i>;
 
@@ -3728,13 +3823,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MixedConst<'i>> for MixedConstFmt {
+        fn prepare(&self, v: &MixedConst<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MixedConstFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let MixedConst { data } = v;
+            let l1 = (Varied(((self.len - 4) + 2))).prepare(data)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ChoiceTagFmt {
         type PT = ChoiceTag<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ChoiceTagFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3753,6 +3859,13 @@ mod exec_impls {
             Fixed::<2>.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ChoiceTag<'i>> for ChoiceTagFmt {
+        fn prepare(&self, v: &ChoiceTag<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ChoiceTagFmt as SpecByteLen>::byte_len);
+            (Fixed::<2>).prepare(v)
         }
     }
 
@@ -3788,6 +3901,16 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NamedSize<'i>> for NamedSizeFmt {
+        fn prepare(&self, v: &NamedSize<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
+            let NamedSize { bytes } = v;
+            let l1 = (Fixed::<3>).prepare(bytes)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ChoiceFormatSizeFmt {
         type PT = ChoiceFormatSize<'i>;
 
@@ -3820,13 +3943,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ChoiceFormatSize<'i>> for ChoiceFormatSizeFmt {
+        fn prepare(&self, v: &ChoiceFormatSize<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
+            let ChoiceFormatSize { bytes } = v;
+            let l1 = (Fixed::<2>).prepare(bytes)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ChoiceArraysFoldedBodyFmt<'i> {
         type PT = ChoiceArraysFoldedBody;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ChoiceArraysFoldedBodyFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3880,6 +4010,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ChoiceArraysFoldedBody> for ChoiceArraysFoldedBodyFmt<'i> {
+        fn prepare(&self, v: &ChoiceArraysFoldedBody) -> Result<usize, PreSerializeError> {
+            reveal(<ChoiceArraysFoldedBodyFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            proof {
+                let ghost arr0 = [0x00u8, 0x00u8].deep_view();
+                let ghost arr1 = [0x01u8, 0x01u8].deep_view();
+                assert(arr0 != arr1) by {
+                    assert(arr0[0] != arr1[0]);
+                };
+            }
+
+            match (self.tag, v) {
+                (x, ChoiceArraysFoldedBody::Variant1(v)) if x.deep_eq(&[0x00, 0x00]) => (
+                U8).prepare(v),
+                (x, ChoiceArraysFoldedBody::Variant2(v)) if x.deep_eq(&[0x01, 0x01]) => (
+                U16Le).prepare(v),
+                (x, ChoiceArraysFoldedBody::Default(v)) if !x.deep_eq(&[0x00, 0x00]) && !x.deep_eq(
+                    &[0x01, 0x01],
+                ) => (U16Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ChoiceArraysFoldedFmt {
         type PT = ChoiceArraysFolded<'i>;
 
@@ -3912,6 +4070,17 @@ mod exec_impls {
             ChoiceArraysFoldedBodyFmt { tag: *tag }.serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ChoiceArraysFolded<'i>> for ChoiceArraysFoldedFmt {
+        fn prepare(&self, v: &ChoiceArraysFolded<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
+            let ChoiceArraysFolded { tag, body } = v;
+            let l1 = (ChoiceTagFmt).prepare(tag)?;
+            let l2 = (ChoiceArraysFoldedBodyFmt { tag: *tag }).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -3955,6 +4124,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ParenExpr<'i>> for ParenExprFmt {
+        fn prepare(&self, v: &ParenExpr<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ParenExprFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let ParenExpr { data } = v;
+            let l1 = (Varied(((self.a - self.b) + self.c))).prepare(data)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for PrimitiveSizesFmt {
         type PT = PrimitiveSizes<'i>;
 
@@ -3987,6 +4170,17 @@ mod exec_impls {
             Fixed::<2>.serialize(word, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PrimitiveSizes<'i>> for PrimitiveSizesFmt {
+        fn prepare(&self, v: &PrimitiveSizes<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
+            let PrimitiveSizes { byte, word } = v;
+            let l1 = (Fixed::<1>).prepare(byte)?;
+            let l2 = (Fixed::<2>).prepare(word)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 

@@ -180,21 +180,33 @@ impl<'i> DeepView for Msg5<'i> {
 
 # [doc = "data type for `msg2_content`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
-pub enum Msg2Content {
+pub enum Msg2Content<'i> {
     Variant1(u16),
-    Default(u32),
+    Variant2(u32),
+    Variant3(u64),
+    Default(&'i [u8]),
 }
 
-pub type Msg2ContentSpec = Msg2Content;
+# [verifier::ext_equal]
+pub enum Msg2ContentSpec {
+    Variant1(u16),
+    Variant2(u32),
+    Variant3(u64),
+    Default(Seq<u8>),
+}
 
-pub type Msg2ContentInner = Sum<u16, u32>;
+pub type Msg2ContentInner = Sum<u16, Sum<u32, Sum<u64, Seq<u8>>>>;
 
-impl DeepView for Msg2Content {
-    type V = Self;
+impl<'i> DeepView for Msg2Content<'i> {
+    type V = Msg2ContentSpec;
 
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            Msg2Content::Variant1(v) => Msg2ContentSpec::Variant1(v.deep_view()),
+            Msg2Content::Variant2(v) => Msg2ContentSpec::Variant2(v.deep_view()),
+            Msg2Content::Variant3(v) => Msg2ContentSpec::Variant3(v.deep_view()),
+            Msg2Content::Default(v) => Msg2ContentSpec::Default(v.deep_view()),
+        }
     }
 }
 
@@ -225,7 +237,7 @@ impl<'i> DeepView for Msg1<'i> {
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Msg2<'i> {
     pub b: &'i [u8],
-    pub content: Msg2Content,
+    pub content: Msg2Content<'i>,
 }
 
 # [verifier::ext_equal]
@@ -651,7 +663,10 @@ impl<'i> Msg2ContentFmt<'i> {
 }
 
 pub type Msg2ContentFmtSpec = Named<
-    Mapped<Sum<U16Le, U32Le>, FnSpecMapper<Msg2ContentInner, Msg2ContentSpec>>,
+    Mapped<
+        Sum<U16Le, Sum<U32Le, Sum<U64Le, Tail>>>,
+        FnSpecMapper<Msg2ContentInner, Msg2ContentSpec>,
+    >,
 >;
 
 impl<'i> Msg2ContentFmt<'i> {
@@ -662,21 +677,27 @@ impl<'i> Msg2ContentFmt<'i> {
             Mapped {
                 inner: match b {
                     x if x == [0x16u8, 0x03u8, 0x01u8].deep_view() => L(U16Le),
-                    _ => R(U32Le),
+                    x if x == [0x16u8, 0x03u8, 0x02u8].deep_view() => R(L(U32Le)),
+                    x if x == [0x16u8, 0x03u8, 0x03u8].deep_view() => R(R(L(U64Le))),
+                    _ => R(R(R(Tail))),
                 },
                 mapper: (
                     |parsed: Msg2ContentInner| -> Msg2ContentSpec
                         {
                             match parsed {
                                 L(v) => Msg2ContentSpec::Variant1(v),
-                                R(v) => Msg2ContentSpec::Default(v),
+                                R(L(v)) => Msg2ContentSpec::Variant2(v),
+                                R(R(L(v))) => Msg2ContentSpec::Variant3(v),
+                                R(R(R(v))) => Msg2ContentSpec::Default(v),
                             }
                         },
                     |value: Msg2ContentSpec| -> Msg2ContentInner
                         {
                             match value {
                                 Msg2ContentSpec::Variant1(v) => L(v),
-                                Msg2ContentSpec::Default(v) => R(v),
+                                Msg2ContentSpec::Variant2(v) => R(L(v)),
+                                Msg2ContentSpec::Variant3(v) => R(R(L(v))),
+                                Msg2ContentSpec::Default(v) => R(R(R(v))),
                             }
                         },
                 ),
@@ -2074,23 +2095,6 @@ mod derived_proofs {
         }
     }
 
-    impl<'i> NonTailFmt for Msg2ContentFmt<'i> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<Msg2ContentFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Msg2ContentFmt::spec_inner(self.b_spec());
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<Msg2ContentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<Msg2ContentFmt as SpecByteLen>::byte_len);
-            let fmt = Msg2ContentFmt::spec_inner(self.b_spec());
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
     impl<'i> GoodSerializer for Msg2ContentFmt<'i> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<Msg2ContentFmt as SpecSerializer>::spec_serialize);
@@ -2119,16 +2123,6 @@ mod derived_proofs {
             let fmt = Msg2ContentFmt::spec_inner(self.b_spec());
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<'i> EquivSerializersGeneral for Msg2ContentFmt<'i> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<Msg2ContentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<Msg2ContentFmt as SpecSerializer>::spec_serialize);
-            let fmt = Msg2ContentFmt::spec_inner(self.b_spec());
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
@@ -2286,23 +2280,6 @@ mod derived_proofs {
         }
     }
 
-    impl NonTailFmt for Msg2Fmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<Msg2Fmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Msg2Fmt::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<Msg2Fmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<Msg2Fmt as SpecByteLen>::byte_len);
-            let fmt = Msg2Fmt::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
     impl GoodSerializer for Msg2Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<Msg2Fmt as SpecSerializer>::spec_serialize);
@@ -2331,16 +2308,6 @@ mod derived_proofs {
             let fmt = Msg2Fmt::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for Msg2Fmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<Msg2Fmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<Msg2Fmt as SpecSerializer>::spec_serialize);
-            let fmt = Msg2Fmt::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
@@ -2445,9 +2412,6 @@ mod exec_impls {
         type PT = Msg5Content<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<Msg5ContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2494,13 +2458,25 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg5Content<'i>> for Msg5ContentFmt {
+        fn prepare(&self, v: &Msg5Content<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg5ContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.i, v) {
+                (1, Msg5Content::Variant1(v)) => (U16Le).prepare(v),
+                (x, Msg5Content::Default(v)) if !(x == 1) => (Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for HelloRetryRequestFmt {
         type PT = HelloRetryRequest;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HelloRetryRequestFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2522,13 +2498,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HelloRetryRequest> for HelloRetryRequestFmt {
+        fn prepare(&self, v: &HelloRetryRequest) -> Result<usize, PreSerializeError> {
+            reveal(<HelloRetryRequestFmt as SpecByteLen>::byte_len);
+            (U16Le).prepare(v)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ServerHelloFmt {
         type PT = ServerHello;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ServerHelloFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2550,13 +2530,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerHello> for ServerHelloFmt {
+        fn prepare(&self, v: &ServerHello) -> Result<usize, PreSerializeError> {
+            reveal(<ServerHelloFmt as SpecByteLen>::byte_len);
+            (U32Le).prepare(v)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg1PayloadFmt<'i> {
         type PT = Msg1Payload;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<Msg1PayloadFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2673,13 +2657,95 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg1Payload> for Msg1PayloadFmt<'i> {
+        fn prepare(&self, v: &Msg1Payload) -> Result<usize, PreSerializeError> {
+            reveal(<Msg1PayloadFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.b, v) {
+                (x, Msg1Payload::Variant1(v)) if x.deep_eq(
+                    &[
+                        0xcf,
+                        0x21,
+                        0xad,
+                        0x74,
+                        0xe5,
+                        0x9a,
+                        0x61,
+                        0x11,
+                        0xbe,
+                        0x1d,
+                        0x8c,
+                        0x02,
+                        0x1e,
+                        0x65,
+                        0xb8,
+                        0x91,
+                        0xc2,
+                        0xa2,
+                        0x11,
+                        0x16,
+                        0x7a,
+                        0xbb,
+                        0x8c,
+                        0x5e,
+                        0x07,
+                        0x9e,
+                        0x09,
+                        0xe2,
+                        0xc8,
+                        0xa8,
+                        0x33,
+                        0x9c,
+                    ],
+                ) => (HelloRetryRequestFmt).prepare(v),
+                (x, Msg1Payload::Default(v)) if !x.deep_eq(
+                    &[
+                        0xcf,
+                        0x21,
+                        0xad,
+                        0x74,
+                        0xe5,
+                        0x9a,
+                        0x61,
+                        0x11,
+                        0xbe,
+                        0x1d,
+                        0x8c,
+                        0x02,
+                        0x1e,
+                        0x65,
+                        0xb8,
+                        0x91,
+                        0xc2,
+                        0xa2,
+                        0x11,
+                        0x16,
+                        0x7a,
+                        0xbb,
+                        0x8c,
+                        0x5e,
+                        0x07,
+                        0x9e,
+                        0x09,
+                        0xe2,
+                        0xc8,
+                        0xa8,
+                        0x33,
+                        0x9c,
+                    ],
+                ) => (ServerHelloFmt).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg4ContentFmt {
         type PT = Msg4Content<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<Msg4ContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2726,13 +2792,25 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg4Content<'i>> for Msg4ContentFmt {
+        fn prepare(&self, v: &Msg4Content<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg4ContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.i, v) {
+                (1, Msg4Content::Variant1(v)) => (U16Le).prepare(v),
+                (x, Msg4Content::Default(v)) if !(x == 1) => (Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg3ContentFmt {
         type PT = Msg3Content<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<Msg3ContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2793,6 +2871,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg3Content<'i>> for Msg3ContentFmt {
+        fn prepare(&self, v: &Msg3Content<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg3ContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.i, v) {
+                (1, Msg3Content::Variant1(v)) => (U16Le).prepare(v),
+                (2, Msg3Content::Variant2(v)) => (U32Le).prepare(v),
+                (3, Msg3Content::Variant3(v)) => (U32Le).prepare(v),
+                (x, Msg3Content::Default(v)) if !(x == 1) && !(x == 2) && !(x == 3) => (
+                Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg3Fmt {
         type PT = Msg3<'i>;
 
@@ -2825,6 +2921,17 @@ mod exec_impls {
             Msg3ContentFmt { i: *i }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Msg3<'i>> for Msg3Fmt {
+        fn prepare(&self, v: &Msg3<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg3Fmt as SpecByteLen>::byte_len);
+            let Msg3 { i, content } = v;
+            let l1 = (U8).prepare(i)?;
+            let l2 = (Msg3ContentFmt { i: *i }).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -2863,13 +2970,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg5<'i>> for Msg5Fmt {
+        fn prepare(&self, v: &Msg5<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg5Fmt as SpecByteLen>::byte_len);
+            let Msg5 { i, content } = v;
+            let l1 = (VarInt::<true>).prepare(i)?;
+            let l2 = (Msg5ContentFmt { i: *i }).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg2ContentFmt<'i> {
-        type PT = Msg2Content;
+        type PT = Msg2Content<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<Msg2ContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2883,8 +2998,16 @@ mod exec_impls {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, Msg2Content::Variant1(v))
                 },
-                _ => {
+                x if x.deep_eq(&[0x16, 0x03, 0x02]) => {
                     let (n, v) = (U32Le).parse(&rest)?;
+                    (n, Msg2Content::Variant2(v))
+                },
+                x if x.deep_eq(&[0x16, 0x03, 0x03]) => {
+                    let (n, v) = (U64Le).parse(&rest)?;
+                    (n, Msg2Content::Variant3(v))
+                },
+                _ => {
+                    let (n, v) = (Tail).parse(&rest)?;
                     (n, Msg2Content::Default(v))
                 },
             };
@@ -2893,8 +3016,8 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Msg2Content> for Msg2ContentFmt<'i> {
-        fn serialize(&self, v: &Msg2Content, obuf: &mut Vec<u8>) {
+    impl<'i> Serializer<Msg2Content<'i>> for Msg2ContentFmt<'i> {
+        fn serialize(&self, v: &Msg2Content<'i>, obuf: &mut Vec<u8>) {
             reveal(<Msg2ContentFmt as SpecSerializer>::spec_serialize);
             proof {
                 use_type_invariant(self);
@@ -2906,13 +3029,59 @@ mod exec_impls {
                 (x, Msg2Content::Variant1(v)) if x.deep_eq(&[0x16, 0x03, 0x01]) => {
                     (U16Le).serialize(v, obuf);
                 },
-                (_, Msg2Content::Default(v)) => {
+                (x, Msg2Content::Variant2(v)) if x.deep_eq(&[0x16, 0x03, 0x02]) => {
                     (U32Le).serialize(v, obuf);
+                },
+                (x, Msg2Content::Variant3(v)) if x.deep_eq(&[0x16, 0x03, 0x03]) => {
+                    (U64Le).serialize(v, obuf);
+                },
+                (_, Msg2Content::Default(v)) => {
+                    (Tail).serialize(v, obuf);
                 },
                 _ => {},
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Msg2Content<'i>> for Msg2ContentFmt<'i> {
+        fn prepare(&self, v: &Msg2Content<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg2ContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            proof {
+                let ghost arr0 = [0x16u8, 0x03u8, 0x01u8].deep_view();
+                let ghost arr1 = [0x16u8, 0x03u8, 0x02u8].deep_view();
+                let ghost arr2 = [0x16u8, 0x03u8, 0x03u8].deep_view();
+                assert(arr0 != arr1) by {
+                    assert(arr0[2] != arr1[2]);
+                };
+                assert(arr0 != arr2) by {
+                    assert(arr0[2] != arr2[2]);
+                };
+                assert(arr1 != arr2) by {
+                    assert(arr1[2] != arr2[2]);
+                };
+            }
+
+            match (self.b, v) {
+                (x, Msg2Content::Variant1(v)) if x.deep_eq(&[0x16, 0x03, 0x01]) => (U16Le).prepare(
+                    v,
+                ),
+                (x, Msg2Content::Variant2(v)) if x.deep_eq(&[0x16, 0x03, 0x02]) => (U32Le).prepare(
+                    v,
+                ),
+                (x, Msg2Content::Variant3(v)) if x.deep_eq(&[0x16, 0x03, 0x03]) => (U64Le).prepare(
+                    v,
+                ),
+                (x, Msg2Content::Default(v)) if !x.deep_eq(&[0x16, 0x03, 0x01]) && !x.deep_eq(
+                    &[0x16, 0x03, 0x02],
+                ) && !x.deep_eq(&[0x16, 0x03, 0x03]) => (Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -2951,6 +3120,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg1<'i>> for Msg1Fmt {
+        fn prepare(&self, v: &Msg1<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg1Fmt as SpecByteLen>::byte_len);
+            let Msg1 { b, payload } = v;
+            let l1 = (Fixed::<32>).prepare(b)?;
+            let l2 = (Msg1PayloadFmt { b: *b }).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg2Fmt {
         type PT = Msg2<'i>;
 
@@ -2986,6 +3166,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg2<'i>> for Msg2Fmt {
+        fn prepare(&self, v: &Msg2<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg2Fmt as SpecByteLen>::byte_len);
+            let Msg2 { b, content } = v;
+            let l1 = (Fixed::<3>).prepare(b)?;
+            let l2 = (Msg2ContentFmt { b: *b }).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg4Fmt {
         type PT = Msg4<'i>;
 
@@ -3018,6 +3209,17 @@ mod exec_impls {
             Msg4ContentFmt { i: *i }.serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Msg4<'i>> for Msg4Fmt {
+        fn prepare(&self, v: &Msg4<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg4Fmt as SpecByteLen>::byte_len);
+            let Msg4 { i, content } = v;
+            let l1 = (U24Le).prepare(i)?;
+            let l2 = (Msg4ContentFmt { i: *i }).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 

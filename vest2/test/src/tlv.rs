@@ -1982,6 +1982,16 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg3<'i>> for Msg3Fmt {
+        fn prepare(&self, v: &Msg3<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg3Fmt as SpecByteLen>::byte_len);
+            let Msg3 { data } = v;
+            let l1 = (Fixed::<6>).prepare(data)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg1Fmt {
         type PT = Msg1<'i>;
 
@@ -2023,6 +2033,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg1<'i>> for Msg1Fmt {
+        fn prepare(&self, v: &Msg1<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Msg1Fmt as SpecByteLen>::byte_len);
+            let Msg1 { a, b, c, data } = v;
+            let l1 = (U8).prepare(a)?;
+            let l2 = (U16Le).prepare(b)?;
+            let l3 = (Fixed::<3>).prepare(c)?;
+            let l4 = (Tail).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for Msg2Fmt {
         type PT = Msg2;
 
@@ -2061,13 +2088,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Msg2> for Msg2Fmt {
+        fn prepare(&self, v: &Msg2) -> Result<usize, PreSerializeError> {
+            reveal(<Msg2Fmt as SpecByteLen>::byte_len);
+            let Msg2 { a, b, c } = v;
+            let l1 = (U8).prepare(a)?;
+            let l2 = (U16Le).prepare(b)?;
+            let l3 = (U32Le).prepare(c)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgParamFmt {
         type PT = MsgParam<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MsgParamFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2121,13 +2159,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MsgParam<'i>> for MsgParamFmt {
+        fn prepare(&self, v: &MsgParam<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MsgParamFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (MsgType::Msg1, MsgParam::Msg1(v)) => (Msg1Fmt).prepare(v),
+                (MsgType::Msg2, MsgParam::Msg2(v)) => (Msg2Fmt).prepare(v),
+                (MsgType::Msg3, MsgParam::Msg3(v)) => (Msg3Fmt).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgContentFmt {
         type PT = MsgContent<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MsgContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2181,13 +2232,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MsgContent<'i>> for MsgContentFmt {
+        fn prepare(&self, v: &MsgContent<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MsgContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (MsgType::Msg1, MsgContent::Msg1(v)) => (Msg1Fmt).prepare(v),
+                (MsgType::Msg2, MsgContent::Msg2(v)) => (Msg2Fmt).prepare(v),
+                (MsgType::Msg3, MsgContent::Msg3(v)) => (Msg3Fmt).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgAltContentFmt {
         type PT = MsgAltContent<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MsgAltContentFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2248,6 +2312,25 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MsgAltContent<'i>> for MsgAltContentFmt {
+        fn prepare(&self, v: &MsgAltContent<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MsgAltContentFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.tag, v) {
+                (1, MsgAltContent::Variant1(v)) => (Msg1Fmt).prepare(v),
+                (2, MsgAltContent::Variant2(v)) => (Msg2Fmt).prepare(v),
+                (3, MsgAltContent::Variant3(v)) => (Msg3Fmt).prepare(v),
+                (x, MsgAltContent::Default(v)) if !(x == 1) && !(x == 2) && !(x == 3) => (Varied(
+                    self.len,
+                )).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgAltFmt {
         type PT = MsgAlt<'i>;
 
@@ -2288,13 +2371,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MsgAlt<'i>> for MsgAltFmt {
+        fn prepare(&self, v: &MsgAlt<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MsgAltFmt as SpecByteLen>::byte_len);
+            let MsgAlt { tag, len, content } = v;
+            let l1 = (U8).prepare(tag)?;
+            let l2 = (U16Le).prepare(len)?;
+            let l3 = (ExactLen(len, MsgAltContentFmt { len: *len, tag: *tag })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgTypeFmt {
         type PT = MsgType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MsgTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2324,6 +2418,19 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<MsgType> for MsgTypeFmt {
+        fn prepare(&self, v: &MsgType) -> Result<usize, PreSerializeError> {
+            reveal(<MsgTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                MsgType::Msg1 => 1,
+                MsgType::Msg2 => 2,
+                MsgType::Msg3 => 3,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -2362,6 +2469,20 @@ mod exec_impls {
             ExactLen(len, MsgContentFmt { tag: *tag }).serialize(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Msg<'i>> for MsgFmt {
+        fn prepare(&self, v: &Msg<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MsgFmt as SpecByteLen>::byte_len);
+            let Msg { tag, len, content } = v;
+            let l1 = (MsgTypeFmt).prepare(tag)?;
+            let l2 = (U16Le).prepare(len)?;
+            let l3 = (ExactLen(len, MsgContentFmt { tag: *tag })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 

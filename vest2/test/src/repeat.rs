@@ -1049,13 +1049,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<OpaqueU16<'i>> for OpaqueU16Fmt {
+        fn prepare(&self, v: &OpaqueU16<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
+            let OpaqueU16 { l, data } = v;
+            let l1 = {
+                if !(*l >= 1 && *l <= 65535) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U16Le).prepare(l)
+                }
+            }?;
+            let l2 = (Varied(l)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for RepeatFixFmt {
         type PT = RepeatFix;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<RepeatFixFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -1077,13 +1091,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<RepeatFix> for RepeatFixFmt {
+        fn prepare(&self, v: &RepeatFix) -> Result<usize, PreSerializeError> {
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            (Array::<32, _>(U16Le)).prepare(v)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ResponderIdFmt {
         type PT = ResponderId<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ResponderIdFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -1102,6 +1120,13 @@ mod exec_impls {
             OpaqueU16Fmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ResponderId<'i>> for ResponderIdFmt {
+        fn prepare(&self, v: &ResponderId<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
+            OpaqueU16Fmt.prepare(v)
         }
     }
 
@@ -1143,6 +1168,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ResponderIdList<'i>> for ResponderIdListFmt {
+        fn prepare(&self, v: &ResponderIdList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
+            let ResponderIdList { l, list } = v;
+            let l1 = {
+                if !(*l >= 0 && *l <= 65535) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U16Le).prepare(l)
+                }
+            }?;
+            let l2 = (ExactLen(l, Star(ResponderIdFmt))).prepare(list)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for RepeatDynFmt {
         type PT = RepeatDyn<'i>;
 
@@ -1175,6 +1217,17 @@ mod exec_impls {
             RepeatN(l, ResponderIdListFmt).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<RepeatDyn<'i>> for RepeatDynFmt {
+        fn prepare(&self, v: &RepeatDyn<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
+            let RepeatDyn { l, data } = v;
+            let l1 = (VarInt::<true>).prepare(l)?;
+            let l2 = (RepeatN(l, ResponderIdListFmt)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 

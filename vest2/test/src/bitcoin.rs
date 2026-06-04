@@ -3016,6 +3016,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Script<'i>> for ScriptFmt {
+        fn prepare(&self, v: &Script<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            let Script { l, data } = v;
+            let l1 = (VarInt::<true>).prepare(l)?;
+            let l2 = (Varied(l)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for TxoutFmt {
         type PT = Txout<'i>;
 
@@ -3048,6 +3059,17 @@ mod exec_impls {
             ScriptFmt.serialize(script_pubkey, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Txout<'i>> for TxoutFmt {
+        fn prepare(&self, v: &Txout<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
+            let Txout { value, script_pubkey } = v;
+            let l1 = (U64Le).prepare(value)?;
+            let l2 = (ScriptFmt).prepare(script_pubkey)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -3086,6 +3108,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Outpoint<'i>> for OutpointFmt {
+        fn prepare(&self, v: &Outpoint<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            let Outpoint { hash, index } = v;
+            let l1 = (Fixed::<32>).prepare(hash)?;
+            let l2 = (U32Le).prepare(index)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ScriptSigFmt {
         type PT = ScriptSig<'i>;
 
@@ -3118,6 +3151,17 @@ mod exec_impls {
             Varied(l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ScriptSig<'i>> for ScriptSigFmt {
+        fn prepare(&self, v: &ScriptSig<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            let ScriptSig { l, data } = v;
+            let l1 = (VarInt::<true>).prepare(l)?;
+            let l2 = (Varied(l)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -3156,6 +3200,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<WitnessComponent<'i>> for WitnessComponentFmt {
+        fn prepare(&self, v: &WitnessComponent<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
+            let WitnessComponent { l, data } = v;
+            let l1 = (VarInt::<true>).prepare(l)?;
+            let l2 = (Varied(l)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for WitnessFmt {
         type PT = Witness<'i>;
 
@@ -3188,6 +3243,17 @@ mod exec_impls {
             RepeatN(count, WitnessComponentFmt).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Witness<'i>> for WitnessFmt {
+        fn prepare(&self, v: &Witness<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            let Witness { count, data } = v;
+            let l1 = (VarInt::<true>).prepare(count)?;
+            let l2 = (RepeatN(count, WitnessComponentFmt)).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -3229,13 +3295,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Txin<'i>> for TxinFmt {
+        fn prepare(&self, v: &Txin<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxinFmt as SpecByteLen>::byte_len);
+            let Txin { previous_output, script_sig, sequence } = v;
+            let l1 = (OutpointFmt).prepare(previous_output)?;
+            let l2 = (ScriptSigFmt).prepare(script_sig)?;
+            let l3 = (U32Le).prepare(sequence)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for LockTimeFmt {
         type PT = LockTime;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3267,6 +3344,28 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<LockTime> for LockTimeFmt {
+        fn prepare(&self, v: &LockTime) -> Result<usize, PreSerializeError> {
+            reveal(<LockTimeFmt as SpecByteLen>::byte_len);
+            match v {
+                LockTime::BlockNo(v) => {
+                    if !(*v >= 0 && *v <= 499999999) {
+                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U32Le).prepare(v)
+                    }
+                },
+                LockTime::Timestamp(v) => {
+                    if !(*v >= 500000000) {
+                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U32Le).prepare(v)
+                    }
+                },
+            }
         }
     }
 
@@ -3316,6 +3415,27 @@ mod exec_impls {
             LockTimeFmt.serialize(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<TxNonsegwit<'i>> for TxNonsegwitFmt {
+        fn prepare(&self, v: &TxNonsegwit<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
+            let l1 = (RepeatN(self.txin_count, TxinFmt)).prepare(txins)?;
+            let l2 = (VarInt::<true>).prepare(txout_count)?;
+            let l3 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
+            let l4 = (LockTimeFmt).prepare(lock_time)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
         }
     }
 
@@ -3377,13 +3497,32 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TxSegwit<'i>> for TxSegwitFmt {
+        fn prepare(&self, v: &TxSegwit<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
+            let l1 = (Const(U8, 1)).prepare(flag)?;
+            let l2 = (VarInt::<true>).prepare(txin_count)?;
+            let l3 = (RepeatN(txin_count, TxinFmt)).prepare(txins)?;
+            let l4 = (VarInt::<true>).prepare(txout_count)?;
+            let l5 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
+            let l6 = (RepeatN(txin_count, WitnessFmt)).prepare(witness)?;
+            let l7 = (LockTimeFmt).prepare(lock_time)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for TxRemFmt {
         type PT = TxRem<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<TxRemFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -3430,6 +3569,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TxRem<'i>> for TxRemFmt {
+        fn prepare(&self, v: &TxRem<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxRemFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.txin_count, v) {
+                (0, TxRem::Variant1(v)) => (TxSegwitFmt).prepare(v),
+                (x, TxRem::Default(v)) if !(x == 0) => (TxNonsegwitFmt {
+                    txin_count: self.txin_count,
+                }).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for TxFmt {
         type PT = Tx<'i>;
 
@@ -3465,6 +3621,20 @@ mod exec_impls {
             TxRemFmt { txin_count: *txin_count }.serialize(rem, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Tx<'i>> for TxFmt {
+        fn prepare(&self, v: &Tx<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxFmt as SpecByteLen>::byte_len);
+            let Tx { version, txin_count, rem } = v;
+            let l1 = (U32Le).prepare(version)?;
+            let l2 = (VarInt::<true>).prepare(txin_count)?;
+            let l3 = (TxRemFmt { txin_count: *txin_count }).prepare(rem)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -3528,6 +3698,32 @@ mod exec_impls {
             RepeatN(tx_count, TxFmt).serialize(txs, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Block<'i>> for BlockFmt {
+        fn prepare(&self, v: &Block<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<BlockFmt as SpecByteLen>::byte_len);
+            let Block { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } =
+                v;
+            let l1 = (U32Le).prepare(version)?;
+            let l2 = (Fixed::<32>).prepare(prev_block)?;
+            let l3 = (Fixed::<32>).prepare(merkle_root)?;
+            let l4 = (U32Le).prepare(timestamp)?;
+            let l5 = (U32Le).prepare(bits)?;
+            let l6 = (U32Le).prepare(nonce)?;
+            let l7 = (VarInt::<true>).prepare(tx_count)?;
+            let l8 = (RepeatN(tx_count, TxFmt)).prepare(txs)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l8).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
         }
     }
 

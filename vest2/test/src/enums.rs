@@ -2319,9 +2319,6 @@ mod exec_impls {
         type PT = ATypedChoose;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2375,13 +2372,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ATypedChoose> for ATypedChooseFmt {
+        fn prepare(&self, v: &ATypedChoose) -> Result<usize, PreSerializeError> {
+            reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.e, v) {
+                (ATypedClosedEnum::X, ATypedChoose::X(v)) => (U8).prepare(v),
+                (ATypedClosedEnum::Y, ATypedChoose::Y(v)) => (U16Le).prepare(v),
+                (ATypedClosedEnum::Z, ATypedChoose::Z(v)) => (U32Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ATypedOpenEnumFmt {
         type PT = ATypedOpenEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2415,13 +2425,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ATypedOpenEnum> for ATypedOpenEnumFmt {
+        fn prepare(&self, v: &ATypedOpenEnum) -> Result<usize, PreSerializeError> {
+            reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ATypedOpenEnum::P => 0,
+                ATypedOpenEnum::Q => 1,
+                ATypedOpenEnum::R => 2,
+                ATypedOpenEnum::Unknown(x) if x != 0 && x != 1 && x != 2 => x,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U32Le.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ANonDependentChooseFmt {
         type PT = ANonDependentChoose;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2465,13 +2486,39 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ANonDependentChoose> for ANonDependentChooseFmt {
+        fn prepare(&self, v: &ANonDependentChoose) -> Result<usize, PreSerializeError> {
+            reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
+            match v {
+                ANonDependentChoose::Variant1(v) => {
+                    if !(*v >= 0 && *v <= 10) {
+                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U8).prepare(v)
+                    }
+                },
+                ANonDependentChoose::Variant2(v) => {
+                    if !(*v >= 11 && *v <= 20) {
+                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U8).prepare(v)
+                    }
+                },
+                ANonDependentChoose::Variant3(v) => {
+                    if !(*v >= 21) {
+                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U8).prepare(v)
+                    }
+                },
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ARegularChooseFmt {
         type PT = ARegularChoose;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2525,13 +2572,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ARegularChoose> for ARegularChooseFmt {
+        fn prepare(&self, v: &ARegularChoose) -> Result<usize, PreSerializeError> {
+            reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.e, v) {
+                (AClosedEnum::A, ARegularChoose::A(v)) => (U8).prepare(v),
+                (AClosedEnum::B, ARegularChoose::B(v)) => (U16Le).prepare(v),
+                (AClosedEnum::C, ARegularChoose::C(v)) => (U32Le).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AMixedTypedEnumFmt {
         type PT = AMixedTypedEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2564,13 +2624,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<AMixedTypedEnum> for AMixedTypedEnumFmt {
+        fn prepare(&self, v: &AMixedTypedEnum) -> Result<usize, PreSerializeError> {
+            reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AMixedTypedEnum::M => 0,
+                AMixedTypedEnum::N => 1,
+                AMixedTypedEnum::O => 2,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AClosedEnumFmt {
         type PT = AClosedEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2603,13 +2673,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<AClosedEnum> for AClosedEnumFmt {
+        fn prepare(&self, v: &AClosedEnum) -> Result<usize, PreSerializeError> {
+            reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AClosedEnum::A => 0,
+                AClosedEnum::B => 1,
+                AClosedEnum::C => 2,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ATypedClosedEnumFmt {
         type PT = ATypedClosedEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2642,13 +2722,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ATypedClosedEnum> for ATypedClosedEnumFmt {
+        fn prepare(&self, v: &ATypedClosedEnum) -> Result<usize, PreSerializeError> {
+            reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ATypedClosedEnum::X => 0,
+                ATypedClosedEnum::Y => 1,
+                ATypedClosedEnum::Z => 2,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U16Le.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AnOpenEnumFmt {
         type PT = AnOpenEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2682,13 +2772,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<AnOpenEnum> for AnOpenEnumFmt {
+        fn prepare(&self, v: &AnOpenEnum) -> Result<usize, PreSerializeError> {
+            reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AnOpenEnum::A => 0,
+                AnOpenEnum::B => 1,
+                AnOpenEnum::C => 2,
+                AnOpenEnum::Unknown(x) if x != 0 && x != 1 && x != 2 => x,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for ATypedChooseWithDefaultFmt {
         type PT = ATypedChooseWithDefault<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2749,13 +2850,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ATypedChooseWithDefault<'i>> for ATypedChooseWithDefaultFmt {
+        fn prepare(&self, v: &ATypedChooseWithDefault<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.e, v) {
+                (ATypedOpenEnum::P, ATypedChooseWithDefault::P(v)) => (U8).prepare(v),
+                (ATypedOpenEnum::Q, ATypedChooseWithDefault::Q(v)) => (U16Le).prepare(v),
+                (ATypedOpenEnum::R, ATypedChooseWithDefault::R(v)) => (U32Le).prepare(v),
+                (ATypedOpenEnum::Unknown(x), ATypedChooseWithDefault::Default(v)) if x != 0 && x
+                    != 1 && x != 2 => (Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AChooseWithDefaultFmt {
         type PT = AChooseWithDefault<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2813,6 +2929,24 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<AChooseWithDefault<'i>> for AChooseWithDefaultFmt {
+        fn prepare(&self, v: &AChooseWithDefault<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.e, v) {
+                (AnOpenEnum::A, AChooseWithDefault::A(v)) => (U8).prepare(v),
+                (AnOpenEnum::B, AChooseWithDefault::B(v)) => (U16Le).prepare(v),
+                (AnOpenEnum::C, AChooseWithDefault::C(v)) => (U32Le).prepare(v),
+                (AnOpenEnum::Unknown(x), AChooseWithDefault::Default(v)) if x != 0 && x != 1 && x
+                    != 2 => (Tail).prepare(v),
+                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 

@@ -26169,9 +26169,6 @@ mod exec_impls {
         type PT = AlertLevel;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AlertLevelFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26202,15 +26199,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<AlertLevel> for AlertLevelFmt {
+        fn prepare(&self, v: &AlertLevel) -> Result<usize, PreSerializeError> {
+            reveal(<AlertLevelFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AlertLevel::Warning => 1,
+                AlertLevel::Fatal => 2,
+                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EmptyFmt {
         type PT = Empty<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<EmptyFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26229,6 +26235,13 @@ mod exec_impls {
             Fixed::< 0 >.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Empty<'i>> for EmptyFmt {
+        fn prepare(&self, v: &Empty<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<EmptyFmt as SpecByteLen>::byte_len);
+            (Fixed::< 0 >).prepare (v)
         }
     }
 
@@ -26275,15 +26288,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque0Ffff<'i>> for Opaque0FfffFmt {
+        fn prepare(&self, v: &Opaque0Ffff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque0FfffFmt as SpecByteLen>::byte_len);
+            let Opaque0Ffff {
+                l,
+                data,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for OcspExtensionsFmt {
         type PT = OcspExtensions<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<OcspExtensionsFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26305,15 +26329,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<OcspExtensions<'i>> for OcspExtensionsFmt {
+        fn prepare(&self, v: &OcspExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OcspExtensionsFmt as SpecByteLen>::byte_len);
+            Opaque0FfffFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ExtensionTypeFmt {
         type PT = ExtensionType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ExtensionTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26393,15 +26421,48 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ExtensionType> for ExtensionTypeFmt {
+        fn prepare(&self, v: &ExtensionType) -> Result<usize, PreSerializeError> {
+            reveal(<ExtensionTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ExtensionType::ServerName => 0,
+                ExtensionType::MaxFragmentLength => 1,
+                ExtensionType::StatusRequest => 5,
+                ExtensionType::SupportedGroups => 10,
+                ExtensionType::ECPointFormats => 11,
+                ExtensionType::SignatureAlgorithms => 13,
+                ExtensionType::UseSRTP => 14,
+                ExtensionType::Heartbeat => 15,
+                ExtensionType::ApplicationLayerProtocolNegotiation => 16,
+                ExtensionType::SignedCertificateTimeStamp => 18,
+                ExtensionType::ClientCertificateType => 19,
+                ExtensionType::ServerCertificateType => 20,
+                ExtensionType::Padding => 21,
+                ExtensionType::EncryptThenMac => 22,
+                ExtensionType::ExtendedMasterSecret => 23,
+                ExtensionType::SessionTicket => 35,
+                ExtensionType::PreSharedKey => 41,
+                ExtensionType::EarlyData => 42,
+                ExtensionType::SupportedVersions => 43,
+                ExtensionType::Cookie => 44,
+                ExtensionType::PskKeyExchangeModes => 45,
+                ExtensionType::CertificateAuthorities => 47,
+                ExtensionType::OidFilters => 48,
+                ExtensionType::PostHandshakeAuth => 49,
+                ExtensionType::SignatureAlgorithmsCert => 50,
+                ExtensionType::KeyShare => 51,
+                ExtensionType::Unknown (x) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U16Be.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SignatureSchemeFmt {
         type PT = SignatureScheme;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<SignatureSchemeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26465,6 +26526,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SignatureScheme> for SignatureSchemeFmt {
+        fn prepare(&self, v: &SignatureScheme) -> Result<usize, PreSerializeError> {
+            reveal(<SignatureSchemeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                SignatureScheme::RSA_PKCS1_MD5 => 257,
+                SignatureScheme::RSA_PKCS1_SHA1 => 513,
+                SignatureScheme::ECDSA_MD5 => 259,
+                SignatureScheme::ECDSA_SHA1 => 515,
+                SignatureScheme::RSA_PKCS1_SHA256 => 1025,
+                SignatureScheme::RSA_PKCS1_SHA384 => 1281,
+                SignatureScheme::RSA_PKCS1_SHA512 => 1537,
+                SignatureScheme::ECDSA_SECP256R1_SHA256 => 1027,
+                SignatureScheme::ECDSA_SECP384R1_SHA384 => 1283,
+                SignatureScheme::ECDSA_SECP521R1_SHA512 => 1539,
+                SignatureScheme::RSA_PSS_RSAE_SHA256 => 2052,
+                SignatureScheme::RSA_PSS_RSAE_SHA384 => 2053,
+                SignatureScheme::RSA_PSS_RSAE_SHA512 => 2054,
+                SignatureScheme::ED25519 => 2055,
+                SignatureScheme::ED448 => 2056,
+                SignatureScheme::RSA_PSS_PSS_SHA256 => 2057,
+                SignatureScheme::RSA_PSS_PSS_SHA384 => 2058,
+                SignatureScheme::RSA_PSS_PSS_SHA512 => 2059,
+                SignatureScheme::Unknown (x) if x != 257 && x != 513 && x != 259 && x != 515 && x != 1025 && x != 1281 && x != 1537 && x != 1027 && x != 1283 && x != 1539 && x != 2052 && x != 2053 && x != 2054 && x != 2055 && x != 2056 && x != 2057 && x != 2058 && x != 2059 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U16Be.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SignatureSchemeListFmt {
@@ -26508,6 +26597,28 @@ mod exec_impls {
             ExactLen (l, Star (SignatureSchemeFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<SignatureSchemeList> for SignatureSchemeListFmt {
+        fn prepare(&self, v: &SignatureSchemeList) -> Result<usize, PreSerializeError> {
+            reveal(<SignatureSchemeListFmt as SpecByteLen>::byte_len);
+            let SignatureSchemeList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65534) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (SignatureSchemeFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -26557,15 +26668,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque1Ffff<'i>> for Opaque1FfffFmt {
+        fn prepare(&self, v: &Opaque1Ffff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque1FfffFmt as SpecByteLen>::byte_len);
+            let Opaque1Ffff {
+                l,
+                data,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for DistinguishedNameFmt {
         type PT = DistinguishedName<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<DistinguishedNameFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26584,6 +26714,13 @@ mod exec_impls {
             Opaque1FfffFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<DistinguishedName<'i>> for DistinguishedNameFmt {
+        fn prepare(&self, v: &DistinguishedName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<DistinguishedNameFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
         }
     }
 
@@ -26633,15 +26770,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateAuthoritiesExtension<'i>> for CertificateAuthoritiesExtensionFmt {
+        fn prepare(&self, v: &CertificateAuthoritiesExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateAuthoritiesExtensionFmt as SpecByteLen>::byte_len);
+            let CertificateAuthoritiesExtension {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 3 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (DistinguishedNameFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ResponderIdFmt {
         type PT = ResponderId<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ResponderIdFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26660,6 +26816,13 @@ mod exec_impls {
             Opaque1FfffFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ResponderId<'i>> for ResponderIdFmt {
+        fn prepare(&self, v: &ResponderId<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
         }
     }
 
@@ -26706,6 +26869,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ResponderIdList<'i>> for ResponderIdListFmt {
+        fn prepare(&self, v: &ResponderIdList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
+            let ResponderIdList {
+                l,
+                list,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (ResponderIdFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for OscpStatusRequestFmt {
@@ -26746,6 +26923,20 @@ mod exec_impls {
             OcspExtensionsFmt.serialize(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<OscpStatusRequest<'i>> for OscpStatusRequestFmt {
+        fn prepare(&self, v: &OscpStatusRequest<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OscpStatusRequestFmt as SpecByteLen>::byte_len);
+            let OscpStatusRequest {
+                responder_id_list,
+                extensions,
+            } = v;
+            let l1 = (ResponderIdListFmt).prepare (responder_id_list) ?;
+            let l2 = (OcspExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -26792,15 +26983,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateStatusRequest<'i>> for CertificateStatusRequestFmt {
+        fn prepare(&self, v: &CertificateStatusRequest<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateStatusRequestFmt as SpecByteLen>::byte_len);
+            let CertificateStatusRequest {
+                status_type,
+                request,
+            } = v;
+            let l1 = (Const (U8, 1)).prepare (status_type) ?;
+            let l2 = (OscpStatusRequestFmt).prepare (request) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SerializedSctFmt {
         type PT = SerializedSct<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<SerializedSctFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -26819,6 +27021,13 @@ mod exec_impls {
             Opaque1FfffFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<SerializedSct<'i>> for SerializedSctFmt {
+        fn prepare(&self, v: &SerializedSct<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SerializedSctFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
         }
     }
 
@@ -26868,6 +27077,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SignedCertificateTimestampList<'i>> for SignedCertificateTimestampListFmt {
+        fn prepare(&self, v: &SignedCertificateTimestampList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SignedCertificateTimestampListFmt as SpecByteLen>::byte_len);
+            let SignedCertificateTimestampList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (SerializedSctFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for Opaque1FfFmt {
@@ -26914,6 +27145,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque1Ff<'i>> for Opaque1FfFmt {
+        fn prepare(&self, v: &Opaque1Ff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque1FfFmt as SpecByteLen>::byte_len);
+            let Opaque1Ff {
+                l,
+                data,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for OidFilterFmt {
@@ -26954,6 +27207,20 @@ mod exec_impls {
             Opaque0FfffFmt.serialize(certificate_extension_values, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<OidFilter<'i>> for OidFilterFmt {
+        fn prepare(&self, v: &OidFilter<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OidFilterFmt as SpecByteLen>::byte_len);
+            let OidFilter {
+                certificate_extension_oid,
+                certificate_extension_values,
+            } = v;
+            let l1 = (Opaque1FfFmt).prepare (certificate_extension_oid) ?;
+            let l2 = (Opaque0FfffFmt).prepare (certificate_extension_values) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -27000,15 +27267,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<OidFilterExtension<'i>> for OidFilterExtensionFmt {
+        fn prepare(&self, v: &OidFilterExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OidFilterExtensionFmt as SpecByteLen>::byte_len);
+            let OidFilterExtension {
+                l,
+                list,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (OidFilterFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateRequestExtensionExtensionDataFmt {
         type PT = CertificateRequestExtensionExtensionData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CertificateRequestExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27118,6 +27396,46 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateRequestExtensionExtensionData<'i>> for CertificateRequestExtensionExtensionDataFmt {
+        fn prepare(&self, v: &CertificateRequestExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateRequestExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::SignatureAlgorithms, CertificateRequestExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::CertificateAuthorities, CertificateRequestExtensionExtensionData::CertificateAuthorities (v)) => (CertificateAuthoritiesExtensionFmt).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, CertificateRequestExtensionExtensionData::SignatureAlgorithmsCert (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::StatusRequest, CertificateRequestExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, CertificateRequestExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
+                (ExtensionType::OidFilters, CertificateRequestExtensionExtensionData::OidFilters (v)) => (OidFilterExtensionFmt).prepare (v),
+                (ExtensionType::ServerName, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::MaxFragmentLength, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedGroups, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ECPointFormats, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::UseSRTP, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Heartbeat, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ClientCertificateType, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ServerCertificateType, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Padding, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SessionTicket, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PreSharedKey, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EarlyData, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedVersions, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::KeyShare, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), CertificateRequestExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateRequestExtensionFmt {
@@ -27176,15 +27494,32 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateRequestExtension<'i>> for CertificateRequestExtensionFmt {
+        fn prepare(&self, v: &CertificateRequestExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateRequestExtensionFmt as SpecByteLen>::byte_len);
+            let CertificateRequestExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, CertificateRequestExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for NameTypeFmt {
         type PT = NameType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<NameTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27211,6 +27546,17 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<NameType> for NameTypeFmt {
+        fn prepare(&self, v: &NameType) -> Result<usize, PreSerializeError> {
+            reveal(<NameTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                NameType::HostName => 0,
+                NameType::Unknown (x) if x != 0 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -27260,15 +27606,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SessionId<'i>> for SessionIdFmt {
+        fn prepare(&self, v: &SessionId<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SessionIdFmt as SpecByteLen>::byte_len);
+            let SessionId {
+                l,
+                id,
+            } = v;
+            let l1 = {
+                if ! (* l >= 0 && * l <= 32) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (id) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CipherSuiteFmt {
         type PT = CipherSuite;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CipherSuiteFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27306,15 +27671,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CipherSuite> for CipherSuiteFmt {
+        fn prepare(&self, v: &CipherSuite) -> Result<usize, PreSerializeError> {
+            reveal(<CipherSuiteFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                CipherSuite::TLS_AES_128_GCM_SHA256 => 4865,
+                CipherSuite::TLS_AES_256_GCM_SHA384 => 4866,
+                CipherSuite::TLS_CHACHA20_POLY1305_SHA256 => 4867,
+                CipherSuite::TLS_AES_128_CCM_SHA256 => 4868,
+                CipherSuite::TLS_AES_128_CCM_8_SHA256 => 4869,
+                CipherSuite::Unknown (x) if x != 4865 && x != 4866 && x != 4867 && x != 4868 && x != 4869 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U16Be.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ProtocolVersionFmt {
         type PT = ProtocolVersion;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ProtocolVersionFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27352,15 +27729,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ProtocolVersion> for ProtocolVersionFmt {
+        fn prepare(&self, v: &ProtocolVersion) -> Result<usize, PreSerializeError> {
+            reveal(<ProtocolVersionFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ProtocolVersion::SSLv3 => 768,
+                ProtocolVersion::TLSv1_0 => 769,
+                ProtocolVersion::TLSv1_1 => 770,
+                ProtocolVersion::TLSv1_2 => 771,
+                ProtocolVersion::TLSv1_3 => 772,
+                ProtocolVersion::Unknown (x) if x != 768 && x != 769 && x != 770 && x != 771 && x != 772 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U16Be.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SupportedVersionsServerFmt {
         type PT = SupportedVersionsServer;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<SupportedVersionsServerFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27382,15 +27771,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SupportedVersionsServer> for SupportedVersionsServerFmt {
+        fn prepare(&self, v: &SupportedVersionsServer) -> Result<usize, PreSerializeError> {
+            reveal(<SupportedVersionsServerFmt as SpecByteLen>::byte_len);
+            ProtocolVersionFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CookieFmt {
         type PT = Cookie<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CookieFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27412,15 +27805,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Cookie<'i>> for CookieFmt {
+        fn prepare(&self, v: &Cookie<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CookieFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for NamedGroupFmt {
         type PT = NamedGroup;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<NamedGroupFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27512,15 +27909,54 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NamedGroup> for NamedGroupFmt {
+        fn prepare(&self, v: &NamedGroup) -> Result<usize, PreSerializeError> {
+            reveal(<NamedGroupFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                NamedGroup::Sect163k1 => 1,
+                NamedGroup::Sect163r1 => 2,
+                NamedGroup::Sect163r2 => 3,
+                NamedGroup::Sect193r1 => 4,
+                NamedGroup::Sect193r2 => 5,
+                NamedGroup::Sect233k1 => 6,
+                NamedGroup::Sect233r1 => 7,
+                NamedGroup::Sect239k1 => 8,
+                NamedGroup::Sect283k1 => 9,
+                NamedGroup::Sect283r1 => 10,
+                NamedGroup::Sect409k1 => 11,
+                NamedGroup::Sect409r1 => 12,
+                NamedGroup::Sect571k1 => 13,
+                NamedGroup::Sect571r1 => 14,
+                NamedGroup::Secp160k1 => 15,
+                NamedGroup::Secp160r1 => 16,
+                NamedGroup::Secp160r2 => 17,
+                NamedGroup::Secp192k1 => 18,
+                NamedGroup::Secp192r1 => 19,
+                NamedGroup::Secp224k1 => 20,
+                NamedGroup::Secp224r1 => 21,
+                NamedGroup::Secp256k1 => 22,
+                NamedGroup::Secp256r1 => 23,
+                NamedGroup::Secp384r1 => 24,
+                NamedGroup::Secp521r1 => 25,
+                NamedGroup::X25519 => 29,
+                NamedGroup::X448 => 30,
+                NamedGroup::Ffdhe2048 => 256,
+                NamedGroup::Ffdhe3072 => 257,
+                NamedGroup::Ffdhe4096 => 258,
+                NamedGroup::Ffdhe6144 => 259,
+                NamedGroup::Ffdhe8192 => 260,
+                NamedGroup::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 29 && x != 30 && x != 256 && x != 257 && x != 258 && x != 259 && x != 260 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U16Be.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HelloRetryExtensionExtensionDataFmt {
         type PT = HelloRetryExtensionExtensionData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HelloRetryExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27597,6 +28033,46 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HelloRetryExtensionExtensionData<'i>> for HelloRetryExtensionExtensionDataFmt {
+        fn prepare(&self, v: &HelloRetryExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HelloRetryExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::SupportedVersions, HelloRetryExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsServerFmt).prepare (v),
+                (ExtensionType::Cookie, HelloRetryExtensionExtensionData::Cookie (v)) => (CookieFmt).prepare (v),
+                (ExtensionType::KeyShare, HelloRetryExtensionExtensionData::KeyShare (v)) => (NamedGroupFmt).prepare (v),
+                (ExtensionType::ServerName, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::MaxFragmentLength, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::StatusRequest, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedGroups, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ECPointFormats, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::UseSRTP, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Heartbeat, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ClientCertificateType, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ServerCertificateType, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Padding, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SessionTicket, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PreSharedKey, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EarlyData, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::CertificateAuthorities, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::OidFilters, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), HelloRetryExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HelloRetryExtensionFmt {
@@ -27655,6 +28131,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HelloRetryExtension<'i>> for HelloRetryExtensionFmt {
+        fn prepare(&self, v: &HelloRetryExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HelloRetryExtensionFmt as SpecByteLen>::byte_len);
+            let HelloRetryExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, HelloRetryExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HelloRetryExtensionsFmt {
@@ -27698,6 +28194,28 @@ mod exec_impls {
             ExactLen (l, Star (HelloRetryExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<HelloRetryExtensions<'i>> for HelloRetryExtensionsFmt {
+        fn prepare(&self, v: &HelloRetryExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HelloRetryExtensionsFmt as SpecByteLen>::byte_len);
+            let HelloRetryExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 6 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (HelloRetryExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -27754,15 +28272,30 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HelloRetryRequest<'i>> for HelloRetryRequestFmt {
+        fn prepare(&self, v: &HelloRetryRequest<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HelloRetryRequestFmt as SpecByteLen>::byte_len);
+            let HelloRetryRequest {
+                legacy_session_id_echo,
+                cipher_suite,
+                legacy_compression_method,
+                extensions,
+            } = v;
+            let l1 = (SessionIdFmt).prepare (legacy_session_id_echo) ?;
+            let l2 = (CipherSuiteFmt).prepare (cipher_suite) ?;
+            let l3 = (Const (U8, 0)).prepare (legacy_compression_method) ?;
+            let l4 = (HelloRetryExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HostNameFmt {
         type PT = HostName<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HostNameFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27784,15 +28317,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HostName<'i>> for HostNameFmt {
+        fn prepare(&self, v: &HostName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HostNameFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for UnknownNameFmt {
         type PT = UnknownName<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<UnknownNameFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27814,15 +28351,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<UnknownName<'i>> for UnknownNameFmt {
+        fn prepare(&self, v: &UnknownName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<UnknownNameFmt as SpecByteLen>::byte_len);
+            Opaque1FfffFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerNameNameFmt {
         type PT = ServerNameName<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ServerNameNameFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -27877,6 +28418,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerNameName<'i>> for ServerNameNameFmt {
+        fn prepare(&self, v: &ServerNameName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ServerNameNameFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.name_type, v) {
+                (NameType::HostName, ServerNameName::HostName (v)) => (HostNameFmt).prepare (v),
+                (NameType::Unknown (x), ServerNameName::Default (v)) if x != 0 => (UnknownNameFmt).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerNameFmt {
@@ -27926,6 +28482,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerName<'i>> for ServerNameFmt {
+        fn prepare(&self, v: &ServerName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ServerNameFmt as SpecByteLen>::byte_len);
+            let ServerName {
+                name_type,
+                name,
+            } = v;
+            let l1 = (NameTypeFmt).prepare (name_type) ?;
+            let l2 = (ServerNameNameFmt {
+                name_type: * name_type
+            }
+            ).prepare (name) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerNameListFmt {
@@ -27972,15 +28545,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerNameList<'i>> for ServerNameListFmt {
+        fn prepare(&self, v: &ServerNameList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ServerNameListFmt as SpecByteLen>::byte_len);
+            let ServerNameList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (ServerNameFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for MaxFragmentLengthFmt {
         type PT = MaxFragmentLength;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MaxFragmentLengthFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28013,6 +28605,20 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<MaxFragmentLength> for MaxFragmentLengthFmt {
+        fn prepare(&self, v: &MaxFragmentLength) -> Result<usize, PreSerializeError> {
+            reveal(<MaxFragmentLengthFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                MaxFragmentLength::Pow2_9 => 1,
+                MaxFragmentLength::Pow2_10 => 2,
+                MaxFragmentLength::Pow2_11 => 3,
+                MaxFragmentLength::Pow2_12 => 4,
+                MaxFragmentLength::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -28062,15 +28668,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NamedGroupList> for NamedGroupListFmt {
+        fn prepare(&self, v: &NamedGroupList) -> Result<usize, PreSerializeError> {
+            reveal(<NamedGroupListFmt as SpecByteLen>::byte_len);
+            let NamedGroupList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (NamedGroupFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EcPointFormatFmt {
         type PT = EcPointFormat;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<EcPointFormatFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28101,6 +28726,19 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<EcPointFormat> for EcPointFormatFmt {
+        fn prepare(&self, v: &EcPointFormat) -> Result<usize, PreSerializeError> {
+            reveal(<EcPointFormatFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                EcPointFormat::Uncompressed => 0,
+                EcPointFormat::AnsiX962CompressedPrime => 1,
+                EcPointFormat::AnsiX962CompressedChar2 => 2,
+                EcPointFormat::Unknown (x) if x != 0 && x != 1 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -28150,15 +28788,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<EcPointFormatList> for EcPointFormatListFmt {
+        fn prepare(&self, v: &EcPointFormatList) -> Result<usize, PreSerializeError> {
+            reveal(<EcPointFormatListFmt as SpecByteLen>::byte_len);
+            let EcPointFormatList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (EcPointFormatFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SrtpProtectionProfileFmt {
         type PT = SrtpProtectionProfile<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<SrtpProtectionProfileFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28177,6 +28834,13 @@ mod exec_impls {
             Fixed::< 2 >.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<SrtpProtectionProfile<'i>> for SrtpProtectionProfileFmt {
+        fn prepare(&self, v: &SrtpProtectionProfile<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SrtpProtectionProfileFmt as SpecByteLen>::byte_len);
+            (Fixed::< 2 >).prepare (v)
         }
     }
 
@@ -28226,15 +28890,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SrtpProtectionProfiles<'i>> for SrtpProtectionProfilesFmt {
+        fn prepare(&self, v: &SrtpProtectionProfiles<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SrtpProtectionProfilesFmt as SpecByteLen>::byte_len);
+            let SrtpProtectionProfiles {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (SrtpProtectionProfileFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HeartbeatModeFmt {
         type PT = HeartbeatMode;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HeartbeatModeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28266,15 +28949,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HeartbeatMode> for HeartbeatModeFmt {
+        fn prepare(&self, v: &HeartbeatMode) -> Result<usize, PreSerializeError> {
+            reveal(<HeartbeatModeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                HeartbeatMode::PeerAllowedToSend => 1,
+                HeartbeatMode::PeerNotAllowedToSend => 2,
+                HeartbeatMode::Unknown (x) if x != 1 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ProtocolNameFmt {
         type PT = ProtocolName<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ProtocolNameFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28293,6 +28985,13 @@ mod exec_impls {
             Opaque1FfFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ProtocolName<'i>> for ProtocolNameFmt {
+        fn prepare(&self, v: &ProtocolName<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ProtocolNameFmt as SpecByteLen>::byte_len);
+            Opaque1FfFmt.prepare(v)
         }
     }
 
@@ -28342,15 +29041,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ProtocolNameList<'i>> for ProtocolNameListFmt {
+        fn prepare(&self, v: &ProtocolNameList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ProtocolNameListFmt as SpecByteLen>::byte_len);
+            let ProtocolNameList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (ProtocolNameFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateTypeFmt {
         type PT = CertificateType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CertificateTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28379,6 +29097,18 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CertificateType> for CertificateTypeFmt {
+        fn prepare(&self, v: &CertificateType) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                CertificateType::X509 => 0,
+                CertificateType::RawPublicKey => 2,
+                CertificateType::Unknown (x) if x != 0 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -28428,6 +29158,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ClientCertTypeClientExtension> for ClientCertTypeClientExtensionFmt {
+        fn prepare(&self, v: &ClientCertTypeClientExtension) -> Result<usize, PreSerializeError> {
+            reveal(<ClientCertTypeClientExtensionFmt as SpecByteLen>::byte_len);
+            let ClientCertTypeClientExtension {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerCertTypeClientExtensionFmt {
@@ -28474,6 +29226,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerCertTypeClientExtension> for ServerCertTypeClientExtensionFmt {
+        fn prepare(&self, v: &ServerCertTypeClientExtension) -> Result<usize, PreSerializeError> {
+            reveal(<ServerCertTypeClientExtensionFmt as SpecByteLen>::byte_len);
+            let ServerCertTypeClientExtension {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for PreSharedKeyServerExtensionFmt {
@@ -28509,6 +29283,18 @@ mod exec_impls {
             U16Be.serialize(selected_identity, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PreSharedKeyServerExtension> for PreSharedKeyServerExtensionFmt {
+        fn prepare(&self, v: &PreSharedKeyServerExtension) -> Result<usize, PreSerializeError> {
+            reveal(<PreSharedKeyServerExtensionFmt as SpecByteLen>::byte_len);
+            let PreSharedKeyServerExtension {
+                selected_identity,
+            } = v;
+            let l1 = (U16Be).prepare (selected_identity) ?;
+            let total_len = l1;
+            Ok(total_len)
         }
     }
 
@@ -28563,15 +29349,37 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<KeyShareEntry<'i>> for KeyShareEntryFmt {
+        fn prepare(&self, v: &KeyShareEntry<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<KeyShareEntryFmt as SpecByteLen>::byte_len);
+            let KeyShareEntry {
+                group,
+                l,
+                key_exchange,
+            } = v;
+            let l1 = (NamedGroupFmt).prepare (group) ?;
+            let l2 = {
+                if ! (* l >= 1 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l3 = (Varied (l)).prepare (key_exchange) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SeverHelloExtensionExtensionDataFmt {
         type PT = SeverHelloExtensionExtensionData<'i>;
 
+        #[verifier::spinoff_prover]
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<SeverHelloExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -28728,6 +29536,7 @@ mod exec_impls {
     }
 
     impl<'i> Serializer<SeverHelloExtensionExtensionData<'i>> for SeverHelloExtensionExtensionDataFmt {
+        #[verifier::spinoff_prover]
         fn serialize(&self, v: &SeverHelloExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
             reveal(<SeverHelloExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -28824,6 +29633,47 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SeverHelloExtensionExtensionData<'i>> for SeverHelloExtensionExtensionDataFmt {
+        #[verifier::spinoff_prover]
+        fn prepare(&self, v: &SeverHelloExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SeverHelloExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::ServerName, SeverHelloExtensionExtensionData::ServerName (v)) => (ServerNameListFmt).prepare (v),
+                (ExtensionType::MaxFragmentLength, SeverHelloExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
+                (ExtensionType::StatusRequest, SeverHelloExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
+                (ExtensionType::SupportedGroups, SeverHelloExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
+                (ExtensionType::ECPointFormats, SeverHelloExtensionExtensionData::ECPointFormats (v)) => (EcPointFormatListFmt).prepare (v),
+                (ExtensionType::SignatureAlgorithms, SeverHelloExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::UseSRTP, SeverHelloExtensionExtensionData::UseSRTP (v)) => (SrtpProtectionProfilesFmt).prepare (v),
+                (ExtensionType::Heartbeat, SeverHelloExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, SeverHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, SeverHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
+                (ExtensionType::ClientCertificateType, SeverHelloExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::ServerCertificateType, SeverHelloExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::Padding, SeverHelloExtensionExtensionData::Padding (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, SeverHelloExtensionExtensionData::EncryptThenMac (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, SeverHelloExtensionExtensionData::ExtendedMasterSecret (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::SessionTicket, SeverHelloExtensionExtensionData::SessionTicket (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::PreSharedKey, SeverHelloExtensionExtensionData::PreSharedKey (v)) => (PreSharedKeyServerExtensionFmt).prepare (v),
+                (ExtensionType::SupportedVersions, SeverHelloExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsServerFmt).prepare (v),
+                (ExtensionType::KeyShare, SeverHelloExtensionExtensionData::KeyShare (v)) => (KeyShareEntryFmt).prepare (v),
+                (ExtensionType::EarlyData, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::CertificateAuthorities, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::OidFilters, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), SeverHelloExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SeverHelloExtensionFmt {
@@ -28882,6 +29732,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SeverHelloExtension<'i>> for SeverHelloExtensionFmt {
+        fn prepare(&self, v: &SeverHelloExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<SeverHelloExtensionFmt as SpecByteLen>::byte_len);
+            let SeverHelloExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, SeverHelloExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerExtensionsFmt {
@@ -28925,6 +29795,28 @@ mod exec_impls {
             ExactLen (l, Star (SeverHelloExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ServerExtensions<'i>> for ServerExtensionsFmt {
+        fn prepare(&self, v: &ServerExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ServerExtensionsFmt as SpecByteLen>::byte_len);
+            let ServerExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 6 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (SeverHelloExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -28981,15 +29873,30 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerHello<'i>> for ServerHelloFmt {
+        fn prepare(&self, v: &ServerHello<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ServerHelloFmt as SpecByteLen>::byte_len);
+            let ServerHello {
+                legacy_session_id_echo,
+                cipher_suite,
+                legacy_compression_method,
+                extensions,
+            } = v;
+            let l1 = (SessionIdFmt).prepare (legacy_session_id_echo) ?;
+            let l2 = (CipherSuiteFmt).prepare (cipher_suite) ?;
+            let l3 = (Const (U8, 0)).prepare (legacy_compression_method) ?;
+            let l4 = (ServerExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ShOrHrrPayloadFmt<'i> {
         type PT = ShOrHrrPayload<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ShOrHrrPayloadFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -29041,6 +29948,21 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ShOrHrrPayload<'i>> for ShOrHrrPayloadFmt<'i> {
+        fn prepare(&self, v: &ShOrHrrPayload<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ShOrHrrPayloadFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.random, v) {
+                (x, ShOrHrrPayload::Variant1 (v)) if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (HelloRetryRequestFmt).prepare (v),
+                (x, ShOrHrrPayload::Default (v)) if ! x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (ServerHelloFmt).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -29098,15 +30020,31 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ShOrHrr<'i>> for ShOrHrrFmt {
+        fn prepare(&self, v: &ShOrHrr<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ShOrHrrFmt as SpecByteLen>::byte_len);
+            let ShOrHrr {
+                legacy_version,
+                random,
+                payload,
+            } = v;
+            let l1 = (Const (U16Be, 771)).prepare (legacy_version) ?;
+            let l2 = (Fixed::< 32 >).prepare (random) ?;
+            let l3 = (ShOrHrrPayloadFmt {
+                random: * random
+            }
+            ).prepare (payload) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HandshakeTypeFmt {
         type PT = HandshakeType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HandshakeTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -29150,6 +30088,26 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<HandshakeType> for HandshakeTypeFmt {
+        fn prepare(&self, v: &HandshakeType) -> Result<usize, PreSerializeError> {
+            reveal(<HandshakeTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                HandshakeType::ClientHello => 1,
+                HandshakeType::ServerHello => 2,
+                HandshakeType::NewSessionTicket => 4,
+                HandshakeType::EndOfEarlyData => 5,
+                HandshakeType::EncryptedExtensions => 8,
+                HandshakeType::Certificate => 11,
+                HandshakeType::CertificateRequest => 13,
+                HandshakeType::CertificateVerify => 15,
+                HandshakeType::Finished => 20,
+                HandshakeType::KeyUpdate => 24,
+                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -29199,6 +30157,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CipherSuiteList> for CipherSuiteListFmt {
+        fn prepare(&self, v: &CipherSuiteList) -> Result<usize, PreSerializeError> {
+            reveal(<CipherSuiteListFmt as SpecByteLen>::byte_len);
+            let CipherSuiteList {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65534) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (CipherSuiteFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for SupportedVersionsClientFmt {
@@ -29245,6 +30225,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<SupportedVersionsClient> for SupportedVersionsClientFmt {
+        fn prepare(&self, v: &SupportedVersionsClient) -> Result<usize, PreSerializeError> {
+            reveal(<SupportedVersionsClientFmt as SpecByteLen>::byte_len);
+            let SupportedVersionsClient {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 254) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (ProtocolVersionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for KeyShareClientHelloFmt {
@@ -29288,15 +30290,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<KeyShareClientHello<'i>> for KeyShareClientHelloFmt {
+        fn prepare(&self, v: &KeyShareClientHello<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<KeyShareClientHelloFmt as SpecByteLen>::byte_len);
+            let KeyShareClientHello {
+                l,
+                list,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (KeyShareEntryFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for PskKeyExchangeModeFmt {
         type PT = PskKeyExchangeMode;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<PskKeyExchangeModeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -29325,6 +30338,18 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PskKeyExchangeMode> for PskKeyExchangeModeFmt {
+        fn prepare(&self, v: &PskKeyExchangeMode) -> Result<usize, PreSerializeError> {
+            reveal(<PskKeyExchangeModeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                PskKeyExchangeMode::PSK_KE => 0,
+                PskKeyExchangeMode::PSK_DHE_KE => 1,
+                PskKeyExchangeMode::Unknown (x) if x != 0 && x != 1 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -29374,6 +30399,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PskKeyExchangeModes> for PskKeyExchangeModesFmt {
+        fn prepare(&self, v: &PskKeyExchangeModes) -> Result<usize, PreSerializeError> {
+            reveal(<PskKeyExchangeModesFmt as SpecByteLen>::byte_len);
+            let PskKeyExchangeModes {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (PskKeyExchangeModeFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for PskIdentityFmt {
@@ -29414,6 +30461,20 @@ mod exec_impls {
             U32Be.serialize(obfuscated_ticket_age, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PskIdentity<'i>> for PskIdentityFmt {
+        fn prepare(&self, v: &PskIdentity<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PskIdentityFmt as SpecByteLen>::byte_len);
+            let PskIdentity {
+                identity,
+                obfuscated_ticket_age,
+            } = v;
+            let l1 = (Opaque1FfffFmt).prepare (identity) ?;
+            let l2 = (U32Be).prepare (obfuscated_ticket_age) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -29463,6 +30524,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PskIdentities<'i>> for PskIdentitiesFmt {
+        fn prepare(&self, v: &PskIdentities<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PskIdentitiesFmt as SpecByteLen>::byte_len);
+            let PskIdentities {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 7 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (PskIdentityFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for PskBinderEntryFmt {
@@ -29506,6 +30589,28 @@ mod exec_impls {
             Varied (l).serialize(entries, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PskBinderEntry<'i>> for PskBinderEntryFmt {
+        fn prepare(&self, v: &PskBinderEntry<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PskBinderEntryFmt as SpecByteLen>::byte_len);
+            let PskBinderEntry {
+                l,
+                entries,
+            } = v;
+            let l1 = {
+                if ! (* l >= 32 && * l <= 255) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U8).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (entries) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -29555,6 +30660,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PskBinderEntries<'i>> for PskBinderEntriesFmt {
+        fn prepare(&self, v: &PskBinderEntries<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PskBinderEntriesFmt as SpecByteLen>::byte_len);
+            let PskBinderEntries {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 33 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (PskBinderEntryFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for OfferedPsksFmt {
@@ -29598,6 +30725,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<OfferedPsks<'i>> for OfferedPsksFmt {
+        fn prepare(&self, v: &OfferedPsks<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OfferedPsksFmt as SpecByteLen>::byte_len);
+            let OfferedPsks {
+                identities,
+                binders,
+            } = v;
+            let l1 = (PskIdentitiesFmt).prepare (identities) ?;
+            let l2 = (PskBinderEntriesFmt).prepare (binders) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for PreSharedKeyClientExtensionFmt {
@@ -29636,15 +30777,25 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PreSharedKeyClientExtension<'i>> for PreSharedKeyClientExtensionFmt {
+        fn prepare(&self, v: &PreSharedKeyClientExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PreSharedKeyClientExtensionFmt as SpecByteLen>::byte_len);
+            let PreSharedKeyClientExtension {
+                offers,
+            } = v;
+            let l1 = (OfferedPsksFmt).prepare (offers) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ClientHelloExtensionExtensionDataFmt {
         type PT = ClientHelloExtensionExtensionData<'i>;
 
+        #[verifier::spinoff_prover]
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ClientHelloExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -29801,6 +30952,7 @@ mod exec_impls {
     }
 
     impl<'i> Serializer<ClientHelloExtensionExtensionData<'i>> for ClientHelloExtensionExtensionDataFmt {
+        #[verifier::spinoff_prover]
         fn serialize(&self, v: &ClientHelloExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
             reveal(<ClientHelloExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
             proof {
@@ -29897,6 +31049,47 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ClientHelloExtensionExtensionData<'i>> for ClientHelloExtensionExtensionDataFmt {
+        #[verifier::spinoff_prover]
+        fn prepare(&self, v: &ClientHelloExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ClientHelloExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::ServerName, ClientHelloExtensionExtensionData::ServerName (v)) => (ServerNameListFmt).prepare (v),
+                (ExtensionType::SignatureAlgorithms, ClientHelloExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::SupportedGroups, ClientHelloExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
+                (ExtensionType::StatusRequest, ClientHelloExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, ClientHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
+                (ExtensionType::SupportedVersions, ClientHelloExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsClientFmt).prepare (v),
+                (ExtensionType::KeyShare, ClientHelloExtensionExtensionData::KeyShare (v)) => (KeyShareClientHelloFmt).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, ClientHelloExtensionExtensionData::PskKeyExchangeModes (v)) => (PskKeyExchangeModesFmt).prepare (v),
+                (ExtensionType::PreSharedKey, ClientHelloExtensionExtensionData::PreSharedKey (v)) => (PreSharedKeyClientExtensionFmt).prepare (v),
+                (ExtensionType::MaxFragmentLength, ClientHelloExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
+                (ExtensionType::Heartbeat, ClientHelloExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, ClientHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
+                (ExtensionType::ClientCertificateType, ClientHelloExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::ServerCertificateType, ClientHelloExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::Padding, ClientHelloExtensionExtensionData::Padding (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, ClientHelloExtensionExtensionData::Cookie (v)) => (CookieFmt).prepare (v),
+                (ExtensionType::CertificateAuthorities, ClientHelloExtensionExtensionData::CertificateAuthorities (v)) => (CertificateAuthoritiesExtensionFmt).prepare (v),
+                (ExtensionType::OidFilters, ClientHelloExtensionExtensionData::OidFilters (v)) => (OidFilterExtensionFmt).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, ClientHelloExtensionExtensionData::SignatureAlgorithmsCert (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::ECPointFormats, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::UseSRTP, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::EncryptThenMac, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::SessionTicket, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::EarlyData, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::PostHandshakeAuth, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
+                (ExtensionType::Unknown (x), ClientHelloExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Tail).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ClientHelloExtensionFmt {
@@ -29955,6 +31148,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ClientHelloExtension<'i>> for ClientHelloExtensionFmt {
+        fn prepare(&self, v: &ClientHelloExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ClientHelloExtensionFmt as SpecByteLen>::byte_len);
+            let ClientHelloExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, ClientHelloExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ClientExtensionsFmt {
@@ -29998,6 +31211,28 @@ mod exec_impls {
             ExactLen (l, Star (ClientHelloExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ClientExtensions<'i>> for ClientExtensionsFmt {
+        fn prepare(&self, v: &ClientExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ClientExtensionsFmt as SpecByteLen>::byte_len);
+            let ClientExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 8 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (ClientHelloExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -30064,6 +31299,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ClientHello<'i>> for ClientHelloFmt {
+        fn prepare(&self, v: &ClientHello<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ClientHelloFmt as SpecByteLen>::byte_len);
+            let ClientHello {
+                legacy_version,
+                random,
+                legacy_session_id,
+                cipher_suites,
+                legacy_compression_methods,
+                extensions,
+            } = v;
+            let l1 = (Const (U16Be, 771)).prepare (legacy_version) ?;
+            let l2 = (Fixed::< 32 >).prepare (random) ?;
+            let l3 = (SessionIdFmt).prepare (legacy_session_id) ?;
+            let l4 = (CipherSuiteListFmt).prepare (cipher_suites) ?;
+            let l5 = (Opaque1FfFmt).prepare (legacy_compression_methods) ?;
+            let l6 = (ClientExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l5).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l6).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for Opaque0FfFmt {
@@ -30107,6 +31364,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque0Ff<'i>> for Opaque0FfFmt {
+        fn prepare(&self, v: &Opaque0Ff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque0FfFmt as SpecByteLen>::byte_len);
+            let Opaque0Ff {
+                l,
+                data,
+            } = v;
+            let l1 = (U8).prepare (l) ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EarlyDataIndicationNewSessionTicketFmt {
@@ -30145,15 +31416,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<EarlyDataIndicationNewSessionTicket> for EarlyDataIndicationNewSessionTicketFmt {
+        fn prepare(&self, v: &EarlyDataIndicationNewSessionTicket) -> Result<usize, PreSerializeError> {
+            reveal(<EarlyDataIndicationNewSessionTicketFmt as SpecByteLen>::byte_len);
+            let EarlyDataIndicationNewSessionTicket {
+                max_early_data_size,
+            } = v;
+            let l1 = (U32Be).prepare (max_early_data_size) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for NewSessionTicketExtensionExtensionDataFmt {
         type PT = NewSessionTicketExtensionExtensionData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<NewSessionTicketExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -30205,6 +31485,46 @@ mod exec_impls {
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<NewSessionTicketExtensionExtensionData<'i>> for NewSessionTicketExtensionExtensionDataFmt {
+        fn prepare(&self, v: &NewSessionTicketExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NewSessionTicketExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::EarlyData, NewSessionTicketExtensionExtensionData::EarlyData (v)) => (EarlyDataIndicationNewSessionTicketFmt).prepare (v),
+                (ExtensionType::ServerName, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::MaxFragmentLength, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::StatusRequest, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedGroups, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ECPointFormats, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::UseSRTP, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Heartbeat, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ClientCertificateType, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ServerCertificateType, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Padding, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SessionTicket, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PreSharedKey, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedVersions, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::CertificateAuthorities, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::OidFilters, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::KeyShare, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), NewSessionTicketExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 
@@ -30266,6 +31586,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NewSessionTicketExtension<'i>> for NewSessionTicketExtensionFmt {
+        fn prepare(&self, v: &NewSessionTicketExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NewSessionTicketExtensionFmt as SpecByteLen>::byte_len);
+            let NewSessionTicketExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, NewSessionTicketExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for NewSessionTicketExtensionsFmt {
@@ -30310,6 +31650,28 @@ mod exec_impls {
             ExactLen (l, Star (NewSessionTicketExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<NewSessionTicketExtensions<'i>> for NewSessionTicketExtensionsFmt {
+        fn prepare(&self, v: &NewSessionTicketExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NewSessionTicketExtensionsFmt as SpecByteLen>::byte_len);
+            let NewSessionTicketExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 0 && * l <= 65534) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (NewSessionTicketExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -30371,15 +31733,32 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NewSessionTicket<'i>> for NewSessionTicketFmt {
+        fn prepare(&self, v: &NewSessionTicket<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NewSessionTicketFmt as SpecByteLen>::byte_len);
+            let NewSessionTicket {
+                ticket_lifetime,
+                ticket_age_add,
+                ticket_nonce,
+                ticket,
+                extensions,
+            } = v;
+            let l1 = (U32Be).prepare (ticket_lifetime) ?;
+            let l2 = (U32Be).prepare (ticket_age_add) ?;
+            let l3 = (Opaque0FfFmt).prepare (ticket_nonce) ?;
+            let l4 = (Opaque1FfffFmt).prepare (ticket) ?;
+            let l5 = (NewSessionTicketExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l5).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EncryptedExtensionExtensionDataFmt {
         type PT = EncryptedExtensionExtensionData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<EncryptedExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -30511,6 +31890,46 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<EncryptedExtensionExtensionData<'i>> for EncryptedExtensionExtensionDataFmt {
+        fn prepare(&self, v: &EncryptedExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<EncryptedExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::ServerName, EncryptedExtensionExtensionData::ServerName (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::MaxFragmentLength, EncryptedExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
+                (ExtensionType::SupportedGroups, EncryptedExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
+                (ExtensionType::Heartbeat, EncryptedExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, EncryptedExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
+                (ExtensionType::ClientCertificateType, EncryptedExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::ServerCertificateType, EncryptedExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::EarlyData, EncryptedExtensionExtensionData::EarlyData (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::StatusRequest, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ECPointFormats, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::UseSRTP, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Padding, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SessionTicket, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PreSharedKey, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedVersions, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::CertificateAuthorities, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::OidFilters, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::KeyShare, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), EncryptedExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EncryptedExtensionFmt {
@@ -30569,6 +31988,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<EncryptedExtension<'i>> for EncryptedExtensionFmt {
+        fn prepare(&self, v: &EncryptedExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<EncryptedExtensionFmt as SpecByteLen>::byte_len);
+            let EncryptedExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, EncryptedExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for EncryptedExtensionsFmt {
@@ -30609,6 +32048,20 @@ mod exec_impls {
             ExactLen (l, Star (EncryptedExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<EncryptedExtensions<'i>> for EncryptedExtensionsFmt {
+        fn prepare(&self, v: &EncryptedExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<EncryptedExtensionsFmt as SpecByteLen>::byte_len);
+            let EncryptedExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (EncryptedExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -30658,15 +32111,34 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque1Ffffff<'i>> for Opaque1FfffffFmt {
+        fn prepare(&self, v: &Opaque1Ffffff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque1FfffffFmt as SpecByteLen>::byte_len);
+            let Opaque1Ffffff {
+                l,
+                data,
+            } = v;
+            let l1 = {
+                if ! (* l >= 1 && * l <= 16777215) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U24Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for OcspResponseFmt {
         type PT = OcspResponse<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<OcspResponseFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -30685,6 +32157,13 @@ mod exec_impls {
             Opaque1FfffffFmt.serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<OcspResponse<'i>> for OcspResponseFmt {
+        fn prepare(&self, v: &OcspResponse<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OcspResponseFmt as SpecByteLen>::byte_len);
+            Opaque1FfffffFmt.prepare(v)
         }
     }
 
@@ -30731,15 +32210,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateStatus<'i>> for CertificateStatusFmt {
+        fn prepare(&self, v: &CertificateStatus<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateStatusFmt as SpecByteLen>::byte_len);
+            let CertificateStatus {
+                status_type,
+                response,
+            } = v;
+            let l1 = (Const (U8, 1)).prepare (status_type) ?;
+            let l2 = (OcspResponseFmt).prepare (response) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateExtensionExtensionDataFmt {
         type PT = CertificateExtensionExtensionData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CertificateExtensionExtensionDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -30805,6 +32295,46 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateExtensionExtensionData<'i>> for CertificateExtensionExtensionDataFmt {
+        fn prepare(&self, v: &CertificateExtensionExtensionData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateExtensionExtensionDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.extension_type, v) {
+                (ExtensionType::StatusRequest, CertificateExtensionExtensionData::StatusRequest (v)) => (CertificateStatusFmt).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, CertificateExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
+                (ExtensionType::ServerName, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::MaxFragmentLength, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedGroups, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ECPointFormats, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::UseSRTP, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Heartbeat, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ClientCertificateType, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ServerCertificateType, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Padding, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EncryptThenMac, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SessionTicket, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PreSharedKey, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::EarlyData, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SupportedVersions, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Cookie, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::CertificateAuthorities, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::OidFilters, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::PostHandshakeAuth, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::KeyShare, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
+                (ExtensionType::Unknown (x), CertificateExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateExtensionFmt {
@@ -30863,6 +32393,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateExtension<'i>> for CertificateExtensionFmt {
+        fn prepare(&self, v: &CertificateExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateExtensionFmt as SpecByteLen>::byte_len);
+            let CertificateExtension {
+                extension_type,
+                ext_len,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (U16Be).prepare (ext_len) ?;
+            let l3 = (ExactLen (ext_len, CertificateExtensionExtensionDataFmt {
+                ext_len: *ext_len,
+                extension_type: *extension_type
+            }
+            )).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateExtensionsFmt {
@@ -30903,6 +32453,20 @@ mod exec_impls {
             ExactLen (l, Star (CertificateExtensionFmt)).serialize(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CertificateExtensions<'i>> for CertificateExtensionsFmt {
+        fn prepare(&self, v: &CertificateExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateExtensionsFmt as SpecByteLen>::byte_len);
+            let CertificateExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (CertificateExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -30949,6 +32513,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateEntryOpaque<'i>> for CertificateEntryOpaqueFmt {
+        fn prepare(&self, v: &CertificateEntryOpaque<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateEntryOpaqueFmt as SpecByteLen>::byte_len);
+            let CertificateEntryOpaque {
+                cert_data,
+                extensions,
+            } = v;
+            let l1 = (Opaque1FfffffFmt).prepare (cert_data) ?;
+            let l2 = (CertificateExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateListFmt {
@@ -30992,6 +32570,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateList<'i>> for CertificateListFmt {
+        fn prepare(&self, v: &CertificateList<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateListFmt as SpecByteLen>::byte_len);
+            let CertificateList {
+                l,
+                list,
+            } = v;
+            let l1 = (U24Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (CertificateEntryOpaqueFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateFmt {
@@ -31032,6 +32624,20 @@ mod exec_impls {
             CertificateListFmt.serialize(certificate_list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Certificate<'i>> for CertificateFmt {
+        fn prepare(&self, v: &Certificate<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateFmt as SpecByteLen>::byte_len);
+            let Certificate {
+                certificate_request_context,
+                certificate_list,
+            } = v;
+            let l1 = (Opaque0FfFmt).prepare (certificate_request_context) ?;
+            let l2 = (CertificateListFmt).prepare (certificate_list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -31082,6 +32688,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateRequestExtensions<'i>> for CertificateRequestExtensionsFmt {
+        fn prepare(&self, v: &CertificateRequestExtensions<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateRequestExtensionsFmt as SpecByteLen>::byte_len);
+            let CertificateRequestExtensions {
+                l,
+                list,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (ExactLen (l, Star (CertificateRequestExtensionFmt))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateRequestFmt {
@@ -31122,6 +32750,20 @@ mod exec_impls {
             CertificateRequestExtensionsFmt.serialize(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<CertificateRequest<'i>> for CertificateRequestFmt {
+        fn prepare(&self, v: &CertificateRequest<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateRequestFmt as SpecByteLen>::byte_len);
+            let CertificateRequest {
+                certificate_request_context,
+                extensions,
+            } = v;
+            let l1 = (Opaque0FfFmt).prepare (certificate_request_context) ?;
+            let l2 = (CertificateRequestExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 
@@ -31168,15 +32810,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateVerify<'i>> for CertificateVerifyFmt {
+        fn prepare(&self, v: &CertificateVerify<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateVerifyFmt as SpecByteLen>::byte_len);
+            let CertificateVerify {
+                algorithm,
+                signature,
+            } = v;
+            let l1 = (SignatureSchemeFmt).prepare (algorithm) ?;
+            let l2 = (Opaque0FfffFmt).prepare (signature) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for FinishedFmt {
         type PT = Finished<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<FinishedFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31275,15 +32928,31 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Finished<'i>> for FinishedFmt {
+        fn prepare(&self, v: &Finished<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<FinishedFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.size, v) {
+                (12, Finished::Variant1 (v)) => (Fixed::< 12 >).prepare (v),
+                (20, Finished::Variant2 (v)) => (Fixed::< 20 >).prepare (v),
+                (32, Finished::Variant3 (v)) => (Fixed::< 32 >).prepare (v),
+                (48, Finished::Variant4 (v)) => (Fixed::< 48 >).prepare (v),
+                (64, Finished::Variant5 (v)) => (Fixed::< 64 >).prepare (v),
+                (x, Finished::Default (v)) if ! (x == 12) && ! (x == 20) && ! (x == 32) && ! (x == 48) && ! (x == 64) => (Varied (self.size)).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for KeyUpdateRequestFmt {
         type PT = KeyUpdateRequest;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<KeyUpdateRequestFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31311,6 +32980,18 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<KeyUpdateRequest> for KeyUpdateRequestFmt {
+        fn prepare(&self, v: &KeyUpdateRequest) -> Result<usize, PreSerializeError> {
+            reveal(<KeyUpdateRequestFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                KeyUpdateRequest::UpdateNotRequested => 0,
+                KeyUpdateRequest::UpdateRequested => 1,
+                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -31352,15 +33033,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<KeyUpdate> for KeyUpdateFmt {
+        fn prepare(&self, v: &KeyUpdate) -> Result<usize, PreSerializeError> {
+            reveal(<KeyUpdateFmt as SpecByteLen>::byte_len);
+            let KeyUpdate {
+                request_update,
+            } = v;
+            let l1 = (KeyUpdateRequestFmt).prepare (request_update) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HandshakeMsgFmt {
         type PT = HandshakeMsg<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<HandshakeMsgFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31509,6 +33199,32 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HandshakeMsg<'i>> for HandshakeMsgFmt {
+        fn prepare(&self, v: &HandshakeMsg<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HandshakeMsgFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.msg_type, v) {
+                (HandshakeType::ClientHello, HandshakeMsg::ClientHello (v)) => (ClientHelloFmt).prepare (v),
+                (HandshakeType::ServerHello, HandshakeMsg::ServerHello (v)) => (ShOrHrrFmt).prepare (v),
+                (HandshakeType::NewSessionTicket, HandshakeMsg::NewSessionTicket (v)) => (NewSessionTicketFmt).prepare (v),
+                (HandshakeType::EndOfEarlyData, HandshakeMsg::EndOfEarlyData (v)) => (EmptyFmt).prepare (v),
+                (HandshakeType::EncryptedExtensions, HandshakeMsg::EncryptedExtensions (v)) => (EncryptedExtensionsFmt).prepare (v),
+                (HandshakeType::Certificate, HandshakeMsg::Certificate (v)) => (CertificateFmt).prepare (v),
+                (HandshakeType::CertificateRequest, HandshakeMsg::CertificateRequest (v)) => (CertificateRequestFmt).prepare (v),
+                (HandshakeType::CertificateVerify, HandshakeMsg::CertificateVerify (v)) => (CertificateVerifyFmt).prepare (v),
+                (HandshakeType::Finished, HandshakeMsg::Finished (v)) => (FinishedFmt {
+                    size: self.length
+                }
+                ).prepare (v),
+                (HandshakeType::KeyUpdate, HandshakeMsg::KeyUpdate (v)) => (KeyUpdateFmt).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for HandshakeFmt {
@@ -31567,6 +33283,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Handshake<'i>> for HandshakeFmt {
+        fn prepare(&self, v: &Handshake<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<HandshakeFmt as SpecByteLen>::byte_len);
+            let Handshake {
+                msg_type,
+                length,
+                msg,
+            } = v;
+            let l1 = (HandshakeTypeFmt).prepare (msg_type) ?;
+            let l2 = (U24Be).prepare (length) ?;
+            let l3 = (ExactLen (length, HandshakeMsgFmt {
+                length: *length,
+                msg_type: *msg_type
+            }
+            )).prepare (msg) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ZeroByteFmt {
@@ -31602,6 +33338,18 @@ mod exec_impls {
             Const (U8, 0).serialize(zero, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ZeroByte> for ZeroByteFmt {
+        fn prepare(&self, v: &ZeroByte) -> Result<usize, PreSerializeError> {
+            reveal(<ZeroByteFmt as SpecByteLen>::byte_len);
+            let ZeroByte {
+                zero,
+            } = v;
+            let l1 = (Const (U8, 0)).prepare (zero) ?;
+            let total_len = l1;
+            Ok(total_len)
         }
     }
 
@@ -31656,6 +33404,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<PaddingExtension> for PaddingExtensionFmt {
+        fn prepare(&self, v: &PaddingExtension) -> Result<usize, PreSerializeError> {
+            reveal(<PaddingExtensionFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let PaddingExtension {
+                l,
+                padding,
+            } = v;
+            let l1 = (U16Be).prepare (l) ?;
+            let l2 = (ExactLen (l, Star (ZeroByteFmt))).prepare (padding) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ExtensionFmt {
@@ -31699,6 +33465,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Extension<'i>> for ExtensionFmt {
+        fn prepare(&self, v: &Extension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<ExtensionFmt as SpecByteLen>::byte_len);
+            let Extension {
+                extension_type,
+                extension_data,
+            } = v;
+            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l2 = (Opaque0FfffFmt).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ClientCertTypeServerExtensionFmt {
@@ -31737,15 +33517,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ClientCertTypeServerExtension> for ClientCertTypeServerExtensionFmt {
+        fn prepare(&self, v: &ClientCertTypeServerExtension) -> Result<usize, PreSerializeError> {
+            reveal(<ClientCertTypeServerExtensionFmt as SpecByteLen>::byte_len);
+            let ClientCertTypeServerExtension {
+                client_certificate_type,
+            } = v;
+            let l1 = (CertificateTypeFmt).prepare (client_certificate_type) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ContentTypeFmt {
         type PT = ContentType;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<ContentTypeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31779,6 +33568,21 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<ContentType> for ContentTypeFmt {
+        fn prepare(&self, v: &ContentType) -> Result<usize, PreSerializeError> {
+            reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ContentType::Invalid => 0,
+                ContentType::ChangeCipherSpec => 20,
+                ContentType::Alert => 21,
+                ContentType::Handshake => 22,
+                ContentType::ApplicationData => 23,
+                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -31830,15 +33634,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TlsPlaintext<'i>> for TlsPlaintextFmt {
+        fn prepare(&self, v: &TlsPlaintext<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TlsPlaintextFmt as SpecByteLen>::byte_len);
+            let TlsPlaintext {
+                content_type,
+                legacy_record_version,
+                fragment,
+            } = v;
+            let l1 = (ContentTypeFmt).prepare (content_type) ?;
+            let l2 = (ProtocolVersionFmt).prepare (legacy_record_version) ?;
+            let l3 = (Opaque0FfffFmt).prepare (fragment) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for AlertDescriptionFmt {
         type PT = AlertDescription;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AlertDescriptionFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31919,6 +33736,43 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<AlertDescription> for AlertDescriptionFmt {
+        fn prepare(&self, v: &AlertDescription) -> Result<usize, PreSerializeError> {
+            reveal(<AlertDescriptionFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                AlertDescription::CloseNotify => 0,
+                AlertDescription::UnexpectedMessage => 10,
+                AlertDescription::BadRecordMac => 20,
+                AlertDescription::RecordOverflow => 22,
+                AlertDescription::HandshakeFailure => 40,
+                AlertDescription::BadCertificate => 42,
+                AlertDescription::UnsupportedCertificate => 43,
+                AlertDescription::CertificateRevoked => 44,
+                AlertDescription::CertificateExpired => 45,
+                AlertDescription::CertificateUnknown => 46,
+                AlertDescription::IllegalParameter => 47,
+                AlertDescription::UnknownCA => 48,
+                AlertDescription::AccessDenied => 49,
+                AlertDescription::DecodeError => 50,
+                AlertDescription::DecryptError => 51,
+                AlertDescription::ProtocolVersion => 70,
+                AlertDescription::InsufficientSecurity => 71,
+                AlertDescription::InternalError => 80,
+                AlertDescription::InappropriateFallback => 86,
+                AlertDescription::UserCanceled => 90,
+                AlertDescription::MissingExtension => 109,
+                AlertDescription::UnsupportedExtension => 110,
+                AlertDescription::UnrecognizedName => 112,
+                AlertDescription::BadCertificateStatusResponse => 113,
+                AlertDescription::UnknownPSKIdentity => 115,
+                AlertDescription::CertificateRequired => 116,
+                AlertDescription::NoApplicationProtocol => 120,
+                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for UseSrtpDataFmt {
@@ -31962,15 +33816,26 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<UseSrtpData<'i>> for UseSrtpDataFmt {
+        fn prepare(&self, v: &UseSrtpData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<UseSrtpDataFmt as SpecByteLen>::byte_len);
+            let UseSrtpData {
+                profiles,
+                srtp_mki,
+            } = v;
+            let l1 = (SrtpProtectionProfilesFmt).prepare (profiles) ?;
+            let l2 = (Opaque0FfFmt).prepare (srtp_mki) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for FinishedOpaqueFmt {
         type PT = FinishedOpaque<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<FinishedOpaqueFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -31997,6 +33862,17 @@ mod exec_impls {
             Varied (self.digest_size).serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<FinishedOpaque<'i>> for FinishedOpaqueFmt {
+        fn prepare(&self, v: &FinishedOpaque<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<FinishedOpaqueFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            (Varied (self.digest_size)).prepare (v)
         }
     }
 
@@ -32046,6 +33922,28 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Opaque2Ffff<'i>> for Opaque2FfffFmt {
+        fn prepare(&self, v: &Opaque2Ffff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque2FfffFmt as SpecByteLen>::byte_len);
+            let Opaque2Ffff {
+                l,
+                data,
+            } = v;
+            let l1 = {
+                if ! (* l >= 2 && * l <= 65535) {
+                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                }
+                else {
+                    (U16Be).prepare (l)
+                }
+            }
+            ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for AlertFmt {
@@ -32089,6 +33987,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Alert> for AlertFmt {
+        fn prepare(&self, v: &Alert) -> Result<usize, PreSerializeError> {
+            reveal(<AlertFmt as SpecByteLen>::byte_len);
+            let Alert {
+                level,
+                description,
+            } = v;
+            let l1 = (AlertLevelFmt).prepare (level) ?;
+            let l2 = (AlertDescriptionFmt).prepare (description) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for ServerCertTypeServerExtensionFmt {
@@ -32127,15 +34039,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<ServerCertTypeServerExtension> for ServerCertTypeServerExtensionFmt {
+        fn prepare(&self, v: &ServerCertTypeServerExtension) -> Result<usize, PreSerializeError> {
+            reveal(<ServerCertTypeServerExtensionFmt as SpecByteLen>::byte_len);
+            let ServerCertTypeServerExtension {
+                server_certificate_type,
+            } = v;
+            let l1 = (CertificateTypeFmt).prepare (server_certificate_type) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for UnknownExtensionFmt {
         type PT = UnknownExtension<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<UnknownExtensionFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -32157,15 +34078,19 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<UnknownExtension<'i>> for UnknownExtensionFmt {
+        fn prepare(&self, v: &UnknownExtension<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<UnknownExtensionFmt as SpecByteLen>::byte_len);
+            Opaque0FfffFmt.prepare(v)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for DigestSizeFmt {
         type PT = DigestSize;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<DigestSizeFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -32202,6 +34127,22 @@ mod exec_impls {
             U24Be.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<DigestSize> for DigestSizeFmt {
+        fn prepare(&self, v: &DigestSize) -> Result<usize, PreSerializeError> {
+            reveal(<DigestSizeFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                DigestSize::Hash12 => 12,
+                DigestSize::Hash20 => 20,
+                DigestSize::Sha256 => 32,
+                DigestSize::Sha384 => 48,
+                DigestSize::Sha512 => 64,
+                DigestSize::Max => 16777215,
+                DigestSize::Unknown (x) if x != 12 && x != 20 && x != 32 && x != 48 && x != 64 && x != 16777215 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+            };
+            U24Be.prepare(&tag)
         }
     }
 
@@ -32243,15 +34184,24 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<HeartbeatExtension> for HeartbeatExtensionFmt {
+        fn prepare(&self, v: &HeartbeatExtension) -> Result<usize, PreSerializeError> {
+            reveal(<HeartbeatExtensionFmt as SpecByteLen>::byte_len);
+            let HeartbeatExtension {
+                mode,
+            } = v;
+            let l1 = (HeartbeatModeFmt).prepare (mode) ?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateEntryDataFmt {
         type PT = CertificateEntryData<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<CertificateEntryDataFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -32317,6 +34267,22 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateEntryData<'i>> for CertificateEntryDataFmt {
+        fn prepare(&self, v: &CertificateEntryData<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateEntryDataFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            match (self.cert_type, v) {
+                (CertificateType::X509, CertificateEntryData::X509 (v)) => (Opaque1FfffffFmt).prepare (v),
+                (CertificateType::RawPublicKey, CertificateEntryData::RawPublicKey (v)) => (Opaque1FfffffFmt).prepare (v),
+                (CertificateType::Unknown (x), CertificateEntryData::Default (v)) if x != 0 && x != 2 => (Opaque1FfffffFmt).prepare (v),
+                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            }
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for CertificateEntryFmt {
@@ -32374,6 +34340,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CertificateEntry<'i>> for CertificateEntryFmt {
+        fn prepare(&self, v: &CertificateEntry<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CertificateEntryFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let CertificateEntry {
+                data,
+                extensions,
+            } = v;
+            let l1 = (CertificateEntryDataFmt {
+                cert_type: self.cert_type
+            }
+            ).prepare (data) ?;
+            let l2 = (CertificateExtensionsFmt).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for TlsCiphertextFmt {
@@ -32422,6 +34409,22 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TlsCiphertext<'i>> for TlsCiphertextFmt {
+        fn prepare(&self, v: &TlsCiphertext<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TlsCiphertextFmt as SpecByteLen>::byte_len);
+            let TlsCiphertext {
+                opaque_type,
+                version,
+                encrypted_record,
+            } = v;
+            let l1 = (ContentTypeFmt).prepare (opaque_type) ?;
+            let l2 = (ProtocolVersionFmt).prepare (version) ?;
+            let l3 = (Opaque0FfffFmt).prepare (encrypted_record) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
+        }
+    }
+
 
 
     impl<'i> Parser<&'i [u8]> for Opaque0FfffffFmt {
@@ -32462,6 +34465,20 @@ mod exec_impls {
             Varied (l).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Opaque0Ffffff<'i>> for Opaque0FfffffFmt {
+        fn prepare(&self, v: &Opaque0Ffffff<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Opaque0FfffffFmt as SpecByteLen>::byte_len);
+            let Opaque0Ffffff {
+                l,
+                data,
+            } = v;
+            let l1 = (U24Be).prepare (l) ?;
+            let l2 = (Varied (l)).prepare (data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            Ok(total_len)
         }
     }
 

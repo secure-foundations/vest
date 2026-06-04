@@ -1602,6 +1602,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<NestedComplex<'i>> for NestedComplexFmt<'i> {
+        fn prepare(&self, v: &NestedComplex<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<NestedComplexFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let NestedComplex { flag, data } = v;
+            let l1 = (Const(U32Le, 0)).prepare(flag)?;
+            let l2 = (Varied((self.hdr_payload.hdr.payload_length - 8))).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for GenericHeaderFmt {
         type PT = GenericHeader;
 
@@ -1640,6 +1655,26 @@ mod exec_impls {
             U32Le.serialize(payload_length, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<GenericHeader> for GenericHeaderFmt {
+        fn prepare(&self, v: &GenericHeader) -> Result<usize, PreSerializeError> {
+            reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
+            let GenericHeader { next_type, reserved, payload_length } = v;
+            let l1 = (U8).prepare(next_type)?;
+            let l2 = (U8).prepare(reserved)?;
+            let l3 = {
+                if !(*payload_length >= 8 && *payload_length <= 65535) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U32Le).prepare(payload_length)
+                }
+            }?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -1686,6 +1721,21 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<CombinedExample<'i>> for CombinedExampleFmt {
+        fn prepare(&self, v: &CombinedExample<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let CombinedExample { header, body } = v;
+            let l1 = (GenericHeaderFmt).prepare(header)?;
+            let l2 = (Varied((self.total_len - header.payload_length))).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for PayloadWithHeaderFmt {
         type PT = PayloadWithHeader<'i>;
 
@@ -1718,6 +1768,17 @@ mod exec_impls {
             Varied((hdr.payload_length - 4)).serialize(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
+        fn prepare(&self, v: &PayloadWithHeader<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            let PayloadWithHeader { hdr, body } = v;
+            let l1 = (GenericHeaderFmt).prepare(hdr)?;
+            let l2 = (Varied((hdr.payload_length - 4))).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -1765,6 +1826,29 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<FinalMsg<'i>> for FinalMsgFmt {
+        fn prepare(&self, v: &FinalMsg<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
+            let FinalMsg { total_len, body, hdr_payload, nested } = v;
+            let l1 = {
+                if !(*total_len >= 16777215 && *total_len <= 4294967295) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (U32Le).prepare(total_len)
+                }
+            }?;
+            let l2 = (CombinedExampleFmt { total_len: *total_len }).prepare(body)?;
+            let l3 = (PayloadWithHeaderFmt).prepare(hdr_payload)?;
+            let l4 = (NestedComplexFmt { hdr_payload: *hdr_payload }).prepare(nested)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for OuterHeaderFmt {
         type PT = OuterHeader;
 
@@ -1800,6 +1884,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<OuterHeader> for OuterHeaderFmt {
+        fn prepare(&self, v: &OuterHeader) -> Result<usize, PreSerializeError> {
+            reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
+            let OuterHeader { magic, inner } = v;
+            let l1 = (U32Le).prepare(magic)?;
+            let l2 = (GenericHeaderFmt).prepare(inner)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for DeepNestedFmt {
         type PT = DeepNested<'i>;
 
@@ -1832,6 +1927,17 @@ mod exec_impls {
             Varied((outer.inner.payload_length - 8)).serialize(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<DeepNested<'i>> for DeepNestedFmt {
+        fn prepare(&self, v: &DeepNested<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
+            let DeepNested { outer, data } = v;
+            let l1 = (OuterHeaderFmt).prepare(outer)?;
+            let l2 = (Varied((outer.inner.payload_length - 8))).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 

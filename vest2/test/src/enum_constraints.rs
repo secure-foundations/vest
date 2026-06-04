@@ -956,9 +956,6 @@ mod exec_impls {
         type PT = MyTypedEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -991,13 +988,23 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<MyTypedEnum> for MyTypedEnumFmt {
+        fn prepare(&self, v: &MyTypedEnum) -> Result<usize, PreSerializeError> {
+            reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                MyTypedEnum::X => 1,
+                MyTypedEnum::Y => 2,
+                MyTypedEnum::Z => 3,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U16Le.prepare(&tag)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MyEnumFmt {
         type PT = MyEnum;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -1027,6 +1034,19 @@ mod exec_impls {
             U8.serialize(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<MyEnum> for MyEnumFmt {
+        fn prepare(&self, v: &MyEnum) -> Result<usize, PreSerializeError> {
+            reveal(<MyEnumFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                MyEnum::A => 1,
+                MyEnum::B => 2,
+                MyEnum::C => 3,
+                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
         }
     }
 
@@ -1080,6 +1100,41 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TypedEnumConstraints> for TypedEnumConstraintsFmt {
+        fn prepare(&self, v: &TypedEnumConstraints) -> Result<usize, PreSerializeError> {
+            reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
+            let TypedEnumConstraints { foo, bar, baz, tag } = v;
+            let l1 = {
+                if !(*foo == MyTypedEnum::X) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyTypedEnumFmt).prepare(foo)
+                }
+            }?;
+            let l2 = {
+                if !(!(*bar == MyTypedEnum::Y)) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyTypedEnumFmt).prepare(bar)
+                }
+            }?;
+            let l3 = {
+                if !(*baz == MyTypedEnum::X || *baz == MyTypedEnum::Z) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyTypedEnumFmt).prepare(baz)
+                }
+            }?;
+            let l4 = (Const(MyTypedEnumFmt, MyTypedEnum::X)).prepare(tag)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for EnumConstraintsFmt {
         type PT = EnumConstraints;
 
@@ -1127,6 +1182,41 @@ mod exec_impls {
             Const(MyEnumFmt, MyEnum::A).serialize(tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<EnumConstraints> for EnumConstraintsFmt {
+        fn prepare(&self, v: &EnumConstraints) -> Result<usize, PreSerializeError> {
+            reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
+            let EnumConstraints { foo, bar, baz, tag } = v;
+            let l1 = {
+                if !(*foo == MyEnum::A) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyEnumFmt).prepare(foo)
+                }
+            }?;
+            let l2 = {
+                if !(!(*bar == MyEnum::B)) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyEnumFmt).prepare(bar)
+                }
+            }?;
+            let l3 = {
+                if !(*baz == MyEnum::A || *baz == MyEnum::C) {
+                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyEnumFmt).prepare(baz)
+                }
+            }?;
+            let l4 = (Const(MyEnumFmt, MyEnum::A)).prepare(tag)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
         }
     }
 

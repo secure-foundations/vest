@@ -1205,13 +1205,20 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<Const10<'i>> for Const10Fmt {
+        fn prepare(&self, v: &Const10<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<Const10Fmt as SpecByteLen>::byte_len);
+            let Const10 { reserved } = v;
+            let l1 = (Fixed::<10>).prepare(reserved)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for AFmt {
         type PT = A<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<AFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -1237,6 +1244,13 @@ mod exec_impls {
             );
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<A<'i>> for AFmt {
+        fn prepare(&self, v: &A<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<AFmt as SpecByteLen>::byte_len);
+            (PrefixTagged(U8, 1, PrefixTagged(U8, 2, SuffixTagged(Const10Fmt, U8, 3)))).prepare(v)
         }
     }
 
@@ -1275,6 +1289,17 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<B<'i>> for BFmt {
+        fn prepare(&self, v: &B<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<BFmt as SpecByteLen>::byte_len);
+            let B { x, y } = v;
+            let l1 = (Fixed::<10>).prepare(x)?;
+            let l2 = (PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1))).prepare(y)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for MsgFmt {
         type PT = Msg;
 
@@ -1307,6 +1332,17 @@ mod exec_impls {
             Const(Fixed::<2>, [0x01, 0x02]).serialize(b, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Msg> for MsgFmt {
+        fn prepare(&self, v: &Msg) -> Result<usize, PreSerializeError> {
+            reveal(<MsgFmt as SpecByteLen>::byte_len);
+            let Msg { a, b } = v;
+            let l1 = (Const(U8, 1)).prepare(a)?;
+            let l2 = (Const(Fixed::<2>, [0x01, 0x02])).prepare(b)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            Ok(total_len)
         }
     }
 
@@ -1352,13 +1388,27 @@ mod exec_impls {
         }
     }
 
+    impl<'i> Prepare<TaggedMix<'i>> for TaggedMixFmt {
+        fn prepare(&self, v: &TaggedMix<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TaggedMixFmt as SpecByteLen>::byte_len);
+            let TaggedMix { x, y, z, w } = v;
+            let l1 = (Opt(PrefixTagged(U8, 10, Const10Fmt))).prepare(x)?;
+            let l2 = (Star(PrefixTagged(U8, 11, AFmt))).prepare(y)?;
+            let l3 = (Opt(PrefixTagged(U8, 12, BFmt))).prepare(z)?;
+            let l4 = (Star(PrefixTagged(U8, 13, MsgFmt))).prepare(w)?;
+            let total_len = l1.checked_add(l2).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
+                PreSerializeError::LengthTooLarge,
+            )?;
+            Ok(total_len)
+        }
+    }
+
     impl<'i> Parser<&'i [u8]> for OptmsgFmt {
         type PT = Optmsg;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
-
             reveal(<OptmsgFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -1379,6 +1429,13 @@ mod exec_impls {
             Opt(MsgFmt).serialize(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Optmsg> for OptmsgFmt {
+        fn prepare(&self, v: &Optmsg) -> Result<usize, PreSerializeError> {
+            reveal(<OptmsgFmt as SpecByteLen>::byte_len);
+            (Opt(MsgFmt)).prepare(v)
         }
     }
 
