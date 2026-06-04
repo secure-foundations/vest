@@ -266,7 +266,8 @@ fn bench_serialize_tls_bulk(c: &mut Criterion) {
     group.bench_function("rustls_library", |b| {
         b.iter(|| {
             for msg in &retained_rustls_msgs {
-                let mut buf = Vec::with_capacity(max_msg_size);
+                // let mut buf = Vec::with_capacity(max_msg_size);
+                let mut buf = Vec::new();
                 msg.encode(&mut buf);
                 black_box(buf);
             }
