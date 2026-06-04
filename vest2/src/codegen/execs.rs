@@ -1,139 +1,12 @@
 use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
-    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator,
-    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, Param, ParamDefn,
-    StructCombinator, StructField,
+    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, EnumCombinator,
+    Param, ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
 const SPINOFF_PROVER_THRESHOLD: usize = 16;
-
-// ============================================================
-// Public entry points — one per definition kind
-// ============================================================
-
-impl<'a> Analysis<'a> {
-    fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
-        if param_defns.is_empty() {
-            return;
-        }
-        w.block("proof", |w| {
-            w.line("use_type_invariant(self);");
-        });
-        w.blank_line();
-    }
-
-    fn resolve_dep(&self, name: &str, param_defns: &[ParamDefn]) -> TokenStream {
-        let base = name.split('.').next().unwrap();
-        let is_param = param_defns.iter().any(|p| match p {
-            ParamDefn::Dependent { name: p_name, .. } => p_name == base,
-        });
-        let path = name.replace('.', ".");
-        if is_param {
-            let ts: TokenStream = format!("self.{}", path).parse().unwrap();
-            ts
-        } else {
-            let ts: TokenStream = path.parse().unwrap();
-            ts
-        }
-    }
-
-    /// Top-level dispatcher. Called once per non-endian definition.
-    pub(crate) fn gen_execs_section(
-        &self,
-        name: &str,
-        combinator: &Combinator,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        self.gen_parser_serializer_prepare(
-            name,
-            param_defns,
-            |w| {
-                self.emit_combinator_parser_body(w, combinator, param_defns);
-            },
-            |w| {
-                self.emit_combinator_serializer_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_combinator_prepare_body(w, name, combinator, param_defns);
-            },
-            false,
-            false,
-        )
-    }
-
-    pub(crate) fn gen_struct_execs_section(
-        &self,
-        name: &str,
-        combinator: &StructCombinator,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        let use_spinoff = combinator.0.len() > SPINOFF_PROVER_THRESHOLD;
-        self.gen_parser_serializer_prepare(
-            name,
-            param_defns,
-            |w| {
-                self.emit_struct_parser_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_struct_serializer_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_struct_prepare_body(w, name, combinator, param_defns);
-            },
-            use_spinoff,
-            true,
-        )
-    }
-
-    pub(crate) fn gen_choice_execs_section(
-        &self,
-        name: &str,
-        combinator: &ChoiceCombinator,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        let use_spinoff = self.choice_branch_count(&combinator.choices) > SPINOFF_PROVER_THRESHOLD;
-        self.gen_parser_serializer_prepare(
-            name,
-            param_defns,
-            |w| {
-                self.emit_choice_parser_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_choice_serializer_body(w, name, combinator, param_defns);
-            },
-            |w| {
-                self.emit_choice_prepare_body(w, name, combinator, param_defns);
-            },
-            use_spinoff,
-            false,
-        )
-    }
-
-    pub(crate) fn gen_enum_execs_section(
-        &self,
-        name: &str,
-        combinator: &EnumCombinator,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        self.gen_parser_serializer_prepare(
-            name,
-            param_defns,
-            |w| {
-                self.emit_enum_parser_body(w, name, combinator);
-            },
-            |w| {
-                self.emit_enum_serializer_body(w, name, combinator);
-            },
-            |w| {
-                self.emit_enum_prepare_body(w, name, combinator);
-            },
-            false,
-            false,
-        )
-    }
-}
 
 // ============================================================
 // Shared scaffolding — emit the three impl blocks
@@ -256,6 +129,127 @@ impl<'a> Analysis<'a> {
             Choices::Arrays(branches) => branches.len(),
         }
     }
+
+    fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
+        if param_defns.is_empty() {
+            return;
+        }
+        w.block("proof", |w| {
+            w.line("use_type_invariant(self);");
+        });
+        w.blank_line();
+    }
+
+    fn resolve_dep(&self, name: &str, param_defns: &[ParamDefn]) -> TokenStream {
+        let base = name.split('.').next().unwrap();
+        let is_param = param_defns.iter().any(|p| match p {
+            ParamDefn::Dependent { name: p_name, .. } => p_name == base,
+        });
+        let path = name.replace('.', ".");
+        if is_param {
+            let ts: TokenStream = format!("self.{}", path).parse().unwrap();
+            ts
+        } else {
+            let ts: TokenStream = path.parse().unwrap();
+            ts
+        }
+    }
+}
+
+impl<'a> Analysis<'a> {
+    pub(crate) fn gen_combinator_execs_section(
+        &self,
+        name: &str,
+        combinator: &Combinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_parser_serializer_prepare(
+            name,
+            param_defns,
+            |w| {
+                self.emit_combinator_parser_body(w, combinator, param_defns);
+            },
+            |w| {
+                self.emit_combinator_serializer_body(w, combinator, param_defns);
+            },
+            |w| {
+                self.emit_combinator_prepare_body(w, combinator, param_defns);
+            },
+            false,
+            false,
+        )
+    }
+
+    pub(crate) fn gen_struct_execs_section(
+        &self,
+        name: &str,
+        combinator: &StructCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let use_spinoff = combinator.0.len() > SPINOFF_PROVER_THRESHOLD;
+        self.gen_parser_serializer_prepare(
+            name,
+            param_defns,
+            |w| {
+                self.emit_struct_parser_body(w, name, combinator, param_defns);
+            },
+            |w| {
+                self.emit_struct_serializer_body(w, name, combinator, param_defns);
+            },
+            |w| {
+                self.emit_struct_prepare_body(w, name, combinator, param_defns);
+            },
+            use_spinoff,
+            true,
+        )
+    }
+
+    pub(crate) fn gen_choice_execs_section(
+        &self,
+        name: &str,
+        combinator: &ChoiceCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let use_spinoff = self.choice_branch_count(&combinator.choices) > SPINOFF_PROVER_THRESHOLD;
+        self.gen_parser_serializer_prepare(
+            name,
+            param_defns,
+            |w| {
+                self.emit_choice_parser_body(w, name, combinator, param_defns);
+            },
+            |w| {
+                self.emit_choice_serializer_body(w, name, combinator, param_defns);
+            },
+            |w| {
+                self.emit_choice_prepare_body(w, name, combinator, param_defns);
+            },
+            use_spinoff,
+            false,
+        )
+    }
+
+    pub(crate) fn gen_enum_execs_section(
+        &self,
+        name: &str,
+        combinator: &EnumCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_parser_serializer_prepare(
+            name,
+            param_defns,
+            |w| {
+                self.emit_enum_parser_body(w, name, combinator);
+            },
+            |w| {
+                self.emit_enum_serializer_body(w, name, combinator);
+            },
+            |w| {
+                self.emit_enum_prepare_body(w, name, combinator);
+            },
+            false,
+            false,
+        )
+    }
 }
 
 // ============================================================
@@ -332,19 +326,7 @@ impl<'a> Analysis<'a> {
         };
         w.line(format!("let total_n = {};", total_n_expr));
 
-        // Collect all field names for struct init
-        let struct_field_names: Vec<String> = fields
-            .iter()
-            .map(|f| {
-                let label = match f {
-                    StructField::Const { label, .. }
-                    | StructField::Dependent { label, .. }
-                    | StructField::Ordinary { label, .. } => label,
-                };
-                label.to_string()
-            })
-            .collect();
-
+        let struct_field_names = struct_field_name_strings(fields);
         w.record_constructor_stmt("final_v", &exec_ident.to_string(), &struct_field_names);
         w.line("assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));");
         w.line("Ok((total_n, final_v))");
@@ -361,17 +343,7 @@ impl<'a> Analysis<'a> {
         let fields = &comb.0;
 
         // Destructure the value
-        let struct_field_names: Vec<String> = fields
-            .iter()
-            .map(|f| {
-                let label = match f {
-                    StructField::Const { label, .. }
-                    | StructField::Dependent { label, .. }
-                    | StructField::Ordinary { label, .. } => label,
-                };
-                label.to_string()
-            })
-            .collect();
+        let struct_field_names = struct_field_name_strings(fields);
         w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
 
         for field in fields {
@@ -419,17 +391,7 @@ impl<'a> Analysis<'a> {
         let fields = &comb.0;
 
         // Destructure the value
-        let struct_field_names: Vec<String> = fields
-            .iter()
-            .map(|f| {
-                let label = match f {
-                    StructField::Const { label, .. }
-                    | StructField::Dependent { label, .. }
-                    | StructField::Ordinary { label, .. } => label,
-                };
-                label.to_string()
-            })
-            .collect();
+        let struct_field_names = struct_field_name_strings(fields);
         w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
 
         let mut l_vars: Vec<String> = Vec::new();
@@ -487,8 +449,6 @@ impl<'a> Analysis<'a> {
                     w.push_multiline(render_ts(arm));
                 }
             });
-            w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
-            w.line("Ok((n, v))");
         } else {
             // Non-dependent choice: delegate to the spec fmt combinator
             let branches: TokenStream =
@@ -500,9 +460,9 @@ impl<'a> Analysis<'a> {
                 &[] as &[&str],
                 Some("?;"),
             );
-            w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
-            w.line("Ok((n, v))");
         }
+        w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
+        w.line("Ok((n, v))");
     }
 
     fn choice_parser_arms(
@@ -651,56 +611,36 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) -> TokenStream {
         // For non-dependent choices we try each branch in order
-        match &comb.choices {
-            Choices::Enums(_) | Choices::Ints(_) | Choices::Arrays(_) => {
-                let branches_iter: Vec<(&Combinator, &String)> = match &comb.choices {
-                    Choices::Enums(b) => b
-                        .iter()
-                        .map(|(_, c)| c)
-                        .zip(variant_names.iter())
-                        .map(|(c, vn)| (c, vn))
-                        .collect(),
-                    Choices::Ints(b) => b
-                        .iter()
-                        .map(|(_, c)| c)
-                        .zip(variant_names.iter())
-                        .map(|(c, vn)| (c, vn))
-                        .collect(),
-                    Choices::Arrays(b) => b
-                        .iter()
-                        .map(|(_, c)| c)
-                        .zip(variant_names.iter())
-                        .map(|(c, vn)| (c, vn))
-                        .collect(),
-                };
-                let mut chain = quote! { Err(ParseError::invalid_tag()) };
-                for (combinator, variant_name) in branches_iter.into_iter().rev() {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr =
-                        self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
-                    if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
-                        chain = quote! {
-                            match (#fmt_expr).parse(&rest) {
-                                Ok((n, va)) if #pred => {
-                                    Ok((n, #exec_ident::#variant_ident(va)))
-                                },
-                                _ => #chain,
-                            }
-                        };
-                    } else {
-                        chain = quote! {
-                            match (#fmt_expr).parse(&rest) {
-                                Ok((n, va)) => {
-                                    Ok((n, #exec_ident::#variant_ident(va)))
-                                },
-                                _ => #chain,
-                            }
-                        };
+        let mut chain = quote! { Err(ParseError::invalid_tag()) };
+        for (combinator, variant_name) in self
+            .choice_combinators_and_names(comb, variant_names)
+            .into_iter()
+            .rev()
+        {
+            let variant_ident = format_ident!("{}", variant_name);
+            let fmt_expr =
+                self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+            if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
+                chain = quote! {
+                    match (#fmt_expr).parse(&rest) {
+                        Ok((n, va)) if #pred => {
+                            Ok((n, #exec_ident::#variant_ident(va)))
+                        },
+                        _ => #chain,
                     }
-                }
-                chain
+                };
+            } else {
+                chain = quote! {
+                    match (#fmt_expr).parse(&rest) {
+                        Ok((n, va)) => {
+                            Ok((n, #exec_ident::#variant_ident(va)))
+                        },
+                        _ => #chain,
+                    }
+                };
             }
         }
+        chain
     }
 
     fn emit_choice_serializer_body(
@@ -731,34 +671,14 @@ impl<'a> Analysis<'a> {
             return;
         }
 
-        let branches: Vec<(&Combinator, &String)> = match &comb.choices {
-            Choices::Enums(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-            Choices::Ints(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-            Choices::Arrays(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-        };
-
-        let arms: Vec<TokenStream> = branches
-            .iter()
+        let arms: Vec<TokenStream> = self
+            .choice_combinators_and_names(comb, &variant_names)
+            .into_iter()
             .map(|(combinator, variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
                 let fmt_expr =
                     self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
+                let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
                 quote! {
                     #exec_ident::#variant_ident(v) => { #ser }
                 }
@@ -790,7 +710,7 @@ impl<'a> Analysis<'a> {
                         let variant_ident = format_ident!("{}", variant_name);
                         let fmt_expr =
                             self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                        let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
+                        let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
                         if pat == "_" {
                             quote! {
                                 (_, #exec_ident::#variant_ident(v)) => { #ser }
@@ -811,7 +731,7 @@ impl<'a> Analysis<'a> {
                 .map(|((pat, combinator), variant_name)| {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
+                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
                     match pat {
                         None => {
                             quote! {
@@ -851,7 +771,7 @@ impl<'a> Analysis<'a> {
                 .map(|((pat, combinator), variant_name)| {
                     let variant_ident = format_ident!("{}", variant_name);
                     let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr, combinator);
+                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
                     match pat {
                         ConstArray::Wildcard => {
                             quote! {
@@ -898,29 +818,9 @@ impl<'a> Analysis<'a> {
             return;
         }
 
-        let branches: Vec<(&Combinator, &String)> = match &comb.choices {
-            Choices::Enums(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-            Choices::Ints(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-            Choices::Arrays(b) => b
-                .iter()
-                .map(|(_, c)| c)
-                .zip(variant_names.iter())
-                .map(|(c, vn)| (c, vn))
-                .collect(),
-        };
-
-        let arms: Vec<TokenStream> = branches
-            .iter()
+        let arms: Vec<TokenStream> = self
+            .choice_combinators_and_names(comb, &variant_names)
+            .into_iter()
             .map(|(combinator, variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
                 let fmt_expr =
@@ -966,6 +866,7 @@ impl<'a> Analysis<'a> {
                             CodegenMode::Serialize,
                         );
                         let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+
                         if pat == "_" {
                             let mut arms = Vec::new();
                             if let (Some(enum_ty), Some(enum_comb)) = (enum_ty.clone(), enum_comb) {
@@ -1194,12 +1095,7 @@ impl<'a> Analysis<'a> {
 impl<'a> Analysis<'a> {
     fn emit_enum_parser_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let (variants, exhaustive, inferred) = match comb {
-            EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
-            EnumCombinator::NonExhaustive { enums, inferred } => {
-                (enums.as_slice(), false, inferred)
-            }
-        };
+        let (variants, exhaustive, inferred) = enum_parts(comb);
         let prim_expr = self.int_combinator_expr(inferred);
 
         w.call_chain_stmt(
@@ -1240,12 +1136,7 @@ impl<'a> Analysis<'a> {
 
     fn emit_enum_serializer_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let (variants, exhaustive, inferred) = match comb {
-            EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
-            EnumCombinator::NonExhaustive { enums, inferred } => {
-                (enums.as_slice(), false, inferred)
-            }
-        };
+        let (variants, exhaustive, inferred) = enum_parts(comb);
         let prim_expr = self.int_combinator_expr(inferred);
 
         let known_arms: Vec<TokenStream> = variants
@@ -1283,12 +1174,7 @@ impl<'a> Analysis<'a> {
 
     fn emit_enum_prepare_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let (variants, exhaustive, inferred) = match comb {
-            EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
-            EnumCombinator::NonExhaustive { enums, inferred } => {
-                (enums.as_slice(), false, inferred)
-            }
-        };
+        let (variants, exhaustive, inferred) = enum_parts(comb);
         let prim_expr = self.int_combinator_expr(inferred);
 
         let known_arms: Vec<TokenStream> = variants
@@ -1373,7 +1259,6 @@ impl<'a> Analysis<'a> {
     fn emit_combinator_serializer_body(
         &self,
         w: &mut CodeWriter,
-        name: &str,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) {
@@ -1391,7 +1276,6 @@ impl<'a> Analysis<'a> {
         }
         let fmt_expr =
             self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-        let _ = name;
         w.call_chain_stmt(
             None,
             &render_ts(quote! { #fmt_expr }),
@@ -1404,7 +1288,6 @@ impl<'a> Analysis<'a> {
     fn emit_combinator_prepare_body(
         &self,
         w: &mut CodeWriter,
-        name: &str,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) {
@@ -1422,7 +1305,6 @@ impl<'a> Analysis<'a> {
         }
         let fmt_expr =
             self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-        let _ = name;
         let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
         w.line(render_ts(prep));
     }
@@ -1432,6 +1314,7 @@ impl<'a> Analysis<'a> {
 // Format expression builders (exec mode)
 // ============================================================
 
+/// Whether we are generating code for the parsing or serializing direction.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CodegenMode {
     Parse,
@@ -1439,6 +1322,18 @@ pub(crate) enum CodegenMode {
 }
 
 impl<'a> Analysis<'a> {
+    fn choice_combinators_and_names<'b>(
+        &self,
+        comb: &'b ChoiceCombinator,
+        variant_names: &'b [String],
+    ) -> Vec<(&'b Combinator, &'b String)> {
+        match &comb.choices {
+            Choices::Enums(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
+            Choices::Ints(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
+            Choices::Arrays(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
+        }
+    }
+
     /// Build the exec-mode combinator expression for a `Combinator`.
     pub(crate) fn exec_combinator_fmt_expr(
         &self,
@@ -1457,8 +1352,10 @@ impl<'a> Analysis<'a> {
         }
 
         match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(c) => self.exec_constraint_int_fmt(c),
-            Combinator::ConstraintEnum(c) => self.exec_constraint_enum_fmt(c, param_defns, mode),
+            Combinator::ConstraintInt(c) => self.int_combinator_expr(&c.combinator),
+            Combinator::ConstraintEnum(c) => {
+                self.exec_invocation_fmt_expr(&c.combinator, param_defns, mode)
+            }
             Combinator::Wrap(wrap) => {
                 let mut body_expr =
                     self.exec_combinator_fmt_expr(&wrap.combinator, param_defns, mode);
@@ -1584,19 +1481,6 @@ impl<'a> Analysis<'a> {
             })
             .collect();
         quote! { #fmt_ident { #(#field_inits),* } }
-    }
-
-    fn exec_constraint_int_fmt(&self, c: &ConstraintIntCombinator) -> TokenStream {
-        self.int_combinator_expr(&c.combinator)
-    }
-
-    fn exec_constraint_enum_fmt(
-        &self,
-        c: &ConstraintEnumCombinator,
-        param_defns: &[ParamDefn],
-        mode: CodegenMode,
-    ) -> TokenStream {
-        self.exec_invocation_fmt_expr(&c.combinator, param_defns, mode)
     }
 
     /// Build the exec format expression for a ConstCombinator.
@@ -1795,13 +1679,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn exec_serialize_value(
-        &self,
-        value_expr: TokenStream,
-        fmt_expr: TokenStream,
-        combinator: &Combinator,
-    ) -> TokenStream {
-        let _ = combinator;
+    fn exec_serialize_value(&self, value_expr: TokenStream, fmt_expr: TokenStream) -> TokenStream {
         quote! { (#fmt_expr).serialize(#value_expr, obuf); }
     }
 
@@ -1969,5 +1847,28 @@ impl<'a> Analysis<'a> {
             }
             _ => None,
         }
+    }
+}
+
+fn struct_field_name_strings(fields: &[StructField]) -> Vec<String> {
+    fields
+        .iter()
+        .map(|f| {
+            let label = match f {
+                StructField::Const { label, .. }
+                | StructField::Dependent { label, .. }
+                | StructField::Ordinary { label, .. } => label,
+            };
+            label.to_string()
+        })
+        .collect()
+}
+
+fn enum_parts(
+    comb: &EnumCombinator,
+) -> (&[crate::vestir::Enum], bool, &crate::vestir::IntCombinator) {
+    match comb {
+        EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
+        EnumCombinator::NonExhaustive { enums, inferred } => (enums.as_slice(), false, inferred),
     }
 }

@@ -208,7 +208,7 @@ impl<'a> Analysis<'a> {
                 name,
                 combinator,
                 param_defns,
-            } => self.gen_execs_section(name, combinator, param_defns),
+            } => self.gen_combinator_execs_section(name, combinator, param_defns),
             Definition::StructDef {
                 name,
                 combinator,
