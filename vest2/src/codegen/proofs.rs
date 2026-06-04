@@ -1,4 +1,5 @@
-use super::common::{render_ts, Analysis};
+use super::common::Analysis;
+use super::writer::render_ts;
 use crate::vestir::ParamDefn;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -12,11 +13,7 @@ impl<'a> Analysis<'a> {
         self.gen_proofs_section_impl(name, param_defns)
     }
 
-    pub(crate) fn gen_proofs_section(
-        &self,
-        name: &str,
-        param_defns: &[ParamDefn],
-    ) -> String {
+    pub(crate) fn gen_proofs_section(&self, name: &str, param_defns: &[ParamDefn]) -> String {
         self.gen_proofs_section_impl(name, param_defns)
     }
 

@@ -1,6 +1,5 @@
-use super::common::{
-    int_literal, render_ts, type_needs_exec_lifetime, Analysis, CodeWriter, TypeMode,
-};
+use super::common::{int_literal, type_needs_exec_lifetime, Analysis, TypeMode};
+use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
     ChoiceCombinator, Combinator, ConstCombinator, EnumCombinator, StructCombinator, StructField,
 };
