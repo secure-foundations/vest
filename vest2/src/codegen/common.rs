@@ -1,8 +1,8 @@
 use crate::vestir::{
     self, ArrayCombinator, ChoiceCombinator, ChoicePattern, Combinator, CombinatorInvocation,
     ConstArray, ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition,
-    Endianess, GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
-    TailCombinator, VecCombinator, WrapCombinator,
+    Endianess, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator, ParamDefn, StructCombinator,
+    StructField, TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
@@ -129,20 +129,13 @@ impl<'a> Analysis<'a> {
     }
 
     pub(crate) fn render_value_type(&self, combinator: &Combinator, mode: TypeMode) -> TokenStream {
-        match combinator {
-            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode),
-            _ => self.render_inner_type(combinator, mode),
-        }
-    }
-
-    pub(crate) fn render_inner_type(&self, inner: &Combinator, mode: TypeMode) -> TokenStream {
-        if let Combinator::Invocation(invocation) = inner {
+        if let Combinator::Invocation(invocation) = combinator {
             return self.invocation_value_type(invocation, mode);
         }
 
-        match self.ctx.resolve_alias(inner) {
+        match self.ctx.resolve_alias(combinator) {
             Combinator::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
-                self.int_type(combinator, mode)
+                self.int_type(combinator)
             }
             Combinator::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
                 self.invocation_value_type(combinator, mode)
@@ -259,18 +252,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn int_type(
-        &self,
-        combinator: &vestir::IntCombinator,
-        mode: TypeMode,
-    ) -> TokenStream {
-        match mode {
-            TypeMode::Exec => self.int_exec_type(combinator),
-            TypeMode::Spec => self.int_spec_type(combinator),
-        }
-    }
-
-    pub(crate) fn int_exec_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
+    pub(crate) fn int_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
         match combinator {
             vestir::IntCombinator::Signed(bits) => {
                 let ident = format_ident!("i{}", bits);
@@ -286,8 +268,60 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn int_spec_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
-        self.int_exec_type(combinator)
+    pub(crate) fn int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
+        match combinator {
+            IntCombinator::Unsigned(8) => quote! { U8 },
+            IntCombinator::Unsigned(16) => match self.endianness {
+                vestir::Endianess::Little => quote! { U16Le },
+                vestir::Endianess::Big => quote! { U16Be },
+            },
+            IntCombinator::Unsigned(24) => match self.endianness {
+                vestir::Endianess::Little => quote! { U24Le },
+                vestir::Endianess::Big => quote! { U24Be },
+            },
+            IntCombinator::Unsigned(32) => match self.endianness {
+                vestir::Endianess::Little => quote! { U32Le },
+                vestir::Endianess::Big => quote! { U32Be },
+            },
+            IntCombinator::Unsigned(64) => match self.endianness {
+                vestir::Endianess::Little => quote! { U64Le },
+                vestir::Endianess::Big => quote! { U64Be },
+            },
+            IntCombinator::BtcVarint => quote! { VarInt<true> },
+            IntCombinator::ULEB128 => quote! { ULeb128<true, 10> },
+            other => panic!(
+                "unsupported integer combinator in spec emitter: {:?}",
+                other
+            ),
+        }
+    }
+
+    pub(crate) fn int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
+        match combinator {
+            IntCombinator::Unsigned(8) => quote! { U8 },
+            IntCombinator::Unsigned(16) => match self.endianness {
+                vestir::Endianess::Little => quote! { U16Le },
+                vestir::Endianess::Big => quote! { U16Be },
+            },
+            IntCombinator::Unsigned(24) => match self.endianness {
+                vestir::Endianess::Little => quote! { U24Le },
+                vestir::Endianess::Big => quote! { U24Be },
+            },
+            IntCombinator::Unsigned(32) => match self.endianness {
+                vestir::Endianess::Little => quote! { U32Le },
+                vestir::Endianess::Big => quote! { U32Be },
+            },
+            IntCombinator::Unsigned(64) => match self.endianness {
+                vestir::Endianess::Little => quote! { U64Le },
+                vestir::Endianess::Big => quote! { U64Be },
+            },
+            IntCombinator::BtcVarint => quote! { VarInt::<true> },
+            IntCombinator::ULEB128 => quote! { ULeb128::<true, 10> },
+            other => panic!(
+                "unsupported integer combinator in spec emitter: {:?}",
+                other
+            ),
+        }
     }
 
     pub(crate) fn render_const_value_type(
@@ -303,7 +337,7 @@ impl<'a> Analysis<'a> {
                 }
                 TypeMode::Spec => quote! { Seq<u8> },
             },
-            ConstCombinator::ConstInt(int_comb) => self.int_type(&int_comb.combinator, mode),
+            ConstCombinator::ConstInt(int_comb) => self.int_type(&int_comb.combinator),
             ConstCombinator::ConstEnum(enum_comb) => {
                 self.nominal_type(&enum_comb.combinator.func, mode)
             }

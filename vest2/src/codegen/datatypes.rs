@@ -244,8 +244,8 @@ impl<'a> Analysis<'a> {
             EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
             EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
         };
-        let repr_ty = self.int_exec_type(inferred);
-        let int_spec_ty = self.int_spec_type(inferred);
+        let repr_ty = self.int_type(inferred);
+        let int_spec_ty = self.int_type(inferred);
         let inner_ty = if exhaustive {
             int_spec_ty.clone()
         } else {

@@ -325,7 +325,7 @@ impl<'a> Analysis<'a> {
     fn render_and_then_spec(&self, lhs: &Combinator, rhs: &Combinator) -> RenderedSpec {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
-                let len_ty = self.int_type(&bytes.len.ty, TypeMode::Spec);
+                let len_ty = self.int_type(&bytes.len.ty);
                 let len_expr = self.render_length_expr_with(
                     &bytes.len,
                     &|name| path_tokens(name),
@@ -386,7 +386,7 @@ impl<'a> Analysis<'a> {
     fn render_constraint_int(&self, c: &ConstraintIntCombinator) -> RenderedSpec {
         let prim_ty = self.int_combinator_ty(&c.combinator);
         let prim_expr = self.int_combinator_expr(&c.combinator);
-        let value_ty = self.int_type(&c.combinator, TypeMode::Spec);
+        let value_ty = self.int_type(&c.combinator);
         match &c.constraint {
             None => RenderedSpec {
                 ty: prim_ty,
@@ -432,7 +432,7 @@ impl<'a> Analysis<'a> {
                 RenderedSpec::new(quote! { Fixed<#n> }, quote! { Fixed::<#n> }, value_ty, true)
             }
             None => {
-                let len_ty = self.int_type(&bytes.len.ty, TypeMode::Spec);
+                let len_ty = self.int_type(&bytes.len.ty);
                 let len = self.render_length_expr_with(
                     &bytes.len,
                     &|name| path_tokens(name),
@@ -483,7 +483,7 @@ impl<'a> Analysis<'a> {
                 )
             }
             None => {
-                let len_ty = self.int_type(&array_comb.len.ty, TypeMode::Spec);
+                let len_ty = self.int_type(&array_comb.len.ty);
                 let len = self.render_length_expr_with(
                     &array_comb.len,
                     &|name| path_tokens(name),
@@ -678,7 +678,7 @@ impl<'a> Analysis<'a> {
             ConstCombinator::ConstInt(int_comb) => {
                 let prim_ty = self.int_combinator_ty(&int_comb.combinator);
                 let prim_expr = self.int_combinator_expr(&int_comb.combinator);
-                let value_ty = self.int_type(&int_comb.combinator, TypeMode::Spec);
+                let value_ty = self.int_type(&int_comb.combinator);
                 let value_expr = int_literal(int_comb.value, &int_comb.combinator);
                 ConstRendered {
                     ty: prim_ty,
@@ -998,7 +998,7 @@ impl<'a> Analysis<'a> {
         };
         let prim_ty = self.int_combinator_ty(inferred);
         let prim_expr = self.int_combinator_expr(inferred);
-        let int_spec_ty = self.int_spec_type(inferred);
+        let int_spec_ty = self.int_type(inferred);
         let eq_terms = variants
             .iter()
             .map(|variant| {
@@ -1124,7 +1124,7 @@ impl<'a> Analysis<'a> {
             ConstCombinator::ConstInt(int_comb) => {
                 let prim_ty = self.int_combinator_ty(&int_comb.combinator);
                 let prim_expr = self.int_combinator_expr(&int_comb.combinator);
-                let value_ty = self.int_type(&int_comb.combinator, TypeMode::Spec);
+                let value_ty = self.int_type(&int_comb.combinator);
                 let value_expr = int_literal(int_comb.value, &int_comb.combinator);
                 ConstRendered {
                     ty: quote! { Const<#prim_ty, #value_ty> },
@@ -1301,62 +1301,6 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
-        match combinator {
-            IntCombinator::Unsigned(8) => quote! { U8 },
-            IntCombinator::Unsigned(16) => match self.endianness {
-                vestir::Endianess::Little => quote! { U16Le },
-                vestir::Endianess::Big => quote! { U16Be },
-            },
-            IntCombinator::Unsigned(24) => match self.endianness {
-                vestir::Endianess::Little => quote! { U24Le },
-                vestir::Endianess::Big => quote! { U24Be },
-            },
-            IntCombinator::Unsigned(32) => match self.endianness {
-                vestir::Endianess::Little => quote! { U32Le },
-                vestir::Endianess::Big => quote! { U32Be },
-            },
-            IntCombinator::Unsigned(64) => match self.endianness {
-                vestir::Endianess::Little => quote! { U64Le },
-                vestir::Endianess::Big => quote! { U64Be },
-            },
-            IntCombinator::BtcVarint => quote! { VarInt<true> },
-            IntCombinator::ULEB128 => quote! { ULeb128<true, 10> },
-            other => panic!(
-                "unsupported integer combinator in spec emitter: {:?}",
-                other
-            ),
-        }
-    }
-
-    pub(crate) fn int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
-        match combinator {
-            IntCombinator::Unsigned(8) => quote! { U8 },
-            IntCombinator::Unsigned(16) => match self.endianness {
-                vestir::Endianess::Little => quote! { U16Le },
-                vestir::Endianess::Big => quote! { U16Be },
-            },
-            IntCombinator::Unsigned(24) => match self.endianness {
-                vestir::Endianess::Little => quote! { U24Le },
-                vestir::Endianess::Big => quote! { U24Be },
-            },
-            IntCombinator::Unsigned(32) => match self.endianness {
-                vestir::Endianess::Little => quote! { U32Le },
-                vestir::Endianess::Big => quote! { U32Be },
-            },
-            IntCombinator::Unsigned(64) => match self.endianness {
-                vestir::Endianess::Little => quote! { U64Le },
-                vestir::Endianess::Big => quote! { U64Be },
-            },
-            IntCombinator::BtcVarint => quote! { VarInt::<true> },
-            IntCombinator::ULEB128 => quote! { ULeb128::<true, 10> },
-            other => panic!(
-                "unsupported integer combinator in spec emitter: {:?}",
-                other
-            ),
-        }
-    }
-
     fn render_enum_pattern_type(
         &self,
         variant_name: &str,
@@ -1417,7 +1361,7 @@ impl<'a> Analysis<'a> {
             .map(|param| match param {
                 ParamDefn::Dependent { name, combinator } => {
                     let ident = format_ident!("{}", name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Spec);
+                    let ty = self.render_value_type(combinator, TypeMode::Spec);
                     quote! { #ident: #ty }
                 }
             })
@@ -1441,7 +1385,7 @@ impl<'a> Analysis<'a> {
             .map(|param| match param {
                 ParamDefn::Dependent { name, combinator } => {
                     let field_ident = FormatNames::wrapper_field_ident(name);
-                    let ty = self.render_inner_type(combinator, TypeMode::Exec);
+                    let ty = self.render_value_type(combinator, TypeMode::Exec);
                     quote! { #field_ident: #ty }
                 }
             })
@@ -1452,7 +1396,7 @@ impl<'a> Analysis<'a> {
                 ParamDefn::Dependent { name, combinator } => {
                     let field_ident = FormatNames::wrapper_field_ident(name);
                     let accessor_ident = FormatNames::wrapper_accessor_ident(name);
-                    let spec_ty = self.render_inner_type(combinator, TypeMode::Spec);
+                    let spec_ty = self.render_value_type(combinator, TypeMode::Spec);
                     quote! {
                         pub closed spec fn #accessor_ident(&self) -> #spec_ty {
                             self.#field_ident.deep_view()
@@ -1507,7 +1451,7 @@ impl<'a> Analysis<'a> {
                 .map(|param| match param {
                     ParamDefn::Dependent { name, combinator } => {
                         let ident = format_ident!("{}", name);
-                        let ty = self.render_inner_type(combinator, TypeMode::Exec);
+                        let ty = self.render_value_type(combinator, TypeMode::Exec);
                         quote! { #ident: #ty }
                     }
                 })
