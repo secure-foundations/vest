@@ -293,22 +293,22 @@ impl<'i> Serializer<BtcTx<'i>> for TxSegwitFmt {
     }
 }
 
-impl<'i> Prepare<&'i BtcTx<'i>> for TxSegwitFmt {
-    fn prepare(&self, v: &'i BtcTx<'i>) -> Result<usize, PreSerializeError> {
+impl<'i> Prepare<BtcTx<'i>> for TxSegwitFmt {
+    fn prepare(&self, v: &BtcTx<'i>) -> Result<usize, PreSerializeError> {
         reveal(<TxSegwitFmt as Consistency>::consistent);
         reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
 
         let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
-        let l1 = U8.prepare(1u8)?;
-        let l2 = U8.prepare(*txin_cnt)?;
-        let l3 = Varied(*txin_cnt).prepare(txin)?;
-        let l4 = U8.prepare(*txout_cnt)?;
+        let l1 = U8.prepare(&1u8)?;
+        let l2 = U8.prepare(txin_cnt)?;
+        let l3 = Varied(txin_cnt).prepare(txin)?;
+        let l4 = U8.prepare(txout_cnt)?;
         if txout_cnt != txin_cnt {
             return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
         }
-        let l5 = RepeatN(*txout_cnt, U16Le).prepare(txout)?;
-        let l6 = RepeatN(*txin_cnt, U16Le).prepare(witness)?;
-        let l7 = U8.prepare(*locktime)?;
+        let l5 = RepeatN(txout_cnt, U16Le).prepare(txout)?;
+        let l6 = RepeatN(txin_cnt, U16Le).prepare(witness)?;
+        let l7 = U8.prepare(locktime)?;
         let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
             l3,
         ).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
@@ -573,8 +573,8 @@ impl<'i> Serializer<MsgTy> for MsgTyFmt {
     }
 }
 
-impl<'i> Prepare<&'i MsgTy> for MsgTyFmt {
-    fn prepare(&self, v: &'i MsgTy) -> Result<usize, PreSerializeError> {
+impl Prepare<MsgTy> for MsgTyFmt {
+    fn prepare(&self, v: &MsgTy) -> Result<usize, PreSerializeError> {
         reveal(<MsgTyFmt as Consistency>::consistent);
         reveal(<MsgTyFmt as SpecByteLen>::byte_len);
         let tag = match v {
@@ -583,7 +583,7 @@ impl<'i> Prepare<&'i MsgTy> for MsgTyFmt {
             MsgTy::TYPE3 => 3u8,
             MsgTy::TYPE4 => 4u8,
         };
-        U8.prepare(tag)
+        U8.prepare(&tag)
     }
 }
 
@@ -1034,8 +1034,8 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
     }
 }
 
-impl<'i> Prepare<&'i TLVMsg<'i>> for TLVFmt {
-    fn prepare(&self, v: &'i TLVMsg<'i>) -> Result<usize, PreSerializeError> {
+impl<'i> Prepare<TLVMsg<'i>> for TLVFmt {
+    fn prepare(&self, v: &TLVMsg<'i>) -> Result<usize, PreSerializeError> {
         reveal(<TLVFmt as Consistency>::consistent);
         reveal(<TLVFmt as SpecByteLen>::byte_len);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
@@ -1051,7 +1051,7 @@ impl<'i> Prepare<&'i TLVMsg<'i>> for TLVFmt {
         if l3 > u8::MAX as usize {
             return Err(PreSerializeError::LengthTooLarge);
         }
-        let l2 = U8.prepare(l3 as u8)?;
+        let l2 = U8.prepare(&(l3 as u8))?;
         let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
             l3,
         ).ok_or(PreSerializeError::LengthTooLarge)?;
@@ -1109,13 +1109,13 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
     }
 }
 
-impl<'i> Prepare<&'i TLVMsg<'i>> for TLVPayloadFmt {
-    fn prepare(&self, v: &'i TLVMsg<'i>) -> Result<usize, PreSerializeError> {
+impl<'i> Prepare<TLVMsg<'i>> for TLVPayloadFmt {
+    fn prepare(&self, v: &TLVMsg<'i>) -> Result<usize, PreSerializeError> {
         reveal(<TLVPayloadFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
 
         match (self.tag, v) {
-            (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.prepare(*v),
+            (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.prepare(v),
             (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.prepare(v),
             (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.prepare(v),
             (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.prepare(v),

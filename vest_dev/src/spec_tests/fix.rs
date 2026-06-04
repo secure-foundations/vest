@@ -171,7 +171,7 @@ impl SerializerRecBody<NestedBracesT> for NestedBracesBody {
     }
 }
 
-impl<'s> PrepareRecBody<&'s NestedBracesT> for NestedBracesBody {
+impl PrepareRecBody<NestedBracesT> for NestedBracesBody {
     type EP = ();
 
     fn prepare_body<Exec>(
@@ -179,16 +179,16 @@ impl<'s> PrepareRecBody<&'s NestedBracesT> for NestedBracesBody {
         _param: &(),
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &'s NestedBracesT,
+        v: &NestedBracesT,
     ) -> Result<usize, PreSerializeError> where
-        Exec: Fn(&(), &'s NestedBracesT) -> Result<usize, PreSerializeError>,
+        Exec: Fn(&(), &NestedBracesT) -> Result<usize, PreSerializeError>,
      {
         match v {
-            NestedBracesT::Eps => U8.prepare(0x00u8),
+            NestedBracesT::Eps => U8.prepare(&0x00u8),
             NestedBracesT::Brace(inner) => {
-                let l1 = U8.prepare(0x7Bu8)?;
+                let l1 = U8.prepare(&0x7Bu8)?;
                 let l2 = exec_rec(&(), inner)?;
-                let l3 = U8.prepare(0x7Du8)?;
+                let l3 = U8.prepare(&0x7Du8)?;
                 let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
                 let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
                 Ok(sum2)
@@ -389,7 +389,7 @@ impl SerializerRecBody<TaggedChainT> for TaggedChainBody {
     }
 }
 
-impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
+impl PrepareRecBody<TaggedChainT> for TaggedChainBody {
     type EP = u8;
 
     fn prepare_body<Exec>(
@@ -397,14 +397,14 @@ impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
         current_tag: &u8,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &'s TaggedChainT,
+        v: &TaggedChainT,
     ) -> Result<usize, PreSerializeError> where
-        Exec: Fn(&u8, &'s TaggedChainT) -> Result<usize, PreSerializeError>,
+        Exec: Fn(&u8, &TaggedChainT) -> Result<usize, PreSerializeError>,
      {
         match v {
             TaggedChainT::End => {
                 if *current_tag == 0u8 {
-                    U8.prepare(0x00u8)
+                    U8.prepare(&0x00u8)
                 } else {
                     Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected))
                 }
@@ -413,8 +413,8 @@ impl<'s> PrepareRecBody<&'s TaggedChainT> for TaggedChainBody {
                 if *current_tag == 0u8 {
                     return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected));
                 }
-                let l1 = U8.prepare(*current_tag)?;
-                let l2 = U8.prepare(*next_tag)?;
+                let l1 = U8.prepare(current_tag)?;
+                let l2 = U8.prepare(next_tag)?;
                 let l3 = exec_rec(next_tag, tail)?;
                 let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
                 let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
