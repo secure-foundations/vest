@@ -57,26 +57,26 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Pair<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Compliance<(STA, STB)> for super::Pair<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B: Compliance<STB>,
+impl<A, B, TA, TB> Compliance<(TA, TB)> for super::Pair<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Compliance<TA>,
+    B: Compliance<TB>,
  {
-    fn check_compliance(&self, v: (STA, STB)) -> (yes: bool) {
-        self.0.check_compliance(v.0) && self.1.check_compliance(v.1)
+    fn check_compliance(&self, v: &(TA, TB)) -> (yes: bool) {
+        self.0.check_compliance(&v.0) && self.1.check_compliance(&v.1)
     }
 }
 
-impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Pair<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Prepare<STA>,
-    B: Prepare<STB>,
+impl<A, B, TA, TB> Prepare<(TA, TB)> for super::Pair<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Prepare<TA>,
+    B: Prepare<TB>,
  {
-    fn prepare(&self, v: (STA, STB)) -> Result<usize, PreSerializeError> {
-        let la = self.0.prepare(v.0)?;
-        let lb = self.1.prepare(v.1)?;
+    fn prepare(&self, v: &(TA, TB)) -> Result<usize, PreSerializeError> {
+        let la = self.0.prepare(&v.0)?;
+        let lb = self.1.prepare(&v.1)?;
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
@@ -85,15 +85,15 @@ impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Pair<A, B> where
     }
 }
 
-impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Pair<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: ByteLen<STA>,
-    B: ByteLen<STB>,
+impl<A, B, TA, TB> ByteLen<(TA, TB)> for super::Pair<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: ByteLen<TA>,
+    B: ByteLen<TB>,
  {
-    fn length(&self, v: (STA, STB)) -> (len: usize) {
-        let la = self.0.length(v.0);
-        let lb = self.1.length(v.1);
+    fn length(&self, v: &(TA, TB)) -> (len: usize) {
+        let la = self.0.length(&v.0);
+        let lb = self.1.length(&v.1);
         la + lb
     }
 }
@@ -152,9 +152,9 @@ impl<A, B, STA, STB> Compliance<(STA, STB)> for super::Bind<A, B> where
     B::O: Compliance<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
-    fn check_compliance(&self, v: (STA, STB)) -> (yes: bool) {
+    fn check_compliance(&self, v: &(STA, STB)) -> (yes: bool) {
         let next = self.1.map(&v.0);
-        self.0.check_compliance(v.0) && next.check_compliance(v.1)
+        self.0.check_compliance(&v.0) && next.check_compliance(&v.1)
     }
 }
 
@@ -165,10 +165,10 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     B::O: ByteLen<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
-    fn length(&self, v: (STA, STB)) -> (len: usize) {
+    fn length(&self, v: &(STA, STB)) -> (len: usize) {
         let next = self.1.map(&v.0);
-        let la = self.0.length(v.0);
-        let lb = next.length(v.1);
+        let la = self.0.length(&v.0);
+        let lb = next.length(&v.1);
         la + lb
     }
 }
@@ -180,10 +180,10 @@ impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Bind<A, B> where
     B::O: Prepare<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
-    fn prepare(&self, v: (STA, STB)) -> Result<usize, PreSerializeError> {
+    fn prepare(&self, v: &(STA, STB)) -> Result<usize, PreSerializeError> {
         let next = self.1.map(&v.0);
-        let la = self.0.prepare(v.0)?;
-        let lb = next.prepare(v.1)?;
+        let la = self.0.prepare(&v.0)?;
+        let lb = next.prepare(&v.1)?;
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {

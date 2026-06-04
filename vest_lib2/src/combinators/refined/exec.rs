@@ -61,33 +61,33 @@ impl<A, PredFn, T> Serializer<T> for super::Refined<A, PredFn> where
     }
 }
 
-impl<A, PredFn, ST> Compliance<ST> for super::Refined<A, PredFn> where
-    ST: DeepView + Copy,
-    A: Compliance<ST>,
-    PredFn: Pred<ST>,
+impl<A, PredFn, T> Compliance<T> for super::Refined<A, PredFn> where
+    T: DeepView,
+    A: Compliance<T>,
+    PredFn: Pred<T>,
  {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
-        self.0.check_compliance(v) && self.1.test(&v)
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
+        self.0.check_compliance(v) && self.1.test(v)
     }
 }
 
-impl<A, PredFn, ST> ByteLen<ST> for super::Refined<A, PredFn> where
-    ST: DeepView,
-    A: ByteLen<ST>,
-    PredFn: Pred<ST>,
+impl<A, PredFn, T> ByteLen<T> for super::Refined<A, PredFn> where
+    T: DeepView,
+    A: ByteLen<T>,
+    PredFn: Pred<T>,
  {
-    fn length(&self, v: ST) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         self.0.length(v)
     }
 }
 
-impl<A, PredFn, ST> Prepare<ST> for super::Refined<A, PredFn> where
-    ST: DeepView,
-    A: Prepare<ST>,
-    PredFn: Pred<ST>,
+impl<A, PredFn, T> Prepare<T> for super::Refined<A, PredFn> where
+    T: DeepView,
+    A: Prepare<T>,
+    PredFn: Pred<T>,
  {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
-        if self.1.test(&v) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
+        if self.1.test(v) {
             self.0.prepare(v)
         } else {
             Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
@@ -126,30 +126,27 @@ impl<Inner, T> Serializer<T> for super::Const<Inner, T> where
     }
 }
 
-impl<Inner, ST> Compliance<ST> for super::Const<Inner, ST> where
-    ST: SelfView + Copy,
-    Inner: Compliance<ST>,
- {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
+impl<Inner, T> Compliance<T> for super::Const<Inner, T> where T: SelfView, Inner: Compliance<T> {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         proof {
             self.1.self_view();
         }
-        self.0.check_compliance(v) && SelfView::eq(&v, &self.1)
+        self.0.check_compliance(v) && SelfView::eq(v, &self.1)
     }
 }
 
-impl<Inner, V, ST> ByteLen<ST> for super::Const<Inner, V> where
-    ST: DeepView<V = V>,
-    Inner: SpecByteLen<T = V> + ByteLen<ST>,
+impl<Inner, V, T> ByteLen<T> for super::Const<Inner, V> where
+    T: DeepView<V = V>,
+    Inner: SpecByteLen<T = V> + ByteLen<T>,
  {
-    fn length(&self, v: ST) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         self.0.length(v)
     }
 }
 
-impl<Inner, ST> Prepare<ST> for super::Const<Inner, ST> where ST: SelfView, Inner: Prepare<ST> {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
-        if SelfView::eq(&v, &self.1) {
+impl<Inner, T> Prepare<T> for super::Const<Inner, T> where T: SelfView, Inner: Prepare<T> {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
+        if SelfView::eq(v, &self.1) {
             self.0.prepare(v)
         } else {
             Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag))
@@ -164,7 +161,7 @@ impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
 }
 
 impl<const N: usize> Compliance<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn check_compliance(&self, v: [u8; N]) -> (yes: bool) {
+    fn check_compliance(&self, v: &[u8; N]) -> (yes: bool) {
         let v_slice = v.as_slice();
         let tag_slice = self.1.as_slice();
         let eq = cmp_byte_slices(v_slice, tag_slice);
@@ -178,7 +175,7 @@ impl<const N: usize> Compliance<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
 }
 
 impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    fn length(&self, _v: [u8; N]) -> (len: usize) {
+    fn length(&self, _v: &[u8; N]) -> (len: usize) {
         N
     }
 }
@@ -262,13 +259,13 @@ impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> Compliance<ST> for super::PrefixTagged<Tg, Of> where
+impl<Tg, TagVal, Of, T> Compliance<T> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: Compliance<ST>,
+    T: DeepView,
+    Of: Compliance<T>,
  {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
@@ -278,13 +275,13 @@ impl<Tg, TagVal, Of, ST> Compliance<ST> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::PrefixTagged<Tg, Of> where
+impl<Tg, TagVal, Of, T> ByteLen<T> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: ByteLen<ST>,
+    T: DeepView,
+    Of: ByteLen<T>,
  {
-    fn length(&self, v: ST) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
@@ -294,13 +291,13 @@ impl<Tg, TagVal, Of, ST> ByteLen<ST> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, ST> Prepare<ST> for super::PrefixTagged<Tg, Of> where
+impl<Tg, TagVal, Of, T> Prepare<T> for super::PrefixTagged<Tg, Of> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: Prepare<ST>,
+    T: DeepView,
+    Of: Prepare<T>,
  {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
             b: &self.2,
@@ -352,13 +349,13 @@ impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, TagVal, Tg, ST> Compliance<ST> for super::SuffixTagged<Of, Tg> where
+impl<Of, TagVal, Tg, T> Compliance<T> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + Compliance<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: Compliance<ST>,
+    T: DeepView,
+    Of: Compliance<T>,
  {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),
@@ -368,13 +365,13 @@ impl<Of, TagVal, Tg, ST> Compliance<ST> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, TagVal, Tg, ST> ByteLen<ST> for super::SuffixTagged<Of, Tg> where
+impl<Of, TagVal, Tg, T> ByteLen<T> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: ByteLen<ST>,
+    T: DeepView,
+    Of: ByteLen<T>,
  {
-    fn length(&self, v: ST) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),
@@ -384,13 +381,13 @@ impl<Of, TagVal, Tg, ST> ByteLen<ST> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, TagVal, Tg, ST> Prepare<ST> for super::SuffixTagged<Of, Tg> where
+impl<Of, TagVal, Tg, T> Prepare<T> for super::SuffixTagged<Of, Tg> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
     TagVal: SelfView + Copy,
-    ST: DeepView,
-    Of: Prepare<ST>,
+    T: DeepView,
+    Of: Prepare<T>,
  {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,
             b: super::Const(&self.1, self.2),

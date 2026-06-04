@@ -86,13 +86,13 @@ pub trait PrepareRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
         param: &Self::EP,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: T,
+        v: &T,
     ) -> (checked: Result<usize, PreSerializeError>) where
-        Exec: Fn(&Self::EP, T) -> Result<usize, PreSerializeError>,
+        Exec: Fn(&Self::EP, &T) -> Result<usize, PreSerializeError>,
 
         requires
-            forall|pp: &Self::EP, vv: T| call_requires(exec_rec, (pp, vv)),
-            forall|pp: &Self::EP, vv: T, rr: Result<usize, PreSerializeError>|
+            forall|pp: &Self::EP, vv: &T| call_requires(exec_rec, (pp, vv)),
+            forall|pp: &Self::EP, vv: &T, rr: Result<usize, PreSerializeError>|
                 call_ensures(exec_rec, (pp, vv), rr) ==> (rr matches Ok(len) ==> {
                     &&& spec_rec(pp.deep_view()).0(vv.deep_view())
                     &&& len == spec_rec(pp.deep_view()).1(vv.deep_view())
@@ -180,7 +180,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.serialize_body(param, Ghost(spec_callback), exec_callback, v, obuf)
     }
 
-    fn prepare_gas<T>(&self, gas: usize, param: &Param, v: T) -> (checked: Result<
+    fn prepare_gas<T>(&self, gas: usize, param: &Param, v: &T) -> (checked: Result<
         usize,
         PreSerializeError,
     >) where
@@ -195,7 +195,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             },
         decreases gas,
     {
-        let exec_callback = |pp: &Param, vv: T| -> (rr: Result<usize, PreSerializeError>)
+        let exec_callback = |pp: &Param, vv: &T| -> (rr: Result<usize, PreSerializeError>)
             ensures
                 rr matches Ok(len) ==> {
                     &&& Self::consistent_callback(gas as nat, pp.deep_view())(vv.deep_view())
@@ -246,7 +246,7 @@ impl<T, const LIMIT: usize, Body, Param> Prepare<T> for super::FixWith<LIMIT, Bo
     Param: DeepView<V = Body::Param>,
     Body: PrepareRecBody<T, EP = Param>,
  {
-    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         self.prepare_gas(LIMIT, &self.1, v)
     }
 }

@@ -78,12 +78,12 @@ impl<A, AVal, B, BVal, const CHECK: bool> Compliance<BVal> for super::Preceded<
     AVal,
     B,
     CHECK,
-> where AVal: SelfView + Copy, BVal: DeepView, A: Compliance<AVal>, B: Compliance<BVal> {
-    fn check_compliance(&self, v: BVal) -> (yes: bool) {
+> where AVal: SelfView, BVal: DeepView, A: Compliance<AVal>, B: Compliance<BVal> {
+    fn check_compliance(&self, v: &BVal) -> (yes: bool) {
         proof {
             self.a_val.self_view();
         }
-        Pair(&self.a, &self.b).check_compliance((self.a_val, v))
+        self.a.check_compliance(&self.a_val) && self.b.check_compliance(v)
     }
 }
 
@@ -92,12 +92,12 @@ impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<BVal> for super::Preceded<
     AVal,
     B,
     CHECK,
-> where AVal: SelfView + Copy, BVal: DeepView, A: ByteLen<AVal>, B: ByteLen<BVal> {
-    fn length(&self, v: BVal) -> (len: usize) {
+> where AVal: SelfView, BVal: DeepView, A: ByteLen<AVal>, B: ByteLen<BVal> {
+    fn length(&self, v: &BVal) -> (len: usize) {
         proof {
             self.a_val.self_view();
         }
-        Pair(&self.a, &self.b).length((self.a_val, v))
+        self.a.length(&self.a_val) + self.b.length(v)
     }
 }
 
@@ -106,12 +106,18 @@ impl<A, AVal, B, BVal, const CHECK: bool> Prepare<BVal> for super::Preceded<
     AVal,
     B,
     CHECK,
-> where AVal: SelfView + Copy, BVal: DeepView, A: Prepare<AVal>, B: Prepare<BVal> {
-    fn prepare(&self, v: BVal) -> (checked: Result<usize, PreSerializeError>) {
+> where AVal: SelfView, BVal: DeepView, A: Prepare<AVal>, B: Prepare<BVal> {
+    fn prepare(&self, v: &BVal) -> (checked: Result<usize, PreSerializeError>) {
         proof {
             self.a_val.self_view();
         }
-        Pair(&self.a, &self.b).prepare((self.a_val, v))
+        let la = self.a.prepare(&self.a_val)?;
+        let lb = self.b.prepare(v)?;
+        if let Some(total) = la.checked_add(lb) {
+            Ok(total)
+        } else {
+            Err(PreSerializeError::LengthTooLarge)
+        }
     }
 }
 

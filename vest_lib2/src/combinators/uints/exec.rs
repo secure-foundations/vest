@@ -177,19 +177,19 @@ impl Serializer<u8> for super::U8 {
 }
 
 impl Compliance<u8> for super::U8 {
-    fn check_compliance(&self, _v: u8) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u8) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u8> for super::U8 {
-    fn length(&self, _v: u8) -> (len: usize) {
+    fn length(&self, _v: &u8) -> (len: usize) {
         1
     }
 }
 
 impl Prepare<u8> for super::U8 {
-    fn prepare(&self, _v: u8) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u8) -> (checked: Result<usize, PreSerializeError>) {
         Ok(1)
     }
 }
@@ -221,19 +221,19 @@ impl Serializer<u16> for super::U16Le {
 }
 
 impl Compliance<u16> for super::U16Le {
-    fn check_compliance(&self, _v: u16) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u16) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u16> for super::U16Le {
-    fn length(&self, _v: u16) -> (len: usize) {
+    fn length(&self, _v: &u16) -> (len: usize) {
         U16_BYTE_LEN
     }
 }
 
 impl Prepare<u16> for super::U16Le {
-    fn prepare(&self, _v: u16) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u16) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U16_BYTE_LEN)
     }
 }
@@ -264,19 +264,19 @@ impl Serializer<u16> for super::U16Be {
 }
 
 impl Compliance<u16> for super::U16Be {
-    fn check_compliance(&self, _v: u16) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u16) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u16> for super::U16Be {
-    fn length(&self, _v: u16) -> (len: usize) {
+    fn length(&self, _v: &u16) -> (len: usize) {
         U16_BYTE_LEN
     }
 }
 
 impl Prepare<u16> for super::U16Be {
-    fn prepare(&self, _v: u16) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u16) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U16_BYTE_LEN)
     }
 }
@@ -307,20 +307,20 @@ impl Serializer<u32> for super::U24Le {
 }
 
 impl Compliance<u32> for super::U24Le {
-    fn check_compliance(&self, v: u32) -> (yes: bool) {
-        v < 0x01000000
+    fn check_compliance(&self, v: &u32) -> (yes: bool) {
+        *v < 0x01000000
     }
 }
 
 impl ByteLen<u32> for super::U24Le {
-    fn length(&self, _v: u32) -> (len: usize) {
+    fn length(&self, _v: &u32) -> (len: usize) {
         U24_BYTE_LEN
     }
 }
 
 impl Prepare<u32> for super::U24Le {
-    fn prepare(&self, v: u32) -> (checked: Result<usize, PreSerializeError>) {
-        if v < 0x01000000 {
+    fn prepare(&self, v: &u32) -> (checked: Result<usize, PreSerializeError>) {
+        if *v < 0x01000000 {
             Ok(U24_BYTE_LEN)
         } else {
             Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
@@ -354,20 +354,20 @@ impl Serializer<u32> for super::U24Be {
 }
 
 impl Compliance<u32> for super::U24Be {
-    fn check_compliance(&self, v: u32) -> (yes: bool) {
-        v < 0x01000000
+    fn check_compliance(&self, v: &u32) -> (yes: bool) {
+        *v < 0x01000000
     }
 }
 
 impl ByteLen<u32> for super::U24Be {
-    fn length(&self, _v: u32) -> (len: usize) {
+    fn length(&self, _v: &u32) -> (len: usize) {
         U24_BYTE_LEN
     }
 }
 
 impl Prepare<u32> for super::U24Be {
-    fn prepare(&self, v: u32) -> (checked: Result<usize, PreSerializeError>) {
-        if v < 0x01000000 {
+    fn prepare(&self, v: &u32) -> (checked: Result<usize, PreSerializeError>) {
+        if *v < 0x01000000 {
             Ok(U24_BYTE_LEN)
         } else {
             Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
@@ -401,19 +401,19 @@ impl Serializer<u32> for super::U32Le {
 }
 
 impl Compliance<u32> for super::U32Le {
-    fn check_compliance(&self, _v: u32) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u32) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u32> for super::U32Le {
-    fn length(&self, _v: u32) -> (len: usize) {
+    fn length(&self, _v: &u32) -> (len: usize) {
         U32_BYTE_LEN
     }
 }
 
 impl Prepare<u32> for super::U32Le {
-    fn prepare(&self, _v: u32) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u32) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U32_BYTE_LEN)
     }
 }
@@ -444,19 +444,19 @@ impl Serializer<u32> for super::U32Be {
 }
 
 impl Compliance<u32> for super::U32Be {
-    fn check_compliance(&self, _v: u32) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u32) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u32> for super::U32Be {
-    fn length(&self, _v: u32) -> (len: usize) {
+    fn length(&self, _v: &u32) -> (len: usize) {
         U32_BYTE_LEN
     }
 }
 
 impl Prepare<u32> for super::U32Be {
-    fn prepare(&self, _v: u32) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u32) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U32_BYTE_LEN)
     }
 }
@@ -496,19 +496,19 @@ impl Serializer<u64> for super::U64Le {
 }
 
 impl Compliance<u64> for super::U64Le {
-    fn check_compliance(&self, _v: u64) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u64) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u64> for super::U64Le {
-    fn length(&self, _v: u64) -> (len: usize) {
+    fn length(&self, _v: &u64) -> (len: usize) {
         U64_BYTE_LEN
     }
 }
 
 impl Prepare<u64> for super::U64Le {
-    fn prepare(&self, _v: u64) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u64) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U64_BYTE_LEN)
     }
 }
@@ -548,19 +548,19 @@ impl Serializer<u64> for super::U64Be {
 }
 
 impl Compliance<u64> for super::U64Be {
-    fn check_compliance(&self, _v: u64) -> (yes: bool) {
+    fn check_compliance(&self, _v: &u64) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<u64> for super::U64Be {
-    fn length(&self, _v: u64) -> (len: usize) {
+    fn length(&self, _v: &u64) -> (len: usize) {
         U64_BYTE_LEN
     }
 }
 
 impl Prepare<u64> for super::U64Be {
-    fn prepare(&self, _v: u64) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &u64) -> (checked: Result<usize, PreSerializeError>) {
         Ok(U64_BYTE_LEN)
     }
 }

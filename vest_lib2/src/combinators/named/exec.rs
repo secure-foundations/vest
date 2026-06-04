@@ -32,20 +32,23 @@ impl<T, Inner> Serializer<T> for super::Named<Inner> where T: DeepView, Inner: S
     }
 }
 
-impl<T, Inner> Compliance<T> for super::Named<Inner> where T: DeepView, Inner: Compliance<T> {
-    fn check_compliance(&self, v: T) -> (yes: bool) {
+impl<T, Inner> Compliance<T> for super::Named<Inner> where
+    T: DeepView + ?Sized,
+    Inner: Compliance<T>,
+ {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         self.1.check_compliance(v)
     }
 }
 
 impl<T, Inner> ByteLen<T> for super::Named<Inner> where T: DeepView, Inner: ByteLen<T> {
-    fn length(&self, v: T) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         self.1.length(v)
     }
 }
 
 impl<T, Inner> Prepare<T> for super::Named<Inner> where T: DeepView, Inner: Prepare<T> {
-    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         match self.1.prepare(v) {
             Err(PreSerializeError::NotCompliant(_)) => Err(
                 PreSerializeError::NotCompliant(ComplianceErrorKind::NamedFormat(self.0)),

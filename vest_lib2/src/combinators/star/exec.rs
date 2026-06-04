@@ -252,9 +252,9 @@ pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>
     }
 }
 
-pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: bool) where
-    Inner: Compliance<InnerST>,
-    InnerST: DeepView + Copy,
+pub fn check_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (yes: bool) where
+    Inner: Compliance<T>,
+    T: DeepView,
 
     ensures
         yes == (super::Star(*fmt)).consistent(values.deep_view()),
@@ -272,16 +272,16 @@ pub fn check_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (yes: boo
             vs[i as int],
         )) ==> (forall|j: int| #![auto] 0 <= j < i + 1 ==> fmt.consistent(vs[j])));
 
-        let elem_ok = fmt.check_compliance(values[i]);
+        let elem_ok = fmt.check_compliance(&values[i]);
         assert(elem_ok == fmt.consistent(vs[i as int]));
         yes = yes && elem_ok;
     }
     yes
 }
 
-pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: usize) where
-    Inner: ByteLen<InnerST>,
-    InnerST: DeepView + Copy,
+pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
+    Inner: ByteLen<T>,
+    T: DeepView,
 
     requires
         (super::Star(*fmt)).byte_len(values.deep_view()) <= usize::MAX,
@@ -304,17 +304,16 @@ pub fn length_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (len: us
             assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
             star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
         }
-        let elem = values[i];
-        let l = fmt.length(elem);
+        let l = fmt.length(&values[i]);
         len += l;
     }
     len
 }
 
-pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checked: Result<
+pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     usize,
     PreSerializeError,
->) where Inner: Prepare<InnerST>, InnerST: DeepView + Copy
+>) where Inner: Prepare<T>, T: DeepView
     ensures
         checked matches Ok(len) ==> {
             &&& (super::Star(*fmt)).consistent(values.deep_view())
@@ -338,7 +337,7 @@ pub fn prepare_slice<Inner, InnerST>(fmt: &Inner, values: &[InnerST]) -> (checke
             assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
             star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
         }
-        let elem_len = fmt.prepare(values[i])?;
+        let elem_len = fmt.prepare(&values[i])?;
         match len.checked_add(elem_len) {
             Some(total) => len = total,
             None => return Err(PreSerializeError::LengthTooLarge),
@@ -354,29 +353,20 @@ impl<Inner, T> Serializer<[T]> for super::Star<Inner> where T: DeepView, Inner: 
     }
 }
 
-impl<Inner, InnerST> Compliance<&[InnerST]> for super::Star<Inner> where
-    Inner: Compliance<InnerST>,
-    InnerST: DeepView + Copy,
- {
-    fn check_compliance(&self, v: &[InnerST]) -> (yes: bool) {
+impl<Inner, T> Compliance<[T]> for super::Star<Inner> where Inner: Compliance<T>, T: DeepView {
+    fn check_compliance(&self, v: &[T]) -> (yes: bool) {
         check_slice(&self.0, v)
     }
 }
 
-impl<Inner, InnerST> ByteLen<&[InnerST]> for super::Star<Inner> where
-    Inner: ByteLen<InnerST>,
-    InnerST: DeepView + Copy,
- {
-    fn length(&self, v: &[InnerST]) -> (len: usize) {
+impl<Inner, T> ByteLen<[T]> for super::Star<Inner> where Inner: ByteLen<T>, T: DeepView {
+    fn length(&self, v: &[T]) -> (len: usize) {
         length_slice(&self.0, v)
     }
 }
 
-impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
-    Inner: Prepare<InnerST>,
-    InnerST: DeepView + Copy,
- {
-    fn prepare(&self, v: &[InnerST]) -> (checked: Result<usize, PreSerializeError>) {
+impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: DeepView {
+    fn prepare(&self, v: &[T]) -> (checked: Result<usize, PreSerializeError>) {
         prepare_slice(&self.0, v)
     }
 }
@@ -391,39 +381,44 @@ impl<Inner, InnerST> Prepare<&[InnerST]> for super::Star<Inner> where
 //         crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
 //     }
 // }
-impl<A, B, AST, BST> Compliance<(&[AST], BST)> for super::Repeat<A, B> where
-    A: Compliance<AST> + Copy,
-    B: Compliance<BST> + Copy,
-    AST: DeepView + Copy,
-    BST: DeepView,
- {
-    fn check_compliance(&self, v: (&[AST], BST)) -> (yes: bool) {
-        crate::combinators::Pair(super::Star(self.0), self.1).check_compliance(v)
-    }
-}
-
-impl<A, B, AST, BST> ByteLen<(&[AST], BST)> for super::Repeat<A, B> where
-    A: ByteLen<AST> + Copy,
-    B: ByteLen<BST> + Copy,
-    AST: DeepView + Copy,
-    BST: DeepView,
- {
-    fn length(&self, v: (&[AST], BST)) -> (len: usize) {
-        crate::combinators::Pair(super::Star(self.0), self.1).length(v)
-    }
-}
-
-impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
-    A: Prepare<AST> + Copy,
-    B: Prepare<BST> + Copy,
-    AST: DeepView + Copy,
-    BST: DeepView,
- {
-    fn prepare(&self, v: (&[AST], BST)) -> (checked: Result<usize, PreSerializeError>) {
-        crate::combinators::Pair(super::Star(self.0), self.1).prepare(v)
-    }
-}
-
+// impl<A, B, AST, BST> Compliance<(&[AST], BST)> for super::Repeat<A, B> where
+//     A: Compliance<AST> + Copy,
+//     B: Compliance<BST> + Copy,
+//     AST: DeepView,
+//     BST: DeepView,
+//  {
+//     fn check_compliance(&self, v: &(&[AST], BST)) -> (yes: bool) {
+//         Star(self.0).check_compliance(v.0) && self.1.check_compliance(&v.1)
+//     }
+// }
+// impl<A, B, AST, BST> ByteLen<(&[AST], BST)> for super::Repeat<A, B> where
+//     A: ByteLen<AST> + Copy,
+//     B: ByteLen<BST> + Copy,
+//     AST: DeepView,
+//     BST: DeepView,
+//  {
+//     fn length(&self, v: &(&[AST], BST)) -> (len: usize) {
+//         let la = Star(self.0).length(v.0);
+//         let lb = self.1.length(&v.1);
+//         la + lb
+//     }
+// }
+// impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
+//     A: Prepare<AST> + Copy,
+//     B: Prepare<BST> + Copy,
+//     AST: DeepView,
+//     BST: DeepView,
+//  {
+//     fn prepare(&self, v: &(&[AST], BST)) -> (checked: Result<usize, PreSerializeError>) {
+//         let la = Star(self.0).prepare(v.0)?;
+//         let lb = self.1.prepare(&v.1)?;
+//         if let Some(total) = la.checked_add(lb) {
+//             Ok(total)
+//         } else {
+//             Err(PreSerializeError::LengthTooLarge)
+//         }
+//     }
+// }
 impl<Inner, N, T> Serializer<[T]> for super::RepeatN<Inner, N> where
     T: DeepView,
     Inner: Serializer<T>,
@@ -434,34 +429,34 @@ impl<Inner, N, T> Serializer<[T]> for super::RepeatN<Inner, N> where
     }
 }
 
-impl<Inner, N, InnerST> Compliance<&[InnerST]> for super::RepeatN<Inner, N> where
-    Inner: Compliance<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, N, T> Compliance<[T]> for super::RepeatN<Inner, N> where
+    Inner: Compliance<T>,
+    T: DeepView,
     N: AsLen,
  {
-    fn check_compliance(&self, v: &[InnerST]) -> (yes: bool) {
+    fn check_compliance(&self, v: &[T]) -> (yes: bool) {
         let count = self.0.get();
         let ok = check_slice(&self.1, v);
         v.len() == count && ok
     }
 }
 
-impl<Inner, N, InnerST> ByteLen<&[InnerST]> for super::RepeatN<Inner, N> where
-    Inner: ByteLen<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, N, T> ByteLen<[T]> for super::RepeatN<Inner, N> where
+    Inner: ByteLen<T>,
+    T: DeepView,
     N: AsLen,
  {
-    fn length(&self, v: &[InnerST]) -> (len: usize) {
+    fn length(&self, v: &[T]) -> (len: usize) {
         length_slice(&self.1, v)
     }
 }
 
-impl<Inner, N, InnerST> Prepare<&[InnerST]> for super::RepeatN<Inner, N> where
-    Inner: Prepare<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, N, T> Prepare<[T]> for super::RepeatN<Inner, N> where
+    Inner: Prepare<T>,
+    T: DeepView,
     N: AsLen,
  {
-    fn prepare(&self, v: &[InnerST]) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &[T]) -> (checked: Result<usize, PreSerializeError>) {
         if v.len() == self.0.get() {
             prepare_slice(&self.1, v)
         } else {
@@ -479,30 +474,30 @@ impl<Inner, T, const N: usize> Serializer<[T; N]> for super::Array<N, Inner> whe
     }
 }
 
-impl<Inner, InnerST, const N: usize> Compliance<&[InnerST; N]> for super::Array<N, Inner> where
-    Inner: Compliance<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, T, const N: usize> Compliance<[T; N]> for super::Array<N, Inner> where
+    Inner: Compliance<T>,
+    T: DeepView,
  {
-    fn check_compliance(&self, v: &[InnerST; N]) -> (yes: bool) {
+    fn check_compliance(&self, v: &[T; N]) -> (yes: bool) {
         let slice = v.as_slice();
         slice.len() == N && check_slice(&self.0, slice)
     }
 }
 
-impl<Inner, InnerST, const N: usize> ByteLen<&[InnerST; N]> for super::Array<N, Inner> where
-    Inner: ByteLen<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, T, const N: usize> ByteLen<[T; N]> for super::Array<N, Inner> where
+    Inner: ByteLen<T>,
+    T: DeepView,
  {
-    fn length(&self, v: &[InnerST; N]) -> (len: usize) {
+    fn length(&self, v: &[T; N]) -> (len: usize) {
         length_slice(&self.0, v.as_slice())
     }
 }
 
-impl<Inner, InnerST, const N: usize> Prepare<&[InnerST; N]> for super::Array<N, Inner> where
-    Inner: Prepare<InnerST>,
-    InnerST: DeepView + Copy,
+impl<Inner, T, const N: usize> Prepare<[T; N]> for super::Array<N, Inner> where
+    Inner: Prepare<T>,
+    T: DeepView,
  {
-    fn prepare(&self, v: &[InnerST; N]) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &[T; N]) -> (checked: Result<usize, PreSerializeError>) {
         prepare_slice(&self.0, v.as_slice())
     }
 }

@@ -21,19 +21,19 @@ impl Serializer<()> for super::Empty {
 }
 
 impl Compliance<()> for super::Empty {
-    fn check_compliance(&self, _v: ()) -> (yes: bool) {
+    fn check_compliance(&self, _v: &()) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<()> for super::Empty {
-    fn length(&self, _v: ()) -> (len: usize) {
+    fn length(&self, _v: &()) -> (len: usize) {
         0
     }
 }
 
 impl Prepare<()> for super::Empty {
-    fn prepare(&self, _v: ()) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &()) -> (checked: Result<usize, PreSerializeError>) {
         Ok(0)
     }
 }

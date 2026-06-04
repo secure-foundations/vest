@@ -35,19 +35,19 @@ impl<Inner, T> Serializer<T> for super::Cond<Inner> where T: DeepView, Inner: Se
 }
 
 impl<T, Inner> Compliance<T> for super::Cond<Inner> where T: DeepView, Inner: Compliance<T> {
-    fn check_compliance(&self, v: T) -> (yes: bool) {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         self.0 && self.1.check_compliance(v)
     }
 }
 
 impl<T, Inner> ByteLen<T> for super::Cond<Inner> where T: DeepView, Inner: ByteLen<T> {
-    fn length(&self, v: T) -> (len: usize) {
+    fn length(&self, v: &T) -> (len: usize) {
         self.1.length(v)
     }
 }
 
 impl<T, Inner> Prepare<T> for super::Cond<Inner> where T: DeepView, Inner: Prepare<T> {
-    fn prepare(&self, v: T) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         if self.0 {
             self.1.prepare(v)
         } else {

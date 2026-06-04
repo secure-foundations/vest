@@ -82,13 +82,13 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Choice<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B: Compliance<STB>,
+impl<A, B, TA, TB> Compliance<super::Sum<TA, TB>> for super::Choice<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Compliance<TA>,
+    B: Compliance<TB>,
  {
-    fn check_compliance(&self, v: super::Sum<STA, STB>) -> (yes: bool) {
+    fn check_compliance(&self, v: &super::Sum<TA, TB>) -> (yes: bool) {
         match v {
             super::Sum::Inl(va) => self.0.check_compliance(va),
             super::Sum::Inr(vb) => self.1.check_compliance(vb),
@@ -96,13 +96,13 @@ impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Choice<A, B> wh
     }
 }
 
-impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: ByteLen<STA>,
-    B: ByteLen<STB>,
+impl<A, B, TA, TB> ByteLen<super::Sum<TA, TB>> for super::Choice<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: ByteLen<TA>,
+    B: ByteLen<TB>,
  {
-    fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
+    fn length(&self, v: &super::Sum<TA, TB>) -> (len: usize) {
         match v {
             super::Sum::Inl(va) => self.0.length(va),
             super::Sum::Inr(vb) => self.1.length(vb),
@@ -110,13 +110,13 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Choice<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Choice<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Prepare<STA>,
-    B: Prepare<STB>,
+impl<A, B, TA, TB> Prepare<super::Sum<TA, TB>> for super::Choice<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Prepare<TA>,
+    B: Prepare<TB>,
  {
-    fn prepare(&self, v: super::Sum<STA, STB>) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &super::Sum<TA, TB>) -> (checked: Result<usize, PreSerializeError>) {
         match v {
             super::Sum::Inl(va) => self.0.prepare(va),
             super::Sum::Inr(vb) => self.1.prepare(vb),
@@ -144,22 +144,22 @@ impl<const NONDETERMINISTIC: bool, I, A, B> Parser<I> for super::Alt<A, B, NONDE
     }
 }
 
-impl<A, B, ST> Compliance<ST> for super::Alt<A, B> where
-    ST: DeepView + Copy,
-    A: Compliance<ST>,
-    B: Compliance<ST>,
+impl<A, B, T> Compliance<T> for super::Alt<A, B> where
+    T: DeepView + ?Sized,
+    A: Compliance<T>,
+    B: Compliance<T>,
  {
-    fn check_compliance(&self, v: ST) -> (yes: bool) {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         self.0.check_compliance(v) || self.1.check_compliance(v)
     }
 }
 
-impl<A, B, ST> Prepare<ST> for super::Alt<A, B, false> where
-    ST: DeepView + Copy,
-    A: Prepare<ST> + Compliance<ST>,
-    B: Prepare<ST>,
+impl<A, B, T> Prepare<T> for super::Alt<A, B, false> where
+    T: DeepView + ?Sized,
+    A: Prepare<T> + Compliance<T>,
+    B: Prepare<T>,
  {
-    fn prepare(&self, v: ST) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         if self.0.check_compliance(v) {
             self.0.prepare(v)
         } else {
@@ -174,7 +174,7 @@ impl<A, B, T> Serializer<T> for super::Alt<A, B, false> where
     B: Serializer<T> + Consistency<Val = T::V>,
  {
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        if self.0.check_compliance(*v) {
+        if self.0.check_compliance(v) {
             self.0.serialize(v, obuf);
         } else {
             self.1.serialize(v, obuf);
@@ -225,13 +225,13 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Sum<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B: Compliance<STB>,
+impl<A, B, TA, TB> Compliance<super::Sum<TA, TB>> for super::Sum<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Compliance<TA>,
+    B: Compliance<TB>,
  {
-    fn check_compliance(&self, v: super::Sum<STA, STB>) -> (yes: bool) {
+    fn check_compliance(&self, v: &super::Sum<TA, TB>) -> (yes: bool) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.check_compliance(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.check_compliance(vb),
@@ -240,13 +240,13 @@ impl<A, B, STA, STB> Compliance<super::Sum<STA, STB>> for super::Sum<A, B> where
     }
 }
 
-impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Sum<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: ByteLen<STA>,
-    B: ByteLen<STB>,
+impl<A, B, TA, TB> ByteLen<super::Sum<TA, TB>> for super::Sum<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: ByteLen<TA>,
+    B: ByteLen<TB>,
  {
-    fn length(&self, v: super::Sum<STA, STB>) -> (len: usize) {
+    fn length(&self, v: &super::Sum<TA, TB>) -> (len: usize) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.length(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.length(vb),
@@ -255,13 +255,13 @@ impl<A, B, STA, STB> ByteLen<super::Sum<STA, STB>> for super::Sum<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Prepare<super::Sum<STA, STB>> for super::Sum<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Prepare<STA>,
-    B: Prepare<STB>,
+impl<A, B, TA, TB> Prepare<super::Sum<TA, TB>> for super::Sum<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Prepare<TA>,
+    B: Prepare<TB>,
  {
-    fn prepare(&self, v: super::Sum<STA, STB>) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &super::Sum<TA, TB>) -> (checked: Result<usize, PreSerializeError>) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.prepare(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.prepare(vb),

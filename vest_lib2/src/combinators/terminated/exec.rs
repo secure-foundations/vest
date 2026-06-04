@@ -72,45 +72,51 @@ impl<A, B, BVal, T, const CHECK: bool> Serializer<T> for super::Terminated<A, B,
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> Compliance<AVal> for super::Terminated<
-    A,
-    B,
-    BVal,
-    CHECK,
-> where AVal: DeepView, BVal: SelfView + Copy, A: Compliance<AVal>, B: Compliance<BVal> {
-    fn check_compliance(&self, v: AVal) -> (yes: bool) {
+impl<A, B, BVal, T, const CHECK: bool> Compliance<T> for super::Terminated<A, B, BVal, CHECK> where
+    T: DeepView,
+    BVal: SelfView,
+    A: Compliance<T>,
+    B: Compliance<BVal>,
+ {
+    fn check_compliance(&self, v: &T) -> (yes: bool) {
         proof {
             self.b_val.self_view();
         }
-        Pair(&self.a, &self.b).check_compliance((v, self.b_val))
+        self.a.check_compliance(v) && self.b.check_compliance(&self.b_val)
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<AVal> for super::Terminated<
-    A,
-    B,
-    BVal,
-    CHECK,
-> where AVal: DeepView, BVal: SelfView + Copy, A: ByteLen<AVal>, B: ByteLen<BVal> {
-    fn length(&self, v: AVal) -> (len: usize) {
+impl<A, B, BVal, T, const CHECK: bool> ByteLen<T> for super::Terminated<A, B, BVal, CHECK> where
+    T: DeepView,
+    BVal: SelfView,
+    A: ByteLen<T>,
+    B: ByteLen<BVal>,
+ {
+    fn length(&self, v: &T) -> (len: usize) {
         proof {
             self.b_val.self_view();
         }
-        Pair(&self.a, &self.b).length((v, self.b_val))
+        self.a.length(v) + self.b.length(&self.b_val)
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> Prepare<AVal> for super::Terminated<
-    A,
-    B,
-    BVal,
-    CHECK,
-> where AVal: DeepView, BVal: SelfView + Copy, A: Prepare<AVal>, B: Prepare<BVal> {
-    fn prepare(&self, v: AVal) -> (checked: Result<usize, PreSerializeError>) {
+impl<A, B, BVal, T, const CHECK: bool> Prepare<T> for super::Terminated<A, B, BVal, CHECK> where
+    T: DeepView,
+    BVal: SelfView,
+    A: Prepare<T>,
+    B: Prepare<BVal>,
+ {
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         proof {
             self.b_val.self_view();
         }
-        Pair(&self.a, &self.b).prepare((v, self.b_val))
+        let la = self.a.prepare(v)?;
+        let lb = self.b.prepare(&self.b_val)?;
+        if let Some(total) = la.checked_add(lb) {
+            Ok(total)
+        } else {
+            Err(PreSerializeError::LengthTooLarge)
+        }
     }
 }
 

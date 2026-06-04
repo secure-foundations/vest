@@ -36,20 +36,20 @@ impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
 //         obuf.extend_from_slice(v);
 //     }
 // }
-impl<'s, const N: usize> Compliance<&'s [u8]> for super::Fixed<N> {
-    fn check_compliance(&self, v: &'s [u8]) -> (yes: bool) {
+impl<const N: usize> Compliance<[u8]> for super::Fixed<N> {
+    fn check_compliance(&self, v: &[u8]) -> (yes: bool) {
         v.len() == N
     }
 }
 
-impl<'s, const N: usize> ByteLen<&'s [u8]> for super::Fixed<N> {
-    fn length(&self, v: &'s [u8]) -> (len: usize) {
+impl<const N: usize> ByteLen<[u8]> for super::Fixed<N> {
+    fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
     }
 }
 
-impl<'s, const N: usize> Prepare<&'s [u8]> for super::Fixed<N> {
-    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+impl<const N: usize> Prepare<[u8]> for super::Fixed<N> {
+    fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
         if v.len() == N {
             Ok(N)
         } else {
@@ -77,20 +77,20 @@ impl<Len: AsLen> Serializer<[u8]> for super::Varied<Len> {
     }
 }
 
-impl<'s, Len: AsLen> Compliance<&'s [u8]> for super::Varied<Len> {
-    fn check_compliance(&self, v: &'s [u8]) -> (yes: bool) {
+impl<Len: AsLen> Compliance<[u8]> for super::Varied<Len> {
+    fn check_compliance(&self, v: &[u8]) -> (yes: bool) {
         v.len() == self.0.get()
     }
 }
 
-impl<'s, Len: AsLen> ByteLen<&'s [u8]> for super::Varied<Len> {
-    fn length(&self, v: &'s [u8]) -> (len: usize) {
+impl<Len: AsLen> ByteLen<[u8]> for super::Varied<Len> {
+    fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
     }
 }
 
-impl<'s, Len: AsLen> Prepare<&'s [u8]> for super::Varied<Len> {
-    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+impl<Len: AsLen> Prepare<[u8]> for super::Varied<Len> {
+    fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
         if v.len() == self.0.get() {
             Ok(v.len())
         } else {
@@ -163,20 +163,20 @@ impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
 // }
 impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
-    InnerST: DeepView,
+    InnerST: DeepView + ?Sized,
     Inner: ByteLen<InnerST>,
  {
-    fn length(&self, v: InnerST) -> (len: usize) {
+    fn length(&self, v: &InnerST) -> (len: usize) {
         self.1.length(v)
     }
 }
 
 impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
-    InnerST: DeepView,
+    InnerST: DeepView + ?Sized,
     Inner: Prepare<InnerST>,
  {
-    fn prepare(&self, v: InnerST) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, v: &InnerST) -> (checked: Result<usize, PreSerializeError>) {
         let len = self.1.prepare(v)?;
         if len == self.0.get() {
             Ok(len)
@@ -187,10 +187,10 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
 }
 
 impl<A, Then, ThenST> ByteLen<ThenST> for super::AndThen<A, Then> where
-    ThenST: DeepView,
+    ThenST: DeepView + ?Sized,
     Then: ByteLen<ThenST>,
  {
-    fn length(&self, v: ThenST) -> (len: usize) {
+    fn length(&self, v: &ThenST) -> (len: usize) {
         self.1.length(v)
     }
 }

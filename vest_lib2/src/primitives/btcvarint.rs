@@ -402,8 +402,8 @@ impl<const MINIMAL: bool> Serializer<u64> for VarInt<MINIMAL> {
 }
 
 impl<const MINIMAL: bool> Prepare<u64> for VarInt<MINIMAL> {
-    fn prepare(&self, v: u64) -> Result<usize, PreSerializeError> {
-        match v {
+    fn prepare(&self, v: &u64) -> (checked: Result<usize, PreSerializeError>) {
+        match *v {
             0..0xFD => Ok(1usize),
             0xFD..=0xFFFF => Ok(3usize),
             0x1_0000..=0xFFFF_FFFF => Ok(5usize),

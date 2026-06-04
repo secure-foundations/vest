@@ -25,26 +25,26 @@ impl<I: InputBuf> Parser<I> for super::Tail {
     }
 }
 
-impl<'s> Serializer<&'s [u8]> for super::Tail {
-    fn serialize(&self, v: &&'s [u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(*v);
+impl Serializer<[u8]> for super::Tail {
+    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
+        obuf.extend_from_slice(v);
     }
 }
 
-impl<'s> Compliance<&'s [u8]> for super::Tail {
-    fn check_compliance(&self, _v: &'s [u8]) -> (yes: bool) {
+impl Compliance<[u8]> for super::Tail {
+    fn check_compliance(&self, _v: &[u8]) -> (yes: bool) {
         true
     }
 }
 
-impl<'s> ByteLen<&'s [u8]> for super::Tail {
-    fn length(&self, v: &'s [u8]) -> (len: usize) {
+impl ByteLen<[u8]> for super::Tail {
+    fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
     }
 }
 
-impl<'s> Prepare<&'s [u8]> for super::Tail {
-    fn prepare(&self, v: &'s [u8]) -> (checked: Result<usize, PreSerializeError>) {
+impl Prepare<[u8]> for super::Tail {
+    fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
         Ok(v.len())
     }
 }
@@ -68,19 +68,19 @@ impl Serializer<()> for super::Eof {
 }
 
 impl Compliance<()> for super::Eof {
-    fn check_compliance(&self, _v: ()) -> (yes: bool) {
+    fn check_compliance(&self, _v: &()) -> (yes: bool) {
         true
     }
 }
 
 impl ByteLen<()> for super::Eof {
-    fn length(&self, _v: ()) -> (len: usize) {
+    fn length(&self, _v: &()) -> (len: usize) {
         0
     }
 }
 
 impl Prepare<()> for super::Eof {
-    fn prepare(&self, _v: ()) -> (checked: Result<usize, PreSerializeError>) {
+    fn prepare(&self, _v: &()) -> (checked: Result<usize, PreSerializeError>) {
         Ok(0)
     }
 }
@@ -91,8 +91,8 @@ impl<A, B, AVal, BVal> Compliance<(AVal, BVal)> for super::PairRev<A, B> where
     A: Compliance<AVal>,
     B: Compliance<BVal>,
  {
-    fn check_compliance(&self, v: (AVal, BVal)) -> (yes: bool) {
-        self.1.check_compliance(v.0) && self.0.check_compliance(v.1)
+    fn check_compliance(&self, v: &(AVal, BVal)) -> (yes: bool) {
+        self.1.check_compliance(&v.0) && self.0.check_compliance(&v.1)
     }
 }
 
@@ -102,9 +102,9 @@ impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     A: ByteLen<AVal>,
     B: ByteLen<BVal>,
  {
-    fn length(&self, v: (AVal, BVal)) -> (len: usize) {
-        let la = self.1.length(v.0);
-        let lb = self.0.length(v.1);
+    fn length(&self, v: &(AVal, BVal)) -> (len: usize) {
+        let la = self.1.length(&v.0);
+        let lb = self.0.length(&v.1);
         proof {
             assert((la + lb) as nat == la as nat + lb as nat);
         }
@@ -118,9 +118,9 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
     A: Prepare<AVal>,
     B: Prepare<BVal>,
  {
-    fn prepare(&self, v: (AVal, BVal)) -> Result<usize, PreSerializeError> {
-        let la = self.1.prepare(v.0)?;
-        let lb = self.0.prepare(v.1)?;
+    fn prepare(&self, v: &(AVal, BVal)) -> Result<usize, PreSerializeError> {
+        let la = self.1.prepare(&v.0)?;
+        let lb = self.0.prepare(&v.1)?;
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
@@ -170,30 +170,21 @@ impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
     }
 }
 
-impl<A, T> Compliance<&[T]> for super::RepeatTillEnd<A> where
-    A: Compliance<T> + Copy,
-    T: DeepView + Copy,
- {
-    fn check_compliance(&self, v: &[T]) -> (yes: bool) {
-        Repeat(self.0, super::Eof).check_compliance((v, ()))
+impl<A, T> Compliance<&[T]> for super::RepeatTillEnd<A> where A: Compliance<T> + Copy, T: DeepView {
+    fn check_compliance(&self, v: &&[T]) -> (yes: bool) {
+        Star(self.0).check_compliance(v)
     }
 }
 
-impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where
-    A: ByteLen<T> + Copy,
-    T: DeepView + Copy,
- {
-    fn length(&self, v: &[T]) -> (len: usize) {
-        Repeat(self.0, super::Eof).length((v, ()))
+impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
+    fn length(&self, v: &&[T]) -> (len: usize) {
+        Star(self.0).length(v)
     }
 }
 
-impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where
-    A: Prepare<T> + Copy,
-    T: DeepView + Copy,
- {
-    fn prepare(&self, v: &[T]) -> Result<usize, PreSerializeError> {
-        Repeat(self.0, super::Eof).prepare((v, ()))
+impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
+    fn prepare(&self, v: &&[T]) -> Result<usize, PreSerializeError> {
+        Star(self.0).prepare(v)
     }
 }
 
@@ -210,20 +201,20 @@ impl<A, AST> Compliance<Option<AST>> for super::OptionalEnd<A> where
     A: Compliance<AST>,
     AST: DeepView,
  {
-    fn check_compliance(&self, v: Option<AST>) -> (yes: bool) {
-        Optional(&self.0, super::Eof).check_compliance((v, ()))
+    fn check_compliance(&self, v: &Option<AST>) -> (yes: bool) {
+        Opt(&self.0).check_compliance(v)
     }
 }
 
 impl<A, AST> ByteLen<Option<AST>> for super::OptionalEnd<A> where A: ByteLen<AST>, AST: DeepView {
-    fn length(&self, v: Option<AST>) -> (len: usize) {
-        Optional(&self.0, super::Eof).length((v, ()))
+    fn length(&self, v: &Option<AST>) -> (len: usize) {
+        Opt(&self.0).length(v)
     }
 }
 
 impl<A, AST> Prepare<Option<AST>> for super::OptionalEnd<A> where A: Prepare<AST>, AST: DeepView {
-    fn prepare(&self, v: Option<AST>) -> Result<usize, PreSerializeError> {
-        Optional(&self.0, super::Eof).prepare((v, ()))
+    fn prepare(&self, v: &Option<AST>) -> Result<usize, PreSerializeError> {
+        Opt(&self.0).prepare(v)
     }
 }
 
