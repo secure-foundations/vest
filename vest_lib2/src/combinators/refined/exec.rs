@@ -180,6 +180,24 @@ impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     }
 }
 
+impl<const N: usize> Prepare<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
+    fn prepare(&self, v: &[u8; N]) -> (checked: Result<usize, PreSerializeError>) {
+        let v_slice = v.as_slice();
+        let tag_slice = self.1.as_slice();
+        let eq = cmp_byte_slices(v_slice, tag_slice);
+        proof {
+            assert(v_slice.deep_view() == v.deep_view());
+            assert(tag_slice.deep_view() == self.1@);
+            assert(eq == (v.deep_view() == self.1@));
+        }
+        if eq {
+            Ok(N)
+        } else {
+            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag))
+        }
+    }
+}
+
 // pub assume_specification<const N: usize>[ <[u8; N] as PartialEq<&[u8]>>::eq ](
 //     x: &[u8; N],
 //     y: &&[u8],
