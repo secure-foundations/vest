@@ -1,7 +1,7 @@
 use crate::vestir::{
-    self, ArrayCombinator, ChoiceCombinator, Choices, Combinator, CombinatorInvocation, ConstArray,
-    ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition, Endianess,
-    GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
+    self, ArrayCombinator, ChoiceCombinator, ChoicePattern, Combinator, CombinatorInvocation,
+    ConstArray, ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition,
+    Endianess, GlobalCtx, LengthExpr, OptionCombinator, ParamDefn, StructCombinator, StructField,
     TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
@@ -664,40 +664,17 @@ impl<'a> Analysis<'a> {
     }
 
     pub(crate) fn choice_variant_names(&self, choice_comb: &ChoiceCombinator) -> Vec<String> {
-        match &choice_comb.choices {
-            Choices::Enums(branches) => branches
-                .iter()
-                .map(|(name, _)| {
-                    if name == "_" {
-                        "Default".to_string()
-                    } else {
-                        name.clone()
-                    }
-                })
-                .collect(),
-            Choices::Ints(branches) => branches
-                .iter()
-                .enumerate()
-                .map(|(idx, (constraint, _))| {
-                    if constraint.is_none() {
-                        "Default".to_string()
-                    } else {
-                        format!("Variant{}", idx + 1)
-                    }
-                })
-                .collect(),
-            Choices::Arrays(branches) => branches
-                .iter()
-                .enumerate()
-                .map(|(idx, (array, _))| {
-                    if matches!(array, vestir::ConstArray::Wildcard) {
-                        "Default".to_string()
-                    } else {
-                        format!("Variant{}", idx + 1)
-                    }
-                })
-                .collect(),
-        }
+        choice_comb
+            .choices
+            .iter()
+            .enumerate()
+            .map(|(idx, (pat, _))| match pat {
+                ChoicePattern::Enum(name) => name.clone(),
+                ChoicePattern::Int(_) => format!("Variant{}", idx + 1),
+                ChoicePattern::Array(_) => format!("Variant{}", idx + 1),
+                ChoicePattern::Wildcard => "Default".to_string(),
+            })
+            .collect()
     }
 
     pub(crate) fn choice_branch_types(
@@ -705,20 +682,11 @@ impl<'a> Analysis<'a> {
         choice_comb: &ChoiceCombinator,
         mode: TypeMode,
     ) -> Vec<TokenStream> {
-        match &choice_comb.choices {
-            Choices::Enums(branches) => branches
-                .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode))
-                .collect(),
-            Choices::Ints(branches) => branches
-                .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode))
-                .collect(),
-            Choices::Arrays(branches) => branches
-                .iter()
-                .map(|(_, combinator)| self.render_value_type(combinator, mode))
-                .collect(),
-        }
+        choice_comb
+            .choices
+            .iter()
+            .map(|(_, combinator)| self.render_value_type(combinator, mode))
+            .collect()
     }
 
     pub(crate) fn choice_sum_type(&self, branch_types: &[TokenStream]) -> TokenStream {
@@ -879,10 +847,6 @@ impl<'a> Analysis<'a> {
                 let len_stream = syn_usize(*len);
                 quote! { [#value_stream; #len_stream] }
             }
-            ConstArray::Wildcard => match mode {
-                TypeMode::Spec => quote! { arbitrary() },
-                TypeMode::Exec => quote! { [0u8; 0] },
-            },
         }
     }
 
@@ -926,13 +890,11 @@ impl<'a> Analysis<'a> {
     }
 
     fn choice_branches<'b>(&self, choice: &'b ChoiceCombinator) -> Vec<&'b Combinator> {
-        match &choice.choices {
-            Choices::Enums(branches) => branches.iter().map(|(_, combinator)| combinator).collect(),
-            Choices::Ints(branches) => branches.iter().map(|(_, combinator)| combinator).collect(),
-            Choices::Arrays(branches) => {
-                branches.iter().map(|(_, combinator)| combinator).collect()
-            }
-        }
+        choice
+            .choices
+            .iter()
+            .map(|(_, combinator)| combinator)
+            .collect()
     }
 
     fn definition_needs_lifetime(&self, def: &Definition) -> bool {
@@ -1179,17 +1141,10 @@ impl<'a> Analysis<'a> {
                     }
                 })
             }
-            Some(Definition::ChoiceDef { combinator, .. }) => match &combinator.choices {
-                Choices::Enums(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
-                Choices::Ints(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
-                Choices::Arrays(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_copyable(comb)),
-            },
+            Some(Definition::ChoiceDef { combinator, .. }) => combinator
+                .choices
+                .iter()
+                .all(|(_, comb)| self.combinator_is_copyable(comb)),
             Some(Definition::EnumDef { .. }) => true,
             Some(Definition::CombinatorDef { combinator, .. }) => {
                 self.combinator_is_copyable(combinator)
@@ -1230,17 +1185,10 @@ impl<'a> Analysis<'a> {
                     }
                 })
             }
-            Some(Definition::ChoiceDef { combinator, .. }) => match &combinator.choices {
-                Choices::Enums(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
-                Choices::Ints(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
-                Choices::Arrays(branches) => branches
-                    .iter()
-                    .all(|(_, comb)| self.combinator_is_selfview(comb)),
-            },
+            Some(Definition::ChoiceDef { combinator, .. }) => combinator
+                .choices
+                .iter()
+                .all(|(_, comb)| self.combinator_is_selfview(comb)),
             Some(Definition::EnumDef { .. }) => true,
             Some(Definition::CombinatorDef { combinator, .. }) => {
                 self.combinator_is_selfview(combinator)

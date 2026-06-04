@@ -2,7 +2,7 @@ use super::common::{
     int_literal, render_ts, syn_usize, Analysis, CodeWriter, FormatNames, TypeMode,
 };
 use crate::vestir::{
-    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, ConstraintElem,
+    self, ChoiceCombinator, ChoicePattern, Combinator, ConstCombinator, ConstraintElem,
     ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, IntCombinator, Param,
     ParamDefn, StructCombinator, StructField,
 };
@@ -827,164 +827,96 @@ impl<'a> Analysis<'a> {
         self.render_choice_raw_via_choice(choice_comb, owner_name)
     }
 
+    fn negated_prior_conditions(
+        &self,
+        choice_comb: &ChoiceCombinator,
+        idx: usize,
+        dep: &TokenStream,
+        owner_name: Option<&str>,
+    ) -> Vec<TokenStream> {
+        choice_comb
+            .choices
+            .iter()
+            .take(idx)
+            .filter_map(|(prior_pat, _)| match prior_pat {
+                ChoicePattern::Enum(name) => {
+                    let enum_ty = owner_name
+                        .map(|n| self.render_enum_pattern_type(name, choice_comb, Some(n)))
+                        .unwrap_or_else(|| {
+                            self.render_enum_pattern_type(name, choice_comb, owner_name)
+                        });
+                    let variant = format_ident!("{}", name);
+                    Some(quote! { #dep != #enum_ty::#variant })
+                }
+                ChoicePattern::Int(elem) => {
+                    let pred = self.render_constraint_elem_pred(elem, quote! { #dep });
+                    Some(quote! { !(#pred) })
+                }
+                ChoicePattern::Array(arr) => {
+                    let pat_expr = self.render_const_array_expr(arr, TypeMode::Spec);
+                    Some(quote! { #dep != #pat_expr })
+                }
+                ChoicePattern::Wildcard => None,
+            })
+            .collect()
+    }
+
     fn render_choice_raw_via_choice(
         &self,
         choice_comb: &ChoiceCombinator,
         owner_name: Option<&str>,
     ) -> RenderedSpec {
-        let branches = match &choice_comb.choices {
-            Choices::Enums(branches) => branches
-                .iter()
-                .enumerate()
-                .map(|(idx, (pat, combinator))| {
-                    let fmt = self.render_spec_combinator(combinator);
-                    let fmt_ty = &fmt.ty;
-                    let fmt_expr = &fmt.expr;
-                    let expr = if let Some(dep) = &choice_comb.depend_id {
-                        let dep = path_tokens(dep);
-                        if pat == "_" {
-                            let enum_ty = owner_name
-                                .map(|name| {
-                                    self.render_enum_pattern_type(pat, choice_comb, Some(name))
-                                })
-                                .unwrap_or_else(|| {
-                                    self.render_enum_pattern_type(pat, choice_comb, owner_name)
-                                });
-                            let negated = branches
-                                .iter()
-                                .take(idx)
-                                .filter(|(prior_pat, _)| prior_pat.as_str() != "_")
-                                .map(|(prior_pat, _)| {
-                                    let prior_variant = format_ident!("{}", prior_pat);
-                                    quote! { #dep != #enum_ty::#prior_variant }
-                                })
-                                .collect::<Vec<_>>();
-                            if negated.is_empty() {
-                                quote! { Cond(true, #fmt_expr) }
-                            } else {
-                                quote! { Cond(#(#negated)&&*, #fmt_expr) }
-                            }
-                        } else {
+        let branches = choice_comb
+            .choices
+            .iter()
+            .enumerate()
+            .map(|(idx, (pat, combinator))| {
+                let fmt = self.render_spec_combinator(combinator);
+                let fmt_ty = &fmt.ty;
+                let fmt_expr = &fmt.expr;
+                let expr = if let Some(dep) = &choice_comb.depend_id {
+                    let dep = path_tokens(dep);
+                    let cond = match pat {
+                        ChoicePattern::Enum(pat_str) => {
                             let enum_ty =
-                                self.render_enum_pattern_type(pat, choice_comb, owner_name);
-                            let variant = format_ident!("{}", pat);
-                            quote! { Cond(#dep == #enum_ty::#variant, #fmt_expr) }
+                                self.render_enum_pattern_type(pat_str, choice_comb, owner_name);
+                            let variant = format_ident!("{}", pat_str);
+                            quote! { #dep == #enum_ty::#variant }
                         }
-                    } else {
-                        fmt.expr.clone()
-                    };
-                    let ty = if choice_comb.depend_id.is_some() {
-                        quote! { Cond<#fmt_ty> }
-                    } else {
-                        fmt.ty.clone()
-                    };
-                    RenderedSpec {
-                        ty,
-                        expr,
-                        value_ty: fmt.value_ty,
-                        has_value: true,
-                    }
-                })
-                .collect::<Vec<_>>(),
-            Choices::Ints(branches) => branches
-                .iter()
-                .enumerate()
-                .map(|(idx, (pat, combinator))| {
-                    let fmt = self.render_spec_combinator(combinator);
-                    let fmt_ty = &fmt.ty;
-                    let fmt_expr = &fmt.expr;
-                    let expr = if let Some(dep) = &choice_comb.depend_id {
-                        let dep = path_tokens(dep);
-                        let cond = pat.as_ref().map_or_else(
-                            || {
-                                let negated = branches
-                                    .iter()
-                                    .take(idx)
-                                    .filter_map(|(prior_pat, _)| {
-                                        prior_pat.as_ref().map(|elem| {
-                                            let pred = self
-                                                .render_constraint_elem_pred(elem, quote! { #dep });
-                                            quote! { !(#pred) }
-                                        })
-                                    })
-                                    .collect::<Vec<_>>();
-                                if negated.is_empty() {
-                                    quote! { true }
-                                } else {
-                                    quote! { #(#negated)&&* }
-                                }
-                            },
-                            |elem| self.render_constraint_elem_pred(elem, quote! { #dep }),
-                        );
-                        quote! { Cond(#cond, #fmt_expr) }
-                    } else {
-                        fmt.expr.clone()
-                    };
-                    let ty = if choice_comb.depend_id.is_some() {
-                        quote! { Cond<#fmt_ty> }
-                    } else {
-                        fmt.ty.clone()
-                    };
-                    RenderedSpec {
-                        ty,
-                        expr,
-                        value_ty: fmt.value_ty,
-                        has_value: true,
-                    }
-                })
-                .collect::<Vec<_>>(),
-            Choices::Arrays(branches) => branches
-                .iter()
-                .enumerate()
-                .map(|(idx, (pat, combinator))| {
-                    let fmt = self.render_spec_combinator(combinator);
-                    let fmt_ty = &fmt.ty;
-                    let fmt_expr = &fmt.expr;
-                    let expr = if let Some(dep) = &choice_comb.depend_id {
-                        let dep = path_tokens(dep);
-                        let cond = match pat {
-                            ConstArray::Wildcard => {
-                                let negated = branches
-                                    .iter()
-                                    .take(idx)
-                                    .filter_map(|(prior_pat, _)| match prior_pat {
-                                        ConstArray::Wildcard => None,
-                                        _ => {
-                                            let pat_expr = self
-                                                .render_const_array_expr(prior_pat, TypeMode::Spec);
-                                            Some(quote! { #dep != #pat_expr })
-                                        }
-                                    })
-                                    .collect::<Vec<_>>();
-                                if negated.is_empty() {
-                                    quote! { true }
-                                } else {
-                                    quote! { #(#negated)&&* }
-                                }
+                        ChoicePattern::Int(elem) => {
+                            self.render_constraint_elem_pred(elem, quote! { #dep })
+                        }
+                        ChoicePattern::Array(arr) => {
+                            let pat_expr = self.render_const_array_expr(arr, TypeMode::Spec);
+                            quote! { #dep == #pat_expr }
+                        }
+                        ChoicePattern::Wildcard => {
+                            let negated =
+                                self.negated_prior_conditions(choice_comb, idx, &dep, owner_name);
+                            if negated.is_empty() {
+                                quote! { true }
+                            } else {
+                                quote! { #(#negated)&&* }
                             }
-                            _ => {
-                                let pat_expr = self.render_const_array_expr(pat, TypeMode::Spec);
-                                quote! { #dep == #pat_expr }
-                            }
-                        };
-                        quote! { Cond(#cond, #fmt_expr) }
-                    } else {
-                        fmt.expr.clone()
+                        }
                     };
-                    let ty = if choice_comb.depend_id.is_some() {
-                        quote! { Cond<#fmt_ty> }
-                    } else {
-                        fmt.ty.clone()
-                    };
-                    RenderedSpec {
-                        ty,
-                        expr,
-                        value_ty: fmt.value_ty,
-                        has_value: true,
-                    }
-                })
-                .collect::<Vec<_>>(),
-        };
+                    quote! { Cond(#cond, #fmt_expr) }
+                } else {
+                    fmt.expr.clone()
+                };
+                let ty = if choice_comb.depend_id.is_some() {
+                    quote! { Cond<#fmt_ty> }
+                } else {
+                    fmt.ty.clone()
+                };
+                RenderedSpec {
+                    ty,
+                    expr,
+                    value_ty: fmt.value_ty,
+                    has_value: true,
+                }
+            })
+            .collect::<Vec<_>>();
         fold_choice(branches)
     }
 
@@ -993,78 +925,41 @@ impl<'a> Analysis<'a> {
         choice_comb: &ChoiceCombinator,
         owner_name: Option<&str>,
     ) -> RenderedSpec {
-        let dep = path_tokens(
-            choice_comb
-                .depend_id
-                .as_ref()
-                .expect("dependent choose should have a selector"),
-        );
-
-        let (branch_specs, match_arms): (Vec<RenderedSpec>, Vec<TokenStream>) =
-            match &choice_comb.choices {
-                Choices::Enums(branches) => {
-                    let enum_ty = owner_name.and_then(|name| {
-                        branches.iter().find_map(|(pat, _)| {
-                            if pat == "_" {
-                                None
-                            } else {
-                                Some(self.render_enum_pattern_type(pat, choice_comb, Some(name)))
-                            }
-                        })
-                    });
-                    let mut specs = Vec::new();
-                    let mut arms = Vec::new();
-                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
-                        let fmt = self.render_spec_combinator(combinator);
-                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
-                        let arm = if pat == "_" {
-                            quote! { _ => #inj, }
-                        } else {
-                            let variant = format_ident!("{}", pat);
-                            let ty = enum_ty.clone().unwrap_or_else(|| {
-                                self.render_enum_pattern_type(pat, choice_comb, owner_name)
-                            });
-                            quote! { #ty::#variant => #inj, }
-                        };
-                        specs.push(fmt);
-                        arms.push(arm);
+        let (branch_specs, match_arms): (Vec<_>, Vec<_>) = choice_comb
+            .choices
+            .iter()
+            .enumerate()
+            .map(|(idx, (pat, combinator))| {
+                let fmt = self.render_spec_combinator(combinator);
+                let inj = sum_injection(idx, choice_comb.choices.len(), fmt.expr.clone());
+                let arm = match pat {
+                    ChoicePattern::Enum(pat_str) => {
+                        let enum_ty = owner_name.and_then(|name| {
+                            choice_comb.choices.iter().find_map(|(pat, _)| match pat {
+                                ChoicePattern::Enum(pat_str) => Some(
+                                    self.render_enum_pattern_type(pat_str, choice_comb, Some(name)),
+                                ),
+                                _ => None,
+                            })
+                        });
+                        let variant = format_ident!("{}", pat_str);
+                        let ty = enum_ty.clone().unwrap_or_else(|| {
+                            self.render_enum_pattern_type(pat_str, choice_comb, owner_name)
+                        });
+                        quote! { #ty::#variant => #inj, }
                     }
-                    (specs, arms)
-                }
-                Choices::Ints(branches) => {
-                    let mut specs = Vec::new();
-                    let mut arms = Vec::new();
-                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
-                        let fmt = self.render_spec_combinator(combinator);
-                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
-                        let arm = match pat {
-                            Some(elem) => self.render_int_choice_match_arm(elem, inj),
-                            None => quote! { _ => #inj, },
-                        };
-                        specs.push(fmt);
-                        arms.push(arm);
+                    ChoicePattern::Int(elem) => self.render_int_choice_match_arm(elem, inj),
+                    ChoicePattern::Array(arr) => {
+                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Spec);
+                        quote! { x if x == #pat_expr.deep_view() => #inj, }
                     }
-                    (specs, arms)
-                }
-                Choices::Arrays(branches) => {
-                    let mut specs = Vec::new();
-                    let mut arms = Vec::new();
-                    for (idx, (pat, combinator)) in branches.iter().enumerate() {
-                        let fmt = self.render_spec_combinator(combinator);
-                        let inj = sum_injection(idx, branches.len(), fmt.expr.clone());
-                        let arm = match pat {
-                            ConstArray::Wildcard => quote! { _ => #inj, },
-                            _ => {
-                                let pat_expr = self.render_const_array_expr(pat, TypeMode::Spec);
-                                quote! { x if x == #pat_expr.deep_view() => #inj, }
-                            }
-                        };
-                        specs.push(fmt);
-                        arms.push(arm);
+                    ChoicePattern::Wildcard => {
+                        quote! { _ => #inj, }
                     }
-                    (specs, arms)
-                }
-            };
+                };
+                (fmt, arm)
+            })
+            .unzip();
 
         let branch_tys = branch_specs
             .iter()
@@ -1076,6 +971,13 @@ impl<'a> Analysis<'a> {
             .collect::<Vec<_>>();
         let ty = self.choice_sum_type(&branch_tys);
         let value_ty = self.choice_sum_type(&branch_value_tys);
+        let dep = path_tokens(
+            choice_comb
+                .depend_id
+                .as_ref()
+                .expect("dependent choose should have a selector"),
+        );
+
         let expr = quote! {
             match #dep {
                 #(#match_arms)*

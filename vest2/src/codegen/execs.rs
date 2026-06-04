@@ -1,6 +1,6 @@
 use super::common::{int_literal, render_ts, syn_usize, Analysis, CodeWriter, TypeMode};
 use crate::vestir::{
-    self, ChoiceCombinator, Choices, Combinator, ConstArray, ConstCombinator, EnumCombinator,
+    self, ChoiceCombinator, ChoicePattern, Combinator, ConstArray, ConstCombinator, EnumCombinator,
     Param, ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
@@ -122,14 +122,6 @@ impl<'a> Analysis<'a> {
         out.finish()
     }
 
-    fn choice_branch_count(&self, choices: &Choices) -> usize {
-        match choices {
-            Choices::Ints(branches) => branches.len(),
-            Choices::Enums(branches) => branches.len(),
-            Choices::Arrays(branches) => branches.len(),
-        }
-    }
-
     fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
         if param_defns.is_empty() {
             return;
@@ -210,7 +202,7 @@ impl<'a> Analysis<'a> {
         combinator: &ChoiceCombinator,
         param_defns: &[ParamDefn],
     ) -> String {
-        let use_spinoff = self.choice_branch_count(&combinator.choices) > SPINOFF_PROVER_THRESHOLD;
+        let use_spinoff = combinator.choices.len() > SPINOFF_PROVER_THRESHOLD;
         self.gen_parser_serializer_prepare(
             name,
             param_defns,
@@ -473,134 +465,67 @@ impl<'a> Analysis<'a> {
         dep: &str,
         param_defns: &[ParamDefn],
     ) -> Vec<TokenStream> {
-        match &comb.choices {
-            Choices::Enums(branches) => {
-                // Find the enum type from the dep field
-                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                branches
-                    .iter()
-                    .zip(variant_names.iter())
-                    .map(|((pat, combinator), variant_name)| {
-                        let variant_ident = format_ident!("{}", variant_name);
-                        let fmt_expr = self.exec_combinator_fmt_expr(
-                            combinator,
-                            param_defns,
-                            CodegenMode::Parse,
-                        );
-                        let check = if let Some(pred) =
-                            self.gen_constraint_pred(combinator, quote! { v })
-                        {
-                            quote! {
-                                if !(#pred) {
-                                    return Err(ParseError::predicate_failed());
-                                }
-                            }
-                        } else {
-                            quote! {}
-                        };
-                        if pat == "_" {
-                            quote! {
-                                _ => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
-                        } else {
-                            let pat_ident = format_ident!("{}", pat);
-                            let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                            quote! {
-                                #enum_ty::#pat_ident => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
-                        }
-                    })
-                    .collect()
-            }
-            Choices::Ints(branches) => branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr =
-                        self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
-                    let check =
-                        if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                            quote! {
-                                if !(#pred) {
-                                    return Err(ParseError::predicate_failed());
-                                }
-                            }
-                        } else {
-                            quote! {}
-                        };
-                    match pat {
-                        None => {
-                            quote! {
-                                _ => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
-                        }
-                        Some(elem) => {
-                            let pat_ts = self.int_constraint_elem_exec_pat(elem);
-                            quote! {
-                                #pat_ts => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
+        comb.choices
+            .iter()
+            .zip(variant_names.iter())
+            .map(|((pat, combinator), variant_name)| {
+                let variant_ident = format_ident!("{}", variant_name);
+                let fmt_expr =
+                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+                let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
+                    quote! {
+                        if !(#pred) {
+                            return Err(ParseError::predicate_failed());
                         }
                     }
-                })
-                .collect(),
-            Choices::Arrays(branches) => branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr =
-                        self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
-                    let check =
-                        if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                            quote! {
-                                if !(#pred) {
-                                    return Err(ParseError::predicate_failed());
-                                }
-                            }
-                        } else {
-                            quote! {}
-                        };
-                    match pat {
-                        ConstArray::Wildcard => {
-                            quote! {
-                                _ => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
-                        }
-                        _ => {
-                            let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
-                            quote! {
-                                x if x.deep_eq(&#pat_expr) => {
-                                    let (n, v) = (#fmt_expr).parse(&rest)?;
-                                    #check
-                                    (n, #exec_ident::#variant_ident(v))
-                                },
-                            }
+                } else {
+                    quote! {}
+                };
+                match pat {
+                    ChoicePattern::Enum(name) => {
+                        let pat_ident = format_ident!("{}", name);
+                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                        quote! {
+                            #ty::#pat_ident => {
+                                let (n, v) = (#fmt_expr).parse(&rest)?;
+                                #check
+                                (n, #exec_ident::#variant_ident(v))
+                            },
                         }
                     }
-                })
-                .collect(),
-        }
+                    ChoicePattern::Int(elem) => {
+                        let pat_ts = self.int_constraint_elem_exec_pat(elem);
+                        quote! {
+                            #pat_ts => {
+                                let (n, v) = (#fmt_expr).parse(&rest)?;
+                                #check
+                                (n, #exec_ident::#variant_ident(v))
+                            },
+                        }
+                    }
+                    ChoicePattern::Array(arr) => {
+                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                        quote! {
+                            x if x.deep_eq(&#pat_expr) => {
+                                let (n, v) = (#fmt_expr).parse(&rest)?;
+                                #check
+                                (n, #exec_ident::#variant_ident(v))
+                            },
+                        }
+                    }
+                    ChoicePattern::Wildcard => {
+                        quote! {
+                            _ => {
+                                let (n, v) = (#fmt_expr).parse(&rest)?;
+                                #check
+                                (n, #exec_ident::#variant_ident(v))
+                            },
+                        }
+                    }
+                }
+            })
+            .collect()
     }
 
     fn choice_parse_arms_nondep(
@@ -700,94 +625,51 @@ impl<'a> Analysis<'a> {
         dep: &str,
         param_defns: &[ParamDefn],
     ) -> Vec<TokenStream> {
-        match &comb.choices {
-            Choices::Enums(branches) => {
-                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                branches
-                    .iter()
-                    .zip(variant_names.iter())
-                    .map(|((pat, combinator), variant_name)| {
-                        let variant_ident = format_ident!("{}", variant_name);
-                        let fmt_expr =
-                            self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                        let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
-                        if pat == "_" {
-                            quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser }
-                            }
-                        } else {
-                            let pat_ident = format_ident!("{}", pat);
-                            let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                            quote! {
-                                (#enum_ty::#pat_ident, #exec_ident::#variant_ident(v)) => { #ser }
-                            }
+        comb.choices
+            .iter()
+            .zip(variant_names.iter())
+            .map(|((pat, combinator), variant_name)| {
+                let variant_ident = format_ident!("{}", variant_name);
+                let fmt_expr =
+                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
+                let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
+                match pat {
+                    ChoicePattern::Enum(name) => {
+                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                        let pat_ident = format_ident!("{}", name);
+                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                        quote! {
+                            (#ty::#pat_ident, #exec_ident::#variant_ident(v)) => { #ser }
                         }
-                    })
-                    .collect()
-            }
-            Choices::Ints(branches) => branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
-                    match pat {
-                        None => {
-                            quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser }
-                            }
-                        }
-                        Some(elem) => match elem {
-                            vestir::ConstraintElem::Single(v) => {
-                                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                                quote! {
-                                    (#lit, #exec_ident::#variant_ident(v)) => { #ser }
-                                }
-                            }
-                            vestir::ConstraintElem::Range {
-                                start: Some(start),
-                                end: Some(end),
-                            } => {
-                                let s = proc_macro2::Literal::i128_unsuffixed(*start);
-                                let e = proc_macro2::Literal::i128_unsuffixed(*end);
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if x >= #s && x <= #e => { #ser }
-                                }
-                            }
-                            _ => {
-                                let cond = self.render_constraint_elem_exec(elem, quote! { x });
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if #cond => { #ser }
-                                }
-                            }
-                        },
                     }
-                })
-                .collect(),
-            Choices::Arrays(branches) => branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                    let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
-                    match pat {
-                        ConstArray::Wildcard => {
+                    ChoicePattern::Int(elem) => match elem {
+                        vestir::ConstraintElem::Single(v) => {
+                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
                             quote! {
-                                (_, #exec_ident::#variant_ident(v)) => { #ser }
+                                (#lit, #exec_ident::#variant_ident(v)) => { #ser }
                             }
                         }
                         _ => {
-                            let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
+                            let cond = self.render_constraint_elem_exec(elem, quote! { x });
                             quote! {
-                                (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => { #ser }
+                                (x, #exec_ident::#variant_ident(v)) if #cond => { #ser }
                             }
                         }
+                    },
+                    ChoicePattern::Array(arr) => {
+                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                        quote! {
+                            (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => { #ser }
+                        }
                     }
-                })
-                .collect(),
-        }
+                    ChoicePattern::Wildcard => {
+                        quote! {
+                            (_, #exec_ident::#variant_ident(v)) => { #ser }
+                        }
+                    }
+                }
+            })
+            .collect()
     }
 
     fn emit_choice_prepare_body(
@@ -801,8 +683,24 @@ impl<'a> Analysis<'a> {
         let variant_names = self.choice_variant_names(comb);
 
         if let Some(dep) = &comb.depend_id {
-            if let Choices::Arrays(branches) = &comb.choices {
-                self.emit_array_choice_prepare_disjointness_proof(w, branches);
+            // Array choices need a disjointness proof upfront
+            let array_branches: Vec<&(ChoicePattern, Combinator)> = comb
+                .choices
+                .iter()
+                .filter(|(pat, _)| {
+                    matches!(pat, ChoicePattern::Array(_)) || matches!(pat, ChoicePattern::Wildcard)
+                })
+                .collect();
+            if !array_branches.is_empty() {
+                let arrays: Vec<(Option<ConstArray>, Combinator)> = array_branches
+                    .iter()
+                    .map(|(pat, c)| match pat {
+                        ChoicePattern::Array(arr) => (Some(arr.clone()), c.clone()),
+                        ChoicePattern::Wildcard => (None, c.clone()),
+                        _ => unreachable!(),
+                    })
+                    .collect();
+                self.emit_array_choice_prepare_disjointness_proof(w, &arrays);
             }
             let dep_expr = self.resolve_dep(dep, param_defns);
             let arms =
@@ -847,43 +745,102 @@ impl<'a> Analysis<'a> {
         dep: &str,
         param_defns: &[ParamDefn],
     ) -> Vec<TokenStream> {
-        match &comb.choices {
-            Choices::Enums(branches) => {
-                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                let enum_comb = self.resolve_dep_enum_combinator(dep, param_defns);
-                let covered_pats: Vec<&str> = branches
-                    .iter()
-                    .filter_map(|(pat, _)| if pat == "_" { None } else { Some(pat.as_str()) })
-                    .collect();
-                branches
-                    .iter()
-                    .zip(variant_names.iter())
-                    .flat_map(|((pat, combinator), variant_name)| {
-                        let variant_ident = format_ident!("{}", variant_name);
-                        let fmt_expr = self.exec_combinator_fmt_expr(
-                            combinator,
-                            param_defns,
-                            CodegenMode::Serialize,
-                        );
-                        let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+        // Collect which enum variant names are explicitly covered (for wildcard expansion)
+        let covered_enum_pats: Vec<&str> = comb
+            .choices
+            .iter()
+            .filter_map(|(pat, _)| match pat {
+                ChoicePattern::Enum(name) if name != "_" => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        // Collect which int conditions are known (for negation guard on wildcard)
+        let known_int_conds: Vec<TokenStream> = comb
+            .choices
+            .iter()
+            .filter_map(|(pat, _)| match pat {
+                ChoicePattern::Int(elem) => {
+                    Some(self.render_constraint_elem_exec(elem, quote! { x }))
+                }
+                _ => None,
+            })
+            .collect();
+        // Collect which array patterns are known (for negation guard on wildcard)
+        let known_array_pats: Vec<&ConstArray> = comb
+            .choices
+            .iter()
+            .filter_map(|(pat, _)| match pat {
+                ChoicePattern::Array(arr) => Some(arr),
+                _ => None,
+            })
+            .collect();
 
-                        if pat == "_" {
+        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+        let enum_comb = self
+            .resolve_dep_enum_info(dep, param_defns)
+            .map(|(_, comb)| comb);
+        let is_enum = comb
+            .choices
+            .iter()
+            .any(|(pat, _)| matches!(pat, ChoicePattern::Enum(_)));
+
+        comb.choices
+            .iter()
+            .zip(variant_names.iter())
+            .flat_map(|((pat, combinator), variant_name)| {
+                let variant_ident = format_ident!("{}", variant_name);
+                let fmt_expr =
+                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
+                let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+                match pat {
+                    ChoicePattern::Enum(name) => {
+                        let pat_ident = format_ident!("{}", name);
+                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                        vec![quote! {
+                            (#ty::#pat_ident, #exec_ident::#variant_ident(v)) => #prep,
+                        }]
+                    }
+                    ChoicePattern::Int(elem) => match elem {
+                        vestir::ConstraintElem::Single(v) => {
+                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                            vec![quote! {
+                                (#lit, #exec_ident::#variant_ident(v)) => #prep,
+                            }]
+                        }
+                        _ => {
+                            let cond = self.render_constraint_elem_exec(elem, quote! { x });
+                            vec![quote! {
+                                (x, #exec_ident::#variant_ident(v)) if #cond => #prep,
+                            }]
+                        }
+                    },
+                    ChoicePattern::Array(arr) => {
+                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                        vec![quote! {
+                            (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => #prep,
+                        }]
+                    }
+                    ChoicePattern::Wildcard => {
+                        if is_enum {
                             let mut arms = Vec::new();
-                            if let (Some(enum_ty), Some(enum_comb)) = (enum_ty.clone(), enum_comb) {
-                                let variants = match enum_comb {
+                            if let (Some(ref ty), Some(ec)) = (&enum_ty, enum_comb) {
+                                let variants = match ec {
                                     EnumCombinator::Exhaustive { enums, .. }
                                     | EnumCombinator::NonExhaustive { enums, .. } => enums,
                                 };
                                 for variant in variants {
-                                    if covered_pats.iter().any(|pat| *pat == variant.name.as_str()) {
+                                    if covered_enum_pats
+                                        .iter()
+                                        .any(|p| *p == variant.name.as_str())
+                                    {
                                         continue;
                                     }
                                     let known_ident = format_ident!("{}", variant.name);
                                     arms.push(quote! {
-                                        (#enum_ty::#known_ident, #exec_ident::#variant_ident(v)) => #prep,
+                                        (#ty::#known_ident, #exec_ident::#variant_ident(v)) => #prep,
                                     });
                                 }
-                                if let EnumCombinator::NonExhaustive { enums, inferred } = enum_comb {
+                                if let EnumCombinator::NonExhaustive { enums, inferred } = ec {
                                     let disjuncts: Vec<TokenStream> = enums
                                         .iter()
                                         .map(|variant| {
@@ -899,7 +856,7 @@ impl<'a> Analysis<'a> {
                                         it.fold(first, |acc, item| quote! { #acc && #item })
                                     };
                                     arms.push(quote! {
-                                        (#enum_ty::Unknown(x), #exec_ident::#variant_ident(v)) if #guard => #prep,
+                                        (#ty::Unknown(x), #exec_ident::#variant_ident(v)) if #guard => #prep,
                                     });
                                 }
                             } else {
@@ -908,144 +865,48 @@ impl<'a> Analysis<'a> {
                                 });
                             }
                             arms
-                        } else {
-                            let pat_ident = format_ident!("{}", pat);
-                            let enum_ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                        } else if !known_array_pats.is_empty() {
+                            let guard = known_array_pats
+                                .iter()
+                                .map(|p| {
+                                    let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
+                                    quote! { !x.deep_eq(&#pat_expr) }
+                                })
+                                .reduce(|acc, cond| quote! { #acc && #cond })
+                                .unwrap();
                             vec![quote! {
-                                (#enum_ty::#pat_ident, #exec_ident::#variant_ident(v)) => #prep,
+                                (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
+                            }]
+                        } else if !known_int_conds.is_empty() {
+                            let guard = known_int_conds
+                                .iter()
+                                .cloned()
+                                .map(|cond| quote! { !(#cond) })
+                                .reduce(|acc, cond| quote! { #acc && #cond })
+                                .unwrap();
+                            vec![quote! {
+                                (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
+                            }]
+                        } else {
+                            vec![quote! {
+                                (_, #exec_ident::#variant_ident(v)) => #prep,
                             }]
                         }
-                    })
-                    .collect()
-            }
-            Choices::Ints(branches) => {
-                let known_conds: Vec<TokenStream> = branches
-                    .iter()
-                    .filter_map(|(pat, _)| pat.as_ref())
-                    .map(|elem| self.render_constraint_elem_exec(elem, quote! { x }))
-                    .collect();
-                branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr = self.exec_combinator_fmt_expr(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
-                    match pat {
-                        None => {
-                            if known_conds.is_empty() {
-                                quote! {
-                                    (_, #exec_ident::#variant_ident(v)) => #prep,
-                                }
-                            } else {
-                                let guard = known_conds
-                                    .iter()
-                                    .cloned()
-                                    .map(|cond| quote! { !(#cond) })
-                                    .reduce(|acc, cond| quote! { #acc && #cond })
-                                    .unwrap();
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
-                                }
-                            }
-                        }
-                        Some(elem) => match elem {
-                            vestir::ConstraintElem::Single(v) => {
-                                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                                quote! {
-                                    (#lit, #exec_ident::#variant_ident(v)) => #prep,
-                                }
-                            }
-                            vestir::ConstraintElem::Range {
-                                start: Some(start),
-                                end: Some(end),
-                            } => {
-                                let s = proc_macro2::Literal::i128_unsuffixed(*start);
-                                let e = proc_macro2::Literal::i128_unsuffixed(*end);
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if x >= #s && x <= #e => #prep,
-                                }
-                            }
-                            _ => {
-                                let cond = self.render_constraint_elem_exec(elem, quote! { x });
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if #cond => #prep,
-                                }
-                            }
-                        },
                     }
-                })
-                .collect()
-            }
-            Choices::Arrays(branches) => {
-                let known_pats: Vec<&ConstArray> = branches
-                    .iter()
-                    .filter_map(|(pat, _)| match pat {
-                        ConstArray::Wildcard => None,
-                        _ => Some(pat),
-                    })
-                    .collect();
-                branches
-                .iter()
-                .zip(variant_names.iter())
-                .map(|((pat, combinator), variant_name)| {
-                    let variant_ident = format_ident!("{}", variant_name);
-                    let fmt_expr = self.exec_combinator_fmt_expr(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
-                    match pat {
-                        ConstArray::Wildcard => {
-                            if known_pats.is_empty() {
-                                quote! {
-                                    (_, #exec_ident::#variant_ident(v)) => #prep,
-                                }
-                            } else {
-                                let guard = known_pats
-                                    .iter()
-                                    .map(|pat| {
-                                        let pat_expr =
-                                            self.render_const_array_expr(pat, TypeMode::Exec);
-                                        quote! { !x.deep_eq(&#pat_expr) }
-                                    })
-                                    .reduce(|acc, cond| quote! { #acc && #cond })
-                                    .unwrap();
-                                quote! {
-                                    (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
-                                }
-                            }
-                        }
-                        _ => {
-                            let pat_expr = self.render_const_array_expr(pat, TypeMode::Exec);
-                            quote! {
-                                (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => #prep,
-                            }
-                        }
-                    }
-                })
-                .collect()
-            }
-        }
+                }
+            })
+            .collect()
     }
 
     fn emit_array_choice_prepare_disjointness_proof(
         &self,
         w: &mut CodeWriter,
-        branches: &[(ConstArray, Combinator)],
+        branches: &[(Option<ConstArray>, Combinator)],
     ) {
         let explicit_arrays: Vec<(usize, &ConstArray)> = branches
             .iter()
             .enumerate()
-            .filter_map(|(idx, (pat, _))| match pat {
-                ConstArray::Wildcard => None,
-                _ => Some((idx, pat)),
-            })
+            .filter_map(|(idx, (pat, _))| pat.as_ref().map(|p| (idx, p)))
             .collect();
 
         if explicit_arrays.len() < 2 {
@@ -1327,11 +1188,11 @@ impl<'a> Analysis<'a> {
         comb: &'b ChoiceCombinator,
         variant_names: &'b [String],
     ) -> Vec<(&'b Combinator, &'b String)> {
-        match &comb.choices {
-            Choices::Enums(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
-            Choices::Ints(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
-            Choices::Arrays(b) => b.iter().map(|(_, c)| c).zip(variant_names.iter()).collect(),
-        }
+        comb.choices
+            .iter()
+            .map(|(_, c)| c)
+            .zip(variant_names.iter())
+            .collect()
     }
 
     /// Build the exec-mode combinator expression for a `Combinator`.
@@ -1733,15 +1594,6 @@ impl<'a> Analysis<'a> {
             .map(|(name, _)| self.nominal_type(name, TypeMode::Exec))
     }
 
-    fn resolve_dep_enum_combinator(
-        &self,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Option<&'a EnumCombinator> {
-        self.resolve_dep_enum_info(dep, param_defns)
-            .map(|(_, comb)| comb)
-    }
-
     fn resolve_dep_enum_info(
         &self,
         dep: &str,
@@ -1811,7 +1663,6 @@ impl<'a> Analysis<'a> {
                 let byte = u8::try_from(*value).expect("repeat array pattern out of u8 range");
                 Some(vec![byte; *len])
             }
-            ConstArray::Wildcard => None,
         }
     }
 

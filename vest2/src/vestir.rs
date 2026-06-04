@@ -197,14 +197,16 @@ pub struct Enum {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChoiceCombinator {
     pub depend_id: Option<String>,
-    pub choices: Choices,
+    pub choices: Vec<(ChoicePattern, Combinator)>,
 }
 
+/// The discriminant pattern of a single choice branch.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Choices {
-    Enums(Vec<(String, Combinator)>),
-    Ints(Vec<(Option<ConstraintElem>, Combinator)>),
-    Arrays(Vec<(ConstArray, Combinator)>),
+pub enum ChoicePattern {
+    Enum(String),
+    Int(ConstraintElem),
+    Array(ConstArray),
+    Wildcard,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -292,7 +294,6 @@ pub enum ConstArray {
     Char(Vec<u8>),
     Int(Vec<i128>),
     Repeat(i128, usize),
-    Wildcard,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -533,7 +534,6 @@ impl Display for ConstArray {
                 write!(f, "]")
             }
             ConstArray::Repeat(value, count) => write!(f, "[{}; {}]", value, count),
-            ConstArray::Wildcard => write!(f, "_"),
         }
     }
 }
@@ -597,35 +597,20 @@ impl Display for ChoiceCombinator {
             write!(f, "({})", depend_id)?;
         }
         writeln!(f, "{{")?;
-        write!(f, "{}", self.choices)?;
+        for (pat, combinator) in &self.choices {
+            writeln!(f, "{} => {},", pat, combinator)?;
+        }
         write!(f, "}}")
     }
 }
 
-impl Display for Choices {
+impl Display for ChoicePattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Choices::Enums(enums) => {
-                for (name, combinator) in enums {
-                    writeln!(f, "{} => {},", name, combinator)?;
-                }
-                Ok(())
-            }
-            Choices::Ints(ints) => {
-                for (pattern, combinator) in ints {
-                    let value = pattern
-                        .as_ref()
-                        .map_or("_".to_string(), |elem| elem.to_string());
-                    writeln!(f, "{} => {},", value, combinator)?;
-                }
-                Ok(())
-            }
-            Choices::Arrays(arrays) => {
-                for (array, combinator) in arrays {
-                    writeln!(f, "{} => {},", array, combinator)?;
-                }
-                Ok(())
-            }
+            ChoicePattern::Enum(name) => write!(f, "{}", name),
+            ChoicePattern::Int(elem) => write!(f, "{}", elem),
+            ChoicePattern::Array(arr) => write!(f, "{}", arr),
+            ChoicePattern::Wildcard => write!(f, "_"),
         }
     }
 }
@@ -1017,36 +1002,39 @@ pub mod lowering {
             ir::ChoiceCombinator {
                 depend_id: c.depend_id.as_ref().map(|dep| dep.name.clone()),
                 choices: match &c.choices {
-                    ast::Choices::Enums(v) => ir::Choices::Enums(
-                        v.iter()
-                            .map(|(i, c)| {
-                                (
-                                    i.name.clone(),
-                                    self.lower_combinator(c, param_defns, local_deps),
-                                )
-                            })
-                            .collect(),
-                    ),
-                    ast::Choices::Ints(v) => ir::Choices::Ints(
-                        v.iter()
-                            .map(|(ce, c)| {
-                                (
-                                    ce.as_ref().map(|elem| self.lower_constraint_elem(elem)),
-                                    self.lower_combinator(c, param_defns, local_deps),
-                                )
-                            })
-                            .collect(),
-                    ),
-                    ast::Choices::Arrays(v) => ir::Choices::Arrays(
-                        v.iter()
-                            .map(|(a, c)| {
-                                (
-                                    self.lower_const_array(a),
-                                    self.lower_combinator(c, param_defns, local_deps),
-                                )
-                            })
-                            .collect(),
-                    ),
+                    ast::Choices::Enums(v) => v
+                        .iter()
+                        .map(|(i, c)| {
+                            let pat = if i.name == "_" {
+                                ir::ChoicePattern::Wildcard
+                            } else {
+                                ir::ChoicePattern::Enum(i.name.clone())
+                            };
+                            (pat, self.lower_combinator(c, param_defns, local_deps))
+                        })
+                        .collect(),
+                    ast::Choices::Ints(v) => v
+                        .iter()
+                        .map(|(ce, c)| {
+                            let pat = match ce {
+                                Some(elem) => {
+                                    ir::ChoicePattern::Int(self.lower_constraint_elem(elem))
+                                }
+                                None => ir::ChoicePattern::Wildcard,
+                            };
+                            (pat, self.lower_combinator(c, param_defns, local_deps))
+                        })
+                        .collect(),
+                    ast::Choices::Arrays(v) => v
+                        .iter()
+                        .map(|(a, c)| {
+                            let pat = match a {
+                                ast::ConstArray::Wildcard => ir::ChoicePattern::Wildcard,
+                                _ => ir::ChoicePattern::Array(self.lower_const_array(a)),
+                            };
+                            (pat, self.lower_combinator(c, param_defns, local_deps))
+                        })
+                        .collect(),
                 },
             }
         }
@@ -1376,7 +1364,7 @@ pub mod lowering {
                 ast::ConstArray::Repeat { repeat, count, .. } => {
                     ir::ConstArray::Repeat(*repeat, *count)
                 }
-                ast::ConstArray::Wildcard => ir::ConstArray::Wildcard,
+                ast::ConstArray::Wildcard => unreachable!("Wildcard in const array lowering"),
             }
         }
 
