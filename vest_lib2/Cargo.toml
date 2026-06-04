@@ -9,7 +9,7 @@ std = ["alloc", "vstd/std"]
 alloc = ["vstd/alloc"]
 
 [dependencies]
-vstd = "=0.0.0-2026-05-24-0157"
+vstd = "=0.0.0-2026-05-31-0205"
 
 [package.metadata.verus]
 verify = true

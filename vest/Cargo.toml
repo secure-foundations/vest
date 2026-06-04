@@ -17,7 +17,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-vstd = "=0.0.0-2026-05-10-0145"
+vstd = "=0.0.0-2026-05-31-0205"
 
 #vstd = { git = "https://github.com/verus-lang/verus", branch = "main" }
 #verus_builtin = { git = "https://github.com/verus-lang/verus", branch = "main" }
