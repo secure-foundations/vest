@@ -1,8 +1,10 @@
 use super::common::{int_literal, type_needs_exec_lifetime, Analysis, TypeMode};
 use super::writer::{render_ts, CodeWriter};
+use crate::codegen::common::{syn_usize, tuple_chain};
 use crate::vestir::{
     ChoiceCombinator, Combinator, ConstCombinator, EnumCombinator, StructCombinator, StructField,
 };
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl<'a> Analysis<'a> {
@@ -37,8 +39,8 @@ impl<'a> Analysis<'a> {
         let spec_ident = format_ident!("{}", info.names.spec);
         let doc = Self::type_doc(name);
         if let Some(invocation) = self.direct_alias(combinator) {
-            let exec_ty = self.invocation_value_type(invocation, TypeMode::Exec);
-            let spec_ty = self.invocation_value_type(invocation, TypeMode::Spec);
+            let exec_ty = self.render_nominal_type(&invocation.func, TypeMode::Exec);
+            let spec_ty = self.render_nominal_type(&invocation.func, TypeMode::Spec);
             return self.emit_exec_spec_aliases(
                 &exec_ident,
                 &spec_ident,
@@ -137,6 +139,26 @@ impl<'a> Analysis<'a> {
         })
     }
 
+    fn render_struct_inner_type(
+        &self,
+        struct_comb: &StructCombinator,
+        mode: TypeMode,
+    ) -> TokenStream {
+        let mut retained = Vec::new();
+        for field in &struct_comb.0 {
+            match field {
+                StructField::Const { combinator, .. } => {
+                    retained.push(self.render_const_value_type(combinator, mode));
+                }
+                StructField::Dependent { combinator, .. }
+                | StructField::Ordinary { combinator, .. } => {
+                    retained.push(self.render_value_type(combinator, mode));
+                }
+            }
+        }
+        tuple_chain(&retained)
+    }
+
     pub(crate) fn gen_choice_value_types(
         &self,
         name: &str,
@@ -149,7 +171,7 @@ impl<'a> Analysis<'a> {
         let variant_names = self.choice_variant_names(choice_comb);
         let branch_exec_types = self.choice_branch_types(choice_comb, TypeMode::Exec);
         let branch_spec_types = self.choice_branch_types(choice_comb, TypeMode::Spec);
-        let inner_ty = self.choice_sum_type(&branch_spec_types);
+        let inner_ty = self.render_choice_sum_type(&branch_spec_types);
         let exec_lifetime = if branch_exec_types.iter().any(type_needs_exec_lifetime) {
             quote! { <'i> }
         } else {
@@ -235,6 +257,18 @@ impl<'a> Analysis<'a> {
         })
     }
 
+    fn choice_branch_types(
+        &self,
+        choice_comb: &ChoiceCombinator,
+        mode: TypeMode,
+    ) -> Vec<TokenStream> {
+        choice_comb
+            .choices
+            .iter()
+            .map(|(_, combinator)| self.render_value_type(combinator, mode))
+            .collect()
+    }
+
     pub(crate) fn gen_enum_value_types(&self, name: &str, enum_comb: &EnumCombinator) -> String {
         let names = &self.info(name).names;
         let exec_ident = format_ident!("{}", names.exec);
@@ -244,8 +278,8 @@ impl<'a> Analysis<'a> {
             EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
             EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
         };
-        let repr_ty = self.int_type(inferred);
-        let int_spec_ty = self.int_type(inferred);
+        let repr_ty = self.render_int_type(inferred);
+        let int_spec_ty = self.render_int_type(inferred);
         let inner_ty = if exhaustive {
             int_spec_ty.clone()
         } else {
@@ -311,6 +345,25 @@ impl<'a> Analysis<'a> {
             info.needs_lifetime,
             &doc,
         )
+    }
+
+    fn render_const_value_type(&self, combinator: &ConstCombinator, mode: TypeMode) -> TokenStream {
+        match self.ctx.resolve_const(combinator) {
+            ConstCombinator::ConstBytes(bytes) => match mode {
+                TypeMode::Exec => {
+                    let n = syn_usize(bytes.len);
+                    quote! { [u8; #n] }
+                }
+                TypeMode::Spec => quote! { Seq<u8> },
+            },
+            ConstCombinator::ConstInt(int_comb) => self.render_int_type(&int_comb.combinator),
+            ConstCombinator::ConstEnum(enum_comb) => {
+                self.render_nominal_type(&enum_comb.combinator.func, mode)
+            }
+            ConstCombinator::ConstCombinatorInvocation(name) => {
+                self.render_nominal_type(name, mode)
+            }
+        }
     }
 
     fn struct_value_fields(

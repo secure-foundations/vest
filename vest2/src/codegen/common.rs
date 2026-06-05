@@ -130,15 +130,15 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn render_value_type(&self, combinator: &Combinator, mode: TypeMode) -> TokenStream {
         if let Combinator::Invocation(invocation) = combinator {
-            return self.invocation_value_type(invocation, mode);
+            return self.render_nominal_type(&invocation.func, mode);
         }
 
         match self.ctx.resolve_alias(combinator) {
             Combinator::ConstraintInt(ConstraintIntCombinator { combinator, .. }) => {
-                self.int_type(combinator)
+                self.render_int_type(combinator)
             }
             Combinator::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
-                self.invocation_value_type(combinator, mode)
+                self.render_nominal_type(&combinator.func, mode)
             }
             Combinator::Wrap(WrapCombinator { combinator, .. }) => {
                 self.render_value_type(combinator, mode)
@@ -169,20 +169,12 @@ impl<'a> Analysis<'a> {
                 let inner_ty = self.render_value_type(combinator, mode);
                 quote! { Option<#inner_ty> }
             }
-            Combinator::Invocation(invocation) => self.invocation_value_type(invocation, mode),
+            Combinator::Invocation(invocation) => self.render_nominal_type(&invocation.func, mode),
             Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode),
         }
     }
 
-    pub(crate) fn invocation_value_type(
-        &self,
-        invocation: &vestir::CombinatorInvocation,
-        mode: TypeMode,
-    ) -> TokenStream {
-        self.nominal_type(&invocation.func, mode)
-    }
-
-    pub(crate) fn nominal_type(&self, dsl_name: &str, mode: TypeMode) -> TokenStream {
+    pub(crate) fn render_nominal_type(&self, dsl_name: &str, mode: TypeMode) -> TokenStream {
         let info = self.info(dsl_name);
         let ident = match mode {
             TypeMode::Exec => format_ident!("{}", info.names.exec),
@@ -194,65 +186,18 @@ impl<'a> Analysis<'a> {
             quote! { #ident }
         }
     }
-
-    pub(crate) fn render_struct_inner_type(
-        &self,
-        struct_comb: &StructCombinator,
-        mode: TypeMode,
-    ) -> TokenStream {
-        let mut retained = Vec::new();
-        for field in &struct_comb.0 {
-            match field {
-                StructField::Const { combinator, .. } => {
-                    retained.push(self.render_const_value_type(combinator, mode));
-                }
-                StructField::Dependent { combinator, .. }
-                | StructField::Ordinary { combinator, .. } => {
-                    retained.push(self.render_value_type(combinator, mode));
-                }
-            }
-        }
-        tuple_chain(&retained)
-    }
-
-    pub(crate) fn choice_variant_names(&self, choice_comb: &ChoiceCombinator) -> Vec<String> {
-        choice_comb
-            .choices
-            .iter()
-            .enumerate()
-            .map(|(idx, (pat, _))| match pat {
-                ChoicePattern::Enum(name) => name.clone(),
-                ChoicePattern::Int(_) => format!("Variant{}", idx + 1),
-                ChoicePattern::Array(_) => format!("Variant{}", idx + 1),
-                ChoicePattern::Wildcard => "Default".to_string(),
-            })
-            .collect()
-    }
-
-    pub(crate) fn choice_branch_types(
-        &self,
-        choice_comb: &ChoiceCombinator,
-        mode: TypeMode,
-    ) -> Vec<TokenStream> {
-        choice_comb
-            .choices
-            .iter()
-            .map(|(_, combinator)| self.render_value_type(combinator, mode))
-            .collect()
-    }
-
-    pub(crate) fn choice_sum_type(&self, branch_types: &[TokenStream]) -> TokenStream {
+    pub(crate) fn render_choice_sum_type(&self, branch_types: &[TokenStream]) -> TokenStream {
         match branch_types {
             [] => quote! { () },
             [only] => only.clone(),
             [first, rest @ ..] => {
-                let rest = self.choice_sum_type(rest);
+                let rest = self.render_choice_sum_type(rest);
                 quote! { Sum<#first, #rest> }
             }
         }
     }
 
-    pub(crate) fn int_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
+    pub(crate) fn render_int_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
         match combinator {
             vestir::IntCombinator::Signed(bits) => {
                 let ident = format_ident!("i{}", bits);
@@ -268,7 +213,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
+    pub(crate) fn render_int_combinator_ty(&self, combinator: &IntCombinator) -> TokenStream {
         match combinator {
             IntCombinator::Unsigned(8) => quote! { U8 },
             IntCombinator::Unsigned(16) => match self.endianness {
@@ -296,7 +241,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
+    pub(crate) fn render_int_combinator_expr(&self, combinator: &IntCombinator) -> TokenStream {
         match combinator {
             IntCombinator::Unsigned(8) => quote! { U8 },
             IntCombinator::Unsigned(16) => match self.endianness {
@@ -321,27 +266,6 @@ impl<'a> Analysis<'a> {
                 "unsupported integer combinator in spec emitter: {:?}",
                 other
             ),
-        }
-    }
-
-    pub(crate) fn render_const_value_type(
-        &self,
-        combinator: &ConstCombinator,
-        mode: TypeMode,
-    ) -> TokenStream {
-        match self.ctx.resolve_const(combinator) {
-            ConstCombinator::ConstBytes(bytes) => match mode {
-                TypeMode::Exec => {
-                    let n = syn_usize(bytes.len);
-                    quote! { [u8; #n] }
-                }
-                TypeMode::Spec => quote! { Seq<u8> },
-            },
-            ConstCombinator::ConstInt(int_comb) => self.int_type(&int_comb.combinator),
-            ConstCombinator::ConstEnum(enum_comb) => {
-                self.nominal_type(&enum_comb.combinator.func, mode)
-            }
-            ConstCombinator::ConstCombinatorInvocation(name) => self.nominal_type(name, mode),
         }
     }
 
@@ -472,7 +396,31 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn render_constraint_elem_with_ty(
+    pub(crate) fn render_int_constraint(
+        &self,
+        constraint: &vestir::IntConstraint,
+        int_ty: &IntCombinator,
+        value: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match constraint {
+            vestir::IntConstraint::Single(elem) => {
+                self.render_constraint_elem_with_ty(elem, int_ty, value)
+            }
+            vestir::IntConstraint::Set(elems) => {
+                let parts = elems
+                    .iter()
+                    .map(|elem| self.render_constraint_elem_with_ty(elem, int_ty, value.clone()))
+                    .collect::<Vec<_>>();
+                quote! { #(#parts)||* }
+            }
+            vestir::IntConstraint::Neg(inner) => {
+                let inner = self.render_int_constraint(inner, int_ty, value);
+                quote! { !(#inner) }
+            }
+        }
+    }
+
+    fn render_constraint_elem_with_ty(
         &self,
         elem: &ConstraintElem,
         int_ty: &IntCombinator,
@@ -498,30 +446,6 @@ impl<'a> Analysis<'a> {
                     (None, Some(u)) => u,
                     (None, None) => quote! { true },
                 }
-            }
-        }
-    }
-
-    pub(crate) fn render_int_constraint(
-        &self,
-        constraint: &vestir::IntConstraint,
-        int_ty: &IntCombinator,
-        value: proc_macro2::TokenStream,
-    ) -> proc_macro2::TokenStream {
-        match constraint {
-            vestir::IntConstraint::Single(elem) => {
-                self.render_constraint_elem_with_ty(elem, int_ty, value)
-            }
-            vestir::IntConstraint::Set(elems) => {
-                let parts = elems
-                    .iter()
-                    .map(|elem| self.render_constraint_elem_with_ty(elem, int_ty, value.clone()))
-                    .collect::<Vec<_>>();
-                quote! { #(#parts)||* }
-            }
-            vestir::IntConstraint::Neg(inner) => {
-                let inner = self.render_int_constraint(inner, int_ty, value);
-                quote! { !(#inner) }
             }
         }
     }
@@ -573,6 +497,20 @@ impl<'a> Analysis<'a> {
                 quote! { x if #cond }
             }
         }
+    }
+
+    pub(crate) fn choice_variant_names(&self, choice_comb: &ChoiceCombinator) -> Vec<String> {
+        choice_comb
+            .choices
+            .iter()
+            .enumerate()
+            .map(|(idx, (pat, _))| match pat {
+                ChoicePattern::Enum(name) => name.clone(),
+                ChoicePattern::Int(_) => format!("Variant{}", idx + 1),
+                ChoicePattern::Array(_) => format!("Variant{}", idx + 1),
+                ChoicePattern::Wildcard => "Default".to_string(),
+            })
+            .collect()
     }
 
     pub(crate) fn wrapper_generics(&self, param_defns: &[ParamDefn]) -> TokenStream {

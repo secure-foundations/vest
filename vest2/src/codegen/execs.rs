@@ -25,7 +25,7 @@ impl<'a> Analysis<'a> {
         is_struct_parser: bool,
     ) -> String {
         let info = self.info(name);
-        let exec_ty = self.nominal_type(name, TypeMode::Exec);
+        let exec_ty = self.render_nominal_type(name, TypeMode::Exec);
         let param_lt = self.wrapper_generics(param_defns);
         let fmt_has_lt = param_lt.to_string().contains("'i");
         let fmt_ident_str = if fmt_has_lt {
@@ -266,7 +266,7 @@ impl<'a> Analysis<'a> {
             match field {
                 StructField::Const { label, combinator } => {
                     let fmt_expr =
-                        self.exec_const_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+                        self.render_exec_const_expr(combinator, param_defns, CodegenMode::Parse);
                     let fmt_str = render_ts(quote! { #fmt_expr });
                     w.call_chain_stmt(
                         Some(&format!("({}, {})", n_var, label)),
@@ -279,8 +279,11 @@ impl<'a> Analysis<'a> {
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
-                    let fmt_expr =
-                        self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+                    let fmt_expr = self.render_exec_combinator_expr(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Parse,
+                    );
                     let fmt_str = render_ts(quote! { #fmt_expr });
                     w.call_chain_stmt(
                         Some(&format!("({}, {})", n_var, label)),
@@ -342,8 +345,11 @@ impl<'a> Analysis<'a> {
         for field in fields {
             match field {
                 StructField::Const { label, combinator } => {
-                    let fmt_expr =
-                        self.exec_const_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
+                    let fmt_expr = self.render_exec_const_expr(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Serialize,
+                    );
                     let fmt_str = render_ts(quote! { #fmt_expr });
                     w.call_chain_stmt(
                         None,
@@ -355,7 +361,7 @@ impl<'a> Analysis<'a> {
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
-                    let fmt_expr = self.exec_combinator_fmt_expr(
+                    let fmt_expr = self.render_exec_combinator_expr(
                         combinator,
                         param_defns,
                         CodegenMode::Serialize,
@@ -394,20 +400,23 @@ impl<'a> Analysis<'a> {
             match field {
                 StructField::Const { label, combinator } => {
                     let label_ident: TokenStream = format_ident!("{}", label).into_token_stream();
-                    let fmt_expr =
-                        self.exec_const_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
+                    let fmt_expr = self.render_exec_const_expr(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Serialize,
+                    );
                     let prep = quote! { (#fmt_expr).prepare(#label_ident) };
                     w.push_multiline(render_ts(quote! { let #l_var_tok = #prep?; }));
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let label_ident: TokenStream = format_ident!("{}", label).into_token_stream();
-                    let fmt_expr = self.exec_combinator_fmt_expr(
+                    let fmt_expr = self.render_exec_combinator_expr(
                         combinator,
                         param_defns,
                         CodegenMode::Serialize,
                     );
-                    let prep = self.exec_prepare_value(label_ident, fmt_expr, combinator);
+                    let prep = self.render_prepare_value(label_ident, fmt_expr, combinator);
                     w.push_multiline(render_ts(quote! { let #l_var_tok = #prep?; }));
                 }
             }
@@ -436,7 +445,7 @@ impl<'a> Analysis<'a> {
         if let Some(dep) = &comb.depend_id {
             // Dependent choice: match on the selector field
             let match_arms: Vec<TokenStream> =
-                self.choice_parser_arms(comb, &variant_names, &exec_ident, dep, param_defns);
+                self.render_choice_parser_arms(comb, &variant_names, &exec_ident, dep, param_defns);
             w.match_block_stmt(Some("(n, v)"), &format!("self.{}", dep), |w| {
                 for arm in match_arms {
                     w.push_multiline(render_ts(arm));
@@ -444,8 +453,12 @@ impl<'a> Analysis<'a> {
             });
         } else {
             // Non-dependent choice: delegate to the spec fmt combinator
-            let branches: TokenStream =
-                self.choice_parse_arms_nondep(comb, &variant_names, &exec_ident, param_defns);
+            let branches: TokenStream = self.render_choice_parse_arms_nondep(
+                comb,
+                &variant_names,
+                &exec_ident,
+                param_defns,
+            );
             w.call_chain_stmt(
                 Some("(n, v)"),
                 &render_ts(branches),
@@ -458,7 +471,7 @@ impl<'a> Analysis<'a> {
         w.line("Ok((n, v))");
     }
 
-    fn choice_parser_arms(
+    fn render_choice_parser_arms(
         &self,
         comb: &ChoiceCombinator,
         variant_names: &[String],
@@ -472,7 +485,7 @@ impl<'a> Analysis<'a> {
             .map(|((pat, combinator), variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
                 let fmt_expr =
-                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+                    self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
                 let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
                     quote! {
                         if !(#pred) {
@@ -529,7 +542,7 @@ impl<'a> Analysis<'a> {
             .collect()
     }
 
-    fn choice_parse_arms_nondep(
+    fn render_choice_parse_arms_nondep(
         &self,
         comb: &ChoiceCombinator,
         variant_names: &[String],
@@ -545,7 +558,7 @@ impl<'a> Analysis<'a> {
         {
             let variant_ident = format_ident!("{}", variant_name);
             let fmt_expr =
-                self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+                self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
             if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
                 chain = quote! {
                     match (#fmt_expr).parse(&rest) {
@@ -581,7 +594,7 @@ impl<'a> Analysis<'a> {
 
         if let Some(dep) = &comb.depend_id {
             let dep_expr = self.resolve_dep(dep, param_defns);
-            let arms = self.choice_serializer_arms_dep(
+            let arms = self.render_choice_serializer_arms_dep(
                 comb,
                 &variant_names,
                 &exec_ident,
@@ -602,9 +615,12 @@ impl<'a> Analysis<'a> {
             .into_iter()
             .map(|(combinator, variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr =
-                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
+                let fmt_expr = self.render_exec_combinator_expr(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Serialize,
+                );
+                let ser = quote! { (#fmt_expr).serialize(v, obuf); };
                 quote! {
                     #exec_ident::#variant_ident(v) => { #ser }
                 }
@@ -618,7 +634,7 @@ impl<'a> Analysis<'a> {
         });
     }
 
-    fn choice_serializer_arms_dep(
+    fn render_choice_serializer_arms_dep(
         &self,
         comb: &ChoiceCombinator,
         variant_names: &[String],
@@ -631,9 +647,12 @@ impl<'a> Analysis<'a> {
             .zip(variant_names.iter())
             .map(|((pat, combinator), variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr =
-                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                let ser = self.exec_serialize_value(quote! { v }, fmt_expr);
+                let fmt_expr = self.render_exec_combinator_expr(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Serialize,
+                );
+                let ser = quote! { (#fmt_expr).serialize(v, obuf); };
                 match pat {
                     ChoicePattern::Enum(name) => {
                         let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
@@ -704,8 +723,13 @@ impl<'a> Analysis<'a> {
                 self.emit_array_choice_prepare_disjointness_proof(w, &arrays);
             }
             let dep_expr = self.resolve_dep(dep, param_defns);
-            let arms =
-                self.choice_prepare_arms_dep(comb, &variant_names, &exec_ident, dep, param_defns);
+            let arms = self.render_choice_prepare_arms_dep(
+                comb,
+                &variant_names,
+                &exec_ident,
+                dep,
+                param_defns,
+            );
             w.match_block_stmt(None, &format!("({}, v)", render_ts(dep_expr)), |w| {
                 for arm in arms {
                     w.push_multiline(render_ts(arm));
@@ -722,9 +746,12 @@ impl<'a> Analysis<'a> {
             .into_iter()
             .map(|(combinator, variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr =
-                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+                let fmt_expr = self.render_exec_combinator_expr(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Serialize,
+                );
+                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
                 quote! {
                     #exec_ident::#variant_ident(v) => #prep,
                 }
@@ -738,7 +765,7 @@ impl<'a> Analysis<'a> {
         });
     }
 
-    fn choice_prepare_arms_dep(
+    fn render_choice_prepare_arms_dep(
         &self,
         comb: &ChoiceCombinator,
         variant_names: &[String],
@@ -791,8 +818,8 @@ impl<'a> Analysis<'a> {
             .flat_map(|((pat, combinator), variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
                 let fmt_expr =
-                    self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-                let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+                    self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
+                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
                 match pat {
                     ChoicePattern::Enum(name) => {
                         let pat_ident = format_ident!("{}", name);
@@ -948,6 +975,18 @@ impl<'a> Analysis<'a> {
         });
         w.blank_line();
     }
+
+    fn choice_combinators_and_names<'b>(
+        &self,
+        comb: &'b ChoiceCombinator,
+        variant_names: &'b [String],
+    ) -> Vec<(&'b Combinator, &'b String)> {
+        comb.choices
+            .iter()
+            .map(|(_, c)| c)
+            .zip(variant_names.iter())
+            .collect()
+    }
 }
 
 // ============================================================
@@ -958,7 +997,7 @@ impl<'a> Analysis<'a> {
     fn emit_enum_parser_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
         let (variants, exhaustive, inferred) = enum_parts(comb);
-        let prim_expr = self.int_combinator_expr(inferred);
+        let prim_expr = self.render_int_combinator_expr(inferred);
 
         w.call_chain_stmt(
             Some("(n, v)"),
@@ -999,7 +1038,7 @@ impl<'a> Analysis<'a> {
     fn emit_enum_serializer_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
         let (variants, exhaustive, inferred) = enum_parts(comb);
-        let prim_expr = self.int_combinator_expr(inferred);
+        let prim_expr = self.render_int_combinator_expr(inferred);
 
         let known_arms: Vec<TokenStream> = variants
             .iter()
@@ -1037,7 +1076,7 @@ impl<'a> Analysis<'a> {
     fn emit_enum_prepare_body(&self, w: &mut CodeWriter, name: &str, comb: &EnumCombinator) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
         let (variants, exhaustive, inferred) = enum_parts(comb);
-        let prim_expr = self.int_combinator_expr(inferred);
+        let prim_expr = self.render_int_combinator_expr(inferred);
 
         let known_arms: Vec<TokenStream> = variants
             .iter()
@@ -1093,7 +1132,8 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         param_defns: &[ParamDefn],
     ) {
-        let fmt_expr = self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Parse);
+        let fmt_expr =
+            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
 
         w.call_chain_stmt(
             Some("(n, v)"),
@@ -1126,7 +1166,7 @@ impl<'a> Analysis<'a> {
     ) {
         if let Some(invocation) = self.direct_alias(combinator) {
             let target_args =
-                self.exec_invocation_fmt_expr(invocation, param_defns, CodegenMode::Serialize);
+                self.render_exec_invocation_expr(invocation, param_defns, CodegenMode::Serialize);
             w.call_chain_stmt(
                 None,
                 &render_ts(quote! { #target_args }),
@@ -1137,7 +1177,7 @@ impl<'a> Analysis<'a> {
             return;
         }
         let fmt_expr =
-            self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
+            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
         w.call_chain_stmt(
             None,
             &render_ts(quote! { #fmt_expr }),
@@ -1155,7 +1195,7 @@ impl<'a> Analysis<'a> {
     ) {
         if let Some(invocation) = self.direct_alias(combinator) {
             let target_args =
-                self.exec_invocation_fmt_expr(invocation, param_defns, CodegenMode::Serialize);
+                self.render_exec_invocation_expr(invocation, param_defns, CodegenMode::Serialize);
             w.call_chain_stmt(
                 None,
                 &render_ts(quote! { #target_args }),
@@ -1166,8 +1206,8 @@ impl<'a> Analysis<'a> {
             return;
         }
         let fmt_expr =
-            self.exec_combinator_fmt_expr(combinator, param_defns, CodegenMode::Serialize);
-        let prep = self.exec_prepare_value(quote! { v }, fmt_expr, combinator);
+            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
+        let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
         w.line(render_ts(prep));
     }
 }
@@ -1184,20 +1224,8 @@ pub(crate) enum CodegenMode {
 }
 
 impl<'a> Analysis<'a> {
-    fn choice_combinators_and_names<'b>(
-        &self,
-        comb: &'b ChoiceCombinator,
-        variant_names: &'b [String],
-    ) -> Vec<(&'b Combinator, &'b String)> {
-        comb.choices
-            .iter()
-            .map(|(_, c)| c)
-            .zip(variant_names.iter())
-            .collect()
-    }
-
     /// Build the exec-mode combinator expression for a `Combinator`.
-    pub(crate) fn exec_combinator_fmt_expr(
+    pub(crate) fn render_exec_combinator_expr(
         &self,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
@@ -1205,41 +1233,41 @@ impl<'a> Analysis<'a> {
     ) -> TokenStream {
         match combinator {
             Combinator::AndThen(lhs, rhs) => {
-                return self.exec_and_then_fmt_expr(lhs, rhs, param_defns, mode);
+                return self.render_exec_and_then_expr(lhs, rhs, param_defns, mode);
             }
             Combinator::Invocation(invocation) => {
-                return self.exec_invocation_fmt_expr(invocation, param_defns, mode);
+                return self.render_exec_invocation_expr(invocation, param_defns, mode);
             }
             _ => {}
         }
 
         match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(c) => self.int_combinator_expr(&c.combinator),
+            Combinator::ConstraintInt(c) => self.render_int_combinator_expr(&c.combinator),
             Combinator::ConstraintEnum(c) => {
-                self.exec_invocation_fmt_expr(&c.combinator, param_defns, mode)
+                self.render_exec_invocation_expr(&c.combinator, param_defns, mode)
             }
             Combinator::Wrap(wrap) => {
                 let mut body_expr =
-                    self.exec_combinator_fmt_expr(&wrap.combinator, param_defns, mode);
+                    self.render_exec_combinator_expr(&wrap.combinator, param_defns, mode);
                 for const_comb in wrap.post.iter() {
-                    let (c_fmt, c_val) = self.exec_tag_expr(const_comb, param_defns, mode);
+                    let (c_fmt, c_val) = self.render_exec_tag_expr(const_comb, param_defns, mode);
                     body_expr = quote! { SuffixTagged(#body_expr, #c_fmt, #c_val) };
                 }
                 for const_comb in wrap.prior.iter().rev() {
-                    let (c_fmt, c_val) = self.exec_tag_expr(const_comb, param_defns, mode);
+                    let (c_fmt, c_val) = self.render_exec_tag_expr(const_comb, param_defns, mode);
                     body_expr = quote! { PrefixTagged(#c_fmt, #c_val, #body_expr) };
                 }
                 body_expr
             }
             Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
-                let inner_expr = self.exec_combinator_fmt_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
                 quote! { Star(#inner_expr) }
             }
             Combinator::Array(vestir::ArrayCombinator {
                 combinator: inner,
                 len,
             }) => {
-                let inner_expr = self.exec_combinator_fmt_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
                 match self.eval_const_length_expr(len) {
                     Some(n) => {
                         let n_tok = syn_usize(n);
@@ -1271,14 +1299,14 @@ impl<'a> Analysis<'a> {
             },
             Combinator::Tail(_) => quote! { Tail },
             Combinator::Option(vestir::OptionCombinator(inner)) => {
-                let inner_expr = self.exec_combinator_fmt_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
                 quote! { Opt(#inner_expr) }
             }
             Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),
         }
     }
 
-    fn exec_and_then_fmt_expr(
+    fn render_exec_and_then_expr(
         &self,
         lhs: &Combinator,
         rhs: &Combinator,
@@ -1292,18 +1320,18 @@ impl<'a> Analysis<'a> {
                     &|name| self.resolve_dep(name, param_defns),
                     None,
                 );
-                let inner_expr = self.exec_combinator_fmt_expr(rhs, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr(rhs, param_defns, mode);
                 quote! { ExactLen(#len_expr, #inner_expr) }
             }
             _ => {
-                let lhs_expr = self.exec_combinator_fmt_expr(lhs, param_defns, mode);
-                let rhs_expr = self.exec_combinator_fmt_expr(rhs, param_defns, mode);
+                let lhs_expr = self.render_exec_combinator_expr(lhs, param_defns, mode);
+                let rhs_expr = self.render_exec_combinator_expr(rhs, param_defns, mode);
                 quote! { AndThen(#lhs_expr, #rhs_expr) }
             }
         }
     }
 
-    fn exec_invocation_fmt_expr(
+    fn render_exec_invocation_expr(
         &self,
         invocation: &vestir::CombinatorInvocation,
         param_defns: &[ParamDefn],
@@ -1346,7 +1374,7 @@ impl<'a> Analysis<'a> {
     }
 
     /// Build the exec format expression for a ConstCombinator.
-    fn exec_tag_expr(
+    fn render_exec_tag_expr(
         &self,
         combinator: &ConstCombinator,
         param_defns: &[ParamDefn],
@@ -1359,13 +1387,14 @@ impl<'a> Analysis<'a> {
                 (quote! { Fixed::<#n> }, values)
             }
             ConstCombinator::ConstInt(int_comb) => {
-                let prim = self.int_combinator_expr(&int_comb.combinator);
+                let prim = self.render_int_combinator_expr(&int_comb.combinator);
                 let value = int_literal(int_comb.value, &int_comb.combinator);
                 (prim, value)
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner = self.exec_invocation_fmt_expr(&enum_comb.combinator, param_defns, mode);
-                let enum_ty = self.nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
+                let inner =
+                    self.render_exec_invocation_expr(&enum_comb.combinator, param_defns, mode);
+                let enum_ty = self.render_nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
                 let variant = format_ident!("{}", enum_comb.variant);
                 (quote! { ConstEnum(#inner) }, quote! { #enum_ty::#variant })
             }
@@ -1377,7 +1406,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn exec_const_fmt_expr(
+    fn render_exec_const_expr(
         &self,
         combinator: &ConstCombinator,
         param_defns: &[ParamDefn],
@@ -1390,13 +1419,14 @@ impl<'a> Analysis<'a> {
                 quote! { Const(Fixed::<#n>, #values) }
             }
             ConstCombinator::ConstInt(int_comb) => {
-                let prim = self.int_combinator_expr(&int_comb.combinator);
+                let prim = self.render_int_combinator_expr(&int_comb.combinator);
                 let value = int_literal(int_comb.value, &int_comb.combinator);
                 quote! { Const(#prim, #value) }
             }
             ConstCombinator::ConstEnum(enum_comb) => {
-                let inner = self.exec_invocation_fmt_expr(&enum_comb.combinator, param_defns, mode);
-                let enum_ty = self.nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
+                let inner =
+                    self.render_exec_invocation_expr(&enum_comb.combinator, param_defns, mode);
+                let enum_ty = self.render_nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
                 let variant = format_ident!("{}", enum_comb.variant);
                 quote! { Const(#inner, #enum_ty::#variant) }
             }
@@ -1408,11 +1438,11 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn exec_serialize_value(&self, value_expr: TokenStream, fmt_expr: TokenStream) -> TokenStream {
-        quote! { (#fmt_expr).serialize(#value_expr, obuf); }
-    }
-
-    fn prepare_pred_value(&self, value_expr: TokenStream, combinator: &Combinator) -> TokenStream {
+    fn render_prepare_pred_value(
+        &self,
+        value_expr: TokenStream,
+        combinator: &Combinator,
+    ) -> TokenStream {
         match self.ctx.resolve_alias(combinator) {
             Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) => {
                 quote! { *#value_expr }
@@ -1421,13 +1451,13 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn exec_prepare_value(
+    fn render_prepare_value(
         &self,
         value_expr: TokenStream,
         fmt_expr: TokenStream,
         combinator: &Combinator,
     ) -> TokenStream {
-        let pred_value = self.prepare_pred_value(value_expr.clone(), combinator);
+        let pred_value = self.render_prepare_pred_value(value_expr.clone(), combinator);
         if let Some(pred) = self.gen_constraint_pred(combinator, pred_value) {
             quote! {{
                 if !(#pred) {
@@ -1459,7 +1489,7 @@ impl<'a> Analysis<'a> {
     /// Try to resolve the enum type of a dependent field `dep` in the struct or params context.
     fn resolve_dep_enum_type(&self, dep: &str, param_defns: &[ParamDefn]) -> Option<TokenStream> {
         self.resolve_dep_enum_info(dep, param_defns)
-            .map(|(name, _)| self.nominal_type(name, TypeMode::Exec))
+            .map(|(name, _)| self.render_nominal_type(name, TypeMode::Exec))
     }
 
     fn resolve_dep_enum_info(
@@ -1468,52 +1498,38 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) -> Option<(&'a str, &'a EnumCombinator)> {
         let base = dep.split('.').last().unwrap_or(dep);
-        let mut enum_name: Option<&str> = None;
-        // Search in all struct defs for a Dependent field with this name
-        for def in self.defs {
-            if let vestir::Definition::StructDef { combinator, .. } = def {
-                for field in &combinator.0 {
-                    if let StructField::Dependent { label, combinator } = field {
-                        if label == base {
-                            if let Combinator::Invocation(inv) = combinator {
-                                enum_name = Some(inv.func.as_str());
-                                break;
-                            }
-                        }
-                    }
+        let enum_name = self
+            .defs
+            .iter()
+            .find_map(|def| {
+                if let vestir::Definition::StructDef { combinator, .. } = def {
+                    combinator.0.iter().find_map(|field| match field {
+                        StructField::Dependent {
+                            label,
+                            combinator: Combinator::Invocation(inv),
+                        } if label == base => Some(inv.func.as_str()),
+                        _ => None,
+                    })
+                } else {
+                    None
                 }
-            }
-            if enum_name.is_some() {
-                break;
-            }
-        }
-        // Also search in param_defns
-        if enum_name.is_none() {
-            for p in param_defns {
-                match p {
-                    ParamDefn::Dependent { name, combinator } => {
-                        if name == base {
-                            if let Combinator::Invocation(inv) = combinator {
-                                enum_name = Some(inv.func.as_str());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        let enum_name = enum_name?;
-        for def in self.defs {
-            if let vestir::Definition::EnumDef {
+            })
+            .or_else(|| {
+                param_defns.iter().find_map(|p| match p {
+                    ParamDefn::Dependent {
+                        name,
+                        combinator: Combinator::Invocation(inv),
+                    } if name == base => Some(inv.func.as_str()),
+                    _ => None,
+                })
+            })?;
+
+        self.defs.iter().find_map(|def| match def {
+            vestir::Definition::EnumDef {
                 name, combinator, ..
-            } = def
-            {
-                if name == enum_name {
-                    return Some((name.as_str(), combinator));
-                }
-            }
-        }
-        None
+            } if name == enum_name => Some((name.as_str(), combinator)),
+            _ => None,
+        })
     }
 
     fn const_array_bytes(&self, arr: &ConstArray) -> Option<Vec<u8>> {
@@ -1561,7 +1577,7 @@ impl<'a> Analysis<'a> {
                 self.render_int_constraint(constraint, &c.combinator, val_tokens)
             }),
             Combinator::ConstraintEnum(c) => {
-                let value_ty = self.nominal_type(&c.combinator.func, TypeMode::Exec);
+                let value_ty = self.render_nominal_type(&c.combinator.func, TypeMode::Exec);
                 Some(self.render_enum_constraint(&c.constraint, &value_ty, val_tokens))
             }
             _ => None,

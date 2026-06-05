@@ -2,8 +2,7 @@ use super::common::{int_literal, syn_usize, Analysis, FormatNames, TypeMode};
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
     self, ChoiceCombinator, ChoicePattern, Combinator, ConstCombinator, ConstraintElem,
-    ConstraintEnumCombinator, ConstraintIntCombinator, EnumCombinator, Param, ParamDefn,
-    StructCombinator, StructField,
+    EnumCombinator, Param, ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -93,7 +92,7 @@ impl<'a> Analysis<'a> {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
         let inner_ident = info.names.spec_ctor_ident();
-        let top_value_ty = self.nominal_type(name, TypeMode::Spec);
+        let top_value_ty = self.render_nominal_type(name, TypeMode::Spec);
         let wrapper_generics = self.wrapper_generics(param_defns);
         let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
 
@@ -325,7 +324,7 @@ impl<'a> Analysis<'a> {
     fn render_and_then_spec(&self, lhs: &Combinator, rhs: &Combinator) -> RenderedSpec {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
-                let len_ty = self.int_type(&bytes.len.ty);
+                let len_ty = self.render_int_type(&bytes.len.ty);
                 let len_expr = self.render_length_expr_with(
                     &bytes.len,
                     &|name| path_tokens(name),
@@ -366,178 +365,152 @@ impl<'a> Analysis<'a> {
         }
 
         match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(c) => self.render_constraint_int(c),
-            Combinator::ConstraintEnum(c) => self.render_constraint_enum(c),
-            Combinator::Wrap(wrap) => self.render_wrap(wrap),
-            Combinator::Vec(vec_comb) => self.render_vec(vec_comb),
-            Combinator::Array(array_comb) => self.render_array(array_comb),
-            Combinator::Bytes(bytes) => self.render_bytes(bytes),
-            Combinator::Tail(_) => RenderedSpec {
-                ty: quote! { Tail },
-                expr: quote! { Tail },
-                value_ty: quote! { Seq<u8> },
-                has_value: true,
-            },
-            Combinator::Option(opt) => self.render_option(opt),
-            Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),
-        }
-    }
-
-    fn render_constraint_int(&self, c: &ConstraintIntCombinator) -> RenderedSpec {
-        let prim_ty = self.int_combinator_ty(&c.combinator);
-        let prim_expr = self.int_combinator_expr(&c.combinator);
-        let value_ty = self.int_type(&c.combinator);
-        match &c.constraint {
-            None => RenderedSpec {
-                ty: prim_ty,
-                expr: prim_expr,
-                value_ty,
-                has_value: true,
-            },
-            Some(constraint) => {
-                let pred = self.render_int_constraint(constraint, &c.combinator, quote! { x });
-                let ty = quote! { Refined<#prim_ty, PredFnSpec<#value_ty>> };
-                let expr = quote! { Refined(#prim_expr, |x: #value_ty| #pred) };
-                RenderedSpec {
-                    ty,
-                    expr,
-                    value_ty,
-                    has_value: true,
+            Combinator::ConstraintInt(c) => {
+                let prim_ty = self.render_int_combinator_ty(&c.combinator);
+                let prim_expr = self.render_int_combinator_expr(&c.combinator);
+                let value_ty = self.render_int_type(&c.combinator);
+                let (ty, expr) = match &c.constraint {
+                    None => (prim_ty, prim_expr),
+                    Some(constraint) => {
+                        let pred =
+                            self.render_int_constraint(constraint, &c.combinator, quote! { x });
+                        let ty = quote! { Refined<#prim_ty, PredFnSpec<#value_ty>> };
+                        let expr = quote! { Refined(#prim_expr, |x: #value_ty| #pred) };
+                        (ty, expr)
+                    }
+                };
+                RenderedSpec::new(ty, expr, value_ty, true)
+            }
+            Combinator::ConstraintEnum(c) => {
+                let inner =
+                    self.render_spec_combinator(&Combinator::Invocation(c.combinator.clone()));
+                let value_ty = inner.value_ty.clone();
+                let pred = self.render_enum_constraint(&c.constraint, &value_ty, quote! { x });
+                let inner_ty = &inner.ty;
+                let inner_expr = &inner.expr;
+                let ty = quote! { Refined<#inner_ty, PredFnSpec<#value_ty>> };
+                let expr = quote! { Refined(#inner_expr, |x: #value_ty| #pred) };
+                RenderedSpec::new(ty, expr, value_ty, true)
+            }
+            Combinator::Wrap(wrap) => {
+                let mut body = self.render_spec_combinator(&wrap.combinator);
+                for const_comb in wrap.post.iter() {
+                    let c = self.render_tag_spec(const_comb);
+                    let body_ty = &body.ty;
+                    let body_expr = &body.expr;
+                    let c_ty = &c.ty;
+                    let c_expr = &c.expr;
+                    let c_value_expr = &c.value_expr;
+                    let ty = quote! { SuffixTagged<#body_ty, #c_ty> };
+                    let expr = quote! { SuffixTagged(#body_expr, #c_expr, #c_value_expr) };
+                    body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
                 }
+                for const_comb in wrap.prior.iter().rev() {
+                    let c = self.render_tag_spec(const_comb);
+                    let body_ty = &body.ty;
+                    let body_expr = &body.expr;
+                    let c_ty = &c.ty;
+                    let c_expr = &c.expr;
+                    let c_value_expr = &c.value_expr;
+                    let ty = quote! { PrefixTagged<#c_ty, #body_ty> };
+                    let expr = quote! { PrefixTagged(#c_expr, #c_value_expr, #body_expr) };
+                    body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
+                }
+                body
             }
-        }
-    }
-
-    fn render_constraint_enum(&self, c: &ConstraintEnumCombinator) -> RenderedSpec {
-        let inner = self.render_spec_combinator(&Combinator::Invocation(c.combinator.clone()));
-        let value_ty = inner.value_ty.clone();
-        let pred = self.render_enum_constraint(&c.constraint, &value_ty, quote! { x });
-        let inner_ty = &inner.ty;
-        let inner_expr = &inner.expr;
-        let ty = quote! { Refined<#inner_ty, PredFnSpec<#value_ty>> };
-        let expr = quote! { Refined(#inner_expr, |x: #value_ty| #pred) };
-        RenderedSpec {
-            ty,
-            expr,
-            value_ty,
-            has_value: true,
-        }
-    }
-
-    fn render_bytes(&self, bytes: &vestir::BytesCombinator) -> RenderedSpec {
-        let value_ty = quote! { Seq<u8> };
-        match self.eval_const_length_expr(&bytes.len) {
-            Some(n) => {
-                let n = syn_usize(n);
-                RenderedSpec::new(quote! { Fixed<#n> }, quote! { Fixed::<#n> }, value_ty, true)
-            }
-            None => {
-                let len_ty = self.int_type(&bytes.len.ty);
-                let len = self.render_length_expr_with(
-                    &bytes.len,
-                    &|name| path_tokens(name),
-                    Some(&len_ty),
-                );
-                RenderedSpec::new(
-                    quote! { Varied<#len_ty> },
-                    quote! { Varied(#len) },
-                    value_ty,
-                    true,
-                )
-            }
-        }
-    }
-
-    fn render_vec(&self, vec_comb: &vestir::VecCombinator) -> RenderedSpec {
-        match vec_comb {
-            vestir::VecCombinator::Vec(inner) => {
-                let inner_fmt = self.render_spec_combinator(inner);
+            Combinator::Vec(vec_comb) => match vec_comb {
+                vestir::VecCombinator::Vec(inner) => {
+                    let inner_fmt = self.render_spec_combinator(inner);
+                    let inner_ty = &inner_fmt.ty;
+                    let inner_expr = &inner_fmt.expr;
+                    let inner_value_ty = &inner_fmt.value_ty;
+                    let value_ty = quote! { Seq<#inner_value_ty> };
+                    RenderedSpec::new(
+                        quote! { RepeatTillEnd<#inner_ty> },
+                        quote! { RepeatTillEnd(#inner_expr) },
+                        value_ty,
+                        true,
+                    )
+                }
+            },
+            Combinator::Array(array_comb) => {
+                let inner_fmt = self.render_spec_combinator(&array_comb.combinator);
                 let inner_ty = &inner_fmt.ty;
                 let inner_expr = &inner_fmt.expr;
                 let inner_value_ty = &inner_fmt.value_ty;
                 let value_ty = quote! { Seq<#inner_value_ty> };
+                match self.eval_const_length_expr(&array_comb.len) {
+                    Some(n) => {
+                        let n = syn_usize(n);
+                        RenderedSpec::new(
+                            quote! { Array<#n, #inner_ty> },
+                            quote! { Array::<#n, _>(#inner_expr) },
+                            value_ty,
+                            true,
+                        )
+                    }
+                    None => {
+                        let len_ty = self.render_int_type(&array_comb.len.ty);
+                        let len = self.render_length_expr_with(
+                            &array_comb.len,
+                            &|name| path_tokens(name),
+                            Some(&len_ty),
+                        );
+                        RenderedSpec::new(
+                            quote! { RepeatN<#inner_ty, #len_ty> },
+                            quote! { RepeatN(#len, #inner_expr) },
+                            value_ty,
+                            true,
+                        )
+                    }
+                }
+            }
+            Combinator::Bytes(bytes) => {
+                let value_ty = quote! { Seq<u8> };
+                match self.eval_const_length_expr(&bytes.len) {
+                    Some(n) => {
+                        let n = syn_usize(n);
+                        RenderedSpec::new(
+                            quote! { Fixed<#n> },
+                            quote! { Fixed::<#n> },
+                            value_ty,
+                            true,
+                        )
+                    }
+                    None => {
+                        let len_ty = self.render_int_type(&bytes.len.ty);
+                        let len = self.render_length_expr_with(
+                            &bytes.len,
+                            &|name| path_tokens(name),
+                            Some(&len_ty),
+                        );
+                        RenderedSpec::new(
+                            quote! { Varied<#len_ty> },
+                            quote! { Varied(#len) },
+                            value_ty,
+                            true,
+                        )
+                    }
+                }
+            }
+            Combinator::Tail(_) => {
+                RenderedSpec::new(quote! { Tail }, quote! { Tail }, quote! { Seq<u8> }, true)
+            }
+            Combinator::Option(opt) => {
+                let inner = self.render_spec_combinator(&opt.0);
+                let inner_ty = &inner.ty;
+                let inner_expr = &inner.expr;
+                let inner_value_ty = &inner.value_ty;
+                let value_ty = quote! { Option<#inner_value_ty> };
                 RenderedSpec::new(
-                    quote! { RepeatTillEnd<#inner_ty> },
-                    quote! { RepeatTillEnd(#inner_expr) },
+                    quote! { OptionalEnd<#inner_ty> },
+                    quote! { OptionalEnd(#inner_expr) },
                     value_ty,
                     true,
                 )
             }
+            Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),
         }
-    }
-
-    fn render_array(&self, array_comb: &vestir::ArrayCombinator) -> RenderedSpec {
-        let inner_fmt = self.render_spec_combinator(&array_comb.combinator);
-        let inner_ty = &inner_fmt.ty;
-        let inner_expr = &inner_fmt.expr;
-        let inner_value_ty = &inner_fmt.value_ty;
-        let value_ty = quote! { Seq<#inner_value_ty> };
-        match self.eval_const_length_expr(&array_comb.len) {
-            Some(n) => {
-                let n = syn_usize(n);
-                RenderedSpec::new(
-                    quote! { Array<#n, #inner_ty> },
-                    quote! { Array::<#n, _>(#inner_expr) },
-                    value_ty,
-                    true,
-                )
-            }
-            None => {
-                let len_ty = self.int_type(&array_comb.len.ty);
-                let len = self.render_length_expr_with(
-                    &array_comb.len,
-                    &|name| path_tokens(name),
-                    Some(&len_ty),
-                );
-                RenderedSpec::new(
-                    quote! { RepeatN<#inner_ty, #len_ty> },
-                    quote! { RepeatN(#len, #inner_expr) },
-                    value_ty,
-                    true,
-                )
-            }
-        }
-    }
-
-    fn render_option(&self, opt: &vestir::OptionCombinator) -> RenderedSpec {
-        let inner = self.render_spec_combinator(&opt.0);
-        let inner_ty = &inner.ty;
-        let inner_expr = &inner.expr;
-        let inner_value_ty = &inner.value_ty;
-        let value_ty = quote! { Option<#inner_value_ty> };
-        RenderedSpec::new(
-            quote! { OptionalEnd<#inner_ty> },
-            quote! { OptionalEnd(#inner_expr) },
-            value_ty,
-            true,
-        )
-    }
-
-    fn render_wrap(&self, wrap: &vestir::WrapCombinator) -> RenderedSpec {
-        let mut body = self.render_spec_combinator(&wrap.combinator);
-        for const_comb in wrap.post.iter() {
-            let c = self.render_tag_spec(const_comb);
-            let body_ty = &body.ty;
-            let body_expr = &body.expr;
-            let c_ty = &c.ty;
-            let c_expr = &c.expr;
-            let c_value_expr = &c.value_expr;
-            let ty = quote! { SuffixTagged<#body_ty, #c_ty> };
-            let expr = quote! { SuffixTagged(#body_expr, #c_expr, #c_value_expr) };
-            body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
-        }
-        for const_comb in wrap.prior.iter().rev() {
-            let c = self.render_tag_spec(const_comb);
-            let body_ty = &body.ty;
-            let body_expr = &body.expr;
-            let c_ty = &c.ty;
-            let c_expr = &c.expr;
-            let c_value_expr = &c.value_expr;
-            let ty = quote! { PrefixTagged<#c_ty, #body_ty> };
-            let expr = quote! { PrefixTagged(#c_expr, #c_value_expr, #body_expr) };
-            body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
-        }
-        body
     }
 
     fn render_struct_fields(&self, fields: &[StructField]) -> RenderedSpec {
@@ -676,9 +649,9 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstInt(int_comb) => {
-                let prim_ty = self.int_combinator_ty(&int_comb.combinator);
-                let prim_expr = self.int_combinator_expr(&int_comb.combinator);
-                let value_ty = self.int_type(&int_comb.combinator);
+                let prim_ty = self.render_int_combinator_ty(&int_comb.combinator);
+                let prim_expr = self.render_int_combinator_expr(&int_comb.combinator);
+                let value_ty = self.render_int_type(&int_comb.combinator);
                 let value_expr = int_literal(int_comb.value, &int_comb.combinator);
                 ConstRendered {
                     ty: prim_ty,
@@ -710,7 +683,7 @@ impl<'a> Analysis<'a> {
                 let fmt_ident = format_ident!("{}", info.names.fmt);
                 let ty_ident = format_ident!("{}Spec", info.names.fmt);
                 let inner_ident = info.names.spec_ctor_ident();
-                let value_ty = self.nominal_type(name, TypeMode::Spec);
+                let value_ty = self.render_nominal_type(name, TypeMode::Spec);
                 let value_expr = quote! { arbitrary() };
                 ConstRendered {
                     ty: quote! { #ty_ident },
@@ -774,6 +747,7 @@ impl<'a> Analysis<'a> {
         let info = self.info(name);
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
+        // let raw = self.render_choice_raw(choice_comb, Some(name));
         let raw = self.render_choice_raw(choice_comb, Some(name));
         let variant_names = self.choice_variant_names(choice_comb);
         let forward_arms = variant_names.iter().enumerate().map(|(idx, variant)| {
@@ -968,8 +942,8 @@ impl<'a> Analysis<'a> {
             .iter()
             .map(|fmt| fmt.value_ty.clone())
             .collect::<Vec<_>>();
-        let ty = self.choice_sum_type(&branch_tys);
-        let value_ty = self.choice_sum_type(&branch_value_tys);
+        let ty = self.render_choice_sum_type(&branch_tys);
+        let value_ty = self.render_choice_sum_type(&branch_value_tys);
         let dep = path_tokens(
             choice_comb
                 .depend_id
@@ -996,9 +970,9 @@ impl<'a> Analysis<'a> {
                 (enums.as_slice(), false, inferred)
             }
         };
-        let prim_ty = self.int_combinator_ty(inferred);
-        let prim_expr = self.int_combinator_expr(inferred);
-        let int_spec_ty = self.int_type(inferred);
+        let prim_ty = self.render_int_combinator_ty(inferred);
+        let prim_expr = self.render_int_combinator_expr(inferred);
+        let int_spec_ty = self.render_int_type(inferred);
         let eq_terms = variants
             .iter()
             .map(|variant| {
@@ -1122,9 +1096,9 @@ impl<'a> Analysis<'a> {
                 }
             }
             ConstCombinator::ConstInt(int_comb) => {
-                let prim_ty = self.int_combinator_ty(&int_comb.combinator);
-                let prim_expr = self.int_combinator_expr(&int_comb.combinator);
-                let value_ty = self.int_type(&int_comb.combinator);
+                let prim_ty = self.render_int_combinator_ty(&int_comb.combinator);
+                let prim_expr = self.render_int_combinator_expr(&int_comb.combinator);
+                let value_ty = self.render_int_type(&int_comb.combinator);
                 let value_expr = int_literal(int_comb.value, &int_comb.combinator);
                 ConstRendered {
                     ty: quote! { Const<#prim_ty, #value_ty> },
@@ -1156,7 +1130,7 @@ impl<'a> Analysis<'a> {
                 let ty_ident = format_ident!("{}Spec", info.names.fmt);
                 let fmt_ident = format_ident!("{}", info.names.fmt);
                 let inner_ident = info.names.spec_ctor_ident();
-                let value_ty = self.nominal_type(name, TypeMode::Spec);
+                let value_ty = self.render_nominal_type(name, TypeMode::Spec);
                 let value_expr = quote! { arbitrary() };
                 ConstRendered {
                     ty: quote! { #ty_ident },
@@ -1195,7 +1169,7 @@ impl<'a> Analysis<'a> {
                     .find_map(|param| match param {
                         ParamDefn::Dependent { name, combinator } if name == dep_base => {
                             if let Combinator::Invocation(inv) = combinator {
-                                Some(self.nominal_type(&inv.func, TypeMode::Spec))
+                                Some(self.render_nominal_type(&inv.func, TypeMode::Spec))
                             } else {
                                 None
                             }
@@ -1214,7 +1188,7 @@ impl<'a> Analysis<'a> {
                     combinator.0.iter().find_map(|field| match field {
                         StructField::Dependent { label, combinator } if label == dep_base => {
                             if let Combinator::Invocation(inv) = combinator {
-                                Some(self.nominal_type(&inv.func, TypeMode::Spec))
+                                Some(self.render_nominal_type(&inv.func, TypeMode::Spec))
                             } else {
                                 None
                             }
@@ -1296,7 +1270,7 @@ impl<'a> Analysis<'a> {
                         }),
                         Combinator::ConstraintEnum(c) => Some(self.render_enum_constraint(
                             &c.constraint,
-                            &self.nominal_type(&c.combinator.func, TypeMode::Spec),
+                            &self.render_nominal_type(&c.combinator.func, TypeMode::Spec),
                             quote! { self.#field_ident },
                         )),
                         Combinator::Invocation(invocation) => {
