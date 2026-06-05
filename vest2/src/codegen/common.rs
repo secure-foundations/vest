@@ -1,8 +1,8 @@
 use crate::vestir::{
     self, ArrayCombinator, ChoiceCombinator, ChoicePattern, Combinator, CombinatorInvocation,
-    ConstArray, ConstCombinator, ConstraintEnumCombinator, ConstraintIntCombinator, Definition,
-    Endianess, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator, ParamDefn, StructCombinator,
-    StructField, TailCombinator, VecCombinator, WrapCombinator,
+    ConstArray, ConstCombinator, ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator,
+    Definition, Endianess, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator, ParamDefn,
+    StructCombinator, StructField, TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
@@ -439,6 +439,138 @@ impl<'a> Analysis<'a> {
                 };
                 let len_stream = syn_usize(*len);
                 quote! { [#value_stream; #len_stream] }
+            }
+        }
+    }
+
+    pub(crate) fn render_constraint_elem_pred(
+        &self,
+        elem: &ConstraintElem,
+        value: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match elem {
+            ConstraintElem::Single(v) => {
+                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                quote! { #value == #lit }
+            }
+            ConstraintElem::Range { start, end } => {
+                let lower = start.as_ref().map(|v| {
+                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                    quote! { #value >= #lit }
+                });
+                let upper = end.as_ref().map(|v| {
+                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                    quote! { #value <= #lit }
+                });
+                match (lower, upper) {
+                    (Some(l), Some(u)) => quote! { #l && #u },
+                    (Some(l), None) => l,
+                    (None, Some(u)) => u,
+                    (None, None) => quote! { true },
+                }
+            }
+        }
+    }
+
+    pub(crate) fn render_constraint_elem_with_ty(
+        &self,
+        elem: &ConstraintElem,
+        int_ty: &IntCombinator,
+        value: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match elem {
+            ConstraintElem::Single(v) => {
+                let lit = int_literal(*v, int_ty);
+                quote! { #value == #lit }
+            }
+            ConstraintElem::Range { start, end } => {
+                let lower = start.as_ref().map(|v| {
+                    let lit = int_literal(*v, int_ty);
+                    quote! { #value >= #lit }
+                });
+                let upper = end.as_ref().map(|v| {
+                    let lit = int_literal(*v, int_ty);
+                    quote! { #value <= #lit }
+                });
+                match (lower, upper) {
+                    (Some(l), Some(u)) => quote! { #l && #u },
+                    (Some(l), None) => l,
+                    (None, Some(u)) => u,
+                    (None, None) => quote! { true },
+                }
+            }
+        }
+    }
+
+    pub(crate) fn render_int_constraint(
+        &self,
+        constraint: &vestir::IntConstraint,
+        int_ty: &IntCombinator,
+        value: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match constraint {
+            vestir::IntConstraint::Single(elem) => {
+                self.render_constraint_elem_with_ty(elem, int_ty, value)
+            }
+            vestir::IntConstraint::Set(elems) => {
+                let parts = elems
+                    .iter()
+                    .map(|elem| self.render_constraint_elem_with_ty(elem, int_ty, value.clone()))
+                    .collect::<Vec<_>>();
+                quote! { #(#parts)||* }
+            }
+            vestir::IntConstraint::Neg(inner) => {
+                let inner = self.render_int_constraint(inner, int_ty, value);
+                quote! { !(#inner) }
+            }
+        }
+    }
+
+    pub(crate) fn render_enum_constraint(
+        &self,
+        constraint: &vestir::EnumConstraint,
+        enum_ty: &proc_macro2::TokenStream,
+        value: proc_macro2::TokenStream,
+    ) -> proc_macro2::TokenStream {
+        match constraint {
+            vestir::EnumConstraint::Single(name) => {
+                let variant = format_ident!("{}", name);
+                quote! { #value == #enum_ty::#variant }
+            }
+            vestir::EnumConstraint::Set(names) => {
+                let parts = names.iter().map(|name| {
+                    let variant = format_ident!("{}", name);
+                    quote! { #value == #enum_ty::#variant }
+                });
+                quote! { #(#parts)||* }
+            }
+            vestir::EnumConstraint::Neg(inner) => {
+                let inner = self.render_enum_constraint(inner, enum_ty, value);
+                quote! { !(#inner) }
+            }
+        }
+    }
+
+    pub(crate) fn render_constraint_elem_pat(
+        &self,
+        elem: &ConstraintElem,
+    ) -> proc_macro2::TokenStream {
+        match elem {
+            ConstraintElem::Single(v) => {
+                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                quote! { #lit }
+            }
+            ConstraintElem::Range {
+                start: Some(start),
+                end: Some(end),
+            } => {
+                let start = proc_macro2::Literal::i128_unsuffixed(*start);
+                let end = proc_macro2::Literal::i128_unsuffixed(*end);
+                quote! { #start ..= #end }
+            }
+            _ => {
+                let cond = self.render_constraint_elem_pred(elem, quote! { x });
+                quote! { x if #cond }
             }
         }
     }

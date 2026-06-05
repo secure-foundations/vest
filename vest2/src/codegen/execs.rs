@@ -496,7 +496,7 @@ impl<'a> Analysis<'a> {
                         }
                     }
                     ChoicePattern::Int(elem) => {
-                        let pat_ts = self.int_constraint_elem_exec_pat(elem);
+                        let pat_ts = self.render_constraint_elem_pat(elem);
                         quote! {
                             #pat_ts => {
                                 let (n, v) = (#fmt_expr).parse(&rest)?;
@@ -651,7 +651,7 @@ impl<'a> Analysis<'a> {
                             }
                         }
                         _ => {
-                            let cond = self.render_constraint_elem_exec(elem, quote! { x });
+                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
                             quote! {
                                 (x, #exec_ident::#variant_ident(v)) if #cond => { #ser }
                             }
@@ -761,7 +761,7 @@ impl<'a> Analysis<'a> {
             .iter()
             .filter_map(|(pat, _)| match pat {
                 ChoicePattern::Int(elem) => {
-                    Some(self.render_constraint_elem_exec(elem, quote! { x }))
+                    Some(self.render_constraint_elem_pred(elem, quote! { x }))
                 }
                 _ => None,
             })
@@ -809,7 +809,7 @@ impl<'a> Analysis<'a> {
                             }]
                         }
                         _ => {
-                            let cond = self.render_constraint_elem_exec(elem, quote! { x });
+                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
                             vec![quote! {
                                 (x, #exec_ident::#variant_ident(v)) if #cond => #prep,
                             }]
@@ -1408,139 +1408,6 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn int_constraint_elem_exec_pat(&self, elem: &vestir::ConstraintElem) -> TokenStream {
-        match elem {
-            vestir::ConstraintElem::Single(v) => {
-                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                quote! { #lit }
-            }
-            vestir::ConstraintElem::Range {
-                start: Some(start),
-                end: Some(end),
-            } => {
-                let s = proc_macro2::Literal::i128_unsuffixed(*start);
-                let e = proc_macro2::Literal::i128_unsuffixed(*end);
-                quote! { #s ..= #e }
-            }
-            _ => {
-                // complex range — use a guard
-                let cond = self.render_constraint_elem_exec(elem, quote! { x });
-                quote! { x if #cond }
-            }
-        }
-    }
-
-    fn render_constraint_elem_exec(
-        &self,
-        elem: &vestir::ConstraintElem,
-        value: TokenStream,
-    ) -> TokenStream {
-        match elem {
-            vestir::ConstraintElem::Single(v) => {
-                let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                quote! { #value == #lit }
-            }
-            vestir::ConstraintElem::Range { start, end } => {
-                let lower = start.as_ref().map(|v| {
-                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                    quote! { #value >= #lit }
-                });
-                let upper = end.as_ref().map(|v| {
-                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                    quote! { #value <= #lit }
-                });
-                match (lower, upper) {
-                    (Some(l), Some(u)) => quote! { #l && #u },
-                    (Some(l), None) => l,
-                    (None, Some(u)) => u,
-                    (None, None) => quote! { true },
-                }
-            }
-        }
-    }
-
-    fn render_int_constraint_exec(
-        &self,
-        constraint: &vestir::IntConstraint,
-        int_ty: &vestir::IntCombinator,
-        value: TokenStream,
-    ) -> TokenStream {
-        match constraint {
-            vestir::IntConstraint::Single(elem) => {
-                self.render_int_constraint_elem_exec(elem, int_ty, value)
-            }
-            vestir::IntConstraint::Set(elems) => {
-                let parts: Vec<_> = elems
-                    .iter()
-                    .map(|elem| self.render_int_constraint_elem_exec(elem, int_ty, value.clone()))
-                    .collect();
-                quote! { #(#parts)||* }
-            }
-            vestir::IntConstraint::Neg(inner) => {
-                let inner = self.render_int_constraint_exec(inner, int_ty, value);
-                quote! { !(#inner) }
-            }
-        }
-    }
-
-    fn render_int_constraint_elem_exec(
-        &self,
-        elem: &vestir::ConstraintElem,
-        int_ty: &vestir::IntCombinator,
-        value: TokenStream,
-    ) -> TokenStream {
-        match elem {
-            vestir::ConstraintElem::Single(v) => {
-                let lit = int_literal(*v, int_ty);
-                quote! { #value == #lit }
-            }
-            vestir::ConstraintElem::Range { start, end } => {
-                let lower = start.as_ref().map(|v| {
-                    let lit = int_literal(*v, int_ty);
-                    quote! { #value >= #lit }
-                });
-                let upper = end.as_ref().map(|v| {
-                    let lit = int_literal(*v, int_ty);
-                    quote! { #value <= #lit }
-                });
-                match (lower, upper) {
-                    (Some(l), Some(u)) => quote! { #l && #u },
-                    (Some(l), None) => l,
-                    (None, Some(u)) => u,
-                    (None, None) => quote! { true },
-                }
-            }
-        }
-    }
-
-    fn render_enum_constraint_exec(
-        &self,
-        constraint: &vestir::EnumConstraint,
-        enum_ty: &TokenStream,
-        value: TokenStream,
-    ) -> TokenStream {
-        match constraint {
-            vestir::EnumConstraint::Single(name) => {
-                let variant = format_ident!("{}", name);
-                quote! { #value == #enum_ty::#variant }
-            }
-            vestir::EnumConstraint::Set(names) => {
-                let parts: Vec<_> = names
-                    .iter()
-                    .map(|name| {
-                        let variant = format_ident!("{}", name);
-                        quote! { #value == #enum_ty::#variant }
-                    })
-                    .collect();
-                quote! { #(#parts)||* }
-            }
-            vestir::EnumConstraint::Neg(inner) => {
-                let inner = self.render_enum_constraint_exec(inner, enum_ty, value);
-                quote! { !(#inner) }
-            }
-        }
-    }
-
     fn exec_serialize_value(&self, value_expr: TokenStream, fmt_expr: TokenStream) -> TokenStream {
         quote! { (#fmt_expr).serialize(#value_expr, obuf); }
     }
@@ -1691,11 +1558,11 @@ impl<'a> Analysis<'a> {
         let resolved = self.ctx.resolve_alias(combinator);
         match resolved {
             Combinator::ConstraintInt(c) => c.constraint.as_ref().map(|constraint| {
-                self.render_int_constraint_exec(constraint, &c.combinator, val_tokens)
+                self.render_int_constraint(constraint, &c.combinator, val_tokens)
             }),
             Combinator::ConstraintEnum(c) => {
                 let value_ty = self.nominal_type(&c.combinator.func, TypeMode::Exec);
-                Some(self.render_enum_constraint_exec(&c.constraint, &value_ty, val_tokens))
+                Some(self.render_enum_constraint(&c.constraint, &value_ty, val_tokens))
             }
             _ => None,
         }
