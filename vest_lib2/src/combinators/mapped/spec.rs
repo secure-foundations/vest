@@ -7,50 +7,6 @@ use vstd::prelude::*;
 
 verus! {
 
-pub trait SpecMap {
-    type Input;
-
-    type Output;
-
-    open spec fn wf(&self, i: Self::Input) -> bool {
-        true
-    }
-
-    spec fn spec_map(&self, i: Self::Input) -> Self::Output;
-}
-
-impl<I, O> SpecMap for spec_fn(I) -> O {
-    type Input = I;
-
-    type Output = O;
-
-    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
-        (self)(i)
-    }
-}
-
-pub struct BiMap<M, MRev>(pub M, pub MRev);
-
-pub type BiMapper<In, Out> = BiMap<spec_fn(In) -> Out, spec_fn(Out) -> In>;
-
-impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<Input = M::Output, Output = M::Input> {
-    pub open spec fn sound(&self, o: M::Output) -> bool
-        recommends
-            self.1.wf(o),
-    {
-        let BiMap(m, mrev) = *self;
-        m.spec_map(mrev.spec_map(o)) == o
-    }
-
-    pub open spec fn lossless(&self, i: M::Input) -> bool
-        recommends
-            self.0.wf(i),
-    {
-        let BiMap(m, mrev) = *self;
-        mrev.spec_map(m.spec_map(i)) == i
-    }
-}
-
 /// A bidirectional mapping between two types (forward for parsing, reverse for
 /// serialization). For roundtrip guarantees, implement and prove
 /// [`LossyMapper`] or [`LosslessMapper`] as appropriate.
@@ -283,6 +239,10 @@ impl<Inner, M> SpecSerializer for super::Mapped<Inner, M> where
     }
 }
 
+/*
+ * Support for plain spec closures as mappers
+ */
+
 pub type FnSpecMapper<In, Out> = (spec_fn(In) -> Out, spec_fn(Out) -> In);
 
 impl<In, Out> SpecMapper for FnSpecMapper<In, Out> {
@@ -349,32 +309,118 @@ impl<Inner: SpecSerializer, Out> SpecSerializer for super::Mapped<
     }
 }
 
-impl<M, MRev> SpecMapper for BiMap<M, MRev> where
-    M: SpecMap,
+/*
+ * Support for [`BiMap`] that can be used for both spec mappers and exec mappers.
+ */
+
+pub trait SpecMap {
+    type Input;
+
+    type Output;
+
+    spec fn spec_map(&self, i: Self::Input) -> Self::Output;
+}
+
+impl<I, O> SpecMap for spec_fn(I) -> O {
+    type Input = I;
+
+    type Output = O;
+
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
+        (self)(i)
+    }
+}
+
+pub struct BiMap<M, MRev>(pub M, pub MRev);
+
+pub type BiMapper<In, Out> = BiMap<spec_fn(In) -> Out, spec_fn(Out) -> In>;
+
+impl<M, MRev> BiMap<M, MRev> where M: SpecMap, MRev: SpecMap<Input = M::Output, Output = M::Input> {
+    pub open spec fn sound(&self, o: M::Output) -> bool {
+        let BiMap(m, mrev) = *self;
+        m.spec_map(mrev.spec_map(o)) == o
+    }
+
+    pub open spec fn lossless(&self, i: M::Input) -> bool {
+        let BiMap(m, mrev) = *self;
+        mrev.spec_map(m.spec_map(i)) == i
+    }
+}
+
+impl<Inner, M, MRev> SpecParser for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: SpecParser,
+    M: SpecMap<Input = Inner::PVal>,
     MRev: SpecMap<Input = M::Output, Output = M::Input>,
  {
-    type In = M::Input;
+    type PVal = M::Output;
 
-    type Out = M::Output;
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, M::Output)> {
+        match self.inner.spec_parse(ibuf) {
+            Some((n, v)) => Some((n, self.mapper.0.spec_map(v))),
+            None => None,
+        }
+    }
+}
 
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        let BiMap(m, _mrev) = *self;
-        m.spec_map(i)
+impl<Inner, M, MRev> SpecSerializerDps for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: SpecSerializerDps,
+    M: SpecMap<Input = Inner::SValue>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    type SValue = M::Output;
+
+    open spec fn spec_serialize_dps(&self, v: M::Output, obuf: Seq<u8>) -> Seq<u8> {
+        self.inner.spec_serialize_dps(self.mapper.1.spec_map(v), obuf)
+    }
+}
+
+impl<Inner, M, MRev> SpecSerializer for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: SpecSerializer,
+    M: SpecMap<Input = Inner::SVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    type SVal = M::Output;
+
+    open spec fn spec_serialize(&self, v: M::Output) -> Seq<u8> {
+        self.inner.spec_serialize(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> Consistency for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: Consistency,
+    M: SpecMap<Input = Inner::Val>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    type Val = M::Output;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.inner.consistent(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> SpecByteLen for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: SpecByteLen,
+    M: SpecMap<Input = Inner::T>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    type T = M::Output;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        self.inner.byte_len(self.mapper.1.spec_map(v))
+    }
+}
+
+impl<Inner, M, MRev> SafeParser for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: SafeParser,
+    M: SpecMap<Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
     }
 
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        let BiMap(_m, mrev) = *self;
-        mrev.spec_map(o)
-    }
-
-    open spec fn wf_in(&self, i: Self::In) -> bool {
-        let BiMap(m, _mrev) = *self;
-        m.wf(i)
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        let BiMap(_m, mrev) = *self;
-        mrev.wf(o)
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
     }
 }
 
@@ -386,14 +432,7 @@ impl<Inner, M, MRev> SoundParser for super::Mapped<Inner, BiMap<M, MRev>> where
     #[verifier::inline]
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()
-        &&& forall|i: Inner::T|
-            #![trigger self.inner.consistent(i)]
-            #![trigger self.mapper.lossless(i)]
-            self.inner.consistent(i) ==> self.mapper.lossless(i)
-        &&& forall|i: Inner::T|
-            #![trigger self.inner.consistent(i)]
-            #![trigger self.mapper.0.spec_map(i)]
-            self.inner.consistent(i) ==> self.mapper.1.wf(self.mapper.0.spec_map(i))
+        &&& forall|i: Inner::T| #[trigger] self.inner.consistent(i) ==> self.mapper.lossless(i)
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -403,6 +442,70 @@ impl<Inner, M, MRev> SoundParser for super::Mapped<Inner, BiMap<M, MRev>> where
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.inner.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner, M, MRev> NonTailFmt for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: NonTailFmt,
+    M: SpecMap<Input = Inner::SValue>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    open spec fn serialize_dps_inv(&self) -> bool {
+        self.inner.serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: M::Output, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_prepend(self.mapper.1.spec_map(v), obuf);
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: M::Output, obuf: Seq<u8>) {
+        self.inner.lemma_serialize_dps_len(self.mapper.1.spec_map(v), obuf);
+    }
+}
+
+impl<Inner, M, MRev> GoodSerializer for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: GoodSerializer,
+    M: SpecMap<Input = Inner::SVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        self.inner.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: M::Output) {
+        self.inner.lemma_serialize_len(self.mapper.1.spec_map(v));
+    }
+}
+
+impl<Inner, M, MRev> MinMaxByteLen for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: MinMaxByteLen,
+    M: SpecMap<Input = Inner::T>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    open spec fn min(&self) -> nat {
+        self.inner.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.inner.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.inner.lemma_min_max_byte_len(self.mapper.1.spec_map(v));
+    }
+}
+
+impl<Inner, M, MRev> StaticByteLen for super::Mapped<Inner, BiMap<M, MRev>> where
+    Inner: StaticByteLen,
+    M: SpecMap<Input = Inner::T>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+ {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.inner.lemma_static_len_matches_byte_len(self.mapper.1.spec_map(v));
     }
 }
 

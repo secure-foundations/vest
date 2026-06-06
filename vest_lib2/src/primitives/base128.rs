@@ -16,7 +16,7 @@ pub type Base128Fmt<const MINIMAL: bool> = Mapped<Base128WireFmt<MINIMAL>, NatFr
 
 pub type Base128WireFmt<const MINIMAL: bool> = Mapped<
     Refined<Repeat<ContinuationByte, TerminalByte>, PredFnSpec<(Seq<u8>, u8)>>,
-    BiMap<spec_fn((Seq<u8>, u8)) -> Seq<u8>, SplitSeqAtLast>,
+    ConcatSplitBytes,
 >;
 
 pub open spec fn base128_fmt<const MINIMAL: bool>() -> Base128Fmt<MINIMAL> {
@@ -30,23 +30,50 @@ pub open spec fn base128_wire_fmt<const MINIMAL: bool>() -> Base128WireFmt<MINIM
             // No leading zeros allowed if MINIMAL
             |pair: (Seq<u8>, u8)| MINIMAL ==> (pair.0.len() > 0 ==> pair.0[0] != 0),
         ),
-        mapper: BiMap(|pair: (Seq<u8>, u8)| pair.0.push(pair.1), SplitSeqAtLast),
+        mapper: ConcatSplitBytes,
     }
 }
 
-pub struct SplitSeqAtLast;
+pub struct ConcatSplitBytes;
 
-impl SpecMap for SplitSeqAtLast {
-    type Input = Seq<u8>;
+impl SpecMapper for ConcatSplitBytes {
+    type In = (Seq<u8>, u8);
 
-    type Output = (Seq<u8>, u8);
+    type Out = Seq<u8>;
 
-    open spec fn wf(&self, s: Self::Input) -> bool {
-        s.len() > 0
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        o.len() > 0
     }
 
-    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
-        (i.drop_last(), i.last())
+    open spec fn spec_map(&self, pair: Self::In) -> Self::Out {
+        pair.0.push(pair.1)
+    }
+
+    open spec fn spec_map_rev(&self, bytes: Self::Out) -> Self::In {
+        (bytes.drop_last(), bytes.last())
+    }
+}
+
+impl LosslessMapper for ConcatSplitBytes {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        assert(i.0.push(i.1).drop_last() == i.0);
+        assert(i.0.push(i.1).last() == i.1);
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        assert(i.0.push(i.1).len() > 0);
+    }
+}
+
+impl LossyMapper for ConcatSplitBytes {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        assert(o.len() > 0);
+        let pair = (o.drop_last(), o.last());
+        assert(pair.0.push(pair.1) == o);
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+        assert(o.len() > 0);
     }
 }
 
@@ -291,7 +318,7 @@ pub broadcast proof fn lemma_base128_wire_fmt_props<const MINIMAL: bool>(bytes: 
         #[trigger] NatFromToBE128::<MINIMAL>.wf_in(bytes),
 {
     reveal(<Star::<_> as Consistency>::consistent);
-    let pair = SplitSeqAtLast.spec_map(bytes);
+    let pair = ConcatSplitBytes.spec_map_rev(bytes);
 
     assert forall|i: int| 0 <= i < bytes.len() implies bytes[i] < 128 by {
         if i < bytes.len() - 1 {
@@ -368,7 +395,6 @@ mod base128_derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             assert(base128_fmt::<true>().sound_inv());
             base128_fmt::<true>().lemma_parse_sound_consumption(ibuf);
         }
@@ -376,7 +402,6 @@ mod base128_derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             assert(base128_fmt::<true>().sound_inv());
             base128_fmt::<true>().lemma_parse_sound_value(ibuf);
         }
@@ -400,9 +425,6 @@ mod base128_derived_proofs {
 
     impl<const MINIMAL: bool> SPRoundTripDps for Base128<MINIMAL> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            assert forall|s: Seq<u8>|
-                #![auto]
-                s.len() > 0 ==> s.drop_last().push(s.last()) == s by {}
             assert(base128_fmt::<MINIMAL>().inner.unambiguous()) by {
                 reveal(disjoint_domains);
             }
@@ -423,7 +445,6 @@ mod base128_derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             assert(base128_fmt::<true>().nonmal_inv());
             base128_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
@@ -560,7 +581,6 @@ mod base128_bounded_derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             let fmt = base128_bounded_fmt::<true>();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
@@ -569,7 +589,6 @@ mod base128_bounded_derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             let fmt = base128_bounded_fmt::<true>();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
@@ -594,9 +613,6 @@ mod base128_bounded_derived_proofs {
 
     impl<const MINIMAL: bool> SPRoundTripDps for Base128Bounded<MINIMAL> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            assert forall|s: Seq<u8>|
-                #![auto]
-                s.len() > 0 ==> s.drop_last().push(s.last()) == s by {}
             assert(base128_bounded_fmt::<MINIMAL>().inner.unambiguous()) by {
                 reveal(disjoint_domains);
             }
@@ -617,7 +633,6 @@ mod base128_bounded_derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use lemma_base128_wire_fmt_props;
 
-            assert forall|s: Seq<u8>, b: u8| #[trigger] s.push(b).drop_last() == s by {}
             assert(base128_bounded_fmt::<true>().nonmal_inv());
             base128_bounded_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }

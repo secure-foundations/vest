@@ -6,19 +6,16 @@ use vstd::prelude::*;
 
 verus! {
 
-pub open spec fn terminated<FmtA, FmtB, A, B, const NON_MALLEABLE: bool>(
+pub open spec fn terminated<FmtA, FmtB, A, B, const CHECK: bool>(
     a: FmtA,
     b: FmtB,
     b_val: B,
-) -> Mapped<
-    Refined<Pair<FmtA, FmtB>, spec_fn((A, B)) -> bool>,
-    BiMap<spec_fn((A, B)) -> A, spec_fn(A) -> (A, B)>,
-> {
+) -> Mapped<Refined<Pair<FmtA, FmtB>, PredFnSpec<(A, B)>>, BiMapper<(A, B), A>> {
     Mapped {
         inner: Refined(
             Pair(a, b),
             |pair: (A, B)|
-                if NON_MALLEABLE {
+                if CHECK {
                     pair.1 == b_val
                 } else {
                     true

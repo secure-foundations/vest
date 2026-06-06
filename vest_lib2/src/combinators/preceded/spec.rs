@@ -10,10 +10,7 @@ pub open spec fn preceded<FmtA, FmtB, A, B, const CHECK: bool>(
     a: FmtA,
     b: FmtB,
     a_val: A,
-) -> Mapped<
-    Refined<Pair<FmtA, FmtB>, spec_fn((A, B)) -> bool>,
-    BiMap<spec_fn((A, B)) -> B, spec_fn(B) -> (A, B)>,
-> {
+) -> Mapped<Refined<Pair<FmtA, FmtB>, PredFnSpec<(A, B)>>, BiMapper<(A, B), B>> {
     Mapped {
         inner: Refined(
             Pair(a, b),
