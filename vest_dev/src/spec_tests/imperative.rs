@@ -373,33 +373,27 @@ impl DeepView for MsgTy {
 pub struct MsgTyFmt;
 
 pub open spec fn msg_ty_fmt() -> Named<
-    Mapped<
-        Choice<Const<U8, u8>, Choice<Const<U8, u8>, Choice<Const<U8, u8>, Const<U8, u8>>>>,
-        FnSpecMapper<MsgTyInner, MsgTy>,
-    >,
+    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<u8, MsgTy>>,
 > {
     #[verusfmt::skip]
     Named("msg_ty", Mapped{
-        inner:
-            Choice(Const(U8, 1u8),
-            Choice(Const(U8, 2u8),
-            Choice(Const(U8, 3u8),
-                   Const(U8, 4u8)))),
+        inner: Refined(U8, |x: u8| x == 1u8 || x == 2u8 || x == 3u8 || x == 4u8),
         mapper: (
-            |parsed: MsgTyInner| -> MsgTy {
+            |parsed: u8| -> MsgTy {
                 match parsed {
-                    Sum::Inl(_) => MsgTy::TYPE1,
-                    Sum::Inr(Sum::Inl(_)) => MsgTy::TYPE2,
-                    Sum::Inr(Sum::Inr(Sum::Inl(_))) => MsgTy::TYPE3,
-                    Sum::Inr(Sum::Inr(Sum::Inr(_))) => MsgTy::TYPE4,
+                    1u8 => MsgTy::TYPE1,
+                    2u8 => MsgTy::TYPE2,
+                    3u8 => MsgTy::TYPE3,
+                    4u8 => MsgTy::TYPE4,
+                    _ => arbitrary(),
                 }
             },
-            |value: MsgTy| -> MsgTyInner {
+            |value: MsgTy| -> u8 {
                 match value {
-                    MsgTy::TYPE1 => Sum::Inl(1u8),
-                    MsgTy::TYPE2 => Sum::Inr(Sum::Inl(2u8)),
-                    MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(3u8))),
-                    MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(4u8))),
+                    MsgTy::TYPE1 => 1u8,
+                    MsgTy::TYPE2 => 2u8,
+                    MsgTy::TYPE3 => 3u8,
+                    MsgTy::TYPE4 => 4u8,
                 }
             }
         )
@@ -503,7 +497,6 @@ impl SPRoundTripDps for MsgTyFmt {
         reveal(<MsgTyFmt as SpecSerializerDps>::spec_serialize_dps);
         reveal(<MsgTyFmt as Consistency>::consistent);
         reveal(<MsgTyFmt as SpecByteLen>::byte_len);
-        reveal(disjoint_domains);
         msg_ty_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -594,7 +587,6 @@ impl Prepare<MsgTy> for MsgTyFmt {
 //     {
 //         Named("msg_ty", MsgTyFmt).parse(&ibuf)
 //     }
-
 //     pub fn serialize(&self, obuf: &mut Vec<u8>)
 //         requires
 //             MsgTyFmt.consistent(self.deep_view()),
@@ -603,7 +595,6 @@ impl Prepare<MsgTy> for MsgTyFmt {
 //     {
 //         MsgTyFmt.serialize(self, obuf)
 //     }
-
 //     pub fn prepare(&self) -> (checked: Result<usize, PreSerializeError>)
 //         ensures
 //             checked matches Ok(len) ==> {
@@ -614,7 +605,6 @@ impl Prepare<MsgTy> for MsgTyFmt {
 //         Named("msg_ty", MsgTyFmt).prepare(self)
 //     }
 // }
-
 /*
  * tlv_msg_fmt: Data types.
  */
@@ -692,24 +682,24 @@ pub open spec fn tlv_fmt() -> Implicit<
 //     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
 // > {
 // Mapped {
-    // inner: Choice(
-    //     Cond(tag == MsgTy::TYPE1, U8),
-    //     Choice(
-    //         Cond(tag == MsgTy::TYPE2, Fixed::<10>),
-    //         Choice(Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)), Cond(tag == MsgTy::TYPE4, Pair(U8, Tail))),
-    //     ),
-    // ),
+// inner: Choice(
+//     Cond(tag == MsgTy::TYPE1, U8),
+//     Choice(
+//         Cond(tag == MsgTy::TYPE2, Fixed::<10>),
+//         Choice(Cond(tag == MsgTy::TYPE3, Pair(U8, Tail)), Cond(tag == MsgTy::TYPE4, Pair(U8, Tail))),
+//     ),
+// ),
 pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
     Sum<U8, Sum<Fixed<10>, Sum<TxSegwitFmt, TxSegwitFmt>>>,
     FnSpecMapper<TLVMsgInner, TLVMsgSpec>,
 > {
     Mapped {
         inner: match tag {
-                MsgTy::TYPE1 => Sum::Inl(U8),
-                MsgTy::TYPE2 => Sum::Inr(Sum::Inl(Fixed::<10>)),
-                MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(TxSegwitFmt))),
-                MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(TxSegwitFmt))),
-            },
+            MsgTy::TYPE1 => Sum::Inl(U8),
+            MsgTy::TYPE2 => Sum::Inr(Sum::Inl(Fixed::<10>)),
+            MsgTy::TYPE3 => Sum::Inr(Sum::Inr(Sum::Inl(TxSegwitFmt))),
+            MsgTy::TYPE4 => Sum::Inr(Sum::Inr(Sum::Inr(TxSegwitFmt))),
+        },
         mapper: (
             |parsed: TLVMsgInner| -> TLVMsgSpec
                 {
@@ -943,7 +933,6 @@ impl SPRoundTripDps for TLVPayloadFmt {
         reveal(<TLVPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
-        reveal(disjoint_domains);
         payload_fmt(self.tag).theorem_serialize_dps_parse_roundtrip(v, obuf);
     }
 }
@@ -1099,8 +1088,8 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
 
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
-            (MsgTy::TYPE1, TLVMsg::V1(v))=> U8.serialize(v, obuf),
-            (MsgTy::TYPE2, TLVMsg::V2(v))=> Fixed::<10>.serialize(*v, obuf),
+            (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.serialize(v, obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.serialize(*v, obuf),
             (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.serialize(v, obuf),
             (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.serialize(v, obuf),
             _ => {},

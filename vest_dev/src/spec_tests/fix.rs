@@ -30,73 +30,82 @@ pub enum NestedBracesT {
     Eps,
 }
 
-/// Mapper between `Sum<NestedBracesT, u8>` and `NestedBracesT`.
-pub struct NestedBracesMap;
-
-pub struct NestedBracesMapRev;
-
-impl SpecMap for NestedBracesMap {
-    type Input = Sum<NestedBracesTSpec, u8>;
-
-    type Output = NestedBracesTSpec;
-
-    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
-        match i {
-            Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
-            Sum::Inr(_) => NestedBracesTSpec::Eps,
-        }
-    }
-}
-
-impl fns::Map<Sum<NestedBracesT, u8>> for NestedBracesMap {
-    type O = NestedBracesT;
-
-    fn map(&self, i: Sum<NestedBracesT, u8>) -> Self::O {
-        match i {
-            Sum::Inl(inner) => NestedBracesT::Brace(Box::new(inner)),
-            Sum::Inr(_) => NestedBracesT::Eps,
-        }
-    }
-}
-
-impl SpecMap for NestedBracesMapRev {
-    type Input = NestedBracesTSpec;
-
-    type Output = Sum<NestedBracesTSpec, u8>;
-
-    open spec fn spec_map(&self, o: Self::Input) -> Self::Output {
-        match o {
-            NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
-            NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
-        }
-    }
-}
-
-impl<'s> fns::Map<&'s NestedBracesT> for NestedBracesMapRev {
-    type O = Sum<&'s NestedBracesT, u8>;
-
-    fn map(&self, o: &'s NestedBracesT) -> Sum<&'s NestedBracesT, u8> {
-        match o {
-            NestedBracesT::Brace(inner) => Sum::Inl(inner),
-            NestedBracesT::Eps => Sum::Inr(0x00u8),
-        }
-    }
-}
-
 /// One level of the nested-braces format: `'{' rec '}' | '\0'`.
 // pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
 pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> {
     Mapped {
         inner: Choice(SuffixTagged(PrefixTagged(U8, 0x7Bu8, rec), U8, 0x7Du8), Const(U8, 0x00u8)),
-        mapper: BiMap(NestedBracesMap, NestedBracesMapRev),
+        mapper: BiMap(
+            (|i: Sum<NestedBracesTSpec, u8>| -> NestedBracesTSpec
+                {
+                    match i {
+                        Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
+                        Sum::Inr(_) => NestedBracesTSpec::Eps,
+                    }
+                }),
+            (|o: NestedBracesTSpec| -> Sum<NestedBracesTSpec, u8>
+                {
+                    match o {
+                        NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
+                        NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
+                    }
+                }),
+        ),
     }
+    // Implicit(
+    //     U8,
+    //     (
+    //         |tag: u8|
+    //             Mapped {
+    //                 inner: match tag {
+    //                     0x7Bu8 => Sum::Inl(SuffixTagged(rec, U8, 0x7Du8)),
+    //                     0x00u8 => Sum::Inr(Const(U8, 0x00u8)),
+    //                 },
+    //                 mapper: BiMap(
+    //                     (|i: Sum<NestedBracesTSpec, u8>| -> NestedBracesTSpec
+    //                         {
+    //                             match i {
+    //                                 Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
+    //                                 Sum::Inr(_) => NestedBracesTSpec::Eps,
+    //                             }
+    //                         }),
+    //                     (|o: NestedBracesTSpec| -> Sum<NestedBracesTSpec, u8>
+    //                         {
+    //                             match o {
+    //                                 NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
+    //                                 NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
+    //                             }
+    //                         }),
+    //                 ),
+    //             },
+    //         |o: NestedBracesTSpec| -> u8
+    //             {
+    //                 match o {
+    //                     NestedBracesTSpec::Brace(_) => 0x7Bu8,
+    //                     NestedBracesTSpec::Eps => 0x00u8,
+    //                 }
+    //             },
+    //     ),
+    // )
+
 }
 
 type NestedBracesBodyComb<Rec> = Mapped<
     Choice<SuffixTagged<PrefixTagged<U8, Rec>, U8>, Const<U8, u8>>,
-    BiMap<NestedBracesMap, NestedBracesMapRev>,
+    BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
 >;
 
+// type NestedBracesBodyComb<Rec> = Implicit<
+//     U8,
+//     KVFormat<
+//         u8,
+//         NestedBracesTSpec,
+//         Mapped<
+//             Sum<SuffixTagged<Rec, U8>, Const<U8, u8>>,
+//             BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
+//         >,
+//     >,
+// >;
 /// [`SpecRecBody`] for the nested-braces example.
 pub struct NestedBracesBody;
 
@@ -245,61 +254,9 @@ pub enum TaggedChainT {
     Step(u8, Box<TaggedChainT>),
 }
 
-pub struct TaggedChainMap;
-
-pub struct TaggedChainMapRev;
-
-impl SpecMap for TaggedChainMap {
-    type Input = Sum<(u8, TaggedChainTSpec), u8>;
-
-    type Output = TaggedChainTSpec;
-
-    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
-        match i {
-            Sum::Inl((next_tag, tail)) => TaggedChainTSpec::Step(next_tag, Box::new(tail)),
-            Sum::Inr(_) => TaggedChainTSpec::End,
-        }
-    }
-}
-
-impl fns::Map<Sum<(u8, TaggedChainT), u8>> for TaggedChainMap {
-    type O = TaggedChainT;
-
-    fn map(&self, i: Sum<(u8, TaggedChainT), u8>) -> Self::O {
-        match i {
-            Sum::Inl((next_tag, tail)) => TaggedChainT::Step(next_tag, Box::new(tail)),
-            Sum::Inr(_) => TaggedChainT::End,
-        }
-    }
-}
-
-impl SpecMap for TaggedChainMapRev {
-    type Input = TaggedChainTSpec;
-
-    type Output = Sum<(u8, TaggedChainTSpec), u8>;
-
-    open spec fn spec_map(&self, o: Self::Input) -> Self::Output {
-        match o {
-            TaggedChainTSpec::Step(next_tag, tail) => Sum::Inl((next_tag, *tail)),
-            TaggedChainTSpec::End => Sum::Inr(0x00u8),
-        }
-    }
-}
-
-impl<'s> fns::Map<&'s TaggedChainT> for TaggedChainMapRev {
-    type O = Sum<(u8, &'s TaggedChainT), u8>;
-
-    fn map(&self, o: &'s TaggedChainT) -> Self::O {
-        match o {
-            TaggedChainT::Step(next_tag, tail) => Sum::Inl((*next_tag, &**tail)),
-            TaggedChainT::End => Sum::Inr(0x00u8),
-        }
-    }
-}
-
 type TaggedChainBodyComb<Rec> = Mapped<
-    Choice<Cond<PrefixTagged<U8, Bind<U8, Rec>>>, Cond<Const<U8, u8>>>,
-    BiMap<TaggedChainMap, TaggedChainMapRev>,
+    Sum<PrefixTagged<U8, Bind<U8, Rec>>, Const<U8, u8>>,
+    BiMapper<Sum<(u8, TaggedChainTSpec), u8>, TaggedChainTSpec>,
 >;
 
 pub struct TaggedChainBody;
@@ -316,14 +273,31 @@ impl SpecRecBody for TaggedChainBody {
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
         Mapped {
-            inner: Choice(
-                Cond(
-                    current_tag != 0u8,
+            inner: match current_tag {
+                0u8 => Sum::Inr(Const(U8, 0x00u8)),
+                _ => Sum::Inl(
                     PrefixTagged(U8, current_tag, Bind(U8, |next_tag: u8| rec(next_tag))),
                 ),
-                Cond(current_tag == 0u8, Const(U8, 0x00u8)),
+            },
+            mapper: BiMap(
+                |i: Sum<(u8, TaggedChainTSpec), u8>| -> TaggedChainTSpec
+                    {
+                        match i {
+                            Sum::Inl((next_tag, tail)) => TaggedChainTSpec::Step(
+                                next_tag,
+                                Box::new(tail),
+                            ),
+                            Sum::Inr(_) => TaggedChainTSpec::End,
+                        }
+                    },
+                |o: TaggedChainTSpec| -> Sum<(u8, TaggedChainTSpec), u8>
+                    {
+                        match o {
+                            TaggedChainTSpec::Step(next_tag, tail) => Sum::Inl((next_tag, *tail)),
+                            TaggedChainTSpec::End => Sum::Inr(0x00u8),
+                        }
+                    },
             ),
-            mapper: BiMap(TaggedChainMap, TaggedChainMapRev),
         }
     }
 }
