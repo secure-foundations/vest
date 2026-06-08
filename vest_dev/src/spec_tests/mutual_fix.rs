@@ -128,6 +128,22 @@ impl DeepView for Value {
     }
 }
 
+pub enum ValueRef<'a> {
+    Expr { expr: &'a Expr },
+    List { list: &'a List },
+}
+
+impl DeepView for ValueRef<'_> {
+    type V = ValueSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        match self {
+            ValueRef::Expr { expr } => ValueSpec::Expr { expr: expr.deep_view() },
+            ValueRef::List { list } => ValueSpec::List { list: list.deep_view() },
+        }
+    }
+}
+
 // ============================================================
 // Format Specifications
 // ============================================================
@@ -661,7 +677,7 @@ impl<'i> ParserRecBody<&'i [u8]> for ExprListRecBody {
     }
 }
 
-impl SerializerRecBody<Value> for ExprListRecBody {
+impl<'a> SerializerRecBody<ValueRef<'a>> for ExprListRecBody {
     type EP = FmtType;
 
     fn serialize_body<Exec>(
@@ -669,26 +685,26 @@ impl SerializerRecBody<Value> for ExprListRecBody {
         which: &FmtType,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &Value,
+        v: &ValueRef<'a>,
         obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&FmtType, &Value, &mut Vec<u8>) {
+    ) where Exec: Fn(&FmtType, &ValueRef<'a>, &mut Vec<u8>) {
         match (which, v) {
-            (FmtType::EXPR, Value::Expr { expr: Expr::Num(n) }) => {
+            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
                 U8.serialize(&0x10u8, obuf);
                 U8.serialize(n, obuf);
             },
-            (FmtType::EXPR, Value::Expr { expr: Expr::Group(list) }) => {
+            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
                 U8.serialize(&0x11u8, obuf);
-                let child = Value::List { list: (**list).clone() };
+                let child = ValueRef::List { list };
                 exec_rec(&FmtType::LIST, &child, obuf);
             },
-            (FmtType::LIST, Value::List { list: List::Nil }) => {
+            (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
                 U8.serialize(&0x20u8, obuf);
             },
-            (FmtType::LIST, Value::List { list: List::Cons(head, tail) }) => {
+            (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
                 U8.serialize(&0x21u8, obuf);
-                let head_child = Value::Expr { expr: (**head).clone() };
-                let tail_child = Value::List { list: (**tail).clone() };
+                let head_child = ValueRef::Expr { expr: head };
+                let tail_child = ValueRef::List { list: tail };
                 exec_rec(&FmtType::EXPR, &head_child, obuf);
                 exec_rec(&FmtType::LIST, &tail_child, obuf);
             },
@@ -697,7 +713,7 @@ impl SerializerRecBody<Value> for ExprListRecBody {
     }
 }
 
-impl PrepareRecBody<Value> for ExprListRecBody {
+impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
     type EP = FmtType;
 
     fn prepare_body<Exec>(
@@ -705,32 +721,32 @@ impl PrepareRecBody<Value> for ExprListRecBody {
         which: &FmtType,
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
-        v: &Value,
+        v: &ValueRef<'a>,
     ) -> Result<usize, PreSerializeError> where
-        Exec: Fn(&FmtType, &Value) -> Result<usize, PreSerializeError>,
+        Exec: Fn(&FmtType, &ValueRef<'a>) -> Result<usize, PreSerializeError>,
      {
         match (which, v) {
-            (FmtType::EXPR, Value::Expr { expr: Expr::Num(n) }) => {
+            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
                 let l1 = U8.prepare(&0x10u8)?;
                 let l2 = U8.prepare(n)?;
                 let total = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
                 Ok(total)
             },
-            (FmtType::EXPR, Value::Expr { expr: Expr::Group(list) }) => {
+            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
                 let l1 = U8.prepare(&0x11u8)?;
-                let child = Value::List { list: (**list).clone() };
+                let child = ValueRef::List { list };
                 let l2 = exec_rec(&FmtType::LIST, &child)?;
                 let total = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
                 Ok(total)
             },
-            (FmtType::LIST, Value::List { list: List::Nil }) => {
+            (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
                 let total = U8.prepare(&0x20u8)?;
                 Ok(total)
             },
-            (FmtType::LIST, Value::List { list: List::Cons(head, tail) }) => {
+            (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
                 let l1 = U8.prepare(&0x21u8)?;
-                let head_child = Value::Expr { expr: (**head).clone() };
-                let tail_child = Value::List { list: (**tail).clone() };
+                let head_child = ValueRef::Expr { expr: head };
+                let tail_child = ValueRef::List { list: tail };
                 let l2 = exec_rec(&FmtType::EXPR, &head_child)?;
                 let l3 = exec_rec(&FmtType::LIST, &tail_child)?;
                 let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
@@ -758,7 +774,7 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
 impl<const LIMIT: usize> Serializer<Expr> for ExprFmt<LIMIT> {
     fn serialize(&self, v: &Expr, obuf: &mut Vec<u8>) {
         let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::EXPR);
-        let family_v = Value::Expr { expr: v.clone() };
+        let family_v = ValueRef::Expr { expr: v };
         family.serialize(&family_v, obuf);
     }
 }
@@ -766,7 +782,7 @@ impl<const LIMIT: usize> Serializer<Expr> for ExprFmt<LIMIT> {
 impl<const LIMIT: usize> Prepare<Expr> for ExprFmt<LIMIT> {
     fn prepare(&self, v: &Expr) -> Result<usize, PreSerializeError> {
         let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::EXPR);
-        let family_v = Value::Expr { expr: v.clone() };
+        let family_v = ValueRef::Expr { expr: v };
         let checked = family.prepare(&family_v);
         checked
     }
@@ -788,7 +804,7 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListFmt<LIMIT> {
 impl<const LIMIT: usize> Serializer<List> for ListFmt<LIMIT> {
     fn serialize(&self, v: &List, obuf: &mut Vec<u8>) {
         let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::LIST);
-        let family_v = Value::List { list: v.clone() };
+        let family_v = ValueRef::List { list: v };
         family.serialize(&family_v, obuf);
 
     }
@@ -797,7 +813,7 @@ impl<const LIMIT: usize> Serializer<List> for ListFmt<LIMIT> {
 impl<const LIMIT: usize> Prepare<List> for ListFmt<LIMIT> {
     fn prepare(&self, v: &List) -> Result<usize, PreSerializeError> {
         let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::LIST);
-        let family_v = Value::List { list: v.clone() };
+        let family_v = ValueRef::List { list: v };
         let checked = family.prepare(&family_v);
         checked
     }
@@ -871,4 +887,223 @@ fn mutual_recursion_limit() {
             ComplianceErrorKind::RecursionLimitExceeded
         ))
     ));
+}
+
+#[cfg(feature = "std")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HandRolledError {
+    UnexpectedEof,
+    InvalidTag,
+    RecursionLimitExceeded,
+}
+
+#[cfg(feature = "std")]
+pub const BENCH_RECURSION_LIMIT: usize = 512;
+
+#[cfg(feature = "std")]
+pub fn handrolled_parse_expr_checked(input: &[u8]) -> Result<(usize, Expr), HandRolledError> {
+    handrolled_parse_expr_gas(BENCH_RECURSION_LIMIT, input)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_parse_list_checked(input: &[u8]) -> Result<(usize, List), HandRolledError> {
+    handrolled_parse_list_gas(BENCH_RECURSION_LIMIT, input)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_prepare_expr_checked(v: &Expr) -> Result<usize, HandRolledError> {
+    handrolled_prepare_expr_gas(BENCH_RECURSION_LIMIT, v)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_prepare_list_checked(v: &List) -> Result<usize, HandRolledError> {
+    handrolled_prepare_list_gas(BENCH_RECURSION_LIMIT, v)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_serialize_expr_checked(
+    v: &Expr,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    handrolled_serialize_expr_gas(BENCH_RECURSION_LIMIT, v, obuf)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_serialize_list_checked(
+    v: &List,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    handrolled_serialize_list_gas(BENCH_RECURSION_LIMIT, v, obuf)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_parse_expr_gas(gas: usize, input: &[u8]) -> Result<(usize, Expr), HandRolledError> {
+    let Some((&tag, rest)) = input.split_first() else {
+        return Err(HandRolledError::UnexpectedEof);
+    };
+    match tag {
+        0x10 => {
+            let Some((&n, _)) = rest.split_first() else {
+                return Err(HandRolledError::UnexpectedEof);
+            };
+            Ok((2, Expr::Num(n)))
+        }
+        0x11 => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            let (n, list) = handrolled_parse_list_gas(gas - 1, rest)?;
+            Ok((1 + n, Expr::Group(Box::new(list))))
+        }
+        _ => Err(HandRolledError::InvalidTag),
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_parse_list_gas(gas: usize, input: &[u8]) -> Result<(usize, List), HandRolledError> {
+    let Some((&tag, rest)) = input.split_first() else {
+        return Err(HandRolledError::UnexpectedEof);
+    };
+    match tag {
+        0x20 => Ok((1, List::Nil)),
+        0x21 => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            let (n_head, head) = handrolled_parse_expr_gas(gas - 1, rest)?;
+            let (n_tail, tail) = handrolled_parse_list_gas(gas - 1, &rest[n_head..])?;
+            Ok((
+                1 + n_head + n_tail,
+                List::Cons(Box::new(head), Box::new(tail)),
+            ))
+        }
+        _ => Err(HandRolledError::InvalidTag),
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_prepare_expr_gas(gas: usize, v: &Expr) -> Result<usize, HandRolledError> {
+    match v {
+        Expr::Num(_) => Ok(2),
+        Expr::Group(list) => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            Ok(1 + handrolled_prepare_list_gas(gas - 1, list)?)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_prepare_list_gas(gas: usize, v: &List) -> Result<usize, HandRolledError> {
+    match v {
+        List::Nil => Ok(1),
+        List::Cons(head, tail) => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            let l_head = handrolled_prepare_expr_gas(gas - 1, head)?;
+            let l_tail = handrolled_prepare_list_gas(gas - 1, tail)?;
+            Ok(1 + l_head + l_tail)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_serialize_expr_gas(
+    gas: usize,
+    v: &Expr,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    match v {
+        Expr::Num(n) => {
+            obuf.push(0x10);
+            obuf.push(*n);
+        }
+        Expr::Group(list) => {
+            obuf.push(0x11);
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            handrolled_serialize_list_gas(gas - 1, list, obuf)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+fn handrolled_serialize_list_gas(
+    gas: usize,
+    v: &List,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    match v {
+        List::Nil => {
+            obuf.push(0x20);
+        }
+        List::Cons(head, tail) => {
+            obuf.push(0x21);
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            handrolled_serialize_expr_gas(gas - 1, head, obuf)?;
+            handrolled_serialize_list_gas(gas - 1, tail, obuf)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+fn bench_seed_byte(seed: usize) -> u8 {
+    ((seed.wrapping_mul(29).wrapping_add(7)) % 251) as u8
+}
+
+#[cfg(feature = "std")]
+pub fn bench_expr(seed: usize, depth: usize) -> Expr {
+    if depth == 0 || seed % 3 == 0 {
+        Expr::Num(bench_seed_byte(seed))
+    } else {
+        Expr::Group(Box::new(bench_list(seed ^ (depth * 17 + 3), depth - 1)))
+    }
+}
+
+#[cfg(feature = "std")]
+pub fn bench_list(seed: usize, depth: usize) -> List {
+    if depth == 0 {
+        return List::Nil;
+    }
+
+    let width = (seed % 4) + 1;
+    let mut tail = List::Nil;
+    for i in (0..width).rev() {
+        let head = if (seed + i) % 2 == 0 {
+            Expr::Num(bench_seed_byte(seed + i))
+        } else if depth > 1 {
+            Expr::Group(Box::new(bench_list(seed + i * 13 + 5, depth - 1)))
+        } else {
+            Expr::Num(bench_seed_byte(seed + i * 13 + 5))
+        };
+        tail = List::Cons(Box::new(head), Box::new(tail));
+    }
+    tail
+}
+
+#[cfg(feature = "std")]
+pub fn benchmark_expr_values() -> Vec<Expr> {
+    let mut values = Vec::new();
+    for seed in 0..96usize {
+        let depth = (seed % 6) + 2;
+        values.push(bench_expr(seed, depth));
+    }
+    values
+}
+
+#[cfg(feature = "std")]
+pub fn benchmark_list_values() -> Vec<List> {
+    let mut values = Vec::new();
+    for seed in 0..96usize {
+        let depth = (seed % 6) + 2;
+        values.push(bench_list(seed * 5 + 1, depth));
+    }
+    values
 }
