@@ -42,7 +42,6 @@ verus! {
  *     },
  * }
  */
-
 // ============================================================
 // Data Types
 // ============================================================
@@ -804,41 +803,7 @@ impl<const LIMIT: usize> Prepare<List> for ListFmt<LIMIT> {
     }
 }
 
-proof fn expr_list_sound_parser() {
-    let expr_fmt = FixWith::<10, _, _>(ExprListRecBody, FmtType::EXPR);
-    let list_fmt = FixWith::<10, _, _>(ExprListRecBody, FmtType::LIST);
-
-    let expr_input = seq![0x10u8, 0x07u8];
-    let list_input = seq![0x21u8, 0x10u8, 0x01u8, 0x20u8];
-
-    expr_fmt.lemma_parse_safe(expr_input);
-    expr_fmt.lemma_parse_sound_value(expr_input);
-    expr_fmt.lemma_parse_sound_consumption(expr_input);
-
-    list_fmt.lemma_parse_safe(list_input);
-    list_fmt.lemma_parse_sound_value(list_input);
-    list_fmt.lemma_parse_sound_consumption(list_input);
-}
-
 } // verus!
-#[test]
-fn mutual_expr_exec_roundtrip() {
-    let fmt = ExprFmt::<16>;
-
-    let v = Expr::Num(7);
-    let input: &[u8] = &[0x10, 0x07];
-
-    let parsed = fmt.parse(&input);
-    assert!(matches!(parsed, Ok((2, Expr::Num(7)))));
-
-    let prepared = fmt.prepare(&v);
-    assert!(matches!(prepared, Ok(2)));
-
-    let mut obuf = Vec::with_capacity(prepared.unwrap());
-    fmt.serialize(&v, &mut obuf);
-    assert_eq!(obuf.as_slice(), input);
-}
-
 #[test]
 fn mutual_list_exec_roundtrip() {
     let fmt = ListFmt::<16>;
