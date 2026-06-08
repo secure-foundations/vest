@@ -12,6 +12,37 @@ use vstd::prelude::*;
 
 verus! {
 
+/*
+ * ```vest
+ * expr_kind = enum {
+ *   Num   = 0x10,
+ *   Group = 0x11,
+ * }
+ *
+ * list_kind = enum {
+ *   Nil  = 0x20,
+ *   Cons = 0x21,
+ * }
+ *
+ * expr = {
+ *   @t: expr_kind,
+ *   v: choose(@t) {
+ *     Num => u8,
+ *     Group => list,
+ *   },
+ * }
+ *
+ * list = {
+ *   @t: list_kind,
+ *   v: choose(@t) {
+ *     Nil => [u8; 0],
+ *     Cons => {
+ *        head: expr,
+ *        tail: list,
+ *     },
+ * }
+ */
+
 // ============================================================
 // Data Types
 // ============================================================
