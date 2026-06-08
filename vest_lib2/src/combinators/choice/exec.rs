@@ -145,7 +145,7 @@ impl<const NONDETERMINISTIC: bool, I, A, B> Parser<I> for super::Alt<A, B, NONDE
 }
 
 impl<A, B, T> Compliance<T> for super::Alt<A, B> where
-    T: DeepView + ?Sized,
+    T: DeepView,
     A: Compliance<T>,
     B: Compliance<T>,
  {
@@ -155,7 +155,7 @@ impl<A, B, T> Compliance<T> for super::Alt<A, B> where
 }
 
 impl<A, B, T> Prepare<T> for super::Alt<A, B, false> where
-    T: DeepView + ?Sized,
+    T: DeepView,
     A: Prepare<T> + Compliance<T>,
     B: Prepare<T>,
  {
@@ -169,7 +169,7 @@ impl<A, B, T> Prepare<T> for super::Alt<A, B, false> where
 }
 
 impl<A, B, T> Serializer<T> for super::Alt<A, B, false> where
-    T: DeepView + Copy,
+    T: DeepView,
     A: Serializer<T> + Compliance<T>,
     B: Serializer<T> + Consistency<Val = T::V>,
  {
