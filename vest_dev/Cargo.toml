@@ -20,6 +20,10 @@ criterion = { version = "0.5", features = ["html_reports"] }
 name = "mutual_fix_benchmark"
 harness = false
 
+[[bench]]
+name = "nested_braces_benchmark"
+harness = false
+
 [profile.bench]
 lto = "fat"
 opt-level = 3

@@ -546,3 +546,114 @@ fn tagged_chain_exec_parse_serialize() {
     );
     assert_eq!(serialized.as_slice(), input);
 }
+
+#[cfg(feature = "std")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NestedBracesBenchError {
+    UnexpectedEof,
+    InvalidTag,
+    RecursionLimitExceeded,
+}
+
+#[cfg(feature = "std")]
+pub const NESTED_BRACES_BENCH_LIMIT: usize = 512;
+
+#[cfg(feature = "std")]
+pub fn nested_braces_value(depth: usize) -> NestedBracesT {
+    let mut value = NestedBracesT::Eps;
+    for _ in 0..depth {
+        value = NestedBracesT::Brace(Box::new(value));
+    }
+    value
+}
+
+#[cfg(feature = "std")]
+pub fn benchmark_nested_braces_values() -> Vec<NestedBracesT> {
+    (0..192usize).map(nested_braces_value).collect()
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_prepare_nested_braces_checked(
+    v: &NestedBracesT,
+) -> Result<usize, NestedBracesBenchError> {
+    handrolled_prepare_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, v)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_prepare_nested_braces_gas(
+    gas: usize,
+    v: &NestedBracesT,
+) -> Result<usize, NestedBracesBenchError> {
+    match v {
+        NestedBracesT::Eps => Ok(1),
+        NestedBracesT::Brace(inner) => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            Ok(2 + handrolled_prepare_nested_braces_gas(gas - 1, inner)?)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_serialize_nested_braces_checked(
+    v: &NestedBracesT,
+    obuf: &mut Vec<u8>,
+) -> Result<(), NestedBracesBenchError> {
+    handrolled_serialize_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, v, obuf)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_serialize_nested_braces_gas(
+    gas: usize,
+    v: &NestedBracesT,
+    obuf: &mut Vec<u8>,
+) -> Result<(), NestedBracesBenchError> {
+    match v {
+        NestedBracesT::Eps => obuf.push(0x00),
+        NestedBracesT::Brace(inner) => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            obuf.push(0x7b);
+            handrolled_serialize_nested_braces_gas(gas - 1, inner, obuf)?;
+            obuf.push(0x7d);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_parse_nested_braces_checked(
+    input: &[u8],
+) -> Result<(usize, NestedBracesT), NestedBracesBenchError> {
+    handrolled_parse_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, input)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_parse_nested_braces_gas(
+    gas: usize,
+    input: &[u8],
+) -> Result<(usize, NestedBracesT), NestedBracesBenchError> {
+    let Some((&tag, rest)) = input.split_first() else {
+        return Err(NestedBracesBenchError::UnexpectedEof);
+    };
+
+    match tag {
+        0x00 => Ok((1, NestedBracesT::Eps)),
+        0x7b => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            let (n_inner, inner) = handrolled_parse_nested_braces_gas(gas - 1, rest)?;
+            let Some((&close, _)) = rest[n_inner..].split_first() else {
+                return Err(NestedBracesBenchError::UnexpectedEof);
+            };
+            if close != 0x7d {
+                return Err(NestedBracesBenchError::InvalidTag);
+            }
+            Ok((n_inner + 2, NestedBracesT::Brace(Box::new(inner))))
+        }
+        _ => Err(NestedBracesBenchError::InvalidTag),
+    }
+}

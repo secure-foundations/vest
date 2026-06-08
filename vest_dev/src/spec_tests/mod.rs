@@ -3,7 +3,7 @@
 mod choice;
 mod dependent;
 mod disjoint;
-mod fix;
+pub mod fix;
 mod imperative;
 mod implicit;
 mod malleable;
