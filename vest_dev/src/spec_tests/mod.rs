@@ -8,6 +8,7 @@ mod imperative;
 mod implicit;
 mod malleable;
 mod mapped;
+mod mutual_fix;
 mod opt;
 // mod recursive;
 mod refined;
