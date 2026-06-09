@@ -819,6 +819,152 @@ impl<const LIMIT: usize> Prepare<List> for ListFmt<LIMIT> {
     }
 }
 
+// ============================================================
+// Self-recursive byte list
+// ============================================================
+#[derive(Debug, PartialEq, Eq)]
+#[verifier::ext_equal]
+pub enum ByteList {
+    Nil,
+    Cons(u8, Box<ByteList>),
+}
+
+pub type ByteListSpec = ByteList;
+
+impl DeepView for ByteList {
+    type V = ByteListSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        *self
+    }
+}
+
+pub type ByteListBodyFmt<Rec> = Mapped<
+    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<U8, Rec>>>,
+    BiMapper<Sum<(), (u8, ByteListSpec)>, ByteListSpec>,
+>;
+
+pub struct ByteListRecBody;
+
+impl SpecRecBody for ByteListRecBody {
+    type Param = ();
+
+    type T = ByteListSpec;
+
+    type Body = ByteListBodyFmt<BundledSpecs<Self::T>>;
+
+    open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+        Mapped {
+            inner: Choice(
+                PrefixTagged(U8, 0x20u8, Empty),
+                PrefixTagged(U8, 0x21u8, Pair(U8, rec(()))),
+            ),
+            mapper: BiMap(
+                |i: Sum<(), (u8, ByteListSpec)>|
+                    match i {
+                        Sum::Inl(_) => ByteListSpec::Nil,
+                        Sum::Inr((head, tail)) => ByteListSpec::Cons(head, Box::new(tail)),
+                    },
+                |byte_list: ByteListSpec|
+                    match byte_list {
+                        ByteListSpec::Nil => Sum::Inl(()),
+                        ByteListSpec::Cons(head, tail) => Sum::Inr((head, *tail)),
+                    },
+            ),
+        }
+    }
+}
+
+impl<'i> ParserRecBody<&'i [u8]> for ByteListRecBody {
+    type EP = ();
+
+    type O = ByteList;
+
+    fn parse_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<Self::O> where Exec: Fn(&(), &&'i [u8]) -> PResult<Self::O> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _ = ibuf.len();
+        let (n1, tag) = U8.parse(ibuf)?;
+        let rest = ibuf.skip(n1);
+        match tag {
+            0x20u8 => Ok((n1, ByteList::Nil)),
+            0x21u8 => {
+                let (n2, head) = U8.parse(&rest)?;
+                let rest2 = rest.skip(n2);
+                let (n3, tail) = exec_rec(&(), &rest2)?;
+                Ok((n1 + n2 + n3, ByteList::Cons(head, Box::new(tail))))
+            },
+            _ => Err(ParseError::invalid_tag()),
+        }
+    }
+}
+
+impl SerializerRecBody<ByteList> for ByteListRecBody {
+    type EP = ();
+
+    fn serialize_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &ByteList,
+        obuf: &mut Vec<u8>,
+    ) where Exec: Fn(&(), &ByteList, &mut Vec<u8>) {
+        match v {
+            ByteList::Nil => {
+                U8.serialize(&0x20u8, obuf);
+            },
+            ByteList::Cons(head, tail) => {
+                U8.serialize(&0x21u8, obuf);
+                U8.serialize(head, obuf);
+                exec_rec(&(), tail, obuf);
+            },
+        }
+    }
+}
+
+impl PrepareRecBody<ByteList> for ByteListRecBody {
+    type EP = ();
+
+    fn prepare_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &ByteList,
+    ) -> Result<usize, PreSerializeError> where
+        Exec: Fn(&(), &ByteList) -> Result<usize, PreSerializeError>,
+     {
+        match v {
+            ByteList::Nil => U8.prepare(&0x20u8),
+            ByteList::Cons(head, tail) => {
+                let l1 = U8.prepare(&0x21u8)?;
+                let l2 = U8.prepare(head)?;
+                let l3 = exec_rec(&(), tail)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+                let total = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                Ok(total)
+            },
+        }
+    }
+}
+
+impl StrictRecBody for ByteListRecBody {
+    proof fn lemma_body_all_inv_preservation(
+        _param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+    }
+}
+
 } // verus!
 #[test]
 fn mutual_list_exec_roundtrip() {
@@ -1104,6 +1250,104 @@ pub fn benchmark_list_values() -> Vec<List> {
     for seed in 0..96usize {
         let depth = (seed % 6) + 2;
         values.push(bench_list(seed * 5 + 1, depth));
+    }
+    values
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_parse_byte_list_checked(
+    input: &[u8],
+) -> Result<(usize, ByteList), HandRolledError> {
+    handrolled_parse_byte_list_gas(BENCH_RECURSION_LIMIT, input)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_prepare_byte_list_checked(v: &ByteList) -> Result<usize, HandRolledError> {
+    handrolled_prepare_byte_list_gas(BENCH_RECURSION_LIMIT, v)
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_serialize_byte_list_checked(
+    v: &ByteList,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    handrolled_serialize_byte_list_gas(BENCH_RECURSION_LIMIT, v, obuf)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_parse_byte_list_gas(
+    gas: usize,
+    input: &[u8],
+) -> Result<(usize, ByteList), HandRolledError> {
+    let Some((&tag, rest)) = input.split_first() else {
+        return Err(HandRolledError::UnexpectedEof);
+    };
+    match tag {
+        0x20 => Ok((1, ByteList::Nil)),
+        0x21 => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            let Some((&head, rest2)) = rest.split_first() else {
+                return Err(HandRolledError::UnexpectedEof);
+            };
+            let (n_tail, tail) = handrolled_parse_byte_list_gas(gas - 1, rest2)?;
+            Ok((2 + n_tail, ByteList::Cons(head, Box::new(tail))))
+        }
+        _ => Err(HandRolledError::InvalidTag),
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_prepare_byte_list_gas(gas: usize, v: &ByteList) -> Result<usize, HandRolledError> {
+    match v {
+        ByteList::Nil => Ok(1),
+        ByteList::Cons(_, tail) => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            Ok(2 + handrolled_prepare_byte_list_gas(gas - 1, tail)?)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+fn handrolled_serialize_byte_list_gas(
+    gas: usize,
+    v: &ByteList,
+    obuf: &mut Vec<u8>,
+) -> Result<(), HandRolledError> {
+    match v {
+        ByteList::Nil => {
+            obuf.push(0x20);
+        }
+        ByteList::Cons(head, tail) => {
+            if gas == 0 {
+                return Err(HandRolledError::RecursionLimitExceeded);
+            }
+            obuf.push(0x21);
+            obuf.push(*head);
+            handrolled_serialize_byte_list_gas(gas - 1, tail, obuf)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+pub fn bench_byte_list(seed: usize, depth: usize) -> ByteList {
+    let mut value = ByteList::Nil;
+    for i in (0..depth).rev() {
+        value = ByteList::Cons(bench_seed_byte(seed + i * 11 + 3), Box::new(value));
+    }
+    value
+}
+
+#[cfg(feature = "std")]
+pub fn benchmark_byte_list_values() -> Vec<ByteList> {
+    let mut values = Vec::new();
+    for seed in 0..96usize {
+        let depth = (seed % 12) + 1;
+        values.push(bench_byte_list(seed * 7 + 2, depth));
     }
     values
 }
