@@ -16,4 +16,4 @@ pub type Never = ::core::convert::Infallible;
 pub use vest_lib2::*;
 
 // #[cfg(verus_only)]
-pub mod spec_tests;
+pub mod formats;

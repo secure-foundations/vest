@@ -3,7 +3,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 use vest_dev::combinators::recursive::FixWith;
 use vest_dev::core::exec::parser::Parser;
 use vest_dev::core::exec::serializer::{Prepare, Serializer};
-use vest_dev::spec_tests::mutual_fix::{
+use vest_dev::formats::mutual_fix::{
     benchmark_byte_list_values, benchmark_expr_values, benchmark_list_values,
     handrolled_parse_byte_list_checked, handrolled_parse_expr_checked,
     handrolled_parse_list_checked, handrolled_prepare_byte_list_checked,

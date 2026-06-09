@@ -3,7 +3,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 use vest_dev::combinators::recursive::FixWith;
 use vest_dev::core::exec::parser::Parser;
 use vest_dev::core::exec::serializer::{Prepare, Serializer};
-use vest_dev::spec_tests::fix::{
+use vest_dev::formats::fix::{
     benchmark_nested_braces_values, handrolled_parse_nested_braces_checked,
     handrolled_prepare_nested_braces_checked, handrolled_serialize_nested_braces_checked,
     NestedBracesBody, NestedBracesT, NESTED_BRACES_BENCH_LIMIT,
