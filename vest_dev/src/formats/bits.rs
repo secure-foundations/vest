@@ -29,16 +29,6 @@
 //!     @len: u8,
 //! }
 //!
-//! bytes_packet = {
-//!     @hdr: packet_header,
-//!     body: [u8; @hdr.len],
-//! }
-//!
-//! words_packet = {
-//!     @hdr: packet_header,
-//!     words: [u16; @hdr.count],
-//! }
-//!
 //! choice_packet = {
 //!     @hdr: packet_header,
 //!     payload: choose(@hdr.kind) {
@@ -50,9 +40,6 @@
 //! }
 //! ```
 //!
-//! This module is intentionally written in the style of generated `vest2/test/src/*.rs` code:
-//! explicit spec combinators, proof lemmas, and manual exec `Parser` / `Serializer` / `Prepare`
-//! implementations over ordinary Rust carrier types.
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::core::exec::input::{InputBuf, InputSlice};
@@ -158,50 +145,6 @@ impl DeepView for PacketHeader {
 
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct BytesPacket<'i> {
-    pub hdr: PacketHeader,
-    pub body: &'i [u8],
-}
-
-#[verifier::ext_equal]
-pub struct BytesPacketSpec {
-    pub hdr: PacketHeaderSpec,
-    pub body: Seq<u8>,
-}
-
-pub type BytesPacketInner = (PacketHeaderSpec, Seq<u8>);
-
-impl<'i> DeepView for BytesPacket<'i> {
-    type V = BytesPacketSpec;
-
-    open spec fn deep_view(&self) -> Self::V {
-        BytesPacketSpec { hdr: self.hdr.deep_view(), body: self.body.deep_view() }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct WordsPacket {
-    pub hdr: PacketHeader,
-    pub words: Vec<u16>,
-}
-
-#[verifier::ext_equal]
-pub struct WordsPacketSpec {
-    pub hdr: PacketHeaderSpec,
-    pub words: Seq<u16>,
-}
-
-pub type WordsPacketInner = (PacketHeaderSpec, Seq<u16>);
-
-impl DeepView for WordsPacket {
-    type V = WordsPacketSpec;
-
-    open spec fn deep_view(&self) -> Self::V {
-        WordsPacketSpec { hdr: self.hdr.deep_view(), words: self.words.deep_view() }
     }
 }
 
@@ -497,15 +440,10 @@ pub proof fn lemma_packet_header_mapper_wf_in_out(i: u16)
 #[verifier::allow_in_spec]
 pub fn payload_kind_wf(kind: PayloadKind) -> bool
     returns
-        match kind {
-            PayloadKind::Raw | PayloadKind::Words | PayloadKind::Tiny => true,
-            PayloadKind::Unknown(x) => x < 8 && x != 0 && x != 1 && x != 2,
-        },
+        kind matches PayloadKind::Unknown(x) ==> x != 0 && x != 1 && x != 2,
 {
-    match kind {
-        PayloadKind::Raw | PayloadKind::Words | PayloadKind::Tiny => true,
-        PayloadKind::Unknown(x) => x < 8 && x != 0 && x != 1 && x != 2,
-    }
+    matches!(kind, PayloadKind::Raw | PayloadKind::Words | PayloadKind::Tiny)
+        || matches!(kind, PayloadKind::Unknown(x) if x != 0 && x != 1 && x != 2)
 }
 
 #[verifier::allow_in_spec]
@@ -542,37 +480,6 @@ pub fn payload_kind_to_bits(kind: PayloadKind) -> u8
         PayloadKind::Tiny => 2,
         PayloadKind::Unknown(x) => x,
     }
-}
-
-pub proof fn lemma_payload_kind_roundtrip(bits: u8)
-    ensures
-        payload_kind_to_bits(payload_kind_from_bits(bits)) == bits,
-{
-}
-
-pub proof fn lemma_payload_kind_value_roundtrip(kind: PayloadKindSpec)
-    requires
-        payload_kind_wf(kind),
-    ensures
-        payload_kind_from_bits(payload_kind_to_bits(kind)) == kind,
-{
-}
-
-pub open spec fn packet_header_wf(v: PacketHeaderSpec) -> bool {
-    &&& payload_kind_wf(v.kind)
-    &&& packet_header_bounds(payload_kind_to_bits(v.kind), v.count, v.len)
-}
-
-pub open spec fn packet_header_refined(v: PacketHeaderSpec) -> bool {
-    &&& packet_header_wf(v)
-    &&& v.count >= 1u8
-}
-
-pub fn packet_header_refined_exec(v: &PacketHeader) -> (res: bool)
-    ensures
-        res == packet_header_refined(v.deep_view()),
-{
-    payload_kind_wf(v.kind) && v.count < COUNT_MAX && v.count >= 1u8
 }
 
 // ============================================================
@@ -683,128 +590,103 @@ impl CrossByteSpanFmt {
 #[derive(Clone, Copy)]
 pub struct PacketHeaderFmt;
 
-pub struct PacketHeaderMapper;
+pub struct PacketHeaderMapper1;
 
-impl SpecMapper for PacketHeaderMapper {
+impl SpecMapper for PacketHeaderMapper1 {
     type In = PacketHeaderInner;
 
-    type Out = PacketHeaderSpec;
+    type Out = (u8, u8, u8);
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
-        packet_header_wf(o)
+        let (kind_bits, count, len) = o;
+        packet_header_bounds(kind_bits, count, len)
     }
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        let (kind_bits, count, len) = unpack_packet_header(i);
-        PacketHeaderSpec { kind: payload_kind_from_bits(kind_bits), count, len }
+        unpack_packet_header(i)
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        pack_packet_header(payload_kind_to_bits(o.kind), o.count, o.len)
+        let (kind_bits, count, len) = o;
+        pack_packet_header(kind_bits, count, len)
     }
 }
 
-impl LossyMapper for PacketHeaderMapper {
+impl LossyMapper for PacketHeaderMapper1 {
     proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        lemma_payload_kind_value_roundtrip(o.kind);
-        let kind_bits = payload_kind_to_bits(o.kind);
-        lemma_packet_header_pack_unpack(kind_bits, o.count, o.len);
+        let (kind_bits, count, len) = o;
+        lemma_packet_header_pack_unpack(kind_bits, count, len);
     }
 
     proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
     }
 }
 
-impl LosslessMapper for PacketHeaderMapper {
+impl LosslessMapper for PacketHeaderMapper1 {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        let (kind_bits, count, len) = unpack_packet_header(i);
-        lemma_payload_kind_roundtrip(kind_bits);
         lemma_packet_header_unpack_pack(i);
     }
 
     proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
         lemma_packet_header_mapper_wf_in_out(i);
-        let (kind_bits, _count, _len) = unpack_packet_header(i);
     }
 }
 
-pub type PacketHeaderRawFmt = Mapped<U16Be, PacketHeaderMapper>;
+pub struct PacketHeaderMapper2;
 
-pub type PacketHeaderFmtSpec = Named<Refined<PacketHeaderRawFmt, PredFnSpec<PacketHeaderSpec>>>;
+impl SpecMapper for PacketHeaderMapper2 {
+    type In = (u8, u8, u8);
+
+    type Out = PacketHeaderSpec;
+
+    open spec fn wf_out(&self, o: Self::Out) -> bool {
+        payload_kind_wf(o.kind)
+    }
+
+    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
+        let (kind_bits, count, len) = i;
+        PacketHeaderSpec { kind: payload_kind_from_bits(kind_bits), count, len }
+    }
+
+    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
+        let PacketHeaderSpec { kind, count, len } = o;
+        (payload_kind_to_bits(kind), count, len)
+    }
+}
+
+impl LossyMapper for PacketHeaderMapper2 {
+    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for PacketHeaderMapper2 {
+    proof fn lemma_lossless_mapper(&self, i: Self::In) {
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    }
+}
+
+pub type PacketHeaderFmtSpec = Named<
+    Mapped<
+        Refined<Mapped<U16Be, PacketHeaderMapper1>, PredFnSpec<(u8, u8, u8)>>,
+        PacketHeaderMapper2,
+    >,
+>;
 
 impl PacketHeaderFmt {
     pub open spec fn spec_inner() -> PacketHeaderFmtSpec {
         Named(
             "packet_header",
-            Refined(
-                Mapped { inner: U16Be, mapper: PacketHeaderMapper },
-                |hdr: PacketHeaderSpec| packet_header_refined(hdr),
-            ),
-        )
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct BytesPacketFmt;
-
-pub type BytesPacketFmtSpec = Named<
-    Mapped<
-        Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> Varied<u8>>,
-        FnSpecMapper<BytesPacketInner, BytesPacketSpec>,
-    >,
->;
-
-impl BytesPacketFmt {
-    pub open spec fn spec_inner() -> BytesPacketFmtSpec {
-        Named(
-            "bytes_packet",
             Mapped {
-                inner: Bind(PacketHeaderFmt, |hdr: PacketHeaderSpec| Varied(hdr.len)),
-                mapper: (
-                    |parsed: BytesPacketInner| -> BytesPacketSpec
-                        {
-                            let (hdr, body) = parsed;
-                            BytesPacketSpec { hdr, body }
-                        },
-                    |value: BytesPacketSpec| -> BytesPacketInner
-                        {
-                            let BytesPacketSpec { hdr, body } = value;
-                            (hdr, body)
-                        },
+                inner: Refined(
+                    Mapped { inner: U16Be, mapper: PacketHeaderMapper1 },
+                    |hdr: (u8, u8, u8)| hdr.1 >= 1u8,
                 ),
-            },
-        )
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct WordsPacketFmt;
-
-pub type WordsPacketFmtSpec = Named<
-    Mapped<
-        Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> RepeatN<U16Be, u8>>,
-        FnSpecMapper<WordsPacketInner, WordsPacketSpec>,
-    >,
->;
-
-impl WordsPacketFmt {
-    pub open spec fn spec_inner() -> WordsPacketFmtSpec {
-        Named(
-            "words_packet",
-            Mapped {
-                inner: Bind(PacketHeaderFmt, |hdr: PacketHeaderSpec| RepeatN(hdr.count, U16Be)),
-                mapper: (
-                    |parsed: WordsPacketInner| -> WordsPacketSpec
-                        {
-                            let (hdr, words) = parsed;
-                            WordsPacketSpec { hdr, words }
-                        },
-                    |value: WordsPacketSpec| -> WordsPacketInner
-                        {
-                            let WordsPacketSpec { hdr, words } = value;
-                            (hdr, words)
-                        },
-                ),
+                mapper: PacketHeaderMapper2,
             },
         )
     }
@@ -956,10 +838,10 @@ impl<'i> Parser<&'i [u8]> for PacketHeaderFmt {
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, raw) = U16Be.parse(ibuf)?;
         let (kind_bits, count, len) = unpack_packet_header(raw);
-        let final_v = PacketHeader { kind: payload_kind_from_bits(kind_bits), count, len };
-        if !packet_header_refined_exec(&final_v) {
+        if !(count >= 1u8) {
             return Err(ParseError::predicate_failed());
         }
+        let final_v = PacketHeader { kind: payload_kind_from_bits(kind_bits), count, len };
         assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
         Ok((n, final_v))
     }
@@ -974,7 +856,13 @@ impl Serializer<PacketHeader> for PacketHeaderFmt {
 
 impl Prepare<PacketHeader> for PacketHeaderFmt {
     fn prepare(&self, v: &PacketHeader) -> Result<usize, PreSerializeError> {
-        if !packet_header_refined_exec(v) {
+        if !packet_header_bounds(payload_kind_to_bits(v.kind), v.count, v.len) {
+            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+        }
+        if !payload_kind_wf(v.kind) {
+            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+        }
+        if !(v.count >= 1u8) {
             return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
         }
         let res = U16Be.prepare(&pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len));
@@ -982,77 +870,6 @@ impl Prepare<PacketHeader> for PacketHeaderFmt {
             assert(self.consistent(v.deep_view()));
         }
         res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for BytesPacketFmt {
-    type PT = BytesPacket<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let rest = *ibuf;
-        let (n1, hdr) = PacketHeaderFmt.parse(&rest)?;
-        let rest = rest.skip(n1);
-        let (n2, body) = Varied(hdr.len).parse(&rest)?;
-        let total_n = n1 + n2;
-        let final_v = BytesPacket { hdr, body };
-        assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-        Ok((total_n, final_v))
-    }
-}
-
-impl<'i> Serializer<BytesPacket<'i>> for BytesPacketFmt {
-    fn serialize(&self, v: &BytesPacket<'i>, obuf: &mut Vec<u8>) {
-        let BytesPacket { hdr, body } = v;
-        PacketHeaderFmt.serialize(hdr, obuf);
-        Varied(hdr.len).serialize(body, obuf);
-    }
-}
-
-impl<'i> Prepare<BytesPacket<'i>> for BytesPacketFmt {
-    fn prepare(&self, v: &BytesPacket<'i>) -> Result<usize, PreSerializeError> {
-        let BytesPacket { hdr, body } = v;
-        let l1 = PacketHeaderFmt.prepare(hdr)?;
-        let l2 = Varied(hdr.len).prepare(body)?;
-        l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for WordsPacketFmt {
-    type PT = WordsPacket;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let rest = *ibuf;
-        let (n1, hdr) = PacketHeaderFmt.parse(&rest)?;
-        let rest = rest.skip(n1);
-        let (n2, words) = RepeatN(hdr.count, U16Be).parse(&rest)?;
-        let _ibuf_len = (*ibuf).len();
-        assert(n1 <= ibuf@.len());
-        assert(n2 <= ibuf@.len() - n1);
-        let total_n = n1 + n2;
-        let final_v = WordsPacket { hdr, words };
-        assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-        Ok((total_n, final_v))
-    }
-}
-
-impl Serializer<WordsPacket> for WordsPacketFmt {
-    fn serialize(&self, v: &WordsPacket, obuf: &mut Vec<u8>) {
-        let WordsPacket { hdr, words } = v;
-        PacketHeaderFmt.serialize(hdr, obuf);
-        RepeatN(hdr.count, U16Be).serialize(words.as_slice(), obuf);
-    }
-}
-
-impl Prepare<WordsPacket> for WordsPacketFmt {
-    fn prepare(&self, v: &WordsPacket) -> Result<usize, PreSerializeError> {
-        let WordsPacket { hdr, words } = v;
-        let l1 = PacketHeaderFmt.prepare(hdr)?;
-        let l2 = RepeatN(hdr.count, U16Be).prepare(words.as_slice())?;
-        l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)
     }
 }
 
@@ -1148,9 +965,9 @@ impl<'i> Prepare<ChoicePacket<'i>> for ChoicePacketFmt {
 }
 
 } // verus!
-  // ============================================================
-  // Runtime tests
-  // ============================================================
+// ============================================================
+// Runtime tests
+// ============================================================
 #[test]
 fn exec_version_ihl_roundtrip() {
     let fmt = VersionIhlFmt;
@@ -1486,6 +1303,4 @@ macro_rules! impl_named_spec_traits {
 impl_named_spec_traits!(VersionIhlFmt, VersionIhlSpec);
 impl_named_spec_traits!(CrossByteSpanFmt, CrossByteSpanSpec);
 impl_named_spec_traits!(PacketHeaderFmt, PacketHeaderSpec);
-impl_named_spec_traits!(BytesPacketFmt, BytesPacketSpec);
-impl_named_spec_traits!(WordsPacketFmt, WordsPacketSpec);
 impl_named_spec_traits!(ChoicePacketFmt, ChoicePacketSpec);
