@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 
+pub mod bits;
 mod choice;
 mod dependent;
 mod disjoint;
