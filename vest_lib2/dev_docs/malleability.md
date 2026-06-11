@@ -282,12 +282,98 @@ Distinguish `LossyMapper` from `LosslessMapper` and implement malleable and non-
 
 - Omitted fields are by default malleable, but can be made non-malleable by
   - being a `const` field, or
-  - having a `default` value that is checked against during parsing.
-  - being a refinement field with unique value, or
-  - being a dependent field whose value can be uniquely determined from other fields or
+  - having a _canonical_ value that is checked against during parsing, or
+  - being a refinement field that admits _unique_ value, or
+  - being a dependent field whose value can be _uniquely determined_ from other fields.
 - Formats containing malleable components (either primitives or user-defined formats) are malleable (e.g., structs with malleable fields, or choices with malleable branches).
 - _Unordered_ structs are malleable unless they contain only one field, in which case they are non-malleable (since there is only one possible order).
-  **Streaming and Error Tolerance related**:
+
+```vest
+// non-malleable
+msg1 = {
+    omitted const FLAG: u8 = 0,
+    omitted @tag: MyType,
+    omitted @len: uvlq128,
+    val: [u8; @len] >>= choose(@tag) {
+        MyType::T1 => u16,
+        MyType::T2 => u32,
+        MyType::T3 => u64,
+    }
+}
+
+// malleable
+malleable msg2 = {
+    omitted reserved: u16 | 0..100,
+    omitted padding: [u8; 5],
+}
+
+// non-malleable
+msg3 = {
+    omitted reserved: u16 | { 0..100, canonical = 0 },
+    omitted padding: [u8; 5] | { canonical = [0, 0, 0, 0, 0] },
+}
+
+// malleable
+malleable msg5 = {
+    @f1: u32,
+    omitted f2: u32,
+}
+
+// non-malleable
+msg5 = {
+    @f1: u32,
+    omitted f2: u32 | { f2 == @f1 },
+}
+
+// malleable
+malleable msg6 = unordered {
+    a: msg1,
+    b: msg2,
+    c: msg3,
+}
+
+// malleable
+malleable msg7 = {
+    a: msg1,
+    b: asn1::ber_bool, // malleable
+    c: Option<msg6>, // malleable
+}
+
+// asn1 sequence
+asn1seq!(f+) = {
+    omitted const SEQTAG: u8 = 0x10,
+    omitted @len: asn1::length,
+    fields: [u8; @len] >>= {
+        f+
+    }
+}
+
+an_asn1_type = asn1seq! {
+    f1: ...,
+    f2: ...,
+    f3: ...,
+}
+
+asn1::sequence {
+    omitted const SEQTAG: u8 = 0x10,
+    omitted @len: asn1::length,
+    fields: [u8; @len] >>= {
+        f1: ...,
+        f2: ...,
+        f3: ...,
+    }
+}
+
+// asn1 defaults
+msg4 = {
+    reserved: u16 | { 0..100, default = 0 },
+    padding: [u8; 5] | { default = [0, 0, 0, 0, 0] },
+}
+
+```
+
+**Streaming and Error Tolerance related**:
+
 - Same fields can occur multiple times, with only the last one taking effect (e.g., `CBOR` duplicate map keys, `Protobuf` patchable fields, etc.)
 - Fields can be chunked or segmented in multiple ways (e.g., `CBOR`/`ASN.1 BER` indefinite-length items, `Protobuf` repeated fields, etc.)
 - Structs/formats themselves can be chunked/segmented (e.g., `Protobuf` messages)
