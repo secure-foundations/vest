@@ -53,7 +53,6 @@
 //! This module is intentionally written in the style of generated `vest2/test/src/*.rs` code:
 //! explicit spec combinators, proof lemmas, and manual exec `Parser` / `Serializer` / `Prepare`
 //! implementations over ordinary Rust carrier types.
-
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::core::exec::input::{InputBuf, InputSlice};
@@ -69,7 +68,6 @@ verus! {
 // ============================================================
 // Data Types
 // ============================================================
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]
 pub struct VersionIhl {
@@ -78,6 +76,7 @@ pub struct VersionIhl {
 }
 
 pub type VersionIhlSpec = VersionIhl;
+
 pub type VersionIhlInner = u8;
 
 impl DeepView for VersionIhl {
@@ -97,6 +96,7 @@ pub struct CrossByteSpan {
 }
 
 pub type CrossByteSpanSpec = CrossByteSpan;
+
 pub type CrossByteSpanInner = u16;
 
 impl DeepView for CrossByteSpan {
@@ -133,7 +133,8 @@ impl DeepEq for PayloadKind {
 }
 
 impl SelfView for PayloadKind {
-    proof fn self_view(&self) {}
+    proof fn self_view(&self) {
+    }
 
     fn eq(&self, other: &Self) -> bool {
         *self == *other
@@ -149,6 +150,7 @@ pub struct PacketHeader {
 }
 
 pub type PacketHeaderSpec = PacketHeader;
+
 pub type PacketHeaderInner = u16;
 
 impl DeepView for PacketHeader {
@@ -259,31 +261,46 @@ impl<'i> DeepView for ChoicePacket<'i> {
 // ============================================================
 // Bit helpers
 // ============================================================
-
 // Version/IHL field (version: u4, ihl: u4)
-pub const VERSION_MASK: u8 = 0b00001111u8;  // 4 bits for version
-pub const IHL_MASK: u8 = 0b00001111u8;  // 4 bits for IHL
+pub const VERSION_MASK: u8 = 0b00001111u8;
+
+pub const IHL_MASK: u8 = 0b00001111u8;
+
 pub const VERSION_SHIFT: u8 = 4u8;
 
-pub const PREFIX_MASK_U16: u16 = 0b0000000000000111u16;  // 3 bits for prefix
-pub const SPAN_MASK: u16 = 0b0000001111111111u16;  // 10 bits for span
-pub const SUFFIX_MASK: u16 = 0b0000000000000111u16;  // 3 bits for suffix
+pub const PREFIX_MASK_U16: u16 = 0b0000000000000111u16;
+
+pub const SPAN_MASK: u16 = 0b0000001111111111u16;
+
+pub const SUFFIX_MASK: u16 = 0b0000000000000111u16;
+
 pub const PREFIX_SHIFT: u16 = 13u16;
+
 pub const SPAN_SHIFT: u16 = 3u16;
 
-pub const KIND_MASK: u16 = 0b0000000000000111u16;  // 3 bits for kind
-pub const COUNT_MASK: u16 = 0b0000000000011111u16;  // 5 bits for count
-pub const LEN_MASK: u16 = 0b0000000011111111u16;  // 8 bits for length
+pub const KIND_MASK: u16 = 0b0000000000000111u16;
+
+pub const COUNT_MASK: u16 = 0b0000000000011111u16;
+
+pub const LEN_MASK: u16 = 0b0000000011111111u16;
+
 pub const KIND_SHIFT: u16 = 13u16;
+
 pub const COUNT_SHIFT: u16 = 8u16;
 
-pub const VERSION_MAX: u8 = 0b00010000u8;  // 2^4
-pub const IHL_MAX: u8 = 0b00010000u8;  // 2^4
-pub const PREFIX_MAX: u8 = 0b00001000u8;  // 2^3
-pub const SPAN_MAX: u16 = 0b10000000000u16;  // 2^10
-pub const SUFFIX_MAX: u8 = 0b00001000u8;  // 2^3
-pub const KIND_MAX: u8 = 0b00001000u8;  // 2^3
-pub const COUNT_MAX: u8 = 0b00100000u8;  // 2^5
+pub const VERSION_MAX: u8 = 0b00010000u8;
+
+pub const IHL_MAX: u8 = 0b00010000u8;
+
+pub const PREFIX_MAX: u8 = 0b00001000u8;
+
+pub const SPAN_MAX: u16 = 0b10000000000u16;
+
+pub const SUFFIX_MAX: u8 = 0b00001000u8;
+
+pub const KIND_MAX: u8 = 0b00001000u8;
+
+pub const COUNT_MAX: u8 = 0b00100000u8;
 
 pub open spec fn payload_kind_wf(kind: PayloadKindSpec) -> bool {
     match kind {
@@ -334,51 +351,60 @@ pub proof fn lemma_payload_kind_value_roundtrip(kind: PayloadKindSpec)
 {
 }
 
-pub open spec fn version_ihl_from_raw(raw: u8) -> VersionIhlSpec {
-    VersionIhlSpec { version: ((raw >> VERSION_SHIFT) & VERSION_MASK), ihl: (raw & IHL_MASK) }
+#[verifier::allow_in_spec]
+pub fn unpack_version_ihl(raw: u8) -> (u8, u8)
+    returns
+        (((raw >> VERSION_SHIFT) & VERSION_MASK), (raw & IHL_MASK)),
+{
+    (((raw >> VERSION_SHIFT) & VERSION_MASK), (raw & IHL_MASK))
 }
 
-pub open spec fn version_ihl_to_raw_inner(version: u8, ihl: u8) -> u8 {
+#[verifier::allow_in_spec]
+pub fn pack_version_ihl(version: u8, ihl: u8) -> u8
+    returns
+        ((version & VERSION_MASK) << VERSION_SHIFT) | (ihl & IHL_MASK),
+{
     ((version & VERSION_MASK) << VERSION_SHIFT) | (ihl & IHL_MASK)
 }
 
-pub open spec fn version_ihl_to_raw(v: VersionIhlSpec) -> u8 {
-    version_ihl_to_raw_inner(v.version, v.ihl)
-}
-
-pub open spec fn version_ihl_wf(v: VersionIhlSpec) -> bool {
-    v.version < VERSION_MAX && v.ihl < IHL_MAX
-}
-
-pub fn version_ihl_wf_exec(v: &VersionIhl) -> (res: bool)
-    ensures
-        res == version_ihl_wf(v.deep_view()),
+#[verifier::allow_in_spec]
+pub fn version_ihl_bounds(version: u8, ihl: u8) -> bool
+    returns
+        version < VERSION_MAX && ihl < IHL_MAX,
 {
-    v.version < VERSION_MAX && v.ihl < IHL_MAX
+    version < VERSION_MAX && ihl < IHL_MAX
 }
 
-pub proof fn lemma_version_ihl_bits_roundtrip(raw: u8) by (bit_vector)
+pub proof fn lemma_version_ihl_unpack_pack(raw: u8)
+    by (bit_vector)
     ensures
-        version_ihl_to_raw(version_ihl_from_raw(raw)) == raw,
+        ({
+            let (version, ihl) = unpack_version_ihl(raw);
+            pack_version_ihl(version, ihl) == raw
+        }),
 {
 }
 
-pub proof fn lemma_version_ihl_value_roundtrip_inner(version: u8, ihl: u8) by (bit_vector)
+pub proof fn lemma_version_ihl_value_pack_unpack(version: u8, ihl: u8)
+    by (bit_vector)
     requires
-        version_ihl_wf(VersionIhlSpec { version, ihl }),
+        version_ihl_bounds(version, ihl),
     ensures
-        version_ihl_from_raw(version_ihl_to_raw_inner(version, ihl)).version == version,
-        version_ihl_from_raw(version_ihl_to_raw_inner(version, ihl)).ihl == ihl,
+        ({
+            let (version_, ihl_) = unpack_version_ihl(pack_version_ihl(version, ihl));
+            version_ == version && ihl_ == ihl
+        }),
 {
 }
 
-pub proof fn lemma_version_ihl_value_roundtrip(v: VersionIhlSpec)
-    requires
-        version_ihl_wf(v),
+pub proof fn lemma_version_ihl_mapper_wf_in_out_inner(i: u8)
+    by (bit_vector)
     ensures
-        version_ihl_from_raw(version_ihl_to_raw(v)) == v,
+        ({
+            let (version, ihl) = unpack_version_ihl(i);
+            version_ihl_bounds(version, ihl)
+        }),
 {
-    lemma_version_ihl_value_roundtrip_inner(v.version, v.ihl);
 }
 
 pub open spec fn cross_byte_span_from_raw(raw: u16) -> CrossByteSpanSpec {
@@ -390,9 +416,8 @@ pub open spec fn cross_byte_span_from_raw(raw: u16) -> CrossByteSpanSpec {
 }
 
 pub open spec fn cross_byte_span_to_raw_inner(prefix: u8, span: u16, suffix: u8) -> u16 {
-    (((prefix as u16) & PREFIX_MASK_U16) << PREFIX_SHIFT)
-        | (((span as u16) & SPAN_MASK) << SPAN_SHIFT)
-        | ((suffix as u16) & SUFFIX_MASK)
+    (((prefix as u16) & PREFIX_MASK_U16) << PREFIX_SHIFT) | (((span as u16) & SPAN_MASK)
+        << SPAN_SHIFT) | ((suffix as u16) & SUFFIX_MASK)
 }
 
 pub open spec fn cross_byte_span_to_raw(v: CrossByteSpanSpec) -> u16 {
@@ -410,19 +435,23 @@ pub fn cross_byte_span_wf_exec(v: &CrossByteSpan) -> (res: bool)
     v.prefix < PREFIX_MAX && v.span < SPAN_MAX && v.suffix < SUFFIX_MAX
 }
 
-pub proof fn lemma_cross_byte_span_bits_roundtrip(raw: u16) by (bit_vector)
+pub proof fn lemma_cross_byte_span_bits_roundtrip(raw: u16)
+    by (bit_vector)
     ensures
         cross_byte_span_to_raw(cross_byte_span_from_raw(raw)) == raw,
 {
 }
 
-pub proof fn lemma_cross_byte_span_value_roundtrip_inner(prefix: u8, span: u16, suffix: u8) by (bit_vector)
+pub proof fn lemma_cross_byte_span_value_roundtrip_inner(prefix: u8, span: u16, suffix: u8)
+    by (bit_vector)
     requires
         cross_byte_span_wf(CrossByteSpanSpec { prefix, span, suffix }),
     ensures
-        cross_byte_span_from_raw(cross_byte_span_to_raw_inner(prefix, span, suffix)).prefix == prefix,
+        cross_byte_span_from_raw(cross_byte_span_to_raw_inner(prefix, span, suffix)).prefix
+            == prefix,
         cross_byte_span_from_raw(cross_byte_span_to_raw_inner(prefix, span, suffix)).span == span,
-        cross_byte_span_from_raw(cross_byte_span_to_raw_inner(prefix, span, suffix)).suffix == suffix,
+        cross_byte_span_from_raw(cross_byte_span_to_raw_inner(prefix, span, suffix)).suffix
+            == suffix,
 {
 }
 
@@ -435,23 +464,26 @@ pub proof fn lemma_cross_byte_span_value_roundtrip(v: CrossByteSpanSpec)
     lemma_cross_byte_span_value_roundtrip_inner(v.prefix, v.span, v.suffix);
 }
 
-
-pub open spec fn packet_header_from_raw(raw: u16) -> PacketHeaderSpec {
-    PacketHeaderSpec {
-        kind: payload_kind_from_bits(((raw >> KIND_SHIFT) & KIND_MASK) as u8),
-        count: (((raw >> COUNT_SHIFT) & COUNT_MASK) as u8),
-        len: ((raw & LEN_MASK) as u8),
-    }
+pub open spec fn packet_header_from_raw_inner(raw: u16) -> (u8, u8, u8) {
+    (
+        ((raw >> KIND_SHIFT) & KIND_MASK) as u8,
+        ((raw >> COUNT_SHIFT) & COUNT_MASK) as u8,
+        (raw & LEN_MASK) as u8,
+    )
 }
 
-pub open spec fn packet_header_to_raw_inner(kind: PayloadKindSpec, count: u8, len: u8) -> u16 {
-    (((payload_kind_to_bits(kind) as u16) & KIND_MASK) << KIND_SHIFT)
-        | (((count as u16) & COUNT_MASK) << COUNT_SHIFT)
-        | ((len as u16) & LEN_MASK)
+pub open spec fn packet_header_from_raw(raw: u16) -> PacketHeaderSpec {
+    let (kind_bits, count, len) = packet_header_from_raw_inner(raw);
+    PacketHeaderSpec { kind: payload_kind_from_bits(kind_bits), count, len }
+}
+
+pub open spec fn packet_header_to_raw_inner(kind: u8, count: u8, len: u8) -> u16 {
+    (((kind as u16) & KIND_MASK) << KIND_SHIFT) | (((count as u16) & COUNT_MASK) << COUNT_SHIFT) | (
+    (len as u16) & LEN_MASK)
 }
 
 pub open spec fn packet_header_to_raw(v: PacketHeaderSpec) -> u16 {
-    packet_header_to_raw_inner(v.kind, v.count, v.len)
+    packet_header_to_raw_inner(payload_kind_to_bits(v.kind), v.count, v.len)
 }
 
 pub open spec fn packet_header_wf(v: PacketHeaderSpec) -> bool {
@@ -471,20 +503,37 @@ pub fn packet_header_refined_exec(v: &PacketHeader) -> (res: bool)
     payload_kind_wf_exec(v.kind) && v.count < COUNT_MAX && v.count >= 1u8
 }
 
+pub proof fn lemma_packet_header_bits_roundtrip_inner(raw: u16)
+    by (bit_vector)
+    ensures
+        ({
+            let (kind_bits, count, len) = packet_header_from_raw_inner(raw);
+            packet_header_to_raw_inner(kind_bits, count, len) == raw
+        }),
+{
+}
+
 pub proof fn lemma_packet_header_bits_roundtrip(raw: u16)
     ensures
         packet_header_to_raw(packet_header_from_raw(raw)) == raw,
 {
     let kind_bits = ((raw >> KIND_SHIFT) & KIND_MASK) as u8;
     lemma_payload_kind_roundtrip(kind_bits);
-    let pk_bits = payload_kind_to_bits(payload_kind_from_bits(kind_bits));
-    assert(pk_bits == kind_bits);
-    assert(
-        ((((pk_bits as u16) & KIND_MASK) << KIND_SHIFT)
-            | (((((raw >> COUNT_SHIFT) & COUNT_MASK) as u8 as u16) & COUNT_MASK) << COUNT_SHIFT)
-            | ((((raw & LEN_MASK) as u8 as u16) & LEN_MASK))) == raw
-    ) by (bit_vector)
-        requires pk_bits == (((raw >> KIND_SHIFT) & KIND_MASK) as u8);
+    lemma_packet_header_bits_roundtrip_inner(raw);
+}
+
+pub proof fn lemma_packet_header_value_roundtrip_inner(kind_bits: u8, count: u8, len: u8)
+    by (bit_vector)
+    requires
+        kind_bits < KIND_MAX,
+        count < COUNT_MAX,
+    ensures
+        (((packet_header_to_raw_inner(kind_bits, count, len) >> KIND_SHIFT) & KIND_MASK) as u8)
+            == kind_bits,
+        (((packet_header_to_raw_inner(kind_bits, count, len) >> COUNT_SHIFT) & COUNT_MASK) as u8)
+            == count,
+        (packet_header_to_raw_inner(kind_bits, count, len) & LEN_MASK) as u8 == len,
+{
 }
 
 pub proof fn lemma_packet_header_value_roundtrip(v: PacketHeaderSpec)
@@ -494,70 +543,8 @@ pub proof fn lemma_packet_header_value_roundtrip(v: PacketHeaderSpec)
         packet_header_from_raw(packet_header_to_raw(v)) == v,
 {
     lemma_payload_kind_value_roundtrip(v.kind);
-    let count = v.count;
-    assert(count < COUNT_MAX);
     let kind_bits = payload_kind_to_bits(v.kind);
-    assert(payload_kind_to_bits(v.kind) < KIND_MAX) by {
-        let k = v.kind;
-        match k {
-            PayloadKind::Raw => assert(payload_kind_to_bits(k) == 0u8),
-            PayloadKind::Words => assert(payload_kind_to_bits(k) == 1u8),
-            PayloadKind::Tiny => assert(payload_kind_to_bits(k) == 2u8),
-            PayloadKind::Unknown(x) => assert(payload_kind_to_bits(k) == x && x < KIND_MAX),
-        }
-    };
-    assert(kind_bits < KIND_MAX);
-    let raw = packet_header_to_raw(v);
-    assert(raw == (((kind_bits as u16) & KIND_MASK) << KIND_SHIFT)
-        | (((count as u16) & COUNT_MASK) << COUNT_SHIFT)
-        | ((v.len as u16) & LEN_MASK));
-    let v_len = v.len;
-    let v2 = packet_header_from_raw(raw);
-    let v2_count = v2.count;
-    let v2_len = v2.len;
-    assert(v2.count == ((raw >> COUNT_SHIFT) & COUNT_MASK) as u8);
-    assert(v2.len == (raw & LEN_MASK) as u8);
-    let kb: u16 = kind_bits as u16;
-    assert(kb < KIND_MAX as u16) by (bit_vector) requires kind_bits < KIND_MAX, kb == kind_bits as u16;
-    let raw_kind_bits = ((raw >> KIND_SHIFT) & KIND_MASK) as u8;
-    assert(v2.kind == payload_kind_from_bits(raw_kind_bits));
-    assert((raw >> KIND_SHIFT) & KIND_MASK == kb) by (bit_vector)
-        requires kb < KIND_MAX as u16,
-                 raw == ((kb & KIND_MASK) << KIND_SHIFT)
-                     | (((count as u16) & COUNT_MASK) << COUNT_SHIFT)
-                     | ((v_len as u16) & LEN_MASK);
-    assert(kb as u8 == kind_bits);
-    assert(raw_kind_bits == kind_bits);
-    assert(v2.kind == v.kind) by {
-        assert(payload_kind_from_bits(kind_bits) == v.kind);
-    };
-    assert(v2_count == count) by (bit_vector)
-        requires count < COUNT_MAX,
-                 raw == (((kind_bits as u16) & KIND_MASK) << KIND_SHIFT)
-                     | (((count as u16) & COUNT_MASK) << COUNT_SHIFT)
-                     | ((v_len as u16) & LEN_MASK),
-                 v2_count == ((raw >> COUNT_SHIFT) & COUNT_MASK) as u8;
-    assert(v2_len == v_len) by (bit_vector)
-        requires raw == (((kind_bits as u16) & KIND_MASK) << KIND_SHIFT)
-                     | (((count as u16) & COUNT_MASK) << COUNT_SHIFT)
-                     | ((v_len as u16) & LEN_MASK),
-                 v2_len == (raw & LEN_MASK) as u8;
-}
-
-#[inline(always)]
-pub fn version_ihl_from_raw_exec(raw: u8) -> (out: VersionIhl)
-    ensures
-        out.deep_view() == version_ihl_from_raw(raw),
-{
-    VersionIhl { version: (raw >> VERSION_SHIFT) & VERSION_MASK, ihl: raw & IHL_MASK }
-}
-
-#[inline(always)]
-pub fn version_ihl_to_raw_exec(v: &VersionIhl) -> (raw: u8)
-    ensures
-        raw == version_ihl_to_raw(v.deep_view()),
-{
-    ((v.version & VERSION_MASK) << VERSION_SHIFT) | (v.ihl & IHL_MASK)
+    lemma_packet_header_value_roundtrip_inner(kind_bits, v.count, v.len);
 }
 
 #[inline(always)]
@@ -577,9 +564,8 @@ pub fn cross_byte_span_to_raw_exec(v: &CrossByteSpan) -> (raw: u16)
     ensures
         raw == cross_byte_span_to_raw(v.deep_view()),
 {
-    (((v.prefix as u16) & PREFIX_MASK_U16) << PREFIX_SHIFT)
-        | (((v.span as u16) & SPAN_MASK) << SPAN_SHIFT)
-        | ((v.suffix as u16) & SUFFIX_MASK)
+    (((v.prefix as u16) & PREFIX_MASK_U16) << PREFIX_SHIFT) | (((v.span as u16) & SPAN_MASK)
+        << SPAN_SHIFT) | ((v.suffix as u16) & SUFFIX_MASK)
 }
 
 #[inline(always)]
@@ -594,7 +580,11 @@ pub fn packet_header_from_raw_exec(raw: u16) -> (out: PacketHeader)
         2 => PayloadKind::Tiny,
         other => PayloadKind::Unknown(other),
     };
-    PacketHeader { kind, count: ((raw >> COUNT_SHIFT) & COUNT_MASK) as u8, len: (raw & LEN_MASK) as u8 }
+    PacketHeader {
+        kind,
+        count: ((raw >> COUNT_SHIFT) & COUNT_MASK) as u8,
+        len: (raw & LEN_MASK) as u8,
+    }
 }
 
 #[inline(always)]
@@ -608,15 +598,13 @@ pub fn packet_header_to_raw_exec(v: &PacketHeader) -> (raw: u16)
         PayloadKind::Tiny => 2,
         PayloadKind::Unknown(x) => x,
     };
-    (((kind_bits as u16) & KIND_MASK) << KIND_SHIFT)
-        | (((v.count as u16) & COUNT_MASK) << COUNT_SHIFT)
-        | ((v.len as u16) & LEN_MASK)
+    (((kind_bits as u16) & KIND_MASK) << KIND_SHIFT) | (((v.count as u16) & COUNT_MASK)
+        << COUNT_SHIFT) | ((v.len as u16) & LEN_MASK)
 }
 
 // ============================================================
 // Format Specifications
 // ============================================================
-
 #[derive(Clone, Copy)]
 pub struct VersionIhlFmt;
 
@@ -624,37 +612,39 @@ pub struct VersionIhlMapper;
 
 impl SpecMapper for VersionIhlMapper {
     type In = VersionIhlInner;
+
     type Out = VersionIhlSpec;
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
-        version_ihl_wf(o)
+        version_ihl_bounds(o.version, o.ihl)
     }
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        version_ihl_from_raw(i)
+        let (version, ihl) = unpack_version_ihl(i);
+        VersionIhlSpec { version, ihl }
     }
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        version_ihl_to_raw(o)
+        pack_version_ihl(o.version, o.ihl)
     }
 }
 
 impl LossyMapper for VersionIhlMapper {
     proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        lemma_version_ihl_value_roundtrip(o);
+        lemma_version_ihl_value_pack_unpack(o.version, o.ihl);
     }
 
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {}
+    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
+    }
 }
 
 impl LosslessMapper for VersionIhlMapper {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_version_ihl_bits_roundtrip(i);
+        lemma_version_ihl_unpack_pack(i);
     }
 
     proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        assert(((i >> VERSION_SHIFT) & VERSION_MASK) < VERSION_MAX) by (bit_vector);
-        assert((i & IHL_MASK) < IHL_MAX) by (bit_vector);
+        lemma_version_ihl_mapper_wf_in_out_inner(i);
     }
 }
 
@@ -673,6 +663,7 @@ pub struct CrossByteSpanMapper;
 
 impl SpecMapper for CrossByteSpanMapper {
     type In = CrossByteSpanInner;
+
     type Out = CrossByteSpanSpec;
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
@@ -693,7 +684,19 @@ impl LossyMapper for CrossByteSpanMapper {
         lemma_cross_byte_span_value_roundtrip(o);
     }
 
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {}
+    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
+    }
+}
+
+pub proof fn lemma_cross_byte_span_mapper_wf_in_out_inner(i: u16)
+    by (bit_vector)
+    ensures
+        ((i >> PREFIX_SHIFT) & PREFIX_MASK_U16) < PREFIX_MAX as u16,
+        ((i >> SPAN_SHIFT) & SPAN_MASK) < SPAN_MAX,
+        (i & SUFFIX_MASK) < SUFFIX_MAX as u16,
+        (((i >> PREFIX_SHIFT) & PREFIX_MASK_U16) as u8) < PREFIX_MAX,
+        ((i & SUFFIX_MASK) as u8) < SUFFIX_MAX,
+{
 }
 
 impl LosslessMapper for CrossByteSpanMapper {
@@ -702,11 +705,7 @@ impl LosslessMapper for CrossByteSpanMapper {
     }
 
     proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        assert(((i >> PREFIX_SHIFT) & PREFIX_MASK_U16) < PREFIX_MAX as u16) by (bit_vector);
-        assert(((i >> SPAN_SHIFT) & SPAN_MASK) < SPAN_MAX) by (bit_vector);
-        assert((i & SUFFIX_MASK) < SUFFIX_MAX as u16) by (bit_vector);
-        assert((((i >> PREFIX_SHIFT) & PREFIX_MASK_U16) as u8) < PREFIX_MAX) by (bit_vector);
-        assert(((i & SUFFIX_MASK) as u8) < SUFFIX_MAX) by (bit_vector);
+        lemma_cross_byte_span_mapper_wf_in_out_inner(i);
     }
 }
 
@@ -725,6 +724,7 @@ pub struct PacketHeaderMapper;
 
 impl SpecMapper for PacketHeaderMapper {
     type In = PacketHeaderInner;
+
     type Out = PacketHeaderSpec;
 
     open spec fn wf_out(&self, o: Self::Out) -> bool {
@@ -750,18 +750,26 @@ impl LossyMapper for PacketHeaderMapper {
     }
 }
 
+pub proof fn lemma_packet_header_mapper_wf_in_out_inner(i: u16)
+    by (bit_vector)
+    ensures
+        (((i >> KIND_SHIFT) & KIND_MASK) as u8) < KIND_MAX,
+        (((i >> COUNT_SHIFT) & COUNT_MASK) as u8) < COUNT_MAX,
+{
+}
+
 impl LosslessMapper for PacketHeaderMapper {
     proof fn lemma_lossless_mapper(&self, i: Self::In) {
         lemma_packet_header_bits_roundtrip(i);
     }
 
     proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        assert((((i >> KIND_SHIFT) & KIND_MASK) as u8) < KIND_MAX) by (bit_vector);
-        assert((((i >> COUNT_SHIFT) & COUNT_MASK) as u8) < COUNT_MAX) by (bit_vector);
+        lemma_packet_header_mapper_wf_in_out_inner(i);
     }
 }
 
 pub type PacketHeaderRawFmt = Mapped<U16Be, PacketHeaderMapper>;
+
 pub type PacketHeaderFmtSpec = Named<Refined<PacketHeaderRawFmt, PredFnSpec<PacketHeaderSpec>>>;
 
 impl PacketHeaderFmt {
@@ -779,10 +787,12 @@ impl PacketHeaderFmt {
 #[derive(Clone, Copy)]
 pub struct BytesPacketFmt;
 
-pub type BytesPacketFmtSpec = Named<Mapped<
-    Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> Varied<u8>>,
-    FnSpecMapper<BytesPacketInner, BytesPacketSpec>,
->>;
+pub type BytesPacketFmtSpec = Named<
+    Mapped<
+        Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> Varied<u8>>,
+        FnSpecMapper<BytesPacketInner, BytesPacketSpec>,
+    >,
+>;
 
 impl BytesPacketFmt {
     pub open spec fn spec_inner() -> BytesPacketFmtSpec {
@@ -791,14 +801,16 @@ impl BytesPacketFmt {
             Mapped {
                 inner: Bind(PacketHeaderFmt, |hdr: PacketHeaderSpec| Varied(hdr.len)),
                 mapper: (
-                    |parsed: BytesPacketInner| -> BytesPacketSpec {
-                        let (hdr, body) = parsed;
-                        BytesPacketSpec { hdr, body }
-                    },
-                    |value: BytesPacketSpec| -> BytesPacketInner {
-                        let BytesPacketSpec { hdr, body } = value;
-                        (hdr, body)
-                    },
+                    |parsed: BytesPacketInner| -> BytesPacketSpec
+                        {
+                            let (hdr, body) = parsed;
+                            BytesPacketSpec { hdr, body }
+                        },
+                    |value: BytesPacketSpec| -> BytesPacketInner
+                        {
+                            let BytesPacketSpec { hdr, body } = value;
+                            (hdr, body)
+                        },
                 ),
             },
         )
@@ -808,10 +820,12 @@ impl BytesPacketFmt {
 #[derive(Clone, Copy)]
 pub struct WordsPacketFmt;
 
-pub type WordsPacketFmtSpec = Named<Mapped<
-    Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> RepeatN<U16Be, u8>>,
-    FnSpecMapper<WordsPacketInner, WordsPacketSpec>,
->>;
+pub type WordsPacketFmtSpec = Named<
+    Mapped<
+        Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> RepeatN<U16Be, u8>>,
+        FnSpecMapper<WordsPacketInner, WordsPacketSpec>,
+    >,
+>;
 
 impl WordsPacketFmt {
     pub open spec fn spec_inner() -> WordsPacketFmtSpec {
@@ -820,14 +834,16 @@ impl WordsPacketFmt {
             Mapped {
                 inner: Bind(PacketHeaderFmt, |hdr: PacketHeaderSpec| RepeatN(hdr.count, U16Be)),
                 mapper: (
-                    |parsed: WordsPacketInner| -> WordsPacketSpec {
-                        let (hdr, words) = parsed;
-                        WordsPacketSpec { hdr, words }
-                    },
-                    |value: WordsPacketSpec| -> WordsPacketInner {
-                        let WordsPacketSpec { hdr, words } = value;
-                        (hdr, words)
-                    },
+                    |parsed: WordsPacketInner| -> WordsPacketSpec
+                        {
+                            let (hdr, words) = parsed;
+                            WordsPacketSpec { hdr, words }
+                        },
+                    |value: WordsPacketSpec| -> WordsPacketInner
+                        {
+                            let WordsPacketSpec { hdr, words } = value;
+                            (hdr, words)
+                        },
                 ),
             },
         )
@@ -835,10 +851,7 @@ impl WordsPacketFmt {
 }
 
 pub type ChoicePayloadFmt = Mapped<
-    Choice<
-        Cond<Varied<u8>>,
-        Choice<Cond<RepeatN<U16Be, u8>>, Choice<Cond<U8>, Cond<Varied<u8>>>>,
-    >,
+    Choice<Cond<Varied<u8>>, Choice<Cond<RepeatN<U16Be, u8>>, Choice<Cond<U8>, Cond<Varied<u8>>>>>,
     FnSpecMapper<ChoicePayloadInner, ChoicePayloadSpec>,
 >;
 
@@ -855,33 +868,37 @@ pub open spec fn choice_packet_body_fmt(hdr: PacketHeaderSpec) -> ChoicePayloadF
             ),
         ),
         mapper: (
-            |parsed: ChoicePayloadInner| -> ChoicePayloadSpec {
-                match parsed {
-                    Sum::Inl(bytes) => ChoicePayloadSpec::Raw(bytes),
-                    Sum::Inr(Sum::Inl(words)) => ChoicePayloadSpec::Words(words),
-                    Sum::Inr(Sum::Inr(Sum::Inl(x))) => ChoicePayloadSpec::Tiny(x),
-                    Sum::Inr(Sum::Inr(Sum::Inr(bytes))) => ChoicePayloadSpec::Default(bytes),
-                }
-            },
-            |value: ChoicePayloadSpec| -> ChoicePayloadInner {
-                match value {
-                    ChoicePayloadSpec::Raw(bytes) => Sum::Inl(bytes),
-                    ChoicePayloadSpec::Words(words) => Sum::Inr(Sum::Inl(words)),
-                    ChoicePayloadSpec::Tiny(x) => Sum::Inr(Sum::Inr(Sum::Inl(x))),
-                    ChoicePayloadSpec::Default(bytes) => Sum::Inr(Sum::Inr(Sum::Inr(bytes))),
-                }
-            },
-        )
+            |parsed: ChoicePayloadInner| -> ChoicePayloadSpec
+                {
+                    match parsed {
+                        Sum::Inl(bytes) => ChoicePayloadSpec::Raw(bytes),
+                        Sum::Inr(Sum::Inl(words)) => ChoicePayloadSpec::Words(words),
+                        Sum::Inr(Sum::Inr(Sum::Inl(x))) => ChoicePayloadSpec::Tiny(x),
+                        Sum::Inr(Sum::Inr(Sum::Inr(bytes))) => ChoicePayloadSpec::Default(bytes),
+                    }
+                },
+            |value: ChoicePayloadSpec| -> ChoicePayloadInner
+                {
+                    match value {
+                        ChoicePayloadSpec::Raw(bytes) => Sum::Inl(bytes),
+                        ChoicePayloadSpec::Words(words) => Sum::Inr(Sum::Inl(words)),
+                        ChoicePayloadSpec::Tiny(x) => Sum::Inr(Sum::Inr(Sum::Inl(x))),
+                        ChoicePayloadSpec::Default(bytes) => Sum::Inr(Sum::Inr(Sum::Inr(bytes))),
+                    }
+                },
+        ),
     }
 }
 
 #[derive(Clone, Copy)]
 pub struct ChoicePacketFmt;
 
-pub type ChoicePacketFmtSpec = Named<Mapped<
-    Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> ChoicePayloadFmt>,
-    FnSpecMapper<ChoicePacketInner, ChoicePacketSpec>
->>;
+pub type ChoicePacketFmtSpec = Named<
+    Mapped<
+        Bind<PacketHeaderFmt, spec_fn(PacketHeaderSpec) -> ChoicePayloadFmt>,
+        FnSpecMapper<ChoicePacketInner, ChoicePacketSpec>,
+    >,
+>;
 
 impl ChoicePacketFmt {
     pub open spec fn spec_inner() -> ChoicePacketFmtSpec {
@@ -890,14 +907,16 @@ impl ChoicePacketFmt {
             Mapped {
                 inner: Bind(PacketHeaderFmt, |hdr: PacketHeaderSpec| choice_packet_body_fmt(hdr)),
                 mapper: (
-                    |parsed: ChoicePacketInner| -> ChoicePacketSpec {
-                        let (hdr, payload) = parsed;
-                        ChoicePacketSpec { hdr, payload }
-                    },
-                    |value: ChoicePacketSpec| -> ChoicePacketInner {
-                        let ChoicePacketSpec { hdr, payload } = value;
-                        (hdr, payload)
-                    },
+                    |parsed: ChoicePacketInner| -> ChoicePacketSpec
+                        {
+                            let (hdr, payload) = parsed;
+                            ChoicePacketSpec { hdr, payload }
+                        },
+                    |value: ChoicePacketSpec| -> ChoicePacketInner
+                        {
+                            let ChoicePacketSpec { hdr, payload } = value;
+                            (hdr, payload)
+                        },
                 ),
             },
         )
@@ -907,13 +926,13 @@ impl ChoicePacketFmt {
 // ============================================================
 // Executable implementations
 // ============================================================
-
 impl<'i> Parser<&'i [u8]> for VersionIhlFmt {
     type PT = VersionIhl;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, raw) = U8.parse(ibuf)?;
-        let final_v = version_ihl_from_raw_exec(raw);
+        let (version, ihl) = unpack_version_ihl(raw);
+        let final_v = VersionIhl { version, ihl };
         assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
         Ok((n, final_v))
     }
@@ -921,17 +940,17 @@ impl<'i> Parser<&'i [u8]> for VersionIhlFmt {
 
 impl Serializer<VersionIhl> for VersionIhlFmt {
     fn serialize(&self, v: &VersionIhl, obuf: &mut Vec<u8>) {
-        let raw = version_ihl_to_raw_exec(v);
-        U8.serialize(&raw, obuf);
+        let packed = pack_version_ihl(v.version, v.ihl);
+        U8.serialize(&packed, obuf);
     }
 }
 
 impl Prepare<VersionIhl> for VersionIhlFmt {
     fn prepare(&self, v: &VersionIhl) -> Result<usize, PreSerializeError> {
-        if !version_ihl_wf_exec(v) {
+        if !version_ihl_bounds(v.version, v.ihl) {
             return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
         }
-        let res = U8.prepare(&version_ihl_to_raw_exec(v));
+        let res = U8.prepare(&pack_version_ihl(v.version, v.ihl));
         if res.is_ok() {
             assert(self.consistent(v.deep_view()));
         }
@@ -952,8 +971,8 @@ impl<'i> Parser<&'i [u8]> for CrossByteSpanFmt {
 
 impl Serializer<CrossByteSpan> for CrossByteSpanFmt {
     fn serialize(&self, v: &CrossByteSpan, obuf: &mut Vec<u8>) {
-        let raw = cross_byte_span_to_raw_exec(v);
-        U16Be.serialize(&raw, obuf);
+        let packed = cross_byte_span_to_raw_exec(v);
+        U16Be.serialize(&packed, obuf);
     }
 }
 
@@ -986,8 +1005,8 @@ impl<'i> Parser<&'i [u8]> for PacketHeaderFmt {
 
 impl Serializer<PacketHeader> for PacketHeaderFmt {
     fn serialize(&self, v: &PacketHeader, obuf: &mut Vec<u8>) {
-        let raw = packet_header_to_raw_exec(v);
-        U16Be.serialize(&raw, obuf);
+        let packed = packet_header_to_raw_exec(v);
+        U16Be.serialize(&packed, obuf);
     }
 }
 
@@ -1118,7 +1137,10 @@ impl<'i> Serializer<ChoicePacket<'i>> for ChoicePacketFmt {
         PacketHeaderFmt.serialize(hdr, obuf);
         match payload {
             ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
-            ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(words.as_slice(), obuf),
+            ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(
+                words.as_slice(),
+                obuf,
+            ),
             ChoicePayload::Tiny(x) => U8.serialize(x, obuf),
             ChoicePayload::Default(bytes) => Varied(hdr.len).serialize(bytes, obuf),
         }
@@ -1163,13 +1185,10 @@ impl<'i> Prepare<ChoicePacket<'i>> for ChoicePacketFmt {
     }
 }
 
-
 } // verus!
-
 // ============================================================
 // Runtime tests
 // ============================================================
-
 #[test]
 fn exec_version_ihl_roundtrip() {
     let fmt = VersionIhlFmt;
