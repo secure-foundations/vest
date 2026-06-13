@@ -1,12 +1,12 @@
 use super::common::{
     bits_tuple_expr_from_idents, bits_tuple_expr_tokens, bits_tuple_pattern_tokens,
-    bits_tuple_type_tokens, int_literal, syn_usize, Analysis, FormatNames, TypeMode,
+    bits_tuple_type_tokens, int_literal, nested_tuple_pattern_idents,
+    nested_tuple_value_expr_idents, syn_usize, tuple_index_expr, Analysis, FormatNames, TypeMode,
 };
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
-    self, BitField, BitFieldCombinator, BitsCombinator, ChoiceCombinator, ChoicePattern,
-    Combinator, ConstCombinator, ConstraintElem, EnumCombinator, Param, ParamDefn,
-    StructCombinator, StructField,
+    self, BitsCombinator, ChoiceCombinator, ChoicePattern, Combinator, ConstCombinator,
+    ConstraintElem, EnumCombinator, Param, ParamDefn, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -251,23 +251,6 @@ impl<'a> Analysis<'a> {
         name: &str,
         param_defns: &[ParamDefn],
     ) -> String {
-        self.gen_derived_specs_section_impl_with_opaque(name, param_defns, true)
-    }
-
-    pub(crate) fn gen_derived_specs_section_impl_nonopaque(
-        &self,
-        name: &str,
-        param_defns: &[ParamDefn],
-    ) -> String {
-        self.gen_derived_specs_section_impl_with_opaque(name, param_defns, false)
-    }
-
-    fn gen_derived_specs_section_impl_with_opaque(
-        &self,
-        name: &str,
-        param_defns: &[ParamDefn],
-        use_opaque_for_zero_arity: bool,
-    ) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
         let inner_ident = info.names.spec_ctor_ident();
@@ -281,7 +264,6 @@ impl<'a> Analysis<'a> {
             &wrapper_generics,
             &wrapper_call_args,
             &top_value_ty,
-            use_opaque_for_zero_arity,
         )
     }
 
@@ -393,9 +375,8 @@ impl<'a> Analysis<'a> {
         wrapper_generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
-        use_opaque_for_zero_arity: bool,
     ) -> String {
-        let opaque = if use_opaque_for_zero_arity && wrapper_generics.is_empty() {
+        let opaque = if wrapper_generics.is_empty() {
             quote! { #[verifier::opaque] }
         } else {
             quote! {}
@@ -908,13 +889,13 @@ impl<'a> Analysis<'a> {
                 | StructField::Ordinary { label, .. } => label.clone(),
             })
             .collect::<Vec<_>>();
-        let tuple_pat = nested_tuple_pattern(&labels);
         let struct_fields_expr = struct_init_fields_expr(&labels);
-        let reverse_tuple_expr = nested_tuple_value_expr(&labels);
         let label_idents = labels
             .iter()
             .map(|label| format_ident!("{}", label))
             .collect::<Vec<_>>();
+        let tuple_pat = nested_tuple_pattern_idents(&label_idents);
+        let reverse_tuple_expr = nested_tuple_value_expr_idents(&label_idents);
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
         let ty = quote! { Mapped<#raw_ty, FnSpecMapper<#inner_ident, #spec_ident>> };
@@ -1268,13 +1249,8 @@ impl<'a> Analysis<'a> {
             .zip(&label_idents)
             .map(|(field, ident)| {
                 let field_ident = format_ident!("{}", field.label);
-                if field.is_enum {
-                    let from_bits =
-                        format_ident!("{}_from_bits", field.enum_name.as_ref().unwrap());
-                    quote! { #field_ident: #from_bits(#ident) }
-                } else {
-                    quote! { #field_ident: #ident }
-                }
+                let expr = self.bits_ctor_field_expr(field, quote! { #ident });
+                quote! { #field_ident: #expr }
             })
             .collect::<Vec<_>>();
 
@@ -1285,8 +1261,8 @@ impl<'a> Analysis<'a> {
             .filter_map(|(field, ident)| {
                 let field_ident = format_ident!("{}", field.label);
                 if field.is_enum {
-                    let to_bits = format_ident!("{}_to_bits", field.enum_name.as_ref().unwrap());
-                    Some(quote! { let #ident = #to_bits(#field_ident); })
+                    let raw_expr = self.bits_raw_field_expr(field, quote! { #field_ident });
+                    Some(quote! { let #ident = #raw_expr; })
                 } else {
                     None
                 }
@@ -1298,12 +1274,7 @@ impl<'a> Analysis<'a> {
             .iter()
             .map(|field| {
                 let field_ident = format_ident!("{}", field.label);
-                if field.is_enum {
-                    let to_bits = format_ident!("{}_to_bits", field.enum_name.as_ref().unwrap());
-                    quote! { #to_bits(#field_ident) }
-                } else {
-                    quote! { #field_ident }
-                }
+                self.bits_raw_field_expr(field, quote! { #field_ident })
             })
             .collect::<Vec<_>>();
 
@@ -1312,15 +1283,8 @@ impl<'a> Analysis<'a> {
             .iter()
             .zip(&layout.fields)
             .zip(&label_idents)
-            .filter_map(|((field, layout_field), ident)| match field.combinator() {
-                BitFieldCombinator::UInt(c) => c.constraint.as_ref().map(|constraint| {
-                    self.render_int_constraint(constraint, &c.combinator, quote! { #ident })
-                }),
-                BitFieldCombinator::Enum(inv) if layout_field.is_closed_enum => {
-                    let values = self.bits_enum_value_literals(inv);
-                    Some(quote! { (#(#ident == #values)||*) })
-                }
-                _ => None,
+            .filter_map(|((field, layout_field), ident)| {
+                self.bits_field_refinement_pred(field, layout_field, quote! { #ident })
             })
             .collect::<Vec<_>>();
         let refinement_expr = if refinement_terms.is_empty() {
@@ -1334,12 +1298,7 @@ impl<'a> Analysis<'a> {
             .iter()
             .filter_map(|layout_field| {
                 let field_ident = format_ident!("{}", layout_field.label);
-                if layout_field.is_enum && !layout_field.is_closed_enum {
-                    let wf = format_ident!("{}_wf", layout_field.enum_name.as_ref().unwrap());
-                    Some(quote! { #wf(#field_ident) })
-                } else {
-                    None
-                }
+                self.bits_open_enum_wf_pred(layout_field, quote! { #field_ident })
             })
             .collect::<Vec<_>>();
 
@@ -1802,126 +1761,12 @@ impl<'a> Analysis<'a> {
             .map(|name| self.param_defns_for(name))
             .unwrap_or(&[]);
         let resolved = self
-            .resolve_dep_combinator_path_spec(dep, param_defns)
+            .resolve_dep_combinator_path(dep, param_defns)
             .unwrap_or_else(|| panic!("could not resolve enum pattern type for `{variant_name}`"));
         match resolved {
             Combinator::Invocation(inv) => self.render_nominal_type(&inv.func, TypeMode::Spec),
             _ => panic!("enum pattern `{variant_name}` does not resolve to an enum invocation"),
         }
-    }
-
-    fn resolve_dep_combinator_path_spec(
-        &self,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Option<Combinator> {
-        let mut parts = dep.split('.');
-        let root = parts.next()?;
-        let mut current = param_defns.iter().find_map(|p| match p {
-            ParamDefn::Dependent { name, combinator } if name == root => Some(combinator.clone()),
-            _ => None,
-        })?;
-
-        for field_name in parts {
-            loop {
-                match current {
-                    Combinator::Invocation(ref inv) => {
-                        let def = self
-                            .defs
-                            .iter()
-                            .find(|d| d.name() == Some(inv.func.as_str()))?;
-                        current = match def {
-                            vestir::Definition::StructDef { combinator, .. } => {
-                                combinator.0.iter().find_map(|field| match field {
-                                    StructField::Dependent { label, combinator }
-                                    | StructField::Ordinary { label, combinator }
-                                        if label == field_name =>
-                                    {
-                                        Some(combinator.clone())
-                                    }
-                                    _ => None,
-                                })?
-                            }
-                            vestir::Definition::BitsDef { combinator, .. } => {
-                                combinator.0.iter().find_map(|field| match field {
-                                    BitField::Dependent { label, combinator }
-                                    | BitField::Ordinary { label, combinator }
-                                        if label == field_name =>
-                                    {
-                                        Some(Combinator::from(combinator))
-                                    }
-                                    _ => None,
-                                })?
-                            }
-                            vestir::Definition::CombinatorDef { combinator, .. } => {
-                                current = combinator.clone();
-                                continue;
-                            }
-                            _ => return None,
-                        };
-                        break;
-                    }
-                    _ => return None,
-                }
-            }
-        }
-
-        Some(current)
-    }
-
-    fn bits_enum_info(
-        &self,
-        invocation: &vestir::CombinatorInvocation,
-    ) -> (&[vestir::Enum], u8, bool) {
-        let def = self
-            .defs
-            .iter()
-            .find(|d| d.name() == Some(invocation.func.as_str()))
-            .unwrap_or_else(|| panic!("unknown enum {}", invocation.func));
-        match def {
-            vestir::Definition::EnumDef { combinator, .. } => match combinator {
-                vestir::EnumCombinator::Exhaustive { enums, inferred } => (
-                    enums.as_slice(),
-                    match inferred {
-                        vestir::IntCombinator::Unsigned(bits) => *bits,
-                        _ => panic!("bitfield enum must be unsigned"),
-                    },
-                    true,
-                ),
-                vestir::EnumCombinator::NonExhaustive { enums, inferred } => (
-                    enums.as_slice(),
-                    match inferred {
-                        vestir::IntCombinator::Unsigned(bits) => *bits,
-                        _ => panic!("bitfield enum must be unsigned"),
-                    },
-                    false,
-                ),
-            },
-            _ => panic!("{} is not an enum", invocation.func),
-        }
-    }
-
-    fn bits_enum_value_literals(
-        &self,
-        invocation: &vestir::CombinatorInvocation,
-    ) -> Vec<TokenStream> {
-        let (enums, _, _) = self.bits_enum_info(invocation);
-        let enum_def = self
-            .defs
-            .iter()
-            .find(|d| d.name() == Some(invocation.func.as_str()))
-            .unwrap();
-        let inferred = match enum_def {
-            vestir::Definition::EnumDef { combinator, .. } => match combinator {
-                vestir::EnumCombinator::Exhaustive { inferred, .. }
-                | vestir::EnumCombinator::NonExhaustive { inferred, .. } => inferred,
-            },
-            _ => unreachable!(),
-        };
-        enums
-            .iter()
-            .map(|variant| int_literal(variant.value, inferred))
-            .collect()
     }
 
     fn spec_param_list(&self, param_defns: &[ParamDefn]) -> Vec<TokenStream> {
@@ -2109,25 +1954,6 @@ fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
         .fold(first, |acc, term| quote! { (#acc) && (#term) })
 }
 
-fn nested_tuple_pattern(labels: &[String]) -> TokenStream {
-    let idents = labels
-        .iter()
-        .map(|label| format_ident!("{}", label))
-        .collect::<Vec<_>>();
-    nested_tuple_pattern_idents(&idents)
-}
-
-fn nested_tuple_pattern_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
-    match idents {
-        [] => quote! { () },
-        [only] => quote! { #only },
-        [first, rest @ ..] => {
-            let rest = nested_tuple_pattern_idents(rest);
-            quote! { (#first, #rest) }
-        }
-    }
-}
-
 fn struct_init_fields_expr(labels: &[String]) -> TokenStream {
     let idents = labels
         .iter()
@@ -2138,30 +1964,6 @@ fn struct_init_fields_expr(labels: &[String]) -> TokenStream {
         .map(|ident| quote! { #ident })
         .collect::<Vec<_>>();
     quote! { #(#fields),* }
-}
-
-fn nested_tuple_value_expr(labels: &[String]) -> TokenStream {
-    let idents = labels
-        .iter()
-        .map(|label| format_ident!("{}", label))
-        .collect::<Vec<_>>();
-    nested_tuple_value_expr_idents(&idents)
-}
-
-fn nested_tuple_value_expr_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
-    match idents {
-        [] => quote! { () },
-        [only] => quote! { #only },
-        [first, rest @ ..] => {
-            let rest = nested_tuple_value_expr_idents(rest);
-            quote! { (#first, #rest) }
-        }
-    }
-}
-
-fn tuple_index_expr(base: TokenStream, idx: usize) -> TokenStream {
-    let index = proc_macro2::Literal::usize_unsuffixed(idx);
-    quote! { #base.#index }
 }
 
 fn shouty_snake_case(s: &str) -> String {

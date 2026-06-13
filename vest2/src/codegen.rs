@@ -184,10 +184,10 @@ impl<'a> Analysis<'a> {
             }
             | Definition::CombinatorDef {
                 name, param_defns, ..
-            } => self.gen_derived_specs_section_impl(name, param_defns),
-            Definition::BitsDef {
+            }
+            | Definition::BitsDef {
                 name, param_defns, ..
-            } => self.gen_derived_specs_section_impl_nonopaque(name, param_defns),
+            } => self.gen_derived_specs_section_impl(name, param_defns),
             Definition::EnumDef { combinator, .. } if self.enum_is_bit_sized(combinator) => {
                 String::new()
             }

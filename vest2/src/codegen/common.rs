@@ -101,6 +101,33 @@ pub(crate) fn bits_tuple_expr_from_idents(idents: &[proc_macro2::Ident]) -> Toke
     }
 }
 
+pub(crate) fn nested_tuple_pattern_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
+    match idents {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        [first, rest @ ..] => {
+            let rest = nested_tuple_pattern_idents(rest);
+            quote! { (#first, #rest) }
+        }
+    }
+}
+
+pub(crate) fn nested_tuple_value_expr_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
+    match idents {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        [first, rest @ ..] => {
+            let rest = nested_tuple_value_expr_idents(rest);
+            quote! { (#first, #rest) }
+        }
+    }
+}
+
+pub(crate) fn tuple_index_expr(base: TokenStream, idx: usize) -> TokenStream {
+    let index = proc_macro2::Literal::usize_unsuffixed(idx);
+    quote! { #base.#index }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TypeMode {
     Exec,
@@ -154,6 +181,131 @@ impl<'a> Analysis<'a> {
             }
             _ => panic!("{} is not an enum", enum_name),
         }
+    }
+
+    pub(crate) fn bits_closed_enum_pred(
+        &self,
+        invocation: &vestir::CombinatorInvocation,
+        value: TokenStream,
+    ) -> TokenStream {
+        let values = self.enum_value_literals(&invocation.func);
+        quote! { (#(#value == #values)||*) }
+    }
+
+    pub(crate) fn bits_raw_field_expr(
+        &self,
+        layout_field: &BitsFieldLayout,
+        value: TokenStream,
+    ) -> TokenStream {
+        if layout_field.is_enum {
+            let to_bits = format_ident!("{}_to_bits", layout_field.enum_name.as_ref().unwrap());
+            quote! { #to_bits(#value) }
+        } else {
+            value
+        }
+    }
+
+    pub(crate) fn bits_ctor_field_expr(
+        &self,
+        layout_field: &BitsFieldLayout,
+        raw_value: TokenStream,
+    ) -> TokenStream {
+        if layout_field.is_enum {
+            let from_bits = format_ident!("{}_from_bits", layout_field.enum_name.as_ref().unwrap());
+            quote! { #from_bits(#raw_value) }
+        } else {
+            raw_value
+        }
+    }
+
+    pub(crate) fn bits_open_enum_wf_pred(
+        &self,
+        layout_field: &BitsFieldLayout,
+        value: TokenStream,
+    ) -> Option<TokenStream> {
+        if layout_field.is_enum && !layout_field.is_closed_enum {
+            let wf = format_ident!("{}_wf", layout_field.enum_name.as_ref().unwrap());
+            Some(quote! { #wf(#value) })
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn bits_field_refinement_pred(
+        &self,
+        field: &vestir::BitField,
+        layout_field: &BitsFieldLayout,
+        value: TokenStream,
+    ) -> Option<TokenStream> {
+        match field.combinator() {
+            vestir::BitFieldCombinator::UInt(c) => c
+                .constraint
+                .as_ref()
+                .map(|constraint| self.render_int_constraint(constraint, &c.combinator, value)),
+            vestir::BitFieldCombinator::Enum(inv) if layout_field.is_closed_enum => {
+                Some(self.bits_closed_enum_pred(inv, value))
+            }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn resolve_dep_combinator_path(
+        &self,
+        dep: &str,
+        param_defns: &[ParamDefn],
+    ) -> Option<Combinator> {
+        let mut parts = dep.split('.');
+        let root = parts.next()?;
+        let mut current = param_defns.iter().find_map(|p| match p {
+            ParamDefn::Dependent { name, combinator } if name == root => Some(combinator.clone()),
+            _ => None,
+        })?;
+
+        for field_name in parts {
+            loop {
+                match current {
+                    Combinator::Invocation(ref inv) => {
+                        let def = self
+                            .defs
+                            .iter()
+                            .find(|d| d.name() == Some(inv.func.as_str()))?;
+                        current = match def {
+                            vestir::Definition::StructDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    StructField::Dependent { label, combinator }
+                                    | StructField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(combinator.clone())
+                                    }
+                                    _ => None,
+                                })?
+                            }
+                            vestir::Definition::BitsDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    vestir::BitField::Dependent { label, combinator }
+                                    | vestir::BitField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(Combinator::from(combinator))
+                                    }
+                                    _ => None,
+                                })?
+                            }
+                            vestir::Definition::CombinatorDef { combinator, .. } => {
+                                current = combinator.clone();
+                                continue;
+                            }
+                            _ => return None,
+                        };
+                        break;
+                    }
+                    _ => return None,
+                }
+            }
+        }
+
+        Some(current)
     }
 
     pub(crate) fn new(defs: &'a [Definition], ctx: &'a GlobalCtx) -> Self {

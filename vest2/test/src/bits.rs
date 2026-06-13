@@ -1108,6 +1108,7 @@ mod derived_specs {
     impl SpecParser for ClosedPacketHeaderFmt {
         type PVal = ClosedPacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             ClosedPacketHeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1124,6 +1125,7 @@ mod derived_specs {
     impl SpecSerializerDps for ClosedPacketHeaderFmt {
         type SValue = ClosedPacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             ClosedPacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1132,6 +1134,7 @@ mod derived_specs {
     impl SpecSerializer for ClosedPacketHeaderFmt {
         type SVal = ClosedPacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             ClosedPacketHeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -1140,6 +1143,7 @@ mod derived_specs {
     impl SpecByteLen for ClosedPacketHeaderFmt {
         type T = ClosedPacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ClosedPacketHeaderFmt::spec_inner().byte_len(v)
         }
@@ -1236,6 +1240,7 @@ mod derived_specs {
     impl SpecParser for PacketHeaderFmt {
         type PVal = PacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             PacketHeaderFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1252,6 +1257,7 @@ mod derived_specs {
     impl SpecSerializerDps for PacketHeaderFmt {
         type SValue = PacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             PacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1260,6 +1266,7 @@ mod derived_specs {
     impl SpecSerializer for PacketHeaderFmt {
         type SVal = PacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             PacketHeaderFmt::spec_inner().spec_serialize(v)
         }
@@ -1268,6 +1275,7 @@ mod derived_specs {
     impl SpecByteLen for PacketHeaderFmt {
         type T = PacketHeaderSpec;
 
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             PacketHeaderFmt::spec_inner().byte_len(v)
         }
@@ -1320,6 +1328,7 @@ mod derived_specs {
     impl SpecParser for VersionIhlFmt {
         type PVal = VersionIhlSpec;
 
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             VersionIhlFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1336,6 +1345,7 @@ mod derived_specs {
     impl SpecSerializerDps for VersionIhlFmt {
         type SValue = VersionIhlSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             VersionIhlFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1344,6 +1354,7 @@ mod derived_specs {
     impl SpecSerializer for VersionIhlFmt {
         type SVal = VersionIhlSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             VersionIhlFmt::spec_inner().spec_serialize(v)
         }
@@ -1352,6 +1363,7 @@ mod derived_specs {
     impl SpecByteLen for VersionIhlFmt {
         type T = VersionIhlSpec;
 
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             VersionIhlFmt::spec_inner().byte_len(v)
         }
@@ -1404,6 +1416,7 @@ mod derived_specs {
     impl SpecParser for CrossByteSpanFmt {
         type PVal = CrossByteSpanSpec;
 
+        # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             CrossByteSpanFmt::spec_inner().spec_parse(ibuf)
         }
@@ -1420,6 +1433,7 @@ mod derived_specs {
     impl SpecSerializerDps for CrossByteSpanFmt {
         type SValue = CrossByteSpanSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             CrossByteSpanFmt::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -1428,6 +1442,7 @@ mod derived_specs {
     impl SpecSerializer for CrossByteSpanFmt {
         type SVal = CrossByteSpanSpec;
 
+        # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             CrossByteSpanFmt::spec_inner().spec_serialize(v)
         }
@@ -1436,6 +1451,7 @@ mod derived_specs {
     impl SpecByteLen for CrossByteSpanFmt {
         type T = CrossByteSpanSpec;
 
+        # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             CrossByteSpanFmt::spec_inner().byte_len(v)
         }
@@ -2350,7 +2366,7 @@ mod exec_impls {
 
             let (n, raw) = U16Be.parse(ibuf)?;
             let (kind, count, len) = unpack_closed_packet_header(raw);
-            if !(kind == 0 || kind == 1 || kind == 2) {
+            if !((kind == 0 || kind == 1 || kind == 2)) {
                 return Err(ParseError::predicate_failed());
             }
             if !(count >= 1 && count <= 31) {
@@ -2386,8 +2402,8 @@ mod exec_impls {
             if !(closed_packet_header_bounds(closed_payload_kind_to_bits(kind), count, len)) {
                 return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
             }
-            if !(closed_payload_kind_to_bits(kind) == 0 || closed_payload_kind_to_bits(kind) == 1
-                || closed_payload_kind_to_bits(kind) == 2) {
+            if !((closed_payload_kind_to_bits(kind) == 0 || closed_payload_kind_to_bits(kind) == 1
+                || closed_payload_kind_to_bits(kind) == 2)) {
                 return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(count >= 1 && count <= 31) {
