@@ -2,7 +2,8 @@ use super::common::{int_literal, type_needs_exec_lifetime, Analysis, TypeMode};
 use super::writer::{render_ts, CodeWriter};
 use crate::codegen::common::{syn_usize, tuple_chain};
 use crate::vestir::{
-    ChoiceCombinator, Combinator, ConstCombinator, EnumCombinator, StructCombinator, StructField,
+    BitsCombinator, ChoiceCombinator, Combinator, ConstCombinator, EnumCombinator,
+    StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -134,6 +135,54 @@ impl<'a> Analysis<'a> {
             #[doc = #doc]
             #exec_struct
             #spec_struct
+            pub type #inner_ident = #inner_ty;
+            #deep_view_impl
+        })
+    }
+
+    pub(crate) fn gen_bits_value_types(&self, name: &str, bits_comb: &BitsCombinator) -> String {
+        let info = self.info(name);
+        let exec_ident = format_ident!("{}", info.names.exec);
+        let spec_ident = format_ident!("{}", info.names.spec);
+        let inner_ident = format_ident!("{}", info.names.inner);
+        let doc = Self::type_doc(name);
+        let layout = self.bits_layout(bits_comb);
+        let exec_fields: Vec<_> = layout
+            .fields
+            .iter()
+            .map(|field| {
+                let ident = format_ident!("{}", field.label);
+                let ty = if field.is_enum {
+                    self.render_nominal_type(field.enum_name.as_ref().unwrap(), TypeMode::Exec)
+                } else {
+                    self.render_int_type(&field.carrier_ty)
+                };
+                quote! { pub #ident: #ty }
+            })
+            .collect();
+        let inner_ty = self.render_int_type(&layout.repr_int);
+        let derives = quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] };
+        let spec_derive = quote! { #[verifier::ext_equal] };
+        let exec_struct = quote! {
+            #derives
+            #spec_derive
+            pub struct #exec_ident {
+                #(#exec_fields,)*
+            }
+        };
+        let spec_type = quote! { pub type #spec_ident = #exec_ident; };
+        let deep_view_impl = quote! {
+            impl DeepView for #exec_ident {
+                type V = Self;
+                open spec fn deep_view(&self) -> Self::V {
+                    *self
+                }
+            }
+        };
+        render_ts(quote! {
+            #[doc = #doc]
+            #exec_struct
+            #spec_type
             pub type #inner_ident = #inner_ty;
             #deep_view_impl
         })

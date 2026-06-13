@@ -396,6 +396,7 @@ fn expand_combinator<'ast>(
                 used_names,
             );
         }
+        CombinatorInner::Bits(_) => {}
         _ => {}
     }
 }
@@ -498,9 +499,10 @@ fn sorted_params<'ast>(combinator: &Combinator<'ast>) -> Vec<Param<'ast>> {
 
 fn contains_anonymous_format(combinator: &Combinator) -> bool {
     match &combinator.inner {
-        CombinatorInner::Struct(..) | CombinatorInner::Choice(..) | CombinatorInner::Enum(..) => {
-            true
-        }
+        CombinatorInner::Struct(..)
+        | CombinatorInner::Choice(..)
+        | CombinatorInner::Enum(..)
+        | CombinatorInner::Bits(..) => true,
         CombinatorInner::Wrap(WrapCombinator { combinator, .. })
         | CombinatorInner::Vec(VecCombinator::Vec(combinator))
         | CombinatorInner::Array(ArrayCombinator { combinator, .. })
@@ -629,6 +631,7 @@ fn collect_params_with_bound<'ast>(
         CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
             params.extend(collect_params_with_bound(combinator, bound));
         }
+        CombinatorInner::Bits(..) => {}
         CombinatorInner::Struct(StructCombinator { fields, .. }) => {
             let mut locally_bound = bound.clone();
             for field in fields {
@@ -703,6 +706,20 @@ fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &m
                         collect_invocations(combinator, invocations);
                     }
                     StructField::Const { .. } => {}
+                }
+            }
+        }
+        CombinatorInner::Bits(BitsCombinator { fields, .. }) => {
+            for field in fields {
+                let combinator = match field {
+                    BitField::Ordinary { combinator, .. }
+                    | BitField::Dependent { combinator, .. } => combinator,
+                };
+                match combinator {
+                    BitFieldCombinator::Invocation(inv) => {
+                        invocations.push(inv.func.name.to_owned());
+                    }
+                    _ => {}
                 }
             }
         }

@@ -80,7 +80,10 @@ impl<'ast> GlobalCtx<'ast> {
         }
     }
     // TODO: return `Result` instead of panic
-    pub fn resolve_alias<'a>(&'a self, combinator: &'a CombinatorInner<'ast>) -> &'a CombinatorInner<'ast> {
+    pub fn resolve_alias<'a>(
+        &'a self,
+        combinator: &'a CombinatorInner<'ast>,
+    ) -> &'a CombinatorInner<'ast> {
         match combinator {
             CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
                 let combinator_sig = self
@@ -258,6 +261,18 @@ impl<'ast> StaticSizeEnv<'ast> {
             Bytes(BytesCombinator { len, .. }) => self.length_expr_size(len),
             Invocation(CombinatorInvocation { func, .. }) => self.format_size(&func.name),
             MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
+            Bits(bits_comb) => {
+                let mut total_width = 0usize;
+                for field in &bits_comb.fields {
+                    let w = bit_field_combinator_width(field.combinator(), &self.formats)?;
+                    total_width = total_width.checked_add(w)?;
+                }
+                if total_width % 8 == 0 {
+                    Some(total_width / 8)
+                } else {
+                    None
+                }
+            }
         }
     }
 
@@ -391,21 +406,6 @@ fn span_as_range(span: &Span) -> std::ops::Range<usize> {
     span.start()..span.end()
 }
 
-macro_rules! report_unbound_field {
-    ($source:expr, $span:expr, $depend_id:expr) => {
-        Report::build(ReportKind::Error, ($source.0, span_as_range($span)))
-            .with_message("unbound dependent field")
-            .with_label(
-                Label::new(($source.0, span_as_range(&$depend_id.span)))
-                    .with_message(format!("`@{}` is not found in current scope", $depend_id))
-                    .with_color(Color::Red),
-            )
-            .finish()
-            .eprint($source)
-            .unwrap();
-    };
-}
-
 pub fn check<'ast>(
     ast: &'ast [Definition<'ast>],
     source: (&str, &Source),
@@ -422,6 +422,7 @@ pub fn check<'ast>(
             Definition::Combinator {
                 name,
                 param_defns,
+
                 combinator,
                 span,
             } => {
@@ -792,85 +793,37 @@ fn check_const_int_combinator(
         };
     }
     match combinator {
-        IntCombinator::Signed(8) => {
-            if *value < i8::MIN.into() || *value > i8::MAX.into() {
+        IntCombinator::Signed(n) => {
+            let n = *n;
+            let min_val = if n >= 128 {
+                i128::MIN
+            } else {
+                -(1i128 << (n - 1))
+            };
+            let max_val = if n >= 128 {
+                i128::MAX
+            } else {
+                (1i128 << (n - 1)) - 1
+            };
+            if *value < min_val || *value > max_val {
                 report_const_int_error!(format!(
-                    "Value {} is out of range for i8 (expected -128 to 127)",
-                    value
+                    "Value {} is out of range for i{} (expected {} to {})",
+                    value, n, min_val, max_val
                 ));
                 return Err(VestError::TypeError);
             }
         }
-        IntCombinator::Signed(16) => {
-            if *value < i16::MIN.into() || *value > i16::MAX.into() {
+        IntCombinator::Unsigned(n) => {
+            let n = *n;
+            let max_val = if n >= 128 {
+                i128::MAX
+            } else {
+                (1i128 << n) - 1
+            };
+            if *value < 0 || *value > max_val {
                 report_const_int_error!(format!(
-                    "Value {} is out of range for i16 (expected -32768 to 32767)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Signed(32) => {
-            if *value < i32::MIN.into() || *value > i32::MAX.into() {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for i32 (expected -2147483648 to 2147483647)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Signed(64) => {
-            if *value < i64::MIN.into() || *value > i64::MAX.into() {
-                report_const_int_error!(
-                    format!(
-                        "Value {} is out of range for i64 (expected -9223372036854775808 to 9223372036854775807)",
-                        value
-                    )
-                );
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Unsigned(8) => {
-            if *value < u8::MIN.into() || *value > u8::MAX.into() {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for u8 (expected 0 to 255)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Unsigned(16) => {
-            if *value < u16::MIN.into() || *value > u16::MAX.into() {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for u16 (expected 0 to 65535)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Unsigned(24) => {
-            if *value < 0 || *value > 0xFFFFFF {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for u24 (expected 0 to 16777215)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Unsigned(32) => {
-            if *value < u32::MIN.into() || *value > u32::MAX.into() {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for u32 (expected 0 to 4294967295)",
-                    value
-                ));
-                return Err(VestError::TypeError);
-            }
-        }
-        IntCombinator::Unsigned(64) => {
-            if *value < u64::MIN.into() || *value > u64::MAX.into() {
-                report_const_int_error!(format!(
-                    "Value {} is out of range for u64 (expected 0 to 18446744073709551615)",
-                    value
+                    "Value {} is out of range for u{} (expected 0 to {})",
+                    value, n, max_val
                 ));
                 return Err(VestError::TypeError);
             }
@@ -890,8 +843,6 @@ fn check_const_int_combinator(
                 return Err(VestError::TypeError);
             }
         }
-        _ => return Err(VestError::TypeError),
-        // panic!("Unsupported const int combinator"),
     }
     Ok(())
 }
@@ -1039,6 +990,14 @@ fn check_combinator_inner<'ast>(
             check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source)
         }
         MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
+        Bits(bits_comb) => check_bits_combinator(
+            bits_comb,
+            &bits_comb.span,
+            param_defns,
+            local_ctx,
+            global_ctx,
+            source,
+        ),
     }
 }
 
@@ -1115,7 +1074,7 @@ fn check_combinator_invocation<'ast>(
             for (arg, param_defn) in zip(args, combinator_sig.param_defns) {
                 match (arg, param_defn) {
                     (Param::Dependent(depend_id), ParamDefn::Dependent { combinator, .. }) => {
-                        let arg_combinator = resolve_dependent_id(
+                        let arg_combinator = resolve_dependent_identifier(
                             depend_id,
                             param_defns,
                             local_ctx,
@@ -1123,7 +1082,7 @@ fn check_combinator_invocation<'ast>(
                             source,
                         )?;
                         let expected = global_ctx.resolve_alias(combinator);
-                        if !combinator_types_compatible(arg_combinator, expected, global_ctx) {
+                        if !combinator_types_compatible(&arg_combinator, expected, global_ctx) {
                             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                 .with_message("argument type mismatch")
                                 .with_label(
@@ -1228,62 +1187,188 @@ fn check_length_expr<'ast>(
     }
 }
 
-fn resolve_dependent_id<'a, 'ast>(
-    depend_id: &Identifier<'ast>,
-    param_defns: &'ast [ParamDefn<'ast>],
-    local_ctx: &'a LocalCtx<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<&'a CombinatorInner<'ast>, VestError> {
-    let parts: Vec<&str> = depend_id.name.split('.').collect();
-    let root_id = Identifier {
-        name: parts[0].to_string(),
-        span: depend_id.span.clone(),
-    };
+#[derive(Debug, Clone)]
+enum ResolveError {
+    UnboundField(String),
+    NotDependentField { field_name: String },
+    NotDefinedInBitfield { field_name: String },
+    BitfieldMembersNoNested,
+    NestedRequiresStructOrBits,
+    CannotResolveType(String),
+}
 
-    // 1. Find the root combinator
-    let mut current_combinator = if let Some(combinator) = local_ctx.dependent_fields.get(&root_id) {
-        global_ctx.resolve(combinator)
+fn emit_resolve_error(err: ResolveError, span: &Span, source: (&str, &Source)) -> VestError {
+    match err {
+        ResolveError::UnboundField(root_id) => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("unbound field")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message(format!("`@{}` is not found in current scope", root_id))
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+        ResolveError::NotDependentField { field_name } => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("invalid nested field access")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message(format!("field `{}` is not a dependent field", field_name))
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+        ResolveError::NotDefinedInBitfield { field_name } => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("invalid nested field access")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message(format!(
+                            "field `{}` is not defined in the bitfield",
+                            field_name
+                        ))
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+        ResolveError::BitfieldMembersNoNested => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("invalid nested field access")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("bitfield members do not have nested fields")
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+        ResolveError::NestedRequiresStructOrBits => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("invalid nested field access")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("nested field access requires a struct or bits type")
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+        ResolveError::CannotResolveType(func_name) => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("cannot resolve type for nested access")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message(format!("cannot resolve type of `{}`", func_name))
+                        .with_color(Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        }
+    }
+    VestError::TypeError
+}
+
+fn resolve_root<'ast>(
+    root_id: &str,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+) -> Result<CombinatorInner<'ast>, ResolveError> {
+    if let Some(combinator) = local_ctx
+        .dependent_fields
+        .iter()
+        .find(|(id, _)| id.name == root_id)
+        .map(|(_, comb)| comb)
+    {
+        Ok(global_ctx.resolve(combinator).clone())
     } else {
         let param_defn = param_defns
             .iter()
-            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
-        match param_defn {
-            Some(ParamDefn::Dependent { combinator, .. }) => global_ctx.resolve_alias(combinator),
-            _ => {
-                report_unbound_field!(source, &depend_id.span, root_id);
-                return Err(VestError::TypeError);
-            }
-        }
-    };
+            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name.name == root_id));
 
-    // 2. Navigate nested fields
-    let mut i = 1;
-    while i < parts.len() {
-        let field_name = parts[i];
+        match param_defn {
+            Some(ParamDefn::Dependent { combinator, .. }) => {
+                Ok(global_ctx.resolve_alias(combinator).clone())
+            }
+            _ => Err(ResolveError::UnboundField(root_id.to_string())),
+        }
+    }
+}
+
+fn resolve_path<'ast>(
+    root_combinator: CombinatorInner<'ast>,
+    path: &[&str],
+    global_ctx: &'ast GlobalCtx<'ast>,
+) -> Result<CombinatorInner<'ast>, ResolveError> {
+    let mut current_combinator = root_combinator;
+    for (i, field_name) in path.iter().enumerate() {
         match current_combinator {
             CombinatorInner::Struct(struct_comb) => {
                 let field = struct_comb.fields.iter().find(|f| match f {
-                    StructField::Dependent { label, .. } => label.name == *field_name,
+                    StructField::Dependent { label, .. } => label.name == **field_name,
                     _ => false,
                 });
                 match field {
                     Some(StructField::Dependent { combinator, .. }) => {
-                        current_combinator = global_ctx.resolve(combinator);
-                        i += 1;
+                        current_combinator = global_ctx.resolve(combinator).clone();
                     }
                     _ => {
-                        Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
-                            .with_message("invalid nested field access")
-                            .with_label(
-                                Label::new((source.0, span_as_range(&depend_id.span)))
-                                    .with_message(format!("field `{}` is not a dependent field", field_name))
-                                    .with_color(Color::Red),
-                            )
-                            .finish()
-                            .eprint(source)
-                            .unwrap();
-                        return Err(VestError::TypeError);
+                        return Err(ResolveError::NotDependentField {
+                            field_name: field_name.to_string(),
+                        });
+                    }
+                }
+            }
+            CombinatorInner::Bits(bits_comb) => {
+                let field = bits_comb.fields.iter().find(|f| match f {
+                    BitField::Dependent { label, .. } | BitField::Ordinary { label, .. } => {
+                        label.name == **field_name
+                    }
+                });
+                match field {
+                    Some(BitField::Dependent { combinator, .. })
+                    | Some(BitField::Ordinary { combinator, .. }) => {
+                        if i == path.len() - 1 {
+                            current_combinator = match combinator {
+                                BitFieldCombinator::UInt {
+                                    width,
+                                    constraint,
+                                    span,
+                                } => CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                                    combinator: IntCombinator::Unsigned(*width),
+                                    constraint: constraint.clone(),
+                                    span: *span,
+                                }),
+                                BitFieldCombinator::Invocation(inv) => {
+                                    let sig = global_ctx
+                                        .combinators
+                                        .iter()
+                                        .find(|sig| sig.name == inv.func);
+                                    if let Some(sig) = sig {
+                                        sig.resolved_combinator.clone()
+                                    } else {
+                                        CombinatorInner::Invocation(inv.clone())
+                                    }
+                                }
+                            };
+                        } else {
+                            return Err(ResolveError::BitfieldMembersNoNested);
+                        }
+                    }
+                    None => {
+                        return Err(ResolveError::NotDefinedInBitfield {
+                            field_name: field_name.to_string(),
+                        });
                     }
                 }
             }
@@ -1293,39 +1378,45 @@ fn resolve_dependent_id<'a, 'ast>(
                     .iter()
                     .find(|sig| sig.name == inv.func);
                 if let Some(sig) = sig {
-                    current_combinator = &sig.resolved_combinator;
-                    // retry the same field on resolved combinator
+                    current_combinator = sig.resolved_combinator.clone();
+                    return resolve_path(current_combinator, &path[i..], global_ctx);
                 } else {
-                    Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
-                        .with_message("cannot resolve type for nested access")
-                        .with_label(
-                            Label::new((source.0, span_as_range(&depend_id.span)))
-                                .with_message(format!("cannot resolve type of `{}`", inv.func))
-                                .with_color(Color::Red),
-                        )
-                        .finish()
-                        .eprint(source)
-                        .unwrap();
-                    return Err(VestError::TypeError);
+                    return Err(ResolveError::CannotResolveType(inv.func.name.clone()));
                 }
             }
             _ => {
-                Report::build(ReportKind::Error, (source.0, span_as_range(&depend_id.span)))
-                    .with_message("invalid nested field access")
-                    .with_label(
-                        Label::new((source.0, span_as_range(&depend_id.span)))
-                            .with_message("nested field access requires a struct type")
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
+                return Err(ResolveError::NestedRequiresStructOrBits);
             }
         }
     }
-
     Ok(current_combinator)
+}
+
+fn resolve_dependent_id_path<'ast>(
+    root_id: &str,
+    path: &[&str],
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+) -> Result<CombinatorInner<'ast>, ResolveError> {
+    let root_comb = resolve_root(root_id, param_defns, local_ctx, global_ctx)?;
+    resolve_path(root_comb, path, global_ctx)
+}
+
+fn resolve_dependent_identifier<'a, 'ast>(
+    depend_id: &'a Identifier<'ast>,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx<'ast>,
+    source: (&str, &Source),
+) -> Result<CombinatorInner<'ast>, VestError> {
+    let parts: Vec<&str> = depend_id.name.split('.').collect();
+    let root_id = parts[0];
+    let path = &parts[1..];
+    match resolve_dependent_id_path(root_id, path, param_defns, local_ctx, global_ctx) {
+        Ok(comb) => Ok(comb),
+        Err(err) => Err(emit_resolve_error(err, &depend_id.span, source)),
+    }
 }
 
 fn check_dependent_id_is_valid_length<'ast>(
@@ -1336,224 +1427,13 @@ fn check_dependent_id_is_valid_length<'ast>(
     global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    // For simple dependent ids (no nested access), check in local_ctx and param_defns
-    if depend_id.is_simple() {
-        let root_id = depend_id.to_identifier();
-
-        // 1. try to find in local_ctx
-        if let Some(combinator) = local_ctx.dependent_fields.get(&root_id) {
-            return check_combinator_is_unsigned_int(
-                global_ctx.resolve(combinator),
-                &depend_id.full_path(),
-                span,
-                &combinator.span,
-                source,
-            );
+    let root_id = depend_id.root.as_str();
+    let path: Vec<&str> = depend_id.path.iter().map(|s| s.as_str()).collect();
+    match resolve_dependent_id_path(root_id, &path, param_defns, local_ctx, global_ctx) {
+        Ok(comb) => {
+            check_combinator_is_unsigned_int(&comb, &depend_id.full_path(), span, span, source)
         }
-
-        // 2. try to find in param_defns
-        let param_defn = param_defns
-            .iter()
-            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
-
-        match param_defn {
-            Some(ParamDefn::Dependent { combinator, .. }) => {
-                return check_combinator_is_unsigned_int(
-                    global_ctx.resolve_alias(combinator),
-                    &depend_id.full_path(),
-                    span,
-                    &combinator.as_span(),
-                    source,
-                );
-            }
-            _ => {
-                report_unbound_field!(source, span, root_id);
-                return Err(VestError::TypeError);
-            }
-        }
-    }
-
-    // For nested access (@hdr.field), we need to resolve through the struct
-    let root_id = Identifier {
-        name: depend_id.root.clone(),
-        span: depend_id.span,
-    };
-
-    // Find the root field
-    let root_combinator = if let Some(combinator) = local_ctx.dependent_fields.get(&root_id) {
-        global_ctx.resolve(combinator)
-    } else {
-        let param_defn = param_defns
-            .iter()
-            .find(|param_defn| matches!(param_defn, ParamDefn::Dependent { name, .. } if name == &root_id));
-        match param_defn {
-            Some(ParamDefn::Dependent { combinator, .. }) => global_ctx.resolve_alias(combinator),
-            _ => {
-                report_unbound_field!(source, span, root_id);
-                return Err(VestError::TypeError);
-            }
-        }
-    };
-
-    // Navigate through nested fields
-    let mut current_combinator = root_combinator;
-    for (i, field_name) in depend_id.path.iter().enumerate() {
-        match current_combinator {
-            CombinatorInner::Struct(struct_comb) => {
-                let field = struct_comb.fields.iter().find(|f| match f {
-                    StructField::Dependent { label, .. } => label.name == *field_name,
-                    _ => false,
-                });
-                match field {
-                    Some(StructField::Dependent { combinator, .. }) => {
-                        if i == depend_id.path.len() - 1 {
-                            // Final field - check it's an unsigned int
-                            return check_combinator_is_unsigned_int(
-                                global_ctx.resolve(combinator),
-                                &depend_id.full_path(),
-                                span,
-                                &combinator.span,
-                                source,
-                            );
-                        } else {
-                            current_combinator = global_ctx.resolve(combinator);
-                        }
-                    }
-                    _ => {
-                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                            .with_message("invalid nested field access")
-                            .with_label(
-                                Label::new((source.0, span_as_range(&depend_id.span)))
-                                    .with_message(format!(
-                                        "field `{}` is not a dependent field in the struct",
-                                        field_name
-                                    ))
-                                    .with_color(Color::Red),
-                            )
-                            .finish()
-                            .eprint(source)
-                            .unwrap();
-                        return Err(VestError::TypeError);
-                    }
-                }
-            }
-            CombinatorInner::Invocation(inv) => {
-                // Resolve the invocation and continue
-                let sig = global_ctx
-                    .combinators
-                    .iter()
-                    .find(|sig| sig.name == inv.func);
-                if let Some(sig) = sig {
-                    current_combinator = &sig.resolved_combinator;
-                    // Retry this field with the resolved combinator
-                    return check_nested_field_in_combinator(
-                        current_combinator,
-                        &depend_id.path[i..],
-                        depend_id,
-                        span,
-                        global_ctx,
-                        source,
-                    );
-                } else {
-                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                        .with_message("cannot resolve type for nested access")
-                        .with_label(
-                            Label::new((source.0, span_as_range(&depend_id.span)))
-                                .with_message(format!("cannot resolve type of `{}`", inv.func))
-                                .with_color(Color::Red),
-                        )
-                        .finish()
-                        .eprint(source)
-                        .unwrap();
-                    return Err(VestError::TypeError);
-                }
-            }
-            _ => {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("invalid nested field access")
-                    .with_label(
-                        Label::new((source.0, span_as_range(&depend_id.span)))
-                            .with_message("nested field access requires a struct type")
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn check_nested_field_in_combinator<'ast>(
-    combinator: &CombinatorInner<'ast>,
-    remaining_path: &[String],
-    depend_id: &DependentId<'ast>,
-    span: &Span<'ast>,
-    global_ctx: &'ast GlobalCtx<'ast>,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
-    if remaining_path.is_empty() {
-        return check_combinator_is_unsigned_int(
-            combinator,
-            &depend_id.full_path(),
-            span,
-            &depend_id.span,
-            source,
-        );
-    }
-
-    match combinator {
-        CombinatorInner::Struct(struct_comb) => {
-            let field_name = &remaining_path[0];
-            let field = struct_comb.fields.iter().find(|f| match f {
-                StructField::Dependent { label, .. } => label.name == *field_name,
-                _ => false,
-            });
-            match field {
-                Some(StructField::Dependent { combinator, .. }) => {
-                    check_nested_field_in_combinator(
-                        global_ctx.resolve(combinator),
-                        &remaining_path[1..],
-                        depend_id,
-                        span,
-                        global_ctx,
-                        source,
-                    )
-                }
-                _ => {
-                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                        .with_message("invalid nested field access")
-                        .with_label(
-                            Label::new((source.0, span_as_range(&depend_id.span)))
-                                .with_message(format!(
-                                    "field `{}` is not a dependent field",
-                                    field_name
-                                ))
-                                .with_color(Color::Red),
-                        )
-                        .finish()
-                        .eprint(source)
-                        .unwrap();
-                    Err(VestError::TypeError)
-                }
-            }
-        }
-        _ => {
-            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                .with_message("invalid nested field access")
-                .with_label(
-                    Label::new((source.0, span_as_range(&depend_id.span)))
-                        .with_message("nested field access requires a struct type")
-                        .with_color(Color::Red),
-                )
-                .finish()
-                .eprint(source)
-                .unwrap();
-            Err(VestError::TypeError)
-        }
+        Err(err) => Err(emit_resolve_error(err, span, source)),
     }
 }
 
@@ -1648,10 +1528,7 @@ fn complement_intervals(domain: (i128, i128), intervals: &[(i128, i128)]) -> Vec
     out
 }
 
-fn constraint_elem_intervals(
-    elem: &ConstraintElem<'_>,
-    domain: (i128, i128),
-) -> Vec<(i128, i128)> {
+fn constraint_elem_intervals(elem: &ConstraintElem<'_>, domain: (i128, i128)) -> Vec<(i128, i128)> {
     let (domain_start, domain_end) = domain;
     let interval = match elem {
         ConstraintElem::Range { start, end, .. } => {
@@ -1782,7 +1659,9 @@ fn combinator_types_compatible<'ast>(
                     expected_constraint.as_ref(),
                 )
         }
-        (CombinatorInner::Enum(arg_enum), CombinatorInner::Enum(expected_enum)) => arg_enum == expected_enum,
+        (CombinatorInner::Enum(arg_enum), CombinatorInner::Enum(expected_enum)) => {
+            arg_enum == expected_enum
+        }
         (CombinatorInner::ConstraintEnum(arg_ce), CombinatorInner::Enum(expected_enum)) => {
             resolve_constraint_enum_target(arg_ce, global_ctx)
                 .is_some_and(|arg_enum| arg_enum == expected_enum)
@@ -1982,7 +1861,13 @@ fn check_choice_combinator<'ast>(
         Choices::Enums(enums) => {
             if let Some(depend_id) = depend_id {
                 // check if depend_id a prior field in the struct or in the param_defns
-                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = resolve_dependent_identifier(
+                    depend_id,
+                    param_defns,
+                    local_ctx,
+                    global_ctx,
+                    source,
+                )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
@@ -1994,13 +1879,19 @@ fn check_choice_combinator<'ast>(
                     };
                     // check for well-formed variants
                     let mut variants = HashSet::new();
-                    let wildcard_count = enums.iter().filter(|(variant, _)| variant.name == "_").count();
+                    let wildcard_count = enums
+                        .iter()
+                        .filter(|(variant, _)| variant.name == "_")
+                        .count();
                     if wildcard_count > 1 {
                         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                             .with_message("duplicate wildcard branch")
-                            .with_labels(enums.iter().filter(|(label, _)| label.name == "_").map(|(label, _)| {
-                                Label::new((source.0, span_as_range(&label.span))).with_color(Color::Yellow)
-                            }))
+                            .with_labels(enums.iter().filter(|(label, _)| label.name == "_").map(
+                                |(label, _)| {
+                                    Label::new((source.0, span_as_range(&label.span)))
+                                        .with_color(Color::Yellow)
+                                },
+                            ))
                             .finish()
                             .eprint(source)
                             .unwrap();
@@ -2012,7 +1903,11 @@ fn check_choice_combinator<'ast>(
                         .find(|(_, (variant, _))| variant.name == "_")
                     {
                         if idx + 1 != enums.len() {
-                            return Err(report_invalid_wildcard_position(&variant.span, span, source));
+                            return Err(report_invalid_wildcard_position(
+                                &variant.span,
+                                span,
+                                source,
+                            ));
                         }
                     }
                     for (variant, combinator) in enums {
@@ -2209,7 +2104,13 @@ fn check_choice_combinator<'ast>(
         }
         Choices::Ints(ints) => {
             if let Some(depend_id) = depend_id {
-                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = resolve_dependent_identifier(
+                    depend_id,
+                    param_defns,
+                    local_ctx,
+                    global_ctx,
+                    source,
+                )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
@@ -2262,7 +2163,11 @@ fn check_choice_combinator<'ast>(
                     [idx] if *idx + 1 == ints.len() => {}
                     [idx] => {
                         let wildcard_span = ints[*idx].1.span;
-                        return Err(report_invalid_wildcard_position(&wildcard_span, span, source));
+                        return Err(report_invalid_wildcard_position(
+                            &wildcard_span,
+                            span,
+                            source,
+                        ));
                     }
                     _ => {
                         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
@@ -2386,21 +2291,33 @@ fn check_choice_combinator<'ast>(
         }
         Choices::Arrays(arrays) => {
             if let Some(depend_id) = depend_id {
-                let combinator = resolve_dependent_id(depend_id, param_defns, local_ctx, global_ctx, source)?;
+                let combinator = resolve_dependent_identifier(
+                    depend_id,
+                    param_defns,
+                    local_ctx,
+                    global_ctx,
+                    source,
+                )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
                 let combinator = global_ctx.resolve_alias(&combinator);
                 let wildcard_positions = arrays
                     .iter()
                     .enumerate()
-                    .filter_map(|(idx, (pattern, _))| matches!(pattern, ConstArray::Wildcard).then_some(idx))
+                    .filter_map(|(idx, (pattern, _))| {
+                        matches!(pattern, ConstArray::Wildcard).then_some(idx)
+                    })
                     .collect::<Vec<_>>();
                 match wildcard_positions.as_slice() {
                     [] => return Err(report_missing_wildcard(span, source, "array")),
                     [idx] if *idx + 1 == arrays.len() => {}
                     [idx] => {
                         let wildcard_span = arrays[*idx].0.as_span();
-                        return Err(report_invalid_wildcard_position(&wildcard_span, span, source));
+                        return Err(report_invalid_wildcard_position(
+                            &wildcard_span,
+                            span,
+                            source,
+                        ));
                     }
                     _ => {
                         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
@@ -2746,6 +2663,189 @@ fn check_struct_combinator<'ast>(
             }
         }
     }
+    Ok(())
+}
+
+fn bit_field_combinator_width(
+    bfc: &BitFieldCombinator<'_>,
+    formats: &HashMap<&str, &Combinator<'_>>,
+) -> Option<usize> {
+    match bfc {
+        BitFieldCombinator::UInt { width, .. } => Some(*width as usize),
+        BitFieldCombinator::Invocation(inv) => {
+            let comb = formats.get(inv.func.name.as_str())?;
+            match &comb.inner {
+                CombinatorInner::Enum(enum_comb) => {
+                    let enums = match enum_comb {
+                        EnumCombinator::Exhaustive { enums, .. }
+                        | EnumCombinator::NonExhaustive { enums, .. } => enums,
+                    };
+                    let backing = resolve_enum_type(enums);
+                    Some(backing.logical_width() as usize)
+                }
+                _ => None,
+            }
+        }
+    }
+}
+
+fn check_bits_combinator<'ast>(
+    bits_comb: &BitsCombinator<'ast>,
+    span: &Span,
+    param_defns: &'ast [ParamDefn<'ast>],
+    local_ctx: &mut LocalCtx<'ast>,
+    global_ctx: &'ast GlobalCtx,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    macro_rules! report_duplicate_field {
+        ($label:expr, $field_span:expr) => {
+            Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                .with_message("duplicate field name in bitfield")
+                .with_label(
+                    Label::new((source.0, span_as_range(span)))
+                        .with_message("Invalid bits format")
+                        .with_color(Color::Red),
+                )
+                .with_label(
+                    Label::new((source.0, span_as_range($field_span)))
+                        .with_message(format!("Duplicate field name `{}`", $label))
+                        .with_color(Color::Yellow),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+        };
+    }
+
+    let mut total_bits = 0usize;
+
+    for field in &bits_comb.fields {
+        let label = field.label();
+        let combinator = field.combinator();
+        let field_span = match field {
+            BitField::Dependent { span, .. } | BitField::Ordinary { span, .. } => span,
+        };
+
+        if let BitField::Dependent { .. } = field {
+            if !local_ctx.dependent_fields.contains_key(label) {
+                local_ctx
+                    .dependent_fields
+                    .insert(label.to_owned(), combinator.as_combinator());
+            } else {
+                report_duplicate_field!(label, field_span);
+                return Err(VestError::TypeError);
+            }
+        }
+
+        if !local_ctx.struct_fields.insert(label.to_owned()) {
+            report_duplicate_field!(label, field_span);
+            return Err(VestError::TypeError);
+        }
+
+        match combinator {
+            BitFieldCombinator::UInt {
+                width,
+                constraint,
+                span: _,
+            } => {
+                if *width == 0 || *width > 64 {
+                    Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
+                        .with_message("invalid bitfield width")
+                        .with_label(
+                            Label::new((source.0, span_as_range(field_span)))
+                                .with_message(format!(
+                                    "width must be between 1 and 64, got {}",
+                                    width
+                                ))
+                                .with_color(Color::Red),
+                        )
+                        .finish()
+                        .eprint(source)
+                        .unwrap();
+                    return Err(VestError::TypeError);
+                }
+                total_bits = total_bits
+                    .checked_add(*width as usize)
+                    .ok_or(VestError::TypeError)?;
+
+                if let Some(c) = constraint {
+                    let int_comb = IntCombinator::Unsigned(*width);
+                    check_constraint_int_combinator(&int_comb, Some(c), source)?;
+                }
+            }
+            BitFieldCombinator::Invocation(inv) => {
+                check_combinator_invocation(inv, param_defns, local_ctx, global_ctx, source)?;
+                let resolved = global_ctx
+                    .combinators
+                    .iter()
+                    .find(|sig| sig.name == inv.func)
+                    .map(|sig| &sig.resolved_combinator);
+                match resolved {
+                    Some(CombinatorInner::Enum(enum_comb)) => {
+                        let enums = match enum_comb {
+                            EnumCombinator::Exhaustive { enums, .. }
+                            | EnumCombinator::NonExhaustive { enums, .. } => enums,
+                        };
+                        let backing = resolve_enum_type(enums);
+                        let w = backing.logical_width() as usize;
+                        if w == 0 || w > 64 {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
+                                .with_message("invalid bitfield width for enum")
+                                .with_label(
+                                    Label::new((source.0, span_as_range(field_span)))
+                                        .with_message(format!(
+                                            "width must be between 1 and 64, got {}",
+                                            w
+                                        ))
+                                        .with_color(Color::Red),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
+                        }
+                        total_bits = total_bits.checked_add(w).ok_or(VestError::TypeError)?;
+                    }
+                    _ => {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
+                            .with_message("invalid bitfield member")
+                            .with_label(
+                                Label::new((source.0, span_as_range(field_span)))
+                                    .with_message("bitfield invocation must resolve to an enum")
+                                    .with_color(Color::Red),
+                            )
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                }
+            }
+        }
+    }
+
+    if total_bits != 8
+        && total_bits != 16
+        && total_bits != 24
+        && total_bits != 32
+        && total_bits != 64
+    {
+        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+            .with_message("invalid bitfield total width")
+            .with_label(
+                Label::new((source.0, span_as_range(span)))
+                    .with_message(format!(
+                        "total bits width must be 8, 16, 24, 32, or 64, got {} bits",
+                        total_bits
+                    ))
+                    .with_color(Color::Red),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
+        return Err(VestError::TypeError);
+    }
+
     Ok(())
 }
 

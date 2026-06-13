@@ -25,6 +25,11 @@ pub enum Definition {
         param_defns: Vec<ParamDefn>,
         combinator: EnumCombinator,
     },
+    BitsDef {
+        name: String,
+        param_defns: Vec<ParamDefn>,
+        combinator: BitsCombinator,
+    },
     CombinatorDef {
         name: String,
         param_defns: Vec<ParamDefn>,
@@ -43,6 +48,7 @@ impl Definition {
             Definition::StructDef { name, .. }
             | Definition::ChoiceDef { name, .. }
             | Definition::EnumDef { name, .. }
+            | Definition::BitsDef { name, .. }
             | Definition::CombinatorDef { name, .. }
             | Definition::ConstCombinatorDef { name, .. } => Some(name.as_str()),
             Definition::Endianess(_) => None,
@@ -54,6 +60,7 @@ impl Definition {
             Definition::StructDef { param_defns, .. }
             | Definition::ChoiceDef { param_defns, .. }
             | Definition::EnumDef { param_defns, .. }
+            | Definition::BitsDef { param_defns, .. }
             | Definition::CombinatorDef { param_defns, .. } => param_defns.as_slice(),
             _ => &[],
         }
@@ -102,6 +109,54 @@ pub enum Combinator {
     /// `lhs >>= rhs`
     AndThen(Box<Combinator>, Box<Combinator>),
 }
+impl From<BitFieldCombinator> for Combinator {
+    fn from(bfc: BitFieldCombinator) -> Self {
+        match bfc {
+            BitFieldCombinator::UInt(c) => Combinator::ConstraintInt(c),
+            BitFieldCombinator::Enum(c) => Combinator::Invocation(c),
+        }
+    }
+}
+
+impl From<&BitFieldCombinator> for Combinator {
+    fn from(bfc: &BitFieldCombinator) -> Self {
+        match bfc {
+            BitFieldCombinator::UInt(c) => Combinator::ConstraintInt(c.clone()),
+            BitFieldCombinator::Enum(c) => Combinator::Invocation(c.clone()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum BitFieldCombinator {
+    UInt(ConstraintIntCombinator),
+    Enum(CombinatorInvocation),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct BitsCombinator(pub Vec<BitField>);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum BitField {
+    Dependent {
+        label: String,
+        combinator: BitFieldCombinator,
+    },
+    Ordinary {
+        label: String,
+        combinator: BitFieldCombinator,
+    },
+}
+
+impl BitField {
+    pub fn combinator(&self) -> &BitFieldCombinator {
+        match self {
+            BitField::Dependent { combinator, .. } | BitField::Ordinary { combinator, .. } => {
+                combinator
+            }
+        }
+    }
+}
 
 // ============================================================
 // Sub-combinator types
@@ -119,6 +174,36 @@ pub enum IntCombinator {
     Unsigned(u8),
     BtcVarint,
     ULEB128,
+}
+
+impl IntCombinator {
+    /// Logical bit width (as declared in the source).
+    pub fn logical_width(&self) -> u8 {
+        match self {
+            IntCombinator::Unsigned(n) | IntCombinator::Signed(n) => *n,
+            IntCombinator::BtcVarint | IntCombinator::ULEB128 => 64,
+        }
+    }
+
+    /// Smallest Rust primitive that can hold this many bits.
+    pub fn carrier_width(&self) -> u8 {
+        match self.logical_width() {
+            1..=8 => 8,
+            9..=16 => 16,
+            17..=32 => 32,
+            _ => 64,
+        }
+    }
+
+    /// `2^width - 1` mask value (u64).
+    pub fn bit_mask(&self) -> u64 {
+        let w = self.logical_width();
+        if w == 64 {
+            u64::MAX
+        } else {
+            (1u64 << w) - 1
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -342,6 +427,17 @@ impl Display for Definition {
                 }
                 write!(f, " = {}", combinator)
             }
+            Definition::BitsDef {
+                name,
+                param_defns,
+                combinator,
+            } => {
+                write!(f, "{}", name)?;
+                if !param_defns.is_empty() {
+                    write!(f, "({})", param_defns.iter().join(","))?;
+                }
+                write!(f, " = {}", combinator)
+            }
             Definition::CombinatorDef {
                 name,
                 param_defns,
@@ -388,6 +484,39 @@ impl Display for Combinator {
             Combinator::Option(o) => write!(f, "{}", o),
             Combinator::Invocation(i) => write!(f, "{}", i),
             Combinator::AndThen(lhs, rhs) => write!(f, "{} >>= {}", lhs, rhs),
+        }
+    }
+}
+
+impl Display for BitsCombinator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "bits {{")?;
+        for field in &self.0 {
+            write!(f, "{}", field)?;
+            writeln!(f, ",")?;
+        }
+        write!(f, "}}")
+    }
+}
+
+impl Display for BitField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BitField::Dependent {
+                label, combinator, ..
+            }
+            | BitField::Ordinary {
+                label, combinator, ..
+            } => write!(f, "{}:{}", label, combinator),
+        }
+    }
+}
+
+impl Display for BitFieldCombinator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BitFieldCombinator::UInt(c) => write!(f, "{}", c),
+            BitFieldCombinator::Enum(c) => write!(f, "{}", c),
         }
     }
 }
@@ -798,6 +927,13 @@ pub mod lowering {
                                 combinator: self.lower_struct_combinator(s, param_defns, &[]),
                             }
                         }
+                        ast::CombinatorInner::Bits(b) if combinator.and_then.is_none() => {
+                            ir::Definition::BitsDef {
+                                name: name_str,
+                                param_defns: params,
+                                combinator: self.lower_bits_combinator(b, param_defns, &[]),
+                            }
+                        }
                         ast::CombinatorInner::Choice(c) if combinator.and_then.is_none() => {
                             ir::Definition::ChoiceDef {
                                 name: name_str,
@@ -882,6 +1018,10 @@ pub mod lowering {
                 A::ConstraintEnum(x) => {
                     ir::Combinator::ConstraintEnum(self.lower_constraint_enum_combinator(x))
                 }
+                A::Bits(x) => panic!(
+                    "Inline Bits in lowering — input must be a top-level definition for now: {:?}",
+                    x
+                ),
                 A::Struct(x) => panic!(
                     "Inline Struct in lowering — input must be elaborated first: {:?}",
                     x
@@ -955,6 +1095,54 @@ pub mod lowering {
                 }
             }
             ir::StructCombinator(fields)
+        }
+
+        fn lower_bit_field_combinator(
+            &self,
+            bfc: &ast::BitFieldCombinator<'i>,
+        ) -> ir::BitFieldCombinator {
+            match bfc {
+                ast::BitFieldCombinator::UInt {
+                    width, constraint, ..
+                } => ir::BitFieldCombinator::UInt(ir::ConstraintIntCombinator {
+                    combinator: ir::IntCombinator::Unsigned(*width),
+                    constraint: constraint.as_ref().map(|c| self.lower_int_constraint(c)),
+                }),
+                ast::BitFieldCombinator::Invocation(inv) => {
+                    ir::BitFieldCombinator::Enum(self.lower_invocation(inv))
+                }
+            }
+        }
+
+        fn lower_bits_combinator(
+            &self,
+            b: &ast::BitsCombinator<'i>,
+            _param_defns: &'i [ast::ParamDefn<'i>],
+            local_deps: &[(String, ast::Combinator<'i>)],
+        ) -> ir::BitsCombinator {
+            let mut visible = local_deps.to_vec();
+            let mut fields = Vec::with_capacity(b.fields.len());
+            for field in &b.fields {
+                let label = field.label().name.clone();
+                let combinator = field.combinator();
+                let field_comb = self.lower_bit_field_combinator(combinator);
+                match field {
+                    ast::BitField::Dependent { .. } => {
+                        visible.push((label.clone(), combinator.into()));
+                        fields.push(ir::BitField::Dependent {
+                            label,
+                            combinator: field_comb,
+                        });
+                    }
+                    ast::BitField::Ordinary { .. } => {
+                        fields.push(ir::BitField::Ordinary {
+                            label,
+                            combinator: field_comb,
+                        });
+                    }
+                }
+            }
+            ir::BitsCombinator(fields)
         }
 
         fn lower_wrap_combinator(
@@ -1185,16 +1373,28 @@ pub mod lowering {
                 };
 
             for field_name in parts.iter().skip(1) {
-                let ast::CombinatorInner::Struct(struct_comb) = self.global_ctx.resolve(&current)
-                else {
-                    return None;
+                current = match self.global_ctx.resolve(&current) {
+                    ast::CombinatorInner::Struct(struct_comb) => {
+                        struct_comb.fields.iter().find_map(|field| match field {
+                            ast::StructField::Dependent {
+                                label, combinator, ..
+                            } if label.name == *field_name => Some(combinator.clone()),
+                            _ => None,
+                        })?
+                    }
+                    ast::CombinatorInner::Bits(bits_comb) => {
+                        bits_comb.fields.iter().find_map(|field| match field {
+                            ast::BitField::Dependent {
+                                label, combinator, ..
+                            }
+                            | ast::BitField::Ordinary {
+                                label, combinator, ..
+                            } if label.name == *field_name => Some(combinator.into()),
+                            _ => None,
+                        })?
+                    }
+                    _ => return None,
                 };
-                current = struct_comb.fields.iter().find_map(|field| match field {
-                    ast::StructField::Dependent {
-                        label, combinator, ..
-                    } if label.name == *field_name => Some(combinator.clone()),
-                    _ => None,
-                })?;
             }
 
             Some(current)
@@ -1240,14 +1440,20 @@ pub mod lowering {
 
         fn length_carrier_ty(combinator: &ast::IntCombinator) -> ir::IntCombinator {
             match combinator {
-                ast::IntCombinator::Unsigned(8) => ir::IntCombinator::Unsigned(8),
-                ast::IntCombinator::Unsigned(16) => ir::IntCombinator::Unsigned(16),
-                ast::IntCombinator::Unsigned(24) | ast::IntCombinator::Unsigned(32) => {
-                    ir::IntCombinator::Unsigned(32)
+                ast::IntCombinator::Unsigned(bits) => match bits {
+                    1..=8 => ir::IntCombinator::Unsigned(8),
+                    9..=16 => ir::IntCombinator::Unsigned(16),
+                    17..=24 => ir::IntCombinator::Unsigned(32),
+                    25..=32 => ir::IntCombinator::Unsigned(32),
+                    33..=64 => ir::IntCombinator::Unsigned(64),
+                    _ => panic!(
+                        "invalid integer width for length expression: {:?}",
+                        combinator
+                    ),
+                },
+                ast::IntCombinator::BtcVarint | ast::IntCombinator::ULEB128 => {
+                    ir::IntCombinator::Unsigned(64)
                 }
-                ast::IntCombinator::Unsigned(64)
-                | ast::IntCombinator::BtcVarint
-                | ast::IntCombinator::ULEB128 => ir::IntCombinator::Unsigned(64),
                 other => panic!("invalid integer type for length expression: {:?}", other),
             }
         }
@@ -1428,6 +1634,7 @@ pub mod lowering {
                     let name = sig.name.name.clone();
                     let resolved_combinator = match &sig.resolved_combinator {
                         ast::CombinatorInner::Struct(_)
+                        | ast::CombinatorInner::Bits(_)
                         | ast::CombinatorInner::Choice(_)
                         | ast::CombinatorInner::Enum(_) => {
                             ir::Combinator::Invocation(ir::CombinatorInvocation {

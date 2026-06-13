@@ -1,8 +1,8 @@
 use crate::vestir::{
     self, ArrayCombinator, ChoiceCombinator, ChoicePattern, Combinator, CombinatorInvocation,
     ConstArray, ConstCombinator, ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator,
-    Definition, Endianess, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator, ParamDefn,
-    StructCombinator, StructField, TailCombinator, VecCombinator, WrapCombinator,
+    Definition, Endianess, EnumCombinator, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator,
+    ParamDefn, StructCombinator, StructField, TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
@@ -11,7 +11,6 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FormatNames {
-    #[allow(dead_code)]
     pub(crate) dsl: String,
     pub(crate) exec: String,
     pub(crate) spec: String,
@@ -52,6 +51,56 @@ pub(crate) struct Analysis<'a> {
     pub(crate) infos: HashMap<String, FormatInfo>,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct BitsFieldLayout {
+    pub(crate) label: String,
+    pub(crate) logical_width: u8,
+    pub(crate) carrier_ty: vestir::IntCombinator,
+    pub(crate) mask: u64,
+    pub(crate) shift: u8,
+    pub(crate) is_enum: bool,
+    pub(crate) is_closed_enum: bool,
+    pub(crate) enum_name: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct BitsLayout {
+    pub(crate) repr_int: vestir::IntCombinator,
+    pub(crate) fields: Vec<BitsFieldLayout>,
+}
+
+pub(crate) fn bits_tuple_type_tokens(tys: &[TokenStream]) -> TokenStream {
+    match tys {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        _ => quote! { (#(#tys),*) },
+    }
+}
+
+pub(crate) fn bits_tuple_pattern_tokens(idents: &[proc_macro2::Ident]) -> TokenStream {
+    match idents {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        _ => quote! { (#(#idents),*) },
+    }
+}
+
+pub(crate) fn bits_tuple_expr_tokens(exprs: &[TokenStream]) -> TokenStream {
+    match exprs {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        _ => quote! { (#(#exprs),*) },
+    }
+}
+
+pub(crate) fn bits_tuple_expr_from_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
+    match idents {
+        [] => quote! { () },
+        [only] => quote! { #only },
+        _ => quote! { (#(#idents),*) },
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TypeMode {
     Exec,
@@ -59,6 +108,21 @@ pub(crate) enum TypeMode {
 }
 
 impl<'a> Analysis<'a> {
+    pub(crate) fn int_is_byte_aligned(&self, int: &IntCombinator) -> bool {
+        match int {
+            IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => bits % 8 == 0,
+            IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
+        }
+    }
+
+    pub(crate) fn enum_is_bit_sized(&self, enum_comb: &vestir::EnumCombinator) -> bool {
+        let inferred = match enum_comb {
+            vestir::EnumCombinator::Exhaustive { inferred, .. }
+            | vestir::EnumCombinator::NonExhaustive { inferred, .. } => inferred,
+        };
+        !self.int_is_byte_aligned(inferred)
+    }
+
     pub(crate) fn direct_alias<'b>(
         &self,
         combinator: &'b Combinator,
@@ -66,6 +130,29 @@ impl<'a> Analysis<'a> {
         match combinator {
             Combinator::Invocation(invocation) => Some(invocation),
             _ => None,
+        }
+    }
+
+    pub(crate) fn enum_value_literals(&self, enum_name: &str) -> Vec<TokenStream> {
+        let def = self
+            .defs
+            .iter()
+            .find(|d| d.name() == Some(enum_name))
+            .unwrap_or_else(|| panic!("unknown enum {}", enum_name));
+        match def {
+            Definition::EnumDef { combinator, .. } => {
+                let (enums, inferred) = match combinator {
+                    EnumCombinator::Exhaustive { enums, inferred }
+                    | EnumCombinator::NonExhaustive { enums, inferred } => {
+                        (enums.as_slice(), inferred)
+                    }
+                };
+                enums
+                    .iter()
+                    .map(|variant| int_literal(variant.value, inferred))
+                    .collect()
+            }
+            _ => panic!("{} is not an enum", enum_name),
         }
     }
 
@@ -123,6 +210,112 @@ impl<'a> Analysis<'a> {
                     vestir::ArithOp::Sub => left.checked_sub(right),
                     vestir::ArithOp::Mul => left.checked_mul(right),
                     vestir::ArithOp::Div => left.checked_div(right),
+                }
+            }
+        }
+    }
+
+    pub(crate) fn bits_layout(&self, bits_comb: &vestir::BitsCombinator) -> BitsLayout {
+        let mut fields = Vec::new();
+        let mut total_width = 0u16;
+        let mut field_widths = Vec::new();
+        for field in &bits_comb.0 {
+            let w = self.bits_field_width(field);
+            field_widths.push(w);
+            total_width += w as u16;
+        }
+        let repr_width = match total_width {
+            8 => 8,
+            16 => 16,
+            24 => 24,
+            32 => 32,
+            64 => 64,
+            _ => panic!("unsupported bitfield total width {}", total_width),
+        };
+        let repr_int = vestir::IntCombinator::Unsigned(repr_width);
+        let mut current_shift = repr_width;
+        for (idx, field) in bits_comb.0.iter().enumerate() {
+            let label = match field {
+                vestir::BitField::Dependent { label, .. }
+                | vestir::BitField::Ordinary { label, .. } => label.clone(),
+            };
+            let logical_width = field_widths[idx];
+            current_shift -= logical_width;
+            let shift = current_shift;
+            let mask = if logical_width == 64 {
+                u64::MAX
+            } else {
+                (1u64 << logical_width) - 1
+            };
+            let (is_enum, is_closed_enum, enum_name) = match field.combinator() {
+                vestir::BitFieldCombinator::Enum(inv) => {
+                    let is_closed = matches!(
+                        self.defs
+                            .iter()
+                            .find(|d| d.name() == Some(inv.func.as_str())),
+                        Some(vestir::Definition::EnumDef {
+                            combinator: EnumCombinator::Exhaustive { .. },
+                            ..
+                        })
+                    );
+                    (true, is_closed, Some(inv.func.clone()))
+                }
+                _ => (false, false, None),
+            };
+            let carrier_ty = match field.combinator() {
+                vestir::BitFieldCombinator::UInt(_) => {
+                    vestir::IntCombinator::Unsigned(logical_width)
+                }
+                vestir::BitFieldCombinator::Enum(inv) => {
+                    let def = self
+                        .defs
+                        .iter()
+                        .find(|d| d.name() == Some(inv.func.as_str()))
+                        .unwrap();
+                    match def {
+                        vestir::Definition::EnumDef { combinator, .. } => match combinator {
+                            EnumCombinator::Exhaustive { inferred, .. }
+                            | EnumCombinator::NonExhaustive { inferred, .. } => inferred.clone(),
+                        },
+                        _ => panic!("expected enum def"),
+                    }
+                }
+            };
+            fields.push(BitsFieldLayout {
+                label,
+                logical_width,
+                carrier_ty,
+                mask,
+                shift,
+                is_enum,
+                is_closed_enum,
+                enum_name,
+            });
+        }
+        BitsLayout { repr_int, fields }
+    }
+
+    pub(crate) fn bits_field_width(&self, field: &vestir::BitField) -> u8 {
+        match field.combinator() {
+            vestir::BitFieldCombinator::UInt(c) => match c.combinator {
+                vestir::IntCombinator::Unsigned(bits) => bits,
+                _ => panic!("invalid bitfield integer {:?}", c.combinator),
+            },
+            vestir::BitFieldCombinator::Enum(inv) => {
+                let def = self
+                    .defs
+                    .iter()
+                    .find(|d| d.name() == Some(inv.func.as_str()))
+                    .unwrap_or_else(|| panic!("unknown bitfield enum {}", inv.func));
+                match def {
+                    vestir::Definition::EnumDef { combinator, .. } => match combinator {
+                        EnumCombinator::Exhaustive { inferred, .. }
+                        | EnumCombinator::NonExhaustive { inferred, .. } => match inferred {
+                            vestir::IntCombinator::Unsigned(bits) => *bits,
+                            _ => panic!("bitfield enum must be unsigned"),
+                        },
+                    },
+                    _ => panic!("bitfield member {} is not an enum", inv.func),
                 }
             }
         }
@@ -200,12 +393,25 @@ impl<'a> Analysis<'a> {
     pub(crate) fn render_int_type(&self, combinator: &vestir::IntCombinator) -> TokenStream {
         match combinator {
             vestir::IntCombinator::Signed(bits) => {
-                let ident = format_ident!("i{}", bits);
+                let carrier: u32 = match bits {
+                    1..=8 => 8,
+                    9..=16 => 16,
+                    17..=32 => 32,
+                    33..=64 => 64,
+                    _ => panic!("unsupported signed integer width {}", bits),
+                };
+                let ident = format_ident!("i{}", carrier);
                 quote! { #ident }
             }
-            vestir::IntCombinator::Unsigned(24) => quote! { u32 },
             vestir::IntCombinator::Unsigned(bits) => {
-                let ident = format_ident!("u{}", bits);
+                let carrier: u32 = match bits {
+                    1..=8 => 8,
+                    9..=16 => 16,
+                    17..=32 => 32,
+                    33..=64 => 64,
+                    _ => panic!("unsupported unsigned integer width {}", bits),
+                };
+                let ident = format_ident!("u{}", carrier);
                 quote! { #ident }
             }
             vestir::IntCombinator::BtcVarint => quote! { u64 },
@@ -563,6 +769,7 @@ impl<'a> Analysis<'a> {
     fn definition_needs_lifetime(&self, def: &Definition) -> bool {
         match def {
             Definition::StructDef { combinator, .. } => self.struct_needs_lifetime(combinator),
+            Definition::BitsDef { .. } => false,
             Definition::ChoiceDef { combinator, .. } => self.choice_needs_lifetime(combinator),
             Definition::EnumDef { .. } => false,
             Definition::CombinatorDef { combinator, .. } => {
@@ -636,6 +843,7 @@ impl<'a> Analysis<'a> {
     fn definition_non_tail(&self, def: &Definition) -> bool {
         match def {
             Definition::StructDef { combinator, .. } => self.struct_non_tail_at(combinator, true),
+            Definition::BitsDef { .. } => true,
             Definition::ChoiceDef { combinator, .. } => self.choice_non_tail_at(combinator, true),
             Definition::EnumDef { .. } => true,
             Definition::CombinatorDef { combinator, .. } => {
@@ -724,6 +932,7 @@ impl<'a> Analysis<'a> {
     fn definition_non_malleable(&self, def: &Definition) -> bool {
         match def {
             Definition::StructDef { combinator, .. } => self.struct_non_malleable(combinator),
+            Definition::BitsDef { .. } => true,
             Definition::ChoiceDef { combinator, .. } => self.choice_non_malleable(combinator),
             Definition::EnumDef { .. } => true,
             Definition::CombinatorDef { combinator, .. } => {
@@ -804,6 +1013,7 @@ impl<'a> Analysis<'a> {
                     }
                 })
             }
+            Some(Definition::BitsDef { .. }) => true,
             Some(Definition::ChoiceDef { combinator, .. }) => combinator
                 .choices
                 .iter()
@@ -848,6 +1058,7 @@ impl<'a> Analysis<'a> {
                     }
                 })
             }
+            Some(Definition::BitsDef { .. }) => true,
             Some(Definition::ChoiceDef { combinator, .. }) => combinator
                 .choices
                 .iter()
@@ -895,6 +1106,7 @@ impl<'a> Analysis<'a> {
 pub(crate) fn definition_name(def: &Definition) -> Option<&str> {
     match def {
         Definition::StructDef { name, .. }
+        | Definition::BitsDef { name, .. }
         | Definition::ChoiceDef { name, .. }
         | Definition::EnumDef { name, .. }
         | Definition::CombinatorDef { name, .. }
@@ -936,37 +1148,39 @@ pub(crate) fn syn_usize(n: usize) -> TokenStream {
 
 pub(crate) fn int_literal(value: i128, combinator: &vestir::IntCombinator) -> TokenStream {
     match combinator {
-        vestir::IntCombinator::Unsigned(8) => {
+        vestir::IntCombinator::Unsigned(bits) if (1..=8).contains(bits) => {
             let lit = proc_macro2::Literal::u8_unsuffixed(value as u8);
             quote! { #lit }
         }
-        vestir::IntCombinator::Unsigned(16) => {
+        vestir::IntCombinator::Unsigned(bits) if (9..=16).contains(bits) => {
             let lit = proc_macro2::Literal::u16_unsuffixed(value as u16);
             quote! { #lit }
         }
-        vestir::IntCombinator::Unsigned(24) | vestir::IntCombinator::Unsigned(32) => {
+        vestir::IntCombinator::Unsigned(bits) if (17..=32).contains(bits) => {
             let lit = proc_macro2::Literal::u32_unsuffixed(value as u32);
             quote! { #lit }
         }
-        vestir::IntCombinator::Unsigned(64)
-        | vestir::IntCombinator::BtcVarint
-        | vestir::IntCombinator::ULEB128 => {
+        vestir::IntCombinator::Unsigned(bits) if (33..=64).contains(bits) => {
             let lit = proc_macro2::Literal::u64_unsuffixed(value as u64);
             quote! { #lit }
         }
-        vestir::IntCombinator::Signed(8) => {
+        vestir::IntCombinator::BtcVarint | vestir::IntCombinator::ULEB128 => {
+            let lit = proc_macro2::Literal::u64_unsuffixed(value as u64);
+            quote! { #lit }
+        }
+        vestir::IntCombinator::Signed(bits) if (1..=8).contains(bits) => {
             let lit = proc_macro2::Literal::i8_unsuffixed(value as i8);
             quote! { #lit }
         }
-        vestir::IntCombinator::Signed(16) => {
+        vestir::IntCombinator::Signed(bits) if (9..=16).contains(bits) => {
             let lit = proc_macro2::Literal::i16_unsuffixed(value as i16);
             quote! { #lit }
         }
-        vestir::IntCombinator::Signed(32) => {
+        vestir::IntCombinator::Signed(bits) if (17..=32).contains(bits) => {
             let lit = proc_macro2::Literal::i32_unsuffixed(value as i32);
             quote! { #lit }
         }
-        vestir::IntCombinator::Signed(64) => {
+        vestir::IntCombinator::Signed(bits) if (33..=64).contains(bits) => {
             let lit = proc_macro2::Literal::i64_unsuffixed(value as i64);
             quote! { #lit }
         }

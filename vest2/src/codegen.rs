@@ -119,6 +119,9 @@ impl<'a> Analysis<'a> {
             Definition::EnumDef {
                 name, combinator, ..
             } => self.gen_enum_value_types(name, combinator),
+            Definition::BitsDef {
+                name, combinator, ..
+            } => self.gen_bits_value_types(name, combinator),
             Definition::CombinatorDef {
                 name, combinator, ..
             } => self.gen_combinator_value_types(name, combinator),
@@ -146,7 +149,18 @@ impl<'a> Analysis<'a> {
                 name,
                 combinator,
                 param_defns,
-            } => self.gen_enum_specs_section(name, combinator, param_defns),
+            } => {
+                if self.enum_is_bit_sized(combinator) {
+                    self.gen_enum_bit_helpers_section(name, combinator)
+                } else {
+                    self.gen_enum_specs_section(name, combinator, param_defns)
+                }
+            }
+            Definition::BitsDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_bits_specs_section(name, combinator, param_defns),
             Definition::CombinatorDef {
                 name,
                 combinator,
@@ -168,10 +182,16 @@ impl<'a> Analysis<'a> {
             | Definition::ChoiceDef {
                 name, param_defns, ..
             }
-            | Definition::EnumDef {
-                name, param_defns, ..
-            }
             | Definition::CombinatorDef {
+                name, param_defns, ..
+            } => self.gen_derived_specs_section_impl(name, param_defns),
+            Definition::BitsDef {
+                name, param_defns, ..
+            } => self.gen_derived_specs_section_impl_nonopaque(name, param_defns),
+            Definition::EnumDef { combinator, .. } if self.enum_is_bit_sized(combinator) => {
+                String::new()
+            }
+            Definition::EnumDef {
                 name, param_defns, ..
             } => self.gen_derived_specs_section_impl(name, param_defns),
             Definition::ConstCombinatorDef { name, .. } => format!(
@@ -189,10 +209,16 @@ impl<'a> Analysis<'a> {
             }
             | Definition::ChoiceDef {
                 name, param_defns, ..
+            } => self.gen_top_level_proofs_section(name, param_defns),
+            Definition::EnumDef { combinator, .. } if self.enum_is_bit_sized(combinator) => {
+                String::new()
             }
-            | Definition::EnumDef {
+            Definition::EnumDef {
                 name, param_defns, ..
             } => self.gen_top_level_proofs_section(name, param_defns),
+            Definition::BitsDef {
+                name, param_defns, ..
+            } => self.gen_bits_proofs_section(name, param_defns),
             Definition::CombinatorDef {
                 name,
                 combinator: _,
@@ -227,7 +253,18 @@ impl<'a> Analysis<'a> {
                 name,
                 combinator,
                 param_defns,
-            } => self.gen_enum_execs_section(name, combinator, param_defns),
+            } => {
+                if self.enum_is_bit_sized(combinator) {
+                    String::new()
+                } else {
+                    self.gen_enum_execs_section(name, combinator, param_defns)
+                }
+            }
+            Definition::BitsDef {
+                name,
+                combinator,
+                param_defns,
+            } => self.gen_bits_execs_section(name, combinator, param_defns),
             Definition::ConstCombinatorDef { name, .. } => format!(
                 "// TODO(execs): emit const-format exec wrappers for {}\n",
                 self.info(name).names.exec

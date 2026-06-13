@@ -5,6 +5,93 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl<'a> Analysis<'a> {
+    pub(crate) fn gen_bits_proofs_section(&self, name: &str, param_defns: &[ParamDefn]) -> String {
+        let info = self.info(name);
+        let fmt_ident = format_ident!("{}", info.names.fmt);
+        let inner_ident = info.names.spec_ctor_ident();
+        let generics = self.wrapper_generics(param_defns);
+        let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
+        let lemma_unpack_pack = format_ident!("lemma_{}_unpack_pack", name);
+        let lemma_pack_unpack = format_ident!("lemma_{}_pack_unpack", name);
+        let lemma_wf = format_ident!("lemma_{}_mapper_wf_in_out", name);
+
+        let safe =
+            self.gen_safe_parser_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let productive =
+            self.gen_productive_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let non_tail =
+            self.gen_non_tail_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let good =
+            self.gen_good_serializer_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let equiv_general =
+            self.gen_equiv_general_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let equiv = self.gen_equiv_impl(&fmt_ident, &inner_ident, &generics, &wrapper_call_args);
+        let reveal_ty = &fmt_ident;
+
+        let sound = quote! {
+            impl #generics SoundParser for #fmt_ident #generics {
+                proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+                    reveal(<#reveal_ty as SpecParser>::spec_parse);
+                    reveal(<#reveal_ty as SpecByteLen>::byte_len);
+                    let fmt = #fmt_ident::#inner_ident(#(#wrapper_call_args),*);
+                    broadcast use #lemma_unpack_pack, #lemma_wf;
+
+                    assert(fmt.1.sound_inv());
+                    fmt.lemma_parse_sound_consumption(ibuf);
+                }
+
+                proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+                    reveal(<#reveal_ty as SpecParser>::spec_parse);
+                    reveal(<#reveal_ty as Consistency>::consistent);
+                    broadcast use #lemma_unpack_pack, #lemma_wf;
+                    let fmt = #fmt_ident::#inner_ident(#(#wrapper_call_args),*);
+
+                    assert(fmt.1.sound_inv());
+                    fmt.lemma_parse_sound_value(ibuf);
+                }
+            }
+        };
+
+        let roundtrip = quote! {
+            impl #generics SPRoundTripDps for #fmt_ident #generics {
+                proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+                    reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps);
+                    reveal(<#reveal_ty as SpecByteLen>::byte_len);
+                    reveal(<#reveal_ty as SpecParser>::spec_parse);
+                    broadcast use #lemma_pack_unpack;
+
+                    let fmt = #fmt_ident::#inner_ident(#(#wrapper_call_args),*);
+                    assert(fmt.1.unambiguous());
+                    fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+                }
+            }
+        };
+
+        let non_malleable = quote! {
+            impl #generics NonMalleable for #fmt_ident #generics {
+                proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+                    reveal(<#reveal_ty as SpecParser>::spec_parse);
+                    broadcast use #lemma_unpack_pack, #lemma_wf;
+
+                    let fmt = #fmt_ident::#inner_ident(#(#wrapper_call_args),*);
+                    fmt.lemma_parse_non_malleable(buf1, buf2);
+                }
+            }
+        };
+
+        render_ts(quote! {
+            #safe
+            #productive
+            #sound
+            #non_tail
+            #good
+            #roundtrip
+            #non_malleable
+            #equiv_general
+            #equiv
+        })
+    }
+
     pub(crate) fn gen_top_level_proofs_section(
         &self,
         name: &str,

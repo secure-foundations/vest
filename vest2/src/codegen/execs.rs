@@ -1,8 +1,9 @@
-use super::common::{int_literal, syn_usize, Analysis, TypeMode};
+use super::common::{bits_tuple_pattern_tokens, int_literal, syn_usize, Analysis, TypeMode};
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
-    self, ChoiceCombinator, ChoicePattern, Combinator, ConstArray, ConstCombinator, EnumCombinator,
-    Param, ParamDefn, StructCombinator, StructField,
+    self, BitField, BitFieldCombinator, BitsCombinator, ChoiceCombinator, ChoicePattern,
+    Combinator, ConstArray, ConstCombinator, EnumCombinator, Param, ParamDefn, StructCombinator,
+    StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -243,6 +244,30 @@ impl<'a> Analysis<'a> {
             false,
         )
     }
+
+    pub(crate) fn gen_bits_execs_section(
+        &self,
+        name: &str,
+        combinator: &BitsCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let use_spinoff = combinator.0.len() > SPINOFF_PROVER_THRESHOLD;
+        self.gen_parser_serializer_prepare(
+            name,
+            param_defns,
+            |w| {
+                self.emit_bits_parser_body(w, name, combinator);
+            },
+            |w| {
+                self.emit_bits_serializer_body(w, name, combinator);
+            },
+            |w| {
+                self.emit_bits_prepare_body(w, name, combinator);
+            },
+            use_spinoff,
+            false,
+        )
+    }
 }
 
 // ============================================================
@@ -250,6 +275,213 @@ impl<'a> Analysis<'a> {
 // ============================================================
 
 impl<'a> Analysis<'a> {
+    fn emit_bits_parser_body(&self, w: &mut CodeWriter, name: &str, bits: &BitsCombinator) {
+        let layout = self.bits_layout(bits);
+        let exec_ident = format_ident!("{}", self.info(name).names.exec);
+        let repr_fmt = self.render_int_combinator_expr(&layout.repr_int);
+        let repr_fmt_str = render_ts(repr_fmt);
+        let unpack_ident = format_ident!("unpack_{}", name);
+        let unpack_str = unpack_ident.to_string();
+
+        let label_idents = layout
+            .fields
+            .iter()
+            .map(|f| format_ident!("{}", f.label))
+            .collect::<Vec<_>>();
+        let tuple_pat = render_ts(bits_tuple_pattern_tokens(&label_idents));
+
+        w.call_chain_stmt(
+            Some("(n, raw)"),
+            &repr_fmt_str,
+            "parse",
+            &["ibuf"],
+            Some("?;"),
+        );
+        w.line(format!("let {} = {}(raw);", tuple_pat, unpack_str));
+
+        for (idx, (field, layout_field)) in bits.0.iter().zip(&layout.fields).enumerate() {
+            let ident = &label_idents[idx];
+            let pred = match field.combinator() {
+                BitFieldCombinator::UInt(c) => c.constraint.as_ref().map(|constraint| {
+                    self.render_int_constraint(constraint, &c.combinator, quote! { #ident })
+                }),
+                BitFieldCombinator::Enum(_) if layout_field.is_closed_enum => {
+                    let values = self.enum_value_literals(layout_field.enum_name.as_ref().unwrap());
+                    Some(quote! { #(#ident == #values)||* })
+                }
+                _ => None,
+            };
+            if let Some(pred) = pred {
+                w.if_block(format!("!({})", render_ts(pred)), |w| {
+                    w.line("return Err(ParseError::predicate_failed());");
+                });
+            }
+        }
+
+        let ctor_fields = layout
+            .fields
+            .iter()
+            .zip(&label_idents)
+            .map(|(layout_field, raw_ident)| {
+                let field_ident = format_ident!("{}", layout_field.label);
+                let expr = if layout_field.is_enum {
+                    let from_bits =
+                        format_ident!("{}_from_bits", layout_field.enum_name.as_ref().unwrap());
+                    quote! { #from_bits(#raw_ident) }
+                } else {
+                    quote! { #raw_ident }
+                };
+                (field_ident, expr)
+            })
+            .collect::<Vec<_>>();
+        let fields_rendered = ctor_fields
+            .iter()
+            .map(|(ident, expr)| format!("{}: {}", ident, render_ts(expr.clone())))
+            .collect::<Vec<_>>();
+        w.record_constructor_stmt("final_v", &exec_ident.to_string(), &fields_rendered);
+        w.line("assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));");
+        w.line("Ok((n, final_v))");
+    }
+
+    fn emit_bits_serializer_body(&self, w: &mut CodeWriter, name: &str, bits: &BitsCombinator) {
+        let layout = self.bits_layout(bits);
+        let exec_ident = format_ident!("{}", self.info(name).names.exec);
+        let field_idents = layout
+            .fields
+            .iter()
+            .map(|f| format_ident!("{}", f.label))
+            .collect::<Vec<_>>();
+        w.push_multiline(render_ts(quote! {
+            let #exec_ident { #(#field_idents),* } = *v;
+        }));
+
+        let pack_ident = format_ident!("pack_{}", name);
+        let pack_args = layout
+            .fields
+            .iter()
+            .zip(&field_idents)
+            .map(|(layout_field, field_ident)| {
+                if layout_field.is_enum {
+                    let to_bits =
+                        format_ident!("{}_to_bits", layout_field.enum_name.as_ref().unwrap());
+                    render_ts(quote! { #to_bits(#field_ident) })
+                } else {
+                    field_ident.to_string()
+                }
+            })
+            .collect::<Vec<_>>();
+        w.line(format!(
+            "let packed = {}({});",
+            pack_ident,
+            pack_args.join(", ")
+        ));
+        let repr_fmt = self.render_int_combinator_expr(&layout.repr_int);
+        let repr_fmt_str = render_ts(repr_fmt);
+        w.call_chain_stmt(
+            None,
+            &repr_fmt_str,
+            "serialize",
+            &["&packed", "obuf"],
+            Some(";"),
+        );
+    }
+
+    fn emit_bits_prepare_body(&self, w: &mut CodeWriter, name: &str, bits: &BitsCombinator) {
+        let layout = self.bits_layout(bits);
+        let exec_ident = format_ident!("{}", self.info(name).names.exec);
+        let field_idents = layout
+            .fields
+            .iter()
+            .map(|f| format_ident!("{}", f.label))
+            .collect::<Vec<_>>();
+        w.push_multiline(render_ts(quote! {
+            let #exec_ident { #(#field_idents),* } = *v;
+        }));
+
+        let raw_exprs = layout
+            .fields
+            .iter()
+            .zip(&field_idents)
+            .map(|(layout_field, field_ident)| {
+                if layout_field.is_enum {
+                    let to_bits =
+                        format_ident!("{}_to_bits", layout_field.enum_name.as_ref().unwrap());
+                    quote! { #to_bits(#field_ident) }
+                } else {
+                    quote! { #field_ident }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let bounds_ident = format_ident!("{}_bounds", name);
+        w.if_block(
+            format!(
+                "!({})",
+                render_ts(quote! { #bounds_ident(#(#raw_exprs),*) })
+            ),
+            |w| {
+                w.line(
+                    "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                );
+            },
+        );
+
+        for (idx, (_, layout_field)) in bits.0.iter().zip(&layout.fields).enumerate() {
+            let field_ident = &field_idents[idx];
+
+            let consistency = if layout_field.is_enum && !layout_field.is_closed_enum {
+                let wf = format_ident!("{}_wf", layout_field.enum_name.as_ref().unwrap());
+                Some(quote! { #wf(#field_ident) })
+            } else {
+                None
+            };
+            if let Some(pred) = consistency {
+                w.if_block(format!("!({})", render_ts(pred)), |w| {
+                    w.line(
+                        "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                    );
+                });
+            }
+        }
+
+        for (idx, (field, layout_field)) in bits.0.iter().zip(&layout.fields).enumerate() {
+            let raw_expr = raw_exprs[idx].clone();
+
+            let refinement = match field.combinator() {
+                BitFieldCombinator::UInt(c) => c.constraint.as_ref().map(|constraint| {
+                    self.render_int_constraint(constraint, &c.combinator, raw_expr)
+                }),
+                BitFieldCombinator::Enum(_) if layout_field.is_closed_enum => {
+                    let values = self.enum_value_literals(layout_field.enum_name.as_ref().unwrap());
+                    Some(quote! { #(#raw_expr == #values)||* })
+                }
+                _ => None,
+            };
+
+            if let Some(pred) = refinement {
+                w.if_block(format!("!({})", render_ts(pred)), |w| {
+                    w.line(
+                        "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                    );
+                });
+            }
+        }
+
+        let pack_ident = format_ident!("pack_{}", name);
+        w.line(format!(
+            "let packed = {}({});",
+            pack_ident,
+            raw_exprs
+                .iter()
+                .map(|ts| render_ts(ts.clone()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+        let repr_fmt = self.render_int_combinator_expr(&layout.repr_int);
+        let repr_fmt_str = render_ts(repr_fmt);
+        w.line(format!("{}.prepare(&packed)", repr_fmt_str));
+    }
+
     fn emit_struct_parser_body(
         &self,
         w: &mut CodeWriter,
@@ -1497,39 +1729,77 @@ impl<'a> Analysis<'a> {
         dep: &str,
         param_defns: &[ParamDefn],
     ) -> Option<(&'a str, &'a EnumCombinator)> {
-        let base = dep.split('.').last().unwrap_or(dep);
-        let enum_name = self
-            .defs
-            .iter()
-            .find_map(|def| {
-                if let vestir::Definition::StructDef { combinator, .. } = def {
-                    combinator.0.iter().find_map(|field| match field {
-                        StructField::Dependent {
-                            label,
-                            combinator: Combinator::Invocation(inv),
-                        } if label == base => Some(inv.func.as_str()),
-                        _ => None,
-                    })
-                } else {
-                    None
-                }
-            })
-            .or_else(|| {
-                param_defns.iter().find_map(|p| match p {
-                    ParamDefn::Dependent {
-                        name,
-                        combinator: Combinator::Invocation(inv),
-                    } if name == base => Some(inv.func.as_str()),
-                    _ => None,
-                })
-            })?;
+        let resolved = self.resolve_dep_combinator_path(dep, param_defns)?;
+        let enum_name = match resolved {
+            Combinator::Invocation(inv) => inv.func,
+            _ => return None,
+        };
 
         self.defs.iter().find_map(|def| match def {
             vestir::Definition::EnumDef {
                 name, combinator, ..
-            } if name == enum_name => Some((name.as_str(), combinator)),
+            } if *name == enum_name => Some((name.as_str(), combinator)),
             _ => None,
         })
+    }
+
+    fn resolve_dep_combinator_path(
+        &self,
+        dep: &str,
+        param_defns: &[ParamDefn],
+    ) -> Option<Combinator> {
+        let mut parts = dep.split('.');
+        let root = parts.next()?;
+        let mut current = param_defns.iter().find_map(|p| match p {
+            ParamDefn::Dependent { name, combinator } if name == root => Some(combinator.clone()),
+            _ => None,
+        })?;
+
+        for field_name in parts {
+            loop {
+                match current {
+                    Combinator::Invocation(ref inv) => {
+                        let def = self
+                            .defs
+                            .iter()
+                            .find(|d| d.name() == Some(inv.func.as_str()))?;
+                        current = match def {
+                            vestir::Definition::StructDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    StructField::Dependent { label, combinator }
+                                    | StructField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(combinator.clone())
+                                    }
+                                    _ => None,
+                                })?
+                            }
+                            vestir::Definition::BitsDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    BitField::Dependent { label, combinator }
+                                    | BitField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(Combinator::from(combinator))
+                                    }
+                                    _ => None,
+                                })?
+                            }
+                            vestir::Definition::CombinatorDef { combinator, .. } => {
+                                current = combinator.clone();
+                                continue;
+                            }
+                            _ => return None,
+                        };
+                        break;
+                    }
+                    _ => return None,
+                }
+            }
+        }
+
+        Some(current)
     }
 
     fn const_array_bytes(&self, arr: &ConstArray) -> Option<Vec<u8>> {

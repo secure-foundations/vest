@@ -1,8 +1,12 @@
-use super::common::{int_literal, syn_usize, Analysis, FormatNames, TypeMode};
+use super::common::{
+    bits_tuple_expr_from_idents, bits_tuple_expr_tokens, bits_tuple_pattern_tokens,
+    bits_tuple_type_tokens, int_literal, syn_usize, Analysis, FormatNames, TypeMode,
+};
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
-    self, ChoiceCombinator, ChoicePattern, Combinator, ConstCombinator, ConstraintElem,
-    EnumCombinator, Param, ParamDefn, StructCombinator, StructField,
+    self, BitField, BitFieldCombinator, BitsCombinator, ChoiceCombinator, ChoicePattern,
+    Combinator, ConstCombinator, ConstraintElem, EnumCombinator, Param, ParamDefn,
+    StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -13,6 +17,19 @@ struct RenderedSpec {
     expr: TokenStream,
     value_ty: TokenStream,
     has_value: bool,
+}
+
+struct RenderedBitsField {
+    label_ident: proc_macro2::Ident,
+    carrier_ty: TokenStream,
+    logical_width: u8,
+    carrier_width: u8,
+    mask: u64,
+    shift: usize,
+    mask_ident: proc_macro2::Ident,
+    shift_ident: proc_macro2::Ident,
+    max_ident: proc_macro2::Ident,
+    max_ty: TokenStream,
 }
 
 impl RenderedSpec {
@@ -62,6 +79,17 @@ impl<'a> Analysis<'a> {
         })
     }
 
+    pub(crate) fn gen_bits_specs_section(
+        &self,
+        name: &str,
+        combinator: &BitsCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_wrapped_specs_section(name, param_defns, || {
+            self.gen_bits_format_spec_alias_and_ctor(name, combinator, param_defns)
+        })
+    }
+
     pub(crate) fn gen_enum_specs_section(
         &self,
         name: &str,
@@ -71,6 +99,140 @@ impl<'a> Analysis<'a> {
         self.gen_wrapped_specs_section(name, param_defns, || {
             self.gen_enum_format_spec_alias_and_ctor(name, combinator, param_defns)
         })
+    }
+
+    pub(crate) fn gen_enum_bit_helpers_section(
+        &self,
+        name: &str,
+        combinator: &EnumCombinator,
+    ) -> String {
+        let info = self.info(name);
+        let exec_ident = format_ident!("{}", info.names.exec);
+        let inferred = match combinator {
+            EnumCombinator::Exhaustive { inferred, .. }
+            | EnumCombinator::NonExhaustive { inferred, .. } => inferred,
+        };
+        let repr_ty = self.render_int_type(inferred);
+        let from_bits_ident = format_ident!("{}_from_bits", name);
+        let to_bits_ident = format_ident!("{}_to_bits", name);
+        let wf_ident = format_ident!("{}_wf", name);
+
+        let variants = match combinator {
+            EnumCombinator::Exhaustive { enums, .. }
+            | EnumCombinator::NonExhaustive { enums, .. } => enums.as_slice(),
+        };
+        let variant_idents = variants
+            .iter()
+            .map(|variant| format_ident!("{}", variant.name))
+            .collect::<Vec<_>>();
+        let variant_values = variants
+            .iter()
+            .map(|variant| int_literal(variant.value, inferred))
+            .collect::<Vec<_>>();
+        let variant_value_exprs = variant_values
+            .iter()
+            .map(|value| quote! { (#value as #repr_ty) })
+            .collect::<Vec<_>>();
+
+        let from_bits_arms = variant_idents
+            .iter()
+            .zip(variant_values.iter())
+            .map(|(ident, value)| quote! { #value => #exec_ident::#ident, })
+            .collect::<Vec<_>>();
+        let to_bits_arms = variant_idents
+            .iter()
+            .zip(variant_value_exprs.iter())
+            .map(|(ident, value)| quote! { #exec_ident::#ident => #value, })
+            .collect::<Vec<_>>();
+
+        match combinator {
+            EnumCombinator::Exhaustive { .. } => {
+                let fallback_ident = variant_idents
+                    .last()
+                    .expect("bit-sized enum must have at least one variant");
+                render_ts(quote! {
+                    #[verifier::allow_in_spec]
+                    pub fn #from_bits_ident(bits: #repr_ty) -> #exec_ident
+                        returns
+                            match bits {
+                                #(#variant_values => #exec_ident::#variant_idents,)*
+                                _ => #exec_ident::#fallback_ident,
+                            },
+                    {
+                        match bits {
+                            #(#from_bits_arms)*
+                            _ => #exec_ident::#fallback_ident,
+                        }
+                    }
+
+                    #[verifier::allow_in_spec]
+                    pub fn #to_bits_ident(kind: #exec_ident) -> #repr_ty
+                        returns
+                            match kind {
+                                #(#exec_ident::#variant_idents => #variant_value_exprs,)*
+                            },
+                    {
+                        match kind {
+                            #(#to_bits_arms)*
+                        }
+                    }
+                })
+            }
+            EnumCombinator::NonExhaustive { .. } => {
+                let wf_terms = variant_values
+                    .iter()
+                    .map(|value| quote! { x != #value })
+                    .collect::<Vec<_>>();
+                let wf_body = if wf_terms.is_empty() {
+                    quote! { true }
+                } else {
+                    quote! { #(#wf_terms)&&* }
+                };
+                render_ts(quote! {
+                    #[verifier::allow_in_spec]
+                    pub fn #wf_ident(kind: #exec_ident) -> bool
+                        returns
+                            match kind {
+                                #(#exec_ident::#variant_idents => true,)*
+                                #exec_ident::Unknown(x) => #wf_body,
+                            },
+                    {
+                        match kind {
+                            #(#exec_ident::#variant_idents => true,)*
+                            #exec_ident::Unknown(x) => #wf_body,
+                        }
+                    }
+
+                    #[verifier::allow_in_spec]
+                    pub fn #from_bits_ident(bits: #repr_ty) -> #exec_ident
+                        returns
+                            match bits {
+                                #(#variant_values => #exec_ident::#variant_idents,)*
+                                _ => #exec_ident::Unknown(bits),
+                            },
+                    {
+                        match bits {
+                            #(#from_bits_arms)*
+                            _ => #exec_ident::Unknown(bits),
+                        }
+                    }
+
+                    #[verifier::allow_in_spec]
+                    pub fn #to_bits_ident(kind: #exec_ident) -> #repr_ty
+                        returns
+                            match kind {
+                                #(#exec_ident::#variant_idents => #variant_value_exprs,)*
+                                #exec_ident::Unknown(x) => x,
+                            },
+                    {
+                        match kind {
+                            #(#to_bits_arms)*
+                            #exec_ident::Unknown(x) => x,
+                        }
+                    }
+                })
+            }
+        }
     }
 
     pub(crate) fn gen_specs_section(
@@ -89,6 +251,23 @@ impl<'a> Analysis<'a> {
         name: &str,
         param_defns: &[ParamDefn],
     ) -> String {
+        self.gen_derived_specs_section_impl_with_opaque(name, param_defns, true)
+    }
+
+    pub(crate) fn gen_derived_specs_section_impl_nonopaque(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        self.gen_derived_specs_section_impl_with_opaque(name, param_defns, false)
+    }
+
+    fn gen_derived_specs_section_impl_with_opaque(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+        use_opaque_for_zero_arity: bool,
+    ) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
         let inner_ident = info.names.spec_ctor_ident();
@@ -102,6 +281,7 @@ impl<'a> Analysis<'a> {
             &wrapper_generics,
             &wrapper_call_args,
             &top_value_ty,
+            use_opaque_for_zero_arity,
         )
     }
 
@@ -157,6 +337,23 @@ impl<'a> Analysis<'a> {
         )
     }
 
+    fn gen_bits_format_spec_alias_and_ctor(
+        &self,
+        name: &str,
+        combinator: &BitsCombinator,
+        param_defns: &[ParamDefn],
+    ) -> String {
+        let mut out = CodeWriter::new();
+        out.push_multiline(self.gen_bits_helpers(name, combinator));
+        out.blank_line();
+        out.push_multiline(self.gen_named_top_level_spec_alias_and_ctor(
+            name,
+            self.render_bits_top_level(name, combinator),
+            param_defns,
+        ));
+        out.finish()
+    }
+
     fn gen_named_top_level_spec_alias_and_ctor(
         &self,
         name: &str,
@@ -196,8 +393,9 @@ impl<'a> Analysis<'a> {
         wrapper_generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
+        use_opaque_for_zero_arity: bool,
     ) -> String {
-        let opaque = if wrapper_generics.is_empty() {
+        let opaque = if use_opaque_for_zero_arity && wrapper_generics.is_empty() {
             quote! { #[verifier::opaque] }
         } else {
             quote! {}
@@ -743,6 +941,445 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    fn gen_bits_helpers(&self, name: &str, bits_comb: &BitsCombinator) -> String {
+        let layout = self.bits_layout(bits_comb);
+        let repr_int = layout.repr_int;
+        let repr_ty = self.render_int_type(&repr_int);
+        let format_upper = shouty_snake_case(name);
+
+        let mut fields_info = Vec::new();
+        for field in &layout.fields {
+            let label = field.label.clone();
+            let label_ident = format_ident!("{}", label);
+            let field_upper = shouty_snake_case(&label);
+            let carrier_ty = self.render_int_type(&field.carrier_ty);
+            let logical_width = field.logical_width;
+            let carrier_width = field.carrier_ty.carrier_width();
+            let mask = field.mask;
+            let shift = field.shift as usize;
+
+            let mask_ident = format_ident!("{}_{}_MASK", format_upper, field_upper);
+            let shift_ident = format_ident!("{}_{}_SHIFT", format_upper, field_upper);
+            let max_ident = format_ident!("{}_{}_MAX", format_upper, field_upper);
+
+            let max_ty = if logical_width == 8
+                || logical_width == 16
+                || logical_width == 32
+                || logical_width == 64
+            {
+                let next_width = match logical_width {
+                    8 => 16,
+                    16 => 32,
+                    32 => 64,
+                    _ => 64,
+                };
+                let next_int_ty = vestir::IntCombinator::Unsigned(next_width);
+                self.render_int_type(&next_int_ty)
+            } else {
+                carrier_ty.clone()
+            };
+
+            fields_info.push(RenderedBitsField {
+                label_ident,
+                carrier_ty,
+                logical_width,
+                carrier_width,
+                mask,
+                shift,
+                mask_ident,
+                shift_ident,
+                max_ident,
+                max_ty,
+            });
+        }
+
+        let consts_block = self.gen_bits_constants(&repr_int, &repr_ty, &fields_info);
+        let unpack_fn = self.gen_bits_unpack(name, &repr_ty, &fields_info);
+        let pack_fn = self.gen_bits_pack(name, &repr_int, &repr_ty, &fields_info);
+        let bounds_fn = self.gen_bits_bounds(name, &fields_info);
+        let lemmas = self.gen_bits_bv_lemmas(name, &repr_ty, &fields_info);
+
+        render_ts(quote! {
+            #consts_block
+            #unpack_fn
+            #pack_fn
+            #bounds_fn
+            #lemmas
+        })
+    }
+
+    fn gen_bits_constants(
+        &self,
+        repr_int: &vestir::IntCombinator,
+        repr_ty: &TokenStream,
+        fields: &[RenderedBitsField],
+    ) -> TokenStream {
+        let consts = fields.iter().map(|f| {
+            let mask_ident = &f.mask_ident;
+            let shift_ident = &f.shift_ident;
+            let shift_lit = syn_usize(f.shift);
+            let mask_lit = bit_mask_literal(f.mask, repr_int);
+            if f.logical_width < f.carrier_width {
+                let max_ident = &f.max_ident;
+                let carrier_ty = &f.max_ty;
+                let max_val = 1u64 << f.logical_width;
+                let max_int_ty = vestir::IntCombinator::Unsigned(f.carrier_width);
+                let max_lit = bit_mask_literal(max_val, &max_int_ty);
+                quote! {
+                    pub const #mask_ident: #repr_ty = #mask_lit;
+                    pub const #shift_ident: #repr_ty = #shift_lit;
+                    pub const #max_ident: #carrier_ty = #max_lit;
+                }
+            } else {
+                quote! {
+                    pub const #mask_ident: #repr_ty = #mask_lit;
+                    pub const #shift_ident: #repr_ty = #shift_lit;
+                }
+            }
+        });
+        quote! {
+            #(#consts)*
+        }
+    }
+
+    fn gen_bits_unpack(
+        &self,
+        name: &str,
+        repr_ty: &TokenStream,
+        fields: &[RenderedBitsField],
+    ) -> TokenStream {
+        let unpack_ident = format_ident!("unpack_{}", name);
+        let tys = fields
+            .iter()
+            .map(|f| f.carrier_ty.clone())
+            .collect::<Vec<_>>();
+        let tuple_ty = bits_tuple_type_tokens(&tys);
+        let unpack_elems = fields
+            .iter()
+            .map(|f| {
+                let mask_ident = &f.mask_ident;
+                let shift_ident = &f.shift_ident;
+                let field_ty = &f.carrier_ty;
+                if f.shift == 0 {
+                    quote! { ((raw & #mask_ident) as #field_ty) }
+                } else {
+                    quote! { (((raw >> #shift_ident) & #mask_ident) as #field_ty) }
+                }
+            })
+            .collect::<Vec<_>>();
+        let unpack_tuple = bits_tuple_expr_tokens(&unpack_elems);
+        quote! {
+            #[verifier::allow_in_spec]
+            pub fn #unpack_ident(raw: #repr_ty) -> #tuple_ty
+                returns
+                    #unpack_tuple,
+            {
+                #unpack_tuple
+            }
+        }
+    }
+
+    fn gen_bits_pack(
+        &self,
+        name: &str,
+        repr_int: &vestir::IntCombinator,
+        repr_ty: &TokenStream,
+        fields: &[RenderedBitsField],
+    ) -> TokenStream {
+        let pack_ident = format_ident!("pack_{}", name);
+        let pack_params = fields
+            .iter()
+            .map(|f| {
+                let ident = &f.label_ident;
+                let field_ty = &f.carrier_ty;
+                quote! { #ident: #field_ty }
+            })
+            .collect::<Vec<_>>();
+        let pack_terms = fields
+            .iter()
+            .map(|f| {
+                let ident = &f.label_ident;
+                let mask_ident = &f.mask_ident;
+                let shift_ident = &f.shift_ident;
+                if f.shift == 0 {
+                    quote! { (((#ident as #repr_ty) & #mask_ident)) }
+                } else {
+                    quote! { (((#ident as #repr_ty) & #mask_ident) << #shift_ident) }
+                }
+            })
+            .collect::<Vec<_>>();
+        let pack_expr = pack_terms
+            .into_iter()
+            .reduce(|acc, term| quote! { #acc | #term })
+            .unwrap_or_else(|| {
+                let zero_lit = bit_mask_literal(0, repr_int);
+                quote! { #zero_lit }
+            });
+        quote! {
+            #[verifier::allow_in_spec]
+            pub fn #pack_ident(#(#pack_params),*) -> #repr_ty
+                returns
+                    #pack_expr,
+            {
+                #pack_expr
+            }
+        }
+    }
+
+    fn gen_bits_bounds(&self, name: &str, fields: &[RenderedBitsField]) -> TokenStream {
+        let bounds_ident = format_ident!("{}_bounds", name);
+        let pack_params = fields
+            .iter()
+            .map(|f| {
+                let ident = &f.label_ident;
+                let field_ty = &f.carrier_ty;
+                quote! { #ident: #field_ty }
+            })
+            .collect::<Vec<_>>();
+        let bounds_terms = fields
+            .iter()
+            .filter(|f| f.logical_width < f.carrier_width)
+            .map(|f| {
+                let ident = &f.label_ident;
+                let max_ident = &f.max_ident;
+                quote! { (#ident < #max_ident) }
+            })
+            .collect::<Vec<_>>();
+        let bounds_expr = if bounds_terms.is_empty() {
+            quote! { true }
+        } else {
+            quote! { #(#bounds_terms)&&* }
+        };
+        quote! {
+            #[verifier::allow_in_spec]
+            pub fn #bounds_ident(#(#pack_params),*) -> bool
+                returns
+                    #bounds_expr,
+            {
+                #bounds_expr
+            }
+        }
+    }
+
+    fn gen_bits_bv_lemmas(
+        &self,
+        name: &str,
+        repr_ty: &TokenStream,
+        fields: &[RenderedBitsField],
+    ) -> TokenStream {
+        let unpack_ident = format_ident!("unpack_{}", name);
+        let pack_ident = format_ident!("pack_{}", name);
+        let bounds_ident = format_ident!("{}_bounds", name);
+        let unpack_proof_ident = format_ident!("lemma_{}_unpack_pack", name);
+        let pack_proof_ident = format_ident!("lemma_{}_pack_unpack", name);
+        let wf_proof_ident = format_ident!("lemma_{}_mapper_wf_in_out", name);
+
+        let label_idents = fields.iter().map(|f| &f.label_ident).collect::<Vec<_>>();
+        let pack_params = fields
+            .iter()
+            .map(|f| {
+                let ident = &f.label_ident;
+                let field_ty = &f.carrier_ty;
+                quote! { #ident: #field_ty }
+            })
+            .collect::<Vec<_>>();
+
+        let unpack_components = (0..fields.len())
+            .map(|idx| {
+                let tuple = quote! { #unpack_ident(raw) };
+                tuple_index_expr(tuple, idx)
+            })
+            .collect::<Vec<_>>();
+        let unpack_i_components = (0..fields.len())
+            .map(|idx| {
+                let tuple = quote! { #unpack_ident(i) };
+                tuple_index_expr(tuple, idx)
+            })
+            .collect::<Vec<_>>();
+        let pack_unpack_ensures = label_idents
+            .iter()
+            .enumerate()
+            .map(|(idx, ident)| {
+                let unpacked_idx = tuple_index_expr(
+                    quote! { #unpack_ident(#pack_ident(#(#label_idents),*)) },
+                    idx,
+                );
+                quote! { #unpacked_idx == #ident }
+            })
+            .collect::<Vec<_>>();
+
+        quote! {
+            pub broadcast proof fn #unpack_proof_ident(raw: #repr_ty)
+                by (bit_vector)
+                ensures
+                    #[trigger] #pack_ident(#(#unpack_components),*) == raw,
+            {
+            }
+
+            pub broadcast proof fn #pack_proof_ident(#(#pack_params),*)
+                by (bit_vector)
+                requires
+                    #[trigger] #bounds_ident(#(#label_idents),*),
+                ensures
+                    #(#pack_unpack_ensures,)*
+            {
+            }
+
+            pub broadcast proof fn #wf_proof_ident(i: #repr_ty)
+                by (bit_vector)
+                ensures
+                    #[trigger] #bounds_ident(#(#unpack_i_components),*),
+            {
+            }
+        }
+    }
+
+    fn render_bits_top_level(&self, name: &str, bits_comb: &BitsCombinator) -> RenderedSpec {
+        let info = self.info(name);
+        let spec_ident = format_ident!("{}", info.names.spec);
+        let layout = self.bits_layout(bits_comb);
+        let repr_int = &layout.repr_int;
+        let repr_fmt_ty = self.render_int_combinator_ty(repr_int);
+        let repr_fmt_expr = self.render_int_combinator_expr(repr_int);
+        let repr_value_ty = self.render_int_type(repr_int);
+
+        let tys = layout
+            .fields
+            .iter()
+            .map(|f| self.render_int_type(&f.carrier_ty))
+            .collect::<Vec<_>>();
+        let tuple_ty = bits_tuple_type_tokens(&tys);
+
+        let unpack_ident = format_ident!("unpack_{}", name);
+        let pack_ident = format_ident!("pack_{}", name);
+        let bounds_ident = format_ident!("{}_bounds", name);
+
+        let label_idents = layout
+            .fields
+            .iter()
+            .map(|f| format_ident!("{}", f.label))
+            .collect::<Vec<_>>();
+        let tuple_pat = bits_tuple_pattern_tokens(&label_idents);
+        let tuple_expr = bits_tuple_expr_from_idents(&label_idents);
+
+        let ctor_fields = layout
+            .fields
+            .iter()
+            .zip(&label_idents)
+            .map(|(field, ident)| {
+                let field_ident = format_ident!("{}", field.label);
+                if field.is_enum {
+                    let from_bits =
+                        format_ident!("{}_from_bits", field.enum_name.as_ref().unwrap());
+                    quote! { #field_ident: #from_bits(#ident) }
+                } else {
+                    quote! { #field_ident: #ident }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let dtor_lets = layout
+            .fields
+            .iter()
+            .zip(&label_idents)
+            .filter_map(|(field, ident)| {
+                let field_ident = format_ident!("{}", field.label);
+                if field.is_enum {
+                    let to_bits = format_ident!("{}_to_bits", field.enum_name.as_ref().unwrap());
+                    Some(quote! { let #ident = #to_bits(#field_ident); })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let bounds_args = layout
+            .fields
+            .iter()
+            .map(|field| {
+                let field_ident = format_ident!("{}", field.label);
+                if field.is_enum {
+                    let to_bits = format_ident!("{}_to_bits", field.enum_name.as_ref().unwrap());
+                    quote! { #to_bits(#field_ident) }
+                } else {
+                    quote! { #field_ident }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let refinement_terms = bits_comb
+            .0
+            .iter()
+            .zip(&layout.fields)
+            .zip(&label_idents)
+            .filter_map(|((field, layout_field), ident)| match field.combinator() {
+                BitFieldCombinator::UInt(c) => c.constraint.as_ref().map(|constraint| {
+                    self.render_int_constraint(constraint, &c.combinator, quote! { #ident })
+                }),
+                BitFieldCombinator::Enum(inv) if layout_field.is_closed_enum => {
+                    let values = self.bits_enum_value_literals(inv);
+                    Some(quote! { (#(#ident == #values)||*) })
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let refinement_expr = if refinement_terms.is_empty() {
+            quote! { true }
+        } else {
+            fold_bool_and(refinement_terms)
+        };
+
+        let consistency_terms = layout
+            .fields
+            .iter()
+            .filter_map(|layout_field| {
+                let field_ident = format_ident!("{}", layout_field.label);
+                if layout_field.is_enum && !layout_field.is_closed_enum {
+                    let wf = format_ident!("{}_wf", layout_field.enum_name.as_ref().unwrap());
+                    Some(quote! { #wf(#field_ident) })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let consistency_body = {
+            let mut terms = consistency_terms.clone();
+            terms.push(quote! { #bounds_ident(#(#bounds_args),*) });
+            fold_bool_and(terms)
+        };
+
+        let ty = quote! { Bits<#repr_fmt_ty, #tuple_ty, #spec_ident> };
+        let expr = quote! {
+            Bits {
+                repr: #repr_fmt_expr,
+                unpack: |packed: #repr_value_ty| #unpack_ident(packed),
+                pack: |unpacked: #tuple_ty| {
+                    let #tuple_pat = unpacked;
+                    #pack_ident(#(#label_idents),*)
+                },
+                refinement: |unpacked: #tuple_ty| {
+                    let #tuple_pat = unpacked;
+                    #refinement_expr
+                },
+                ctor: |unpacked: #tuple_ty| {
+                    let #tuple_pat = unpacked;
+                    #spec_ident { #(#ctor_fields),* }
+                },
+                dtor: |value: #spec_ident| {
+                    let #spec_ident { #(#label_idents),* } = value;
+                    #(#dtor_lets)*
+                    #tuple_expr
+                },
+                consistent: |value: #spec_ident| {
+                    let #spec_ident { #(#label_idents),* } = value;
+                    #consistency_body
+                },
+            }
+        };
+        RenderedSpec::new(ty, expr, quote! { #spec_ident }, true)
+    }
+
     fn render_choice_top_level(&self, name: &str, choice_comb: &ChoiceCombinator) -> RenderedSpec {
         let info = self.info(name);
         let spec_ident = format_ident!("{}", info.names.spec);
@@ -1161,48 +1798,130 @@ impl<'a> Analysis<'a> {
             .depend_id
             .as_ref()
             .expect("enum choice should be dependent");
-        let dep_base = dep.split('.').next().unwrap();
-        if let Some(owner_name) = owner_name {
-            if let Some(ty) =
-                self.param_defns_for(owner_name)
-                    .iter()
-                    .find_map(|param| match param {
-                        ParamDefn::Dependent { name, combinator } if name == dep_base => {
-                            if let Combinator::Invocation(inv) = combinator {
-                                Some(self.render_nominal_type(&inv.func, TypeMode::Spec))
-                            } else {
-                                None
+        let param_defns = owner_name
+            .map(|name| self.param_defns_for(name))
+            .unwrap_or(&[]);
+        let resolved = self
+            .resolve_dep_combinator_path_spec(dep, param_defns)
+            .unwrap_or_else(|| panic!("could not resolve enum pattern type for `{variant_name}`"));
+        match resolved {
+            Combinator::Invocation(inv) => self.render_nominal_type(&inv.func, TypeMode::Spec),
+            _ => panic!("enum pattern `{variant_name}` does not resolve to an enum invocation"),
+        }
+    }
+
+    fn resolve_dep_combinator_path_spec(
+        &self,
+        dep: &str,
+        param_defns: &[ParamDefn],
+    ) -> Option<Combinator> {
+        let mut parts = dep.split('.');
+        let root = parts.next()?;
+        let mut current = param_defns.iter().find_map(|p| match p {
+            ParamDefn::Dependent { name, combinator } if name == root => Some(combinator.clone()),
+            _ => None,
+        })?;
+
+        for field_name in parts {
+            loop {
+                match current {
+                    Combinator::Invocation(ref inv) => {
+                        let def = self
+                            .defs
+                            .iter()
+                            .find(|d| d.name() == Some(inv.func.as_str()))?;
+                        current = match def {
+                            vestir::Definition::StructDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    StructField::Dependent { label, combinator }
+                                    | StructField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(combinator.clone())
+                                    }
+                                    _ => None,
+                                })?
                             }
-                        }
-                        _ => None,
-                    })
-            {
-                return ty;
+                            vestir::Definition::BitsDef { combinator, .. } => {
+                                combinator.0.iter().find_map(|field| match field {
+                                    BitField::Dependent { label, combinator }
+                                    | BitField::Ordinary { label, combinator }
+                                        if label == field_name =>
+                                    {
+                                        Some(Combinator::from(combinator))
+                                    }
+                                    _ => None,
+                                })?
+                            }
+                            vestir::Definition::CombinatorDef { combinator, .. } => {
+                                current = combinator.clone();
+                                continue;
+                            }
+                            _ => return None,
+                        };
+                        break;
+                    }
+                    _ => return None,
+                }
             }
         }
+
+        Some(current)
+    }
+
+    fn bits_enum_info(
+        &self,
+        invocation: &vestir::CombinatorInvocation,
+    ) -> (&[vestir::Enum], u8, bool) {
         let def = self
             .defs
             .iter()
-            .find_map(|def| match def {
-                vestir::Definition::StructDef { combinator, .. } => {
-                    combinator.0.iter().find_map(|field| match field {
-                        StructField::Dependent { label, combinator } if label == dep_base => {
-                            if let Combinator::Invocation(inv) = combinator {
-                                Some(self.render_nominal_type(&inv.func, TypeMode::Spec))
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None,
-                    })
-                }
-                _ => None,
-            })
-            .unwrap_or_else(|| {
-                let name = variant_name;
-                panic!("could not resolve enum pattern type for `{name}`")
-            });
-        def
+            .find(|d| d.name() == Some(invocation.func.as_str()))
+            .unwrap_or_else(|| panic!("unknown enum {}", invocation.func));
+        match def {
+            vestir::Definition::EnumDef { combinator, .. } => match combinator {
+                vestir::EnumCombinator::Exhaustive { enums, inferred } => (
+                    enums.as_slice(),
+                    match inferred {
+                        vestir::IntCombinator::Unsigned(bits) => *bits,
+                        _ => panic!("bitfield enum must be unsigned"),
+                    },
+                    true,
+                ),
+                vestir::EnumCombinator::NonExhaustive { enums, inferred } => (
+                    enums.as_slice(),
+                    match inferred {
+                        vestir::IntCombinator::Unsigned(bits) => *bits,
+                        _ => panic!("bitfield enum must be unsigned"),
+                    },
+                    false,
+                ),
+            },
+            _ => panic!("{} is not an enum", invocation.func),
+        }
+    }
+
+    fn bits_enum_value_literals(
+        &self,
+        invocation: &vestir::CombinatorInvocation,
+    ) -> Vec<TokenStream> {
+        let (enums, _, _) = self.bits_enum_info(invocation);
+        let enum_def = self
+            .defs
+            .iter()
+            .find(|d| d.name() == Some(invocation.func.as_str()))
+            .unwrap();
+        let inferred = match enum_def {
+            vestir::Definition::EnumDef { combinator, .. } => match combinator {
+                vestir::EnumCombinator::Exhaustive { inferred, .. }
+                | vestir::EnumCombinator::NonExhaustive { inferred, .. } => inferred,
+            },
+            _ => unreachable!(),
+        };
+        enums
+            .iter()
+            .map(|variant| int_literal(variant.value, inferred))
+            .collect()
     }
 
     fn spec_param_list(&self, param_defns: &[ParamDefn]) -> Vec<TokenStream> {
@@ -1377,7 +2096,7 @@ fn fold_bool_or(mut terms: Vec<TokenStream>) -> TokenStream {
         .expect("boolean disjunction requires at least one term");
     terms
         .into_iter()
-        .fold(first, |acc, term| quote! { #acc || #term })
+        .fold(first, |acc, term| quote! { (#acc) || (#term) })
 }
 
 fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
@@ -1387,7 +2106,7 @@ fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
         .expect("boolean conjunction requires at least one term");
     terms
         .into_iter()
-        .fold(first, |acc, term| quote! { #acc && #term })
+        .fold(first, |acc, term| quote! { (#acc) && (#term) })
 }
 
 fn nested_tuple_pattern(labels: &[String]) -> TokenStream {
@@ -1438,6 +2157,46 @@ fn nested_tuple_value_expr_idents(idents: &[proc_macro2::Ident]) -> TokenStream 
             quote! { (#first, #rest) }
         }
     }
+}
+
+fn tuple_index_expr(base: TokenStream, idx: usize) -> TokenStream {
+    let index = proc_macro2::Literal::usize_unsuffixed(idx);
+    quote! { #base.#index }
+}
+
+fn shouty_snake_case(s: &str) -> String {
+    let mut shouty = String::new();
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            shouty.push(c.to_ascii_uppercase());
+        } else {
+            shouty.push('_');
+        }
+    }
+    shouty
+}
+
+fn bit_mask_literal(mask: u64, int_ty: &vestir::IntCombinator) -> TokenStream {
+    let width = match int_ty {
+        vestir::IntCombinator::Signed(bits) | vestir::IntCombinator::Unsigned(bits) => match bits {
+            1..=8 => 8,
+            9..=16 => 16,
+            17..=32 => 32,
+            33..=64 => 64,
+            _ => 64,
+        },
+        _ => 64,
+    };
+    let binary_str = match width {
+        8 => format!("0b{:08b}", mask),
+        16 => format!("0b{:016b}", mask),
+        32 => format!("0b{:032b}", mask),
+        64 => format!("0b{:064b}", mask),
+        _ => format!("0b{:b}", mask),
+    };
+    let suffix = format!("u{width}");
+    let lit_str = format!("{binary_str}{suffix}");
+    lit_str.parse().unwrap()
 }
 
 fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> TokenStream {

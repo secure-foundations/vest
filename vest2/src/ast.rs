@@ -77,6 +77,7 @@ pub struct Combinator<'i> {
 pub enum CombinatorInner<'i> {
     ConstraintInt(ConstraintIntCombinator<'i>),
     ConstraintEnum(ConstraintEnumCombinator<'i>),
+    Bits(BitsCombinator<'i>),
     Struct(StructCombinator<'i>),
     Wrap(WrapCombinator<'i>),
     Enum(EnumCombinator<'i>),
@@ -91,6 +92,123 @@ pub enum CombinatorInner<'i> {
         name: String,
         args: Vec<CombinatorInner<'i>>,
     },
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub struct BitsCombinator<'i> {
+    pub fields: Vec<BitField<'i>>,
+    pub span: Span<'i>,
+}
+
+impl PartialEq for BitsCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.fields == other.fields
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum BitFieldCombinator<'i> {
+    UInt {
+        width: u8,
+        constraint: Option<IntConstraint<'i>>,
+        span: Span<'i>,
+    },
+    Invocation(CombinatorInvocation<'i>),
+}
+
+impl<'i> From<&BitFieldCombinator<'i>> for Combinator<'i> {
+    fn from(bfc: &BitFieldCombinator<'i>) -> Self {
+        match bfc {
+            BitFieldCombinator::UInt {
+                width,
+                constraint,
+                span,
+            } => Combinator {
+                inner: CombinatorInner::ConstraintInt(ConstraintIntCombinator {
+                    combinator: IntCombinator::Unsigned(*width),
+                    constraint: constraint.clone(),
+                    span: *span,
+                }),
+                and_then: None,
+                span: *span,
+            },
+            BitFieldCombinator::Invocation(inv) => {
+                let span = inv.span;
+                Combinator {
+                    inner: CombinatorInner::Invocation(inv.clone()),
+                    and_then: None,
+                    span,
+                }
+            }
+        }
+    }
+}
+
+impl<'i> BitFieldCombinator<'i> {
+    pub fn as_combinator(&self) -> Combinator<'i> {
+        Combinator::from(self)
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub enum BitField<'i> {
+    Dependent {
+        label: Identifier<'i>,
+        combinator: BitFieldCombinator<'i>,
+        span: Span<'i>,
+    },
+    Ordinary {
+        label: Identifier<'i>,
+        combinator: BitFieldCombinator<'i>,
+        span: Span<'i>,
+    },
+}
+
+impl<'i> BitField<'i> {
+    pub fn label(&self) -> &Identifier<'i> {
+        match self {
+            BitField::Dependent { label, .. } | BitField::Ordinary { label, .. } => label,
+        }
+    }
+    pub fn combinator(&self) -> &BitFieldCombinator<'i> {
+        match self {
+            BitField::Dependent { combinator, .. } | BitField::Ordinary { combinator, .. } => {
+                combinator
+            }
+        }
+    }
+}
+
+impl PartialEq for BitField<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                BitField::Dependent {
+                    label: l1,
+                    combinator: c1,
+                    ..
+                },
+                BitField::Dependent {
+                    label: l2,
+                    combinator: c2,
+                    ..
+                },
+            ) => l1 == l2 && c1 == c2,
+            (
+                BitField::Ordinary {
+                    label: l1,
+                    combinator: c1,
+                    ..
+                },
+                BitField::Ordinary {
+                    label: l2,
+                    combinator: c2,
+                    ..
+                },
+            ) => l1 == l2 && c1 == c2,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, Hash)]
@@ -148,6 +266,36 @@ pub enum IntCombinator {
     Unsigned(u8),
     BtcVarint,
     ULEB128,
+}
+
+impl IntCombinator {
+    /// Logical bit width (as declared in the source).
+    pub fn logical_width(&self) -> u8 {
+        match self {
+            IntCombinator::Unsigned(n) | IntCombinator::Signed(n) => *n,
+            IntCombinator::BtcVarint | IntCombinator::ULEB128 => 64,
+        }
+    }
+
+    /// Smallest Rust primitive that can hold this many bits.
+    pub fn carrier_width(&self) -> u8 {
+        match self.logical_width() {
+            1..=8 => 8,
+            9..=16 => 16,
+            17..=32 => 32,
+            _ => 64,
+        }
+    }
+
+    /// `2^width - 1` mask value (u64).
+    pub fn bit_mask(&self) -> u64 {
+        let w = self.logical_width();
+        if w == 64 {
+            u64::MAX
+        } else {
+            (1u64 << w) - 1
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, Hash)]
@@ -812,6 +960,7 @@ impl Display for CombinatorInner<'_> {
         match self {
             CombinatorInner::ConstraintInt(c) => write!(f, "{}", c),
             CombinatorInner::ConstraintEnum(c) => write!(f, "{}", c),
+            CombinatorInner::Bits(b) => write!(f, "{}", b),
             CombinatorInner::Struct(s) => write!(f, "{}", s),
             CombinatorInner::Wrap(w) => write!(f, "{}", w),
             CombinatorInner::Enum(e) => write!(f, "{}", e),
@@ -825,6 +974,47 @@ impl Display for CombinatorInner<'_> {
             CombinatorInner::MacroInvocation { name, args } => {
                 write!(f, "{}!({})", name, args.iter().join(","))
             }
+        }
+    }
+}
+
+impl Display for BitsCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "bits {{")?;
+        for field in &self.fields {
+            write!(f, "{}", field)?;
+            writeln!(f, ",")?;
+        }
+        write!(f, "}}")
+    }
+}
+
+impl Display for BitField<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BitField::Dependent {
+                label, combinator, ..
+            }
+            | BitField::Ordinary {
+                label, combinator, ..
+            } => write!(f, "{}:{}", label, combinator),
+        }
+    }
+}
+
+impl Display for BitFieldCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BitFieldCombinator::UInt {
+                width, constraint, ..
+            } => {
+                write!(f, "u{}", width)?;
+                if let Some(c) = constraint {
+                    write!(f, " | {}", c)?;
+                }
+                Ok(())
+            }
+            BitFieldCombinator::Invocation(inv) => write!(f, "{}", inv),
         }
     }
 }
@@ -1124,6 +1314,7 @@ impl<'i> CombinatorInner<'i> {
         match self {
             CombinatorInner::ConstraintInt(c) => c.span,
             CombinatorInner::ConstraintEnum(c) => c.span,
+            CombinatorInner::Bits(b) => b.span,
             CombinatorInner::Struct(s) => s.span,
             CombinatorInner::Wrap(w) => w.span,
             CombinatorInner::Enum(
@@ -1314,6 +1505,11 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 span,
             })
         }
+        Rule::bits_combinator => {
+            let inner_rules = rule.into_inner();
+            let fields = inner_rules.map(build_bit_field).collect();
+            CombinatorInner::Bits(BitsCombinator { fields, span })
+        }
         Rule::struct_combinator => {
             let inner_rules = rule.into_inner();
             let fields = inner_rules.map(build_field).collect();
@@ -1436,6 +1632,52 @@ fn build_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
         Rule::signed => IntCombinator::Signed(parse_width()),
         Rule::btc_varint => IntCombinator::BtcVarint,
         Rule::uleb128 => IntCombinator::ULEB128,
+        _ => unreachable!(),
+    }
+}
+
+fn build_bit_field(pair: pest::iterators::Pair<Rule>) -> BitField {
+    let span = pair.as_span();
+    let mut inner_rules = pair.into_inner();
+    let label = build_id(inner_rules.next().unwrap());
+    let combinator = build_bit_field_combinator(inner_rules.next().unwrap());
+    if label.name.starts_with('@') {
+        let mut label = label;
+        label.name = label.name.strip_prefix('@').unwrap().to_string();
+        BitField::Dependent {
+            label,
+            combinator,
+            span,
+        }
+    } else {
+        BitField::Ordinary {
+            label,
+            combinator,
+            span,
+        }
+    }
+}
+
+fn build_bit_field_combinator(pair: pest::iterators::Pair<Rule>) -> BitFieldCombinator {
+    let mut inner = pair.into_inner();
+    let child = inner.next().unwrap();
+    let span = child.as_span();
+    match child.as_rule() {
+        Rule::bit_uint_combinator => {
+            let mut uint_rules = child.into_inner();
+            let _unsigned = uint_rules.next().unwrap(); // "u"
+            let width_str = uint_rules.next().unwrap().as_str();
+            let width = width_str.parse::<u8>().unwrap();
+            let constraint = uint_rules.next().map(build_int_constraint);
+            BitFieldCombinator::UInt {
+                width,
+                constraint,
+                span,
+            }
+        }
+        Rule::combinator_invocation => {
+            BitFieldCombinator::Invocation(build_combinator_invocation(child))
+        }
         _ => unreachable!(),
     }
 }

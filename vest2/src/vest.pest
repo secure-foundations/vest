@@ -20,6 +20,7 @@ combinator_inner = {
     constraint_int_combinator
   | constraint_enum_combinator
   | macro_invocation
+  | bits_combinator
   | struct_combinator
   | wrap_combinator
   | enum_combinator
@@ -34,7 +35,7 @@ combinator_inner = {
 /// an integer combinator with an optional set of constraints
 constraint_int_combinator =  { int_combinator ~ ("|" ~ int_constraint)? }
 int_combinator            = ${ ((unsigned | signed) ~ int_width) | btc_varint | uleb128 }
-int_width                 = @{ "8" | "16" | "24" | "32" | "64" }
+int_width                 = @{ ASCII_DIGIT+ }
 int_constraint            =  { constraint_elem | constraint_elem_set | "!" ~ int_constraint }
 constraint_elem_set       =  { "{" ~ constraint_elem ~ ("," ~ constraint_elem)* ~ "}" }
 constraint_elem           =  { const_int_range | const_int }
@@ -48,12 +49,19 @@ enum_constraint_set        = { "{" ~ enum_constraint_elem ~ ("," ~ enum_constrai
 enum_constraint_elem       = { variant_id }
 
 /// sequence of `combinator` with semantic labels
-struct_combinator = { "{" ~ (field ~ ",")* ~ "}" }
-field             = {
+struct_combinator    = { "{" ~ (field ~ ",")* ~ "}" }
+bits_combinator      = { "bits" ~ "{" ~ (bit_field ~ ",")* ~ "}" }
+field                = {
     constant ~ var_id ~ ":" ~ const_combinator
   | depend_id ~ ":" ~ combinator
   | var_id ~ ":" ~ combinator
 }
+bit_field            = {
+    depend_id ~ ":" ~ bit_field_combinator
+  | var_id ~ ":" ~ bit_field_combinator
+}
+bit_field_combinator = { bit_uint_combinator | combinator_invocation }
+bit_uint_combinator  = { unsigned ~ int_width ~ ("|" ~ int_constraint)? }
 
 /// wrap a `combinator` with any number of inline const combinators
 wrap_combinator         = { wrap ~ "(" ~ wrap_prior ~ combinator ~ wrap_post ~ ")" }
