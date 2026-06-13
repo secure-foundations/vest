@@ -76,6 +76,7 @@
 //! | Combinator | Description |
 //! |---|---|
 //! | [`FixWith<LIMIT, Body, Param>`] | Bounded fixpoint for recursive formats; use `Param = ()` for context-free recursion |
+pub mod bits;
 pub mod bytes;
 pub mod choice;
 pub mod cond;
@@ -96,6 +97,7 @@ pub mod terminated;
 pub mod tuple;
 pub mod uints;
 
+pub use bits::Bits;
 pub use bytes::{AndThen, ExactLen, Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
