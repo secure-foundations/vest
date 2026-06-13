@@ -1,446 +1,675 @@
-# Bit-Packed Ints in Vest v1
+# `Bits` Combinator: Current Design and Implementation
+
+This document records the **current** bitfield design in the repository.
+
+It supersedes the older front-end-only plan. The authoritative references are now:
+
+- [`vest_lib2/src/combinators/bits`](../src/combinators/bits)
+- [`vest_dev/src/formats/bits.rs`](../../vest_dev/src/formats/bits.rs)
+
+The design center is no longer “bitfields as a hypothetical DSL feature lowered to ad hoc mappers”.
+Instead, the core abstraction is a reusable **specification combinator**:
+
+- `Bits<Repr, Tuple, Nominal>` in `vest_lib2`
+
+and the handwritten formats in `vest_dev/src/formats/bits.rs` show the intended generated shape.
 
 ## Summary
 
-This document records the recommended v1 design for bit-packed integers in the Vest DSL in
-`vest2/src`.
+`Bits` is a **spec/proof-side** combinator for byte-aligned bit-packed formats.
 
-The chosen direction is:
+Its job is to package the common structure of bitfield formats:
 
-- add an explicit `bits { ... }` block to the DSL
-- keep v1 unsigned-only for non-byte-aligned integers
-- keep bit endianness separate from the existing byte endianness
-- require each `bits` block to be byte-aligned and to fit into exactly one existing fixed-size
-  byte-aligned integer carrier: `u8`, `u16`, `u24`, `u32`, or `u64`
-- keep the emitted Rust values as ordinary Rust integer carrier types and ordinary generated
-  structs/enums
-- keep the exec side manual, following the current generated style, rather than relying on
-  `Mapped` exec implementations
+1. parse one fixed-size carrier integer (`u8`, `u16`, `u24`, `u32`, `u64`)
+2. unpack it into a tuple of field values
+3. optionally refine that tuple
+4. construct the nominal spec value
+5. serialize by destructing the nominal value back to a tuple and re-packing it into the carrier
 
-This design is intentionally conservative. It preserves the current byte-oriented parser and
-serializer traits in `vest_lib2`, while still making bit-packed integers first-class values in the
-DSL for:
+The executable side is still written manually, in the same style as current generated code in
+`vest2/test/src/*.rs`.
 
-- refinements
-- field access
-- dependent choices
-- dependent byte arrays
-- dependent `RepeatN`
-- dependent `AndThen` / `[u8; @l] >>= fmt`
+That split is deliberate:
 
-It does **not** attempt full bit-stream parsing in v1. Mid-byte transitions between arbitrary
-combinators remain out of scope.
+- spec/proof composition is factored into `vest_lib2`
+- exec parsing/serialization/prepare stay explicit and easy to inspect
 
----
+## Public API
 
-## DSL Surface
+The combinator lives in:
 
-### `bits { ... }`
+- [`vest_lib2/src/combinators/bits/mod.rs`](../src/combinators/bits/mod.rs)
 
-Introduce a new combinator form:
+Its public shape is:
 
-```vest
-!BIG_ENDIAN
-!BIT_BIG_ENDIAN
-
-ipv4_prelude = bits {
-    version: u4 | 4,
-    ihl: u4 | { 5..15 },
-    dscp: u6,
-    ecn: u2,
-    @total_len: u16 | { 20..0xffff },
+```rust
+pub struct Bits<Repr: SpecByteLen, Tuple, Nominal> {
+    pub repr: Repr,
+    pub unpack: spec_fn(Repr::T) -> Tuple,
+    pub pack: spec_fn(Tuple) -> Repr::T,
+    pub refinement: PredFnSpec<Tuple>,
+    pub ctor: spec_fn(Tuple) -> Nominal,
+    pub dtor: spec_fn(Nominal) -> Tuple,
+    pub consistent: PredFnSpec<Nominal>,
 }
 ```
 
-Semantics:
+This is intentionally closure-based. The generated or handwritten format definition directly names:
 
-- a `bits` block is a flat sequence of integer-like fields
-- fields inside the block are interpreted in bit order
-- the entire block is parsed and serialized as one fixed-size integer carrier
-- once the block finishes, parsing resumes at the next byte boundary
+- the representation combinator
+- the bit unpacking function
+- the packing function
+- tuple refinement
+- constructor / destructor between tuple and nominal spec type
+- nominal consistency predicate
 
-### Bit endianness
+### Representative usage
 
-Bit endianness must be a distinct DSL control. Reusing the current `!LITTLE_ENDIAN` /
-`!BIG_ENDIAN` for both byte order and bit order would make the semantics too implicit.
-
-Recommended v1 surface:
-
-```vest
-!LITTLE_ENDIAN
-!BIT_BIG_ENDIAN
-```
-
-or
-
-```vest
-!BIG_ENDIAN
-!BIT_LITTLE_ENDIAN
-```
-
-For v1 this should be file-global only.
-
-### Bit-sized integers
-
-Inside `bits { ... }`, permit arbitrary unsigned widths:
-
-- `u1`
-- `u3`
-- `u7`
-- `u10`
-- `u18`
-- ...
-- `u64`
-
-Outside `bits { ... }`, keep the current restriction:
-
-- only byte-oriented integer widths currently supported by Vest
-
-### Bit-sized enums
-
-Do not add a new enum syntax. Extend the existing type-suffixed literal story instead.
-
-Today byte-sized enums use examples like:
-
-```vest
-a_typed_open_enum = enum {
-  P = 0x00u32,
-  Q = 0x01u32,
-  R = 0x02u32,
-  ...
-}
-```
-
-Bit-sized enums should use the same idea, with the suffix grammar extended to the new widths:
-
-```vest
-payload_kind = enum {
-  Raw   = 0u3,
-  Words = 1,
-  Tiny  = 2u3,
-  ...
-}
-```
-
-Notes:
-
-- all explicitly suffixed literals in one enum must still agree
-- the enum’s declared or inferred underlying width must fit in the surrounding bitfield width
-- plain `enum { ... }` should keep its current byte-oriented inference behavior
-
----
-
-## v1 Restrictions
-
-### Whole-block representation
-
-For v1, each `bits` block must satisfy both:
-
-1. total width is a multiple of 8
-2. total width is exactly one of:
-   - `8`
-   - `16`
-   - `24`
-   - `32`
-   - `64`
-
-This is the main additional restriction relative to the broader Route A discussion.
-
-So the spec-side carrier is always one existing fixed-size int combinator, for example:
+From `vest_dev/src/formats/bits.rs`, the intended spec-level shape is:
 
 ```rust
-Named<Mapped<U32Be, Ipv4PreludeMapper>>
-```
-
-instead of:
-
-```rust
-Named<Mapped<Fixed<4>, Ipv4PreludeMapper>>
-```
-
-If the block also has DSL-level refinements, those may still appear as an outer `Refined(...)`
-around the mapped block or around the underlying carrier, depending on codegen convenience.
-
-### Allowed contents inside `bits`
-
-Keep v1 intentionally narrow. Inside a `bits` block, allow only:
-
-- unsigned integer fields `u1..u64`
-- constrained integer fields
-- enum fields whose underlying integer width is valid in the block
-- const integer and const enum fields
-
-Disallow in v1:
-
-- nested ordinary structs
-- nested `bits` blocks
-- `Vec`
-- `Option`
-- `Tail`
-- `Bytes`
-- `Array`
-- `Wrap`
-- `>>=`
-
-This restriction is only for the interior of the block. Once the block has been parsed into
-ordinary values, those values can drive all the existing dependent combinators outside.
-
----
-
-## Value Model and Emitted Rust API
-
-### Carrier types
-
-Bit-sized integer fields should be emitted as ordinary Rust integer carrier types:
-
-- widths `1..=8` map to `u8`
-- widths `9..=16` map to `u16`
-- widths `17..=32` map to `u32`
-- widths `33..=64` map to `u64`
-
-This is the same compatibility story Vest already uses for `u24`, which is represented as `u32`.
-
-Examples:
-
-- `u1`, `u3`, `u7` -> `u8`
-- `u10` -> `u16`
-- `u18` -> `u32`
-
-### Consistency
-
-The width invariant belongs to the format, not to the runtime datatype.
-
-For example, for a field `version: u3`, the emitted Rust field is still `u8`, but consistency
-requires:
-
-```rust
-version <= 0x7u8
-```
-
-The same pattern applies to open enums and closed enums:
-
-- open enum unknown values must still fit within the field width
-- closed enums must reject values not represented by the enum
-
-This keeps emitted Rust values compatible with the current generated style in `vest2/test/src`.
-
-### Field access and dependency
-
-Once parsed, bitfield values are ordinary typed values. That means existing dependent forms should
-keep working without new surface syntax:
-
-```vest
-packet = {
-    @hdr: bits {
-        @kind: payload_kind,
-        @count: u5,
-        @len: u8,
-    },
-    body: [u8; @hdr.len] >>= choose(@hdr.kind) {
-        Raw => [u8; @hdr.len],
-        Words => [u16; @hdr.count],
-        _ => Tail,
-    },
-}
-```
-
-This is one of the main reasons to make bitfields produce ordinary ints and ordinary generated
-structs rather than introducing dedicated runtime bitfield wrapper types.
-
----
-
-## Frontend Changes in `vest2/src`
-
-### Grammar / AST
-
-Add:
-
-- a `bits` combinator node
-- parsing support for arbitrary unsigned widths in integer type syntax
-- typed integer suffix parsing for non-byte widths in enum literals
-- a file-global bit-endianness directive
-
-Suggested grammar extensions:
-
-- `bit_struct_combinator = { "bits" ~ "{" ~ ... ~ "}" }`
-- widen integer width parsing from the current fixed set to a decimal width token that is later
-  validated by context
-- extend typed integer literal suffixes from the current byte-oriented widths to `u1..u64`
-
-### Elaboration
-
-Keep elaboration simple:
-
-- anonymous `bits { ... }` blocks should be lifted the same way anonymous inline combinators are
-  lifted today
-- no implicit grouping of adjacent bit-sized fields in ordinary structs
-
-### Type checking
-
-Type checking needs to enforce:
-
-1. non-byte widths are only legal inside `bits { ... }`
-2. the block total width is one of `8/16/24/32/64`
-3. every enum / const / refinement fits its declared width
-4. dependent use sites such as `[u8; @l]`, `[fmt; @l]`, `choose(@x)`, and `[u8; @l] >>= fmt`
-   accept bitfield-derived integer values the same way they accept existing integer values
-
-The existing typed `LengthExpr` pipeline in `vestir` should be reused. The main change is that
-integer width legality and width-to-carrier mapping become broader in bitfield contexts.
-
----
-
-## Library Support in `vest_lib2`
-
-### Placement
-
-The small reusable helper layer for bit operations should live under:
-
-- `vest_lib2/src/combinators/uints`
-
-as a new file / submodule, alongside the existing byte-aligned integer support.
-
-This helper layer should include:
-
-- spec-level bit extraction helpers
-- spec-level bit insertion helpers
-- proof lemmas for roundtrip and range facts
-- exec helper functions with `ensures` linking them back to the spec-level helpers
-
-Suggested responsibilities:
-
-```rust
-pub open spec fn extract_bits_be_u64(value: u64, start: nat, width: nat) -> u64;
-pub open spec fn insert_bits_be_u64(base: u64, start: nat, width: nat, field: u64) -> u64;
-
-pub open spec fn extract_bits_le_u64(value: u64, start: nat, width: nat) -> u64;
-pub open spec fn insert_bits_le_u64(base: u64, start: nat, width: nat, field: u64) -> u64;
-```
-
-and exec counterparts specialized to the supported carriers:
-
-```rust
-pub fn extract_bits_be_u16(value: u16, start: usize, width: usize) -> (out: u16)
-    ensures out as u64 == extract_bits_be_u64(value as u64, start as nat, width as nat);
-```
-
-The helper layer should be proof-oriented infrastructure only. It should **not** introduce a new
-bit-aware parser trait family in v1.
-
-### Exec side
-
-For the exec side of bitfield formats, do **not** rely on `Mapped` exec implementations.
-
-Instead, follow the current generated style used in `vest2/test/src`:
-
-- parse the underlying carrier using an existing exec int combinator like `U16Be`
-- extract fields explicitly in the generated parser body
-- pack fields explicitly in the generated serializer body
-- compute `prepare()` directly, with explicit compliance checks
-
-This keeps the generated exec code aligned with the rest of the codegen strategy and avoids
-needing new exec trait coverage for `Mapped`.
-
----
-
-## Codegen Shape
-
-### Spec side
-
-For a bitfield block with no extra DSL-level refinement:
-
-```rust
-pub type PacketHeaderFmtSpec = Named<Mapped<U16Be, PacketHeaderMapper>>;
-```
-
-If the block has additional refinement not guaranteed by the raw width partitioning, wrap that
-using the existing refinement pattern:
-
-```rust
-pub type PacketHeaderFmtSpec =
-    Named<Refined<Mapped<U16Be, PacketHeaderMapper>, PredFnSpec<PacketHeaderSpec>>>;
-```
-
-The mapper is responsible for:
-
-- unpacking the carrier into a generated spec struct
-- packing the struct back into the carrier
-- declaring `wf_out` for width / enum-shape constraints
-- proving `LossyMapper` / `LosslessMapper`
-
-### Exec side
-
-The generated exec wrapper should look like the current generated code:
-
-```rust
-impl Parser<&[u8]> for PacketHeaderFmt {
-    type PT = PacketHeader;
-
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-        reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
-        let (n, raw) = U16Be.parse(ibuf)?;
-        let value = unpack_packet_header(raw);
-        if !(value.count >= 1) {
-            return Err(ParseError::predicate_failed());
-        }
-        assert(self.spec_parse(ibuf@) == Some((n as int, value.deep_view())));
-        Ok((n, value))
+pub type PacketHeaderFmtSpec = Named<Bits<U16Be, (u8, u8, u8), PacketHeaderSpec>>;
+
+impl PacketHeaderFmt {
+    pub open spec fn spec_inner() -> PacketHeaderFmtSpec {
+        Named(
+            "packet_header",
+            Bits {
+                repr: U16Be,
+                unpack: |packed: u16| unpack_packet_header(packed),
+                pack: |unpacked: (u8, u8, u8)| {
+                    let (kind_bits, count, len) = unpacked;
+                    pack_packet_header(kind_bits, count, len)
+                },
+                refinement: |unpacked: (u8, u8, u8)| -> bool {
+                    let (_kind_bits, count, _len) = unpacked;
+                    count >= 1u8
+                },
+                ctor: |unpacked: (u8, u8, u8)| -> PacketHeaderSpec {
+                    let (kind_bits, count, len) = unpacked;
+                    let kind = payload_kind_from_bits(kind_bits);
+                    PacketHeaderSpec { kind, count, len }
+                },
+                dtor: |value: PacketHeaderSpec| -> (u8, u8, u8) {
+                    let PacketHeaderSpec { kind, count, len } = value;
+                    let kind_bits = payload_kind_to_bits(kind);
+                    (kind_bits, count, len)
+                },
+                consistent: |value: PacketHeaderSpec| -> bool {
+                    let PacketHeaderSpec { kind, count, len } = value;
+                    &&& payload_kind_wf(kind)
+                    &&& packet_header_bounds(payload_kind_to_bits(kind), count, len)
+                },
+            },
+        )
     }
 }
 ```
 
-Serializer and `Prepare` should mirror that style:
+This is the template the DSL/codegen should target.
 
-- `serialize()` packs to the carrier then delegates to the existing integer combinator
-- `prepare()` checks compliance and returns the carrier byte length
+## Internal Desugaring
 
----
+The helper function in
+[`vest_lib2/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
+shows the exact internal meaning:
 
-## Experimental Reference Implementation
+```rust
+pub open spec fn bits<Repr: SpecByteLen, Tuple, Nominal>(
+    repr: Repr,
+    unpack: spec_fn(Repr::T) -> Tuple,
+    pack: spec_fn(Tuple) -> Repr::T,
+    refinement: PredFnSpec<Tuple>,
+    ctor: spec_fn(Tuple) -> Nominal,
+    dtor: spec_fn(Nominal) -> Tuple,
+) -> Mapped<
+    Refined<Mapped<Repr, BiMapper<Repr::T, Tuple>>, PredFnSpec<Tuple>>,
+    BiMapper<Tuple, Nominal>,
+>
+```
 
-Before touching the generator, the intended shape should be prototyped manually in
-`vest_dev/src/formats`.
+So `Bits` is not magic. It is a named, direct surface over the recurring pattern:
 
-The prototype should cover:
+1. `Mapped<Repr, BiMap(unpack, pack)>`
+2. `Refined(..., refinement)`
+3. `Mapped(..., BiMap(ctor, dtor))`
 
-1. **Basic packing**
-   - one byte-wide packed struct, e.g. `u4 + u4`
-2. **Cross-byte fields**
-   - e.g. `u3 + u10 + u3` in a `U16Be` carrier
-3. **Refinements**
-   - field-level refinement not guaranteed by width alone
-4. **Bit-sized enums**
-   - using the ordinary typed-literal idea, not a second enum syntax
-5. **Dependency into bytes**
-   - a later `[u8; @hdr.len]`
-6. **Dependency into `RepeatN`**
-   - a later `[u16; @hdr.count]`
-7. **Dependency into `choose`**
-   - a dependent payload chosen from a bitfield-derived enum
+The additional `consistent` field is **not** part of this internal desugaring. It is added by
+`Bits` itself at the outer `Consistency` / `SoundParser` / `SPRoundTripDps` layer.
 
-The handwritten module should mirror the current generated style in `vest2/test/src`:
+That is the key difference between `Bits` and merely spelling the nested `Mapped/Refined/Mapped`
+stack directly.
 
-- public runtime datatypes and spec datatypes
-- mapper types
-- named format wrappers with `spec_inner()`
-- proof trait impls by delegation to the underlying spec combinators
-- explicit exec `Parser` / `Serializer` / `Prepare` impls
+## Spec Semantics
 
-The first experiment should remain in `vest_dev/src/formats` even if some helpers are duplicated
-locally. The point is to validate the generated-code shape before baking support into `vest2`
-codegen and `vest_lib2`.
+Implemented in:
 
----
+- [`vest_lib2/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
 
-## Out of Scope for v1
+### Parsing
 
-These should be explicitly deferred:
+`Bits::spec_parse` delegates to the internal desugared format:
 
-- signed non-byte widths (`i1`, `i3`, `i10`, ...)
-- arbitrary mid-byte transitions between unrelated combinators
-- nested `bits` blocks
-- implicit auto-grouping of adjacent bit-sized fields
-- a new bit-aware parser / serializer trait family in `vest_lib2`
+1. parse `repr`
+2. unpack the carrier into the tuple
+3. require `refinement(tuple)`
+4. return `ctor(tuple)`
 
-If the project later needs fully general bit-stream parsing, that should be treated as a separate
-library architecture change rather than an incremental extension of this v1 design.
+So parse acceptance is controlled by:
+
+- `repr`
+- `refinement`
+
+and **not** directly by the outer `consistent` predicate.
+
+This is important for open/closed enum cases:
+
+- open enums may parse more raw encodings and normalize them to `Unknown(x)`
+- closed enums use the tuple refinement to reject invalid raw encodings at parse time
+
+### Serialization
+
+Serialization is:
+
+1. `dtor(nominal)`
+2. `pack(tuple)`
+3. serialize with `repr`
+
+### Consistency
+
+`Bits::consistent` is stronger than the internal `Mapped/Refined/Mapped` consistency:
+
+```rust
+let fmt = bits(...);
+&&& fmt.consistent(v)
+&&& self.consistent(v)
+```
+
+In other words, a nominal value is consistent only if:
+
+1. destructing it yields a tuple accepted by the tuple refinement
+2. re-packing that tuple is consistent with the representation combinator
+3. the nominal-specific semantic predicate holds
+
+This split is intentional:
+
+- `refinement` talks about the unpacked tuple and affects parsing
+- `consistent` talks about the nominal value and affects serializer/prepare admissibility
+
+## Proof Structure
+
+Implemented in:
+
+- [`vest_lib2/src/combinators/bits/proof.rs`](../src/combinators/bits/proof.rs)
+
+The proof story is deliberately lightweight:
+
+- reuse the internal `bits(...)` desugaring where possible
+- expose only the extra obligations that are specific to the `Bits` abstraction
+
+### `SoundParser`
+
+`Bits::sound_inv()` currently requires:
+
+1. the internal `bits(...)` format is sound
+2. every value returned by the internal parse path satisfies the outer nominal `consistent`
+
+Concretely:
+
+```rust
+&&& fmt.sound_inv()
+&&& forall|ibuf| #[trigger]
+    fmt.spec_parse(ibuf) matches Some((_, v)) ==> (self.consistent)(v)
+```
+
+This means the format-specific wrapper must prove that its constructor normalizes parsed tuples
+into semantically well-formed nominal values.
+
+For simple layouts like `version_ihl` and `cross_byte_span`, this reduces to showing:
+
+- `unpack(raw)` always satisfies the field-width bounds
+
+For enum-bearing layouts like `packet_header`, this additionally requires:
+
+- `payload_kind_from_bits(kind_bits)` is well-formed under the parsed bit-width bound
+
+### `SPRoundTripDps`
+
+`Bits::unambiguous()` is where the tuple/nominal isomorphism obligations surface.
+
+The current shape is:
+
+```rust
+&&& self.repr.unambiguous()
+&&& forall|unpacked: Tuple|
+    (#[trigger] (self.consistent)((self.ctor)(unpacked)) && (self.refinement)(unpacked))
+        ==> (self.unpack)((self.pack)(unpacked)) == unpacked
+&&& forall|t: Nominal| #[trigger]
+    (self.consistent)(t) ==> (self.ctor)((self.dtor)(t)) == t
+```
+
+So to use `Bits` as a roundtrip-capable leaf-ish format, each concrete wrapper must prove:
+
+1. `unpack(pack(tuple)) == tuple` on refined consistent tuples
+2. `ctor(dtor(value)) == value` on consistent nominal values
+
+This is why `vest_dev/src/formats/bits.rs` still contains manual proof glue around
+`fmt.1.unambiguous()`.
+
+### `NonMalleable`, `NoLookAhead`, `Productive`, `EquivSerializers`
+
+These mostly delegate to the internal desugaring.
+
+The critical format-specific work remains:
+
+- proving the `SoundParser` precondition
+- proving the `SPRoundTripDps::unambiguous()` precondition
+
+Once those are in place, the rest of the traits tend to follow the same pattern as other
+named leaf formats.
+
+## Authoritative Reference Patterns
+
+The file
+[`vest_dev/src/formats/bits.rs`](../../vest_dev/src/formats/bits.rs)
+is the current reference for how bitfield formats should be written/generated.
+
+The important cases are:
+
+### 1. `VersionIhl`
+
+Smallest useful case:
+
+- carrier: `U8`
+- tuple: `(u8, u8)`
+- no parse-time refinement beyond representable widths (`refinement: true`)
+- nominal consistency: `version_ihl_bounds(...)`
+
+This is the simplest template for:
+
+- a byte-sized packed record
+- field-width constraints carried only in `consistent`
+
+### 2. `CrossByteSpan`
+
+Cross-byte field slicing over `U16Be`:
+
+- carrier: `U16Be`
+- tuple: `(u8, u16, u8)`
+- again `refinement: true`
+- nominal consistency captures representable widths
+
+This is the template for multi-field packed layouts that span byte boundaries but still have no
+semantic cross-field dependency.
+
+### 3. `PacketHeader`
+
+Open enum case:
+
+- carrier: `U16Be`
+- tuple: `(kind_bits, count, len)`
+- parse-time tuple refinement: `count >= 1`
+- constructor maps `kind_bits` into an open enum with `Unknown(x)`
+- nominal consistency adds:
+  - `payload_kind_wf(kind)`
+  - field-width bounds through `packet_header_bounds(...)`
+
+This demonstrates the intended split:
+
+- raw parse filtering is done by `refinement`
+- semantic enum well-formedness is done by the nominal `consistent`
+
+### 4. `ClosedPacketHeader`
+
+Closed enum case:
+
+- same packed representation as `PacketHeader`
+- stronger tuple refinement:
+  - `kind_bits < 3`
+  - `count >= 1`
+- constructor maps into a closed enum
+
+This is the template for exhaustive enums embedded inside bitfields.
+
+## Open and Closed Bit-Sized Enums
+
+The authoritative examples are in:
+
+- `payload_kind`
+- `closed_payload_kind`
+
+from [`vest_dev/src/formats/bits.rs`](../../vest_dev/src/formats/bits.rs).
+
+These two cases drive the codegen strategy for enum-backed bitfields.
+
+### Open bit-sized enums
+
+Open enums use the existing Vest “unknown/default” story:
+
+- known bit patterns map to named variants
+- all remaining in-range bit patterns map to `Unknown(x)`
+
+In the handwritten reference:
+
+```rust
+pub enum PayloadKind {
+    Raw = 0,
+    Words = 1,
+    Tiny = 2,
+    Unknown(u8),
+}
+```
+
+with helpers:
+
+```rust
+payload_kind_from_bits(bits: u8) -> PayloadKind
+payload_kind_to_bits(kind: PayloadKind) -> u8
+payload_kind_wf(kind: PayloadKind) -> bool
+```
+
+Codegen strategy:
+
+1. generate the exec/spec enum with an `Unknown(carrier)` variant
+2. generate `from_bits`, `to_bits`, and `wf` helpers
+3. keep parse-time tuple refinement focused only on raw structural constraints
+   - e.g. `count >= 1`
+4. put enum well-formedness into the nominal `consistent` closure of `Bits`
+
+That gives the intended semantics:
+
+- parsing accepts any in-range bit pattern for the enum field
+- serialization only accepts semantically well-formed open-enum values
+
+For `packet_header`, that is exactly:
+
+```rust
+consistent: |value: PacketHeaderSpec| -> bool {
+    let PacketHeaderSpec { kind, count, len } = value;
+    &&& payload_kind_wf(kind)
+    &&& packet_header_bounds(payload_kind_to_bits(kind), count, len)
+}
+```
+
+### Closed bit-sized enums
+
+Closed enums do not have an unknown/default variant. In the handwritten reference:
+
+```rust
+pub enum ClosedPayloadKind {
+    Raw = 0,
+    Words = 1,
+    Tiny = 2,
+}
+```
+
+The key difference is that invalid raw bit patterns are rejected at parse time.
+
+Codegen strategy:
+
+1. generate the closed enum datatype
+2. generate `from_bits` and `to_bits`
+3. encode enum admissibility as part of the tuple refinement
+   - e.g. `kind_bits < 3`
+4. keep the nominal `consistent` predicate focused on the serialized tuple bounds
+
+For `closed_packet_header`, that is:
+
+```rust
+refinement: |unpacked: (u8, u8, u8)| -> bool {
+    let (kind_bits, count, _len) = unpacked;
+    &&& kind_bits < 3u8
+    &&& count >= 1u8
+},
+```
+
+and:
+
+```rust
+consistent: |value: ClosedPacketHeaderSpec| -> bool {
+    let ClosedPacketHeaderSpec { kind, count, len } = value;
+    packet_header_bounds(closed_payload_kind_to_bits(kind), count, len)
+}
+```
+
+This gives the intended semantics:
+
+- parse rejects non-enum raw encodings immediately
+- serialize only needs to reason about valid closed-enum values
+
+### Summary of enum codegen policy
+
+For bit-sized enums inside `bits { ... }`:
+
+- **open enum**:
+  - generate `Unknown(...)`
+  - do not refine away unknown bit patterns
+  - enforce enum semantic well-formedness in nominal `consistent`
+
+- **closed enum**:
+  - no `Unknown(...)`
+  - refine away invalid bit patterns at parse time
+  - nominal `consistent` does not need a separate enum-wf clause
+
+This distinction should be treated as part of the stable backend shape for DSL codegen.
+
+## Pack/Unpack Helpers and Lemmas
+
+The current recommended helper pattern is the one used in `bits.rs`.
+
+For each layout, define:
+
+1. `unpack_*`
+2. `pack_*`
+3. `*_bounds`
+4. bitvector lemmas:
+   - `lemma_*_unpack_pack`
+   - `lemma_*_pack_unpack`
+   - `lemma_*_mapper_wf_in_out`
+
+Example:
+
+```rust
+#[verifier::allow_in_spec]
+pub fn unpack_version_ihl(raw: u8) -> (u8, u8) { ... }
+
+#[verifier::allow_in_spec]
+pub fn pack_version_ihl(version: u8, ihl: u8) -> u8 { ... }
+
+#[verifier::allow_in_spec]
+pub fn version_ihl_bounds(version: u8, ihl: u8) -> bool { ... }
+
+pub broadcast proof fn lemma_version_ihl_unpack_pack(raw: u8)
+    by (bit_vector)
+    ensures
+        #[trigger] pack_version_ihl(unpack_version_ihl(raw).0, unpack_version_ihl(raw).1) == raw,
+{ }
+```
+
+The key point is that the bitvector solver can usually discharge the layout-level arithmetic
+completely automatically, as long as the helper functions are stated in this flattened style.
+
+The remaining proof burden is normally not bit arithmetic. It is the semantic glue:
+
+- tuple refinement
+- open vs closed enum reconstruction
+- nominal consistency
+
+## Standard Derived-Proof Pattern
+
+In the wrapper proof section for `bits { ... }` formats, there is now a standard local proof
+pattern. The `version_ihl` wrapper in
+[`vest_dev/src/formats/bits.rs`](../../vest_dev/src/formats/bits.rs)
+is the reference.
+
+The three broadcast lemmas generated from the pack/unpack helpers are used in a fixed way:
+
+### For `SoundParser` and `NonMalleable`
+
+Use:
+
+```rust
+broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
+```
+
+This is the standard pair for:
+
+- `SoundParser::lemma_parse_sound_consumption`
+- `SoundParser::lemma_parse_sound_value`
+- `NonMalleable::lemma_parse_non_malleable`
+
+Semantically:
+
+- `lemma_*_unpack_pack` provides the lossless raw-layout roundtrip
+- `lemma_*_mapper_wf_in_out` provides the tuple bounds / raw-layout well-formedness fact
+
+### For `SPRoundTripDps`
+
+Use:
+
+```rust
+broadcast use lemma_version_ihl_pack_unpack;
+```
+
+This is the standard broadcast lemma for:
+
+- `SPRoundTripDps::theorem_serialize_dps_parse_roundtrip`
+
+Semantically, it discharges the `Bits::unambiguous()` side condition that requires:
+
+- `unpack(pack(tuple)) == tuple`
+
+on refined consistent tuples.
+
+### Codegen implication
+
+This broadcast-lemma pattern should be treated as part of the generated proof shape for bitfield
+formats:
+
+1. generate the three broadcast proofs:
+   - `lemma_*_unpack_pack`
+   - `lemma_*_pack_unpack`
+   - `lemma_*_mapper_wf_in_out`
+2. use:
+   - `unpack_pack + mapper_wf_in_out` in `SoundParser` and `NonMalleable`
+   - `pack_unpack` in `SPRoundTripDps`
+
+This is now part of the intended backend contract for bitfield codegen, not just an incidental
+proof trick in the handwritten examples.
+
+## Exec Side: Still Manual
+
+`Bits` is currently **not** an exec combinator.
+
+The executable `Parser` / `Serializer` / `Prepare` impls in `vest_dev/src/formats/bits.rs`
+remain manual and follow the generated-code style:
+
+- parse the carrier integer with `U8`, `U16Be`, etc.
+- unpack it using `unpack_*`
+- perform explicit runtime checks for tuple refinement
+- build the nominal exec value
+
+and symmetrically for serialize / prepare:
+
+- destruct the nominal value
+- pack the tuple
+- delegate to the carrier integer combinator
+
+This is the current intended split for DSL/codegen as well:
+
+- spec side: emit `Bits { ... }`
+- exec side: emit direct code
+
+## Codegen Target Shape
+
+The current codegen target implied by this design is:
+
+### Spec side
+
+Generate:
+
+1. carrier choice (`U8`, `U16Be`, `U24Le`, `U32Be`, `U64Le`, etc.)
+2. `unpack_*` / `pack_*` / `*_bounds`
+3. broadcast bitvector lemmas
+4. `spec_inner()` returning:
+
+```rust
+Named(
+    "format_name",
+    Bits {
+        repr: ...,
+        unpack: ...,
+        pack: ...,
+        refinement: ...,
+        ctor: ...,
+        dtor: ...,
+        consistent: ...,
+    },
+)
+```
+
+5. wrapper proof impls in the style currently used in `bits.rs`
+
+### Exec side
+
+Generate manual:
+
+- `impl Parser`
+- `impl Serializer`
+- `impl Prepare`
+
+for the nominal exec datatype, using the pack/unpack helpers directly.
+
+## Relationship to the DSL Design
+
+The older document treated bitfields mainly as a DSL-front-end feature.
+
+The current implementation suggests a sharper split:
+
+1. the DSL should still expose a `bits { ... }` surface
+2. but the core backend target should be this `Bits` combinator plus manual exec code
+
+That means the front-end design should now be understood as:
+
+- parse a `bits { ... }` block in `vest2`
+- elaborate/typecheck it into:
+  - one representation carrier
+  - one tuple layout
+  - one nominal generated datatype
+  - one generated `Bits { ... }` spec definition
+  - one set of pack/unpack/bounds/bitvector lemmas
+  - one set of manual exec impls
+
+This is materially different from the older “just lower to `Mapped<...>` directly” story.
+`Bits` is now the intended public spec-side backend primitive.
+
+## Current Limitations
+
+This document reflects the current implemented direction, not an idealized finished feature.
+
+Notable current limitations:
+
+1. `Bits` is spec/proof-side only
+2. wrapper proof impls still need manual format-specific glue
+3. the tuple/nominal roundtrip obligations are still exposed at the wrapper layer
+4. `vest_dev/src/formats/bits.rs` remains the primary reference for those local proof shapes
+
+These are acceptable for now because they keep:
+
+- the semantics clear
+- the generated exec code explicit
+- the bitvector-heavy reasoning local and automatable
+
+## Practical Guidance
+
+When adding a new bitfield format today:
+
+1. choose a byte-aligned integer representation combinator
+2. write `unpack_*`, `pack_*`, and `*_bounds`
+3. prove the three bitvector lemmas as broadcast proofs
+4. define `spec_inner()` using `Bits`
+5. add manual wrapper proofs following `version_ihl` / `cross_byte_span` / `packet_header`
+6. write explicit exec `parse` / `serialize` / `prepare`
+
+If in doubt, treat `vest_dev/src/formats/bits.rs` as the source of truth. This document is meant
+to explain that file, not replace it.
