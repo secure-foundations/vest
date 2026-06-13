@@ -61,6 +61,7 @@
 //! }
 //! ```
 //!
+use crate::combinators::bits::Bits;
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::core::exec::input::{InputBuf, InputSlice};
@@ -393,35 +394,27 @@ pub fn version_ihl_bounds(version: u8, ihl: u8) -> bool
     version < VERSION_MAX && ihl < IHL_MAX
 }
 
-pub proof fn lemma_version_ihl_unpack_pack(raw: u8)
+pub broadcast proof fn lemma_version_ihl_unpack_pack(raw: u8)
     by (bit_vector)
     ensures
-        ({
-            let (version, ihl) = unpack_version_ihl(raw);
-            pack_version_ihl(version, ihl) == raw
-        }),
+        #[trigger] pack_version_ihl(unpack_version_ihl(raw).0, unpack_version_ihl(raw).1) == raw,
 {
 }
 
-pub proof fn lemma_version_ihl_value_pack_unpack(version: u8, ihl: u8)
+pub broadcast proof fn lemma_version_ihl_pack_unpack(version: u8, ihl: u8)
     by (bit_vector)
     requires
-        version_ihl_bounds(version, ihl),
+        #[trigger] version_ihl_bounds(version, ihl),
     ensures
-        ({
-            let (version_, ihl_) = unpack_version_ihl(pack_version_ihl(version, ihl));
-            version_ == version && ihl_ == ihl
-        }),
+        unpack_version_ihl(pack_version_ihl(version, ihl)).0 == version,
+        unpack_version_ihl(pack_version_ihl(version, ihl)).1 == ihl,
 {
 }
 
-pub proof fn lemma_version_ihl_mapper_wf_in_out(i: u8)
+pub broadcast proof fn lemma_version_ihl_mapper_wf_in_out(i: u8)
     by (bit_vector)
     ensures
-        ({
-            let (version, ihl) = unpack_version_ihl(i);
-            version_ihl_bounds(version, ihl)
-        }),
+        #[trigger] version_ihl_bounds(unpack_version_ihl(i).0, unpack_version_ihl(i).1),
 {
 }
 
@@ -459,37 +452,36 @@ pub fn cross_byte_span_bounds(prefix: u8, span: u16, suffix: u8) -> bool
     prefix < PREFIX_MAX && span < SPAN_MAX && suffix < SUFFIX_MAX
 }
 
-pub proof fn lemma_cross_byte_span_unpack_pack(raw: u16)
+pub broadcast proof fn lemma_cross_byte_span_unpack_pack(raw: u16)
     by (bit_vector)
     ensures
-        ({
-            let (prefix, span, suffix) = unpack_cross_byte_span(raw);
-            pack_cross_byte_span(prefix, span, suffix) == raw
-        }),
+        #[trigger] pack_cross_byte_span(
+            unpack_cross_byte_span(raw).0,
+            unpack_cross_byte_span(raw).1,
+            unpack_cross_byte_span(raw).2,
+        ) == raw,
 {
 }
 
-pub proof fn lemma_cross_byte_span_pack_unpack(prefix: u8, span: u16, suffix: u8)
+pub broadcast proof fn lemma_cross_byte_span_pack_unpack(prefix: u8, span: u16, suffix: u8)
     by (bit_vector)
     requires
-        cross_byte_span_bounds(prefix, span, suffix),
+        #[trigger] cross_byte_span_bounds(prefix, span, suffix),
     ensures
-        ({
-            let (prefix_, span_, suffix_) = unpack_cross_byte_span(
-                pack_cross_byte_span(prefix, span, suffix),
-            );
-            prefix_ == prefix && span_ == span && suffix_ == suffix
-        }),
+        unpack_cross_byte_span(pack_cross_byte_span(prefix, span, suffix)).0 == prefix,
+        unpack_cross_byte_span(pack_cross_byte_span(prefix, span, suffix)).1 == span,
+        unpack_cross_byte_span(pack_cross_byte_span(prefix, span, suffix)).2 == suffix,
 {
 }
 
-pub proof fn lemma_cross_byte_span_mapper_wf_in_out(i: u16)
+pub broadcast proof fn lemma_cross_byte_span_mapper_wf_in_out(i: u16)
     by (bit_vector)
     ensures
-        ({
-            let (prefix, span, suffix) = unpack_cross_byte_span(i);
-            cross_byte_span_bounds(prefix, span, suffix)
-        }),
+        #[trigger] cross_byte_span_bounds(
+            unpack_cross_byte_span(i).0,
+            unpack_cross_byte_span(i).1,
+            unpack_cross_byte_span(i).2,
+        ),
 {
 }
 
@@ -527,37 +519,36 @@ pub fn packet_header_bounds(kind_bits: u8, count: u8, _len: u8) -> bool
     kind_bits < KIND_MAX && count < COUNT_MAX
 }
 
-pub proof fn lemma_packet_header_unpack_pack(raw: u16)
+pub broadcast proof fn lemma_packet_header_unpack_pack(raw: u16)
     by (bit_vector)
     ensures
-        ({
-            let (kind_bits, count, len) = unpack_packet_header(raw);
-            pack_packet_header(kind_bits, count, len) == raw
-        }),
+        #[trigger] pack_packet_header(
+            unpack_packet_header(raw).0,
+            unpack_packet_header(raw).1,
+            unpack_packet_header(raw).2,
+        ) == raw,
 {
 }
 
-pub proof fn lemma_packet_header_pack_unpack(kind_bits: u8, count: u8, len: u8)
+pub broadcast proof fn lemma_packet_header_pack_unpack(kind_bits: u8, count: u8, len: u8)
     by (bit_vector)
     requires
-        packet_header_bounds(kind_bits, count, len),
+        #[trigger] packet_header_bounds(kind_bits, count, len),
     ensures
-        ({
-            let (kind_bits_, count_, len_) = unpack_packet_header(
-                pack_packet_header(kind_bits, count, len),
-            );
-            kind_bits_ == kind_bits && count_ == count && len_ == len
-        }),
+        unpack_packet_header(pack_packet_header(kind_bits, count, len)).0 == kind_bits,
+        unpack_packet_header(pack_packet_header(kind_bits, count, len)).1 == count,
+        unpack_packet_header(pack_packet_header(kind_bits, count, len)).2 == len,
 {
 }
 
-pub proof fn lemma_packet_header_mapper_wf_in_out(i: u16)
+pub broadcast proof fn lemma_packet_header_mapper_wf_in_out(i: u16)
     by (bit_vector)
     ensures
-        ({
-            let (kind_bits, count, len) = unpack_packet_header(i);
-            packet_header_bounds(kind_bits, count, len)
-        }),
+        #[trigger] packet_header_bounds(
+            unpack_packet_header(i).0,
+            unpack_packet_header(i).1,
+            unpack_packet_header(i).2,
+        ),
 {
 }
 
@@ -644,70 +635,36 @@ pub fn closed_payload_kind_to_bits(kind: ClosedPayloadKind) -> u8
 #[derive(Clone, Copy)]
 pub struct VersionIhlFmt;
 
-pub struct VersionIhlMapper;
-
-impl SpecMapper for VersionIhlMapper {
-    type In = VersionIhlInner;
-
-    type Out = (u8, u8);
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        let (version, ihl) = o;
-        version_ihl_bounds(version, ihl)
-    }
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        unpack_version_ihl(i)
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        let (version, ihl) = o;
-        pack_version_ihl(version, ihl)
-    }
-}
-
-impl LossyMapper for VersionIhlMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        let (version, ihl) = o;
-        lemma_version_ihl_value_pack_unpack(version, ihl);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for VersionIhlMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_version_ihl_unpack_pack(i);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        lemma_version_ihl_mapper_wf_in_out(i);
-    }
-}
-
-pub type VersionIhlFmtSpec = Named<
-    Mapped<Mapped<U8, VersionIhlMapper>, FnSpecMapper<(u8, u8), VersionIhlSpec>>,
->;
+pub type VersionIhlFmtSpec = Named<Bits<U8, (u8, u8), VersionIhlSpec>>;
 
 impl VersionIhlFmt {
     pub open spec fn spec_inner() -> VersionIhlFmtSpec {
         Named(
             "version_ihl",
-            Mapped {
-                inner: Mapped { inner: U8, mapper: VersionIhlMapper },
-                mapper: (
-                    |parsed: (u8, u8)| -> VersionIhlSpec
-                        {
-                            let (version, ihl) = parsed;
-                            VersionIhl { version, ihl }
-                        },
-                    |value: VersionIhlSpec| -> (u8, u8)
-                        {
-                            let VersionIhl { version, ihl } = value;
-                            (version, ihl)
-                        },
-                ),
+            Bits {
+                repr: U8,
+                unpack: |packed: u8| unpack_version_ihl(packed),
+                pack: |unpacked: (u8, u8)|
+                    {
+                        let (version, ihl) = unpacked;
+                        pack_version_ihl(version, ihl)
+                    },
+                refinement: |unpacked: (u8, u8)| true,
+                ctor: |parsed: (u8, u8)|
+                    {
+                        let (version, ihl) = parsed;
+                        VersionIhl { version, ihl }
+                    },
+                dtor: |value: VersionIhlSpec|
+                    {
+                        let VersionIhl { version, ihl } = value;
+                        (version, ihl)
+                    },
+                consistent: |value: VersionIhlSpec|
+                    {
+                        let VersionIhl { version, ihl } = value;
+                        version_ihl_bounds(version, ihl)
+                    },
             },
         )
     }
@@ -716,70 +673,36 @@ impl VersionIhlFmt {
 #[derive(Clone, Copy)]
 pub struct CrossByteSpanFmt;
 
-pub struct CrossByteSpanMapper;
-
-impl SpecMapper for CrossByteSpanMapper {
-    type In = CrossByteSpanInner;
-
-    type Out = (u8, u16, u8);
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        let (prefix, span, suffix) = o;
-        cross_byte_span_bounds(prefix, span, suffix)
-    }
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        unpack_cross_byte_span(i)
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        let (prefix, span, suffix) = o;
-        pack_cross_byte_span(prefix, span, suffix)
-    }
-}
-
-impl LossyMapper for CrossByteSpanMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        let (prefix, span, suffix) = o;
-        lemma_cross_byte_span_pack_unpack(prefix, span, suffix);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for CrossByteSpanMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_cross_byte_span_unpack_pack(i);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        lemma_cross_byte_span_mapper_wf_in_out(i);
-    }
-}
-
-pub type CrossByteSpanFmtSpec = Named<
-    Mapped<Mapped<U16Be, CrossByteSpanMapper>, FnSpecMapper<(u8, u16, u8), CrossByteSpanSpec>>,
->;
+pub type CrossByteSpanFmtSpec = Named<Bits<U16Be, (u8, u16, u8), CrossByteSpanSpec>>;
 
 impl CrossByteSpanFmt {
     pub open spec fn spec_inner() -> CrossByteSpanFmtSpec {
         Named(
             "cross_byte_span",
-            Mapped {
-                inner: Mapped { inner: U16Be, mapper: CrossByteSpanMapper },
-                mapper: (
-                    |parsed: (u8, u16, u8)| -> CrossByteSpanSpec
-                        {
-                            let (prefix, span, suffix) = parsed;
-                            CrossByteSpan { prefix, span, suffix }
-                        },
-                    |value: CrossByteSpanSpec| -> (u8, u16, u8)
-                        {
-                            let CrossByteSpan { prefix, span, suffix } = value;
-                            (prefix, span, suffix)
-                        },
-                ),
+            Bits {
+                repr: U16Be,
+                unpack: |packed: u16| unpack_cross_byte_span(packed),
+                pack: |unpacked: (u8, u16, u8)|
+                    {
+                        let (prefix, span, suffix) = unpacked;
+                        pack_cross_byte_span(prefix, span, suffix)
+                    },
+                refinement: |unpacked: (u8, u16, u8)| true,
+                ctor: |parsed: (u8, u16, u8)| -> CrossByteSpanSpec
+                    {
+                        let (prefix, span, suffix) = parsed;
+                        CrossByteSpan { prefix, span, suffix }
+                    },
+                dtor: |value: CrossByteSpanSpec|
+                    {
+                        let CrossByteSpan { prefix, span, suffix } = value;
+                        (prefix, span, suffix)
+                    },
+                consistent: |value: CrossByteSpanSpec|
+                    {
+                        let CrossByteSpan { prefix, span, suffix } = value;
+                        cross_byte_span_bounds(prefix, span, suffix)
+                    },
             },
         )
     }
@@ -788,125 +711,61 @@ impl CrossByteSpanFmt {
 #[derive(Clone, Copy)]
 pub struct PacketHeaderFmt;
 
-pub struct PacketHeaderMapper;
-
-impl SpecMapper for PacketHeaderMapper {
-    type In = PacketHeaderInner;
-
-    type Out = (u8, u8, u8);
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        let (kind_bits, count, len) = o;
-        packet_header_bounds(kind_bits, count, len)
-    }
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        unpack_packet_header(i)
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        let (kind_bits, count, len) = o;
-        pack_packet_header(kind_bits, count, len)
-    }
-}
-
-impl LossyMapper for PacketHeaderMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        let (kind_bits, count, len) = o;
-        lemma_packet_header_pack_unpack(kind_bits, count, len);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for PacketHeaderMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_packet_header_unpack_pack(i);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        lemma_packet_header_mapper_wf_in_out(i);
-    }
-}
-
-pub struct PacketHeaderMapper2;
-
-impl SpecMapper for PacketHeaderMapper2 {
-    type In = (u8, u8, u8);
-
-    type Out = PacketHeaderSpec;
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        payload_kind_wf(o.kind)
-    }
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        let (kind_bits, count, len) = i;
-        PacketHeaderSpec { kind: payload_kind_from_bits(kind_bits), count, len }
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        let PacketHeaderSpec { kind, count, len } = o;
-        (payload_kind_to_bits(kind), count, len)
-    }
-}
-
-impl LossyMapper for PacketHeaderMapper2 {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for PacketHeaderMapper2 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
-pub type PacketHeaderFmtSpec = Named<
-    Mapped<
-        Refined<Mapped<U16Be, PacketHeaderMapper>, PredFnSpec<(u8, u8, u8)>>,
-        PacketHeaderMapper2,
-    >,
->;
+pub type PacketHeaderFmtSpec = Named<Bits<U16Be, (u8, u8, u8), PacketHeaderSpec>>;
 
 impl PacketHeaderFmt {
     pub open spec fn spec_inner() -> PacketHeaderFmtSpec {
         Named(
             "packet_header",
-            Mapped {
-                inner: Refined(
-                    Mapped { inner: U16Be, mapper: PacketHeaderMapper },
-                    |hdr: (u8, u8, u8)| hdr.1 >= 1u8,
-                ),
-                mapper: PacketHeaderMapper2,
+            Bits {
+                repr: U16Be,
+                unpack: |packed: u16| unpack_packet_header(packed),
+                pack: |unpacked: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = unpacked;
+                        pack_packet_header(kind_bits, count, len)
+                    },
+                refinement: |unpacked: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = unpacked;
+                        count >= 1u8
+                    },
+                ctor: |unpacked: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = unpacked;
+                        let kind = payload_kind_from_bits(kind_bits);
+                        PacketHeaderSpec { kind, count, len }
+                    },
+                dtor: |value: PacketHeaderSpec|
+                    {
+                        let PacketHeaderSpec { kind, count, len } = value;
+                        let kind_bits = payload_kind_to_bits(kind);
+                        (kind_bits, count, len)
+                    },
+                consistent: |value: PacketHeaderSpec|
+                    {
+                        let PacketHeaderSpec { kind, count, len } = value;
+                        &&& payload_kind_wf(kind)
+                        &&& packet_header_bounds(payload_kind_to_bits(kind), count, len)
+                    },
             },
         )
     }
 }
 
 pub type ChoicePayloadFmt = Mapped<
-    Choice<Cond<Varied<u8>>, Choice<Cond<RepeatN<U16Be, u8>>, Choice<Cond<U8>, Cond<Varied<u8>>>>>,
+    Sum<Varied<u8>, Sum<RepeatN<U16Be, u8>, Sum<U8, Varied<u8>>>>,
     FnSpecMapper<ChoicePayloadInner, ChoicePayloadSpec>,
 >;
 
 pub open spec fn choice_packet_body_fmt(hdr: PacketHeaderSpec) -> ChoicePayloadFmt {
     Mapped {
-        inner: Choice(
-            Cond(hdr.kind == PayloadKind::Raw, Varied(hdr.len)),
-            Choice(
-                Cond(hdr.kind == PayloadKind::Words, RepeatN(hdr.count, U16Be)),
-                Choice(
-                    Cond(hdr.kind == PayloadKind::Tiny, U8),
-                    Cond(hdr.kind matches PayloadKind::Unknown(_), Varied(hdr.len)),
-                ),
-            ),
-        ),
+        inner: match hdr.kind {
+            PayloadKind::Raw => Sum::Inl(Varied(hdr.len)),
+            PayloadKind::Words => Sum::Inr(Sum::Inl(RepeatN(hdr.count, U16Be))),
+            PayloadKind::Tiny => Sum::Inr(Sum::Inr(Sum::Inl(U8))),
+            PayloadKind::Unknown(_) => Sum::Inr(Sum::Inr(Sum::Inr(Varied(hdr.len)))),
+        },
         mapper: (
             |parsed: ChoicePayloadInner| -> ChoicePayloadSpec
                 {
@@ -966,45 +825,52 @@ impl ChoicePacketFmt {
 #[derive(Clone, Copy)]
 pub struct ClosedPacketHeaderFmt;
 
-pub type ClosedPacketHeaderFmtSpec = Named<
-    Mapped<
-        Refined<Mapped<U16Be, PacketHeaderMapper>, PredFnSpec<(u8, u8, u8)>>,
-        FnSpecMapper<(u8, u8, u8), ClosedPacketHeaderSpec>,
-    >,
->;
+pub type ClosedPacketHeaderFmtSpec = Named<Bits<U16Be, (u8, u8, u8), ClosedPacketHeaderSpec>>;
 
 impl ClosedPacketHeaderFmt {
     pub open spec fn spec_inner() -> ClosedPacketHeaderFmtSpec {
         Named(
             "closed_packet_header",
-            Mapped {
-                inner: Refined(
-                    Mapped { inner: U16Be, mapper: PacketHeaderMapper },
-                    |hdr: (u8, u8, u8)| hdr.0 < 3u8 && hdr.1 >= 1u8,
-                ),
-                mapper: (
-                    |hdr: (u8, u8, u8)| -> ClosedPacketHeaderSpec
-                        {
-                            let (kind_bits, count, len) = hdr;
-                            ClosedPacketHeaderSpec {
-                                kind: closed_payload_kind_from_bits(kind_bits),
-                                count,
-                                len,
-                            }
-                        },
-                    |o: ClosedPacketHeaderSpec| -> (u8, u8, u8)
-                        {
-                            let ClosedPacketHeaderSpec { kind, count, len } = o;
-                            (closed_payload_kind_to_bits(kind), count, len)
-                        },
-                ),
+            Bits {
+                repr: U16Be,
+                unpack: |packed: u16| unpack_packet_header(packed),
+                pack: |unpacked: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = unpacked;
+                        pack_packet_header(kind_bits, count, len)
+                    },
+                refinement: |unpacked: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = unpacked;
+                        &&& kind_bits < 3u8
+                        &&& count >= 1u8
+                    },
+                ctor: |hdr: (u8, u8, u8)|
+                    {
+                        let (kind_bits, count, len) = hdr;
+                        ClosedPacketHeaderSpec {
+                            kind: closed_payload_kind_from_bits(kind_bits),
+                            count,
+                            len,
+                        }
+                    },
+                dtor: |value: ClosedPacketHeaderSpec|
+                    {
+                        let ClosedPacketHeaderSpec { kind, count, len } = value;
+                        (closed_payload_kind_to_bits(kind), count, len)
+                    },
+                consistent: |value: ClosedPacketHeaderSpec|
+                    {
+                        let ClosedPacketHeaderSpec { kind, count, len } = value;
+                        packet_header_bounds(closed_payload_kind_to_bits(kind), count, len)
+                    },
             },
         )
     }
 }
 
 pub type ClosedChoicePayloadFmt = Mapped<
-    Choice<Cond<Varied<u8>>, Choice<Cond<RepeatN<U16Be, u8>>, Cond<U8>>>,
+    Sum<Varied<u8>, Sum<RepeatN<U16Be, u8>, U8>>,
     FnSpecMapper<ClosedChoicePayloadInner, ClosedChoicePayloadSpec>,
 >;
 
@@ -1012,13 +878,11 @@ pub open spec fn closed_choice_packet_body_fmt(
     hdr: ClosedPacketHeaderSpec,
 ) -> ClosedChoicePayloadFmt {
     Mapped {
-        inner: Choice(
-            Cond(hdr.kind == ClosedPayloadKind::Raw, Varied(hdr.len)),
-            Choice(
-                Cond(hdr.kind == ClosedPayloadKind::Words, RepeatN(hdr.count, U16Be)),
-                Cond(hdr.kind == ClosedPayloadKind::Tiny, U8),
-            ),
-        ),
+        inner: match hdr.kind {
+            ClosedPayloadKind::Raw => Sum::Inl(Varied(hdr.len)),
+            ClosedPayloadKind::Words => Sum::Inr(Sum::Inl(RepeatN(hdr.count, U16Be))),
+            ClosedPayloadKind::Tiny => Sum::Inr(Sum::Inr(U8)),
+        },
         mapper: (
             |parsed: ClosedChoicePayloadInner| -> ClosedChoicePayloadSpec
                 {
@@ -1077,299 +941,745 @@ impl ClosedChoicePacketFmt {
 }
 
 // ============================================================
+// Derived Specs and Proofs
+// ============================================================
+mod derived_specs_proofs {
+    use super::*;
+
+    impl SpecParser for VersionIhlFmt {
+        type PVal = VersionIhlSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            VersionIhlFmt::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for VersionIhlFmt {
+        type Val = VersionIhlSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            VersionIhlFmt::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for VersionIhlFmt {
+        type SValue = VersionIhlSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            VersionIhlFmt::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for VersionIhlFmt {
+        type SVal = VersionIhlSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            VersionIhlFmt::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for VersionIhlFmt {
+        type T = VersionIhlSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            VersionIhlFmt::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SafeParser for VersionIhlFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            VersionIhlFmt::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl SoundParser for VersionIhlFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = VersionIhlFmt::spec_inner();
+            broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            VersionIhlFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
+
+            VersionIhlFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for VersionIhlFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            VersionIhlFmt::spec_inner().lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            VersionIhlFmt::spec_inner().lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for VersionIhlFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            VersionIhlFmt::spec_inner().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for VersionIhlFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            broadcast use lemma_version_ihl_pack_unpack;
+
+            let fmt = VersionIhlFmt::spec_inner();
+            assert(fmt.1.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for VersionIhlFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
+
+            let fmt = VersionIhlFmt::spec_inner();
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for VersionIhlFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = VersionIhlFmt::spec_inner();
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for VersionIhlFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = VersionIhlFmt::spec_inner();
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SpecParser for CrossByteSpanFmt {
+        type PVal = CrossByteSpanSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            CrossByteSpanFmt::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for CrossByteSpanFmt {
+        type Val = CrossByteSpanSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            CrossByteSpanFmt::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for CrossByteSpanFmt {
+        type SValue = CrossByteSpanSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            CrossByteSpanFmt::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for CrossByteSpanFmt {
+        type SVal = CrossByteSpanSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            CrossByteSpanFmt::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for CrossByteSpanFmt {
+        type T = CrossByteSpanSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            CrossByteSpanFmt::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SafeParser for CrossByteSpanFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            CrossByteSpanFmt::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl SoundParser for CrossByteSpanFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = CrossByteSpanFmt::spec_inner();
+            broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            CrossByteSpanFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
+
+            CrossByteSpanFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for CrossByteSpanFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            CrossByteSpanFmt::spec_inner().lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            CrossByteSpanFmt::spec_inner().lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for CrossByteSpanFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            CrossByteSpanFmt::spec_inner().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for CrossByteSpanFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            broadcast use lemma_cross_byte_span_pack_unpack;
+
+            let fmt = CrossByteSpanFmt::spec_inner();
+            assert(fmt.1.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for CrossByteSpanFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
+
+            let fmt = CrossByteSpanFmt::spec_inner();
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for CrossByteSpanFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = CrossByteSpanFmt::spec_inner();
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for CrossByteSpanFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = CrossByteSpanFmt::spec_inner();
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SpecParser for PacketHeaderFmt {
+        type PVal = PacketHeaderSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            PacketHeaderFmt::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for PacketHeaderFmt {
+        type Val = PacketHeaderSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            PacketHeaderFmt::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for PacketHeaderFmt {
+        type SValue = PacketHeaderSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            PacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for PacketHeaderFmt {
+        type SVal = PacketHeaderSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            PacketHeaderFmt::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for PacketHeaderFmt {
+        type T = PacketHeaderSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            PacketHeaderFmt::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SafeParser for PacketHeaderFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            PacketHeaderFmt::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl SoundParser for PacketHeaderFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = PacketHeaderFmt::spec_inner();
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            PacketHeaderFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            PacketHeaderFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for PacketHeaderFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            PacketHeaderFmt::spec_inner().lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            PacketHeaderFmt::spec_inner().lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for PacketHeaderFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            PacketHeaderFmt::spec_inner().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for PacketHeaderFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            broadcast use lemma_packet_header_pack_unpack;
+
+            let fmt = PacketHeaderFmt::spec_inner();
+            assert(fmt.1.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for PacketHeaderFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            let fmt = PacketHeaderFmt::spec_inner();
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for PacketHeaderFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = PacketHeaderFmt::spec_inner();
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for PacketHeaderFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = PacketHeaderFmt::spec_inner();
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SpecParser for ClosedPacketHeaderFmt {
+        type PVal = ClosedPacketHeaderSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            ClosedPacketHeaderFmt::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for ClosedPacketHeaderFmt {
+        type Val = ClosedPacketHeaderSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            ClosedPacketHeaderFmt::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for ClosedPacketHeaderFmt {
+        type SValue = ClosedPacketHeaderSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            ClosedPacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for ClosedPacketHeaderFmt {
+        type SVal = ClosedPacketHeaderSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            ClosedPacketHeaderFmt::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for ClosedPacketHeaderFmt {
+        type T = ClosedPacketHeaderSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            ClosedPacketHeaderFmt::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SafeParser for ClosedPacketHeaderFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            ClosedPacketHeaderFmt::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl SoundParser for ClosedPacketHeaderFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            ClosedPacketHeaderFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            ClosedPacketHeaderFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for ClosedPacketHeaderFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            ClosedPacketHeaderFmt::spec_inner().lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            ClosedPacketHeaderFmt::spec_inner().lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for ClosedPacketHeaderFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            ClosedPacketHeaderFmt::spec_inner().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for ClosedPacketHeaderFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            broadcast use lemma_packet_header_pack_unpack;
+
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            assert(fmt.1.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for ClosedPacketHeaderFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for ClosedPacketHeaderFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for ClosedPacketHeaderFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+}
+
+// ============================================================
 // Executable implementations
 // ============================================================
-impl<'i> Parser<&'i [u8]> for VersionIhlFmt {
-    type PT = VersionIhl;
+mod derived_execs {
+    use super::*;
 
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        let (n, raw) = U8.parse(ibuf)?;
-        let (version, ihl) = unpack_version_ihl(raw);
-        let final_v = VersionIhl { version, ihl };
-        assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
-        Ok((n, final_v))
-    }
-}
+    impl<'i> Parser<&'i [u8]> for VersionIhlFmt {
+        type PT = VersionIhl;
 
-impl Serializer<VersionIhl> for VersionIhlFmt {
-    fn serialize(&self, v: &VersionIhl, obuf: &mut Vec<u8>) {
-        let packed = pack_version_ihl(v.version, v.ihl);
-        U8.serialize(&packed, obuf);
-    }
-}
-
-impl Prepare<VersionIhl> for VersionIhlFmt {
-    fn prepare(&self, v: &VersionIhl) -> Result<usize, PreSerializeError> {
-        if !version_ihl_bounds(v.version, v.ihl) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        let res = U8.prepare(&pack_version_ihl(v.version, v.ihl));
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
-        }
-        res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for CrossByteSpanFmt {
-    type PT = CrossByteSpan;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        let (n, raw) = U16Be.parse(ibuf)?;
-        let (prefix, span, suffix) = unpack_cross_byte_span(raw);
-        let final_v = CrossByteSpan { prefix, span, suffix };
-        assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
-        Ok((n, final_v))
-    }
-}
-
-impl Serializer<CrossByteSpan> for CrossByteSpanFmt {
-    fn serialize(&self, v: &CrossByteSpan, obuf: &mut Vec<u8>) {
-        let packed = pack_cross_byte_span(v.prefix, v.span, v.suffix);
-        U16Be.serialize(&packed, obuf);
-    }
-}
-
-impl Prepare<CrossByteSpan> for CrossByteSpanFmt {
-    fn prepare(&self, v: &CrossByteSpan) -> Result<usize, PreSerializeError> {
-        if !cross_byte_span_bounds(v.prefix, v.span, v.suffix) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        let res = U16Be.prepare(&pack_cross_byte_span(v.prefix, v.span, v.suffix));
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
-        }
-        res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for PacketHeaderFmt {
-    type PT = PacketHeader;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        let (n, raw) = U16Be.parse(ibuf)?;
-        let (kind_bits, count, len) = unpack_packet_header(raw);
-        if !(count >= 1u8) {
-            return Err(ParseError::predicate_failed());
-        }
-        let final_v = PacketHeader { kind: payload_kind_from_bits(kind_bits), count, len };
-        assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
-        Ok((n, final_v))
-    }
-}
-
-impl Serializer<PacketHeader> for PacketHeaderFmt {
-    fn serialize(&self, v: &PacketHeader, obuf: &mut Vec<u8>) {
-        let packed = pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len);
-        U16Be.serialize(&packed, obuf);
-    }
-}
-
-impl Prepare<PacketHeader> for PacketHeaderFmt {
-    fn prepare(&self, v: &PacketHeader) -> Result<usize, PreSerializeError> {
-        if !packet_header_bounds(payload_kind_to_bits(v.kind), v.count, v.len) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        if !payload_kind_wf(v.kind) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        if !(v.count >= 1u8) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        let res = U16Be.prepare(&pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len));
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
-        }
-        res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for ChoicePacketFmt {
-    type PT = ChoicePacket<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        let rest = *ibuf;
-        let (n1, hdr) = PacketHeaderFmt.parse(&rest)?;
-        let rest = rest.skip(n1);
-        let (n2, payload) = match hdr.kind {
-            PayloadKind::Raw => {
-                let (n, bytes) = Varied(hdr.len).parse(&rest)?;
-                (n, ChoicePayload::Raw(bytes))
-            },
-            PayloadKind::Words => {
-                let (n, words) = RepeatN(hdr.count, U16Be).parse(&rest)?;
-                (n, ChoicePayload::Words(words))
-            },
-            PayloadKind::Tiny => {
-                let (n, x) = U8.parse(&rest)?;
-                (n, ChoicePayload::Tiny(x))
-            },
-            PayloadKind::Unknown(_) => {
-                let (n, bytes) = Varied(hdr.len).parse(&rest)?;
-                (n, ChoicePayload::Default(bytes))
-            },
-        };
-        let total_n = n1 + n2;
-        let final_v = ChoicePacket { hdr, payload };
-        assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-        Ok((total_n, final_v))
-    }
-}
-
-impl<'i> Serializer<ChoicePacket<'i>> for ChoicePacketFmt {
-    fn serialize(&self, v: &ChoicePacket<'i>, obuf: &mut Vec<u8>) {
-        let ChoicePacket { hdr, payload } = v;
-        PacketHeaderFmt.serialize(hdr, obuf);
-        match payload {
-            ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
-            ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(words, obuf),
-            ChoicePayload::Tiny(x) => U8.serialize(x, obuf),
-            ChoicePayload::Default(bytes) => Varied(hdr.len).serialize(bytes, obuf),
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            let (n, raw) = U8.parse(ibuf)?;
+            let (version, ihl) = unpack_version_ihl(raw);
+            let final_v = VersionIhl { version, ihl };
+            assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
+            Ok((n, final_v))
         }
     }
-}
 
-impl<'i> Prepare<ChoicePacket<'i>> for ChoicePacketFmt {
-    fn prepare(&self, v: &ChoicePacket<'i>) -> Result<usize, PreSerializeError> {
-        let ChoicePacket { hdr, payload } = v;
-        let l1 = PacketHeaderFmt.prepare(hdr)?;
-        let l2 = match (hdr.kind, payload) {
-            (PayloadKind::Raw, ChoicePayload::Raw(bytes)) => Varied(hdr.len).prepare(bytes)?,
-            (PayloadKind::Words, ChoicePayload::Words(words)) => RepeatN(hdr.count, U16Be).prepare(
-                words,
-            )?,
-            (PayloadKind::Tiny, ChoicePayload::Tiny(x)) => U8.prepare(x)?,
-            (PayloadKind::Unknown(_), ChoicePayload::Default(bytes)) => Varied(hdr.len).prepare(
-                bytes,
-            )?,
-            _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice)),
-        };
-        let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
-        }
-        res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for ClosedPacketHeaderFmt {
-    type PT = ClosedPacketHeader;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        let (n, raw) = U16Be.parse(ibuf)?;
-        let (kind_bits, count, len) = unpack_packet_header(raw);
-        if !(kind_bits < 3u8 && count >= 1u8) {
-            return Err(ParseError::predicate_failed());
-        }
-        let final_v = ClosedPacketHeader {
-            kind: closed_payload_kind_from_bits(kind_bits),
-            count,
-            len,
-        };
-        assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
-        Ok((n, final_v))
-    }
-}
-
-impl Serializer<ClosedPacketHeader> for ClosedPacketHeaderFmt {
-    fn serialize(&self, v: &ClosedPacketHeader, obuf: &mut Vec<u8>) {
-        let packed = pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len);
-        U16Be.serialize(&packed, obuf);
-    }
-}
-
-impl Prepare<ClosedPacketHeader> for ClosedPacketHeaderFmt {
-    fn prepare(&self, v: &ClosedPacketHeader) -> Result<usize, PreSerializeError> {
-        if !packet_header_bounds(closed_payload_kind_to_bits(v.kind), v.count, v.len) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        if !(v.count >= 1u8) {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
-        }
-        let res = U16Be.prepare(
-            &pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len),
-        );
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
-        }
-        res
-    }
-}
-
-impl<'i> Parser<&'i [u8]> for ClosedChoicePacketFmt {
-    type PT = ClosedChoicePacket<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-
-        let rest = *ibuf;
-        let (n1, hdr) = ClosedPacketHeaderFmt.parse(&rest)?;
-        let rest = rest.skip(n1);
-        let (n2, payload) = match hdr.kind {
-            ClosedPayloadKind::Raw => {
-                let (n, bytes) = Varied(hdr.len).parse(&rest)?;
-                (n, ClosedChoicePayload::Raw(bytes))
-            },
-            ClosedPayloadKind::Words => {
-                let (n, words) = RepeatN(hdr.count, U16Be).parse(&rest)?;
-                (n, ClosedChoicePayload::Words(words))
-            },
-            ClosedPayloadKind::Tiny => {
-                let (n, x) = U8.parse(&rest)?;
-                (n, ClosedChoicePayload::Tiny(x))
-            },
-        };
-        let total_n = n1 + n2;
-        let final_v = ClosedChoicePacket { hdr, payload };
-        assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-        Ok((total_n, final_v))
-    }
-}
-
-impl<'i> Serializer<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
-    fn serialize(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Vec<u8>) {
-        let ClosedChoicePacket { hdr, payload } = v;
-        ClosedPacketHeaderFmt.serialize(hdr, obuf);
-        match payload {
-            ClosedChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
-            ClosedChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(words, obuf),
-            ClosedChoicePayload::Tiny(x) => U8.serialize(x, obuf),
+    impl Serializer<VersionIhl> for VersionIhlFmt {
+        fn serialize(&self, v: &VersionIhl, obuf: &mut Vec<u8>) {
+            let packed = pack_version_ihl(v.version, v.ihl);
+            U8.serialize(&packed, obuf);
         }
     }
-}
 
-impl<'i> Prepare<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
-    fn prepare(&self, v: &ClosedChoicePacket<'i>) -> Result<usize, PreSerializeError> {
-        let ClosedChoicePacket { hdr, payload } = v;
-        let l1 = ClosedPacketHeaderFmt.prepare(hdr)?;
-        let l2 = match (hdr.kind, payload) {
-            (ClosedPayloadKind::Raw, ClosedChoicePayload::Raw(bytes)) => Varied(hdr.len).prepare(
-                bytes,
-            )?,
-            (ClosedPayloadKind::Words, ClosedChoicePayload::Words(words)) => RepeatN(
-                hdr.count,
-                U16Be,
-            ).prepare(words)?,
-            (ClosedPayloadKind::Tiny, ClosedChoicePayload::Tiny(x)) => U8.prepare(x)?,
-            _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice)),
-        };
-        let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
-        if res.is_ok() {
-            assert(self.consistent(v.deep_view()));
+    impl Prepare<VersionIhl> for VersionIhlFmt {
+        fn prepare(&self, v: &VersionIhl) -> Result<usize, PreSerializeError> {
+            if !version_ihl_bounds(v.version, v.ihl) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            U8.prepare(&pack_version_ihl(v.version, v.ihl))
         }
-        res
     }
+
+    impl<'i> Parser<&'i [u8]> for CrossByteSpanFmt {
+        type PT = CrossByteSpan;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            let (n, raw) = U16Be.parse(ibuf)?;
+            let (prefix, span, suffix) = unpack_cross_byte_span(raw);
+            let final_v = CrossByteSpan { prefix, span, suffix };
+            assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
+            Ok((n, final_v))
+        }
+    }
+
+    impl Serializer<CrossByteSpan> for CrossByteSpanFmt {
+        fn serialize(&self, v: &CrossByteSpan, obuf: &mut Vec<u8>) {
+            let packed = pack_cross_byte_span(v.prefix, v.span, v.suffix);
+            U16Be.serialize(&packed, obuf);
+        }
+    }
+
+    impl Prepare<CrossByteSpan> for CrossByteSpanFmt {
+        fn prepare(&self, v: &CrossByteSpan) -> Result<usize, PreSerializeError> {
+            if !cross_byte_span_bounds(v.prefix, v.span, v.suffix) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            U16Be.prepare(&pack_cross_byte_span(v.prefix, v.span, v.suffix))
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for PacketHeaderFmt {
+        type PT = PacketHeader;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            let (n, raw) = U16Be.parse(ibuf)?;
+            let (kind_bits, count, len) = unpack_packet_header(raw);
+            if !(count >= 1u8) {
+                return Err(ParseError::predicate_failed());
+            }
+            let final_v = PacketHeader { kind: payload_kind_from_bits(kind_bits), count, len };
+            assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
+            Ok((n, final_v))
+        }
+    }
+
+    impl Serializer<PacketHeader> for PacketHeaderFmt {
+        fn serialize(&self, v: &PacketHeader, obuf: &mut Vec<u8>) {
+            let packed = pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len);
+            U16Be.serialize(&packed, obuf);
+        }
+    }
+
+    impl Prepare<PacketHeader> for PacketHeaderFmt {
+        fn prepare(&self, v: &PacketHeader) -> Result<usize, PreSerializeError> {
+            if !packet_header_bounds(payload_kind_to_bits(v.kind), v.count, v.len) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            if !payload_kind_wf(v.kind) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            if !(v.count >= 1u8) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            U16Be.prepare(&pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len))
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for ClosedPacketHeaderFmt {
+        type PT = ClosedPacketHeader;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            let (n, raw) = U16Be.parse(ibuf)?;
+            let (kind_bits, count, len) = unpack_packet_header(raw);
+            if !(kind_bits < 3u8 && count >= 1u8) {
+                return Err(ParseError::predicate_failed());
+            }
+            let final_v = ClosedPacketHeader {
+                kind: closed_payload_kind_from_bits(kind_bits),
+                count,
+                len,
+            };
+            assert(self.spec_parse(ibuf@) == Some((n as int, final_v.deep_view())));
+            Ok((n, final_v))
+        }
+    }
+
+    impl Serializer<ClosedPacketHeader> for ClosedPacketHeaderFmt {
+        fn serialize(&self, v: &ClosedPacketHeader, obuf: &mut Vec<u8>) {
+            let packed = pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len);
+            U16Be.serialize(&packed, obuf);
+        }
+    }
+
+    impl Prepare<ClosedPacketHeader> for ClosedPacketHeaderFmt {
+        fn prepare(&self, v: &ClosedPacketHeader) -> Result<usize, PreSerializeError> {
+            if !packet_header_bounds(closed_payload_kind_to_bits(v.kind), v.count, v.len) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            if !(v.count >= 1u8) {
+                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            }
+            U16Be.prepare(&pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len))
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for ChoicePacketFmt {
+        type PT = ChoicePacket<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+            let _ = ibuf.len();
+            let rest = *ibuf;
+            let (n1, hdr) = PacketHeaderFmt.parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, payload) = match hdr.kind {
+                PayloadKind::Raw => {
+                    let (n, bytes) = Varied(hdr.len).parse(&rest)?;
+                    (n, ChoicePayload::Raw(bytes))
+                },
+                PayloadKind::Words => {
+                    let (n, words) = RepeatN(hdr.count, U16Be).parse(&rest)?;
+                    (n, ChoicePayload::Words(words))
+                },
+                PayloadKind::Tiny => {
+                    let (n, x) = U8.parse(&rest)?;
+                    (n, ChoicePayload::Tiny(x))
+                },
+                PayloadKind::Unknown(_) => {
+                    let (n, bytes) = Varied(hdr.len).parse(&rest)?;
+                    (n, ChoicePayload::Default(bytes))
+                },
+            };
+            let total_n = n1 + n2;
+            let final_v = ChoicePacket { hdr, payload };
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<'i> Serializer<ChoicePacket<'i>> for ChoicePacketFmt {
+        fn serialize(&self, v: &ChoicePacket<'i>, obuf: &mut Vec<u8>) {
+            let ChoicePacket { hdr, payload } = v;
+            PacketHeaderFmt.serialize(hdr, obuf);
+            match payload {
+                ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
+                ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(words, obuf),
+                ChoicePayload::Tiny(x) => U8.serialize(x, obuf),
+                ChoicePayload::Default(bytes) => Varied(hdr.len).serialize(bytes, obuf),
+            }
+        }
+    }
+
+    impl<'i> Prepare<ChoicePacket<'i>> for ChoicePacketFmt {
+        fn prepare(&self, v: &ChoicePacket<'i>) -> Result<usize, PreSerializeError> {
+            let ChoicePacket { hdr, payload } = v;
+            let l1 = PacketHeaderFmt.prepare(hdr)?;
+            let l2 = match (hdr.kind, payload) {
+                (PayloadKind::Raw, ChoicePayload::Raw(bytes)) => Varied(hdr.len).prepare(bytes)?,
+                (PayloadKind::Words, ChoicePayload::Words(words)) => RepeatN(
+                    hdr.count,
+                    U16Be,
+                ).prepare(words)?,
+                (PayloadKind::Tiny, ChoicePayload::Tiny(x)) => U8.prepare(x)?,
+                (PayloadKind::Unknown(_), ChoicePayload::Default(bytes)) => Varied(hdr.len).prepare(
+                    bytes,
+                )?,
+                _ => return Err(
+                    PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice),
+                ),
+            };
+            let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
+            if res.is_ok() {
+                assert(self.consistent(v.deep_view()));
+            }
+            res
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for ClosedChoicePacketFmt {
+        type PT = ClosedChoicePacket<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+            let _ = ibuf.len();
+            let rest = *ibuf;
+            let (n1, hdr) = ClosedPacketHeaderFmt.parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, payload) = match hdr.kind {
+                ClosedPayloadKind::Raw => {
+                    let (n, bytes) = Varied(hdr.len).parse(&rest)?;
+                    (n, ClosedChoicePayload::Raw(bytes))
+                },
+                ClosedPayloadKind::Words => {
+                    let (n, words) = RepeatN(hdr.count, U16Be).parse(&rest)?;
+                    (n, ClosedChoicePayload::Words(words))
+                },
+                ClosedPayloadKind::Tiny => {
+                    let (n, x) = U8.parse(&rest)?;
+                    (n, ClosedChoicePayload::Tiny(x))
+                },
+            };
+            let total_n = n1 + n2;
+            let final_v = ClosedChoicePacket { hdr, payload };
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<'i> Serializer<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
+        fn serialize(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Vec<u8>) {
+            let ClosedChoicePacket { hdr, payload } = v;
+            ClosedPacketHeaderFmt.serialize(hdr, obuf);
+            match payload {
+                ClosedChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
+                ClosedChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(
+                    words,
+                    obuf,
+                ),
+                ClosedChoicePayload::Tiny(x) => U8.serialize(x, obuf),
+            }
+        }
+    }
+
+    impl<'i> Prepare<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
+        fn prepare(&self, v: &ClosedChoicePacket<'i>) -> Result<usize, PreSerializeError> {
+            let ClosedChoicePacket { hdr, payload } = v;
+            let l1 = ClosedPacketHeaderFmt.prepare(hdr)?;
+            let l2 = match (hdr.kind, payload) {
+                (ClosedPayloadKind::Raw, ClosedChoicePayload::Raw(bytes)) => Varied(
+                    hdr.len,
+                ).prepare(bytes)?,
+                (ClosedPayloadKind::Words, ClosedChoicePayload::Words(words)) => RepeatN(
+                    hdr.count,
+                    U16Be,
+                ).prepare(words)?,
+                (ClosedPayloadKind::Tiny, ClosedChoicePayload::Tiny(x)) => U8.prepare(x)?,
+                _ => return Err(
+                    PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice),
+                ),
+            };
+            let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
+            if res.is_ok() {
+                assert(self.consistent(v.deep_view()));
+            }
+            res
+        }
+    }
+
 }
 
 } // verus!
-// ============================================================
-// Runtime tests
-// ============================================================
+  // ============================================================
+  // Runtime tests
+  // ============================================================
 #[test]
 fn exec_version_ihl_roundtrip() {
     let fmt = VersionIhlFmt;
@@ -1377,13 +1687,11 @@ fn exec_version_ihl_roundtrip() {
     let (n, parsed) = fmt.parse(&&input[..]).unwrap();
     assert_eq!(n, 1);
     assert_eq!(parsed, VersionIhl { version: 4, ihl: 5 });
-
     let mut out = Vec::new();
     fmt.serialize(&parsed, &mut out);
     assert_eq!(out, input);
     assert_eq!(fmt.prepare(&parsed).unwrap(), input.len());
 }
-
 #[test]
 fn exec_cross_byte_span_roundtrip() {
     let fmt = CrossByteSpanFmt;
@@ -1399,7 +1707,6 @@ fn exec_cross_byte_span_roundtrip() {
     assert_eq!(parsed, value);
     assert_eq!(fmt.prepare(&value).unwrap(), 2);
 }
-
 #[test]
 fn exec_choice_packet_roundtrip() {
     let fmt = ChoicePacketFmt;
@@ -1418,7 +1725,6 @@ fn exec_choice_packet_roundtrip() {
     assert_eq!(parsed, raw);
     assert_eq!(fmt.prepare(&raw).unwrap(), out.len());
 }
-
 #[test]
 fn exec_closed_choice_packet_roundtrip() {
     let fmt = ClosedChoicePacketFmt;
@@ -1437,7 +1743,6 @@ fn exec_closed_choice_packet_roundtrip() {
     assert_eq!(parsed, raw);
     assert_eq!(fmt.prepare(&raw).unwrap(), out.len());
 }
-
 #[cfg(feature = "std")]
 #[derive(Clone)]
 pub enum ChoicePayloadOwned {
@@ -1678,52 +1983,60 @@ macro_rules! impl_named_spec_traits {
 
             impl SafeParser for $fmt {
                 proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-                    reveal(<$fmt as SpecParser>::spec_parse);
                     $fmt::spec_inner().lemma_parse_safe(ibuf);
                 }
             }
 
             impl SoundParser for $fmt {
                 proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-                    reveal(<$fmt as SpecParser>::spec_parse);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
                     $fmt::spec_inner().lemma_parse_sound_consumption(ibuf);
                 }
 
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-                    reveal(<$fmt as SpecParser>::spec_parse);
-                    reveal(<$fmt as Consistency>::consistent);
                     $fmt::spec_inner().lemma_parse_sound_value(ibuf);
                 }
             }
 
             impl NonTailFmt for $fmt {
                 proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-                    reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
                     $fmt::spec_inner().lemma_serialize_dps_prepend(v, obuf);
                 }
 
                 proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-                    reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
                     $fmt::spec_inner().lemma_serialize_dps_len(v, obuf);
                 }
             }
 
             impl GoodSerializer for $fmt {
                 proof fn lemma_serialize_len(&self, v: Self::SVal) {
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
                     $fmt::spec_inner().lemma_serialize_len(v);
                 }
             }
+
+            impl SPRoundTripDps for $fmt {
+                proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+                    let fmt = $fmt::spec_inner();
+                    fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+                }
+            }
+
+            impl NonMalleable for $fmt {
+                proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+                    let fmt = $fmt::spec_inner();
+                    fmt.lemma_parse_non_malleable(buf1, buf2);
+                }
+            }
+
+            impl EquivSerializers for $fmt {
+                proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+                    let fmt = $fmt::spec_inner();
+                    fmt.lemma_serialize_equiv_on_empty(v);
+                }
+            }
+
         }
     };
 }
 
-impl_named_spec_traits!(VersionIhlFmt, VersionIhlSpec);
-impl_named_spec_traits!(CrossByteSpanFmt, CrossByteSpanSpec);
-impl_named_spec_traits!(PacketHeaderFmt, PacketHeaderSpec);
 impl_named_spec_traits!(ChoicePacketFmt, ChoicePacketSpec);
-impl_named_spec_traits!(ClosedPacketHeaderFmt, ClosedPacketHeaderSpec);
 impl_named_spec_traits!(ClosedChoicePacketFmt, ClosedChoicePacketSpec);
