@@ -1351,11 +1351,14 @@ fn resolve_path<'ast>(
         match current_combinator {
             CombinatorInner::Struct(struct_comb) => {
                 let field = struct_comb.fields.iter().find(|f| match f {
-                    StructField::Dependent { label, .. } => label.name == **field_name,
+                    StructField::Dependent { label, .. } | StructField::Ordinary { label, .. } => {
+                        label.name == **field_name
+                    }
                     _ => false,
                 });
                 match field {
-                    Some(StructField::Dependent { combinator, .. }) => {
+                    Some(StructField::Dependent { combinator, .. })
+                    | Some(StructField::Ordinary { combinator, .. }) => {
                         current_combinator = global_ctx.resolve(combinator).clone();
                     }
                     _ => {

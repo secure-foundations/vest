@@ -1378,6 +1378,9 @@ pub mod lowering {
                         struct_comb.fields.iter().find_map(|field| match field {
                             ast::StructField::Dependent {
                                 label, combinator, ..
+                            }
+                            | ast::StructField::Ordinary {
+                                label, combinator, ..
                             } if label.name == *field_name => Some(combinator.clone()),
                             _ => None,
                         })?

@@ -41,9 +41,9 @@ closed_payload_kind = enum {
 }
 
 closed_packet_header = bits {
-    @kind: closed_payload_kind,
-    @count: u5 | { 1..31 },
-    @len: u8,
+    kind: closed_payload_kind,
+    count: u5 | { 1..31 },
+    len: u8,
 }
 
 closed_choice_packet = {
