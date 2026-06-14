@@ -34,6 +34,52 @@ That split is deliberate:
 - spec/proof composition is factored into `vest_lib2`
 - exec parsing/serialization/prepare stay explicit and easy to inspect
 
+## Endianness Semantics
+
+The current design supports **byte endianness only**.
+
+That distinction is important:
+
+- the backing representation combinator (`U16Be`, `U16Le`, `U24Be`, `U24Le`, etc.) controls how
+  the carrier integer is parsed from / serialized to bytes
+- once that carrier integer value exists, bitfield extraction and packing always proceed in
+  **DSL field order from most-significant bits to least-significant bits**
+
+There is currently **no independent bit-endianness setting**.
+
+In other words, a definition like:
+
+```text
+version_ihl = bits {
+    version: u4,
+    ihl: u4,
+}
+```
+
+always means:
+
+- `version` occupies the high 4 bits
+- `ihl` occupies the low 4 bits
+
+so its serialized representation is identical regardless of whether the surrounding file uses
+`!BIG_ENDIAN` or `!LITTLE_ENDIAN`, because the backing carrier is only one byte.
+
+By contrast, a multi-byte layout such as:
+
+```text
+cross_byte_span = bits {
+    prefix: u3,
+    span: u10,
+    suffix: u3,
+}
+```
+
+uses the same MSB-to-LSB field layout over the 16-bit carrier value in both cases, but the
+serialized byte sequence differs because the carrier is written with either `U16Be` or `U16Le`.
+
+This is the intended semantics for the current implementation and the DSL/codegen should document
+and test it explicitly.
+
 ## Public API
 
 The combinator lives in:
