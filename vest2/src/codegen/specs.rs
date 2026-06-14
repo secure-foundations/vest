@@ -1235,56 +1235,39 @@ impl<'a> Analysis<'a> {
         let pack_ident = format_ident!("pack_{}", name);
         let bounds_ident = format_ident!("{}_bounds", name);
 
-        let label_idents = layout
-            .fields
-            .iter()
-            .map(|f| format_ident!("{}", f.label))
-            .collect::<Vec<_>>();
+        let label_idents = layout.field_idents();
         let tuple_pat = bits_tuple_pattern_tokens(&label_idents);
         let tuple_expr = bits_tuple_expr_from_idents(&label_idents);
 
-        let ctor_fields = layout
-            .fields
+        let ctor_fields = self
+            .bits_ctor_fields(&layout)
             .iter()
-            .zip(&label_idents)
-            .map(|(field, ident)| {
-                let field_ident = format_ident!("{}", field.label);
-                let expr = self.bits_ctor_field_expr(field, quote! { #ident });
-                quote! { #field_ident: #expr }
-            })
+            .map(|(field_ident, expr)| quote! { #field_ident: #expr })
             .collect::<Vec<_>>();
 
         let dtor_lets = layout
             .fields
             .iter()
-            .zip(&label_idents)
-            .filter_map(|(field, ident)| {
+            .filter_map(|field| {
                 let field_ident = format_ident!("{}", field.label);
                 if field.is_enum {
                     let raw_expr = self.bits_raw_field_expr(field, quote! { #field_ident });
-                    Some(quote! { let #ident = #raw_expr; })
+                    Some(quote! { let #field_ident = #raw_expr; })
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
 
-        let bounds_args = layout
-            .fields
-            .iter()
-            .map(|field| {
-                let field_ident = format_ident!("{}", field.label);
-                self.bits_raw_field_expr(field, quote! { #field_ident })
-            })
-            .collect::<Vec<_>>();
+        let bounds_args = self.bits_raw_field_exprs(&layout);
 
         let refinement_terms = bits_comb
             .0
             .iter()
             .zip(&layout.fields)
-            .zip(&label_idents)
-            .filter_map(|((field, layout_field), ident)| {
-                self.bits_field_refinement_pred(field, layout_field, quote! { #ident })
+            .filter_map(|(field, field_layout)| {
+                let ident = format_ident!("{}", field_layout.label);
+                self.bits_field_refinement_pred(field, field_layout, quote! { #ident })
             })
             .collect::<Vec<_>>();
         let refinement_expr = if refinement_terms.is_empty() {
@@ -1296,9 +1279,9 @@ impl<'a> Analysis<'a> {
         let consistency_terms = layout
             .fields
             .iter()
-            .filter_map(|layout_field| {
-                let field_ident = format_ident!("{}", layout_field.label);
-                self.bits_open_enum_wf_pred(layout_field, quote! { #field_ident })
+            .filter_map(|field_layout| {
+                let field_ident = format_ident!("{}", field_layout.label);
+                self.bits_open_enum_wf_pred(field_layout, quote! { #field_ident })
             })
             .collect::<Vec<_>>();
 

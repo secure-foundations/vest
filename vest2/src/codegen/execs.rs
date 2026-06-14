@@ -282,11 +282,7 @@ impl<'a> Analysis<'a> {
         let unpack_ident = format_ident!("unpack_{}", name);
         let unpack_str = unpack_ident.to_string();
 
-        let label_idents = layout
-            .fields
-            .iter()
-            .map(|f| format_ident!("{}", f.label))
-            .collect::<Vec<_>>();
+        let label_idents = layout.field_idents();
         let tuple_pat = render_ts(bits_tuple_pattern_tokens(&label_idents));
 
         w.call_chain_stmt(
@@ -308,16 +304,7 @@ impl<'a> Analysis<'a> {
             }
         }
 
-        let ctor_fields = layout
-            .fields
-            .iter()
-            .zip(&label_idents)
-            .map(|(layout_field, raw_ident)| {
-                let field_ident = format_ident!("{}", layout_field.label);
-                let expr = self.bits_ctor_field_expr(layout_field, quote! { #raw_ident });
-                (field_ident, expr)
-            })
-            .collect::<Vec<_>>();
+        let ctor_fields = self.bits_ctor_fields(&layout);
         let fields_rendered = ctor_fields
             .iter()
             .map(|(ident, expr)| format!("{}: {}", ident, render_ts(expr.clone())))
@@ -330,23 +317,16 @@ impl<'a> Analysis<'a> {
     fn emit_bits_serializer_body(&self, w: &mut CodeWriter, name: &str, bits: &BitsCombinator) {
         let layout = self.bits_layout(bits);
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let field_idents = layout
-            .fields
-            .iter()
-            .map(|f| format_ident!("{}", f.label))
-            .collect::<Vec<_>>();
+        let field_idents = layout.field_idents();
         w.push_multiline(render_ts(quote! {
             let #exec_ident { #(#field_idents),* } = *v;
         }));
 
         let pack_ident = format_ident!("pack_{}", name);
-        let pack_args = layout
-            .fields
+        let pack_args = self
+            .bits_raw_field_exprs(&layout)
             .iter()
-            .zip(&field_idents)
-            .map(|(layout_field, field_ident)| {
-                render_ts(self.bits_raw_field_expr(layout_field, quote! { #field_ident }))
-            })
+            .map(|expr| render_ts(expr.clone()))
             .collect::<Vec<_>>();
         w.line(format!(
             "let packed = {}({});",
@@ -367,23 +347,12 @@ impl<'a> Analysis<'a> {
     fn emit_bits_prepare_body(&self, w: &mut CodeWriter, name: &str, bits: &BitsCombinator) {
         let layout = self.bits_layout(bits);
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let field_idents = layout
-            .fields
-            .iter()
-            .map(|f| format_ident!("{}", f.label))
-            .collect::<Vec<_>>();
+        let field_idents = layout.field_idents();
         w.push_multiline(render_ts(quote! {
             let #exec_ident { #(#field_idents),* } = *v;
         }));
 
-        let raw_exprs = layout
-            .fields
-            .iter()
-            .zip(&field_idents)
-            .map(|(layout_field, field_ident)| {
-                self.bits_raw_field_expr(layout_field, quote! { #field_ident })
-            })
-            .collect::<Vec<_>>();
+        let raw_exprs = self.bits_raw_field_exprs(&layout);
 
         let bounds_ident = format_ident!("{}_bounds", name);
         w.if_block(

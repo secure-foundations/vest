@@ -69,6 +69,15 @@ pub(crate) struct BitsLayout {
     pub(crate) fields: Vec<BitsFieldLayout>,
 }
 
+impl BitsLayout {
+    pub(crate) fn field_idents(&self) -> Vec<proc_macro2::Ident> {
+        self.fields
+            .iter()
+            .map(|f| format_ident!("{}", f.label))
+            .collect()
+    }
+}
+
 pub(crate) fn bits_tuple_type_tokens(tys: &[TokenStream]) -> TokenStream {
     match tys {
         [] => quote! { () },
@@ -216,6 +225,32 @@ impl<'a> Analysis<'a> {
         } else {
             raw_value
         }
+    }
+
+    pub(crate) fn bits_ctor_fields(
+        &self,
+        layout: &BitsLayout,
+    ) -> Vec<(proc_macro2::Ident, TokenStream)> {
+        layout
+            .fields
+            .iter()
+            .map(|field| {
+                let field_ident = format_ident!("{}", field.label);
+                let expr = self.bits_ctor_field_expr(field, quote! { #field_ident });
+                (field_ident, expr)
+            })
+            .collect()
+    }
+
+    pub(crate) fn bits_raw_field_exprs(&self, layout: &BitsLayout) -> Vec<TokenStream> {
+        layout
+            .fields
+            .iter()
+            .map(|field| {
+                let ident = format_ident!("{}", field.label);
+                self.bits_raw_field_expr(field, quote! { #ident })
+            })
+            .collect()
     }
 
     pub(crate) fn bits_open_enum_wf_pred(
