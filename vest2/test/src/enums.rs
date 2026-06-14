@@ -409,8 +409,8 @@ impl ATypedOpenEnumFmt {
             "a_typed_open_enum",
             Mapped {
                 inner: Choice(
-                    Refined(U32Le, |x: u32| x == 0 || x == 1 || x == 2),
-                    Refined(U32Le, |x: u32| x != 0 && x != 1 && x != 2),
+                    Refined(U32Le, |x: u32| ((x == 0) || (x == 1)) || (x == 2)),
+                    Refined(U32Le, |x: u32| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
                 mapper: (
                     |parsed: ATypedOpenEnumInner| -> ATypedOpenEnumSpec
@@ -560,7 +560,7 @@ impl AMixedTypedEnumFmt {
         Named(
             "a_mixed_typed_enum",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 0 || x == 1 || x == 2),
+                inner: Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
                 mapper: (
                     |parsed: AMixedTypedEnumInner| -> AMixedTypedEnumSpec
                         {
@@ -599,7 +599,7 @@ impl AClosedEnumFmt {
         Named(
             "a_closed_enum",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 0 || x == 1 || x == 2),
+                inner: Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
                 mapper: (
                     |parsed: AClosedEnumInner| -> AClosedEnumSpec
                         {
@@ -641,7 +641,7 @@ impl ATypedClosedEnumFmt {
         Named(
             "a_typed_closed_enum",
             Mapped {
-                inner: Refined(U16Le, |x: u16| x == 0 || x == 1 || x == 2),
+                inner: Refined(U16Le, |x: u16| ((x == 0) || (x == 1)) || (x == 2)),
                 mapper: (
                     |parsed: ATypedClosedEnumInner| -> ATypedClosedEnumSpec
                         {
@@ -684,8 +684,8 @@ impl AnOpenEnumFmt {
             "an_open_enum",
             Mapped {
                 inner: Choice(
-                    Refined(U8, |x: u8| x == 0 || x == 1 || x == 2),
-                    Refined(U8, |x: u8| x != 0 && x != 1 && x != 2),
+                    Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
+                    Refined(U8, |x: u8| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
                 mapper: (
                     |parsed: AnOpenEnumInner| -> AnOpenEnumSpec

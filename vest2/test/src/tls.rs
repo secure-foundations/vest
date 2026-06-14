@@ -2869,7 +2869,7 @@ impl AlertLevelFmt {
         Named ("alert_level",
         Mapped {
             inner: Refined (U8,
-            | x: u8 | x == 1 || x == 2),
+            | x: u8 | (x == 1) || (x == 2)),
             mapper: (| parsed: AlertLevelInner | -> AlertLevelSpec {
                 match parsed {
                     1 => AlertLevelSpec::Warning,
@@ -2967,9 +2967,9 @@ impl ExtensionTypeFmt {
         Named ("extension_type",
         Mapped {
             inner: Choice (Refined (U16Be,
-            | x: u16 | x == 0 || x == 1 || x == 5 || x == 10 || x == 11 || x == 13 || x == 14 || x == 15 || x == 16 || x == 18 || x == 19 || x == 20 || x == 21 || x == 22 || x == 23 || x == 35 || x == 41 || x == 42 || x == 43 || x == 44 || x == 45 || x == 47 || x == 48 || x == 49 || x == 50 || x == 51),
+            | x: u16 | (((((((((((((((((((((((((x == 0) || (x == 1)) || (x == 5)) || (x == 10)) || (x == 11)) || (x == 13)) || (x == 14)) || (x == 15)) || (x == 16)) || (x == 18)) || (x == 19)) || (x == 20)) || (x == 21)) || (x == 22)) || (x == 23)) || (x == 35)) || (x == 41)) || (x == 42)) || (x == 43)) || (x == 44)) || (x == 45)) || (x == 47)) || (x == 48)) || (x == 49)) || (x == 50)) || (x == 51)),
             Refined (U16Be,
-            | x: u16 | x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51)),
+            | x: u16 | (((((((((((((((((((((((((x != 0) && (x != 1)) && (x != 5)) && (x != 10)) && (x != 11)) && (x != 13)) && (x != 14)) && (x != 15)) && (x != 16)) && (x != 18)) && (x != 19)) && (x != 20)) && (x != 21)) && (x != 22)) && (x != 23)) && (x != 35)) && (x != 41)) && (x != 42)) && (x != 43)) && (x != 44)) && (x != 45)) && (x != 47)) && (x != 48)) && (x != 49)) && (x != 50)) && (x != 51))),
             mapper: (| parsed: ExtensionTypeInner | -> ExtensionTypeSpec {
                 match parsed {
                     L (x) => match x {
@@ -3055,9 +3055,9 @@ impl SignatureSchemeFmt {
         Named ("signature_scheme",
         Mapped {
             inner: Choice (Refined (U16Be,
-            | x: u16 | x == 257 || x == 513 || x == 259 || x == 515 || x == 1025 || x == 1281 || x == 1537 || x == 1027 || x == 1283 || x == 1539 || x == 2052 || x == 2053 || x == 2054 || x == 2055 || x == 2056 || x == 2057 || x == 2058 || x == 2059),
+            | x: u16 | (((((((((((((((((x == 257) || (x == 513)) || (x == 259)) || (x == 515)) || (x == 1025)) || (x == 1281)) || (x == 1537)) || (x == 1027)) || (x == 1283)) || (x == 1539)) || (x == 2052)) || (x == 2053)) || (x == 2054)) || (x == 2055)) || (x == 2056)) || (x == 2057)) || (x == 2058)) || (x == 2059)),
             Refined (U16Be,
-            | x: u16 | x != 257 && x != 513 && x != 259 && x != 515 && x != 1025 && x != 1281 && x != 1537 && x != 1027 && x != 1283 && x != 1539 && x != 2052 && x != 2053 && x != 2054 && x != 2055 && x != 2056 && x != 2057 && x != 2058 && x != 2059)),
+            | x: u16 | (((((((((((((((((x != 257) && (x != 513)) && (x != 259)) && (x != 515)) && (x != 1025)) && (x != 1281)) && (x != 1537)) && (x != 1027)) && (x != 1283)) && (x != 1539)) && (x != 2052)) && (x != 2053)) && (x != 2054)) && (x != 2055)) && (x != 2056)) && (x != 2057)) && (x != 2058)) && (x != 2059))),
             mapper: (| parsed: SignatureSchemeInner | -> SignatureSchemeSpec {
                 match parsed {
                     L (x) => match x {
@@ -3742,9 +3742,9 @@ impl CipherSuiteFmt {
         Named ("cipher_suite",
         Mapped {
             inner: Choice (Refined (U16Be,
-            | x: u16 | x == 4865 || x == 4866 || x == 4867 || x == 4868 || x == 4869),
+            | x: u16 | ((((x == 4865) || (x == 4866)) || (x == 4867)) || (x == 4868)) || (x == 4869)),
             Refined (U16Be,
-            | x: u16 | x != 4865 && x != 4866 && x != 4867 && x != 4868 && x != 4869)),
+            | x: u16 | ((((x != 4865) && (x != 4866)) && (x != 4867)) && (x != 4868)) && (x != 4869))),
             mapper: (| parsed: CipherSuiteInner | -> CipherSuiteSpec {
                 match parsed {
                     L (x) => match x {
@@ -3788,9 +3788,9 @@ impl ProtocolVersionFmt {
         Named ("protocol_version",
         Mapped {
             inner: Choice (Refined (U16Be,
-            | x: u16 | x == 768 || x == 769 || x == 770 || x == 771 || x == 772),
+            | x: u16 | ((((x == 768) || (x == 769)) || (x == 770)) || (x == 771)) || (x == 772)),
             Refined (U16Be,
-            | x: u16 | x != 768 && x != 769 && x != 770 && x != 771 && x != 772)),
+            | x: u16 | ((((x != 768) && (x != 769)) && (x != 770)) && (x != 771)) && (x != 772))),
             mapper: (| parsed: ProtocolVersionInner | -> ProtocolVersionSpec {
                 match parsed {
                     L (x) => match x {
@@ -3862,9 +3862,9 @@ impl NamedGroupFmt {
         Named ("named_group",
         Mapped {
             inner: Choice (Refined (U16Be,
-            | x: u16 | x == 1 || x == 2 || x == 3 || x == 4 || x == 5 || x == 6 || x == 7 || x == 8 || x == 9 || x == 10 || x == 11 || x == 12 || x == 13 || x == 14 || x == 15 || x == 16 || x == 17 || x == 18 || x == 19 || x == 20 || x == 21 || x == 22 || x == 23 || x == 24 || x == 25 || x == 29 || x == 30 || x == 256 || x == 257 || x == 258 || x == 259 || x == 260),
+            | x: u16 | (((((((((((((((((((((((((((((((x == 1) || (x == 2)) || (x == 3)) || (x == 4)) || (x == 5)) || (x == 6)) || (x == 7)) || (x == 8)) || (x == 9)) || (x == 10)) || (x == 11)) || (x == 12)) || (x == 13)) || (x == 14)) || (x == 15)) || (x == 16)) || (x == 17)) || (x == 18)) || (x == 19)) || (x == 20)) || (x == 21)) || (x == 22)) || (x == 23)) || (x == 24)) || (x == 25)) || (x == 29)) || (x == 30)) || (x == 256)) || (x == 257)) || (x == 258)) || (x == 259)) || (x == 260)),
             Refined (U16Be,
-            | x: u16 | x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 29 && x != 30 && x != 256 && x != 257 && x != 258 && x != 259 && x != 260)),
+            | x: u16 | (((((((((((((((((((((((((((((((x != 1) && (x != 2)) && (x != 3)) && (x != 4)) && (x != 5)) && (x != 6)) && (x != 7)) && (x != 8)) && (x != 9)) && (x != 10)) && (x != 11)) && (x != 12)) && (x != 13)) && (x != 14)) && (x != 15)) && (x != 16)) && (x != 17)) && (x != 18)) && (x != 19)) && (x != 20)) && (x != 21)) && (x != 22)) && (x != 23)) && (x != 24)) && (x != 25)) && (x != 29)) && (x != 30)) && (x != 256)) && (x != 257)) && (x != 258)) && (x != 259)) && (x != 260))),
             mapper: (| parsed: NamedGroupInner | -> NamedGroupSpec {
                 match parsed {
                     L (x) => match x {
@@ -4310,9 +4310,9 @@ impl MaxFragmentLengthFmt {
         Named ("max_fragment_length",
         Mapped {
             inner: Choice (Refined (U8,
-            | x: u8 | x == 1 || x == 2 || x == 3 || x == 4),
+            | x: u8 | (((x == 1) || (x == 2)) || (x == 3)) || (x == 4)),
             Refined (U8,
-            | x: u8 | x != 1 && x != 2 && x != 3 && x != 4)),
+            | x: u8 | (((x != 1) && (x != 2)) && (x != 3)) && (x != 4))),
             mapper: (| parsed: MaxFragmentLengthInner | -> MaxFragmentLengthSpec {
                 match parsed {
                     L (x) => match x {
@@ -4393,9 +4393,9 @@ impl EcPointFormatFmt {
         Named ("ec_point_format",
         Mapped {
             inner: Choice (Refined (U8,
-            | x: u8 | x == 0 || x == 1 || x == 2),
+            | x: u8 | ((x == 0) || (x == 1)) || (x == 2)),
             Refined (U8,
-            | x: u8 | x != 0 && x != 1 && x != 2)),
+            | x: u8 | ((x != 0) && (x != 1)) && (x != 2))),
             mapper: (| parsed: EcPointFormatInner | -> EcPointFormatSpec {
                 match parsed {
                     L (x) => match x {
@@ -4527,9 +4527,9 @@ impl HeartbeatModeFmt {
         Named ("heartbeat_mode",
         Mapped {
             inner: Choice (Refined (U8,
-            | x: u8 | x == 1 || x == 2),
+            | x: u8 | (x == 1) || (x == 2)),
             Refined (U8,
-            | x: u8 | x != 1 && x != 2)),
+            | x: u8 | (x != 1) && (x != 2))),
             mapper: (| parsed: HeartbeatModeInner | -> HeartbeatModeSpec {
                 match parsed {
                     L (x) => match x {
@@ -4620,9 +4620,9 @@ impl CertificateTypeFmt {
         Named ("certificate_type",
         Mapped {
             inner: Choice (Refined (U8,
-            | x: u8 | x == 0 || x == 2),
+            | x: u8 | (x == 0) || (x == 2)),
             Refined (U8,
-            | x: u8 | x != 0 && x != 2)),
+            | x: u8 | (x != 0) && (x != 2))),
             mapper: (| parsed: CertificateTypeInner | -> CertificateTypeSpec {
                 match parsed {
                     L (x) => match x {
@@ -5148,7 +5148,7 @@ impl HandshakeTypeFmt {
         Named ("handshake_type",
         Mapped {
             inner: Refined (U8,
-            | x: u8 | x == 1 || x == 2 || x == 4 || x == 5 || x == 8 || x == 11 || x == 13 || x == 15 || x == 20 || x == 24),
+            | x: u8 | (((((((((x == 1) || (x == 2)) || (x == 4)) || (x == 5)) || (x == 8)) || (x == 11)) || (x == 13)) || (x == 15)) || (x == 20)) || (x == 24)),
             mapper: (| parsed: HandshakeTypeInner | -> HandshakeTypeSpec {
                 match parsed {
                     1 => HandshakeTypeSpec::ClientHello,
@@ -5313,9 +5313,9 @@ impl PskKeyExchangeModeFmt {
         Named ("psk_key_exchange_mode",
         Mapped {
             inner: Choice (Refined (U8,
-            | x: u8 | x == 0 || x == 1),
+            | x: u8 | (x == 0) || (x == 1)),
             Refined (U8,
-            | x: u8 | x != 0 && x != 1)),
+            | x: u8 | (x != 0) && (x != 1))),
             mapper: (| parsed: PskKeyExchangeModeInner | -> PskKeyExchangeModeSpec {
                 match parsed {
                     L (x) => match x {
@@ -6806,7 +6806,7 @@ impl KeyUpdateRequestFmt {
         Named ("key_update_request",
         Mapped {
             inner: Refined (U8,
-            | x: u8 | x == 0 || x == 1),
+            | x: u8 | (x == 0) || (x == 1)),
             mapper: (| parsed: KeyUpdateRequestInner | -> KeyUpdateRequestSpec {
                 match parsed {
                     0 => KeyUpdateRequestSpec::UpdateNotRequested,
@@ -7151,7 +7151,7 @@ impl ContentTypeFmt {
         Named ("content_type",
         Mapped {
             inner: Refined (U8,
-            | x: u8 | x == 0 || x == 20 || x == 21 || x == 22 || x == 23),
+            | x: u8 | ((((x == 0) || (x == 20)) || (x == 21)) || (x == 22)) || (x == 23)),
             mapper: (| parsed: ContentTypeInner | -> ContentTypeSpec {
                 match parsed {
                     0 => ContentTypeSpec::Invalid,
@@ -7232,7 +7232,7 @@ impl AlertDescriptionFmt {
         Named ("alert_description",
         Mapped {
             inner: Refined (U8,
-            | x: u8 | x == 0 || x == 10 || x == 20 || x == 22 || x == 40 || x == 42 || x == 43 || x == 44 || x == 45 || x == 46 || x == 47 || x == 48 || x == 49 || x == 50 || x == 51 || x == 70 || x == 71 || x == 80 || x == 86 || x == 90 || x == 109 || x == 110 || x == 112 || x == 113 || x == 115 || x == 116 || x == 120),
+            | x: u8 | ((((((((((((((((((((((((((x == 0) || (x == 10)) || (x == 20)) || (x == 22)) || (x == 40)) || (x == 42)) || (x == 43)) || (x == 44)) || (x == 45)) || (x == 46)) || (x == 47)) || (x == 48)) || (x == 49)) || (x == 50)) || (x == 51)) || (x == 70)) || (x == 71)) || (x == 80)) || (x == 86)) || (x == 90)) || (x == 109)) || (x == 110)) || (x == 112)) || (x == 113)) || (x == 115)) || (x == 116)) || (x == 120)),
             mapper: (| parsed: AlertDescriptionInner | -> AlertDescriptionSpec {
                 match parsed {
                     0 => AlertDescriptionSpec::CloseNotify,
@@ -7502,9 +7502,9 @@ impl DigestSizeFmt {
         Named ("digest_size",
         Mapped {
             inner: Choice (Refined (U24Be,
-            | x: u32 | x == 12 || x == 20 || x == 32 || x == 48 || x == 64 || x == 16777215),
+            | x: u32 | (((((x == 12) || (x == 20)) || (x == 32)) || (x == 48)) || (x == 64)) || (x == 16777215)),
             Refined (U24Be,
-            | x: u32 | x != 12 && x != 20 && x != 32 && x != 48 && x != 64 && x != 16777215)),
+            | x: u32 | (((((x != 12) && (x != 20)) && (x != 32)) && (x != 48)) && (x != 64)) && (x != 16777215))),
             mapper: (| parsed: DigestSizeInner | -> DigestSizeSpec {
                 match parsed {
                     L (x) => match x {

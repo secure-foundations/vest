@@ -1,0 +1,11 @@
+MyEnum = enum {
+    A = 0u4,
+    B = 1u4,
+}
+Foo = {
+    @hdr: bits {
+        a: u4,
+        b: MyEnum,
+    },
+    payload: [u8; @hdr.b],
+}

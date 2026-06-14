@@ -1449,7 +1449,7 @@ impl COrDFmt {
         Named(
             "c_or_d",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 1 || x == 2),
+                inner: Refined(U8, |x: u8| (x == 1) || (x == 2)),
                 mapper: (
                     |parsed: COrDInner| -> COrDSpec
                         {
@@ -1558,7 +1558,7 @@ impl AOrBFmt {
         Named(
             "a_or_b",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 1 || x == 2),
+                inner: Refined(U8, |x: u8| (x == 1) || (x == 2)),
                 mapper: (
                     |parsed: AOrBInner| -> AOrBSpec
                         {

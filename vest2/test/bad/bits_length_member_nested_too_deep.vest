@@ -1,0 +1,7 @@
+Foo = {
+    @hdr: bits {
+        a: u4,
+        b: u4,
+    },
+    payload: [u8; @hdr.a.foo],
+}

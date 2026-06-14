@@ -614,7 +614,7 @@ impl MsgTypeFmt {
         Named(
             "msg_type",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 1 || x == 2 || x == 3),
+                inner: Refined(U8, |x: u8| ((x == 1) || (x == 2)) || (x == 3)),
                 mapper: (
                     |parsed: MsgTypeInner| -> MsgTypeSpec
                         {

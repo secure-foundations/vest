@@ -242,8 +242,8 @@ impl ContentTypeFmt {
             "content_type",
             Mapped {
                 inner: Choice(
-                    Refined(U8, |x: u8| x == 0 || x == 1 || x == 2),
-                    Refined(U8, |x: u8| x != 0 && x != 1 && x != 2),
+                    Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
+                    Refined(U8, |x: u8| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
                 mapper: (
                     |parsed: ContentTypeInner| -> ContentTypeSpec

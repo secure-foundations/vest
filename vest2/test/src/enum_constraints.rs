@@ -154,7 +154,7 @@ impl MyTypedEnumFmt {
         Named(
             "my_typed_enum",
             Mapped {
-                inner: Refined(U16Le, |x: u16| x == 1 || x == 2 || x == 3),
+                inner: Refined(U16Le, |x: u16| ((x == 1) || (x == 2)) || (x == 3)),
                 mapper: (
                     |parsed: MyTypedEnumInner| -> MyTypedEnumSpec
                         {
@@ -193,7 +193,7 @@ impl MyEnumFmt {
         Named(
             "my_enum",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 1 || x == 2 || x == 3),
+                inner: Refined(U8, |x: u8| ((x == 1) || (x == 2)) || (x == 3)),
                 mapper: (
                     |parsed: MyEnumInner| -> MyEnumSpec
                         {

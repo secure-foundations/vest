@@ -532,6 +532,8 @@ pub fn check<'ast>(
     Ok(global_ctx)
 }
 
+
+
 fn check_defn<'ast>(
     defn: &'ast Definition<'ast>,
     local_ctx: &mut LocalCtx<'ast>,
@@ -544,7 +546,14 @@ fn check_defn<'ast>(
             param_defns,
             combinator,
             ..
-        } => check_combinator(combinator, param_defns, local_ctx, global_ctx, source),
+        } => {
+            for param in param_defns {
+                let ParamDefn::Dependent { combinator: param_comb, .. } = param;
+                let mut dummy_local_ctx = LocalCtx::new();
+                check_combinator_inner(param_comb, &[], &mut dummy_local_ctx, global_ctx, source)?;
+            }
+            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
+        }
         Definition::ConstCombinator {
             const_combinator, ..
         } => check_const_combinator(const_combinator, local_ctx, global_ctx, source),
@@ -616,7 +625,7 @@ fn check_const_enum_combinator<'ast>(
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     // Reuse combinator invocation checks (no params allowed unless in scope)
-    check_combinator_invocation(combinator, &[], local_ctx, global_ctx, source)?;
+    check_combinator_invocation(combinator, &[], local_ctx, global_ctx, source, false)?;
     let binding = CombinatorInner::Invocation(combinator.clone());
     let resolved = global_ctx.resolve_alias(&binding);
     match resolved {
@@ -987,7 +996,7 @@ fn check_combinator_inner<'ast>(
             check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
         }
         Invocation(combinator) => {
-            check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source)
+            check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source, false)
         }
         MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
         Bits(bits_comb) => check_bits_combinator(
@@ -1024,6 +1033,7 @@ fn check_combinator_invocation<'ast>(
     local_ctx: &mut LocalCtx<'ast>,
     global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
+    is_in_bits: bool,
 ) -> Result<(), VestError> {
     let CombinatorInvocation {
         func: name,
@@ -1045,6 +1055,32 @@ fn check_combinator_invocation<'ast>(
             return Err(VestError::TypeError);
         }
         Some(combinator_sig) => {
+            if !is_in_bits {
+                if let CombinatorInner::Enum(enum_comb) = &combinator_sig.resolved_combinator {
+                    let enums = match enum_comb {
+                        EnumCombinator::Exhaustive { enums, .. }
+                        | EnumCombinator::NonExhaustive { enums, .. } => enums,
+                    };
+                    let inferred = resolve_enum_type(enums);
+                    let is_byte_aligned = match inferred {
+                        IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => bits % 8 == 0,
+                        IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
+                    };
+                    if !is_byte_aligned {
+                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+                            .with_message("bit-sized enum used outside of bitfield")
+                            .with_label(
+                                Label::new((source.0, span_as_range(span)))
+                                    .with_message("bit-sized enums may only be used inside bits members")
+                                    .with_color(Color::Red),
+                            )
+                            .finish()
+                            .eprint(source)
+                            .unwrap();
+                        return Err(VestError::TypeError);
+                    }
+                }
+            }
             if args.len() != combinator_sig.param_defns.len() {
                 Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                     .with_message("argument count mismatch")
@@ -2774,7 +2810,7 @@ fn check_bits_combinator<'ast>(
                 }
             }
             BitFieldCombinator::Invocation(inv) => {
-                check_combinator_invocation(inv, param_defns, local_ctx, global_ctx, source)?;
+                check_combinator_invocation(inv, param_defns, local_ctx, global_ctx, source, true)?;
                 let resolved = global_ctx
                     .combinators
                     .iter()
@@ -2787,6 +2823,19 @@ fn check_bits_combinator<'ast>(
                             | EnumCombinator::NonExhaustive { enums, .. } => enums,
                         };
                         let backing = resolve_enum_type(enums);
+                        if !matches!(backing, IntCombinator::Unsigned(_)) {
+                            Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
+                                .with_message("invalid bitfield member")
+                                .with_label(
+                                    Label::new((source.0, span_as_range(field_span)))
+                                        .with_message("bitfield enum must have an unsigned backing type")
+                                        .with_color(Color::Red),
+                                )
+                                .finish()
+                                .eprint(source)
+                                .unwrap();
+                            return Err(VestError::TypeError);
+                        }
                         let w = backing.logical_width() as usize;
                         if w == 0 || w > 64 {
                             Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
@@ -2884,7 +2933,7 @@ fn check_constraint_enum_combinator<'ast>(
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     // First ensure the invocation is well-formed
-    check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source)?;
+    check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source, false)?;
     // Resolve the invocation target
     let resolved = global_ctx
         .combinators

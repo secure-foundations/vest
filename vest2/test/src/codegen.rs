@@ -246,7 +246,7 @@ impl ATypeFmt {
         Named(
             "a_type",
             Mapped {
-                inner: Refined(U8, |x: u8| x == 0 || x == 1 || x == 2),
+                inner: Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
                 mapper: (
                     |parsed: ATypeInner| -> ATypeSpec
                         {

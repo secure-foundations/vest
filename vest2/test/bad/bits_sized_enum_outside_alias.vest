@@ -1,0 +1,5 @@
+MyEnum = enum {
+    A = 0u3,
+    B = 1u3,
+}
+Foo = MyEnum
