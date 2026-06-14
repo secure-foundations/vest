@@ -1340,6 +1340,7 @@ impl<'a> Analysis<'a> {
             self.ctx.resolve_alias(combinator),
             Combinator::Option(_) | Combinator::Vec(_)
         ) {
+            w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
             w.line("let rest = ibuf.skip(n);");
             w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
         }

@@ -1414,6 +1414,8 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n, v) = Opt(MsgFmt).parse(ibuf)?;
+            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+
             let rest = ibuf.skip(n);
             let _ = Eof.parse(&rest)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));

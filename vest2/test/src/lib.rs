@@ -1,5 +1,6 @@
 pub mod anonymous_nested;
 pub mod bitcoin;
+pub mod bits;
 pub mod codegen;
 pub mod elab;
 pub mod enum_constraints;
