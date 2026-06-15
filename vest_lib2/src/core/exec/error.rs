@@ -89,6 +89,11 @@ impl ParseError {
         Self::new(ParseErrorKind::InvalidTag)
     }
 
+    /// Creates an invalid-choice error.
+    pub fn invalid_choice() -> Self {
+        Self::new(ParseErrorKind::InvalidChoice)
+    }
+
     /// Creates an invalid-length error.
     pub fn invalid_length() -> Self {
         Self::new(ParseErrorKind::InvalidLength)
@@ -163,6 +168,8 @@ pub enum ParseErrorKind {
     ExpectingEof,
     /// A tag or discriminant byte sequence was invalid.
     InvalidTag,
+    /// Input did not match any branch of a choice-like format.
+    InvalidChoice,
     /// A parsed length field was invalid.
     InvalidLength,
     /// A computed length disagreed with the enclosing format.
@@ -189,15 +196,26 @@ impl Clone for ParseErrorKind {
 impl fmt::Display for ParseErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseErrorKind::UnexpectedEof => f.write_str("unexpected end of input"),
-            ParseErrorKind::ExpectingEof => f.write_str("expecting end of input"),
-            ParseErrorKind::InvalidTag => f.write_str("invalid tag"),
-            ParseErrorKind::InvalidLength => f.write_str("invalid length"),
-            ParseErrorKind::LengthMismatch => f.write_str("length mismatch"),
-            ParseErrorKind::PredicateFailed => f.write_str("predicate failed"),
-            ParseErrorKind::CondRejected => f.write_str("condition failed"),
+            ParseErrorKind::UnexpectedEof => {
+                f.write_str("input ended before the format could finish parsing")
+            }
+            ParseErrorKind::ExpectingEof => f.write_str("unexpected trailing input"),
+            ParseErrorKind::InvalidTag => {
+                f.write_str("tag or discriminant did not match the format")
+            }
+            ParseErrorKind::InvalidChoice => f.write_str("input did not match any choice branch"),
+            ParseErrorKind::InvalidLength => {
+                f.write_str("length field is outside the format's valid range")
+            }
+            ParseErrorKind::LengthMismatch => {
+                f.write_str("a length-delimited parser did not consume the declared length")
+            }
+            ParseErrorKind::PredicateFailed => {
+                f.write_str("parsed value failed a refinement predicate")
+            }
+            ParseErrorKind::CondRejected => f.write_str("conditional format rejected this branch"),
             ParseErrorKind::NonCanonical => f.write_str("non-canonical encoding"),
-            ParseErrorKind::Overflow => f.write_str("overflow"),
+            ParseErrorKind::Overflow => f.write_str("integer or size computation overflowed"),
             ParseErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
         }
     }

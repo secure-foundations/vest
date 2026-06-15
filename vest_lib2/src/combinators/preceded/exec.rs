@@ -116,7 +116,7 @@ impl<A, AVal, B, BVal, const CHECK: bool> Prepare<BVal> for super::Preceded<
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
-            Err(PreSerializeError::LengthTooLarge)
+            Err(PreSerializeError::length_too_large())
         }
     }
 }

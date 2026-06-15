@@ -2,6 +2,10 @@
 use crate::core::spec::{Consistency, SpecByteLen, SpecSerializer};
 use core::fmt;
 use core::marker::PhantomData;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 use vstd::prelude::*;
 
 verus! {
@@ -25,7 +29,7 @@ pub trait Compliance<T>: Consistency<Val = T::V> where T: DeepView + ?Sized {
     ;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ComplianceErrorKind {
     LengthInconsistent,
     InvalidTag,
@@ -33,13 +37,73 @@ pub enum ComplianceErrorKind {
     CondRejected,
     RecursionLimitExceeded,
     InvalidChoice,
-    NamedFormat(&'static str),
 }
 
-#[derive(Debug)]
-pub enum PreSerializeError {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PreSerializeErrorKind {
     LengthTooLarge,
     NotCompliant(ComplianceErrorKind),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct PreSerializeError {
+    pub kind: PreSerializeErrorKind,
+    pub failed_format: Option<&'static str>,
+    #[cfg(feature = "alloc")]
+    pub format_stack: Vec<&'static str>,
+}
+
+impl Clone for PreSerializeError {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind,
+            failed_format: self.failed_format,
+            #[cfg(feature = "alloc")]
+            format_stack: self.format_stack.clone(),
+        }
+    }
+}
+
+impl PreSerializeError {
+    pub fn new(kind: PreSerializeErrorKind) -> Self {
+        Self {
+            kind,
+            failed_format: None,
+            #[cfg(feature = "alloc")]
+            format_stack: Vec::new(),
+        }
+    }
+
+    pub fn length_too_large() -> Self {
+        Self::new(PreSerializeErrorKind::LengthTooLarge)
+    }
+
+    pub fn not_compliant(kind: ComplianceErrorKind) -> Self {
+        Self::new(PreSerializeErrorKind::NotCompliant(kind))
+    }
+
+    pub fn push_format(self, current_format: &'static str) -> Self {
+        let mut err = self;
+        if err.failed_format.is_none() {
+            err.failed_format = Some(current_format);
+        }
+        #[cfg(feature = "alloc")]
+        {
+            err.format_stack.push(current_format);
+        }
+        err
+    }
+
+    pub fn failed_format(&self) -> Option<&'static str> {
+        self.failed_format
+    }
+
+    pub fn format_trace(&self) -> &[&'static str] {
+        #[cfg(feature = "alloc")]
+        { self.format_stack.as_slice() }
+        #[cfg(not(feature = "alloc"))]
+        { &[] }
+    }
 }
 
 pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: DeepView + ?Sized {
@@ -384,24 +448,60 @@ impl<T, S> Serializer<T> for &S where T: DeepView, S: Serializer<T> {
 impl fmt::Display for ComplianceErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ComplianceErrorKind::LengthInconsistent => f.write_str("length inconsistent"),
-            ComplianceErrorKind::InvalidTag => f.write_str("invalid tag"),
-            ComplianceErrorKind::PredicateFailed => f.write_str("predicate failed"),
-            ComplianceErrorKind::CondRejected => f.write_str("condition rejected"),
-            ComplianceErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
-            ComplianceErrorKind::InvalidChoice => f.write_str("invalid choice"),
-            ComplianceErrorKind::NamedFormat(name) => {
-                write!(f, "value not compliant with format `{}`", name)
+            ComplianceErrorKind::LengthInconsistent => {
+                f.write_str("value length does not match the format's declared length")
             }
+            ComplianceErrorKind::InvalidTag => {
+                f.write_str("value does not match the required tag or discriminant")
+            }
+            ComplianceErrorKind::PredicateFailed => {
+                f.write_str("value failed a refinement predicate")
+            }
+            ComplianceErrorKind::CondRejected => {
+                f.write_str("conditional format rejected this value")
+            }
+            ComplianceErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
+            ComplianceErrorKind::InvalidChoice => {
+                f.write_str("value does not match any choice branch")
+            }
+        }
+    }
+}
+
+impl fmt::Display for PreSerializeErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PreSerializeErrorKind::LengthTooLarge => {
+                f.write_str("computed encoded length exceeds usize::MAX")
+            }
+            PreSerializeErrorKind::NotCompliant(kind) => write!(f, "{}", kind),
         }
     }
 }
 
 impl fmt::Display for PreSerializeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PreSerializeError::LengthTooLarge => f.write_str("length too large for usize"),
-            PreSerializeError::NotCompliant(kind) => write!(f, "not compliant: {}", kind),
+        let format_trace = self.format_trace();
+        if !format_trace.is_empty() {
+            write!(f, "{} while preparing format stack ", self.kind)?;
+            for (i, format_name) in format_trace.iter().rev().enumerate() {
+                if i > 0 {
+                    f.write_str(" -> ")?;
+                }
+                write!(f, "`{}`", format_name)?;
+            }
+            Ok(())
+        } else {
+            match self.failed_format {
+                Some(current_format) => {
+                    write!(
+                        f,
+                        "{} while preparing format `{}`",
+                        self.kind, current_format
+                    )
+                }
+                None => write!(f, "{}", self.kind),
+            }
         }
     }
 }

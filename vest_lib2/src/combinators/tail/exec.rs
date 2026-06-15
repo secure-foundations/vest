@@ -124,7 +124,7 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
-            Err(PreSerializeError::LengthTooLarge)
+            Err(PreSerializeError::length_too_large())
         }
     }
 }

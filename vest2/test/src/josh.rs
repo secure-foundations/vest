@@ -1565,7 +1565,7 @@ mod exec_impls {
                 TstTag::C28 => 28,
                 TstTag::C29 => 29,
                 TstTag::C30 => 30,
-                TstTag::Unknown (x) if x != 0 && x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 26 && x != 27 && x != 28 && x != 29 && x != 30 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                TstTag::Unknown (x) if x != 0 && x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 26 && x != 27 && x != 28 && x != 29 && x != 30 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -1623,7 +1623,7 @@ mod exec_impls {
             } = v;
             let l1 = (Fixed::< 2 >).prepare (foo) ?;
             let l2 = (Fixed::< 2 >).prepare (bar) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -1646,217 +1646,248 @@ mod exec_impls {
             let (n, v) = match self.tag {
                 TstTag::C0 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C0 (v))
                 }
                 ,
                 TstTag::C1 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C1 (v))
                 }
                 ,
                 TstTag::C2 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C2 (v))
                 }
                 ,
                 TstTag::C3 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C3 (v))
                 }
                 ,
                 TstTag::C4 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C4 (v))
                 }
                 ,
                 TstTag::C5 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C5 (v))
                 }
                 ,
                 TstTag::C6 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C6 (v))
                 }
                 ,
                 TstTag::C7 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C7 (v))
                 }
                 ,
                 TstTag::C8 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C8 (v))
                 }
                 ,
                 TstTag::C9 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C9 (v))
                 }
                 ,
                 TstTag::C10 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C10 (v))
                 }
                 ,
                 TstTag::C11 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C11 (v))
                 }
                 ,
                 TstTag::C12 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C12 (v))
                 }
                 ,
                 TstTag::C13 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C13 (v))
                 }
                 ,
                 TstTag::C14 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C14 (v))
                 }
                 ,
                 TstTag::C15 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C15 (v))
                 }
                 ,
                 TstTag::C16 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C16 (v))
                 }
                 ,
                 TstTag::C17 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C17 (v))
                 }
                 ,
                 TstTag::C18 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C18 (v))
                 }
                 ,
                 TstTag::C19 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C19 (v))
                 }
                 ,
                 TstTag::C20 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C20 (v))
                 }
                 ,
                 TstTag::C21 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C21 (v))
                 }
                 ,
                 TstTag::C22 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C22 (v))
                 }
                 ,
                 TstTag::C23 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C23 (v))
                 }
                 ,
                 TstTag::C24 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C24 (v))
                 }
                 ,
                 TstTag::C25 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C25 (v))
                 }
                 ,
                 TstTag::C26 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C26 (v))
                 }
                 ,
                 TstTag::C27 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C27 (v))
                 }
                 ,
                 TstTag::C28 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C28 (v))
                 }
                 ,
                 TstTag::C29 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C29 (v))
                 }
                 ,
                 TstTag::C30 => {
                     let (n,
-                    v) = (MydataFmt).parse (& rest) ?;
+                    v) = (Named ("mydata",
+                    MydataFmt)).parse (& rest) ?;
                     (n,
                     TstMydata::C30 (v))
                 }
@@ -2029,39 +2060,39 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (TstTag::C0, TstMydata::C0 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C1, TstMydata::C1 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C2, TstMydata::C2 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C3, TstMydata::C3 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C4, TstMydata::C4 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C5, TstMydata::C5 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C6, TstMydata::C6 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C7, TstMydata::C7 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C8, TstMydata::C8 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C9, TstMydata::C9 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C10, TstMydata::C10 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C11, TstMydata::C11 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C12, TstMydata::C12 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C13, TstMydata::C13 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C14, TstMydata::C14 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C15, TstMydata::C15 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C16, TstMydata::C16 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C17, TstMydata::C17 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C18, TstMydata::C18 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C19, TstMydata::C19 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C20, TstMydata::C20 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C21, TstMydata::C21 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C22, TstMydata::C22 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C23, TstMydata::C23 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C24, TstMydata::C24 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C25, TstMydata::C25 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C26, TstMydata::C26 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C27, TstMydata::C27 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C28, TstMydata::C28 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C29, TstMydata::C29 (v)) => (MydataFmt).prepare (v),
-                (TstTag::C30, TstMydata::C30 (v)) => (MydataFmt).prepare (v),
+                (TstTag::C0, TstMydata::C0 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C1, TstMydata::C1 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C2, TstMydata::C2 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C3, TstMydata::C3 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C4, TstMydata::C4 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C5, TstMydata::C5 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C6, TstMydata::C6 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C7, TstMydata::C7 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C8, TstMydata::C8 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C9, TstMydata::C9 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C10, TstMydata::C10 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C11, TstMydata::C11 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C12, TstMydata::C12 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C13, TstMydata::C13 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C14, TstMydata::C14 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C15, TstMydata::C15 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C16, TstMydata::C16 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C17, TstMydata::C17 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C18, TstMydata::C18 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C19, TstMydata::C19 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C20, TstMydata::C20 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C21, TstMydata::C21 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C22, TstMydata::C22 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C23, TstMydata::C23 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C24, TstMydata::C24 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C25, TstMydata::C25 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C26, TstMydata::C26 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C27, TstMydata::C27 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C28, TstMydata::C28 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C29, TstMydata::C29 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
+                (TstTag::C30, TstMydata::C30 (v)) => (Named ("mydata", MydataFmt)).prepare (v),
                 (TstTag::Unknown (x), TstMydata::Default (v)) if x != 0 && x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 26 && x != 27 && x != 28 && x != 29 && x != 30 => (Tail).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2079,11 +2110,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = TstTagFmt.parse(&rest)?;
+            let (n1, tag) = Named ("tst_tag", TstTagFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, mydata) = TstMydataFmt {
+            let (n2, mydata) = Named ("tst_mydata", TstMydataFmt {
                 tag: tag
             }
+            )
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -2122,12 +2154,12 @@ mod exec_impls {
                 tag,
                 mydata,
             } = v;
-            let l1 = (TstTagFmt).prepare (tag) ?;
-            let l2 = (TstMydataFmt {
+            let l1 = (Named ("tst_tag", TstTagFmt)).prepare (tag) ?;
+            let l2 = (Named ("tst_mydata", TstMydataFmt {
                 tag: *tag
             }
-            ).prepare (mydata) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            )).prepare (mydata) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -2299,7 +2331,7 @@ mod exec_impls {
             let l16 = (U8).prepare (f16) ?;
             let l17 = (U8).prepare (f17) ?;
             let l18 = (U8).prepare (f18) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l5).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l6).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l7).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l8).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l9).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l10).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l11).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l12).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l13).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l14).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l15).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l16).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l17).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l18).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l4).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l5).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l6).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l7).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l8).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l9).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l10).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l11).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l12).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l13).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l14).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l15).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l16).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l17).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l18).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }

@@ -2042,9 +2042,9 @@ mod exec_impls {
             let l3 = (Fixed::<3>).prepare(c)?;
             let l4 = (Tail).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }
@@ -2096,8 +2096,8 @@ mod exec_impls {
             let l2 = (U16Le).prepare(b)?;
             let l3 = (U32Le).prepare(c)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -2116,15 +2116,15 @@ mod exec_impls {
 
             let (n, v) = match self.tag {
                 MsgType::Msg1 => {
-                    let (n, v) = (Msg1Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg1", Msg1Fmt)).parse(&rest)?;
                     (n, MsgParam::Msg1(v))
                 },
                 MsgType::Msg2 => {
-                    let (n, v) = (Msg2Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg2", Msg2Fmt)).parse(&rest)?;
                     (n, MsgParam::Msg2(v))
                 },
                 MsgType::Msg3 => {
-                    let (n, v) = (Msg3Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg3", Msg3Fmt)).parse(&rest)?;
                     (n, MsgParam::Msg3(v))
                 },
             };
@@ -2167,10 +2167,10 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (MsgType::Msg1, MsgParam::Msg1(v)) => (Msg1Fmt).prepare(v),
-                (MsgType::Msg2, MsgParam::Msg2(v)) => (Msg2Fmt).prepare(v),
-                (MsgType::Msg3, MsgParam::Msg3(v)) => (Msg3Fmt).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (MsgType::Msg1, MsgParam::Msg1(v)) => (Named("msg1", Msg1Fmt)).prepare(v),
+                (MsgType::Msg2, MsgParam::Msg2(v)) => (Named("msg2", Msg2Fmt)).prepare(v),
+                (MsgType::Msg3, MsgParam::Msg3(v)) => (Named("msg3", Msg3Fmt)).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2189,15 +2189,15 @@ mod exec_impls {
 
             let (n, v) = match self.tag {
                 MsgType::Msg1 => {
-                    let (n, v) = (Msg1Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg1", Msg1Fmt)).parse(&rest)?;
                     (n, MsgContent::Msg1(v))
                 },
                 MsgType::Msg2 => {
-                    let (n, v) = (Msg2Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg2", Msg2Fmt)).parse(&rest)?;
                     (n, MsgContent::Msg2(v))
                 },
                 MsgType::Msg3 => {
-                    let (n, v) = (Msg3Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg3", Msg3Fmt)).parse(&rest)?;
                     (n, MsgContent::Msg3(v))
                 },
             };
@@ -2240,10 +2240,10 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (MsgType::Msg1, MsgContent::Msg1(v)) => (Msg1Fmt).prepare(v),
-                (MsgType::Msg2, MsgContent::Msg2(v)) => (Msg2Fmt).prepare(v),
-                (MsgType::Msg3, MsgContent::Msg3(v)) => (Msg3Fmt).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (MsgType::Msg1, MsgContent::Msg1(v)) => (Named("msg1", Msg1Fmt)).prepare(v),
+                (MsgType::Msg2, MsgContent::Msg2(v)) => (Named("msg2", Msg2Fmt)).prepare(v),
+                (MsgType::Msg3, MsgContent::Msg3(v)) => (Named("msg3", Msg3Fmt)).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2262,15 +2262,15 @@ mod exec_impls {
 
             let (n, v) = match self.tag {
                 1 => {
-                    let (n, v) = (Msg1Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg1", Msg1Fmt)).parse(&rest)?;
                     (n, MsgAltContent::Variant1(v))
                 },
                 2 => {
-                    let (n, v) = (Msg2Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg2", Msg2Fmt)).parse(&rest)?;
                     (n, MsgAltContent::Variant2(v))
                 },
                 3 => {
-                    let (n, v) = (Msg3Fmt).parse(&rest)?;
+                    let (n, v) = (Named("msg3", Msg3Fmt)).parse(&rest)?;
                     (n, MsgAltContent::Variant3(v))
                 },
                 _ => {
@@ -2320,13 +2320,13 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (1, MsgAltContent::Variant1(v)) => (Msg1Fmt).prepare(v),
-                (2, MsgAltContent::Variant2(v)) => (Msg2Fmt).prepare(v),
-                (3, MsgAltContent::Variant3(v)) => (Msg3Fmt).prepare(v),
+                (1, MsgAltContent::Variant1(v)) => (Named("msg1", Msg1Fmt)).prepare(v),
+                (2, MsgAltContent::Variant2(v)) => (Named("msg2", Msg2Fmt)).prepare(v),
+                (3, MsgAltContent::Variant3(v)) => (Named("msg3", Msg3Fmt)).prepare(v),
                 (x, MsgAltContent::Default(v)) if !(x == 1) && !(x == 2) && !(x == 3) => (Varied(
                     self.len,
                 )).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2346,9 +2346,10 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, len) = U16Le.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, content) = ExactLen(len, MsgAltContentFmt { len: len, tag: tag }).parse(
-                &rest,
-            )?;
+            let (n3, content) = ExactLen(
+                len,
+                Named("msg_alt_content", MsgAltContentFmt { len: len, tag: tag }),
+            ).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = MsgAlt { tag, len, content };
@@ -2377,10 +2378,13 @@ mod exec_impls {
             let MsgAlt { tag, len, content } = v;
             let l1 = (U8).prepare(tag)?;
             let l2 = (U16Le).prepare(len)?;
-            let l3 = (ExactLen(len, MsgAltContentFmt { len: *len, tag: *tag })).prepare(content)?;
+            let l3 = (ExactLen(
+                len,
+                Named("msg_alt_content", MsgAltContentFmt { len: *len, tag: *tag }),
+            )).prepare(content)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -2428,7 +2432,7 @@ mod exec_impls {
                 MsgType::Msg1 => 1,
                 MsgType::Msg2 => 2,
                 MsgType::Msg3 => 3,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -2445,11 +2449,14 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = MsgTypeFmt.parse(&rest)?;
+            let (n1, tag) = Named("msg_type", MsgTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, len) = U16Le.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, content) = ExactLen(len, MsgContentFmt { tag: tag }).parse(&rest)?;
+            let (n3, content) = ExactLen(
+                len,
+                Named("msg_content", MsgContentFmt { tag: tag }),
+            ).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg { tag, len, content };
@@ -2476,12 +2483,14 @@ mod exec_impls {
         fn prepare(&self, v: &Msg<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgFmt as SpecByteLen>::byte_len);
             let Msg { tag, len, content } = v;
-            let l1 = (MsgTypeFmt).prepare(tag)?;
+            let l1 = (Named("msg_type", MsgTypeFmt)).prepare(tag)?;
             let l2 = (U16Le).prepare(len)?;
-            let l3 = (ExactLen(len, MsgContentFmt { tag: *tag })).prepare(content)?;
+            let l3 = (ExactLen(len, Named("msg_content", MsgContentFmt { tag: *tag }))).prepare(
+                content,
+            )?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }

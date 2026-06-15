@@ -90,7 +90,7 @@ impl<A, PredFn, T> Prepare<T> for super::Refined<A, PredFn> where
         if self.1.test(v) {
             self.0.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
         }
     }
 }
@@ -149,7 +149,7 @@ impl<Inner, T> Prepare<T> for super::Const<Inner, T> where T: SelfView, Inner: P
         if SelfView::eq(v, &self.1) {
             self.0.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag))
         }
     }
 }
@@ -193,7 +193,7 @@ impl<const N: usize> Prepare<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
         if eq {
             Ok(N)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag))
         }
     }
 }

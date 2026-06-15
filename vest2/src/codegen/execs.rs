@@ -362,7 +362,7 @@ impl<'a> Analysis<'a> {
             ),
             |w| {
                 w.line(
-                    "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                    "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));",
                 );
             },
         );
@@ -374,7 +374,7 @@ impl<'a> Analysis<'a> {
             if let Some(pred) = consistency {
                 w.if_block(format!("!({})", render_ts(pred)), |w| {
                     w.line(
-                        "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                        "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));",
                     );
                 });
             }
@@ -387,7 +387,7 @@ impl<'a> Analysis<'a> {
             if let Some(pred) = refinement {
                 w.if_block(format!("!({})", render_ts(pred)), |w| {
                     w.line(
-                        "return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));",
+                        "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));",
                     );
                 });
             }
@@ -437,7 +437,7 @@ impl<'a> Analysis<'a> {
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
-                    let fmt_expr = self.render_exec_combinator_expr(
+                    let fmt_expr = self.render_exec_combinator_expr_named(
                         combinator,
                         param_defns,
                         CodegenMode::Parse,
@@ -569,7 +569,7 @@ impl<'a> Analysis<'a> {
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let label_ident: TokenStream = format_ident!("{}", label).into_token_stream();
-                    let fmt_expr = self.render_exec_combinator_expr(
+                    let fmt_expr = self.render_exec_combinator_expr_named(
                         combinator,
                         param_defns,
                         CodegenMode::Serialize,
@@ -642,8 +642,11 @@ impl<'a> Analysis<'a> {
             .zip(variant_names.iter())
             .map(|((pat, combinator), variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr =
-                    self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
+                let fmt_expr = self.render_exec_combinator_expr_named(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Parse,
+                );
                 let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
                     quote! {
                         if !(#pred) {
@@ -708,7 +711,7 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) -> TokenStream {
         // For non-dependent choices we try each branch in order
-        let mut chain = quote! { Err(ParseError::invalid_tag()) };
+        let mut chain = quote! { Err(ParseError::invalid_choice()) };
         for (combinator, variant_name) in self
             .choice_combinators_and_names(comb, variant_names)
             .into_iter()
@@ -716,7 +719,7 @@ impl<'a> Analysis<'a> {
         {
             let variant_ident = format_ident!("{}", variant_name);
             let fmt_expr =
-                self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
+                self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Parse);
             if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
                 chain = quote! {
                     match (#fmt_expr).parse(&rest) {
@@ -893,7 +896,7 @@ impl<'a> Analysis<'a> {
                     w.push_multiline(render_ts(arm));
                 }
                 w.line(
-                    " _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),",
+                    " _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),",
                 );
             });
             return;
@@ -904,7 +907,7 @@ impl<'a> Analysis<'a> {
             .into_iter()
             .map(|(combinator, variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr(
+                let fmt_expr = self.render_exec_combinator_expr_named(
                     combinator,
                     param_defns,
                     CodegenMode::Serialize,
@@ -975,8 +978,11 @@ impl<'a> Analysis<'a> {
             .zip(variant_names.iter())
             .flat_map(|((pat, combinator), variant_name)| {
                 let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr =
-                    self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
+                let fmt_expr = self.render_exec_combinator_expr_named(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Serialize,
+                );
                 let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
                 match pat {
                     ChoicePattern::Enum(name) => {
@@ -1246,7 +1252,7 @@ impl<'a> Analysis<'a> {
             .collect();
 
         let default_arm = if exhaustive {
-            quote! { _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)), }
+            quote! { _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)), }
         } else {
             let disjuncts: Vec<TokenStream> = variants
                 .iter()
@@ -1264,7 +1270,7 @@ impl<'a> Analysis<'a> {
             };
             quote! {
                 #exec_ident::Unknown(x) if #guard => x,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         };
 
@@ -1291,7 +1297,7 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) {
         let fmt_expr =
-            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse);
+            self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Parse);
 
         w.call_chain_stmt(
             Some("(n, v)"),
@@ -1353,8 +1359,11 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
     ) {
         if let Some(invocation) = self.direct_alias(combinator) {
-            let target_args =
-                self.render_exec_invocation_expr(invocation, param_defns, CodegenMode::Serialize);
+            let target_args = self.render_named_exec_invocation_expr(
+                invocation,
+                param_defns,
+                CodegenMode::Serialize,
+            );
             w.call_chain_stmt(
                 None,
                 &render_ts(quote! { #target_args }),
@@ -1365,7 +1374,7 @@ impl<'a> Analysis<'a> {
             return;
         }
         let fmt_expr =
-            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
+            self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Serialize);
         let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
         w.line(render_ts(prep));
     }
@@ -1390,12 +1399,41 @@ impl<'a> Analysis<'a> {
         param_defns: &[ParamDefn],
         mode: CodegenMode,
     ) -> TokenStream {
+        self.render_exec_combinator_expr_impl(combinator, param_defns, mode, false)
+    }
+
+    fn render_exec_combinator_expr_named(
+        &self,
+        combinator: &Combinator,
+        param_defns: &[ParamDefn],
+        mode: CodegenMode,
+    ) -> TokenStream {
+        self.render_exec_combinator_expr_impl(combinator, param_defns, mode, true)
+    }
+
+    fn render_exec_combinator_expr_impl(
+        &self,
+        combinator: &Combinator,
+        param_defns: &[ParamDefn],
+        mode: CodegenMode,
+        named_invocations: bool,
+    ) -> TokenStream {
         match combinator {
             Combinator::AndThen(lhs, rhs) => {
-                return self.render_exec_and_then_expr(lhs, rhs, param_defns, mode);
+                return self.render_exec_and_then_expr_impl(
+                    lhs,
+                    rhs,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
             }
             Combinator::Invocation(invocation) => {
-                return self.render_exec_invocation_expr(invocation, param_defns, mode);
+                return if named_invocations {
+                    self.render_named_exec_invocation_expr(invocation, param_defns, mode)
+                } else {
+                    self.render_exec_invocation_expr(invocation, param_defns, mode)
+                };
             }
             _ => {}
         }
@@ -1403,11 +1441,19 @@ impl<'a> Analysis<'a> {
         match self.ctx.resolve_alias(combinator) {
             Combinator::ConstraintInt(c) => self.render_int_combinator_expr(&c.combinator),
             Combinator::ConstraintEnum(c) => {
-                self.render_exec_invocation_expr(&c.combinator, param_defns, mode)
+                if named_invocations {
+                    self.render_named_exec_invocation_expr(&c.combinator, param_defns, mode)
+                } else {
+                    self.render_exec_invocation_expr(&c.combinator, param_defns, mode)
+                }
             }
             Combinator::Wrap(wrap) => {
-                let mut body_expr =
-                    self.render_exec_combinator_expr(&wrap.combinator, param_defns, mode);
+                let mut body_expr = self.render_exec_combinator_expr_impl(
+                    &wrap.combinator,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 for const_comb in wrap.post.iter() {
                     let (c_fmt, c_val) = self.render_exec_tag_expr(const_comb, param_defns, mode);
                     body_expr = quote! { SuffixTagged(#body_expr, #c_fmt, #c_val) };
@@ -1419,14 +1465,24 @@ impl<'a> Analysis<'a> {
                 body_expr
             }
             Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
-                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr_impl(
+                    inner,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 quote! { Star(#inner_expr) }
             }
             Combinator::Array(vestir::ArrayCombinator {
                 combinator: inner,
                 len,
             }) => {
-                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr_impl(
+                    inner,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 match self.eval_const_length_expr(len) {
                     Some(n) => {
                         let n_tok = syn_usize(n);
@@ -1458,19 +1514,25 @@ impl<'a> Analysis<'a> {
             },
             Combinator::Tail(_) => quote! { Tail },
             Combinator::Option(vestir::OptionCombinator(inner)) => {
-                let inner_expr = self.render_exec_combinator_expr(inner, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr_impl(
+                    inner,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 quote! { Opt(#inner_expr) }
             }
             Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),
         }
     }
 
-    fn render_exec_and_then_expr(
+    fn render_exec_and_then_expr_impl(
         &self,
         lhs: &Combinator,
         rhs: &Combinator,
         param_defns: &[ParamDefn],
         mode: CodegenMode,
+        named_invocations: bool,
     ) -> TokenStream {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
@@ -1479,12 +1541,27 @@ impl<'a> Analysis<'a> {
                     &|name| self.resolve_dep(name, param_defns),
                     None,
                 );
-                let inner_expr = self.render_exec_combinator_expr(rhs, param_defns, mode);
+                let inner_expr = self.render_exec_combinator_expr_impl(
+                    rhs,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 quote! { ExactLen(#len_expr, #inner_expr) }
             }
             _ => {
-                let lhs_expr = self.render_exec_combinator_expr(lhs, param_defns, mode);
-                let rhs_expr = self.render_exec_combinator_expr(rhs, param_defns, mode);
+                let lhs_expr = self.render_exec_combinator_expr_impl(
+                    lhs,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
+                let rhs_expr = self.render_exec_combinator_expr_impl(
+                    rhs,
+                    param_defns,
+                    mode,
+                    named_invocations,
+                );
                 quote! { AndThen(#lhs_expr, #rhs_expr) }
             }
         }
@@ -1530,6 +1607,17 @@ impl<'a> Analysis<'a> {
             })
             .collect();
         quote! { #fmt_ident { #(#field_inits),* } }
+    }
+
+    fn render_named_exec_invocation_expr(
+        &self,
+        invocation: &vestir::CombinatorInvocation,
+        param_defns: &[ParamDefn],
+        mode: CodegenMode,
+    ) -> TokenStream {
+        let name = invocation.func.as_str();
+        let fmt_expr = self.render_exec_invocation_expr(invocation, param_defns, mode);
+        quote! { Named(#name, #fmt_expr) }
     }
 
     /// Build the exec format expression for a ConstCombinator.
@@ -1620,7 +1708,7 @@ impl<'a> Analysis<'a> {
         if let Some(pred) = self.gen_constraint_pred(combinator, pred_value) {
             quote! {{
                 if !(#pred) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (#fmt_expr).prepare(#value_expr)
                 }
@@ -1639,7 +1727,7 @@ impl<'a> Analysis<'a> {
         let mut acc: TokenStream = terms[0].parse().unwrap();
         for term in &terms[1..] {
             let next: TokenStream = term.parse().unwrap();
-            acc = quote! { #acc.checked_add(#next).ok_or(PreSerializeError::LengthTooLarge)? };
+            acc = quote! { #acc.checked_add(#next).ok_or(PreSerializeError::length_too_large())? };
         }
         w.line(format!("let {} = {};", total_name, render_ts(acc)));
         w.line(format!("Ok({})", total_name));

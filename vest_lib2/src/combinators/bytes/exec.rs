@@ -53,7 +53,7 @@ impl<const N: usize> Prepare<[u8]> for super::Fixed<N> {
         if v.len() == N {
             Ok(N)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }
@@ -94,7 +94,7 @@ impl<Len: AsLen> Prepare<[u8]> for super::Varied<Len> {
         if v.len() == self.0.get() {
             Ok(v.len())
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }
@@ -181,7 +181,7 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
         if len == self.0.get() {
             Ok(len)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }

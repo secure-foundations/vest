@@ -265,7 +265,7 @@ impl<A, B, TA, TB> Prepare<super::Sum<TA, TB>> for super::Sum<A, B> where
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.prepare(va),
             (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.prepare(vb),
-            _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice)),
+            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice)),
         }
     }
 }

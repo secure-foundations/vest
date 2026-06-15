@@ -1612,7 +1612,7 @@ mod exec_impls {
             let NestedComplex { flag, data } = v;
             let l1 = (Const(U32Le, 0)).prepare(flag)?;
             let l2 = (Varied((self.hdr_payload.hdr.payload_length - 8))).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1666,14 +1666,14 @@ mod exec_impls {
             let l2 = (U8).prepare(reserved)?;
             let l3 = {
                 if !(*payload_length >= 8 && *payload_length <= 65535) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U32Le).prepare(payload_length)
                 }
             }?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1693,7 +1693,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, header) = GenericHeaderFmt.parse(&rest)?;
+            let (n1, header) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, body) = Varied((self.total_len - header.payload_length)).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -1729,9 +1729,9 @@ mod exec_impls {
             }
 
             let CombinedExample { header, body } = v;
-            let l1 = (GenericHeaderFmt).prepare(header)?;
+            let l1 = (Named("generic_header", GenericHeaderFmt)).prepare(header)?;
             let l2 = (Varied((self.total_len - header.payload_length))).prepare(body)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1747,7 +1747,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = GenericHeaderFmt.parse(&rest)?;
+            let (n1, hdr) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, body) = Varied((hdr.payload_length - 4)).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -1775,9 +1775,9 @@ mod exec_impls {
         fn prepare(&self, v: &PayloadWithHeader<'i>) -> Result<usize, PreSerializeError> {
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let PayloadWithHeader { hdr, body } = v;
-            let l1 = (GenericHeaderFmt).prepare(hdr)?;
+            let l1 = (Named("generic_header", GenericHeaderFmt)).prepare(hdr)?;
             let l2 = (Varied((hdr.payload_length - 4))).prepare(body)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1798,11 +1798,19 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, body) = CombinedExampleFmt { total_len: total_len }.parse(&rest)?;
+            let (n2, body) = Named(
+                "combined_example",
+                CombinedExampleFmt { total_len: total_len },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, hdr_payload) = PayloadWithHeaderFmt.parse(&rest)?;
+            let (n3, hdr_payload) = Named("payload_with_header", PayloadWithHeaderFmt).parse(
+                &rest,
+            )?;
             let rest = rest.skip(n3);
-            let (n4, nested) = NestedComplexFmt { hdr_payload: hdr_payload }.parse(&rest)?;
+            let (n4, nested) = Named(
+                "nested_complex",
+                NestedComplexFmt { hdr_payload: hdr_payload },
+            ).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = FinalMsg { total_len, body, hdr_payload, nested };
@@ -1832,18 +1840,24 @@ mod exec_impls {
             let FinalMsg { total_len, body, hdr_payload, nested } = v;
             let l1 = {
                 if !(*total_len >= 16777215 && *total_len <= 4294967295) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U32Le).prepare(total_len)
                 }
             }?;
-            let l2 = (CombinedExampleFmt { total_len: *total_len }).prepare(body)?;
-            let l3 = (PayloadWithHeaderFmt).prepare(hdr_payload)?;
-            let l4 = (NestedComplexFmt { hdr_payload: *hdr_payload }).prepare(nested)?;
+            let l2 = (Named(
+                "combined_example",
+                CombinedExampleFmt { total_len: *total_len },
+            )).prepare(body)?;
+            let l3 = (Named("payload_with_header", PayloadWithHeaderFmt)).prepare(hdr_payload)?;
+            let l4 = (Named(
+                "nested_complex",
+                NestedComplexFmt { hdr_payload: *hdr_payload },
+            )).prepare(nested)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }
@@ -1862,7 +1876,7 @@ mod exec_impls {
 
             let (n1, magic) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, inner) = GenericHeaderFmt.parse(&rest)?;
+            let (n2, inner) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OuterHeader { magic, inner };
@@ -1889,8 +1903,8 @@ mod exec_impls {
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
             let OuterHeader { magic, inner } = v;
             let l1 = (U32Le).prepare(magic)?;
-            let l2 = (GenericHeaderFmt).prepare(inner)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("generic_header", GenericHeaderFmt)).prepare(inner)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1906,7 +1920,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, outer) = OuterHeaderFmt.parse(&rest)?;
+            let (n1, outer) = Named("outer_header", OuterHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, data) = Varied((outer.inner.payload_length - 8)).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -1934,9 +1948,9 @@ mod exec_impls {
         fn prepare(&self, v: &DeepNested<'i>) -> Result<usize, PreSerializeError> {
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
             let DeepNested { outer, data } = v;
-            let l1 = (OuterHeaderFmt).prepare(outer)?;
+            let l1 = (Named("outer_header", OuterHeaderFmt)).prepare(outer)?;
             let l2 = (Varied((outer.inner.payload_length - 8))).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }

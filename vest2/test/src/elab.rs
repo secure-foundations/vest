@@ -1597,7 +1597,7 @@ mod exec_impls {
                 ContentType::C1 => 1,
                 ContentType::C2 => 2,
                 ContentType::Unknown(x) if x != 0 && x != 1 && x != 2 => x,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -1617,7 +1617,7 @@ mod exec_impls {
 
             let (n, v) = match self.f2 {
                 ContentType::C0 => {
-                    let (n, v) = (Content0Fmt { num: self.f3 }).parse(&rest)?;
+                    let (n, v) = (Named("content_0", Content0Fmt { num: self.f3 })).parse(&rest)?;
                     (n, MsgCF4::C0(v))
                 },
                 ContentType::C1 => {
@@ -1675,12 +1675,15 @@ mod exec_impls {
             }
 
             match (self.f2, v) {
-                (ContentType::C0, MsgCF4::C0(v)) => (Content0Fmt { num: self.f3 }).prepare(v),
+                (ContentType::C0, MsgCF4::C0(v)) => (Named(
+                    "content_0",
+                    Content0Fmt { num: self.f3 },
+                )).prepare(v),
                 (ContentType::C1, MsgCF4::C1(v)) => (U16Be).prepare(v),
                 (ContentType::C2, MsgCF4::C2(v)) => (U32Be).prepare(v),
                 (ContentType::Unknown(x), MsgCF4::Default(v)) if x != 0 && x != 1 && x != 2 => (
                 Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -1731,8 +1734,8 @@ mod exec_impls {
             let l2 = (Const(U16Be, 4660)).prepare(f2)?;
             let l3 = (Const(Fixed::<5>, [0x01, 0x01, 0x01, 0x01, 0x01])).prepare(c)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1748,7 +1751,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f1) = MsgDFmt.parse(&rest)?;
+            let (n1, f1) = Named("msg_d", MsgDFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MsgB { f1 };
@@ -1773,7 +1776,7 @@ mod exec_impls {
         fn prepare(&self, v: &MsgB) -> Result<usize, PreSerializeError> {
             reveal(<MsgBFmt as SpecByteLen>::byte_len);
             let MsgB { f1 } = v;
-            let l1 = (MsgDFmt).prepare(f1)?;
+            let l1 = (Named("msg_d", MsgDFmt)).prepare(f1)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -1790,7 +1793,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f1) = MsgBFmt.parse(&rest)?;
+            let (n1, f1) = Named("msg_b", MsgBFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, f2) = Tail.parse(&rest)?;
             let rest = rest.skip(n2);
@@ -1818,9 +1821,9 @@ mod exec_impls {
         fn prepare(&self, v: &MsgA<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgAFmt as SpecByteLen>::byte_len);
             let MsgA { f1, f2 } = v;
-            let l1 = (MsgBFmt).prepare(f1)?;
+            let l1 = (Named("msg_b", MsgBFmt)).prepare(f1)?;
             let l2 = (Tail).prepare(f2)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1836,11 +1839,13 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f2) = ContentTypeFmt.parse(&rest)?;
+            let (n1, f2) = Named("content_type", ContentTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, f3) = U24Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, f4) = ExactLen(f3, MsgCF4Fmt { f2: f2, f3: f3 }).parse(&rest)?;
+            let (n3, f4) = ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: f2, f3: f3 })).parse(
+                &rest,
+            )?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = MsgC { f2, f3, f4 };
@@ -1867,12 +1872,12 @@ mod exec_impls {
         fn prepare(&self, v: &MsgC<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgCFmt as SpecByteLen>::byte_len);
             let MsgC { f2, f3, f4 } = v;
-            let l1 = (ContentTypeFmt).prepare(f2)?;
+            let l1 = (Named("content_type", ContentTypeFmt)).prepare(f2)?;
             let l2 = (U24Be).prepare(f3)?;
-            let l3 = (ExactLen(f3, MsgCF4Fmt { f2: *f2, f3: *f3 })).prepare(f4)?;
+            let l3 = (ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: *f2, f3: *f3 }))).prepare(f4)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }

@@ -206,7 +206,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
                     self.prepare_gas((gas - 1) as usize, pp, vv)
                 } else {
                     Err(
-                        PreSerializeError::NotCompliant(
+                        PreSerializeError::not_compliant(
                             ComplianceErrorKind::RecursionLimitExceeded,
                         ),
                     )

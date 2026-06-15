@@ -2383,7 +2383,7 @@ mod exec_impls {
                 (ATypedClosedEnum::X, ATypedChoose::X(v)) => (U8).prepare(v),
                 (ATypedClosedEnum::Y, ATypedChoose::Y(v)) => (U16Le).prepare(v),
                 (ATypedClosedEnum::Z, ATypedChoose::Z(v)) => (U32Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2433,7 +2433,7 @@ mod exec_impls {
                 ATypedOpenEnum::Q => 1,
                 ATypedOpenEnum::R => 2,
                 ATypedOpenEnum::Unknown(x) if x != 0 && x != 1 && x != 2 => x,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U32Le.prepare(&tag)
         }
@@ -2456,7 +2456,7 @@ mod exec_impls {
                     },
                     _ => match (U8).parse(&rest) {
                         Ok((n, va)) if va >= 21 => { Ok((n, ANonDependentChoose::Variant3(va))) },
-                        _ => Err(ParseError::invalid_tag()),
+                        _ => Err(ParseError::invalid_choice()),
                     },
                 },
             }?;
@@ -2492,21 +2492,21 @@ mod exec_impls {
             match v {
                 ANonDependentChoose::Variant1(v) => {
                     if !(*v >= 0 && *v <= 10) {
-                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
                         (U8).prepare(v)
                     }
                 },
                 ANonDependentChoose::Variant2(v) => {
                     if !(*v >= 11 && *v <= 20) {
-                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
                         (U8).prepare(v)
                     }
                 },
                 ANonDependentChoose::Variant3(v) => {
                     if !(*v >= 21) {
-                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
                         (U8).prepare(v)
                     }
@@ -2583,7 +2583,7 @@ mod exec_impls {
                 (AClosedEnum::A, ARegularChoose::A(v)) => (U8).prepare(v),
                 (AClosedEnum::B, ARegularChoose::B(v)) => (U16Le).prepare(v),
                 (AClosedEnum::C, ARegularChoose::C(v)) => (U32Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2631,7 +2631,7 @@ mod exec_impls {
                 AMixedTypedEnum::M => 0,
                 AMixedTypedEnum::N => 1,
                 AMixedTypedEnum::O => 2,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -2680,7 +2680,7 @@ mod exec_impls {
                 AClosedEnum::A => 0,
                 AClosedEnum::B => 1,
                 AClosedEnum::C => 2,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -2729,7 +2729,7 @@ mod exec_impls {
                 ATypedClosedEnum::X => 0,
                 ATypedClosedEnum::Y => 1,
                 ATypedClosedEnum::Z => 2,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U16Le.prepare(&tag)
         }
@@ -2780,7 +2780,7 @@ mod exec_impls {
                 AnOpenEnum::B => 1,
                 AnOpenEnum::C => 2,
                 AnOpenEnum::Unknown(x) if x != 0 && x != 1 && x != 2 => x,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -2863,7 +2863,7 @@ mod exec_impls {
                 (ATypedOpenEnum::R, ATypedChooseWithDefault::R(v)) => (U32Le).prepare(v),
                 (ATypedOpenEnum::Unknown(x), ATypedChooseWithDefault::Default(v)) if x != 0 && x
                     != 1 && x != 2 => (Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2945,7 +2945,7 @@ mod exec_impls {
                 (AnOpenEnum::C, AChooseWithDefault::C(v)) => (U32Le).prepare(v),
                 (AnOpenEnum::Unknown(x), AChooseWithDefault::Default(v)) if x != 0 && x != 1 && x
                     != 2 => (Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }

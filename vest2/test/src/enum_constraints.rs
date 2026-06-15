@@ -995,7 +995,7 @@ mod exec_impls {
                 MyTypedEnum::X => 1,
                 MyTypedEnum::Y => 2,
                 MyTypedEnum::Z => 3,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U16Le.prepare(&tag)
         }
@@ -1044,7 +1044,7 @@ mod exec_impls {
                 MyEnum::A => 1,
                 MyEnum::B => 2,
                 MyEnum::C => 3,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -1061,17 +1061,17 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = MyTypedEnumFmt.parse(&rest)?;
+            let (n1, foo) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
             if !(foo == MyTypedEnum::X) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = MyTypedEnumFmt.parse(&rest)?;
+            let (n2, bar) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
             if !(!(bar == MyTypedEnum::Y)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = MyTypedEnumFmt.parse(&rest)?;
+            let (n3, baz) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
             if !(baz == MyTypedEnum::X || baz == MyTypedEnum::Z) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1106,30 +1106,30 @@ mod exec_impls {
             let TypedEnumConstraints { foo, bar, baz, tag } = v;
             let l1 = {
                 if !(*foo == MyTypedEnum::X) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyTypedEnumFmt).prepare(foo)
+                    (Named("my_typed_enum", MyTypedEnumFmt)).prepare(foo)
                 }
             }?;
             let l2 = {
                 if !(!(*bar == MyTypedEnum::Y)) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyTypedEnumFmt).prepare(bar)
+                    (Named("my_typed_enum", MyTypedEnumFmt)).prepare(bar)
                 }
             }?;
             let l3 = {
                 if !(*baz == MyTypedEnum::X || *baz == MyTypedEnum::Z) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyTypedEnumFmt).prepare(baz)
+                    (Named("my_typed_enum", MyTypedEnumFmt)).prepare(baz)
                 }
             }?;
             let l4 = (Const(MyTypedEnumFmt, MyTypedEnum::X)).prepare(tag)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }
@@ -1146,17 +1146,17 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = MyEnumFmt.parse(&rest)?;
+            let (n1, foo) = Named("my_enum", MyEnumFmt).parse(&rest)?;
             if !(foo == MyEnum::A) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = MyEnumFmt.parse(&rest)?;
+            let (n2, bar) = Named("my_enum", MyEnumFmt).parse(&rest)?;
             if !(!(bar == MyEnum::B)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = MyEnumFmt.parse(&rest)?;
+            let (n3, baz) = Named("my_enum", MyEnumFmt).parse(&rest)?;
             if !(baz == MyEnum::A || baz == MyEnum::C) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1191,30 +1191,30 @@ mod exec_impls {
             let EnumConstraints { foo, bar, baz, tag } = v;
             let l1 = {
                 if !(*foo == MyEnum::A) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyEnumFmt).prepare(foo)
+                    (Named("my_enum", MyEnumFmt)).prepare(foo)
                 }
             }?;
             let l2 = {
                 if !(!(*bar == MyEnum::B)) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyEnumFmt).prepare(bar)
+                    (Named("my_enum", MyEnumFmt)).prepare(bar)
                 }
             }?;
             let l3 = {
                 if !(*baz == MyEnum::A || *baz == MyEnum::C) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
-                    (MyEnumFmt).prepare(baz)
+                    (Named("my_enum", MyEnumFmt)).prepare(baz)
                 }
             }?;
             let l4 = (Const(MyEnumFmt, MyEnum::A)).prepare(tag)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }

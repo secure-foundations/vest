@@ -3022,7 +3022,7 @@ mod exec_impls {
             let Script { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(l)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3040,7 +3040,7 @@ mod exec_impls {
 
             let (n1, value) = U64Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_pubkey) = ScriptFmt.parse(&rest)?;
+            let (n2, script_pubkey) = Named("script", ScriptFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Txout { value, script_pubkey };
@@ -3067,8 +3067,8 @@ mod exec_impls {
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let Txout { value, script_pubkey } = v;
             let l1 = (U64Le).prepare(value)?;
-            let l2 = (ScriptFmt).prepare(script_pubkey)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("script", ScriptFmt)).prepare(script_pubkey)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3114,7 +3114,7 @@ mod exec_impls {
             let Outpoint { hash, index } = v;
             let l1 = (Fixed::<32>).prepare(hash)?;
             let l2 = (U32Le).prepare(index)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3160,7 +3160,7 @@ mod exec_impls {
             let ScriptSig { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(l)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3206,7 +3206,7 @@ mod exec_impls {
             let WitnessComponent { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(l)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3224,7 +3224,9 @@ mod exec_impls {
 
             let (n1, count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(count, WitnessComponentFmt).parse(&rest)?;
+            let (n2, data) = RepeatN(count, Named("witness_component", WitnessComponentFmt)).parse(
+                &rest,
+            )?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Witness { count, data };
@@ -3251,8 +3253,10 @@ mod exec_impls {
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let Witness { count, data } = v;
             let l1 = (VarInt::<true>).prepare(count)?;
-            let l2 = (RepeatN(count, WitnessComponentFmt)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (RepeatN(count, Named("witness_component", WitnessComponentFmt))).prepare(
+                data,
+            )?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3268,9 +3272,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, previous_output) = OutpointFmt.parse(&rest)?;
+            let (n1, previous_output) = Named("outpoint", OutpointFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_sig) = ScriptSigFmt.parse(&rest)?;
+            let (n2, script_sig) = Named("script_sig", ScriptSigFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let (n3, sequence) = U32Le.parse(&rest)?;
             let rest = rest.skip(n3);
@@ -3299,12 +3303,12 @@ mod exec_impls {
         fn prepare(&self, v: &Txin<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let Txin { previous_output, script_sig, sequence } = v;
-            let l1 = (OutpointFmt).prepare(previous_output)?;
-            let l2 = (ScriptSigFmt).prepare(script_sig)?;
+            let l1 = (Named("outpoint", OutpointFmt)).prepare(previous_output)?;
+            let l2 = (Named("script_sig", ScriptSigFmt)).prepare(script_sig)?;
             let l3 = (U32Le).prepare(sequence)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3321,7 +3325,7 @@ mod exec_impls {
                 Ok((n, va)) if va >= 0 && va <= 499999999 => { Ok((n, LockTime::BlockNo(va))) },
                 _ => match (U32Le).parse(&rest) {
                     Ok((n, va)) if va >= 500000000 => { Ok((n, LockTime::Timestamp(va))) },
-                    _ => Err(ParseError::invalid_tag()),
+                    _ => Err(ParseError::invalid_choice()),
                 },
             }?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
@@ -3353,14 +3357,14 @@ mod exec_impls {
             match v {
                 LockTime::BlockNo(v) => {
                     if !(*v >= 0 && *v <= 499999999) {
-                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
                         (U32Le).prepare(v)
                     }
                 },
                 LockTime::Timestamp(v) => {
                     if !(*v >= 500000000) {
-                        Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
                         (U32Le).prepare(v)
                     }
@@ -3384,13 +3388,13 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, txins) = RepeatN(self.txin_count, TxinFmt).parse(&rest)?;
+            let (n1, txins) = RepeatN(self.txin_count, Named("txin", TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
+            let (n3, txouts) = RepeatN(txout_count, Named("txout", TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, lock_time) = LockTimeFmt.parse(&rest)?;
+            let (n4, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TxNonsegwit { txins, txout_count, txouts, lock_time };
@@ -3426,14 +3430,14 @@ mod exec_impls {
             }
 
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
-            let l1 = (RepeatN(self.txin_count, TxinFmt)).prepare(txins)?;
+            let l1 = (RepeatN(self.txin_count, Named("txin", TxinFmt))).prepare(txins)?;
             let l2 = (VarInt::<true>).prepare(txout_count)?;
-            let l3 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
-            let l4 = (LockTimeFmt).prepare(lock_time)?;
+            let l3 = (RepeatN(txout_count, Named("txout", TxoutFmt))).prepare(txouts)?;
+            let l4 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }
@@ -3454,15 +3458,15 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txins) = RepeatN(txin_count, TxinFmt).parse(&rest)?;
+            let (n3, txins) = RepeatN(txin_count, Named("txin", TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
             let (n4, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
+            let (n5, txouts) = RepeatN(txout_count, Named("txout", TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, witness) = RepeatN(txin_count, WitnessFmt).parse(&rest)?;
+            let (n6, witness) = RepeatN(txin_count, Named("witness", WitnessFmt)).parse(&rest)?;
             let rest = rest.skip(n6);
-            let (n7, lock_time) = LockTimeFmt.parse(&rest)?;
+            let (n7, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
             let rest = rest.skip(n7);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7;
             let final_v = TxSegwit {
@@ -3503,18 +3507,18 @@ mod exec_impls {
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
             let l1 = (Const(U8, 1)).prepare(flag)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (RepeatN(txin_count, TxinFmt)).prepare(txins)?;
+            let l3 = (RepeatN(txin_count, Named("txin", TxinFmt))).prepare(txins)?;
             let l4 = (VarInt::<true>).prepare(txout_count)?;
-            let l5 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
-            let l6 = (RepeatN(txin_count, WitnessFmt)).prepare(witness)?;
-            let l7 = (LockTimeFmt).prepare(lock_time)?;
+            let l5 = (RepeatN(txout_count, Named("txout", TxoutFmt))).prepare(txouts)?;
+            let l6 = (RepeatN(txin_count, Named("witness", WitnessFmt))).prepare(witness)?;
+            let l7 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l5).ok_or(PreSerializeError::length_too_large())?.checked_add(l6).ok_or(
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l7).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3533,11 +3537,14 @@ mod exec_impls {
 
             let (n, v) = match self.txin_count {
                 0 => {
-                    let (n, v) = (TxSegwitFmt).parse(&rest)?;
+                    let (n, v) = (Named("tx_segwit", TxSegwitFmt)).parse(&rest)?;
                     (n, TxRem::Variant1(v))
                 },
                 _ => {
-                    let (n, v) = (TxNonsegwitFmt { txin_count: self.txin_count }).parse(&rest)?;
+                    let (n, v) = (Named(
+                        "tx_nonsegwit",
+                        TxNonsegwitFmt { txin_count: self.txin_count },
+                    )).parse(&rest)?;
                     (n, TxRem::Default(v))
                 },
             };
@@ -3577,11 +3584,12 @@ mod exec_impls {
             }
 
             match (self.txin_count, v) {
-                (0, TxRem::Variant1(v)) => (TxSegwitFmt).prepare(v),
-                (x, TxRem::Default(v)) if !(x == 0) => (TxNonsegwitFmt {
-                    txin_count: self.txin_count,
-                }).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (0, TxRem::Variant1(v)) => (Named("tx_segwit", TxSegwitFmt)).prepare(v),
+                (x, TxRem::Default(v)) if !(x == 0) => (Named(
+                    "tx_nonsegwit",
+                    TxNonsegwitFmt { txin_count: self.txin_count },
+                )).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -3601,7 +3609,7 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, rem) = TxRemFmt { txin_count: txin_count }.parse(&rest)?;
+            let (n3, rem) = Named("tx_rem", TxRemFmt { txin_count: txin_count }).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Tx { version, txin_count, rem };
@@ -3630,10 +3638,10 @@ mod exec_impls {
             let Tx { version, txin_count, rem } = v;
             let l1 = (U32Le).prepare(version)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (TxRemFmt { txin_count: *txin_count }).prepare(rem)?;
+            let l3 = (Named("tx_rem", TxRemFmt { txin_count: *txin_count })).prepare(rem)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3663,7 +3671,7 @@ mod exec_impls {
             let rest = rest.skip(n6);
             let (n7, tx_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n7);
-            let (n8, txs) = RepeatN(tx_count, TxFmt).parse(&rest)?;
+            let (n8, txs) = RepeatN(tx_count, Named("tx", TxFmt)).parse(&rest)?;
             let rest = rest.skip(n8);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8;
             let final_v = Block {
@@ -3713,15 +3721,15 @@ mod exec_impls {
             let l5 = (U32Le).prepare(bits)?;
             let l6 = (U32Le).prepare(nonce)?;
             let l7 = (VarInt::<true>).prepare(tx_count)?;
-            let l8 = (RepeatN(tx_count, TxFmt)).prepare(txs)?;
+            let l8 = (RepeatN(tx_count, Named("tx", TxFmt))).prepare(txs)?;
             let total_len = l1.checked_add(l2).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
-                PreSerializeError::LengthTooLarge,
-            )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l8).ok_or(
-                PreSerializeError::LengthTooLarge,
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l5).ok_or(PreSerializeError::length_too_large())?.checked_add(l6).ok_or(
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l7).ok_or(PreSerializeError::length_too_large())?.checked_add(l8).ok_or(
+                PreSerializeError::length_too_large(),
             )?;
             Ok(total_len)
         }

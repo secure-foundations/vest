@@ -323,7 +323,7 @@ impl Prepare<u32> for super::U24Le {
         if *v < 0x01000000 {
             Ok(U24_BYTE_LEN)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
         }
     }
 }
@@ -370,7 +370,7 @@ impl Prepare<u32> for super::U24Be {
         if *v < 0x01000000 {
             Ok(U24_BYTE_LEN)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
         }
     }
 }

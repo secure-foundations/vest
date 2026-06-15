@@ -5039,7 +5039,7 @@ mod exec_impls {
             match (self.choice2, v) {
                 (COrD::C, CaptureParamAndLocalXAPayload::C(v)) => (Varied(self.len)).prepare(v),
                 (COrD::D, CaptureParamAndLocalXAPayload::D(v)) => (Varied(self.len)).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5061,10 +5061,10 @@ mod exec_impls {
 
             let (n1, len) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = CaptureParamAndLocalXAPayloadFmt {
-                choice2: self.choice2,
-                len: len,
-            }.parse(&rest)?;
+            let (n2, payload) = Named(
+                "capture_param_and_local_x_a_payload",
+                CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: len },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXA { len, payload };
@@ -5102,11 +5102,11 @@ mod exec_impls {
 
             let CaptureParamAndLocalXA { len, payload } = v;
             let l1 = (U8).prepare(len)?;
-            let l2 = (CaptureParamAndLocalXAPayloadFmt {
-                choice2: self.choice2,
-                len: *len,
-            }).prepare(payload)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named(
+                "capture_param_and_local_x_a_payload",
+                CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len },
+            )).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5171,7 +5171,7 @@ mod exec_impls {
             match (self.tag, v) {
                 (0, CaptureParamAndLocalXBY::Variant1(v)) => (U8).prepare(v),
                 (x, CaptureParamAndLocalXBY::Default(v)) if !(x == 0) => (U16Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5189,7 +5189,10 @@ mod exec_impls {
 
             let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = CaptureParamAndLocalXBYFmt { tag: tag }.parse(&rest)?;
+            let (n2, y) = Named(
+                "capture_param_and_local_x_b_y",
+                CaptureParamAndLocalXBYFmt { tag: tag },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXB { tag, y };
@@ -5216,8 +5219,11 @@ mod exec_impls {
             reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
             let CaptureParamAndLocalXB { tag, y } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (CaptureParamAndLocalXBYFmt { tag: *tag }).prepare(y)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named(
+                "capture_param_and_local_x_b_y",
+                CaptureParamAndLocalXBYFmt { tag: *tag },
+            )).prepare(y)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5236,13 +5242,17 @@ mod exec_impls {
 
             let (n, v) = match self.choice1 {
                 AOrB::A => {
-                    let (n, v) = (CaptureParamAndLocalXAFmt { choice2: self.choice2 }).parse(
-                        &rest,
-                    )?;
+                    let (n, v) = (Named(
+                        "capture_param_and_local_x_a",
+                        CaptureParamAndLocalXAFmt { choice2: self.choice2 },
+                    )).parse(&rest)?;
                     (n, CaptureParamAndLocalX::A(v))
                 },
                 AOrB::B => {
-                    let (n, v) = (CaptureParamAndLocalXBFmt).parse(&rest)?;
+                    let (n, v) = (Named(
+                        "capture_param_and_local_x_b",
+                        CaptureParamAndLocalXBFmt,
+                    )).parse(&rest)?;
                     (n, CaptureParamAndLocalX::B(v))
                 },
             };
@@ -5282,11 +5292,15 @@ mod exec_impls {
             }
 
             match (self.choice1, v) {
-                (AOrB::A, CaptureParamAndLocalX::A(v)) => (CaptureParamAndLocalXAFmt {
-                    choice2: self.choice2,
-                }).prepare(v),
-                (AOrB::B, CaptureParamAndLocalX::B(v)) => (CaptureParamAndLocalXBFmt).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (AOrB::A, CaptureParamAndLocalX::A(v)) => (Named(
+                    "capture_param_and_local_x_a",
+                    CaptureParamAndLocalXAFmt { choice2: self.choice2 },
+                )).prepare(v),
+                (AOrB::B, CaptureParamAndLocalX::B(v)) => (Named(
+                    "capture_param_and_local_x_b",
+                    CaptureParamAndLocalXBFmt,
+                )).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5351,7 +5365,7 @@ mod exec_impls {
             match (self.choice2, v) {
                 (COrD::C, NestedInnerChoiceXA::C(v)) => (U8).prepare(v),
                 (COrD::D, NestedInnerChoiceXA::D(v)) => (U16Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5404,7 +5418,7 @@ mod exec_impls {
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
             let l1 = (U8).prepare(count)?;
             let l2 = (Varied(count)).prepare(items)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5427,7 +5441,10 @@ mod exec_impls {
                     (n, CaptureOuterAndLocalPayloadBody::Variant1(v))
                 },
                 _ => {
-                    let (n, v) = (CaptureOuterAndLocalPayloadBodyChoice1Fmt).parse(&rest)?;
+                    let (n, v) = (Named(
+                        "capture_outer_and_local_payload_body_choice1",
+                        CaptureOuterAndLocalPayloadBodyChoice1Fmt,
+                    )).parse(&rest)?;
                     (n, CaptureOuterAndLocalPayloadBody::Default(v))
                 },
             };
@@ -5475,9 +5492,11 @@ mod exec_impls {
                 (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) => (Varied(
                     (self.frame_len - 1),
                 )).prepare(v),
-                (x, CaptureOuterAndLocalPayloadBody::Default(v)) if !(x == 0) => (
-                CaptureOuterAndLocalPayloadBodyChoice1Fmt).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (x, CaptureOuterAndLocalPayloadBody::Default(v)) if !(x == 0) => (Named(
+                    "capture_outer_and_local_payload_body_choice1",
+                    CaptureOuterAndLocalPayloadBodyChoice1Fmt,
+                )).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5499,10 +5518,10 @@ mod exec_impls {
 
             let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = CaptureOuterAndLocalPayloadBodyFmt {
-                frame_len: self.frame_len,
-                tag: tag,
-            }.parse(&rest)?;
+            let (n2, body) = Named(
+                "capture_outer_and_local_payload_body",
+                CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: tag },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocalPayload { tag, body };
@@ -5540,11 +5559,11 @@ mod exec_impls {
 
             let CaptureOuterAndLocalPayload { tag, body } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (CaptureOuterAndLocalPayloadBodyFmt {
-                frame_len: self.frame_len,
-                tag: *tag,
-            }).prepare(body)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named(
+                "capture_outer_and_local_payload_body",
+                CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag },
+            )).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5567,7 +5586,10 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, payload) = ExactLen(
                 frame_len,
-                CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
+                Named(
+                    "capture_outer_and_local_payload",
+                    CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
+                ),
             ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -5599,16 +5621,19 @@ mod exec_impls {
             let CaptureOuterAndLocal { frame_len, payload } = v;
             let l1 = {
                 if !(*frame_len >= 1) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U8).prepare(frame_len)
                 }
             }?;
             let l2 = (ExactLen(
                 frame_len,
-                CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
+                Named(
+                    "capture_outer_and_local_payload",
+                    CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
+                ),
             )).prepare(payload)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5667,7 +5692,7 @@ mod exec_impls {
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
             let l1 = (U8).prepare(len)?;
             let l2 = (Varied(len)).prepare(bytes)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5686,7 +5711,10 @@ mod exec_impls {
 
             let (n, v) = match self.tag {
                 0 => {
-                    let (n, v) = (CaptureLocalInAnonStructWrapperValueChoice0Fmt).parse(&rest)?;
+                    let (n, v) = (Named(
+                        "capture_local_in_anon_struct_wrapper_value_choice0",
+                        CaptureLocalInAnonStructWrapperValueChoice0Fmt,
+                    )).parse(&rest)?;
                     (n, CaptureLocalInAnonStructWrapperValue::Variant1(v))
                 },
                 _ => {
@@ -5737,11 +5765,13 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => (
-                CaptureLocalInAnonStructWrapperValueChoice0Fmt).prepare(v),
+                (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => (Named(
+                    "capture_local_in_anon_struct_wrapper_value_choice0",
+                    CaptureLocalInAnonStructWrapperValueChoice0Fmt,
+                )).prepare(v),
                 (x, CaptureLocalInAnonStructWrapperValue::Default(v)) if !(x == 0) => (
                 U16Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5760,7 +5790,10 @@ mod exec_impls {
 
             let (n, v) = match self.choice1 {
                 AOrB::A => {
-                    let (n, v) = (NestedInnerChoiceXAFmt { choice2: self.choice2 }).parse(&rest)?;
+                    let (n, v) = (Named(
+                        "nested_inner_choice_x_a",
+                        NestedInnerChoiceXAFmt { choice2: self.choice2 },
+                    )).parse(&rest)?;
                     (n, NestedInnerChoiceX::A(v))
                 },
                 AOrB::B => {
@@ -5804,11 +5837,12 @@ mod exec_impls {
             }
 
             match (self.choice1, v) {
-                (AOrB::A, NestedInnerChoiceX::A(v)) => (NestedInnerChoiceXAFmt {
-                    choice2: self.choice2,
-                }).prepare(v),
+                (AOrB::A, NestedInnerChoiceX::A(v)) => (Named(
+                    "nested_inner_choice_x_a",
+                    NestedInnerChoiceXAFmt { choice2: self.choice2 },
+                )).prepare(v),
                 (AOrB::B, NestedInnerChoiceX::B(v)) => (U32Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -5828,10 +5862,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = NestedInnerChoiceXFmt {
-                choice1: self.choice1,
-                choice2: self.choice2,
-            }.parse(&rest)?;
+            let (n1, x) = Named(
+                "nested_inner_choice_x",
+                NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = NestedInnerChoice { x };
@@ -5867,10 +5901,10 @@ mod exec_impls {
             }
 
             let NestedInnerChoice { x } = v;
-            let l1 = (NestedInnerChoiceXFmt {
-                choice1: self.choice1,
-                choice2: self.choice2,
-            }).prepare(x)?;
+            let l1 = (Named(
+                "nested_inner_choice_x",
+                NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
+            )).prepare(x)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -5891,10 +5925,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = CaptureParamAndLocalXFmt {
-                choice1: self.choice1,
-                choice2: self.choice2,
-            }.parse(&rest)?;
+            let (n1, x) = Named(
+                "capture_param_and_local_x",
+                CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureParamAndLocal { x };
@@ -5930,10 +5964,10 @@ mod exec_impls {
             }
 
             let CaptureParamAndLocal { x } = v;
-            let l1 = (CaptureParamAndLocalXFmt {
-                choice1: self.choice1,
-                choice2: self.choice2,
-            }).prepare(x)?;
+            let l1 = (Named(
+                "capture_param_and_local_x",
+                CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
+            )).prepare(x)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -5980,7 +6014,7 @@ mod exec_impls {
             let NestedInnerStructVal { x, y } = v;
             let l1 = (U8).prepare(x)?;
             let l2 = (Tail).prepare(y)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -5998,7 +6032,10 @@ mod exec_impls {
 
             let (n1, len) = U32Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, val) = ExactLen(len, NestedInnerStructValFmt).parse(&rest)?;
+            let (n2, val) = ExactLen(
+                len,
+                Named("nested_inner_struct_val", NestedInnerStructValFmt),
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedInnerStruct { len, val };
@@ -6025,8 +6062,11 @@ mod exec_impls {
             reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
             let NestedInnerStruct { len, val } = v;
             let l1 = (U32Le).prepare(len)?;
-            let l2 = (ExactLen(len, NestedInnerStructValFmt)).prepare(val)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (ExactLen(
+                len,
+                Named("nested_inner_struct_val", NestedInnerStructValFmt),
+            )).prepare(val)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -6071,7 +6111,7 @@ mod exec_impls {
             let tag = match *v {
                 COrD::C => 1,
                 COrD::D => 2,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -6090,7 +6130,10 @@ mod exec_impls {
 
             let (n1, tag) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, value) = CaptureLocalInAnonStructWrapperValueFmt { tag: tag }.parse(&rest)?;
+            let (n2, value) = Named(
+                "capture_local_in_anon_struct_wrapper_value",
+                CaptureLocalInAnonStructWrapperValueFmt { tag: tag },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureLocalInAnonStructWrapper { tag, value };
@@ -6122,8 +6165,11 @@ mod exec_impls {
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
             let CaptureLocalInAnonStructWrapper { tag, value } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }).prepare(value)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named(
+                "capture_local_in_anon_struct_wrapper_value",
+                CaptureLocalInAnonStructWrapperValueFmt { tag: *tag },
+            )).prepare(value)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -6139,7 +6185,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, wrapper) = CaptureLocalInAnonStructWrapperFmt.parse(&rest)?;
+            let (n1, wrapper) = Named(
+                "capture_local_in_anon_struct_wrapper",
+                CaptureLocalInAnonStructWrapperFmt,
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureLocalInAnonStruct { wrapper };
@@ -6164,7 +6213,10 @@ mod exec_impls {
         fn prepare(&self, v: &CaptureLocalInAnonStruct<'i>) -> Result<usize, PreSerializeError> {
             reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
             let CaptureLocalInAnonStruct { wrapper } = v;
-            let l1 = (CaptureLocalInAnonStructWrapperFmt).prepare(wrapper)?;
+            let l1 = (Named(
+                "capture_local_in_anon_struct_wrapper",
+                CaptureLocalInAnonStructWrapperFmt,
+            )).prepare(wrapper)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -6210,7 +6262,7 @@ mod exec_impls {
             let tag = match *v {
                 AOrB::A => 1,
                 AOrB::B => 2,
-                _ => return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }

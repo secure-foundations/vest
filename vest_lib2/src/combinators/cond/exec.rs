@@ -51,7 +51,7 @@ impl<T, Inner> Prepare<T> for super::Cond<Inner> where T: DeepView, Inner: Prepa
         if self.0 {
             self.1.prepare(v)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
         }
     }
 }

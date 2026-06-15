@@ -115,7 +115,7 @@ impl<A, B, BVal, T, const CHECK: bool> Prepare<T> for super::Terminated<A, B, BV
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
-            Err(PreSerializeError::LengthTooLarge)
+            Err(PreSerializeError::length_too_large())
         }
     }
 }

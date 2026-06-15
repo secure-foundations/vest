@@ -2468,7 +2468,7 @@ mod exec_impls {
             match (self.i, v) {
                 (1, Msg5Content::Variant1(v)) => (U16Le).prepare(v),
                 (x, Msg5Content::Default(v)) if !(x == 1) => (Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2586,11 +2586,11 @@ mod exec_impls {
                         0x9c,
                     ],
                 ) => {
-                    let (n, v) = (HelloRetryRequestFmt).parse(&rest)?;
+                    let (n, v) = (Named("hello_retry_request", HelloRetryRequestFmt)).parse(&rest)?;
                     (n, Msg1Payload::Variant1(v))
                 },
                 _ => {
-                    let (n, v) = (ServerHelloFmt).parse(&rest)?;
+                    let (n, v) = (Named("server_hello", ServerHelloFmt)).parse(&rest)?;
                     (n, Msg1Payload::Default(v))
                 },
             };
@@ -2700,7 +2700,7 @@ mod exec_impls {
                         0x33,
                         0x9c,
                     ],
-                ) => (HelloRetryRequestFmt).prepare(v),
+                ) => (Named("hello_retry_request", HelloRetryRequestFmt)).prepare(v),
                 (x, Msg1Payload::Default(v)) if !x.deep_eq(
                     &[
                         0xcf,
@@ -2736,8 +2736,8 @@ mod exec_impls {
                         0x33,
                         0x9c,
                     ],
-                ) => (ServerHelloFmt).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                ) => (Named("server_hello", ServerHelloFmt)).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2802,7 +2802,7 @@ mod exec_impls {
             match (self.i, v) {
                 (1, Msg4Content::Variant1(v)) => (U16Le).prepare(v),
                 (x, Msg4Content::Default(v)) if !(x == 1) => (Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2884,7 +2884,7 @@ mod exec_impls {
                 (3, Msg3Content::Variant3(v)) => (U32Le).prepare(v),
                 (x, Msg3Content::Default(v)) if !(x == 1) && !(x == 2) && !(x == 3) => (
                 Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2902,7 +2902,7 @@ mod exec_impls {
 
             let (n1, i) = U8.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Msg3ContentFmt { i: i }.parse(&rest)?;
+            let (n2, content) = Named("msg3_content", Msg3ContentFmt { i: i }).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg3 { i, content };
@@ -2929,8 +2929,8 @@ mod exec_impls {
             reveal(<Msg3Fmt as SpecByteLen>::byte_len);
             let Msg3 { i, content } = v;
             let l1 = (U8).prepare(i)?;
-            let l2 = (Msg3ContentFmt { i: *i }).prepare(content)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("msg3_content", Msg3ContentFmt { i: *i })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -2948,7 +2948,7 @@ mod exec_impls {
 
             let (n1, i) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Msg5ContentFmt { i: i }.parse(&rest)?;
+            let (n2, content) = Named("msg5_content", Msg5ContentFmt { i: i }).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg5 { i, content };
@@ -2975,8 +2975,8 @@ mod exec_impls {
             reveal(<Msg5Fmt as SpecByteLen>::byte_len);
             let Msg5 { i, content } = v;
             let l1 = (VarInt::<true>).prepare(i)?;
-            let l2 = (Msg5ContentFmt { i: *i }).prepare(content)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("msg5_content", Msg5ContentFmt { i: *i })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3080,7 +3080,7 @@ mod exec_impls {
                 (x, Msg2Content::Default(v)) if !x.deep_eq(&[0x16, 0x03, 0x01]) && !x.deep_eq(
                     &[0x16, 0x03, 0x02],
                 ) && !x.deep_eq(&[0x16, 0x03, 0x03]) => (Tail).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -3098,7 +3098,7 @@ mod exec_impls {
 
             let (n1, b) = Fixed::<32>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = Msg1PayloadFmt { b: b }.parse(&rest)?;
+            let (n2, payload) = Named("msg1_payload", Msg1PayloadFmt { b: b }).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg1 { b, payload };
@@ -3125,8 +3125,8 @@ mod exec_impls {
             reveal(<Msg1Fmt as SpecByteLen>::byte_len);
             let Msg1 { b, payload } = v;
             let l1 = (Fixed::<32>).prepare(b)?;
-            let l2 = (Msg1PayloadFmt { b: *b }).prepare(payload)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("msg1_payload", Msg1PayloadFmt { b: *b })).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3144,7 +3144,7 @@ mod exec_impls {
 
             let (n1, b) = Fixed::<3>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Msg2ContentFmt { b: b }.parse(&rest)?;
+            let (n2, content) = Named("msg2_content", Msg2ContentFmt { b: b }).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg2 { b, content };
@@ -3171,8 +3171,8 @@ mod exec_impls {
             reveal(<Msg2Fmt as SpecByteLen>::byte_len);
             let Msg2 { b, content } = v;
             let l1 = (Fixed::<3>).prepare(b)?;
-            let l2 = (Msg2ContentFmt { b: *b }).prepare(content)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("msg2_content", Msg2ContentFmt { b: *b })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3190,7 +3190,7 @@ mod exec_impls {
 
             let (n1, i) = U24Le.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Msg4ContentFmt { i: i }.parse(&rest)?;
+            let (n2, content) = Named("msg4_content", Msg4ContentFmt { i: i }).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg4 { i, content };
@@ -3217,8 +3217,8 @@ mod exec_impls {
             reveal(<Msg4Fmt as SpecByteLen>::byte_len);
             let Msg4 { i, content } = v;
             let l1 = (U24Le).prepare(i)?;
-            let l2 = (Msg4ContentFmt { i: *i }).prepare(content)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (Named("msg4_content", Msg4ContentFmt { i: *i })).prepare(content)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }

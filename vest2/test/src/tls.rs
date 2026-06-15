@@ -26205,7 +26205,7 @@ mod exec_impls {
             let tag = match *v {
                 AlertLevel::Warning => 1,
                 AlertLevel::Fatal => 2,
-                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -26297,7 +26297,7 @@ mod exec_impls {
             } = v;
             let l1 = (U16Be).prepare (l) ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26312,7 +26312,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque0FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_0_ffff", Opaque0FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -26332,7 +26332,7 @@ mod exec_impls {
     impl<'i> Prepare<OcspExtensions<'i>> for OcspExtensionsFmt {
         fn prepare(&self, v: &OcspExtensions<'i>) -> Result<usize, PreSerializeError> {
             reveal(<OcspExtensionsFmt as SpecByteLen>::byte_len);
-            Opaque0FfffFmt.prepare(v)
+            Named ("opaque_0_ffff", Opaque0FfffFmt).prepare(v)
         }
     }
 
@@ -26451,7 +26451,7 @@ mod exec_impls {
                 ExtensionType::PostHandshakeAuth => 49,
                 ExtensionType::SignatureAlgorithmsCert => 50,
                 ExtensionType::KeyShare => 51,
-                ExtensionType::Unknown (x) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                ExtensionType::Unknown (x) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U16Be.prepare(&tag)
         }
@@ -26548,7 +26548,7 @@ mod exec_impls {
                 SignatureScheme::RSA_PSS_PSS_SHA256 => 2057,
                 SignatureScheme::RSA_PSS_PSS_SHA384 => 2058,
                 SignatureScheme::RSA_PSS_PSS_SHA512 => 2059,
-                SignatureScheme::Unknown (x) if x != 257 && x != 513 && x != 259 && x != 515 && x != 1025 && x != 1281 && x != 1537 && x != 1027 && x != 1283 && x != 1539 && x != 2052 && x != 2053 && x != 2054 && x != 2055 && x != 2056 && x != 2057 && x != 2058 && x != 2059 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                SignatureScheme::Unknown (x) if x != 257 && x != 513 && x != 259 && x != 515 && x != 1025 && x != 1281 && x != 1537 && x != 1027 && x != 1283 && x != 1539 && x != 2052 && x != 2053 && x != 2054 && x != 2055 && x != 2056 && x != 2057 && x != 2058 && x != 2059 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U16Be.prepare(&tag)
         }
@@ -26572,7 +26572,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (SignatureSchemeFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("signature_scheme", SignatureSchemeFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SignatureSchemeList {
@@ -26609,15 +26610,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65534) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SignatureSchemeFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("signature_scheme", SignatureSchemeFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26677,7 +26678,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
@@ -26685,7 +26686,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26700,7 +26701,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -26720,7 +26721,7 @@ mod exec_impls {
     impl<'i> Prepare<DistinguishedName<'i>> for DistinguishedNameFmt {
         fn prepare(&self, v: &DistinguishedName<'i>) -> Result<usize, PreSerializeError> {
             reveal(<DistinguishedNameFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -26742,7 +26743,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (DistinguishedNameFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("distinguished_name", DistinguishedNameFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateAuthoritiesExtension {
@@ -26779,15 +26781,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 3 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (DistinguishedNameFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("distinguished_name", DistinguishedNameFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26802,7 +26804,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -26822,7 +26824,7 @@ mod exec_impls {
     impl<'i> Prepare<ResponderId<'i>> for ResponderIdFmt {
         fn prepare(&self, v: &ResponderId<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -26841,7 +26843,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (ResponderIdFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("responder_id", ResponderIdFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList {
@@ -26877,8 +26880,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (ResponderIdFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("responder_id", ResponderIdFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26896,9 +26899,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, responder_id_list) = ResponderIdListFmt.parse(&rest)?;
+            let (n1, responder_id_list) = Named ("responder_id_list", ResponderIdListFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, extensions) = OcspExtensionsFmt.parse(&rest)?;
+            let (n2, extensions) = Named ("ocsp_extensions", OcspExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OscpStatusRequest {
@@ -26933,9 +26938,9 @@ mod exec_impls {
                 responder_id_list,
                 extensions,
             } = v;
-            let l1 = (ResponderIdListFmt).prepare (responder_id_list) ?;
-            let l2 = (OcspExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("responder_id_list", ResponderIdListFmt)).prepare (responder_id_list) ?;
+            let l2 = (Named ("ocsp_extensions", OcspExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -26955,7 +26960,8 @@ mod exec_impls {
 
             let (n1, status_type) = Const (U8, 1).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, request) = OscpStatusRequestFmt.parse(&rest)?;
+            let (n2, request) = Named ("oscp_status_request", OscpStatusRequestFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateStatusRequest {
@@ -26991,8 +26997,8 @@ mod exec_impls {
                 request,
             } = v;
             let l1 = (Const (U8, 1)).prepare (status_type) ?;
-            let l2 = (OscpStatusRequestFmt).prepare (request) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (Named ("oscp_status_request", OscpStatusRequestFmt)).prepare (request) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27007,7 +27013,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -27027,7 +27033,7 @@ mod exec_impls {
     impl<'i> Prepare<SerializedSct<'i>> for SerializedSctFmt {
         fn prepare(&self, v: &SerializedSct<'i>) -> Result<usize, PreSerializeError> {
             reveal(<SerializedSctFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -27049,7 +27055,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (SerializedSctFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("serialized_sct", SerializedSctFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SignedCertificateTimestampList {
@@ -27086,15 +27093,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SerializedSctFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("serialized_sct", SerializedSctFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27154,7 +27161,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
@@ -27162,7 +27169,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27180,9 +27187,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, certificate_extension_oid) = Opaque1FfFmt.parse(&rest)?;
+            let (n1, certificate_extension_oid) = Named ("opaque_1_ff", Opaque1FfFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, certificate_extension_values) = Opaque0FfffFmt.parse(&rest)?;
+            let (n2, certificate_extension_values) = Named ("opaque_0_ffff", Opaque0FfffFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OidFilter {
@@ -27217,9 +27226,9 @@ mod exec_impls {
                 certificate_extension_oid,
                 certificate_extension_values,
             } = v;
-            let l1 = (Opaque1FfFmt).prepare (certificate_extension_oid) ?;
-            let l2 = (Opaque0FfffFmt).prepare (certificate_extension_values) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("opaque_1_ff", Opaque1FfFmt)).prepare (certificate_extension_oid) ?;
+            let l2 = (Named ("opaque_0_ffff", Opaque0FfffFmt)).prepare (certificate_extension_values) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27239,7 +27248,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (OidFilterFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("oid_filter", OidFilterFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OidFilterExtension {
@@ -27275,8 +27285,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (OidFilterFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("oid_filter", OidFilterFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27298,42 +27308,48 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::SignatureAlgorithms => {
                     let (n,
-                    v) = (SignatureSchemeListFmt).parse (& rest) ?;
+                    v) = (Named ("signature_scheme_list",
+                    SignatureSchemeListFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::SignatureAlgorithms (v))
                 }
                 ,
                 ExtensionType::CertificateAuthorities => {
                     let (n,
-                    v) = (CertificateAuthoritiesExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_authorities_extension",
+                    CertificateAuthoritiesExtensionFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::CertificateAuthorities (v))
                 }
                 ,
                 ExtensionType::SignatureAlgorithmsCert => {
                     let (n,
-                    v) = (SignatureSchemeListFmt).parse (& rest) ?;
+                    v) = (Named ("signature_scheme_list",
+                    SignatureSchemeListFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::SignatureAlgorithmsCert (v))
                 }
                 ,
                 ExtensionType::StatusRequest => {
                     let (n,
-                    v) = (CertificateStatusRequestFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_status_request",
+                    CertificateStatusRequestFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::StatusRequest (v))
                 }
                 ,
                 ExtensionType::SignedCertificateTimeStamp => {
                     let (n,
-                    v) = (SignedCertificateTimestampListFmt).parse (& rest) ?;
+                    v) = (Named ("signed_certificate_timestamp_list",
+                    SignedCertificateTimestampListFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::SignedCertificateTimeStamp (v))
                 }
                 ,
                 ExtensionType::OidFilters => {
                     let (n,
-                    v) = (OidFilterExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("oid_filter_extension",
+                    OidFilterExtensionFmt)).parse (& rest) ?;
                     (n,
                     CertificateRequestExtensionExtensionData::OidFilters (v))
                 }
@@ -27404,12 +27420,12 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::SignatureAlgorithms, CertificateRequestExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
-                (ExtensionType::CertificateAuthorities, CertificateRequestExtensionExtensionData::CertificateAuthorities (v)) => (CertificateAuthoritiesExtensionFmt).prepare (v),
-                (ExtensionType::SignatureAlgorithmsCert, CertificateRequestExtensionExtensionData::SignatureAlgorithmsCert (v)) => (SignatureSchemeListFmt).prepare (v),
-                (ExtensionType::StatusRequest, CertificateRequestExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
-                (ExtensionType::SignedCertificateTimeStamp, CertificateRequestExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
-                (ExtensionType::OidFilters, CertificateRequestExtensionExtensionData::OidFilters (v)) => (OidFilterExtensionFmt).prepare (v),
+                (ExtensionType::SignatureAlgorithms, CertificateRequestExtensionExtensionData::SignatureAlgorithms (v)) => (Named ("signature_scheme_list", SignatureSchemeListFmt)).prepare (v),
+                (ExtensionType::CertificateAuthorities, CertificateRequestExtensionExtensionData::CertificateAuthorities (v)) => (Named ("certificate_authorities_extension", CertificateAuthoritiesExtensionFmt)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, CertificateRequestExtensionExtensionData::SignatureAlgorithmsCert (v)) => (Named ("signature_scheme_list", SignatureSchemeListFmt)).prepare (v),
+                (ExtensionType::StatusRequest, CertificateRequestExtensionExtensionData::StatusRequest (v)) => (Named ("certificate_status_request", CertificateStatusRequestFmt)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, CertificateRequestExtensionExtensionData::SignedCertificateTimeStamp (v)) => (Named ("signed_certificate_timestamp_list", SignedCertificateTimestampListFmt)).prepare (v),
+                (ExtensionType::OidFilters, CertificateRequestExtensionExtensionData::OidFilters (v)) => (Named ("oid_filter_extension", OidFilterExtensionFmt)).prepare (v),
                 (ExtensionType::ServerName, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::MaxFragmentLength, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::SupportedGroups, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -27431,7 +27447,7 @@ mod exec_impls {
                 (ExtensionType::PostHandshakeAuth, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::KeyShare, CertificateRequestExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), CertificateRequestExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -27449,15 +27465,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, CertificateRequestExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("certificate_request_extension_extension_data", CertificateRequestExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -27502,14 +27519,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, CertificateRequestExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("certificate_request_extension_extension_data", CertificateRequestExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27554,7 +27571,7 @@ mod exec_impls {
             reveal(<NameTypeFmt as SpecByteLen>::byte_len);
             let tag = match *v {
                 NameType::HostName => 0,
-                NameType::Unknown (x) if x != 0 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                NameType::Unknown (x) if x != 0 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -27615,7 +27632,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 0 && * l <= 32) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
@@ -27623,7 +27640,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (id) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -27680,7 +27697,7 @@ mod exec_impls {
                 CipherSuite::TLS_CHACHA20_POLY1305_SHA256 => 4867,
                 CipherSuite::TLS_AES_128_CCM_SHA256 => 4868,
                 CipherSuite::TLS_AES_128_CCM_8_SHA256 => 4869,
-                CipherSuite::Unknown (x) if x != 4865 && x != 4866 && x != 4867 && x != 4868 && x != 4869 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                CipherSuite::Unknown (x) if x != 4865 && x != 4866 && x != 4867 && x != 4868 && x != 4869 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U16Be.prepare(&tag)
         }
@@ -27738,7 +27755,7 @@ mod exec_impls {
                 ProtocolVersion::TLSv1_1 => 770,
                 ProtocolVersion::TLSv1_2 => 771,
                 ProtocolVersion::TLSv1_3 => 772,
-                ProtocolVersion::Unknown (x) if x != 768 && x != 769 && x != 770 && x != 771 && x != 772 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                ProtocolVersion::Unknown (x) if x != 768 && x != 769 && x != 770 && x != 771 && x != 772 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U16Be.prepare(&tag)
         }
@@ -27754,7 +27771,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = ProtocolVersionFmt.parse(ibuf)?;
+            let (n, v) = Named ("protocol_version", ProtocolVersionFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -27774,7 +27791,7 @@ mod exec_impls {
     impl<'i> Prepare<SupportedVersionsServer> for SupportedVersionsServerFmt {
         fn prepare(&self, v: &SupportedVersionsServer) -> Result<usize, PreSerializeError> {
             reveal(<SupportedVersionsServerFmt as SpecByteLen>::byte_len);
-            ProtocolVersionFmt.prepare(v)
+            Named ("protocol_version", ProtocolVersionFmt).prepare(v)
         }
     }
 
@@ -27788,7 +27805,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -27808,7 +27825,7 @@ mod exec_impls {
     impl<'i> Prepare<Cookie<'i>> for CookieFmt {
         fn prepare(&self, v: &Cookie<'i>) -> Result<usize, PreSerializeError> {
             reveal(<CookieFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -27945,7 +27962,7 @@ mod exec_impls {
                 NamedGroup::Ffdhe4096 => 258,
                 NamedGroup::Ffdhe6144 => 259,
                 NamedGroup::Ffdhe8192 => 260,
-                NamedGroup::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 29 && x != 30 && x != 256 && x != 257 && x != 258 && x != 259 && x != 260 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                NamedGroup::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 && x != 5 && x != 6 && x != 7 && x != 8 && x != 9 && x != 10 && x != 11 && x != 12 && x != 13 && x != 14 && x != 15 && x != 16 && x != 17 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 24 && x != 25 && x != 29 && x != 30 && x != 256 && x != 257 && x != 258 && x != 259 && x != 260 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U16Be.prepare(&tag)
         }
@@ -27968,21 +27985,24 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::SupportedVersions => {
                     let (n,
-                    v) = (SupportedVersionsServerFmt).parse (& rest) ?;
+                    v) = (Named ("supported_versions_server",
+                    SupportedVersionsServerFmt)).parse (& rest) ?;
                     (n,
                     HelloRetryExtensionExtensionData::SupportedVersions (v))
                 }
                 ,
                 ExtensionType::Cookie => {
                     let (n,
-                    v) = (CookieFmt).parse (& rest) ?;
+                    v) = (Named ("cookie",
+                    CookieFmt)).parse (& rest) ?;
                     (n,
                     HelloRetryExtensionExtensionData::Cookie (v))
                 }
                 ,
                 ExtensionType::KeyShare => {
                     let (n,
-                    v) = (NamedGroupFmt).parse (& rest) ?;
+                    v) = (Named ("named_group",
+                    NamedGroupFmt)).parse (& rest) ?;
                     (n,
                     HelloRetryExtensionExtensionData::KeyShare (v))
                 }
@@ -28041,9 +28061,9 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::SupportedVersions, HelloRetryExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsServerFmt).prepare (v),
-                (ExtensionType::Cookie, HelloRetryExtensionExtensionData::Cookie (v)) => (CookieFmt).prepare (v),
-                (ExtensionType::KeyShare, HelloRetryExtensionExtensionData::KeyShare (v)) => (NamedGroupFmt).prepare (v),
+                (ExtensionType::SupportedVersions, HelloRetryExtensionExtensionData::SupportedVersions (v)) => (Named ("supported_versions_server", SupportedVersionsServerFmt)).prepare (v),
+                (ExtensionType::Cookie, HelloRetryExtensionExtensionData::Cookie (v)) => (Named ("cookie", CookieFmt)).prepare (v),
+                (ExtensionType::KeyShare, HelloRetryExtensionExtensionData::KeyShare (v)) => (Named ("named_group", NamedGroupFmt)).prepare (v),
                 (ExtensionType::ServerName, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::MaxFragmentLength, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::StatusRequest, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -28068,7 +28088,7 @@ mod exec_impls {
                 (ExtensionType::PostHandshakeAuth, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::SignatureAlgorithmsCert, HelloRetryExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), HelloRetryExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -28086,15 +28106,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, HelloRetryExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("hello_retry_extension_extension_data", HelloRetryExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -28139,14 +28160,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, HelloRetryExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("hello_retry_extension_extension_data", HelloRetryExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28169,7 +28190,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (HelloRetryExtensionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("hello_retry_extension", HelloRetryExtensionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = HelloRetryExtensions {
@@ -28206,15 +28228,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 6 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (HelloRetryExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("hello_retry_extension", HelloRetryExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28232,13 +28254,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, legacy_session_id_echo) = SessionIdFmt.parse(&rest)?;
+            let (n1, legacy_session_id_echo) = Named ("session_id", SessionIdFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, cipher_suite) = CipherSuiteFmt.parse(&rest)?;
+            let (n2, cipher_suite) = Named ("cipher_suite", CipherSuiteFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let (n3, legacy_compression_method) = Const (U8, 0).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, extensions) = HelloRetryExtensionsFmt.parse(&rest)?;
+            let (n4, extensions) = Named ("hello_retry_extensions", HelloRetryExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = HelloRetryRequest {
@@ -28281,11 +28305,11 @@ mod exec_impls {
                 legacy_compression_method,
                 extensions,
             } = v;
-            let l1 = (SessionIdFmt).prepare (legacy_session_id_echo) ?;
-            let l2 = (CipherSuiteFmt).prepare (cipher_suite) ?;
+            let l1 = (Named ("session_id", SessionIdFmt)).prepare (legacy_session_id_echo) ?;
+            let l2 = (Named ("cipher_suite", CipherSuiteFmt)).prepare (cipher_suite) ?;
             let l3 = (Const (U8, 0)).prepare (legacy_compression_method) ?;
-            let l4 = (HelloRetryExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l4 = (Named ("hello_retry_extensions", HelloRetryExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l4).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28300,7 +28324,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -28320,7 +28344,7 @@ mod exec_impls {
     impl<'i> Prepare<HostName<'i>> for HostNameFmt {
         fn prepare(&self, v: &HostName<'i>) -> Result<usize, PreSerializeError> {
             reveal(<HostNameFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -28334,7 +28358,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -28354,7 +28378,7 @@ mod exec_impls {
     impl<'i> Prepare<UnknownName<'i>> for UnknownNameFmt {
         fn prepare(&self, v: &UnknownName<'i>) -> Result<usize, PreSerializeError> {
             reveal(<UnknownNameFmt as SpecByteLen>::byte_len);
-            Opaque1FfffFmt.prepare(v)
+            Named ("opaque_1_ffff", Opaque1FfffFmt).prepare(v)
         }
     }
 
@@ -28375,14 +28399,16 @@ mod exec_impls {
             let (n, v) = match self.name_type {
                 NameType::HostName => {
                     let (n,
-                    v) = (HostNameFmt).parse (& rest) ?;
+                    v) = (Named ("host_name",
+                    HostNameFmt)).parse (& rest) ?;
                     (n,
                     ServerNameName::HostName (v))
                 }
                 ,
                 _ => {
                     let (n,
-                    v) = (UnknownNameFmt).parse (& rest) ?;
+                    v) = (Named ("unknown_name",
+                    UnknownNameFmt)).parse (& rest) ?;
                     (n,
                     ServerNameName::Default (v))
                 }
@@ -28426,9 +28452,9 @@ mod exec_impls {
             }
 
             match (self.name_type, v) {
-                (NameType::HostName, ServerNameName::HostName (v)) => (HostNameFmt).prepare (v),
-                (NameType::Unknown (x), ServerNameName::Default (v)) if x != 0 => (UnknownNameFmt).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (NameType::HostName, ServerNameName::HostName (v)) => (Named ("host_name", HostNameFmt)).prepare (v),
+                (NameType::Unknown (x), ServerNameName::Default (v)) if x != 0 => (Named ("unknown_name", UnknownNameFmt)).prepare (v),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -28446,11 +28472,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, name_type) = NameTypeFmt.parse(&rest)?;
+            let (n1, name_type) = Named ("name_type", NameTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, name) = ServerNameNameFmt {
+            let (n2, name) = Named ("server_name_name", ServerNameNameFmt {
                 name_type: name_type
             }
+            )
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -28489,12 +28516,12 @@ mod exec_impls {
                 name_type,
                 name,
             } = v;
-            let l1 = (NameTypeFmt).prepare (name_type) ?;
-            let l2 = (ServerNameNameFmt {
+            let l1 = (Named ("name_type", NameTypeFmt)).prepare (name_type) ?;
+            let l2 = (Named ("server_name_name", ServerNameNameFmt {
                 name_type: * name_type
             }
-            ).prepare (name) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            )).prepare (name) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28517,7 +28544,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (ServerNameFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("server_name", ServerNameFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerNameList {
@@ -28554,15 +28582,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ServerNameFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("server_name", ServerNameFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28616,7 +28644,7 @@ mod exec_impls {
                 MaxFragmentLength::Pow2_10 => 2,
                 MaxFragmentLength::Pow2_11 => 3,
                 MaxFragmentLength::Pow2_12 => 4,
-                MaxFragmentLength::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                MaxFragmentLength::Unknown (x) if x != 1 && x != 2 && x != 3 && x != 4 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -28640,7 +28668,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (NamedGroupFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("named_group", NamedGroupFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NamedGroupList {
@@ -28677,15 +28706,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (NamedGroupFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("named_group", NamedGroupFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28736,7 +28765,7 @@ mod exec_impls {
                 EcPointFormat::Uncompressed => 0,
                 EcPointFormat::AnsiX962CompressedPrime => 1,
                 EcPointFormat::AnsiX962CompressedChar2 => 2,
-                EcPointFormat::Unknown (x) if x != 0 && x != 1 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                EcPointFormat::Unknown (x) if x != 0 && x != 1 && x != 2 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -28760,7 +28789,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (EcPointFormatFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("ec_point_format", EcPointFormatFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = EcPointFormatList {
@@ -28797,15 +28827,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (EcPointFormatFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("ec_point_format", EcPointFormatFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28862,7 +28892,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (SrtpProtectionProfileFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("srtp_protection_profile", SrtpProtectionProfileFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SrtpProtectionProfiles {
@@ -28899,15 +28930,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SrtpProtectionProfileFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("srtp_protection_profile", SrtpProtectionProfileFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -28955,7 +28986,7 @@ mod exec_impls {
             let tag = match *v {
                 HeartbeatMode::PeerAllowedToSend => 1,
                 HeartbeatMode::PeerNotAllowedToSend => 2,
-                HeartbeatMode::Unknown (x) if x != 1 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                HeartbeatMode::Unknown (x) if x != 1 && x != 2 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -28971,7 +29002,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ff", Opaque1FfFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -28991,7 +29022,7 @@ mod exec_impls {
     impl<'i> Prepare<ProtocolName<'i>> for ProtocolNameFmt {
         fn prepare(&self, v: &ProtocolName<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ProtocolNameFmt as SpecByteLen>::byte_len);
-            Opaque1FfFmt.prepare(v)
+            Named ("opaque_1_ff", Opaque1FfFmt).prepare(v)
         }
     }
 
@@ -29013,7 +29044,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (ProtocolNameFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("protocol_name", ProtocolNameFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ProtocolNameList {
@@ -29050,15 +29082,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ProtocolNameFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("protocol_name", ProtocolNameFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29106,7 +29138,7 @@ mod exec_impls {
             let tag = match *v {
                 CertificateType::X509 => 0,
                 CertificateType::RawPublicKey => 2,
-                CertificateType::Unknown (x) if x != 0 && x != 2 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                CertificateType::Unknown (x) if x != 0 && x != 2 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -29130,7 +29162,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CertificateTypeFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClientCertTypeClientExtension {
@@ -29167,15 +29200,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29198,7 +29231,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CertificateTypeFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerCertTypeClientExtension {
@@ -29235,15 +29269,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29311,7 +29345,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, group) = NamedGroupFmt.parse(&rest)?;
+            let (n1, group) = Named ("named_group", NamedGroupFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, l) = U16Be.parse(&rest)?;
             if !(l >= 1 && l <= 65535) {
@@ -29357,10 +29391,10 @@ mod exec_impls {
                 l,
                 key_exchange,
             } = v;
-            let l1 = (NamedGroupFmt).prepare (group) ?;
+            let l1 = (Named ("named_group", NamedGroupFmt)).prepare (group) ?;
             let l2 = {
                 if ! (* l >= 1 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
@@ -29368,7 +29402,7 @@ mod exec_impls {
             }
             ?;
             let l3 = (Varied (l)).prepare (key_exchange) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29391,84 +29425,96 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::ServerName => {
                     let (n,
-                    v) = (ServerNameListFmt).parse (& rest) ?;
+                    v) = (Named ("server_name_list",
+                    ServerNameListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ServerName (v))
                 }
                 ,
                 ExtensionType::MaxFragmentLength => {
                     let (n,
-                    v) = (MaxFragmentLengthFmt).parse (& rest) ?;
+                    v) = (Named ("max_fragment_length",
+                    MaxFragmentLengthFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::MaxFragmentLength (v))
                 }
                 ,
                 ExtensionType::StatusRequest => {
                     let (n,
-                    v) = (CertificateStatusRequestFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_status_request",
+                    CertificateStatusRequestFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::StatusRequest (v))
                 }
                 ,
                 ExtensionType::SupportedGroups => {
                     let (n,
-                    v) = (NamedGroupListFmt).parse (& rest) ?;
+                    v) = (Named ("named_group_list",
+                    NamedGroupListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::SupportedGroups (v))
                 }
                 ,
                 ExtensionType::ECPointFormats => {
                     let (n,
-                    v) = (EcPointFormatListFmt).parse (& rest) ?;
+                    v) = (Named ("ec_point_format_list",
+                    EcPointFormatListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ECPointFormats (v))
                 }
                 ,
                 ExtensionType::SignatureAlgorithms => {
                     let (n,
-                    v) = (SignatureSchemeListFmt).parse (& rest) ?;
+                    v) = (Named ("signature_scheme_list",
+                    SignatureSchemeListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::SignatureAlgorithms (v))
                 }
                 ,
                 ExtensionType::UseSRTP => {
                     let (n,
-                    v) = (SrtpProtectionProfilesFmt).parse (& rest) ?;
+                    v) = (Named ("srtp_protection_profiles",
+                    SrtpProtectionProfilesFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::UseSRTP (v))
                 }
                 ,
                 ExtensionType::Heartbeat => {
                     let (n,
-                    v) = (HeartbeatModeFmt).parse (& rest) ?;
+                    v) = (Named ("heartbeat_mode",
+                    HeartbeatModeFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::Heartbeat (v))
                 }
                 ,
                 ExtensionType::ApplicationLayerProtocolNegotiation => {
                     let (n,
-                    v) = (ProtocolNameListFmt).parse (& rest) ?;
+                    v) = (Named ("protocol_name_list",
+                    ProtocolNameListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v))
                 }
                 ,
                 ExtensionType::SignedCertificateTimeStamp => {
                     let (n,
-                    v) = (SignedCertificateTimestampListFmt).parse (& rest) ?;
+                    v) = (Named ("signed_certificate_timestamp_list",
+                    SignedCertificateTimestampListFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::SignedCertificateTimeStamp (v))
                 }
                 ,
                 ExtensionType::ClientCertificateType => {
                     let (n,
-                    v) = (ClientCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("client_cert_type_client_extension",
+                    ClientCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ClientCertificateType (v))
                 }
                 ,
                 ExtensionType::ServerCertificateType => {
                     let (n,
-                    v) = (ServerCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("server_cert_type_client_extension",
+                    ServerCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ServerCertificateType (v))
                 }
@@ -29482,42 +29528,48 @@ mod exec_impls {
                 ,
                 ExtensionType::EncryptThenMac => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::EncryptThenMac (v))
                 }
                 ,
                 ExtensionType::ExtendedMasterSecret => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::ExtendedMasterSecret (v))
                 }
                 ,
                 ExtensionType::SessionTicket => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::SessionTicket (v))
                 }
                 ,
                 ExtensionType::PreSharedKey => {
                     let (n,
-                    v) = (PreSharedKeyServerExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("pre_shared_key_server_extension",
+                    PreSharedKeyServerExtensionFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::PreSharedKey (v))
                 }
                 ,
                 ExtensionType::SupportedVersions => {
                     let (n,
-                    v) = (SupportedVersionsServerFmt).parse (& rest) ?;
+                    v) = (Named ("supported_versions_server",
+                    SupportedVersionsServerFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::SupportedVersions (v))
                 }
                 ,
                 ExtensionType::KeyShare => {
                     let (n,
-                    v) = (KeyShareEntryFmt).parse (& rest) ?;
+                    v) = (Named ("key_share_entry",
+                    KeyShareEntryFmt)).parse (& rest) ?;
                     (n,
                     SeverHelloExtensionExtensionData::KeyShare (v))
                 }
@@ -29642,25 +29694,25 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::ServerName, SeverHelloExtensionExtensionData::ServerName (v)) => (ServerNameListFmt).prepare (v),
-                (ExtensionType::MaxFragmentLength, SeverHelloExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
-                (ExtensionType::StatusRequest, SeverHelloExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
-                (ExtensionType::SupportedGroups, SeverHelloExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
-                (ExtensionType::ECPointFormats, SeverHelloExtensionExtensionData::ECPointFormats (v)) => (EcPointFormatListFmt).prepare (v),
-                (ExtensionType::SignatureAlgorithms, SeverHelloExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
-                (ExtensionType::UseSRTP, SeverHelloExtensionExtensionData::UseSRTP (v)) => (SrtpProtectionProfilesFmt).prepare (v),
-                (ExtensionType::Heartbeat, SeverHelloExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
-                (ExtensionType::ApplicationLayerProtocolNegotiation, SeverHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
-                (ExtensionType::SignedCertificateTimeStamp, SeverHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
-                (ExtensionType::ClientCertificateType, SeverHelloExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
-                (ExtensionType::ServerCertificateType, SeverHelloExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::ServerName, SeverHelloExtensionExtensionData::ServerName (v)) => (Named ("server_name_list", ServerNameListFmt)).prepare (v),
+                (ExtensionType::MaxFragmentLength, SeverHelloExtensionExtensionData::MaxFragmentLength (v)) => (Named ("max_fragment_length", MaxFragmentLengthFmt)).prepare (v),
+                (ExtensionType::StatusRequest, SeverHelloExtensionExtensionData::StatusRequest (v)) => (Named ("certificate_status_request", CertificateStatusRequestFmt)).prepare (v),
+                (ExtensionType::SupportedGroups, SeverHelloExtensionExtensionData::SupportedGroups (v)) => (Named ("named_group_list", NamedGroupListFmt)).prepare (v),
+                (ExtensionType::ECPointFormats, SeverHelloExtensionExtensionData::ECPointFormats (v)) => (Named ("ec_point_format_list", EcPointFormatListFmt)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, SeverHelloExtensionExtensionData::SignatureAlgorithms (v)) => (Named ("signature_scheme_list", SignatureSchemeListFmt)).prepare (v),
+                (ExtensionType::UseSRTP, SeverHelloExtensionExtensionData::UseSRTP (v)) => (Named ("srtp_protection_profiles", SrtpProtectionProfilesFmt)).prepare (v),
+                (ExtensionType::Heartbeat, SeverHelloExtensionExtensionData::Heartbeat (v)) => (Named ("heartbeat_mode", HeartbeatModeFmt)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, SeverHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (Named ("protocol_name_list", ProtocolNameListFmt)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, SeverHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (Named ("signed_certificate_timestamp_list", SignedCertificateTimestampListFmt)).prepare (v),
+                (ExtensionType::ClientCertificateType, SeverHelloExtensionExtensionData::ClientCertificateType (v)) => (Named ("client_cert_type_client_extension", ClientCertTypeClientExtensionFmt)).prepare (v),
+                (ExtensionType::ServerCertificateType, SeverHelloExtensionExtensionData::ServerCertificateType (v)) => (Named ("server_cert_type_client_extension", ServerCertTypeClientExtensionFmt)).prepare (v),
                 (ExtensionType::Padding, SeverHelloExtensionExtensionData::Padding (v)) => (Varied (self.ext_len)).prepare (v),
-                (ExtensionType::EncryptThenMac, SeverHelloExtensionExtensionData::EncryptThenMac (v)) => (EmptyFmt).prepare (v),
-                (ExtensionType::ExtendedMasterSecret, SeverHelloExtensionExtensionData::ExtendedMasterSecret (v)) => (EmptyFmt).prepare (v),
-                (ExtensionType::SessionTicket, SeverHelloExtensionExtensionData::SessionTicket (v)) => (EmptyFmt).prepare (v),
-                (ExtensionType::PreSharedKey, SeverHelloExtensionExtensionData::PreSharedKey (v)) => (PreSharedKeyServerExtensionFmt).prepare (v),
-                (ExtensionType::SupportedVersions, SeverHelloExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsServerFmt).prepare (v),
-                (ExtensionType::KeyShare, SeverHelloExtensionExtensionData::KeyShare (v)) => (KeyShareEntryFmt).prepare (v),
+                (ExtensionType::EncryptThenMac, SeverHelloExtensionExtensionData::EncryptThenMac (v)) => (Named ("empty", EmptyFmt)).prepare (v),
+                (ExtensionType::ExtendedMasterSecret, SeverHelloExtensionExtensionData::ExtendedMasterSecret (v)) => (Named ("empty", EmptyFmt)).prepare (v),
+                (ExtensionType::SessionTicket, SeverHelloExtensionExtensionData::SessionTicket (v)) => (Named ("empty", EmptyFmt)).prepare (v),
+                (ExtensionType::PreSharedKey, SeverHelloExtensionExtensionData::PreSharedKey (v)) => (Named ("pre_shared_key_server_extension", PreSharedKeyServerExtensionFmt)).prepare (v),
+                (ExtensionType::SupportedVersions, SeverHelloExtensionExtensionData::SupportedVersions (v)) => (Named ("supported_versions_server", SupportedVersionsServerFmt)).prepare (v),
+                (ExtensionType::KeyShare, SeverHelloExtensionExtensionData::KeyShare (v)) => (Named ("key_share_entry", KeyShareEntryFmt)).prepare (v),
                 (ExtensionType::EarlyData, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Cookie, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::PskKeyExchangeModes, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -29669,7 +29721,7 @@ mod exec_impls {
                 (ExtensionType::PostHandshakeAuth, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::SignatureAlgorithmsCert, SeverHelloExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), SeverHelloExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -29687,15 +29739,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, SeverHelloExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("sever_hello_extension_extension_data", SeverHelloExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -29740,14 +29793,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, SeverHelloExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("sever_hello_extension_extension_data", SeverHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29770,7 +29823,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (SeverHelloExtensionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("sever_hello_extension", SeverHelloExtensionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerExtensions {
@@ -29807,15 +29861,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 6 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SeverHelloExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("sever_hello_extension", SeverHelloExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29833,13 +29887,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, legacy_session_id_echo) = SessionIdFmt.parse(&rest)?;
+            let (n1, legacy_session_id_echo) = Named ("session_id", SessionIdFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, cipher_suite) = CipherSuiteFmt.parse(&rest)?;
+            let (n2, cipher_suite) = Named ("cipher_suite", CipherSuiteFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let (n3, legacy_compression_method) = Const (U8, 0).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, extensions) = ServerExtensionsFmt.parse(&rest)?;
+            let (n4, extensions) = Named ("server_extensions", ServerExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = ServerHello {
@@ -29882,11 +29938,11 @@ mod exec_impls {
                 legacy_compression_method,
                 extensions,
             } = v;
-            let l1 = (SessionIdFmt).prepare (legacy_session_id_echo) ?;
-            let l2 = (CipherSuiteFmt).prepare (cipher_suite) ?;
+            let l1 = (Named ("session_id", SessionIdFmt)).prepare (legacy_session_id_echo) ?;
+            let l2 = (Named ("cipher_suite", CipherSuiteFmt)).prepare (cipher_suite) ?;
             let l3 = (Const (U8, 0)).prepare (legacy_compression_method) ?;
-            let l4 = (ServerExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l4 = (Named ("server_extensions", ServerExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l4).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -29908,14 +29964,16 @@ mod exec_impls {
             let (n, v) = match self.random {
                 x if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
                     let (n,
-                    v) = (HelloRetryRequestFmt).parse (& rest) ?;
+                    v) = (Named ("hello_retry_request",
+                    HelloRetryRequestFmt)).parse (& rest) ?;
                     (n,
                     ShOrHrrPayload::Variant1 (v))
                 }
                 ,
                 _ => {
                     let (n,
-                    v) = (ServerHelloFmt).parse (& rest) ?;
+                    v) = (Named ("server_hello",
+                    ServerHelloFmt)).parse (& rest) ?;
                     (n,
                     ShOrHrrPayload::Default (v))
                 }
@@ -29959,9 +30017,9 @@ mod exec_impls {
             }
 
             match (self.random, v) {
-                (x, ShOrHrrPayload::Variant1 (v)) if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (HelloRetryRequestFmt).prepare (v),
-                (x, ShOrHrrPayload::Default (v)) if ! x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (ServerHelloFmt).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (x, ShOrHrrPayload::Variant1 (v)) if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("hello_retry_request", HelloRetryRequestFmt)).prepare (v),
+                (x, ShOrHrrPayload::Default (v)) if ! x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("server_hello", ServerHelloFmt)).prepare (v),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -29983,9 +30041,10 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, random) = Fixed::< 32 >.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, payload) = ShOrHrrPayloadFmt {
+            let (n3, payload) = Named ("sh_or_hrr_payload", ShOrHrrPayloadFmt {
                 random: random
             }
+            )
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -30030,11 +30089,11 @@ mod exec_impls {
             } = v;
             let l1 = (Const (U16Be, 771)).prepare (legacy_version) ?;
             let l2 = (Fixed::< 32 >).prepare (random) ?;
-            let l3 = (ShOrHrrPayloadFmt {
+            let l3 = (Named ("sh_or_hrr_payload", ShOrHrrPayloadFmt {
                 random: * random
             }
-            ).prepare (payload) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            )).prepare (payload) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30105,7 +30164,7 @@ mod exec_impls {
                 HandshakeType::CertificateVerify => 15,
                 HandshakeType::Finished => 20,
                 HandshakeType::KeyUpdate => 24,
-                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -30129,7 +30188,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CipherSuiteFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("cipher_suite", CipherSuiteFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CipherSuiteList {
@@ -30166,15 +30226,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65534) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CipherSuiteFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("cipher_suite", CipherSuiteFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30197,7 +30257,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (ProtocolVersionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("protocol_version", ProtocolVersionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SupportedVersionsClient {
@@ -30234,15 +30295,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 254) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ProtocolVersionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("protocol_version", ProtocolVersionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30262,7 +30323,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (KeyShareEntryFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("key_share_entry", KeyShareEntryFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = KeyShareClientHello {
@@ -30298,8 +30360,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (KeyShareEntryFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("key_share_entry", KeyShareEntryFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30347,7 +30409,7 @@ mod exec_impls {
             let tag = match *v {
                 PskKeyExchangeMode::PSK_KE => 0,
                 PskKeyExchangeMode::PSK_DHE_KE => 1,
-                PskKeyExchangeMode::Unknown (x) if x != 0 && x != 1 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                PskKeyExchangeMode::Unknown (x) if x != 0 && x != 1 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -30371,7 +30433,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (PskKeyExchangeModeFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("psk_key_exchange_mode", PskKeyExchangeModeFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskKeyExchangeModes {
@@ -30408,15 +30471,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskKeyExchangeModeFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("psk_key_exchange_mode", PskKeyExchangeModeFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30434,7 +30497,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, identity) = Opaque1FfffFmt.parse(&rest)?;
+            let (n1, identity) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, obfuscated_ticket_age) = U32Be.parse(&rest)?;
             let rest = rest.skip(n2);
@@ -30471,9 +30534,9 @@ mod exec_impls {
                 identity,
                 obfuscated_ticket_age,
             } = v;
-            let l1 = (Opaque1FfffFmt).prepare (identity) ?;
+            let l1 = (Named ("opaque_1_ffff", Opaque1FfffFmt)).prepare (identity) ?;
             let l2 = (U32Be).prepare (obfuscated_ticket_age) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30496,7 +30559,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (PskIdentityFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("psk_identity", PskIdentityFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskIdentities {
@@ -30533,15 +30597,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 7 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskIdentityFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("psk_identity", PskIdentityFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30601,7 +30665,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 32 && * l <= 255) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U8).prepare (l)
@@ -30609,7 +30673,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (entries) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30632,7 +30696,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (PskBinderEntryFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("psk_binder_entry", PskBinderEntryFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskBinderEntries {
@@ -30669,15 +30734,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 33 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskBinderEntryFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("psk_binder_entry", PskBinderEntryFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30695,9 +30760,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, identities) = PskIdentitiesFmt.parse(&rest)?;
+            let (n1, identities) = Named ("psk_identities", PskIdentitiesFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, binders) = PskBinderEntriesFmt.parse(&rest)?;
+            let (n2, binders) = Named ("psk_binder_entries", PskBinderEntriesFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OfferedPsks {
@@ -30732,9 +30798,9 @@ mod exec_impls {
                 identities,
                 binders,
             } = v;
-            let l1 = (PskIdentitiesFmt).prepare (identities) ?;
-            let l2 = (PskBinderEntriesFmt).prepare (binders) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("psk_identities", PskIdentitiesFmt)).prepare (identities) ?;
+            let l2 = (Named ("psk_binder_entries", PskBinderEntriesFmt)).prepare (binders) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -30752,7 +30818,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, offers) = OfferedPsksFmt.parse(&rest)?;
+            let (n1, offers) = Named ("offered_psks", OfferedPsksFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = PreSharedKeyClientExtension {
@@ -30783,7 +30849,7 @@ mod exec_impls {
             let PreSharedKeyClientExtension {
                 offers,
             } = v;
-            let l1 = (OfferedPsksFmt).prepare (offers) ?;
+            let l1 = (Named ("offered_psks", OfferedPsksFmt)).prepare (offers) ?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -30807,98 +30873,112 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::ServerName => {
                     let (n,
-                    v) = (ServerNameListFmt).parse (& rest) ?;
+                    v) = (Named ("server_name_list",
+                    ServerNameListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::ServerName (v))
                 }
                 ,
                 ExtensionType::SignatureAlgorithms => {
                     let (n,
-                    v) = (SignatureSchemeListFmt).parse (& rest) ?;
+                    v) = (Named ("signature_scheme_list",
+                    SignatureSchemeListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::SignatureAlgorithms (v))
                 }
                 ,
                 ExtensionType::SupportedGroups => {
                     let (n,
-                    v) = (NamedGroupListFmt).parse (& rest) ?;
+                    v) = (Named ("named_group_list",
+                    NamedGroupListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::SupportedGroups (v))
                 }
                 ,
                 ExtensionType::StatusRequest => {
                     let (n,
-                    v) = (CertificateStatusRequestFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_status_request",
+                    CertificateStatusRequestFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::StatusRequest (v))
                 }
                 ,
                 ExtensionType::ApplicationLayerProtocolNegotiation => {
                     let (n,
-                    v) = (ProtocolNameListFmt).parse (& rest) ?;
+                    v) = (Named ("protocol_name_list",
+                    ProtocolNameListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v))
                 }
                 ,
                 ExtensionType::SupportedVersions => {
                     let (n,
-                    v) = (SupportedVersionsClientFmt).parse (& rest) ?;
+                    v) = (Named ("supported_versions_client",
+                    SupportedVersionsClientFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::SupportedVersions (v))
                 }
                 ,
                 ExtensionType::KeyShare => {
                     let (n,
-                    v) = (KeyShareClientHelloFmt).parse (& rest) ?;
+                    v) = (Named ("key_share_client_hello",
+                    KeyShareClientHelloFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::KeyShare (v))
                 }
                 ,
                 ExtensionType::PskKeyExchangeModes => {
                     let (n,
-                    v) = (PskKeyExchangeModesFmt).parse (& rest) ?;
+                    v) = (Named ("psk_key_exchange_modes",
+                    PskKeyExchangeModesFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::PskKeyExchangeModes (v))
                 }
                 ,
                 ExtensionType::PreSharedKey => {
                     let (n,
-                    v) = (PreSharedKeyClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("pre_shared_key_client_extension",
+                    PreSharedKeyClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::PreSharedKey (v))
                 }
                 ,
                 ExtensionType::MaxFragmentLength => {
                     let (n,
-                    v) = (MaxFragmentLengthFmt).parse (& rest) ?;
+                    v) = (Named ("max_fragment_length",
+                    MaxFragmentLengthFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::MaxFragmentLength (v))
                 }
                 ,
                 ExtensionType::Heartbeat => {
                     let (n,
-                    v) = (HeartbeatModeFmt).parse (& rest) ?;
+                    v) = (Named ("heartbeat_mode",
+                    HeartbeatModeFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::Heartbeat (v))
                 }
                 ,
                 ExtensionType::SignedCertificateTimeStamp => {
                     let (n,
-                    v) = (SignedCertificateTimestampListFmt).parse (& rest) ?;
+                    v) = (Named ("signed_certificate_timestamp_list",
+                    SignedCertificateTimestampListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::SignedCertificateTimeStamp (v))
                 }
                 ,
                 ExtensionType::ClientCertificateType => {
                     let (n,
-                    v) = (ClientCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("client_cert_type_client_extension",
+                    ClientCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::ClientCertificateType (v))
                 }
                 ,
                 ExtensionType::ServerCertificateType => {
                     let (n,
-                    v) = (ServerCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("server_cert_type_client_extension",
+                    ServerCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::ServerCertificateType (v))
                 }
@@ -30912,28 +30992,32 @@ mod exec_impls {
                 ,
                 ExtensionType::Cookie => {
                     let (n,
-                    v) = (CookieFmt).parse (& rest) ?;
+                    v) = (Named ("cookie",
+                    CookieFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::Cookie (v))
                 }
                 ,
                 ExtensionType::CertificateAuthorities => {
                     let (n,
-                    v) = (CertificateAuthoritiesExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_authorities_extension",
+                    CertificateAuthoritiesExtensionFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::CertificateAuthorities (v))
                 }
                 ,
                 ExtensionType::OidFilters => {
                     let (n,
-                    v) = (OidFilterExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("oid_filter_extension",
+                    OidFilterExtensionFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::OidFilters (v))
                 }
                 ,
                 ExtensionType::SignatureAlgorithmsCert => {
                     let (n,
-                    v) = (SignatureSchemeListFmt).parse (& rest) ?;
+                    v) = (Named ("signature_scheme_list",
+                    SignatureSchemeListFmt)).parse (& rest) ?;
                     (n,
                     ClientHelloExtensionExtensionData::SignatureAlgorithmsCert (v))
                 }
@@ -31058,25 +31142,25 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::ServerName, ClientHelloExtensionExtensionData::ServerName (v)) => (ServerNameListFmt).prepare (v),
-                (ExtensionType::SignatureAlgorithms, ClientHelloExtensionExtensionData::SignatureAlgorithms (v)) => (SignatureSchemeListFmt).prepare (v),
-                (ExtensionType::SupportedGroups, ClientHelloExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
-                (ExtensionType::StatusRequest, ClientHelloExtensionExtensionData::StatusRequest (v)) => (CertificateStatusRequestFmt).prepare (v),
-                (ExtensionType::ApplicationLayerProtocolNegotiation, ClientHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
-                (ExtensionType::SupportedVersions, ClientHelloExtensionExtensionData::SupportedVersions (v)) => (SupportedVersionsClientFmt).prepare (v),
-                (ExtensionType::KeyShare, ClientHelloExtensionExtensionData::KeyShare (v)) => (KeyShareClientHelloFmt).prepare (v),
-                (ExtensionType::PskKeyExchangeModes, ClientHelloExtensionExtensionData::PskKeyExchangeModes (v)) => (PskKeyExchangeModesFmt).prepare (v),
-                (ExtensionType::PreSharedKey, ClientHelloExtensionExtensionData::PreSharedKey (v)) => (PreSharedKeyClientExtensionFmt).prepare (v),
-                (ExtensionType::MaxFragmentLength, ClientHelloExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
-                (ExtensionType::Heartbeat, ClientHelloExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
-                (ExtensionType::SignedCertificateTimeStamp, ClientHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
-                (ExtensionType::ClientCertificateType, ClientHelloExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
-                (ExtensionType::ServerCertificateType, ClientHelloExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
+                (ExtensionType::ServerName, ClientHelloExtensionExtensionData::ServerName (v)) => (Named ("server_name_list", ServerNameListFmt)).prepare (v),
+                (ExtensionType::SignatureAlgorithms, ClientHelloExtensionExtensionData::SignatureAlgorithms (v)) => (Named ("signature_scheme_list", SignatureSchemeListFmt)).prepare (v),
+                (ExtensionType::SupportedGroups, ClientHelloExtensionExtensionData::SupportedGroups (v)) => (Named ("named_group_list", NamedGroupListFmt)).prepare (v),
+                (ExtensionType::StatusRequest, ClientHelloExtensionExtensionData::StatusRequest (v)) => (Named ("certificate_status_request", CertificateStatusRequestFmt)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, ClientHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (Named ("protocol_name_list", ProtocolNameListFmt)).prepare (v),
+                (ExtensionType::SupportedVersions, ClientHelloExtensionExtensionData::SupportedVersions (v)) => (Named ("supported_versions_client", SupportedVersionsClientFmt)).prepare (v),
+                (ExtensionType::KeyShare, ClientHelloExtensionExtensionData::KeyShare (v)) => (Named ("key_share_client_hello", KeyShareClientHelloFmt)).prepare (v),
+                (ExtensionType::PskKeyExchangeModes, ClientHelloExtensionExtensionData::PskKeyExchangeModes (v)) => (Named ("psk_key_exchange_modes", PskKeyExchangeModesFmt)).prepare (v),
+                (ExtensionType::PreSharedKey, ClientHelloExtensionExtensionData::PreSharedKey (v)) => (Named ("pre_shared_key_client_extension", PreSharedKeyClientExtensionFmt)).prepare (v),
+                (ExtensionType::MaxFragmentLength, ClientHelloExtensionExtensionData::MaxFragmentLength (v)) => (Named ("max_fragment_length", MaxFragmentLengthFmt)).prepare (v),
+                (ExtensionType::Heartbeat, ClientHelloExtensionExtensionData::Heartbeat (v)) => (Named ("heartbeat_mode", HeartbeatModeFmt)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, ClientHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => (Named ("signed_certificate_timestamp_list", SignedCertificateTimestampListFmt)).prepare (v),
+                (ExtensionType::ClientCertificateType, ClientHelloExtensionExtensionData::ClientCertificateType (v)) => (Named ("client_cert_type_client_extension", ClientCertTypeClientExtensionFmt)).prepare (v),
+                (ExtensionType::ServerCertificateType, ClientHelloExtensionExtensionData::ServerCertificateType (v)) => (Named ("server_cert_type_client_extension", ServerCertTypeClientExtensionFmt)).prepare (v),
                 (ExtensionType::Padding, ClientHelloExtensionExtensionData::Padding (v)) => (Varied (self.ext_len)).prepare (v),
-                (ExtensionType::Cookie, ClientHelloExtensionExtensionData::Cookie (v)) => (CookieFmt).prepare (v),
-                (ExtensionType::CertificateAuthorities, ClientHelloExtensionExtensionData::CertificateAuthorities (v)) => (CertificateAuthoritiesExtensionFmt).prepare (v),
-                (ExtensionType::OidFilters, ClientHelloExtensionExtensionData::OidFilters (v)) => (OidFilterExtensionFmt).prepare (v),
-                (ExtensionType::SignatureAlgorithmsCert, ClientHelloExtensionExtensionData::SignatureAlgorithmsCert (v)) => (SignatureSchemeListFmt).prepare (v),
+                (ExtensionType::Cookie, ClientHelloExtensionExtensionData::Cookie (v)) => (Named ("cookie", CookieFmt)).prepare (v),
+                (ExtensionType::CertificateAuthorities, ClientHelloExtensionExtensionData::CertificateAuthorities (v)) => (Named ("certificate_authorities_extension", CertificateAuthoritiesExtensionFmt)).prepare (v),
+                (ExtensionType::OidFilters, ClientHelloExtensionExtensionData::OidFilters (v)) => (Named ("oid_filter_extension", OidFilterExtensionFmt)).prepare (v),
+                (ExtensionType::SignatureAlgorithmsCert, ClientHelloExtensionExtensionData::SignatureAlgorithmsCert (v)) => (Named ("signature_scheme_list", SignatureSchemeListFmt)).prepare (v),
                 (ExtensionType::ECPointFormats, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
                 (ExtensionType::UseSRTP, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
                 (ExtensionType::EncryptThenMac, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
@@ -31085,7 +31169,7 @@ mod exec_impls {
                 (ExtensionType::EarlyData, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
                 (ExtensionType::PostHandshakeAuth, ClientHelloExtensionExtensionData::Default (v)) => (Tail).prepare (v),
                 (ExtensionType::Unknown (x), ClientHelloExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Tail).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -31103,15 +31187,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, ClientHelloExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("client_hello_extension_extension_data", ClientHelloExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -31156,14 +31241,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, ClientHelloExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("client_hello_extension_extension_data", ClientHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31186,7 +31271,8 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (ClientHelloExtensionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("client_hello_extension", ClientHelloExtensionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClientExtensions {
@@ -31223,15 +31309,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 8 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ClientHelloExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("client_hello_extension", ClientHelloExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31253,13 +31339,16 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, random) = Fixed::< 32 >.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, legacy_session_id) = SessionIdFmt.parse(&rest)?;
+            let (n3, legacy_session_id) = Named ("session_id", SessionIdFmt).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, cipher_suites) = CipherSuiteListFmt.parse(&rest)?;
+            let (n4, cipher_suites) = Named ("cipher_suite_list", CipherSuiteListFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, legacy_compression_methods) = Opaque1FfFmt.parse(&rest)?;
+            let (n5, legacy_compression_methods) = Named ("opaque_1_ff", Opaque1FfFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, extensions) = ClientExtensionsFmt.parse(&rest)?;
+            let (n6, extensions) = Named ("client_extensions", ClientExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n6);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6;
             let final_v = ClientHello {
@@ -31312,11 +31401,11 @@ mod exec_impls {
             } = v;
             let l1 = (Const (U16Be, 771)).prepare (legacy_version) ?;
             let l2 = (Fixed::< 32 >).prepare (random) ?;
-            let l3 = (SessionIdFmt).prepare (legacy_session_id) ?;
-            let l4 = (CipherSuiteListFmt).prepare (cipher_suites) ?;
-            let l5 = (Opaque1FfFmt).prepare (legacy_compression_methods) ?;
-            let l6 = (ClientExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l5).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l6).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l3 = (Named ("session_id", SessionIdFmt)).prepare (legacy_session_id) ?;
+            let l4 = (Named ("cipher_suite_list", CipherSuiteListFmt)).prepare (cipher_suites) ?;
+            let l5 = (Named ("opaque_1_ff", Opaque1FfFmt)).prepare (legacy_compression_methods) ?;
+            let l6 = (Named ("client_extensions", ClientExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l4).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l5).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l6).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31373,7 +31462,7 @@ mod exec_impls {
             } = v;
             let l1 = (U8).prepare (l) ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31445,7 +31534,8 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::EarlyData => {
                     let (n,
-                    v) = (EarlyDataIndicationNewSessionTicketFmt).parse (& rest) ?;
+                    v) = (Named ("early_data_indication_new_session_ticket",
+                    EarlyDataIndicationNewSessionTicketFmt)).parse (& rest) ?;
                     (n,
                     NewSessionTicketExtensionExtensionData::EarlyData (v))
                 }
@@ -31496,7 +31586,7 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::EarlyData, NewSessionTicketExtensionExtensionData::EarlyData (v)) => (EarlyDataIndicationNewSessionTicketFmt).prepare (v),
+                (ExtensionType::EarlyData, NewSessionTicketExtensionExtensionData::EarlyData (v)) => (Named ("early_data_indication_new_session_ticket", EarlyDataIndicationNewSessionTicketFmt)).prepare (v),
                 (ExtensionType::ServerName, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::MaxFragmentLength, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::StatusRequest, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -31523,7 +31613,7 @@ mod exec_impls {
                 (ExtensionType::SignatureAlgorithmsCert, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::KeyShare, NewSessionTicketExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), NewSessionTicketExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -31541,15 +31631,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, NewSessionTicketExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("new_session_ticket_extension_extension_data", NewSessionTicketExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -31594,14 +31685,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, NewSessionTicketExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("new_session_ticket_extension_extension_data", NewSessionTicketExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31624,7 +31715,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (NewSessionTicketExtensionFmt))
+            let (n2, list) = ExactLen (l, Star (Named ("new_session_ticket_extension", NewSessionTicketExtensionFmt)))
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -31662,15 +31753,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 0 && * l <= 65534) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (NewSessionTicketExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("new_session_ticket_extension", NewSessionTicketExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31692,11 +31783,12 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, ticket_age_add) = U32Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, ticket_nonce) = Opaque0FfFmt.parse(&rest)?;
+            let (n3, ticket_nonce) = Named ("opaque_0_ff", Opaque0FfFmt).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, ticket) = Opaque1FfffFmt.parse(&rest)?;
+            let (n4, ticket) = Named ("opaque_1_ffff", Opaque1FfffFmt).parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, extensions) = NewSessionTicketExtensionsFmt.parse(&rest)?;
+            let (n5, extensions) = Named ("new_session_ticket_extensions", NewSessionTicketExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n5);
             let total_n = n1 + n2 + n3 + n4 + n5;
             let final_v = NewSessionTicket {
@@ -31745,10 +31837,10 @@ mod exec_impls {
             } = v;
             let l1 = (U32Be).prepare (ticket_lifetime) ?;
             let l2 = (U32Be).prepare (ticket_age_add) ?;
-            let l3 = (Opaque0FfFmt).prepare (ticket_nonce) ?;
-            let l4 = (Opaque1FfffFmt).prepare (ticket) ?;
-            let l5 = (NewSessionTicketExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l4).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l5).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l3 = (Named ("opaque_0_ff", Opaque0FfFmt)).prepare (ticket_nonce) ?;
+            let l4 = (Named ("opaque_1_ffff", Opaque1FfffFmt)).prepare (ticket) ?;
+            let l5 = (Named ("new_session_ticket_extensions", NewSessionTicketExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l4).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l5).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -31770,56 +31862,64 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::ServerName => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::ServerName (v))
                 }
                 ,
                 ExtensionType::MaxFragmentLength => {
                     let (n,
-                    v) = (MaxFragmentLengthFmt).parse (& rest) ?;
+                    v) = (Named ("max_fragment_length",
+                    MaxFragmentLengthFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::MaxFragmentLength (v))
                 }
                 ,
                 ExtensionType::SupportedGroups => {
                     let (n,
-                    v) = (NamedGroupListFmt).parse (& rest) ?;
+                    v) = (Named ("named_group_list",
+                    NamedGroupListFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::SupportedGroups (v))
                 }
                 ,
                 ExtensionType::Heartbeat => {
                     let (n,
-                    v) = (HeartbeatModeFmt).parse (& rest) ?;
+                    v) = (Named ("heartbeat_mode",
+                    HeartbeatModeFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::Heartbeat (v))
                 }
                 ,
                 ExtensionType::ApplicationLayerProtocolNegotiation => {
                     let (n,
-                    v) = (ProtocolNameListFmt).parse (& rest) ?;
+                    v) = (Named ("protocol_name_list",
+                    ProtocolNameListFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::ApplicationLayerProtocolNegotiation (v))
                 }
                 ,
                 ExtensionType::ClientCertificateType => {
                     let (n,
-                    v) = (ClientCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("client_cert_type_client_extension",
+                    ClientCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::ClientCertificateType (v))
                 }
                 ,
                 ExtensionType::ServerCertificateType => {
                     let (n,
-                    v) = (ServerCertTypeClientExtensionFmt).parse (& rest) ?;
+                    v) = (Named ("server_cert_type_client_extension",
+                    ServerCertTypeClientExtensionFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::ServerCertificateType (v))
                 }
                 ,
                 ExtensionType::EarlyData => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     EncryptedExtensionExtensionData::EarlyData (v))
                 }
@@ -31898,14 +31998,14 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::ServerName, EncryptedExtensionExtensionData::ServerName (v)) => (EmptyFmt).prepare (v),
-                (ExtensionType::MaxFragmentLength, EncryptedExtensionExtensionData::MaxFragmentLength (v)) => (MaxFragmentLengthFmt).prepare (v),
-                (ExtensionType::SupportedGroups, EncryptedExtensionExtensionData::SupportedGroups (v)) => (NamedGroupListFmt).prepare (v),
-                (ExtensionType::Heartbeat, EncryptedExtensionExtensionData::Heartbeat (v)) => (HeartbeatModeFmt).prepare (v),
-                (ExtensionType::ApplicationLayerProtocolNegotiation, EncryptedExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (ProtocolNameListFmt).prepare (v),
-                (ExtensionType::ClientCertificateType, EncryptedExtensionExtensionData::ClientCertificateType (v)) => (ClientCertTypeClientExtensionFmt).prepare (v),
-                (ExtensionType::ServerCertificateType, EncryptedExtensionExtensionData::ServerCertificateType (v)) => (ServerCertTypeClientExtensionFmt).prepare (v),
-                (ExtensionType::EarlyData, EncryptedExtensionExtensionData::EarlyData (v)) => (EmptyFmt).prepare (v),
+                (ExtensionType::ServerName, EncryptedExtensionExtensionData::ServerName (v)) => (Named ("empty", EmptyFmt)).prepare (v),
+                (ExtensionType::MaxFragmentLength, EncryptedExtensionExtensionData::MaxFragmentLength (v)) => (Named ("max_fragment_length", MaxFragmentLengthFmt)).prepare (v),
+                (ExtensionType::SupportedGroups, EncryptedExtensionExtensionData::SupportedGroups (v)) => (Named ("named_group_list", NamedGroupListFmt)).prepare (v),
+                (ExtensionType::Heartbeat, EncryptedExtensionExtensionData::Heartbeat (v)) => (Named ("heartbeat_mode", HeartbeatModeFmt)).prepare (v),
+                (ExtensionType::ApplicationLayerProtocolNegotiation, EncryptedExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => (Named ("protocol_name_list", ProtocolNameListFmt)).prepare (v),
+                (ExtensionType::ClientCertificateType, EncryptedExtensionExtensionData::ClientCertificateType (v)) => (Named ("client_cert_type_client_extension", ClientCertTypeClientExtensionFmt)).prepare (v),
+                (ExtensionType::ServerCertificateType, EncryptedExtensionExtensionData::ServerCertificateType (v)) => (Named ("server_cert_type_client_extension", ServerCertTypeClientExtensionFmt)).prepare (v),
+                (ExtensionType::EarlyData, EncryptedExtensionExtensionData::EarlyData (v)) => (Named ("empty", EmptyFmt)).prepare (v),
                 (ExtensionType::StatusRequest, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::ECPointFormats, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::SignatureAlgorithms, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -31925,7 +32025,7 @@ mod exec_impls {
                 (ExtensionType::SignatureAlgorithmsCert, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::KeyShare, EncryptedExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), EncryptedExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -31943,15 +32043,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, EncryptedExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("encrypted_extension_extension_data", EncryptedExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -31996,14 +32097,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, EncryptedExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("encrypted_extension_extension_data", EncryptedExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32023,7 +32124,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (EncryptedExtensionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("encrypted_extension", EncryptedExtensionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = EncryptedExtensions {
@@ -32059,8 +32161,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (EncryptedExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("encrypted_extension", EncryptedExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32120,7 +32222,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 1 && * l <= 16777215) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U24Be).prepare (l)
@@ -32128,7 +32230,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32143,7 +32245,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque1FfffffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_1_ffffff", Opaque1FfffffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -32163,7 +32265,7 @@ mod exec_impls {
     impl<'i> Prepare<OcspResponse<'i>> for OcspResponseFmt {
         fn prepare(&self, v: &OcspResponse<'i>) -> Result<usize, PreSerializeError> {
             reveal(<OcspResponseFmt as SpecByteLen>::byte_len);
-            Opaque1FfffffFmt.prepare(v)
+            Named ("opaque_1_ffffff", Opaque1FfffffFmt).prepare(v)
         }
     }
 
@@ -32182,7 +32284,7 @@ mod exec_impls {
 
             let (n1, status_type) = Const (U8, 1).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, response) = OcspResponseFmt.parse(&rest)?;
+            let (n2, response) = Named ("ocsp_response", OcspResponseFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateStatus {
@@ -32218,8 +32320,8 @@ mod exec_impls {
                 response,
             } = v;
             let l1 = (Const (U8, 1)).prepare (status_type) ?;
-            let l2 = (OcspResponseFmt).prepare (response) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (Named ("ocsp_response", OcspResponseFmt)).prepare (response) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32241,14 +32343,16 @@ mod exec_impls {
             let (n, v) = match self.extension_type {
                 ExtensionType::StatusRequest => {
                     let (n,
-                    v) = (CertificateStatusFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_status",
+                    CertificateStatusFmt)).parse (& rest) ?;
                     (n,
                     CertificateExtensionExtensionData::StatusRequest (v))
                 }
                 ,
                 ExtensionType::SignedCertificateTimeStamp => {
                     let (n,
-                    v) = (SignedCertificateTimestampListFmt).parse (& rest) ?;
+                    v) = (Named ("signed_certificate_timestamp_list",
+                    SignedCertificateTimestampListFmt)).parse (& rest) ?;
                     (n,
                     CertificateExtensionExtensionData::SignedCertificateTimeStamp (v))
                 }
@@ -32303,8 +32407,8 @@ mod exec_impls {
             }
 
             match (self.extension_type, v) {
-                (ExtensionType::StatusRequest, CertificateExtensionExtensionData::StatusRequest (v)) => (CertificateStatusFmt).prepare (v),
-                (ExtensionType::SignedCertificateTimeStamp, CertificateExtensionExtensionData::SignedCertificateTimeStamp (v)) => (SignedCertificateTimestampListFmt).prepare (v),
+                (ExtensionType::StatusRequest, CertificateExtensionExtensionData::StatusRequest (v)) => (Named ("certificate_status", CertificateStatusFmt)).prepare (v),
+                (ExtensionType::SignedCertificateTimeStamp, CertificateExtensionExtensionData::SignedCertificateTimeStamp (v)) => (Named ("signed_certificate_timestamp_list", SignedCertificateTimestampListFmt)).prepare (v),
                 (ExtensionType::ServerName, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::MaxFragmentLength, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::SupportedGroups, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
@@ -32330,7 +32434,7 @@ mod exec_impls {
                 (ExtensionType::SignatureAlgorithmsCert, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::KeyShare, CertificateExtensionExtensionData::Default (v)) => (Varied (self.ext_len)).prepare (v),
                 (ExtensionType::Unknown (x), CertificateExtensionExtensionData::Default (v)) if x != 0 && x != 1 && x != 5 && x != 10 && x != 11 && x != 13 && x != 14 && x != 15 && x != 16 && x != 18 && x != 19 && x != 20 && x != 21 && x != 22 && x != 23 && x != 35 && x != 41 && x != 42 && x != 43 && x != 44 && x != 45 && x != 47 && x != 48 && x != 49 && x != 50 && x != 51 => (Varied (self.ext_len)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -32348,15 +32452,16 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, ext_len) = U16Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, extension_data) = ExactLen (ext_len, CertificateExtensionExtensionDataFmt {
+            let (n3, extension_data) = ExactLen (ext_len, Named ("certificate_extension_extension_data", CertificateExtensionExtensionDataFmt {
                 ext_len: ext_len,
                 extension_type: extension_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -32401,14 +32506,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, CertificateExtensionExtensionDataFmt {
+            let l3 = (ExactLen (ext_len, Named ("certificate_extension_extension_data", CertificateExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
-            )).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32428,7 +32533,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CertificateExtensionFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("certificate_extension", CertificateExtensionFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateExtensions {
@@ -32464,8 +32570,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (CertificateExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("certificate_extension", CertificateExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32483,9 +32589,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, cert_data) = Opaque1FfffffFmt.parse(&rest)?;
+            let (n1, cert_data) = Named ("opaque_1_ffffff", Opaque1FfffffFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, extensions) = CertificateExtensionsFmt.parse(&rest)?;
+            let (n2, extensions) = Named ("certificate_extensions", CertificateExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateEntryOpaque {
@@ -32520,9 +32627,9 @@ mod exec_impls {
                 cert_data,
                 extensions,
             } = v;
-            let l1 = (Opaque1FfffffFmt).prepare (cert_data) ?;
-            let l2 = (CertificateExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("opaque_1_ffffff", Opaque1FfffffFmt)).prepare (cert_data) ?;
+            let l2 = (Named ("certificate_extensions", CertificateExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32542,7 +32649,8 @@ mod exec_impls {
 
             let (n1, l) = U24Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CertificateEntryOpaqueFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (Named ("certificate_entry_opaque", CertificateEntryOpaqueFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateList {
@@ -32578,8 +32686,8 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U24Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (CertificateEntryOpaqueFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("certificate_entry_opaque", CertificateEntryOpaqueFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32597,9 +32705,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, certificate_request_context) = Opaque0FfFmt.parse(&rest)?;
+            let (n1, certificate_request_context) = Named ("opaque_0_ff", Opaque0FfFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, certificate_list) = CertificateListFmt.parse(&rest)?;
+            let (n2, certificate_list) = Named ("certificate_list", CertificateListFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Certificate {
@@ -32634,9 +32744,9 @@ mod exec_impls {
                 certificate_request_context,
                 certificate_list,
             } = v;
-            let l1 = (Opaque0FfFmt).prepare (certificate_request_context) ?;
-            let l2 = (CertificateListFmt).prepare (certificate_list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("opaque_0_ff", Opaque0FfFmt)).prepare (certificate_request_context) ?;
+            let l2 = (Named ("certificate_list", CertificateListFmt)).prepare (certificate_list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32659,7 +32769,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (CertificateRequestExtensionFmt))
+            let (n2, list) = ExactLen (l, Star (Named ("certificate_request_extension", CertificateRequestExtensionFmt)))
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -32697,15 +32807,15 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateRequestExtensionFmt))).prepare (list) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("certificate_request_extension", CertificateRequestExtensionFmt)))).prepare (list) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32723,9 +32833,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, certificate_request_context) = Opaque0FfFmt.parse(&rest)?;
+            let (n1, certificate_request_context) = Named ("opaque_0_ff", Opaque0FfFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, extensions) = CertificateRequestExtensionsFmt.parse(&rest)?;
+            let (n2, extensions) = Named ("certificate_request_extensions", CertificateRequestExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateRequest {
@@ -32760,9 +32872,9 @@ mod exec_impls {
                 certificate_request_context,
                 extensions,
             } = v;
-            let l1 = (Opaque0FfFmt).prepare (certificate_request_context) ?;
-            let l2 = (CertificateRequestExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("opaque_0_ff", Opaque0FfFmt)).prepare (certificate_request_context) ?;
+            let l2 = (Named ("certificate_request_extensions", CertificateRequestExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32780,9 +32892,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, algorithm) = SignatureSchemeFmt.parse(&rest)?;
+            let (n1, algorithm) = Named ("signature_scheme", SignatureSchemeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, signature) = Opaque0FfffFmt.parse(&rest)?;
+            let (n2, signature) = Named ("opaque_0_ffff", Opaque0FfffFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateVerify {
@@ -32817,9 +32930,9 @@ mod exec_impls {
                 algorithm,
                 signature,
             } = v;
-            let l1 = (SignatureSchemeFmt).prepare (algorithm) ?;
-            let l2 = (Opaque0FfffFmt).prepare (signature) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("signature_scheme", SignatureSchemeFmt)).prepare (algorithm) ?;
+            let l2 = (Named ("opaque_0_ffff", Opaque0FfffFmt)).prepare (signature) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -32942,7 +33055,7 @@ mod exec_impls {
                 (48, Finished::Variant4 (v)) => (Fixed::< 48 >).prepare (v),
                 (64, Finished::Variant5 (v)) => (Fixed::< 64 >).prepare (v),
                 (x, Finished::Default (v)) if ! (x == 12) && ! (x == 20) && ! (x == 32) && ! (x == 48) && ! (x == 64) => (Varied (self.size)).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -32989,7 +33102,7 @@ mod exec_impls {
             let tag = match *v {
                 KeyUpdateRequest::UpdateNotRequested => 0,
                 KeyUpdateRequest::UpdateRequested => 1,
-                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -33008,7 +33121,8 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, request_update) = KeyUpdateRequestFmt.parse(&rest)?;
+            let (n1, request_update) = Named ("key_update_request", KeyUpdateRequestFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = KeyUpdate {
@@ -33039,7 +33153,7 @@ mod exec_impls {
             let KeyUpdate {
                 request_update,
             } = v;
-            let l1 = (KeyUpdateRequestFmt).prepare (request_update) ?;
+            let l1 = (Named ("key_update_request", KeyUpdateRequestFmt)).prepare (request_update) ?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -33062,73 +33176,83 @@ mod exec_impls {
             let (n, v) = match self.msg_type {
                 HandshakeType::ClientHello => {
                     let (n,
-                    v) = (ClientHelloFmt).parse (& rest) ?;
+                    v) = (Named ("client_hello",
+                    ClientHelloFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::ClientHello (v))
                 }
                 ,
                 HandshakeType::ServerHello => {
                     let (n,
-                    v) = (ShOrHrrFmt).parse (& rest) ?;
+                    v) = (Named ("sh_or_hrr",
+                    ShOrHrrFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::ServerHello (v))
                 }
                 ,
                 HandshakeType::NewSessionTicket => {
                     let (n,
-                    v) = (NewSessionTicketFmt).parse (& rest) ?;
+                    v) = (Named ("new_session_ticket",
+                    NewSessionTicketFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::NewSessionTicket (v))
                 }
                 ,
                 HandshakeType::EndOfEarlyData => {
                     let (n,
-                    v) = (EmptyFmt).parse (& rest) ?;
+                    v) = (Named ("empty",
+                    EmptyFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::EndOfEarlyData (v))
                 }
                 ,
                 HandshakeType::EncryptedExtensions => {
                     let (n,
-                    v) = (EncryptedExtensionsFmt).parse (& rest) ?;
+                    v) = (Named ("encrypted_extensions",
+                    EncryptedExtensionsFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::EncryptedExtensions (v))
                 }
                 ,
                 HandshakeType::Certificate => {
                     let (n,
-                    v) = (CertificateFmt).parse (& rest) ?;
+                    v) = (Named ("certificate",
+                    CertificateFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::Certificate (v))
                 }
                 ,
                 HandshakeType::CertificateRequest => {
                     let (n,
-                    v) = (CertificateRequestFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_request",
+                    CertificateRequestFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::CertificateRequest (v))
                 }
                 ,
                 HandshakeType::CertificateVerify => {
                     let (n,
-                    v) = (CertificateVerifyFmt).parse (& rest) ?;
+                    v) = (Named ("certificate_verify",
+                    CertificateVerifyFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::CertificateVerify (v))
                 }
                 ,
                 HandshakeType::Finished => {
                     let (n,
-                    v) = (FinishedFmt {
+                    v) = (Named ("finished",
+                    FinishedFmt {
                         size: self.length
                     }
-                    ).parse (& rest) ?;
+                    )).parse (& rest) ?;
                     (n,
                     HandshakeMsg::Finished (v))
                 }
                 ,
                 HandshakeType::KeyUpdate => {
                     let (n,
-                    v) = (KeyUpdateFmt).parse (& rest) ?;
+                    v) = (Named ("key_update",
+                    KeyUpdateFmt)).parse (& rest) ?;
                     (n,
                     HandshakeMsg::KeyUpdate (v))
                 }
@@ -33207,20 +33331,20 @@ mod exec_impls {
             }
 
             match (self.msg_type, v) {
-                (HandshakeType::ClientHello, HandshakeMsg::ClientHello (v)) => (ClientHelloFmt).prepare (v),
-                (HandshakeType::ServerHello, HandshakeMsg::ServerHello (v)) => (ShOrHrrFmt).prepare (v),
-                (HandshakeType::NewSessionTicket, HandshakeMsg::NewSessionTicket (v)) => (NewSessionTicketFmt).prepare (v),
-                (HandshakeType::EndOfEarlyData, HandshakeMsg::EndOfEarlyData (v)) => (EmptyFmt).prepare (v),
-                (HandshakeType::EncryptedExtensions, HandshakeMsg::EncryptedExtensions (v)) => (EncryptedExtensionsFmt).prepare (v),
-                (HandshakeType::Certificate, HandshakeMsg::Certificate (v)) => (CertificateFmt).prepare (v),
-                (HandshakeType::CertificateRequest, HandshakeMsg::CertificateRequest (v)) => (CertificateRequestFmt).prepare (v),
-                (HandshakeType::CertificateVerify, HandshakeMsg::CertificateVerify (v)) => (CertificateVerifyFmt).prepare (v),
-                (HandshakeType::Finished, HandshakeMsg::Finished (v)) => (FinishedFmt {
+                (HandshakeType::ClientHello, HandshakeMsg::ClientHello (v)) => (Named ("client_hello", ClientHelloFmt)).prepare (v),
+                (HandshakeType::ServerHello, HandshakeMsg::ServerHello (v)) => (Named ("sh_or_hrr", ShOrHrrFmt)).prepare (v),
+                (HandshakeType::NewSessionTicket, HandshakeMsg::NewSessionTicket (v)) => (Named ("new_session_ticket", NewSessionTicketFmt)).prepare (v),
+                (HandshakeType::EndOfEarlyData, HandshakeMsg::EndOfEarlyData (v)) => (Named ("empty", EmptyFmt)).prepare (v),
+                (HandshakeType::EncryptedExtensions, HandshakeMsg::EncryptedExtensions (v)) => (Named ("encrypted_extensions", EncryptedExtensionsFmt)).prepare (v),
+                (HandshakeType::Certificate, HandshakeMsg::Certificate (v)) => (Named ("certificate", CertificateFmt)).prepare (v),
+                (HandshakeType::CertificateRequest, HandshakeMsg::CertificateRequest (v)) => (Named ("certificate_request", CertificateRequestFmt)).prepare (v),
+                (HandshakeType::CertificateVerify, HandshakeMsg::CertificateVerify (v)) => (Named ("certificate_verify", CertificateVerifyFmt)).prepare (v),
+                (HandshakeType::Finished, HandshakeMsg::Finished (v)) => (Named ("finished", FinishedFmt {
                     size: self.length
                 }
-                ).prepare (v),
-                (HandshakeType::KeyUpdate, HandshakeMsg::KeyUpdate (v)) => (KeyUpdateFmt).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                )).prepare (v),
+                (HandshakeType::KeyUpdate, HandshakeMsg::KeyUpdate (v)) => (Named ("key_update", KeyUpdateFmt)).prepare (v),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -33238,15 +33362,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, msg_type) = HandshakeTypeFmt.parse(&rest)?;
+            let (n1, msg_type) = Named ("handshake_type", HandshakeTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, length) = U24Be.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, msg) = ExactLen (length, HandshakeMsgFmt {
+            let (n3, msg) = ExactLen (length, Named ("handshake_msg", HandshakeMsgFmt {
                 length: length,
                 msg_type: msg_type
             }
-            )
+            ))
             .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
@@ -33291,14 +33415,14 @@ mod exec_impls {
                 length,
                 msg,
             } = v;
-            let l1 = (HandshakeTypeFmt).prepare (msg_type) ?;
+            let l1 = (Named ("handshake_type", HandshakeTypeFmt)).prepare (msg_type) ?;
             let l2 = (U24Be).prepare (length) ?;
-            let l3 = (ExactLen (length, HandshakeMsgFmt {
+            let l3 = (ExactLen (length, Named ("handshake_msg", HandshakeMsgFmt {
                 length: *length,
                 msg_type: *msg_type
             }
-            )).prepare (msg) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            ))).prepare (msg) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33372,7 +33496,8 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, padding) = ExactLen (l, Star (ZeroByteFmt)).parse(&rest)?;
+            let (n2, padding) = ExactLen (l, Star (Named ("zero_byte", ZeroByteFmt)))
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PaddingExtension {
@@ -33416,8 +33541,8 @@ mod exec_impls {
                 padding,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (ZeroByteFmt))).prepare (padding) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l2 = (ExactLen (l, Star (Named ("zero_byte", ZeroByteFmt)))).prepare (padding) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33435,9 +33560,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, extension_type) = ExtensionTypeFmt.parse(&rest)?;
+            let (n1, extension_type) = Named ("extension_type", ExtensionTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, extension_data) = Opaque0FfffFmt.parse(&rest)?;
+            let (n2, extension_data) = Named ("opaque_0_ffff", Opaque0FfffFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Extension {
@@ -33472,9 +33599,9 @@ mod exec_impls {
                 extension_type,
                 extension_data,
             } = v;
-            let l1 = (ExtensionTypeFmt).prepare (extension_type) ?;
-            let l2 = (Opaque0FfffFmt).prepare (extension_data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
+            let l2 = (Named ("opaque_0_ffff", Opaque0FfffFmt)).prepare (extension_data) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33492,7 +33619,8 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, client_certificate_type) = CertificateTypeFmt.parse(&rest)?;
+            let (n1, client_certificate_type) = Named ("certificate_type", CertificateTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ClientCertTypeServerExtension {
@@ -33523,7 +33651,7 @@ mod exec_impls {
             let ClientCertTypeServerExtension {
                 client_certificate_type,
             } = v;
-            let l1 = (CertificateTypeFmt).prepare (client_certificate_type) ?;
+            let l1 = (Named ("certificate_type", CertificateTypeFmt)).prepare (client_certificate_type) ?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -33580,7 +33708,7 @@ mod exec_impls {
                 ContentType::Alert => 21,
                 ContentType::Handshake => 22,
                 ContentType::ApplicationData => 23,
-                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -33599,11 +33727,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, content_type) = ContentTypeFmt.parse(&rest)?;
+            let (n1, content_type) = Named ("content_type", ContentTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, legacy_record_version) = ProtocolVersionFmt.parse(&rest)?;
+            let (n2, legacy_record_version) = Named ("protocol_version", ProtocolVersionFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, fragment) = Opaque0FfffFmt.parse(&rest)?;
+            let (n3, fragment) = Named ("opaque_0_ffff", Opaque0FfffFmt).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = TlsPlaintext {
@@ -33642,10 +33771,10 @@ mod exec_impls {
                 legacy_record_version,
                 fragment,
             } = v;
-            let l1 = (ContentTypeFmt).prepare (content_type) ?;
-            let l2 = (ProtocolVersionFmt).prepare (legacy_record_version) ?;
-            let l3 = (Opaque0FfffFmt).prepare (fragment) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("content_type", ContentTypeFmt)).prepare (content_type) ?;
+            let l2 = (Named ("protocol_version", ProtocolVersionFmt)).prepare (legacy_record_version) ?;
+            let l3 = (Named ("opaque_0_ffff", Opaque0FfffFmt)).prepare (fragment) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33767,7 +33896,7 @@ mod exec_impls {
                 AlertDescription::UnknownPSKIdentity => 115,
                 AlertDescription::CertificateRequired => 116,
                 AlertDescription::NoApplicationProtocol => 120,
-                _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U8.prepare(&tag)
         }
@@ -33786,9 +33915,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, profiles) = SrtpProtectionProfilesFmt.parse(&rest)?;
+            let (n1, profiles) = Named ("srtp_protection_profiles", SrtpProtectionProfilesFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, srtp_mki) = Opaque0FfFmt.parse(&rest)?;
+            let (n2, srtp_mki) = Named ("opaque_0_ff", Opaque0FfFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = UseSrtpData {
@@ -33823,9 +33953,9 @@ mod exec_impls {
                 profiles,
                 srtp_mki,
             } = v;
-            let l1 = (SrtpProtectionProfilesFmt).prepare (profiles) ?;
-            let l2 = (Opaque0FfFmt).prepare (srtp_mki) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("srtp_protection_profiles", SrtpProtectionProfilesFmt)).prepare (profiles) ?;
+            let l2 = (Named ("opaque_0_ff", Opaque0FfFmt)).prepare (srtp_mki) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33931,7 +34061,7 @@ mod exec_impls {
             } = v;
             let l1 = {
                 if ! (* l >= 2 && * l <= 65535) {
-                    Err (PreSerializeError::NotCompliant (ComplianceErrorKind::PredicateFailed))
+                    Err (PreSerializeError::not_compliant (ComplianceErrorKind::PredicateFailed))
                 }
                 else {
                     (U16Be).prepare (l)
@@ -33939,7 +34069,7 @@ mod exec_impls {
             }
             ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -33957,9 +34087,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, level) = AlertLevelFmt.parse(&rest)?;
+            let (n1, level) = Named ("alert_level", AlertLevelFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, description) = AlertDescriptionFmt.parse(&rest)?;
+            let (n2, description) = Named ("alert_description", AlertDescriptionFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Alert {
@@ -33994,9 +34125,9 @@ mod exec_impls {
                 level,
                 description,
             } = v;
-            let l1 = (AlertLevelFmt).prepare (level) ?;
-            let l2 = (AlertDescriptionFmt).prepare (description) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("alert_level", AlertLevelFmt)).prepare (level) ?;
+            let l2 = (Named ("alert_description", AlertDescriptionFmt)).prepare (description) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -34014,7 +34145,8 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, server_certificate_type) = CertificateTypeFmt.parse(&rest)?;
+            let (n1, server_certificate_type) = Named ("certificate_type", CertificateTypeFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ServerCertTypeServerExtension {
@@ -34045,7 +34177,7 @@ mod exec_impls {
             let ServerCertTypeServerExtension {
                 server_certificate_type,
             } = v;
-            let l1 = (CertificateTypeFmt).prepare (server_certificate_type) ?;
+            let l1 = (Named ("certificate_type", CertificateTypeFmt)).prepare (server_certificate_type) ?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -34061,7 +34193,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opaque0FfffFmt.parse(ibuf)?;
+            let (n, v) = Named ("opaque_0_ffff", Opaque0FfffFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -34081,7 +34213,7 @@ mod exec_impls {
     impl<'i> Prepare<UnknownExtension<'i>> for UnknownExtensionFmt {
         fn prepare(&self, v: &UnknownExtension<'i>) -> Result<usize, PreSerializeError> {
             reveal(<UnknownExtensionFmt as SpecByteLen>::byte_len);
-            Opaque0FfffFmt.prepare(v)
+            Named ("opaque_0_ffff", Opaque0FfffFmt).prepare(v)
         }
     }
 
@@ -34140,7 +34272,7 @@ mod exec_impls {
                 DigestSize::Sha384 => 48,
                 DigestSize::Sha512 => 64,
                 DigestSize::Max => 16777215,
-                DigestSize::Unknown (x) if x != 12 && x != 20 && x != 32 && x != 48 && x != 64 && x != 16777215 => x, _ => return Err (PreSerializeError::NotCompliant (ComplianceErrorKind::InvalidTag)),
+                DigestSize::Unknown (x) if x != 12 && x != 20 && x != 32 && x != 48 && x != 64 && x != 16777215 => x, _ => return Err (PreSerializeError::not_compliant (ComplianceErrorKind::InvalidTag)),
             };
             U24Be.prepare(&tag)
         }
@@ -34159,7 +34291,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, mode) = HeartbeatModeFmt.parse(&rest)?;
+            let (n1, mode) = Named ("heartbeat_mode", HeartbeatModeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = HeartbeatExtension {
@@ -34190,7 +34322,7 @@ mod exec_impls {
             let HeartbeatExtension {
                 mode,
             } = v;
-            let l1 = (HeartbeatModeFmt).prepare (mode) ?;
+            let l1 = (Named ("heartbeat_mode", HeartbeatModeFmt)).prepare (mode) ?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -34213,21 +34345,24 @@ mod exec_impls {
             let (n, v) = match self.cert_type {
                 CertificateType::X509 => {
                     let (n,
-                    v) = (Opaque1FfffffFmt).parse (& rest) ?;
+                    v) = (Named ("opaque_1_ffffff",
+                    Opaque1FfffffFmt)).parse (& rest) ?;
                     (n,
                     CertificateEntryData::X509 (v))
                 }
                 ,
                 CertificateType::RawPublicKey => {
                     let (n,
-                    v) = (Opaque1FfffffFmt).parse (& rest) ?;
+                    v) = (Named ("opaque_1_ffffff",
+                    Opaque1FfffffFmt)).parse (& rest) ?;
                     (n,
                     CertificateEntryData::RawPublicKey (v))
                 }
                 ,
                 _ => {
                     let (n,
-                    v) = (Opaque1FfffffFmt).parse (& rest) ?;
+                    v) = (Named ("opaque_1_ffffff",
+                    Opaque1FfffffFmt)).parse (& rest) ?;
                     (n,
                     CertificateEntryData::Default (v))
                 }
@@ -34275,10 +34410,10 @@ mod exec_impls {
             }
 
             match (self.cert_type, v) {
-                (CertificateType::X509, CertificateEntryData::X509 (v)) => (Opaque1FfffffFmt).prepare (v),
-                (CertificateType::RawPublicKey, CertificateEntryData::RawPublicKey (v)) => (Opaque1FfffffFmt).prepare (v),
-                (CertificateType::Unknown (x), CertificateEntryData::Default (v)) if x != 0 && x != 2 => (Opaque1FfffffFmt).prepare (v),
-                 _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                (CertificateType::X509, CertificateEntryData::X509 (v)) => (Named ("opaque_1_ffffff", Opaque1FfffffFmt)).prepare (v),
+                (CertificateType::RawPublicKey, CertificateEntryData::RawPublicKey (v)) => (Named ("opaque_1_ffffff", Opaque1FfffffFmt)).prepare (v),
+                (CertificateType::Unknown (x), CertificateEntryData::Default (v)) if x != 0 && x != 2 => (Named ("opaque_1_ffffff", Opaque1FfffffFmt)).prepare (v),
+                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -34300,12 +34435,14 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = CertificateEntryDataFmt {
+            let (n1, data) = Named ("certificate_entry_data", CertificateEntryDataFmt {
                 cert_type: self.cert_type
             }
+            )
             .parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, extensions) = CertificateExtensionsFmt.parse(&rest)?;
+            let (n2, extensions) = Named ("certificate_extensions", CertificateExtensionsFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateEntry {
@@ -34351,12 +34488,12 @@ mod exec_impls {
                 data,
                 extensions,
             } = v;
-            let l1 = (CertificateEntryDataFmt {
+            let l1 = (Named ("certificate_entry_data", CertificateEntryDataFmt {
                 cert_type: self.cert_type
             }
-            ).prepare (data) ?;
-            let l2 = (CertificateExtensionsFmt).prepare (extensions) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            )).prepare (data) ?;
+            let l2 = (Named ("certificate_extensions", CertificateExtensionsFmt)).prepare (extensions) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -34374,11 +34511,13 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, opaque_type) = ContentTypeFmt.parse(&rest)?;
+            let (n1, opaque_type) = Named ("content_type", ContentTypeFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, version) = ProtocolVersionFmt.parse(&rest)?;
+            let (n2, version) = Named ("protocol_version", ProtocolVersionFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, encrypted_record) = Opaque0FfffFmt.parse(&rest)?;
+            let (n3, encrypted_record) = Named ("opaque_0_ffff", Opaque0FfffFmt)
+            .parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = TlsCiphertext {
@@ -34417,10 +34556,10 @@ mod exec_impls {
                 version,
                 encrypted_record,
             } = v;
-            let l1 = (ContentTypeFmt).prepare (opaque_type) ?;
-            let l2 = (ProtocolVersionFmt).prepare (version) ?;
-            let l3 = (Opaque0FfffFmt).prepare (encrypted_record) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?.checked_add (l3).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let l1 = (Named ("content_type", ContentTypeFmt)).prepare (opaque_type) ?;
+            let l2 = (Named ("protocol_version", ProtocolVersionFmt)).prepare (version) ?;
+            let l3 = (Named ("opaque_0_ffff", Opaque0FfffFmt)).prepare (encrypted_record) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }
@@ -34477,7 +34616,7 @@ mod exec_impls {
             } = v;
             let l1 = (U24Be).prepare (l) ?;
             let l2 = (Varied (l)).prepare (data) ?;
-            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::LengthTooLarge) ?;
+            let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
     }

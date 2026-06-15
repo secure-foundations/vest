@@ -80,7 +80,7 @@ impl<A, B, TA, TB> Prepare<(TA, TB)> for super::Pair<A, B> where
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
-            Err(PreSerializeError::LengthTooLarge)
+            Err(PreSerializeError::length_too_large())
         }
     }
 }
@@ -187,7 +187,7 @@ impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Bind<A, B> where
         if let Some(total) = la.checked_add(lb) {
             Ok(total)
         } else {
-            Err(PreSerializeError::LengthTooLarge)
+            Err(PreSerializeError::length_too_large())
         }
     }
 }

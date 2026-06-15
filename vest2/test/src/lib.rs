@@ -71,3 +71,138 @@ mod bits_endianness_sanity {
         assert_eq!(parsed_le, le_v);
     }
 }
+
+#[cfg(test)]
+mod named_error_sanity {
+    use super::nested_access;
+    use vest_lib2::core::exec::parser::Parser;
+    use vest_lib2::core::exec::serializer::Prepare;
+
+    #[test]
+    fn parse_error_carries_named_format_stack() {
+        let input = [0xff, 0xff, 0xff, 0x00];
+        let err = nested_access::FinalMsgFmt.parse(&&input[..]).unwrap_err();
+        let msg = err.to_string();
+        println!("Parse error message: {}", msg);
+        assert!(msg.contains("input ended before the format could finish parsing"));
+        assert!(msg.contains("`combined_example` -> `generic_header`"));
+    }
+
+    #[test]
+    fn prepare_error_uses_named_nested_format() {
+        let empty: &[u8] = &[];
+        let v = nested_access::FinalMsg {
+            total_len: 16_777_215,
+            body: nested_access::CombinedExample {
+                header: nested_access::GenericHeader {
+                    next_type: 0,
+                    reserved: 0,
+                    payload_length: 7,
+                },
+                body: empty,
+            },
+            hdr_payload: nested_access::PayloadWithHeader {
+                hdr: nested_access::GenericHeader {
+                    next_type: 0,
+                    reserved: 0,
+                    payload_length: 8,
+                },
+                body: empty,
+            },
+            nested: nested_access::NestedComplex {
+                flag: 0,
+                data: empty,
+            },
+        };
+
+        let err = nested_access::FinalMsgFmt.prepare(&v).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("value failed a refinement predicate"));
+        assert!(msg.contains("`combined_example` -> `generic_header`"));
+    }
+}
+
+#[cfg(test)]
+mod tls_error_sanity {
+    use super::tls;
+    use vest_lib2::combinators::Named;
+    use vest_lib2::core::exec::parser::Parser;
+    use vest_lib2::core::exec::serializer::{Prepare, Serializer};
+
+    #[test]
+    fn pre_shared_key_extension_parse_error_is_semantic_and_deeply_nested() {
+        let input = [
+            0x00, 0x29, // extension_type = PreSharedKey
+            0x00, 0x09, // ext_len = 9
+            0x00, 0x07, // psk_identities total length = 7
+            0x00, 0x00, // first identity: opaque_1_ffff length = 0, rejected by predicate
+            0x00, 0x00, 0x00, 0x00, 0x00, // remaining bytes inside the exact-length chunk
+        ];
+
+        let err = Named("client_hello_extension", tls::ClientHelloExtensionFmt)
+            .parse(&&input[..])
+            .unwrap_err();
+        let msg = err.to_string();
+        println!("TLS parse error message: {}", msg);
+        assert!(msg.contains("a length-delimited parser did not consume the declared length"));
+        assert!(msg.contains(
+            "`client_hello_extension` -> `client_hello_extension_extension_data` -> `pre_shared_key_client_extension` -> `offered_psks` -> `psk_identities`"
+        ));
+    }
+
+    #[test]
+    fn hello_retry_request_prepare_error_carries_deep_named_stack() {
+        let empty: &[u8] = &[];
+        let v = tls::HelloRetryRequest {
+            legacy_session_id_echo: tls::SessionId { l: 0, id: empty },
+            cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
+            legacy_compression_method: 0,
+            extensions: tls::HelloRetryExtensions {
+                l: 6,
+                list: vec![tls::HelloRetryExtension {
+                    extension_type: tls::ExtensionType::Cookie,
+                    ext_len: 2,
+                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
+                        l: 0,
+                        data: empty,
+                    }),
+                }],
+            },
+        };
+
+        let err = tls::HelloRetryRequestFmt.prepare(&v).unwrap_err();
+        let msg = err.to_string();
+        println!("TLS prepare error message: {}", msg);
+        assert!(msg.contains("value failed a refinement predicate"));
+        assert!(msg.contains(
+            "`hello_retry_extensions` -> `hello_retry_extension` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`"
+        ));
+    }
+
+    #[test]
+    fn hello_retry_request_roundtrips_when_well_formed() {
+        let cookie_data: &[u8] = &[0xaa];
+        let v = tls::HelloRetryRequest {
+            legacy_session_id_echo: tls::SessionId { l: 0, id: &[] },
+            cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
+            legacy_compression_method: 0,
+            extensions: tls::HelloRetryExtensions {
+                l: 7,
+                list: vec![tls::HelloRetryExtension {
+                    extension_type: tls::ExtensionType::Cookie,
+                    ext_len: 3,
+                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
+                        l: 1,
+                        data: cookie_data,
+                    }),
+                }],
+            },
+        };
+
+        let mut buf = Vec::new();
+        tls::HelloRetryRequestFmt.serialize(&v, &mut buf);
+        let (_, parsed) = tls::HelloRetryRequestFmt.parse(&&buf[..]).unwrap();
+        assert_eq!(parsed, v);
+        assert_eq!(tls::HelloRetryRequestFmt.prepare(&v).unwrap(), buf.len());
+    }
+}

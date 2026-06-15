@@ -2400,14 +2400,14 @@ mod exec_impls {
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
             let ClosedPacketHeader { kind, count, len } = *v;
             if !(closed_packet_header_bounds(closed_payload_kind_to_bits(kind), count, len)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !((closed_payload_kind_to_bits(kind) == 0 || closed_payload_kind_to_bits(kind) == 1
                 || closed_payload_kind_to_bits(kind) == 2)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(count >= 1 && count <= 31) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             let packed = pack_closed_packet_header(closed_payload_kind_to_bits(kind), count, len);
             U16Be.prepare(&packed)
@@ -2487,7 +2487,7 @@ mod exec_impls {
                     U16Be,
                 )).prepare(v),
                 (ClosedPayloadKind::Tiny, ClosedChoicePacketPayload::Tiny(v)) => (U8).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2503,9 +2503,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = ClosedPacketHeaderFmt.parse(&rest)?;
+            let (n1, hdr) = Named("closed_packet_header", ClosedPacketHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = ClosedChoicePacketPayloadFmt { hdr: hdr }.parse(&rest)?;
+            let (n2, payload) = Named(
+                "closed_choice_packet_payload",
+                ClosedChoicePacketPayloadFmt { hdr: hdr },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClosedChoicePacket { hdr, payload };
@@ -2531,9 +2534,12 @@ mod exec_impls {
         fn prepare(&self, v: &ClosedChoicePacket<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
             let ClosedChoicePacket { hdr, payload } = v;
-            let l1 = (ClosedPacketHeaderFmt).prepare(hdr)?;
-            let l2 = (ClosedChoicePacketPayloadFmt { hdr: *hdr }).prepare(payload)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l1 = (Named("closed_packet_header", ClosedPacketHeaderFmt)).prepare(hdr)?;
+            let l2 = (Named(
+                "closed_choice_packet_payload",
+                ClosedChoicePacketPayloadFmt { hdr: *hdr },
+            )).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -2579,13 +2585,13 @@ mod exec_impls {
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
             let PacketHeader { kind, count, len } = *v;
             if !(packet_header_bounds(payload_kind_to_bits(kind), count, len)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(payload_kind_wf(kind)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(count >= 1 && count <= 31) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             let packed = pack_packet_header(payload_kind_to_bits(kind), count, len);
             U16Be.prepare(&packed)
@@ -2674,7 +2680,7 @@ mod exec_impls {
                 (PayloadKind::Tiny, ChoicePacketPayload::Tiny(v)) => (U8).prepare(v),
                 (PayloadKind::Unknown(x), ChoicePacketPayload::Default(v)) if x != 0 && x != 1 && x
                     != 2 => (Varied(self.hdr.len)).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -2713,7 +2719,7 @@ mod exec_impls {
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
             let VersionIhl { version, ihl } = *v;
             if !(version_ihl_bounds(version, ihl)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             let packed = pack_version_ihl(version, ihl);
             U8.prepare(&packed)
@@ -2731,9 +2737,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = PacketHeaderFmt.parse(&rest)?;
+            let (n1, hdr) = Named("packet_header", PacketHeaderFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = ChoicePacketPayloadFmt { hdr: hdr }.parse(&rest)?;
+            let (n2, payload) = Named(
+                "choice_packet_payload",
+                ChoicePacketPayloadFmt { hdr: hdr },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ChoicePacket { hdr, payload };
@@ -2759,9 +2768,11 @@ mod exec_impls {
         fn prepare(&self, v: &ChoicePacket<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
             let ChoicePacket { hdr, payload } = v;
-            let l1 = (PacketHeaderFmt).prepare(hdr)?;
-            let l2 = (ChoicePacketPayloadFmt { hdr: *hdr }).prepare(payload)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l1 = (Named("packet_header", PacketHeaderFmt)).prepare(hdr)?;
+            let l2 = (Named("choice_packet_payload", ChoicePacketPayloadFmt { hdr: *hdr })).prepare(
+                payload,
+            )?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -2800,7 +2811,7 @@ mod exec_impls {
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
             let CrossByteSpan { prefix, span, suffix } = *v;
             if !(cross_byte_span_bounds(prefix, span, suffix)) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             let packed = pack_cross_byte_span(prefix, span, suffix);
             U16Be.prepare(&packed)

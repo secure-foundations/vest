@@ -340,7 +340,7 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
         let elem_len = fmt.prepare(&values[i])?;
         match len.checked_add(elem_len) {
             Some(total) => len = total,
-            None => return Err(PreSerializeError::LengthTooLarge),
+            None => return Err(PreSerializeError::length_too_large()),
         }
     }
     Ok(len)
@@ -460,7 +460,7 @@ impl<Inner, N, T> Prepare<[T]> for super::RepeatN<Inner, N> where
         if v.len() == self.0.get() {
             prepare_slice(&self.1, v)
         } else {
-            Err(PreSerializeError::NotCompliant(ComplianceErrorKind::LengthInconsistent))
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
         }
     }
 }

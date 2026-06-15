@@ -3429,13 +3429,13 @@ mod exec_impls {
             let Header { len, flags } = v;
             let l1 = {
                 if !(*len >= 3 && *len <= 65535) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U16Le).prepare(len)
                 }
             }?;
             let l2 = (U8).prepare(flags)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -3448,7 +3448,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = HeaderFmt.parse(ibuf)?;
+            let (n, v) = Named("header", HeaderFmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -3468,7 +3468,7 @@ mod exec_impls {
     impl<'i> Prepare<HeaderAlias> for HeaderAliasFmt {
         fn prepare(&self, v: &HeaderAlias) -> Result<usize, PreSerializeError> {
             reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
-            HeaderFmt.prepare(v)
+            Named("header", HeaderFmt).prepare(v)
         }
     }
 
@@ -3532,7 +3532,7 @@ mod exec_impls {
             match (self.tag, v) {
                 (0, FixedChoice::Variant1(v)) => (U16Le).prepare(v),
                 (x, FixedChoice::Default(v)) if !(x == 0) => (U16Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -4033,7 +4033,7 @@ mod exec_impls {
                 (x, ChoiceArraysFoldedBody::Default(v)) if !x.deep_eq(&[0x00, 0x00]) && !x.deep_eq(
                     &[0x01, 0x01],
                 ) => (U16Le).prepare(v),
-                _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
@@ -4049,9 +4049,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = ChoiceTagFmt.parse(&rest)?;
+            let (n1, tag) = Named("choice_tag", ChoiceTagFmt).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = ChoiceArraysFoldedBodyFmt { tag: tag }.parse(&rest)?;
+            let (n2, body) = Named(
+                "choice_arrays_folded_body",
+                ChoiceArraysFoldedBodyFmt { tag: tag },
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ChoiceArraysFolded { tag, body };
@@ -4077,9 +4080,12 @@ mod exec_impls {
         fn prepare(&self, v: &ChoiceArraysFolded<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let ChoiceArraysFolded { tag, body } = v;
-            let l1 = (ChoiceTagFmt).prepare(tag)?;
-            let l2 = (ChoiceArraysFoldedBodyFmt { tag: *tag }).prepare(body)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l1 = (Named("choice_tag", ChoiceTagFmt)).prepare(tag)?;
+            let l2 = (Named(
+                "choice_arrays_folded_body",
+                ChoiceArraysFoldedBodyFmt { tag: *tag },
+            )).prepare(body)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -4179,7 +4185,7 @@ mod exec_impls {
             let PrimitiveSizes { byte, word } = v;
             let l1 = (Fixed::<1>).prepare(byte)?;
             let l2 = (Fixed::<2>).prepare(word)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }

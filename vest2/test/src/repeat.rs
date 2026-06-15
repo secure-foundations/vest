@@ -1055,13 +1055,13 @@ mod exec_impls {
             let OpaqueU16 { l, data } = v;
             let l1 = {
                 if !(*l >= 1 && *l <= 65535) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U16Le).prepare(l)
                 }
             }?;
             let l2 = (Varied(l)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1106,7 +1106,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = OpaqueU16Fmt.parse(ibuf)?;
+            let (n, v) = Named("opaque_u16", OpaqueU16Fmt).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
@@ -1126,7 +1126,7 @@ mod exec_impls {
     impl<'i> Prepare<ResponderId<'i>> for ResponderIdFmt {
         fn prepare(&self, v: &ResponderId<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
-            OpaqueU16Fmt.prepare(v)
+            Named("opaque_u16", OpaqueU16Fmt).prepare(v)
         }
     }
 
@@ -1146,7 +1146,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen(l, Star(ResponderIdFmt)).parse(&rest)?;
+            let (n2, list) = ExactLen(l, Star(Named("responder_id", ResponderIdFmt))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList { l, list };
@@ -1174,13 +1174,13 @@ mod exec_impls {
             let ResponderIdList { l, list } = v;
             let l1 = {
                 if !(*l >= 0 && *l <= 65535) {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                 } else {
                     (U16Le).prepare(l)
                 }
             }?;
-            let l2 = (ExactLen(l, Star(ResponderIdFmt))).prepare(list)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (ExactLen(l, Star(Named("responder_id", ResponderIdFmt)))).prepare(list)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
@@ -1198,7 +1198,9 @@ mod exec_impls {
 
             let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(l, ResponderIdListFmt).parse(&rest)?;
+            let (n2, data) = RepeatN(l, Named("responder_id_list", ResponderIdListFmt)).parse(
+                &rest,
+            )?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = RepeatDyn { l, data };
@@ -1225,8 +1227,8 @@ mod exec_impls {
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let RepeatDyn { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (RepeatN(l, ResponderIdListFmt)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+            let l2 = (RepeatN(l, Named("responder_id_list", ResponderIdListFmt))).prepare(data)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
