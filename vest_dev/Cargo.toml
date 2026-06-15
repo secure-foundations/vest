@@ -24,6 +24,10 @@ harness = false
 name = "nested_braces_benchmark"
 harness = false
 
+[[bench]]
+name = "overhead_study_benchmark"
+harness = false
+
 [profile.bench]
 lto = "fat"
 opt-level = 3

@@ -327,282 +327,287 @@ impl SpecMapper for ListMapper {
 // ============================================================
 // Derived Parser, Serializer, Length, and Consistency Specifications
 // ============================================================
-impl<const LIMIT: usize> SpecParser for ExprFmt<LIMIT> {
-    type PVal = ExprSpec;
+mod derived_spec_proof {
+    use super::*;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        Self::spec_inner().spec_parse(ibuf)
-    }
-}
+    impl<const LIMIT: usize> SpecParser for ExprFmt<LIMIT> {
+        type PVal = ExprSpec;
 
-impl<const LIMIT: usize> Consistency for ExprFmt<LIMIT> {
-    type Val = ExprSpec;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        Self::spec_inner().consistent(v)
-    }
-}
-
-impl<const LIMIT: usize> SpecByteLen for ExprFmt<LIMIT> {
-    type T = ExprSpec;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        Self::spec_inner().byte_len(v)
-    }
-}
-
-impl<const LIMIT: usize> SpecSerializerDps for ExprFmt<LIMIT> {
-    type SValue = ExprSpec;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        Self::spec_inner().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<const LIMIT: usize> SpecSerializer for ExprFmt<LIMIT> {
-    type SVal = ExprSpec;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        Self::spec_inner().spec_serialize(v)
-    }
-}
-
-impl<const LIMIT: usize> SpecParser for ListFmt<LIMIT> {
-    type PVal = ListSpec;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        Self::spec_inner().spec_parse(ibuf)
-    }
-}
-
-impl<const LIMIT: usize> Consistency for ListFmt<LIMIT> {
-    type Val = ListSpec;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        Self::spec_inner().consistent(v)
-    }
-}
-
-impl<const LIMIT: usize> SpecByteLen for ListFmt<LIMIT> {
-    type T = ListSpec;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        Self::spec_inner().byte_len(v)
-    }
-}
-
-impl<const LIMIT: usize> SpecSerializerDps for ListFmt<LIMIT> {
-    type SValue = ListSpec;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        Self::spec_inner().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<const LIMIT: usize> SpecSerializer for ListFmt<LIMIT> {
-    type SVal = ListSpec;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        Self::spec_inner().spec_serialize(v)
-    }
-}
-
-// ============================================================
-// Proven Format Properties
-// ============================================================
-impl<const LIMIT: usize> SafeParser for ExprFmt<LIMIT> {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Self::spec_inner().lemma_parse_safe(ibuf);
-    }
-}
-
-impl<const LIMIT: usize> SoundParser for ExprFmt<LIMIT> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.sound_inv());
-        fmt.lemma_parse_sound_consumption(ibuf);
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
     }
 
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.sound_inv());
-        fmt.lemma_parse_sound_value(ibuf);
-    }
-}
+    impl<const LIMIT: usize> Consistency for ExprFmt<LIMIT> {
+        type Val = ExprSpec;
 
-impl<const LIMIT: usize> NonTailFmt for ExprFmt<LIMIT> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_dps_inv());
-        fmt.lemma_serialize_dps_prepend(v, obuf);
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_dps_inv());
-        fmt.lemma_serialize_dps_len(v, obuf);
-    }
-}
+    impl<const LIMIT: usize> SpecByteLen for ExprFmt<LIMIT> {
+        type T = ExprSpec;
 
-impl<const LIMIT: usize> GoodSerializer for ExprFmt<LIMIT> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_inv());
-        fmt.lemma_serialize_len(v);
-    }
-}
-
-impl<const LIMIT: usize> SPRoundTripDps for ExprFmt<LIMIT> {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.unambiguous());
-        fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-    }
-}
-
-impl<const LIMIT: usize> NonMalleable for ExprFmt<LIMIT> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.nonmal_inv());
-        fmt.lemma_parse_non_malleable(buf1, buf2);
-    }
-}
-
-impl<const LIMIT: usize> EquivSerializersGeneral for ExprFmt<LIMIT> {
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.equiv_general_inv());
-        fmt.lemma_serialize_equiv(v, obuf);
-    }
-}
-
-impl<const LIMIT: usize> EquivSerializers for ExprFmt<LIMIT> {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let fmt = Self::spec_inner();
-        assert(fmt.equiv_inv());
-        fmt.lemma_serialize_equiv_on_empty(v);
-    }
-}
-
-impl<const LIMIT: usize> SafeParser for ListFmt<LIMIT> {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        Self::spec_inner().lemma_parse_safe(ibuf);
-    }
-}
-
-impl<const LIMIT: usize> SoundParser for ListFmt<LIMIT> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.sound_inv());
-        fmt.lemma_parse_sound_consumption(ibuf);
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
     }
 
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.sound_inv());
-        fmt.lemma_parse_sound_value(ibuf);
-    }
-}
+    impl<const LIMIT: usize> SpecSerializerDps for ExprFmt<LIMIT> {
+        type SValue = ExprSpec;
 
-impl<const LIMIT: usize> NonTailFmt for ListFmt<LIMIT> {
-    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_dps_inv());
-        fmt.lemma_serialize_dps_prepend(v, obuf);
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
     }
 
-    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_dps_inv());
-        fmt.lemma_serialize_dps_len(v, obuf);
-    }
-}
+    impl<const LIMIT: usize> SpecSerializer for ExprFmt<LIMIT> {
+        type SVal = ExprSpec;
 
-impl<const LIMIT: usize> GoodSerializer for ListFmt<LIMIT> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        let fmt = Self::spec_inner();
-        assert(fmt.serialize_inv());
-        fmt.lemma_serialize_len(v);
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
     }
-}
 
-impl<const LIMIT: usize> SPRoundTripDps for ListFmt<LIMIT> {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.unambiguous());
-        fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+    impl<const LIMIT: usize> SpecParser for ListFmt<LIMIT> {
+        type PVal = ListSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
     }
-}
 
-impl<const LIMIT: usize> NonMalleable for ListFmt<LIMIT> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.nonmal_inv());
-        fmt.lemma_parse_non_malleable(buf1, buf2);
+    impl<const LIMIT: usize> Consistency for ListFmt<LIMIT> {
+        type Val = ListSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
     }
-}
 
-impl<const LIMIT: usize> EquivSerializersGeneral for ListFmt<LIMIT> {
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        let fmt = Self::spec_inner();
-        assert(fmt.equiv_general_inv());
-        fmt.lemma_serialize_equiv(v, obuf);
+    impl<const LIMIT: usize> SpecByteLen for ListFmt<LIMIT> {
+        type T = ListSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
     }
-}
 
-impl<const LIMIT: usize> EquivSerializers for ListFmt<LIMIT> {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        let fmt = Self::spec_inner();
-        assert(fmt.equiv_inv());
-        fmt.lemma_serialize_equiv_on_empty(v);
+    impl<const LIMIT: usize> SpecSerializerDps for ListFmt<LIMIT> {
+        type SValue = ListSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
     }
-}
 
-/*
+    impl<const LIMIT: usize> SpecSerializer for ListFmt<LIMIT> {
+        type SVal = ListSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    // ============================================================
+    // Proven Format Properties
+    // ============================================================
+    impl<const LIMIT: usize> SafeParser for ExprFmt<LIMIT> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> SoundParser for ExprFmt<LIMIT> {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> NonTailFmt for ExprFmt<LIMIT> {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> GoodSerializer for ExprFmt<LIMIT> {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl<const LIMIT: usize> SPRoundTripDps for ExprFmt<LIMIT> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> NonMalleable for ExprFmt<LIMIT> {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializersGeneral for ExprFmt<LIMIT> {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializers for ExprFmt<LIMIT> {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl<const LIMIT: usize> SafeParser for ListFmt<LIMIT> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> SoundParser for ListFmt<LIMIT> {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> NonTailFmt for ListFmt<LIMIT> {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> GoodSerializer for ListFmt<LIMIT> {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl<const LIMIT: usize> SPRoundTripDps for ListFmt<LIMIT> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> NonMalleable for ListFmt<LIMIT> {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializersGeneral for ListFmt<LIMIT> {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializers for ListFmt<LIMIT> {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    /*
  *  Helpers for mutual recursion
  */
 
-impl LossyMapper for ExprMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+    impl LossyMapper for ExprMapper {
+        proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        }
+
+        proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+        }
     }
 
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-    }
-}
+    impl LosslessMapper for ExprMapper {
+        proof fn lemma_lossless_mapper(&self, i: Self::In) {
+        }
 
-impl LosslessMapper for ExprMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
-impl LossyMapper for ListMapper {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        }
     }
 
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-    }
-}
+    impl LossyMapper for ListMapper {
+        proof fn lemma_sound_mapper(&self, o: Self::Out) {
+        }
 
-impl LosslessMapper for ListMapper {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        assert(self.spec_map_rev(self.spec_map(i)) == i);
+        proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+        }
     }
 
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
+    impl LosslessMapper for ListMapper {
+        proof fn lemma_lossless_mapper(&self, i: Self::In) {
+            assert(self.spec_map_rev(self.spec_map(i)) == i);
+        }
 
-impl StrictRecBody for ExprListRecBody {
-    proof fn lemma_body_all_inv_preservation(
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-        broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
+        proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        }
     }
+
+    impl StrictRecBody for ExprListRecBody {
+        proof fn lemma_body_all_inv_preservation(
+            param: Self::Param,
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+        }
+    }
+
 }
 
 // ============================================================
@@ -688,27 +693,26 @@ impl<'a> SerializerRecBody<ValueRef<'a>> for ExprListRecBody {
         v: &ValueRef<'a>,
         obuf: &mut Vec<u8>,
     ) where Exec: Fn(&FmtType, &ValueRef<'a>, &mut Vec<u8>) {
-        match (which, v) {
-            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
+        match v {
+            ValueRef::Expr { expr: Expr::Num(n) }=> {
                 U8.serialize(&0x10u8, obuf);
                 U8.serialize(n, obuf);
             },
-            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
+            ValueRef::Expr { expr: Expr::Group(list) }=> {
                 U8.serialize(&0x11u8, obuf);
                 let child = ValueRef::List { list };
                 exec_rec(&FmtType::LIST, &child, obuf);
             },
-            (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
+            ValueRef::List { list: List::Nil }=> {
                 U8.serialize(&0x20u8, obuf);
             },
-            (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
+            ValueRef::List { list: List::Cons(head, tail) }=> {
                 U8.serialize(&0x21u8, obuf);
                 let head_child = ValueRef::Expr { expr: head };
                 let tail_child = ValueRef::List { list: tail };
                 exec_rec(&FmtType::EXPR, &head_child, obuf);
                 exec_rec(&FmtType::LIST, &tail_child, obuf);
             },
-            _ => {},
         }
     }
 }
@@ -1030,9 +1034,7 @@ fn mutual_recursion_limit() {
     assert!(matches!(
         prepared,
         Err(PreSerializeError {
-            kind: PreSerializeErrorKind::NotCompliant(
-                ComplianceErrorKind::RecursionLimitExceeded
-            ),
+            kind: PreSerializeErrorKind::NotCompliant(ComplianceErrorKind::RecursionLimitExceeded),
             ..
         })
     ));

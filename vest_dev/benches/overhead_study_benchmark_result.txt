@@ -1,0 +1,73 @@
+tree_parse/A_handrolled time:   [69.254 µs 69.331 µs 69.410 µs]
+                        thrpt:  [164.88 MiB/s 165.06 MiB/s 165.25 MiB/s]
+                 change:
+                        time:   [+0.8685% +1.1720% +1.4938%] (p = 0.00 < 0.05)
+                        thrpt:  [-1.4718% -1.1584% -0.8610%]
+                        Change within noise threshold.
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) high mild
+  3 (3.00%) high severe
+tree_parse/B_tagged     time:   [80.795 µs 80.909 µs 81.045 µs]
+                        thrpt:  [141.21 MiB/s 141.44 MiB/s 141.64 MiB/s]
+                 change:
+                        time:   [-0.0776% +0.2372% +0.7145%] (p = 0.28 > 0.05)
+                        thrpt:  [-0.7095% -0.2366% +0.0777%]
+                        No change in performance detected.
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+tree_parse/C_vest_fixwith
+                        time:   [92.366 µs 92.441 µs 92.527 µs]
+                        thrpt:  [123.68 MiB/s 123.80 MiB/s 123.90 MiB/s]
+                 change:
+                        time:   [+0.0695% +2.2582% +8.1251%] (p = 0.21 > 0.05)
+                        thrpt:  [-7.5146% -2.2083% -0.0694%]
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  6 (6.00%) high severe
+
+tree_serialize/A_handrolled
+                        time:   [13.743 µs 14.093 µs 14.432 µs]
+                        thrpt:  [792.98 MiB/s 812.01 MiB/s 832.70 MiB/s]
+                 change:
+                        time:   [-6.9083% -4.4432% -1.8521%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.8871% +4.6497% +7.4210%]
+                        Performance has improved.
+tree_serialize/B_tagged time:   [24.720 µs 25.605 µs 26.734 µs]
+                        thrpt:  [428.07 MiB/s 446.95 MiB/s 462.94 MiB/s]
+                 change:
+                        time:   [+34.741% +47.520% +60.643%] (p = 0.00 < 0.05)
+                        thrpt:  [-37.750% -32.212% -25.783%]
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+tree_serialize/C_vest_fixwith
+                        time:   [21.460 µs 21.559 µs 21.669 µs]
+                        thrpt:  [528.12 MiB/s 530.84 MiB/s 533.27 MiB/s]
+                 change:
+                        time:   [-0.6465% -0.1296% +0.3579%] (p = 0.62 > 0.05)
+                        thrpt:  [-0.3566% +0.1298% +0.6507%]
+                        No change in performance detected.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+
+tree_prepare/A_handrolled
+                        time:   [12.844 µs 13.265 µs 13.797 µs]
+                        change: [+10.184% +15.872% +22.033%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 21 outliers among 100 measurements (21.00%)
+  4 (4.00%) high mild
+  17 (17.00%) high severe
+tree_prepare/B_tagged   time:   [20.291 µs 20.337 µs 20.393 µs]
+                        change: [-1.1806% -0.7567% -0.3271%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 10 outliers among 100 measurements (10.00%)
+  8 (8.00%) high mild
+  2 (2.00%) high severe
+tree_prepare/C_vest_fixwith
+                        time:   [19.588 µs 19.626 µs 19.662 µs]
+                        change: [+0.6081% +1.1026% +1.5744%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
