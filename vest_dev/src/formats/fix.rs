@@ -198,8 +198,8 @@ impl PrepareRecBody<NestedBracesT> for NestedBracesBody {
                 let l1 = U8.prepare(&0x7Bu8)?;
                 let l2 = exec_rec(&(), inner)?;
                 let l3 = U8.prepare(&0x7Du8)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
-                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                 Ok(sum2)
             },
         }
@@ -380,18 +380,18 @@ impl PrepareRecBody<TaggedChainT> for TaggedChainBody {
                 if *current_tag == 0u8 {
                     U8.prepare(&0x00u8)
                 } else {
-                    Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected))
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
                 }
             },
             TaggedChainT::Step(next_tag, tail) => {
                 if *current_tag == 0u8 {
-                    return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::CondRejected));
+                    return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
                 }
                 let l1 = U8.prepare(current_tag)?;
                 let l2 = U8.prepare(next_tag)?;
                 let l3 = exec_rec(next_tag, tail)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
-                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                 Ok(sum2)
             },
         }
@@ -505,9 +505,12 @@ fn nested_braces_exec_parse() {
     println!("too-deep nested prepare result: {:?}", too_deep_prepared);
     assert!(matches!(
         too_deep_prepared,
-        Err(PreSerializeError::NotCompliant(
-            ComplianceErrorKind::RecursionLimitExceeded
-        ))
+        Err(PreSerializeError {
+            kind: PreSerializeErrorKind::NotCompliant(
+                ComplianceErrorKind::RecursionLimitExceeded
+            ),
+            ..
+        })
     ));
 }
 

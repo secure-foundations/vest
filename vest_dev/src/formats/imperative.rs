@@ -304,18 +304,18 @@ impl<'i> Prepare<BtcTx<'i>> for TxSegwitFmt {
         let l3 = Varied(txin_cnt).prepare(txin)?;
         let l4 = U8.prepare(txout_cnt)?;
         if txout_cnt != txin_cnt {
-            return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+            return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
         }
         let l5 = RepeatN(txout_cnt, U16Le).prepare(txout)?;
         let l6 = RepeatN(txin_cnt, U16Le).prepare(witness)?;
         let l7 = U8.prepare(locktime)?;
-        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
+        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?.checked_add(
             l3,
-        ).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l4).ok_or(
-            PreSerializeError::LengthTooLarge,
-        )?.checked_add(l5).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(l6).ok_or(
-            PreSerializeError::LengthTooLarge,
-        )?.checked_add(l7).ok_or(PreSerializeError::LengthTooLarge)?;
+        ).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+            PreSerializeError::length_too_large(),
+        )?.checked_add(l5).ok_or(PreSerializeError::length_too_large())?.checked_add(l6).ok_or(
+            PreSerializeError::length_too_large(),
+        )?.checked_add(l7).ok_or(PreSerializeError::length_too_large())?;
 
         Ok(total_len)
     }
@@ -1038,12 +1038,12 @@ impl<'i> Prepare<TLVMsg<'i>> for TLVFmt {
         let l1 = Named("msg_ty", MsgTyFmt).prepare(&tag)?;
         let l3 = TLVPayloadFmt { tag }.prepare(v)?;
         if l3 > u8::MAX as usize {
-            return Err(PreSerializeError::LengthTooLarge);
+            return Err(PreSerializeError::length_too_large());
         }
         let l2 = U8.prepare(&(l3 as u8))?;
-        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?.checked_add(
+        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?.checked_add(
             l3,
-        ).ok_or(PreSerializeError::LengthTooLarge)?;
+        ).ok_or(PreSerializeError::length_too_large())?;
         Ok(total_len)
     }
 }
@@ -1108,7 +1108,7 @@ impl<'i> Prepare<TLVMsg<'i>> for TLVPayloadFmt {
             (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.prepare(v),
             (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.prepare(v),
             (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.prepare(v),
-            _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
         }
     }
 }

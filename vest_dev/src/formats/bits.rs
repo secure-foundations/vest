@@ -1420,7 +1420,7 @@ mod derived_execs {
     impl Prepare<VersionIhl> for VersionIhlFmt {
         fn prepare(&self, v: &VersionIhl) -> Result<usize, PreSerializeError> {
             if !version_ihl_bounds(v.version, v.ihl) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             U8.prepare(&pack_version_ihl(v.version, v.ihl))
         }
@@ -1448,7 +1448,7 @@ mod derived_execs {
     impl Prepare<CrossByteSpan> for CrossByteSpanFmt {
         fn prepare(&self, v: &CrossByteSpan) -> Result<usize, PreSerializeError> {
             if !cross_byte_span_bounds(v.prefix, v.span, v.suffix) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             U16Be.prepare(&pack_cross_byte_span(v.prefix, v.span, v.suffix))
         }
@@ -1479,13 +1479,13 @@ mod derived_execs {
     impl Prepare<PacketHeader> for PacketHeaderFmt {
         fn prepare(&self, v: &PacketHeader) -> Result<usize, PreSerializeError> {
             if !packet_header_bounds(payload_kind_to_bits(v.kind), v.count, v.len) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !payload_kind_wf(v.kind) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(v.count >= 1u8) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             U16Be.prepare(&pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len))
         }
@@ -1520,10 +1520,10 @@ mod derived_execs {
     impl Prepare<ClosedPacketHeader> for ClosedPacketHeaderFmt {
         fn prepare(&self, v: &ClosedPacketHeader) -> Result<usize, PreSerializeError> {
             if !packet_header_bounds(closed_payload_kind_to_bits(v.kind), v.count, v.len) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             if !(v.count >= 1u8) {
-                return Err(PreSerializeError::NotCompliant(ComplianceErrorKind::PredicateFailed));
+                return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
             }
             U16Be.prepare(&pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len))
         }
@@ -1592,10 +1592,10 @@ mod derived_execs {
                     bytes,
                 )?,
                 _ => return Err(
-                    PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice),
+                    PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice),
                 ),
             };
-            let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
+            let res = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large());
             if res.is_ok() {
                 assert(self.consistent(v.deep_view()));
             }
@@ -1663,10 +1663,10 @@ mod derived_execs {
                 ).prepare(words)?,
                 (ClosedPayloadKind::Tiny, ClosedChoicePayload::Tiny(x)) => U8.prepare(x)?,
                 _ => return Err(
-                    PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidChoice),
+                    PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice),
                 ),
             };
-            let res = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge);
+            let res = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large());
             if res.is_ok() {
                 assert(self.consistent(v.deep_view()));
             }

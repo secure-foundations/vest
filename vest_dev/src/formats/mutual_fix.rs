@@ -729,14 +729,14 @@ impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
             (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
                 let l1 = U8.prepare(&0x10u8)?;
                 let l2 = U8.prepare(n)?;
-                let total = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
             },
             (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
                 let l1 = U8.prepare(&0x11u8)?;
                 let child = ValueRef::List { list };
                 let l2 = exec_rec(&FmtType::LIST, &child)?;
-                let total = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
+                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
             },
             (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
@@ -749,11 +749,11 @@ impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
                 let tail_child = ValueRef::List { list: tail };
                 let l2 = exec_rec(&FmtType::EXPR, &head_child)?;
                 let l3 = exec_rec(&FmtType::LIST, &tail_child)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
             },
-            _ => Err(PreSerializeError::NotCompliant(ComplianceErrorKind::InvalidTag)),
+            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
         }
     }
 }
@@ -947,8 +947,8 @@ impl PrepareRecBody<ByteList> for ByteListRecBody {
                 let l1 = U8.prepare(&0x21u8)?;
                 let l2 = U8.prepare(head)?;
                 let l3 = exec_rec(&(), tail)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::LengthTooLarge)?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::LengthTooLarge)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
             },
         }
@@ -1029,9 +1029,12 @@ fn mutual_recursion_limit() {
     let prepared = expr_fmt.prepare(&too_deep);
     assert!(matches!(
         prepared,
-        Err(PreSerializeError::NotCompliant(
-            ComplianceErrorKind::RecursionLimitExceeded
-        ))
+        Err(PreSerializeError {
+            kind: PreSerializeErrorKind::NotCompliant(
+                ComplianceErrorKind::RecursionLimitExceeded
+            ),
+            ..
+        })
     ));
 }
 
