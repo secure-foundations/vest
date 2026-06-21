@@ -763,201 +763,6 @@ impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
     }
 }
 
-pub open spec fn expr_consistent_direct_gas(gas: nat, v: ExprSpec) -> bool
-    decreases gas,
-{
-    match v {
-        ExprSpec::Num(_) => true,
-        ExprSpec::Group(list) => gas > 0 && list_consistent_direct_gas((gas - 1) as nat, *list),
-    }
-}
-
-pub open spec fn list_consistent_direct_gas(gas: nat, v: ListSpec) -> bool
-    decreases gas,
-{
-    match v {
-        ListSpec::Nil => true,
-        ListSpec::Cons(head, tail) => gas > 0 && expr_consistent_direct_gas((gas - 1) as nat, *head)
-            && list_consistent_direct_gas((gas - 1) as nat, *tail),
-    }
-}
-
-pub open spec fn expr_serialize_direct_gas(gas: nat, v: ExprSpec) -> Seq<u8>
-    decreases gas,
-{
-    match v {
-        ExprSpec::Num(n) => Pair(U8, U8).spec_serialize((0x10u8, n)),
-        ExprSpec::Group(list) => {
-            let list_serializer = |v: ListSpec|
-                if gas > 0 {
-                    list_serialize_direct_gas((gas - 1) as nat, v)
-                } else {
-                    Seq::empty()
-                };
-            Pair(U8, list_serializer).spec_serialize((0x11u8, *list))
-        },
-    }
-}
-
-pub open spec fn list_serialize_direct_gas(gas: nat, v: ListSpec) -> Seq<u8>
-    decreases gas,
-{
-    match v {
-        ListSpec::Nil => U8.spec_serialize(0x20u8),
-        ListSpec::Cons(head, tail) => {
-            let head_serializer = |v: ExprSpec|
-                if gas > 0 {
-                    expr_serialize_direct_gas((gas - 1) as nat, v)
-                } else {
-                    Seq::empty()
-                };
-            let tail_serializer = |v: ListSpec|
-                if gas > 0 {
-                    list_serialize_direct_gas((gas - 1) as nat, v)
-                } else {
-                    Seq::empty()
-                };
-            Pair(U8, Pair(head_serializer, tail_serializer)).spec_serialize(
-                (0x21u8, (*head, *tail)),
-            )
-        },
-    }
-}
-
-pub open spec fn expr_parse_direct_gas(gas: nat, input: Seq<u8>) -> Option<(int, ExprSpec)>
-    decreases gas,
-{
-    let list_parser = |input|
-        if gas > 0 {
-            list_parse_direct_gas((gas - 1) as nat, input)
-        } else {
-            None
-        };
-    Alt::<_, _, false>(
-        PrefixTagged(U8, 0x10u8, Mapped { inner: U8, mapper: |n| ExprSpec::Num(n) }),
-        PrefixTagged(
-            U8,
-            0x11u8,
-            Mapped { inner: list_parser, mapper: |list| ExprSpec::Group(Box::new(list)) },
-        ),
-    ).spec_parse(input)
-}
-
-pub open spec fn list_parse_direct_gas(gas: nat, input: Seq<u8>) -> Option<(int, ListSpec)>
-    decreases gas,
-{
-    let list_parser = |input|
-        if gas > 0 {
-            list_parse_direct_gas((gas - 1) as nat, input)
-        } else {
-            None
-        };
-    let expr_parser = |input|
-        if gas > 0 {
-            expr_parse_direct_gas((gas - 1) as nat, input)
-        } else {
-            None
-        };
-    Alt::<_, _, false>(
-        PrefixTagged(U8, 0x20u8, Mapped { inner: Empty, mapper: |_e: ()| ListSpec::Nil }),
-        PrefixTagged(
-            U8,
-            0x21u8,
-            Mapped {
-                inner: Pair(expr_parser, list_parser),
-                mapper: |parsed|
-                    {
-                        let (head, tail) = parsed;
-                        ListSpec::Cons(Box::new(head), Box::new(tail))
-                    },
-            },
-        ),
-    ).spec_parse(input)
-}
-
-pub proof fn lemma_expr_consistent_direct_matches_fix<const LIMIT: usize>(gas: nat, v: ExprSpec)
-    ensures
-        expr_consistent_direct_gas(gas, v) == FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::consistent_gas(gas, FmtType::EXPR, ValueSpec::Expr { expr: v }),
-    decreases gas,
-{
-    match v {
-        ExprSpec::Num(_) => {},
-        ExprSpec::Group(list) => {
-            if gas > 0 {
-                lemma_list_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *list);
-            }
-        },
-    }
-}
-
-pub proof fn lemma_list_consistent_direct_matches_fix<const LIMIT: usize>(gas: nat, v: ListSpec)
-    ensures
-        list_consistent_direct_gas(gas, v) == FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::consistent_gas(gas, FmtType::LIST, ValueSpec::List { list: v }),
-    decreases gas,
-{
-    match v {
-        ListSpec::Nil => {},
-        ListSpec::Cons(head, tail) => {
-            if gas > 0 {
-                lemma_expr_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *head);
-                lemma_list_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *tail);
-            }
-        },
-    }
-}
-
-pub proof fn lemma_expr_serialize_direct_matches_fix<const LIMIT: usize>(gas: nat, v: ExprSpec)
-    requires
-        expr_consistent_direct_gas(gas, v),
-    ensures
-        expr_serialize_direct_gas(gas, v) == FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::spec_serialize_gas(gas, FmtType::EXPR, ValueSpec::Expr { expr: v }),
-    decreases gas,
-{
-    match v {
-        ExprSpec::Num(n) => {
-        },
-        ExprSpec::Group(list) => {
-            lemma_list_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *list);
-            lemma_list_serialize_direct_matches_fix::<LIMIT>((gas - 1) as nat, *list);
-        },
-    }
-}
-
-pub proof fn lemma_list_serialize_direct_matches_fix<const LIMIT: usize>(gas: nat, v: ListSpec)
-    requires
-        list_consistent_direct_gas(gas, v),
-    ensures
-        list_serialize_direct_gas(gas, v) == FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::spec_serialize_gas(gas, FmtType::LIST, ValueSpec::List { list: v }),
-    decreases gas,
-{
-    match v {
-        ListSpec::Nil => {
-        },
-        ListSpec::Cons(head, tail) => {
-            lemma_expr_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *head);
-            lemma_list_consistent_direct_matches_fix::<LIMIT>((gas - 1) as nat, *tail);
-            lemma_expr_serialize_direct_matches_fix::<LIMIT>((gas - 1) as nat, *head);
-            lemma_list_serialize_direct_matches_fix::<LIMIT>((gas - 1) as nat, *tail);
-        },
-    }
-}
-
 fn parse_expr_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<Expr>)
     ensures
         parse_matches_spec(
@@ -980,16 +785,12 @@ fn parse_expr_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<E
     match tag {
         0x10u8 => {
             let (n2, n) = U8.parse(&rest)?;
-            let total = n1 + n2;
-            let expr = Expr::Num(n);
-            Ok((total, expr))
+            Ok((n1 + n2, Expr::Num(n)))
         },
         0x11u8 => {
             if gas > 0 {
                 let (n2, list) = parse_list_gas::<LIMIT>(gas - 1, &rest)?;
-                let total = n1 + n2;
-                let expr = Expr::Group(Box::new(list));
-                Ok((total, expr))
+                Ok((n1 + n2, Expr::Group(Box::new(list))))
             } else {
                 Err(ParseError::recursion_limit_exceeded())
             }
@@ -1022,11 +823,9 @@ fn parse_list_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<L
         0x21u8 => {
             if gas > 0 {
                 let (n2, head) = parse_expr_gas::<LIMIT>(gas - 1, &rest)?;
-                let rest2 = rest.skip(n2);
-                let (n3, tail) = parse_list_gas::<LIMIT>(gas - 1, &rest2)?;
-                let total = n1 + n2 + n3;
-                let list = List::Cons(Box::new(head), Box::new(tail));
-                Ok((total, list))
+                let rest = rest.skip(n2);
+                let (n3, tail) = parse_list_gas::<LIMIT>(gas - 1, &rest)?;
+                Ok((n1 + n2 + n3, List::Cons(Box::new(head), Box::new(tail))))
             } else {
                 Err(ParseError::recursion_limit_exceeded())
             }
@@ -1037,14 +836,17 @@ fn parse_list_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<L
 
 fn serialize_expr_gas<const LIMIT: usize>(gas: usize, v: &Expr, obuf: &mut Vec<u8>)
     requires
-        expr_consistent_direct_gas(gas as nat, v.deep_view()),
+        FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+            gas as nat,
+            FmtType::EXPR,
+            ValueSpec::Expr { expr: v.deep_view() },
+        ),
     ensures
-        // final(obuf)@ == old(obuf)@ + expr_serialize_direct_gas(gas as nat, v.deep_view()),
-        final(obuf)@ == old(obuf)@ + FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::spec_serialize_gas(gas as nat, FmtType::EXPR, ValueSpec::Expr { expr: v.deep_view() }),
+        final(obuf)@ == old(obuf)@ + FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_serialize_gas(
+            gas as nat,
+            FmtType::EXPR,
+            ValueSpec::Expr { expr: v.deep_view() },
+        ),
     decreases gas,
 {
     match v {
@@ -1054,23 +856,24 @@ fn serialize_expr_gas<const LIMIT: usize>(gas: usize, v: &Expr, obuf: &mut Vec<u
         },
         Expr::Group(list) => {
             U8.serialize(&0x11u8, obuf);
-            if gas > 0 {
-                serialize_list_gas::<LIMIT>(gas - 1, list, obuf);
-            }
+            serialize_list_gas::<LIMIT>(gas - 1, list, obuf);
         },
     }
 }
 
 fn serialize_list_gas<const LIMIT: usize>(gas: usize, v: &List, obuf: &mut Vec<u8>)
     requires
-        list_consistent_direct_gas(gas as nat, v.deep_view()),
+        FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+            gas as nat,
+            FmtType::LIST,
+            ValueSpec::List { list: v.deep_view() },
+        ),
     ensures
-        // final(obuf)@ == old(obuf)@ + list_serialize_direct_gas(gas as nat, v.deep_view()),
-        final(obuf)@ == old(obuf)@ + FixWith::<
-            LIMIT,
-            ExprListRecBody,
-            FmtType,
-        >::spec_serialize_gas(gas as nat, FmtType::LIST, ValueSpec::List { list: v.deep_view() }),
+        final(obuf)@ == old(obuf)@ + FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_serialize_gas(
+            gas as nat,
+            FmtType::LIST,
+            ValueSpec::List { list: v.deep_view() },
+        ),
     decreases gas,
 {
     match v {
@@ -1079,12 +882,8 @@ fn serialize_list_gas<const LIMIT: usize>(gas: usize, v: &List, obuf: &mut Vec<u
         },
         List::Cons(head, tail) => {
             U8.serialize(&0x21u8, obuf);
-            if gas > 0 {
-                serialize_expr_gas::<LIMIT>(gas - 1, head, obuf);
-            }
-            if gas > 0 {
-                serialize_list_gas::<LIMIT>(gas - 1, tail, obuf);
-            }
+            serialize_expr_gas::<LIMIT>(gas - 1, head, obuf);
+            serialize_list_gas::<LIMIT>(gas - 1, tail, obuf);
         },
     }
 }
@@ -1099,10 +898,6 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
 
 impl<const LIMIT: usize> Serializer<Expr> for ExprFmt<LIMIT> {
     fn serialize(&self, v: &Expr, obuf: &mut Vec<u8>) {
-        proof {
-            lemma_expr_consistent_direct_matches_fix::<LIMIT>(LIMIT as nat, v.deep_view());
-            lemma_expr_serialize_direct_matches_fix::<LIMIT>(LIMIT as nat, v.deep_view());
-        }
         serialize_expr_gas::<LIMIT>(LIMIT, v, obuf);
     }
 }
@@ -1126,10 +921,6 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListFmt<LIMIT> {
 
 impl<const LIMIT: usize> Serializer<List> for ListFmt<LIMIT> {
     fn serialize(&self, v: &List, obuf: &mut Vec<u8>) {
-        proof {
-            lemma_list_consistent_direct_matches_fix::<LIMIT>(LIMIT as nat, v.deep_view());
-            lemma_list_serialize_direct_matches_fix::<LIMIT>(LIMIT as nat, v.deep_view());
-        }
         serialize_list_gas::<LIMIT>(LIMIT, v, obuf);
     }
 }
