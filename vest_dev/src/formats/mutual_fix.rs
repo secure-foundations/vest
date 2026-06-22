@@ -122,22 +122,22 @@ impl DeepView for ValueRef<'_> {
 #[derive(Clone, Copy)]
 pub struct ExprFmt<const LIMIT: usize>;
 
-pub type ExprFmtSpec<const LIMIT: usize> = ExprProj<FixWith<LIMIT, ExprListRecBody, FmtType>>;
+pub type ExprFmtSpec<const LIMIT: usize> = ExprProj<FixWith<LIMIT, ExprListRecBody, WhichFmt>>;
 
 impl<const LIMIT: usize> ExprFmt<LIMIT> {
     pub open spec fn spec_inner() -> ExprFmtSpec<LIMIT> {
-        expr_proj(FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::EXPR))
+        expr_proj(FixWith::<LIMIT, _, _>(ExprListRecBody, WhichFmt::EXPR))
     }
 }
 
 #[derive(Clone, Copy)]
 pub struct ListFmt<const LIMIT: usize>;
 
-pub type ListFmtSpec<const LIMIT: usize> = ListProj<FixWith<LIMIT, ExprListRecBody, FmtType>>;
+pub type ListFmtSpec<const LIMIT: usize> = ListProj<FixWith<LIMIT, ExprListRecBody, WhichFmt>>;
 
 impl<const LIMIT: usize> ListFmt<LIMIT> {
     pub open spec fn spec_inner() -> ListFmtSpec<LIMIT> {
-        list_proj(FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::LIST))
+        list_proj(FixWith::<LIMIT, _, _>(ExprListRecBody, WhichFmt::LIST))
     }
 }
 
@@ -145,16 +145,22 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
  *  Helpers for mutual recursion
  */
 
-pub type ExprProj<Rec> = Mapped<Refined<Rec, PredFnSpec<ValueSpec>>, BiMapper<ValueSpec, ExprSpec>>;
+pub type ExprProj<Rec> = Mapped<
+    Refined<Rec, PredFnSpec<ValueSpec>>,
+    FnSpecMapper<ValueSpec, ExprSpec>,
+>;
 
-pub type ListProj<Rec> = Mapped<Refined<Rec, PredFnSpec<ValueSpec>>, BiMapper<ValueSpec, ListSpec>>;
+pub type ListProj<Rec> = Mapped<
+    Refined<Rec, PredFnSpec<ValueSpec>>,
+    FnSpecMapper<ValueSpec, ListSpec>,
+>;
 
 pub open spec fn expr_proj<Rec>(rec: Rec) -> ExprProj<Rec> where
     Rec: SpecCombinator<T = ValueSpec>,
  {
     Mapped {
         inner: Refined(rec, |v: ValueSpec| v is Expr),
-        mapper: BiMap(
+        mapper: (
             |v: ValueSpec| -> ExprSpec { v->expr },
             |expr: ExprSpec| -> ValueSpec { ValueSpec::Expr { expr } },
         ),
@@ -166,7 +172,7 @@ pub open spec fn list_proj<Rec>(rec: Rec) -> ListProj<Rec> where
  {
     Mapped {
         inner: Refined(rec, |v: ValueSpec| v is List),
-        mapper: BiMap(
+        mapper: (
             |v: ValueSpec| -> ListSpec { v->list },
             |list: ListSpec| -> ValueSpec { ValueSpec::List { list } },
         ),
@@ -174,18 +180,28 @@ pub open spec fn list_proj<Rec>(rec: Rec) -> ListProj<Rec> where
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub enum FmtType {
+pub enum WhichFmt {
     EXPR,
     LIST,
 }
 
-impl DeepView for FmtType {
+impl DeepView for WhichFmt {
     type V = Self;
 
     open spec fn deep_view(&self) -> Self::V {
         *self
     }
 }
+
+pub type ExprBodyFmt<Rec> = Mapped<
+    Choice<PrefixTagged<U8, U8>, PrefixTagged<U8, ListProj<Rec>>>,
+    ExprMapper,
+>;
+
+pub type ListBodyFmt<Rec> = Mapped<
+    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<ExprProj<Rec>, ListProj<Rec>>>>,
+    ListMapper,
+>;
 
 pub type ExprListBodyFmt<Rec> = Alt<Cond<ExprBodyFmt<Rec>>, Cond<ListBodyFmt<Rec>>>;
 
@@ -196,7 +212,7 @@ pub struct ExprRecBody;
 pub struct ListRecBody;
 
 impl SpecRecBody for ExprListRecBody {
-    type Param = FmtType;
+    type Param = WhichFmt;
 
     type T = ValueSpec;
 
@@ -207,14 +223,14 @@ impl SpecRecBody for ExprListRecBody {
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
         Alt(
-            Cond(which == FmtType::EXPR, ExprRecBody::spec_body(FmtType::EXPR, rec)),
-            Cond(which == FmtType::LIST, ListRecBody::spec_body(FmtType::LIST, rec)),
+            Cond(which == WhichFmt::EXPR, ExprRecBody::spec_body(WhichFmt::EXPR, rec)),
+            Cond(which == WhichFmt::LIST, ListRecBody::spec_body(WhichFmt::LIST, rec)),
         )
     }
 }
 
 impl SpecRecBody for ExprRecBody {
-    type Param = FmtType;
+    type Param = WhichFmt;
 
     type T = ValueSpec;
 
@@ -227,7 +243,7 @@ impl SpecRecBody for ExprRecBody {
         Mapped {
             inner: Choice(
                 PrefixTagged(U8, 0x10u8, U8),
-                PrefixTagged(U8, 0x11u8, list_proj(rec(FmtType::LIST))),
+                PrefixTagged(U8, 0x11u8, list_proj(rec(WhichFmt::LIST))),
             ),
             mapper: ExprMapper,
         }
@@ -235,7 +251,7 @@ impl SpecRecBody for ExprRecBody {
 }
 
 impl SpecRecBody for ListRecBody {
-    type Param = FmtType;
+    type Param = WhichFmt;
 
     type T = ValueSpec;
 
@@ -251,18 +267,13 @@ impl SpecRecBody for ListRecBody {
                 PrefixTagged(
                     U8,
                     0x21u8,
-                    Pair(expr_proj(rec(FmtType::EXPR)), list_proj(rec(FmtType::LIST))),
+                    Pair(expr_proj(rec(WhichFmt::EXPR)), list_proj(rec(WhichFmt::LIST))),
                 ),
             ),
             mapper: ListMapper,
         }
     }
 }
-
-pub type ExprBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, U8>, PrefixTagged<U8, ListProj<Rec>>>,
-    ExprMapper,
->;
 
 pub struct ExprMapper;
 
@@ -290,11 +301,6 @@ impl SpecMapper for ExprMapper {
         }
     }
 }
-
-pub type ListBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<ExprProj<Rec>, ListProj<Rec>>>>,
-    ListMapper,
->;
 
 pub struct ListMapper;
 
@@ -628,8 +634,8 @@ mod derived_spec_proof {
             hide(<ListRecBody as SpecRecBody>::spec_body);
             broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
-            ExprRecBody::lemma_body_all_inv_preservation(FmtType::EXPR, rec);
-            ListRecBody::lemma_body_all_inv_preservation(FmtType::LIST, rec);
+            ExprRecBody::lemma_body_all_inv_preservation(WhichFmt::EXPR, rec);
+            ListRecBody::lemma_body_all_inv_preservation(WhichFmt::LIST, rec);
         }
     }
 
@@ -642,23 +648,23 @@ mod slow_exec_impl {
     use super::*;
 
     impl<'i> ParserRecBody<&'i [u8]> for ExprListRecBody {
-        type EP = FmtType;
+        type EP = WhichFmt;
 
         type O = Value;
 
         fn parse_body<Exec>(
             &self,
-            which: &FmtType,
+            which: &WhichFmt,
             Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
             exec_rec: Exec,
             ibuf: &&'i [u8],
-        ) -> PResult<Self::O> where Exec: Fn(&FmtType, &&'i [u8]) -> PResult<Self::O> {
+        ) -> PResult<Self::O> where Exec: Fn(&WhichFmt, &&'i [u8]) -> PResult<Self::O> {
             broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
 
             match which {
-                FmtType::EXPR => {
+                WhichFmt::EXPR => {
                     let (n1, tag) = U8.parse(ibuf)?;
                     let rest = ibuf.skip(n1);
                     match tag {
@@ -667,7 +673,7 @@ mod slow_exec_impl {
                             Ok((n1 + n2, Value::Expr { expr: Expr::Num(n) }))
                         },
                         0x11u8 => {
-                            let (n2, inner) = exec_rec(&FmtType::LIST, &rest)?;
+                            let (n2, inner) = exec_rec(&WhichFmt::LIST, &rest)?;
                             match inner {
                                 Value::List { list } => {
                                     let total = n1 + n2;
@@ -679,15 +685,15 @@ mod slow_exec_impl {
                         _ => Err(ParseError::invalid_tag()),
                     }
                 },
-                FmtType::LIST => {
+                WhichFmt::LIST => {
                     let (n1, tag) = U8.parse(ibuf)?;
                     let rest = ibuf.skip(n1);
                     match tag {
                         0x20u8 => Ok((n1, Value::List { list: List::Nil })),
                         0x21u8 => {
-                            let (n2, head_val) = exec_rec(&FmtType::EXPR, &rest)?;
+                            let (n2, head_val) = exec_rec(&WhichFmt::EXPR, &rest)?;
                             let rest2 = rest.skip(n2);
-                            let (n3, tail_val) = exec_rec(&FmtType::LIST, &rest2)?;
+                            let (n3, tail_val) = exec_rec(&WhichFmt::LIST, &rest2)?;
                             match (head_val, tail_val) {
                                 (Value::Expr { expr }, Value::List { list }) => {
                                     let total = n1 + n2 + n3;
@@ -711,16 +717,16 @@ mod slow_exec_impl {
     }
 
     impl<'a> SerializerRecBody<ValueRef<'a>> for ExprListRecBody {
-        type EP = FmtType;
+        type EP = WhichFmt;
 
         fn serialize_body<Exec>(
             &self,
-            which: &FmtType,
+            which: &WhichFmt,
             Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
             exec_rec: Exec,
             v: &ValueRef<'a>,
             obuf: &mut Vec<u8>,
-        ) where Exec: Fn(&FmtType, &ValueRef<'a>, &mut Vec<u8>) {
+        ) where Exec: Fn(&WhichFmt, &ValueRef<'a>, &mut Vec<u8>) {
             match v {
                 ValueRef::Expr { expr: Expr::Num(n) } => {
                     U8.serialize(&0x10u8, obuf);
@@ -729,7 +735,7 @@ mod slow_exec_impl {
                 ValueRef::Expr { expr: Expr::Group(list) } => {
                     U8.serialize(&0x11u8, obuf);
                     let child = ValueRef::List { list };
-                    exec_rec(&FmtType::LIST, &child, obuf);
+                    exec_rec(&WhichFmt::LIST, &child, obuf);
                 },
                 ValueRef::List { list: List::Nil } => {
                     U8.serialize(&0x20u8, obuf);
@@ -738,49 +744,49 @@ mod slow_exec_impl {
                     U8.serialize(&0x21u8, obuf);
                     let head_child = ValueRef::Expr { expr: head };
                     let tail_child = ValueRef::List { list: tail };
-                    exec_rec(&FmtType::EXPR, &head_child, obuf);
-                    exec_rec(&FmtType::LIST, &tail_child, obuf);
+                    exec_rec(&WhichFmt::EXPR, &head_child, obuf);
+                    exec_rec(&WhichFmt::LIST, &tail_child, obuf);
                 },
             }
         }
     }
 
     impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
-        type EP = FmtType;
+        type EP = WhichFmt;
 
         fn prepare_body<Exec>(
             &self,
-            which: &FmtType,
+            which: &WhichFmt,
             Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
             exec_rec: Exec,
             v: &ValueRef<'a>,
         ) -> Result<usize, PreSerializeError> where
-            Exec: Fn(&FmtType, &ValueRef<'a>) -> Result<usize, PreSerializeError>,
+            Exec: Fn(&WhichFmt, &ValueRef<'a>) -> Result<usize, PreSerializeError>,
          {
             match (which, v) {
-                (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
+                (WhichFmt::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
                     let l1 = U8.prepare(&0x10u8)?;
                     let l2 = U8.prepare(n)?;
                     let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                     Ok(total)
                 },
-                (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
+                (WhichFmt::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
                     let l1 = U8.prepare(&0x11u8)?;
                     let child = ValueRef::List { list };
-                    let l2 = exec_rec(&FmtType::LIST, &child)?;
+                    let l2 = exec_rec(&WhichFmt::LIST, &child)?;
                     let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                     Ok(total)
                 },
-                (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
+                (WhichFmt::LIST, ValueRef::List { list: List::Nil }) => {
                     let total = U8.prepare(&0x20u8)?;
                     Ok(total)
                 },
-                (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
+                (WhichFmt::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
                     let l1 = U8.prepare(&0x21u8)?;
                     let head_child = ValueRef::Expr { expr: head };
                     let tail_child = ValueRef::List { list: tail };
-                    let l2 = exec_rec(&FmtType::EXPR, &head_child)?;
-                    let l3 = exec_rec(&FmtType::LIST, &tail_child)?;
+                    let l2 = exec_rec(&WhichFmt::EXPR, &head_child)?;
+                    let l3 = exec_rec(&WhichFmt::LIST, &tail_child)?;
                     let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                     let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                     Ok(total)
@@ -792,209 +798,224 @@ mod slow_exec_impl {
 
 }
 
-fn parse_expr_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<Expr>)
-    ensures
-        parse_matches_spec(
-            r,
-            match FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_parse_gas(
-                gas as nat,
-                FmtType::EXPR,
-                ibuf@,
-            ) {
-                Some((n, ValueSpec::Expr { expr })) => Some((n, expr)),
-                _ => None,
+impl<const LIMIT: usize> ExprFmt<LIMIT> {
+    fn parse_gas(&self, gas: usize, ibuf: &&[u8]) -> (r: PResult<Expr>)
+        ensures
+            parse_matches_spec(
+                r,
+                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>::spec_parse_gas(
+                    gas as nat,
+                    WhichFmt::EXPR,
+                    ibuf@,
+                ) {
+                    Some((n, v)) => Some((n, v->expr)),
+                    _ => None,
+                },
+            ),
+            r matches Ok((n, _)) ==> n <= ibuf@.len(),
+        decreases gas,
+    {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _ = ibuf.len();
+        let (n1, tag) = U8.parse(ibuf)?;
+        let rest = ibuf.skip(n1);
+        match tag {
+            0x10u8 => {
+                let (n2, n) = U8.parse(&rest)?;
+                Ok((n1 + n2, Expr::Num(n)))
             },
-        ),
-        r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    decreases gas,
-{
-    let _ = ibuf.len();
-    let (n1, tag) = U8.parse(ibuf)?;
-    let rest = ibuf.skip(n1);
-    match tag {
-        0x10u8 => {
-            let (n2, n) = U8.parse(&rest)?;
-            Ok((n1 + n2, Expr::Num(n)))
-        },
-        0x11u8 => {
-            if gas > 0 {
-                let (n2, list) = parse_list_gas::<LIMIT>(gas - 1, &rest)?;
-                Ok((n1 + n2, Expr::Group(Box::new(list))))
-            } else {
-                Err(ParseError::recursion_limit_exceeded())
-            }
-        },
-        _ => { Err(ParseError::invalid_tag()) },
-    }
-}
+            0x11u8 => {
+                if gas > 0 {
+                    let (n2, list) = ListFmt::<LIMIT>.parse_gas(gas - 1, &rest)?;
 
-fn parse_list_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<List>)
-    ensures
-        parse_matches_spec(
-            r,
-            match FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_parse_gas(
-                gas as nat,
-                FmtType::LIST,
-                ibuf@,
-            ) {
-                Some((n, ValueSpec::List { list })) => Some((n, list)),
-                _ => None,
+                    Ok((n1 + n2, Expr::Group(Box::new(list))))
+                } else {
+                    Err(ParseError::recursion_limit_exceeded())
+                }
             },
-        ),
-        r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    decreases gas,
-{
-    let _ = ibuf.len();
-    let (n1, tag) = U8.parse(ibuf)?;
-    let rest = ibuf.skip(n1);
-    match tag {
-        0x20u8 => { Ok((n1, List::Nil)) },
-        0x21u8 => {
-            if gas > 0 {
-                let (n2, head) = parse_expr_gas::<LIMIT>(gas - 1, &rest)?;
-                let rest = rest.skip(n2);
-                let (n3, tail) = parse_list_gas::<LIMIT>(gas - 1, &rest)?;
-                Ok((n1 + n2 + n3, List::Cons(Box::new(head), Box::new(tail))))
-            } else {
-                Err(ParseError::recursion_limit_exceeded())
-            }
-        },
-        _ => { Err(ParseError::invalid_tag()) },
+            _ => { Err(ParseError::invalid_tag()) },
+        }
     }
-}
 
-fn serialize_expr_gas<const LIMIT: usize>(gas: usize, v: &Expr, obuf: &mut Vec<u8>)
-    requires
-        FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
-            gas as nat,
-            FmtType::EXPR,
-            ValueSpec::Expr { expr: v.deep_view() },
-        ),
-    ensures
-        final(obuf)@ == old(obuf)@ + FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_serialize_gas(
-            gas as nat,
-            FmtType::EXPR,
-            ValueSpec::Expr { expr: v.deep_view() },
-        ),
-    decreases gas,
-{
-    match v {
-        Expr::Num(n) => {
-            U8.serialize(&0x10u8, obuf);
-            U8.serialize(n, obuf);
-        },
-        Expr::Group(list) => {
-            U8.serialize(&0x11u8, obuf);
-            serialize_list_gas::<LIMIT>(gas - 1, list, obuf);
-        },
-    }
-}
-
-fn serialize_list_gas<const LIMIT: usize>(gas: usize, v: &List, obuf: &mut Vec<u8>)
-    requires
-        FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
-            gas as nat,
-            FmtType::LIST,
-            ValueSpec::List { list: v.deep_view() },
-        ),
-    ensures
-        final(obuf)@ == old(obuf)@ + FixWith::<LIMIT, ExprListRecBody, FmtType>::spec_serialize_gas(
-            gas as nat,
-            FmtType::LIST,
-            ValueSpec::List { list: v.deep_view() },
-        ),
-    decreases gas,
-{
-    match v {
-        List::Nil => {
-            U8.serialize(&0x20u8, obuf);
-        },
-        List::Cons(head, tail) => {
-            U8.serialize(&0x21u8, obuf);
-            serialize_expr_gas::<LIMIT>(gas - 1, head, obuf);
-            serialize_list_gas::<LIMIT>(gas - 1, tail, obuf);
-        },
-    }
-}
-
-fn prepare_expr_gas<const LIMIT: usize>(gas: usize, v: &Expr) -> (checked: Result<
-    usize,
-    PreSerializeError,
->)
-    ensures
-        checked matches Ok(len) ==> {
-            &&& FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+    fn serialize_gas(&self, gas: usize, v: &Expr, obuf: &mut Vec<u8>)
+        requires
+            FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
                 gas as nat,
-                FmtType::EXPR,
+                WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
-            )
-            &&& len == FixWith::<LIMIT, ExprListRecBody, FmtType>::byte_len_gas(
+            ),
+        ensures
+            final(obuf)@ == old(obuf)@ + FixWith::<
+                LIMIT,
+                ExprListRecBody,
+                WhichFmt,
+            >::spec_serialize_gas(
                 gas as nat,
-                FmtType::EXPR,
+                WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
-            )
-        },
-    decreases gas,
-{
-    match v {
-        Expr::Num(n) => {
-            let l1 = U8.prepare(&0x10u8)?;
-            let l2 = U8.prepare(n)?;
-            let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-            Ok(total)
-        },
-        Expr::Group(list) => {
-            let l1 = U8.prepare(&0x11u8)?;
-            if gas == 0 {
-                return Err(
-                    PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
-                );
-            }
-            let l2 = prepare_list_gas::<LIMIT>(gas - 1, list)?;
-            let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-            Ok(total)
-        },
+            ),
+        decreases gas,
+    {
+        match v {
+            Expr::Num(n) => {
+                U8.serialize(&0x10u8, obuf);
+                U8.serialize(n, obuf);
+            },
+            Expr::Group(list) => {
+                U8.serialize(&0x11u8, obuf);
+                ListFmt::<LIMIT>.serialize_gas(gas - 1, list, obuf);
+            },
+        }
+    }
+
+    fn prepare_gas(&self, gas: usize, v: &Expr) -> (checked: Result<usize, PreSerializeError>)
+        ensures
+            checked matches Ok(len) ==> {
+                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                    gas as nat,
+                    WhichFmt::EXPR,
+                    ValueSpec::Expr { expr: v.deep_view() },
+                )
+                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    gas as nat,
+                    WhichFmt::EXPR,
+                    ValueSpec::Expr { expr: v.deep_view() },
+                )
+            },
+        decreases gas,
+    {
+        match v {
+            Expr::Num(n) => {
+                let l1 = U8.prepare(&0x10u8)?;
+                let l2 = U8.prepare(n)?;
+                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                Ok(total)
+            },
+            Expr::Group(list) => {
+                let l1 = U8.prepare(&0x11u8)?;
+                if gas == 0 {
+                    return Err(
+                        PreSerializeError::not_compliant(
+                            ComplianceErrorKind::RecursionLimitExceeded,
+                        ),
+                    );
+                }
+                let l2 = ListFmt::<LIMIT>.prepare_gas(gas - 1, list)?;
+                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                Ok(total)
+            },
+        }
     }
 }
 
-fn prepare_list_gas<const LIMIT: usize>(gas: usize, v: &List) -> (checked: Result<
-    usize,
-    PreSerializeError,
->)
-    ensures
-        checked matches Ok(len) ==> {
-            &&& FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+impl<const LIMIT: usize> ListFmt<LIMIT> {
+    fn parse_gas(&self, gas: usize, ibuf: &&[u8]) -> (r: PResult<List>)
+        ensures
+            parse_matches_spec(
+                r,
+                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>::spec_parse_gas(
+                    gas as nat,
+                    WhichFmt::LIST,
+                    ibuf@,
+                ) {
+                    Some((n, v)) => Some((n, v->list)),
+                    _ => None,
+                },
+            ),
+            r matches Ok((n, _)) ==> n <= ibuf@.len(),
+        decreases gas,
+    {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _ = ibuf.len();
+        let (n1, tag) = U8.parse(ibuf)?;
+        let rest = ibuf.skip(n1);
+        match tag {
+            0x20u8 => { Ok((n1, List::Nil)) },
+            0x21u8 => {
+                if gas > 0 {
+                    let (n2, head) = ExprFmt::<LIMIT>.parse_gas(gas - 1, &rest)?;
+                    let rest = rest.skip(n2);
+                    let (n3, tail) = self.parse_gas(gas - 1, &rest)?;
+                    Ok((n1 + n2 + n3, List::Cons(Box::new(head), Box::new(tail))))
+                } else {
+                    Err(ParseError::recursion_limit_exceeded())
+                }
+            },
+            _ => { Err(ParseError::invalid_tag()) },
+        }
+    }
+
+    fn serialize_gas(&self, gas: usize, v: &List, obuf: &mut Vec<u8>)
+        requires
+            FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
                 gas as nat,
-                FmtType::LIST,
+                WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
-            )
-            &&& len == FixWith::<LIMIT, ExprListRecBody, FmtType>::byte_len_gas(
+            ),
+        ensures
+            final(obuf)@ == old(obuf)@ + FixWith::<
+                LIMIT,
+                ExprListRecBody,
+                WhichFmt,
+            >::spec_serialize_gas(
                 gas as nat,
-                FmtType::LIST,
+                WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
-            )
-        },
-    decreases gas,
-{
-    match v {
-        List::Nil => {
-            let total = U8.prepare(&0x20u8)?;
-            Ok(total)
-        },
-        List::Cons(head, tail) => {
-            let l1 = U8.prepare(&0x21u8)?;
-            if gas == 0 {
-                return Err(
-                    PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
-                );
-            }
-            let l2 = prepare_expr_gas::<LIMIT>(gas - 1, head)?;
-            let l3 = prepare_list_gas::<LIMIT>(gas - 1, tail)?;
-            let total = l1.checked_add(l2).ok_or(
-                PreSerializeError::length_too_large(),
-            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
-            Ok(total)
-        },
+            ),
+        decreases gas,
+    {
+        match v {
+            List::Nil => {
+                U8.serialize(&0x20u8, obuf);
+            },
+            List::Cons(head, tail) => {
+                U8.serialize(&0x21u8, obuf);
+                ExprFmt::<LIMIT>.serialize_gas(gas - 1, head, obuf);
+                self.serialize_gas(gas - 1, tail, obuf);
+            },
+        }
+    }
+
+    fn prepare_gas(&self, gas: usize, v: &List) -> (checked: Result<usize, PreSerializeError>)
+        ensures
+            checked matches Ok(len) ==> {
+                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                    gas as nat,
+                    WhichFmt::LIST,
+                    ValueSpec::List { list: v.deep_view() },
+                )
+                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    gas as nat,
+                    WhichFmt::LIST,
+                    ValueSpec::List { list: v.deep_view() },
+                )
+            },
+        decreases gas,
+    {
+        match v {
+            List::Nil => {
+                let total = U8.prepare(&0x20u8)?;
+                Ok(total)
+            },
+            List::Cons(head, tail) => {
+                let l1 = U8.prepare(&0x21u8)?;
+                if gas == 0 {
+                    return Err(
+                        PreSerializeError::not_compliant(
+                            ComplianceErrorKind::RecursionLimitExceeded,
+                        ),
+                    );
+                }
+                let l2 = ExprFmt::<LIMIT>.prepare_gas(gas - 1, head)?;
+                let l3 = self.prepare_gas(gas - 1, tail)?;
+                let total = l1.checked_add(l2).ok_or(
+                    PreSerializeError::length_too_large(),
+                )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                Ok(total)
+            },
+        }
     }
 }
 
@@ -1002,19 +1023,19 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
     type PT = Expr;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        parse_expr_gas::<LIMIT>(LIMIT, ibuf)
+        self.parse_gas(LIMIT, ibuf)
     }
 }
 
 impl<const LIMIT: usize> Serializer<Expr> for ExprFmt<LIMIT> {
     fn serialize(&self, v: &Expr, obuf: &mut Vec<u8>) {
-        serialize_expr_gas::<LIMIT>(LIMIT, v, obuf);
+        self.serialize_gas(LIMIT, v, obuf);
     }
 }
 
 impl<const LIMIT: usize> Prepare<Expr> for ExprFmt<LIMIT> {
     fn prepare(&self, v: &Expr) -> Result<usize, PreSerializeError> {
-        prepare_expr_gas::<LIMIT>(LIMIT, v)
+        self.prepare_gas(LIMIT, v)
     }
 }
 
@@ -1022,19 +1043,19 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListFmt<LIMIT> {
     type PT = List;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        parse_list_gas::<LIMIT>(LIMIT, ibuf)
+        self.parse_gas(LIMIT, ibuf)
     }
 }
 
 impl<const LIMIT: usize> Serializer<List> for ListFmt<LIMIT> {
     fn serialize(&self, v: &List, obuf: &mut Vec<u8>) {
-        serialize_list_gas::<LIMIT>(LIMIT, v, obuf);
+        self.serialize_gas(LIMIT, v, obuf);
     }
 }
 
 impl<const LIMIT: usize> Prepare<List> for ListFmt<LIMIT> {
     fn prepare(&self, v: &List) -> Result<usize, PreSerializeError> {
-        prepare_list_gas::<LIMIT>(LIMIT, v)
+        self.prepare_gas(LIMIT, v)
     }
 }
 
