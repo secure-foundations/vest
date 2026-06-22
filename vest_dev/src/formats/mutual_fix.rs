@@ -638,153 +638,158 @@ mod derived_spec_proof {
 // ============================================================
 // Executable Implementations
 // ============================================================
-impl<'i> ParserRecBody<&'i [u8]> for ExprListRecBody {
-    type EP = FmtType;
+mod slow_exec_impl {
+    use super::*;
 
-    type O = Value;
+    impl<'i> ParserRecBody<&'i [u8]> for ExprListRecBody {
+        type EP = FmtType;
 
-    fn parse_body<Exec>(
-        &self,
-        which: &FmtType,
-        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
-        exec_rec: Exec,
-        ibuf: &&'i [u8],
-    ) -> PResult<Self::O> where Exec: Fn(&FmtType, &&'i [u8]) -> PResult<Self::O> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        type O = Value;
 
-        let _ = ibuf.len();
+        fn parse_body<Exec>(
+            &self,
+            which: &FmtType,
+            Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+            exec_rec: Exec,
+            ibuf: &&'i [u8],
+        ) -> PResult<Self::O> where Exec: Fn(&FmtType, &&'i [u8]) -> PResult<Self::O> {
+            broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
-        match which {
-            FmtType::EXPR => {
-                let (n1, tag) = U8.parse(ibuf)?;
-                let rest = ibuf.skip(n1);
-                match tag {
-                    0x10u8 => {
-                        let (n2, n) = U8.parse(&rest)?;
-                        Ok((n1 + n2, Value::Expr { expr: Expr::Num(n) }))
-                    },
-                    0x11u8 => {
-                        let (n2, inner) = exec_rec(&FmtType::LIST, &rest)?;
-                        match inner {
-                            Value::List { list } => {
-                                let total = n1 + n2;
-                                Ok((total, Value::Expr { expr: Expr::Group(Box::new(list)) }))
-                            },
-                            Value::Expr { .. } => Err(ParseError::cond_rejected()),
-                        }
-                    },
-                    _ => Err(ParseError::invalid_tag()),
-                }
-            },
-            FmtType::LIST => {
-                let (n1, tag) = U8.parse(ibuf)?;
-                let rest = ibuf.skip(n1);
-                match tag {
-                    0x20u8 => Ok((n1, Value::List { list: List::Nil })),
-                    0x21u8 => {
-                        let (n2, head_val) = exec_rec(&FmtType::EXPR, &rest)?;
-                        let rest2 = rest.skip(n2);
-                        let (n3, tail_val) = exec_rec(&FmtType::LIST, &rest2)?;
-                        match (head_val, tail_val) {
-                            (Value::Expr { expr }, Value::List { list }) => {
-                                let total = n1 + n2 + n3;
-                                Ok(
-                                    (
-                                        total,
-                                        Value::List {
-                                            list: List::Cons(Box::new(expr), Box::new(list)),
-                                        },
-                                    ),
-                                )
-                            },
-                            _ => Err(ParseError::cond_rejected()),
-                        }
-                    },
-                    _ => Err(ParseError::invalid_tag()),
-                }
-            },
+            let _ = ibuf.len();
+
+            match which {
+                FmtType::EXPR => {
+                    let (n1, tag) = U8.parse(ibuf)?;
+                    let rest = ibuf.skip(n1);
+                    match tag {
+                        0x10u8 => {
+                            let (n2, n) = U8.parse(&rest)?;
+                            Ok((n1 + n2, Value::Expr { expr: Expr::Num(n) }))
+                        },
+                        0x11u8 => {
+                            let (n2, inner) = exec_rec(&FmtType::LIST, &rest)?;
+                            match inner {
+                                Value::List { list } => {
+                                    let total = n1 + n2;
+                                    Ok((total, Value::Expr { expr: Expr::Group(Box::new(list)) }))
+                                },
+                                Value::Expr { .. } => Err(ParseError::cond_rejected()),
+                            }
+                        },
+                        _ => Err(ParseError::invalid_tag()),
+                    }
+                },
+                FmtType::LIST => {
+                    let (n1, tag) = U8.parse(ibuf)?;
+                    let rest = ibuf.skip(n1);
+                    match tag {
+                        0x20u8 => Ok((n1, Value::List { list: List::Nil })),
+                        0x21u8 => {
+                            let (n2, head_val) = exec_rec(&FmtType::EXPR, &rest)?;
+                            let rest2 = rest.skip(n2);
+                            let (n3, tail_val) = exec_rec(&FmtType::LIST, &rest2)?;
+                            match (head_val, tail_val) {
+                                (Value::Expr { expr }, Value::List { list }) => {
+                                    let total = n1 + n2 + n3;
+                                    Ok(
+                                        (
+                                            total,
+                                            Value::List {
+                                                list: List::Cons(Box::new(expr), Box::new(list)),
+                                            },
+                                        ),
+                                    )
+                                },
+                                _ => Err(ParseError::cond_rejected()),
+                            }
+                        },
+                        _ => Err(ParseError::invalid_tag()),
+                    }
+                },
+            }
         }
     }
-}
 
-impl<'a> SerializerRecBody<ValueRef<'a>> for ExprListRecBody {
-    type EP = FmtType;
+    impl<'a> SerializerRecBody<ValueRef<'a>> for ExprListRecBody {
+        type EP = FmtType;
 
-    fn serialize_body<Exec>(
-        &self,
-        which: &FmtType,
-        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
-        exec_rec: Exec,
-        v: &ValueRef<'a>,
-        obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&FmtType, &ValueRef<'a>, &mut Vec<u8>) {
-        match v {
-            ValueRef::Expr { expr: Expr::Num(n) } => {
-                U8.serialize(&0x10u8, obuf);
-                U8.serialize(n, obuf);
-            },
-            ValueRef::Expr { expr: Expr::Group(list) } => {
-                U8.serialize(&0x11u8, obuf);
-                let child = ValueRef::List { list };
-                exec_rec(&FmtType::LIST, &child, obuf);
-            },
-            ValueRef::List { list: List::Nil } => {
-                U8.serialize(&0x20u8, obuf);
-            },
-            ValueRef::List { list: List::Cons(head, tail) } => {
-                U8.serialize(&0x21u8, obuf);
-                let head_child = ValueRef::Expr { expr: head };
-                let tail_child = ValueRef::List { list: tail };
-                exec_rec(&FmtType::EXPR, &head_child, obuf);
-                exec_rec(&FmtType::LIST, &tail_child, obuf);
-            },
+        fn serialize_body<Exec>(
+            &self,
+            which: &FmtType,
+            Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+            exec_rec: Exec,
+            v: &ValueRef<'a>,
+            obuf: &mut Vec<u8>,
+        ) where Exec: Fn(&FmtType, &ValueRef<'a>, &mut Vec<u8>) {
+            match v {
+                ValueRef::Expr { expr: Expr::Num(n) } => {
+                    U8.serialize(&0x10u8, obuf);
+                    U8.serialize(n, obuf);
+                },
+                ValueRef::Expr { expr: Expr::Group(list) } => {
+                    U8.serialize(&0x11u8, obuf);
+                    let child = ValueRef::List { list };
+                    exec_rec(&FmtType::LIST, &child, obuf);
+                },
+                ValueRef::List { list: List::Nil } => {
+                    U8.serialize(&0x20u8, obuf);
+                },
+                ValueRef::List { list: List::Cons(head, tail) } => {
+                    U8.serialize(&0x21u8, obuf);
+                    let head_child = ValueRef::Expr { expr: head };
+                    let tail_child = ValueRef::List { list: tail };
+                    exec_rec(&FmtType::EXPR, &head_child, obuf);
+                    exec_rec(&FmtType::LIST, &tail_child, obuf);
+                },
+            }
         }
     }
-}
 
-impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
-    type EP = FmtType;
+    impl<'a> PrepareRecBody<ValueRef<'a>> for ExprListRecBody {
+        type EP = FmtType;
 
-    fn prepare_body<Exec>(
-        &self,
-        which: &FmtType,
-        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
-        exec_rec: Exec,
-        v: &ValueRef<'a>,
-    ) -> Result<usize, PreSerializeError> where
-        Exec: Fn(&FmtType, &ValueRef<'a>) -> Result<usize, PreSerializeError>,
-     {
-        match (which, v) {
-            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
-                let l1 = U8.prepare(&0x10u8)?;
-                let l2 = U8.prepare(n)?;
-                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
-            },
-            (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
-                let l1 = U8.prepare(&0x11u8)?;
-                let child = ValueRef::List { list };
-                let l2 = exec_rec(&FmtType::LIST, &child)?;
-                let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
-            },
-            (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
-                let total = U8.prepare(&0x20u8)?;
-                Ok(total)
-            },
-            (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
-                let l1 = U8.prepare(&0x21u8)?;
-                let head_child = ValueRef::Expr { expr: head };
-                let tail_child = ValueRef::List { list: tail };
-                let l2 = exec_rec(&FmtType::EXPR, &head_child)?;
-                let l3 = exec_rec(&FmtType::LIST, &tail_child)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
-            },
-            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
+        fn prepare_body<Exec>(
+            &self,
+            which: &FmtType,
+            Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+            exec_rec: Exec,
+            v: &ValueRef<'a>,
+        ) -> Result<usize, PreSerializeError> where
+            Exec: Fn(&FmtType, &ValueRef<'a>) -> Result<usize, PreSerializeError>,
+         {
+            match (which, v) {
+                (FmtType::EXPR, ValueRef::Expr { expr: Expr::Num(n) }) => {
+                    let l1 = U8.prepare(&0x10u8)?;
+                    let l2 = U8.prepare(n)?;
+                    let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                    Ok(total)
+                },
+                (FmtType::EXPR, ValueRef::Expr { expr: Expr::Group(list) }) => {
+                    let l1 = U8.prepare(&0x11u8)?;
+                    let child = ValueRef::List { list };
+                    let l2 = exec_rec(&FmtType::LIST, &child)?;
+                    let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                    Ok(total)
+                },
+                (FmtType::LIST, ValueRef::List { list: List::Nil }) => {
+                    let total = U8.prepare(&0x20u8)?;
+                    Ok(total)
+                },
+                (FmtType::LIST, ValueRef::List { list: List::Cons(head, tail) }) => {
+                    let l1 = U8.prepare(&0x21u8)?;
+                    let head_child = ValueRef::Expr { expr: head };
+                    let tail_child = ValueRef::List { list: tail };
+                    let l2 = exec_rec(&FmtType::EXPR, &head_child)?;
+                    let l3 = exec_rec(&FmtType::LIST, &tail_child)?;
+                    let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                    let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                    Ok(total)
+                },
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
+
 }
 
 fn parse_expr_gas<const LIMIT: usize>(gas: usize, ibuf: &&[u8]) -> (r: PResult<Expr>)
@@ -912,6 +917,87 @@ fn serialize_list_gas<const LIMIT: usize>(gas: usize, v: &List, obuf: &mut Vec<u
     }
 }
 
+fn prepare_expr_gas<const LIMIT: usize>(gas: usize, v: &Expr) -> (checked: Result<
+    usize,
+    PreSerializeError,
+>)
+    ensures
+        checked matches Ok(len) ==> {
+            &&& FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+                gas as nat,
+                FmtType::EXPR,
+                ValueSpec::Expr { expr: v.deep_view() },
+            )
+            &&& len == FixWith::<LIMIT, ExprListRecBody, FmtType>::byte_len_gas(
+                gas as nat,
+                FmtType::EXPR,
+                ValueSpec::Expr { expr: v.deep_view() },
+            )
+        },
+    decreases gas,
+{
+    match v {
+        Expr::Num(n) => {
+            let l1 = U8.prepare(&0x10u8)?;
+            let l2 = U8.prepare(n)?;
+            let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total)
+        },
+        Expr::Group(list) => {
+            let l1 = U8.prepare(&0x11u8)?;
+            if gas == 0 {
+                return Err(
+                    PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
+                );
+            }
+            let l2 = prepare_list_gas::<LIMIT>(gas - 1, list)?;
+            let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total)
+        },
+    }
+}
+
+fn prepare_list_gas<const LIMIT: usize>(gas: usize, v: &List) -> (checked: Result<
+    usize,
+    PreSerializeError,
+>)
+    ensures
+        checked matches Ok(len) ==> {
+            &&& FixWith::<LIMIT, ExprListRecBody, FmtType>::consistent_gas(
+                gas as nat,
+                FmtType::LIST,
+                ValueSpec::List { list: v.deep_view() },
+            )
+            &&& len == FixWith::<LIMIT, ExprListRecBody, FmtType>::byte_len_gas(
+                gas as nat,
+                FmtType::LIST,
+                ValueSpec::List { list: v.deep_view() },
+            )
+        },
+    decreases gas,
+{
+    match v {
+        List::Nil => {
+            let total = U8.prepare(&0x20u8)?;
+            Ok(total)
+        },
+        List::Cons(head, tail) => {
+            let l1 = U8.prepare(&0x21u8)?;
+            if gas == 0 {
+                return Err(
+                    PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
+                );
+            }
+            let l2 = prepare_expr_gas::<LIMIT>(gas - 1, head)?;
+            let l3 = prepare_list_gas::<LIMIT>(gas - 1, tail)?;
+            let total = l1.checked_add(l2).ok_or(
+                PreSerializeError::length_too_large(),
+            )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total)
+        },
+    }
+}
+
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
     type PT = Expr;
 
@@ -928,10 +1014,7 @@ impl<const LIMIT: usize> Serializer<Expr> for ExprFmt<LIMIT> {
 
 impl<const LIMIT: usize> Prepare<Expr> for ExprFmt<LIMIT> {
     fn prepare(&self, v: &Expr) -> Result<usize, PreSerializeError> {
-        let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::EXPR);
-        let family_v = ValueRef::Expr { expr: v };
-        let checked = family.prepare(&family_v);
-        checked
+        prepare_expr_gas::<LIMIT>(LIMIT, v)
     }
 }
 
@@ -951,10 +1034,7 @@ impl<const LIMIT: usize> Serializer<List> for ListFmt<LIMIT> {
 
 impl<const LIMIT: usize> Prepare<List> for ListFmt<LIMIT> {
     fn prepare(&self, v: &List) -> Result<usize, PreSerializeError> {
-        let family = FixWith::<LIMIT, ExprListRecBody, FmtType>(ExprListRecBody, FmtType::LIST);
-        let family_v = ValueRef::List { list: v };
-        let checked = family.prepare(&family_v);
-        checked
+        prepare_list_gas::<LIMIT>(LIMIT, v)
     }
 }
 
