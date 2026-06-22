@@ -64,35 +64,6 @@ pub type ExprSpec = Expr;
 
 pub type ListSpec = List;
 
-impl Clone for Expr {
-    fn clone(&self) -> (cloned: Self)
-        ensures
-            cloned.deep_view() == self.deep_view(),
-        decreases self,
-    {
-        match self {
-            Expr::Num(n) => Expr::Num(*n),
-            Expr::Group(list) => Expr::Group(Box::new((**list).clone())),
-        }
-    }
-}
-
-impl Clone for List {
-    fn clone(&self) -> (cloned: Self)
-        ensures
-            cloned.deep_view() == self.deep_view(),
-        decreases self,
-    {
-        match self {
-            List::Nil => List::Nil,
-            List::Cons(head, tail) => List::Cons(
-                Box::new((**head).clone()),
-                Box::new((**tail).clone()),
-            ),
-        }
-    }
-}
-
 impl DeepView for Expr {
     type V = ExprSpec;
 
@@ -220,6 +191,10 @@ pub type ExprListBodyFmt<Rec> = Alt<Cond<ExprBodyFmt<Rec>>, Cond<ListBodyFmt<Rec
 
 pub struct ExprListRecBody;
 
+pub struct ExprRecBody;
+
+pub struct ListRecBody;
+
 impl SpecRecBody for ExprListRecBody {
     type Param = FmtType;
 
@@ -232,9 +207,55 @@ impl SpecRecBody for ExprListRecBody {
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
         Alt(
-            Cond(which == FmtType::EXPR, expr_body(rec(FmtType::LIST))),
-            Cond(which == FmtType::LIST, list_body(rec(FmtType::EXPR), rec(FmtType::LIST))),
+            Cond(which == FmtType::EXPR, ExprRecBody::spec_body(FmtType::EXPR, rec)),
+            Cond(which == FmtType::LIST, ListRecBody::spec_body(FmtType::LIST, rec)),
         )
+    }
+}
+
+impl SpecRecBody for ExprRecBody {
+    type Param = FmtType;
+
+    type T = ValueSpec;
+
+    type Body = ExprBodyFmt<BundledSpecs<Self::T>>;
+
+    open spec fn spec_body(
+        _which: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        Mapped {
+            inner: Choice(
+                PrefixTagged(U8, 0x10u8, U8),
+                PrefixTagged(U8, 0x11u8, list_proj(rec(FmtType::LIST))),
+            ),
+            mapper: ExprMapper,
+        }
+    }
+}
+
+impl SpecRecBody for ListRecBody {
+    type Param = FmtType;
+
+    type T = ValueSpec;
+
+    type Body = ListBodyFmt<BundledSpecs<Self::T>>;
+
+    open spec fn spec_body(
+        _which: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        Mapped {
+            inner: Choice(
+                PrefixTagged(U8, 0x20u8, Empty),
+                PrefixTagged(
+                    U8,
+                    0x21u8,
+                    Pair(expr_proj(rec(FmtType::EXPR)), list_proj(rec(FmtType::LIST))),
+                ),
+            ),
+            mapper: ListMapper,
+        }
     }
 }
 
@@ -242,15 +263,6 @@ pub type ExprBodyFmt<Rec> = Mapped<
     Choice<PrefixTagged<U8, U8>, PrefixTagged<U8, ListProj<Rec>>>,
     ExprMapper,
 >;
-
-pub open spec fn expr_body<Rec>(list_rec: Rec) -> ExprBodyFmt<Rec> where
-    Rec: SpecCombinator<T = ValueSpec>,
- {
-    Mapped {
-        inner: Choice(PrefixTagged(U8, 0x10u8, U8), PrefixTagged(U8, 0x11u8, list_proj(list_rec))),
-        mapper: ExprMapper,
-    }
-}
 
 pub struct ExprMapper;
 
@@ -283,18 +295,6 @@ pub type ListBodyFmt<Rec> = Mapped<
     Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<ExprProj<Rec>, ListProj<Rec>>>>,
     ListMapper,
 >;
-
-pub open spec fn list_body<Rec>(expr_rec: Rec, list_rec: Rec) -> ListBodyFmt<Rec> where
-    Rec: SpecCombinator<T = ValueSpec>,
- {
-    Mapped {
-        inner: Choice(
-            PrefixTagged(U8, 0x20u8, Empty),
-            PrefixTagged(U8, 0x21u8, Pair(expr_proj(expr_rec), list_proj(list_rec))),
-        ),
-        mapper: ListMapper,
-    }
-}
 
 pub struct ListMapper;
 
@@ -599,13 +599,37 @@ mod derived_spec_proof {
         }
     }
 
-    impl StrictRecBody for ExprListRecBody {
+    impl StrictRecBody for ExprRecBody {
         proof fn lemma_body_all_inv_preservation(
             param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
             broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
+        }
+    }
+
+    impl StrictRecBody for ListRecBody {
+        proof fn lemma_body_all_inv_preservation(
+            param: Self::Param,
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+        }
+    }
+
+    impl StrictRecBody for ExprListRecBody {
+        proof fn lemma_body_all_inv_preservation(
+            param: Self::Param,
+            rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+            hide(<ExprRecBody as SpecRecBody>::spec_body);
+            hide(<ListRecBody as SpecRecBody>::spec_body);
+            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
+            ExprRecBody::lemma_body_all_inv_preservation(FmtType::EXPR, rec);
+            ListRecBody::lemma_body_all_inv_preservation(FmtType::LIST, rec);
         }
     }
 
