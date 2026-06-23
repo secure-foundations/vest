@@ -41,11 +41,6 @@ impl<'i> DeepView for OpaqueU16<'i> {
     }
 }
 
-# [doc = "data type for `repeat_fix`."]
-pub type RepeatFix = [u16; 32];
-
-pub type RepeatFixSpec = Seq<u16>;
-
 # [doc = "data type for `responder_id`."]
 pub type ResponderId<'i> = OpaqueU16<'i>;
 
@@ -73,6 +68,11 @@ impl<'i> DeepView for ResponderIdList<'i> {
         ResponderIdListSpec { l: self.l.deep_view(), list: self.list.deep_view() }
     }
 }
+
+# [doc = "data type for `repeat_fix`."]
+pub type RepeatFix = [u16; 32];
+
+pub type RepeatFixSpec = Seq<u16>;
 
 # [doc = "data type for `repeat_dyn`."]
 # [derive (Debug, PartialEq, Eq, Clone)]
@@ -135,19 +135,6 @@ impl OpaqueU16Fmt {
     }
 }
 
-# [doc = "named format combinator for `repeat_fix`."]
-# [derive (Clone, Copy)]
-pub struct RepeatFixFmt;
-
-pub type RepeatFixFmtSpec = Named<Array<32, U16Le>>;
-
-impl RepeatFixFmt {
-    # [doc = "specification constructor for `repeat_fix`."]
-    pub open spec fn spec_inner() -> RepeatFixFmtSpec {
-        Named("repeat_fix", Array::<32, _>(U16Le))
-    }
-}
-
 # [doc = "named format combinator for `responder_id`."]
 # [derive (Clone, Copy)]
 pub struct ResponderIdFmt;
@@ -199,6 +186,19 @@ impl ResponderIdListFmt {
                 ),
             },
         )
+    }
+}
+
+# [doc = "named format combinator for `repeat_fix`."]
+# [derive (Clone, Copy)]
+pub struct RepeatFixFmt;
+
+pub type RepeatFixFmtSpec = Named<Array<32, U16Le>>;
+
+impl RepeatFixFmt {
+    # [doc = "specification constructor for `repeat_fix`."]
+    pub open spec fn spec_inner() -> RepeatFixFmtSpec {
+        Named("repeat_fix", Array::<32, _>(U16Le))
     }
 }
 
@@ -287,50 +287,6 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for RepeatFixFmt {
-        type PVal = RepeatFixSpec;
-
-        # [verifier::opaque]
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            RepeatFixFmt::spec_inner().spec_parse(ibuf)
-        }
-    }
-
-    impl Consistency for RepeatFixFmt {
-        type Val = RepeatFixSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            RepeatFixFmt::spec_inner().consistent(v)
-        }
-    }
-
-    impl SpecSerializerDps for RepeatFixFmt {
-        type SValue = RepeatFixSpec;
-
-        # [verifier::opaque]
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            RepeatFixFmt::spec_inner().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl SpecSerializer for RepeatFixFmt {
-        type SVal = RepeatFixSpec;
-
-        # [verifier::opaque]
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            RepeatFixFmt::spec_inner().spec_serialize(v)
-        }
-    }
-
-    impl SpecByteLen for RepeatFixFmt {
-        type T = RepeatFixSpec;
-
-        # [verifier::opaque]
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            RepeatFixFmt::spec_inner().byte_len(v)
-        }
-    }
-
     impl SpecParser for ResponderIdFmt {
         type PVal = ResponderIdSpec;
 
@@ -416,6 +372,50 @@ mod derived_specs {
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             ResponderIdListFmt::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for RepeatFixFmt {
+        type PVal = RepeatFixSpec;
+
+        # [verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            RepeatFixFmt::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for RepeatFixFmt {
+        type Val = RepeatFixSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            RepeatFixFmt::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for RepeatFixFmt {
+        type SValue = RepeatFixSpec;
+
+        # [verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            RepeatFixFmt::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for RepeatFixFmt {
+        type SVal = RepeatFixSpec;
+
+        # [verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            RepeatFixFmt::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for RepeatFixFmt {
+        type T = RepeatFixSpec;
+
+        # [verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            RepeatFixFmt::spec_inner().byte_len(v)
         }
     }
 
@@ -574,112 +574,6 @@ mod derived_proofs {
             reveal(<OpaqueU16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<OpaqueU16Fmt as SpecSerializer>::spec_serialize);
             let fmt = OpaqueU16Fmt::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl SafeParser for RepeatFixFmt {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            RepeatFixFmt::spec_inner().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl Productive for RepeatFixFmt {
-        open spec fn productive_inv(&self) -> bool {
-            RepeatFixFmt::spec_inner().productive_inv()
-        }
-
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.productive_inv());
-            fmt.lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for RepeatFixFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            reveal(<RepeatFixFmt as Consistency>::consistent);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl NonTailFmt for RepeatFixFmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl GoodSerializer for RepeatFixFmt {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
-            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl SPRoundTripDps for RepeatFixFmt {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<RepeatFixFmt as Consistency>::consistent);
-            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl NonMalleable for RepeatFixFmt {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for RepeatFixFmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
-            let fmt = RepeatFixFmt::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl EquivSerializers for RepeatFixFmt {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
-            let fmt = RepeatFixFmt::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -897,6 +791,112 @@ mod derived_proofs {
         }
     }
 
+    impl SafeParser for RepeatFixFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            RepeatFixFmt::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for RepeatFixFmt {
+        open spec fn productive_inv(&self) -> bool {
+            RepeatFixFmt::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for RepeatFixFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            reveal(<RepeatFixFmt as Consistency>::consistent);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for RepeatFixFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for RepeatFixFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for RepeatFixFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RepeatFixFmt as Consistency>::consistent);
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for RepeatFixFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for RepeatFixFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for RepeatFixFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<RepeatFixFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
+            let fmt = RepeatFixFmt::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
     impl SafeParser for RepeatDynFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
@@ -1066,38 +1066,6 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for RepeatFixFmt {
-        type PT = RepeatFix;
-
-        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
-            let _ = ibuf.len();
-            let rest = *ibuf;
-
-            let (n, v) = Array::<32, _>(U16Le).parse(ibuf)?;
-            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
-            Ok((n, v))
-        }
-    }
-
-    impl<'i> Serializer<RepeatFix> for RepeatFixFmt {
-        fn serialize(&self, v: &RepeatFix, obuf: &mut Vec<u8>) {
-            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
-            let ghost old_obuf = obuf@;
-
-            Array::<32, _>(U16Le).serialize(v, obuf);
-
-            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
-        }
-    }
-
-    impl<'i> Prepare<RepeatFix> for RepeatFixFmt {
-        fn prepare(&self, v: &RepeatFix) -> Result<usize, PreSerializeError> {
-            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
-            (Array::<32, _>(U16Le)).prepare(v)
-        }
-    }
-
     impl<'i> Parser<&'i [u8]> for ResponderIdFmt {
         type PT = ResponderId<'i>;
 
@@ -1146,7 +1114,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen(l, Star(Named("responder_id", ResponderIdFmt))).parse(&rest)?;
+            let (n2, list) = ExactLen(l, Star(ResponderIdFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList { l, list };
@@ -1179,9 +1147,41 @@ mod exec_impls {
                     (U16Le).prepare(l)
                 }
             }?;
-            let l2 = (ExactLen(l, Star(Named("responder_id", ResponderIdFmt)))).prepare(list)?;
+            let l2 = (ExactLen(l, Star(ResponderIdFmt))).prepare(list)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for RepeatFixFmt {
+        type PT = RepeatFix;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<RepeatFixFmt as SpecParser>::spec_parse);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = Array::<32, _>(U16Le).parse(ibuf)?;
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<'i> Serializer<RepeatFix> for RepeatFixFmt {
+        fn serialize(&self, v: &RepeatFix, obuf: &mut Vec<u8>) {
+            reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
+            let ghost old_obuf = obuf@;
+
+            Array::<32, _>(U16Le).serialize(v, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<RepeatFix> for RepeatFixFmt {
+        fn prepare(&self, v: &RepeatFix) -> Result<usize, PreSerializeError> {
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+            (Array::<32, _>(U16Le)).prepare(v)
         }
     }
 
@@ -1198,9 +1198,7 @@ mod exec_impls {
 
             let (n1, l) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(l, Named("responder_id_list", ResponderIdListFmt)).parse(
-                &rest,
-            )?;
+            let (n2, data) = RepeatN(l, ResponderIdListFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = RepeatDyn { l, data };
@@ -1227,7 +1225,7 @@ mod exec_impls {
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let RepeatDyn { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (RepeatN(l, Named("responder_id_list", ResponderIdListFmt))).prepare(data)?;
+            let l2 = (RepeatN(l, ResponderIdListFmt)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }

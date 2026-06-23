@@ -406,6 +406,109 @@ fn span_as_range(span: &Span) -> std::ops::Range<usize> {
     span.start()..span.end()
 }
 
+fn report_undefined_format_name(name: &Identifier, source: (&str, &Source)) -> VestError {
+    Report::build(ReportKind::Error, (source.0, span_as_range(&name.span)))
+        .with_message("undefined format")
+        .with_label(
+            Label::new((source.0, span_as_range(&name.span)))
+                .with_message(format!("Format `{}` is not defined", name))
+                .with_color(Color::Red),
+        )
+        .finish()
+        .eprint(source)
+        .unwrap();
+    VestError::TypeError
+}
+
+fn report_undefined_const_format_name(name: &Identifier, source: (&str, &Source)) -> VestError {
+    Report::build(ReportKind::Error, (source.0, span_as_range(&name.span)))
+        .with_message("undefined const format")
+        .with_label(
+            Label::new((source.0, span_as_range(&name.span)))
+                .with_message(format!("Const format `{}` is not defined", name))
+                .with_color(Color::Red),
+        )
+        .finish()
+        .eprint(source)
+        .unwrap();
+    VestError::TypeError
+}
+
+fn report_alias_cycle(name: &Identifier, source: (&str, &Source)) -> VestError {
+    Report::build(ReportKind::Error, (source.0, span_as_range(&name.span)))
+        .with_message("cyclic format alias")
+        .with_label(
+            Label::new((source.0, span_as_range(&name.span)))
+                .with_message(format!(
+                    "Format `{}` is defined as a cyclic alias, which has no concrete type",
+                    name
+                ))
+                .with_color(Color::Red),
+        )
+        .finish()
+        .eprint(source)
+        .unwrap();
+    VestError::TypeError
+}
+
+/// Resolve a combinator to its head-normal-form [`CombinatorInner`] by following
+/// `>>=` to its final result type and following invocation aliases, using a
+/// *complete* map of every definition in the file.
+///
+/// Because it resolves against the full set of definitions rather than whatever
+/// has been processed so far, the result is independent of the order in which
+/// definitions appear. Undefined invocations and cyclic aliases produce a proper
+/// type error instead of panicking.
+fn resolve_combinator_to_inner<'ast>(
+    combinator: &'ast Combinator<'ast>,
+    raw: &HashMap<&str, &'ast Combinator<'ast>>,
+    source: (&str, &Source),
+    visiting: &mut Vec<&'ast str>,
+) -> Result<CombinatorInner<'ast>, VestError> {
+    if let Some(and_then) = &combinator.and_then {
+        return resolve_combinator_to_inner(and_then, raw, source, visiting);
+    }
+    match &combinator.inner {
+        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
+            let Some(&target) = raw.get(func.name.as_str()) else {
+                return Err(report_undefined_format_name(func, source));
+            };
+            if visiting.contains(&func.name.as_str()) {
+                return Err(report_alias_cycle(func, source));
+            }
+            visiting.push(func.name.as_str());
+            let resolved = resolve_combinator_to_inner(target, raw, source, visiting)?;
+            visiting.pop();
+            Ok(resolved)
+        }
+        other => Ok(other.clone()),
+    }
+}
+
+/// Const-format analogue of [`resolve_combinator_to_inner`].
+fn resolve_const_to_inner<'ast>(
+    const_combinator: &'ast ConstCombinator<'ast>,
+    raw: &HashMap<&str, &'ast ConstCombinator<'ast>>,
+    source: (&str, &Source),
+    visiting: &mut Vec<&'ast str>,
+) -> Result<ConstCombinator<'ast>, VestError> {
+    match const_combinator {
+        ConstCombinator::ConstCombinatorInvocation { name, .. } => {
+            let Some(&target) = raw.get(name.name.as_str()) else {
+                return Err(report_undefined_const_format_name(name, source));
+            };
+            if visiting.contains(&name.name.as_str()) {
+                return Err(report_alias_cycle(name, source));
+            }
+            visiting.push(name.name.as_str());
+            let resolved = resolve_const_to_inner(target, raw, source, visiting)?;
+            visiting.pop();
+            Ok(resolved)
+        }
+        other => Ok(other.clone()),
+    }
+}
+
 pub fn check<'ast>(
     ast: &'ast [Definition<'ast>],
     source: (&str, &Source),
@@ -416,6 +519,30 @@ pub fn check<'ast>(
         enums: HashMap::new(),
         static_sizes: HashMap::new(),
     };
+
+    // Collect every definition up front so that alias resolution can look up any
+    // referenced format regardless of the order definitions appear in. This is
+    // what lets the rest of the pipeline drop the topological pre-sort.
+    let mut raw_combinators: HashMap<&str, &Combinator> = HashMap::new();
+    let mut raw_consts: HashMap<&str, &ConstCombinator> = HashMap::new();
+    for defn in ast {
+        match defn {
+            Definition::Combinator {
+                name, combinator, ..
+            } => {
+                raw_combinators.insert(name.name.as_str(), combinator);
+            }
+            Definition::ConstCombinator {
+                name,
+                const_combinator,
+                ..
+            } => {
+                raw_consts.insert(name.name.as_str(), const_combinator);
+            }
+            _ => {}
+        }
+    }
+
     let mut local_ctx = LocalCtx::new();
     for defn in ast {
         match defn {
@@ -426,8 +553,10 @@ pub fn check<'ast>(
                 combinator,
                 span,
             } => {
-                // Check for combinator invocations and `and_then`s and resolve them
-                let resolved_combinator = global_ctx.resolve(combinator).to_owned();
+                // Resolve combinator invocations (aliases) and `and_then`s against
+                // the complete definition set, so this no longer depends on order.
+                let resolved_combinator =
+                    resolve_combinator_to_inner(combinator, &raw_combinators, source, &mut Vec::new())?;
 
                 match global_ctx.combinators.iter().find(|sig| &sig.name == name) {
                     Some(sig) => {
@@ -478,8 +607,9 @@ pub fn check<'ast>(
                 const_combinator,
                 span,
             } => {
-                // resolve the const combinator
-                let resolved_combinator = global_ctx.resolve_const(const_combinator).to_owned();
+                // resolve the const combinator against the complete definition set
+                let resolved_combinator =
+                    resolve_const_to_inner(const_combinator, &raw_consts, source, &mut Vec::new())?;
 
                 match global_ctx
                     .const_combinators

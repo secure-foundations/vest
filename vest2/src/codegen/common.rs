@@ -358,24 +358,65 @@ impl<'a> Analysis<'a> {
             endianness,
             infos: HashMap::new(),
         };
-        for def in defs {
-            if let Some(name) = definition_name(def) {
-                let names = format_names(name);
-                let needs_lifetime = this.definition_needs_lifetime(def);
-                let non_tail = this.definition_non_tail(def);
-                let non_malleable = this.definition_non_malleable(def);
-                this.infos.insert(
-                    name.to_string(),
-                    FormatInfo {
-                        names,
-                        needs_lifetime,
-                        non_tail,
-                        non_malleable,
-                    },
-                );
-            }
+        // `definition_needs_lifetime`/`non_tail`/`non_malleable` query the info of the
+        // formats a definition invokes, so each format's dependencies must be analysed
+        // first. Process definitions in dependency (callee-before-caller) order rather
+        // than relying on the input being topologically pre-sorted.
+        for name in this.dependency_order() {
+            let Some(def) = this.def_by_name(&name) else {
+                continue;
+            };
+            let names = format_names(&name);
+            let needs_lifetime = this.definition_needs_lifetime(def);
+            let non_tail = this.definition_non_tail(def);
+            let non_malleable = this.definition_non_malleable(def);
+            this.infos.insert(
+                name,
+                FormatInfo {
+                    names,
+                    needs_lifetime,
+                    non_tail,
+                    non_malleable,
+                },
+            );
         }
         this
+    }
+
+    /// Look up a definition by its format name.
+    fn def_by_name(&self, name: &str) -> Option<&'a Definition> {
+        self.defs
+            .iter()
+            .find(|def| definition_name(def) == Some(name))
+    }
+
+    /// Names of all formats in dependency order (a format's callees come before it).
+    ///
+    /// This makes [`Analysis::new`] independent of the order definitions are given
+    /// in. The call graph among generated formats is acyclic; if a cycle is ever
+    /// encountered we fall back to the input order.
+    fn dependency_order(&self) -> Vec<String> {
+        use crate::utils::{topological_sort, VestHasherBuilder};
+
+        let names: std::collections::HashSet<&str> =
+            self.defs.iter().filter_map(definition_name).collect();
+        let mut graph: HashMap<String, Vec<String>, VestHasherBuilder> =
+            HashMap::with_hasher(VestHasherBuilder);
+        for def in self.defs {
+            if let Some(name) = definition_name(def) {
+                let deps: Vec<String> = definition_dependencies(def)
+                    .into_iter()
+                    .filter(|dep| names.contains(dep.as_str()))
+                    .collect();
+                graph.insert(name.to_string(), deps);
+            }
+        }
+        topological_sort(&graph).unwrap_or_else(|_| {
+            self.defs
+                .iter()
+                .filter_map(|def| definition_name(def).map(str::to_string))
+                .collect()
+        })
     }
 
     pub(crate) fn info(&self, name: &str) -> &FormatInfo {
@@ -1299,6 +1340,90 @@ pub(crate) fn definition_name(def: &Definition) -> Option<&str> {
         | Definition::CombinatorDef { name, .. }
         | Definition::ConstCombinatorDef { name, .. } => Some(name),
         Definition::Endianess(_) => None,
+    }
+}
+
+/// Names of the formats directly invoked by `def` (a superset of the formats whose
+/// [`FormatInfo`] is queried while analysing `def`). Used to order analysis so that
+/// callees are processed before callers.
+fn definition_dependencies(def: &Definition) -> Vec<String> {
+    let mut out = Vec::new();
+    match def {
+        Definition::StructDef { combinator, .. } => {
+            collect_struct_invocations(combinator, &mut out)
+        }
+        Definition::ChoiceDef { combinator, .. } => {
+            collect_choice_invocations(combinator, &mut out)
+        }
+        Definition::BitsDef { combinator, .. } => collect_bits_invocations(combinator, &mut out),
+        Definition::CombinatorDef { combinator, .. } => {
+            collect_combinator_invocations(combinator, &mut out)
+        }
+        Definition::ConstCombinatorDef {
+            const_combinator, ..
+        } => collect_const_invocations(const_combinator, &mut out),
+        Definition::EnumDef { .. } | Definition::Endianess(_) => {}
+    }
+    out
+}
+
+fn collect_combinator_invocations(combinator: &Combinator, out: &mut Vec<String>) {
+    match combinator {
+        Combinator::ConstraintInt(_) | Combinator::Bytes(_) | Combinator::Tail(_) => {}
+        Combinator::ConstraintEnum(ce) => out.push(ce.combinator.func.clone()),
+        Combinator::Wrap(WrapCombinator {
+            prior,
+            combinator,
+            post,
+        }) => {
+            prior.iter().for_each(|c| collect_const_invocations(c, out));
+            collect_combinator_invocations(combinator, out);
+            post.iter().for_each(|c| collect_const_invocations(c, out));
+        }
+        Combinator::Vec(VecCombinator::Vec(inner)) => collect_combinator_invocations(inner, out),
+        Combinator::Array(ArrayCombinator { combinator, .. }) => {
+            collect_combinator_invocations(combinator, out)
+        }
+        Combinator::Option(OptionCombinator(inner)) => collect_combinator_invocations(inner, out),
+        Combinator::Invocation(inv) => out.push(inv.func.clone()),
+        Combinator::AndThen(lhs, rhs) => {
+            collect_combinator_invocations(lhs, out);
+            collect_combinator_invocations(rhs, out);
+        }
+    }
+}
+
+fn collect_const_invocations(const_combinator: &ConstCombinator, out: &mut Vec<String>) {
+    match const_combinator {
+        ConstCombinator::ConstBytes(_) | ConstCombinator::ConstInt(_) => {}
+        ConstCombinator::ConstEnum(ce) => out.push(ce.combinator.func.clone()),
+        ConstCombinator::ConstCombinatorInvocation(name) => out.push(name.clone()),
+    }
+}
+
+fn collect_struct_invocations(struct_comb: &StructCombinator, out: &mut Vec<String>) {
+    for field in &struct_comb.0 {
+        match field {
+            StructField::Dependent { combinator, .. }
+            | StructField::Ordinary { combinator, .. } => {
+                collect_combinator_invocations(combinator, out)
+            }
+            StructField::Const { combinator, .. } => collect_const_invocations(combinator, out),
+        }
+    }
+}
+
+fn collect_choice_invocations(choice: &ChoiceCombinator, out: &mut Vec<String>) {
+    for (_, combinator) in &choice.choices {
+        collect_combinator_invocations(combinator, out);
+    }
+}
+
+fn collect_bits_invocations(bits_comb: &vestir::BitsCombinator, out: &mut Vec<String>) {
+    for field in &bits_comb.0 {
+        if let vestir::BitFieldCombinator::Enum(inv) = field.combinator() {
+            out.push(inv.func.clone());
+        }
     }
 }
 

@@ -1,11 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{ast::*, utils::topological_sort, utils::VestHasherBuilder};
+use crate::{ast::*, utils::VestHasherBuilder};
 
 /// Elaborate the AST:
 /// - expand the macro invocations
 /// - expand the inlined, anonymous combinator definitions
-/// - reorder the definitions according to the call graph (topological sort of the invocations)
+///
+/// Definitions are left in their original DSL source order (with any lifted
+/// anonymous helper formats appended at the end). Downstream passes
+/// (type checking and codegen) no longer require a topological pre-sort, so the
+/// emitted Rust mirrors the order of the `.vest` source.
 pub fn elaborate(ast: &mut Vec<Definition>) {
     // expand the macro invocations
     expand_macros(ast);
@@ -15,32 +19,6 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
 
     // expand the inlined, anonymous combinator definitions
     expand_definitions(ast);
-
-    // build the call graph
-    let call_graph = build_call_graph(ast);
-    // topo sort the call graph
-    topological_sort(&call_graph)
-        .map(|sorted| {
-            // reorder the definitions
-            ast.sort_by_cached_key(|defn| {
-                // skip the endianness definition
-                if let Definition::Endianess(_) = defn {
-                    0
-                } else {
-                    sorted
-                        .iter()
-                        .position(|name_| match defn {
-                            Definition::Combinator { name, .. } => name.name == *name_,
-                            Definition::ConstCombinator { name, .. } => name.name == *name_,
-                            _ => false,
-                        })
-                        .unwrap()
-                }
-            });
-        })
-        .unwrap_or_else(|e| {
-            panic!("Cycle detected in the format definitions: {:?}", e);
-        });
     // println!("Number of definitions: {}", ast.len());
 }
 
@@ -659,121 +637,6 @@ fn collect_params_with_bound<'ast>(
         }
     }
     params
-}
-
-pub fn build_call_graph(ast: &[Definition]) -> HashMap<String, Vec<String>, VestHasherBuilder> {
-    ast.iter()
-        .filter_map(|defn| match defn {
-            Definition::Combinator {
-                name, combinator, ..
-            } => {
-                let mut invocations = Vec::new();
-                collect_invocations(combinator, &mut invocations);
-                Some((name.name.to_owned(), invocations))
-            }
-            Definition::ConstCombinator {
-                name,
-                const_combinator,
-                ..
-            } => {
-                let invocations = collect_const_invocations(const_combinator);
-                Some((name.name.to_owned(), invocations))
-            }
-            _ => None,
-        })
-        .collect()
-}
-
-fn collect_invocations(combinator: &Combinator, invocations: &mut Vec<String>) {
-    if let Some(and_then) = &combinator.and_then {
-        collect_invocations(and_then, invocations);
-    }
-    collect_invocations_inner(&combinator.inner, invocations);
-}
-
-fn collect_invocations_inner(combinator_inner: &CombinatorInner, invocations: &mut Vec<String>) {
-    match combinator_inner {
-        // base case: combinator invocation
-        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-            invocations.push(func.name.to_owned());
-        }
-        // recursive cases
-        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
-            for field in fields {
-                match field {
-                    StructField::Ordinary { combinator, .. }
-                    | StructField::Dependent { combinator, .. } => {
-                        collect_invocations(combinator, invocations);
-                    }
-                    StructField::Const { .. } => {}
-                }
-            }
-        }
-        CombinatorInner::Bits(BitsCombinator { fields, .. }) => {
-            for field in fields {
-                let combinator = match field {
-                    BitField::Ordinary { combinator, .. }
-                    | BitField::Dependent { combinator, .. } => combinator,
-                };
-                match combinator {
-                    BitFieldCombinator::Invocation(inv) => {
-                        invocations.push(inv.func.name.to_owned());
-                    }
-                    _ => {}
-                }
-            }
-        }
-        CombinatorInner::Wrap(WrapCombinator { combinator, .. }) => {
-            collect_invocations(combinator, invocations);
-        }
-        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
-            Choices::Enums(enums) => {
-                for (_, combinator) in enums {
-                    collect_invocations(combinator, invocations);
-                }
-            }
-            Choices::Ints(ints) => {
-                for (_, combinator) in ints {
-                    collect_invocations(combinator, invocations);
-                }
-            }
-            Choices::Arrays(arrays) => {
-                for (_, combinator) in arrays {
-                    collect_invocations(combinator, invocations);
-                }
-            }
-        },
-        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
-            collect_invocations(combinator, invocations);
-        }
-        CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
-            collect_invocations(combinator, invocations);
-        }
-        CombinatorInner::Option(OptionCombinator(combinator)) => {
-            collect_invocations(combinator, invocations);
-        }
-        CombinatorInner::Enum(..) => {}
-        CombinatorInner::ConstraintInt(..) => {}
-        CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
-            invocations.push(combinator.func.name.to_owned());
-            for arg in &combinator.args {
-                let Param::Dependent(name) = arg;
-                let _ = name; // no invocations inside params
-            }
-        }
-        CombinatorInner::Bytes(..) => {}
-        CombinatorInner::Tail(..) => {}
-        CombinatorInner::MacroInvocation { .. } => {}
-    }
-}
-
-fn collect_const_invocations(const_combinator: &ConstCombinator) -> Vec<String> {
-    match const_combinator {
-        ConstCombinator::ConstCombinatorInvocation {
-            name: invocation, ..
-        } => vec![invocation.name.to_owned()],
-        _ => Vec::new(),
-    }
 }
 
 #[cfg(test)]
