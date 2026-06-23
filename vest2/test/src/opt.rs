@@ -1227,7 +1227,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n, v) = Opt(Named("msg", MsgFmt)).parse(ibuf)?;
+            let (n, v) = Opt(MsgFmt).parse(ibuf)?;
             broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
 
             let rest = ibuf.skip(n);
@@ -1251,7 +1251,7 @@ mod exec_impls {
     impl<'i> Prepare<Optmsg> for OptmsgFmt {
         fn prepare(&self, v: &Optmsg) -> Result<usize, PreSerializeError> {
             reveal(<OptmsgFmt as SpecByteLen>::byte_len);
-            (Opt(Named("msg", MsgFmt))).prepare(v)
+            (Opt(MsgFmt)).prepare(v)
         }
     }
 
@@ -1308,7 +1308,7 @@ mod exec_impls {
             let (n, v) = PrefixTagged(
                 U8,
                 1,
-                PrefixTagged(U8, 2, SuffixTagged(Named("const_10", Const10Fmt), U8, 3)),
+                PrefixTagged(U8, 2, SuffixTagged(Const10Fmt, U8, 3)),
             ).parse(ibuf)?;
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
@@ -1332,11 +1332,7 @@ mod exec_impls {
     impl<'i> Prepare<A<'i>> for AFmt {
         fn prepare(&self, v: &A<'i>) -> Result<usize, PreSerializeError> {
             reveal(<AFmt as SpecByteLen>::byte_len);
-            (PrefixTagged(
-                U8,
-                1,
-                PrefixTagged(U8, 2, SuffixTagged(Named("const_10", Const10Fmt), U8, 3)),
-            )).prepare(v)
+            (PrefixTagged(U8, 1, PrefixTagged(U8, 2, SuffixTagged(Const10Fmt, U8, 3)))).prepare(v)
         }
     }
 
@@ -1353,9 +1349,7 @@ mod exec_impls {
 
             let (n1, x) = Fixed::<10>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = PrefixTagged(U16Le, 65535, SuffixTagged(Named("a", AFmt), U8, 1)).parse(
-                &rest,
-            )?;
+            let (n2, y) = PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = B { x, y };
@@ -1382,9 +1376,7 @@ mod exec_impls {
             reveal(<BFmt as SpecByteLen>::byte_len);
             let B { x, y } = v;
             let l1 = (Fixed::<10>).prepare(x)?;
-            let l2 = (PrefixTagged(U16Le, 65535, SuffixTagged(Named("a", AFmt), U8, 1))).prepare(
-                y,
-            )?;
+            let l2 = (PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1))).prepare(y)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -1401,13 +1393,13 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, x) = Opt(PrefixTagged(U8, 10, Named("const_10", Const10Fmt))).parse(&rest)?;
+            let (n1, x) = Opt(PrefixTagged(U8, 10, Const10Fmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = Star(PrefixTagged(U8, 11, Named("a", AFmt))).parse(&rest)?;
+            let (n2, y) = Star(PrefixTagged(U8, 11, AFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, z) = Opt(PrefixTagged(U8, 12, Named("b", BFmt))).parse(&rest)?;
+            let (n3, z) = Opt(PrefixTagged(U8, 12, BFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, w) = Star(PrefixTagged(U8, 13, Named("msg", MsgFmt))).parse(&rest)?;
+            let (n4, w) = Star(PrefixTagged(U8, 13, MsgFmt)).parse(&rest)?;
             let rest = rest.skip(n4);
             let _ = Eof.parse(&rest)?;
             let total_n = n1 + n2 + n3 + n4;
@@ -1436,10 +1428,10 @@ mod exec_impls {
         fn prepare(&self, v: &TaggedMix<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TaggedMixFmt as SpecByteLen>::byte_len);
             let TaggedMix { x, y, z, w } = v;
-            let l1 = (Opt(PrefixTagged(U8, 10, Named("const_10", Const10Fmt)))).prepare(x)?;
-            let l2 = (Star(PrefixTagged(U8, 11, Named("a", AFmt)))).prepare(y)?;
-            let l3 = (Opt(PrefixTagged(U8, 12, Named("b", BFmt)))).prepare(z)?;
-            let l4 = (Star(PrefixTagged(U8, 13, Named("msg", MsgFmt)))).prepare(w)?;
+            let l1 = (Opt(PrefixTagged(U8, 10, Const10Fmt))).prepare(x)?;
+            let l2 = (Star(PrefixTagged(U8, 11, AFmt))).prepare(y)?;
+            let l3 = (Opt(PrefixTagged(U8, 12, BFmt))).prepare(z)?;
+            let l4 = (Star(PrefixTagged(U8, 13, MsgFmt))).prepare(w)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(

@@ -3006,7 +3006,7 @@ mod exec_impls {
             let rest = rest.skip(n6);
             let (n7, tx_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n7);
-            let (n8, txs) = RepeatN(tx_count, Named("tx", TxFmt)).parse(&rest)?;
+            let (n8, txs) = RepeatN(tx_count, TxFmt).parse(&rest)?;
             let rest = rest.skip(n8);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8;
             let final_v = Block {
@@ -3056,7 +3056,7 @@ mod exec_impls {
             let l5 = (U32Le).prepare(bits)?;
             let l6 = (U32Le).prepare(nonce)?;
             let l7 = (VarInt::<true>).prepare(tx_count)?;
-            let l8 = (RepeatN(tx_count, Named("tx", TxFmt))).prepare(txs)?;
+            let l8 = (RepeatN(tx_count, TxFmt)).prepare(txs)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
@@ -3137,13 +3137,13 @@ mod exec_impls {
             let rest = rest.skip(n1);
             let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txins) = RepeatN(txin_count, Named("txin", TxinFmt)).parse(&rest)?;
+            let (n3, txins) = RepeatN(txin_count, TxinFmt).parse(&rest)?;
             let rest = rest.skip(n3);
             let (n4, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, txouts) = RepeatN(txout_count, Named("txout", TxoutFmt)).parse(&rest)?;
+            let (n5, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, witness) = RepeatN(txin_count, Named("witness", WitnessFmt)).parse(&rest)?;
+            let (n6, witness) = RepeatN(txin_count, WitnessFmt).parse(&rest)?;
             let rest = rest.skip(n6);
             let (n7, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
             let rest = rest.skip(n7);
@@ -3186,10 +3186,10 @@ mod exec_impls {
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
             let l1 = (Const(U8, 1)).prepare(flag)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (RepeatN(txin_count, Named("txin", TxinFmt))).prepare(txins)?;
+            let l3 = (RepeatN(txin_count, TxinFmt)).prepare(txins)?;
             let l4 = (VarInt::<true>).prepare(txout_count)?;
-            let l5 = (RepeatN(txout_count, Named("txout", TxoutFmt))).prepare(txouts)?;
-            let l6 = (RepeatN(txin_count, Named("witness", WitnessFmt))).prepare(witness)?;
+            let l5 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
+            let l6 = (RepeatN(txin_count, WitnessFmt)).prepare(witness)?;
             let l7 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
@@ -3215,9 +3215,7 @@ mod exec_impls {
 
             let (n1, count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(count, Named("witness_component", WitnessComponentFmt)).parse(
-                &rest,
-            )?;
+            let (n2, data) = RepeatN(count, WitnessComponentFmt).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Witness { count, data };
@@ -3244,9 +3242,7 @@ mod exec_impls {
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let Witness { count, data } = v;
             let l1 = (VarInt::<true>).prepare(count)?;
-            let l2 = (RepeatN(count, Named("witness_component", WitnessComponentFmt))).prepare(
-                data,
-            )?;
+            let l2 = (RepeatN(count, WitnessComponentFmt)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -3313,11 +3309,11 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, txins) = RepeatN(self.txin_count, Named("txin", TxinFmt)).parse(&rest)?;
+            let (n1, txins) = RepeatN(self.txin_count, TxinFmt).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, txout_count) = VarInt::<true>.parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txouts) = RepeatN(txout_count, Named("txout", TxoutFmt)).parse(&rest)?;
+            let (n3, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
             let rest = rest.skip(n3);
             let (n4, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
             let rest = rest.skip(n4);
@@ -3355,9 +3351,9 @@ mod exec_impls {
             }
 
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
-            let l1 = (RepeatN(self.txin_count, Named("txin", TxinFmt))).prepare(txins)?;
+            let l1 = (RepeatN(self.txin_count, TxinFmt)).prepare(txins)?;
             let l2 = (VarInt::<true>).prepare(txout_count)?;
-            let l3 = (RepeatN(txout_count, Named("txout", TxoutFmt))).prepare(txouts)?;
+            let l3 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
             let l4 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),

@@ -175,7 +175,7 @@ mod tls_error_sanity {
         println!("TLS prepare error message: {}", msg);
         assert!(msg.contains("value failed a refinement predicate"));
         assert!(msg.contains(
-            "`hello_retry_extensions` -> `hello_retry_extension` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`"
+            "`hello_retry_extensions` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`"
         ));
     }
 

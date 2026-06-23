@@ -1452,7 +1452,7 @@ impl<'a> Analysis<'a> {
                     &wrap.combinator,
                     param_defns,
                     mode,
-                    named_invocations,
+                    false,
                 );
                 for const_comb in wrap.post.iter() {
                     let (c_fmt, c_val) = self.render_exec_tag_expr(const_comb, param_defns, mode);
@@ -1469,7 +1469,7 @@ impl<'a> Analysis<'a> {
                     inner,
                     param_defns,
                     mode,
-                    named_invocations,
+                    false,
                 );
                 quote! { Star(#inner_expr) }
             }
@@ -1481,7 +1481,7 @@ impl<'a> Analysis<'a> {
                     inner,
                     param_defns,
                     mode,
-                    named_invocations,
+                    false,
                 );
                 match self.eval_const_length_expr(len) {
                     Some(n) => {
@@ -1518,7 +1518,7 @@ impl<'a> Analysis<'a> {
                     inner,
                     param_defns,
                     mode,
-                    named_invocations,
+                    false,
                 );
                 quote! { Opt(#inner_expr) }
             }

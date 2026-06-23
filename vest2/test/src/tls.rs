@@ -26984,8 +26984,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("server_name", ServerNameFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (ServerNameFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerNameList {
@@ -27029,7 +27028,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("server_name", ServerNameFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (ServerNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27173,8 +27172,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("responder_id", ResponderIdFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (ResponderIdFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList {
@@ -27210,7 +27208,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("responder_id", ResponderIdFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (ResponderIdFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27581,8 +27579,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("named_group", NamedGroupFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (NamedGroupFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NamedGroupList {
@@ -27626,7 +27623,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("named_group", NamedGroupFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (NamedGroupFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27702,8 +27699,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("ec_point_format", EcPointFormatFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (EcPointFormatFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = EcPointFormatList {
@@ -27747,7 +27743,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("ec_point_format", EcPointFormatFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (EcPointFormatFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27868,8 +27864,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("signature_scheme", SignatureSchemeFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (SignatureSchemeFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SignatureSchemeList {
@@ -27913,7 +27908,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("signature_scheme", SignatureSchemeFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (SignatureSchemeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27971,8 +27966,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("srtp_protection_profile", SrtpProtectionProfileFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (SrtpProtectionProfileFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SrtpProtectionProfiles {
@@ -28016,7 +28010,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("srtp_protection_profile", SrtpProtectionProfileFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (SrtpProtectionProfileFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28231,8 +28225,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("protocol_name", ProtocolNameFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (ProtocolNameFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ProtocolNameList {
@@ -28276,7 +28269,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("protocol_name", ProtocolNameFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (ProtocolNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28334,8 +28327,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("serialized_sct", SerializedSctFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (SerializedSctFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SignedCertificateTimestampList {
@@ -28379,7 +28371,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("serialized_sct", SerializedSctFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (SerializedSctFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28452,8 +28444,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (CertificateTypeFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClientCertTypeClientExtension {
@@ -28497,7 +28488,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28572,8 +28563,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (CertificateTypeFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerCertTypeClientExtension {
@@ -28617,7 +28607,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("certificate_type", CertificateTypeFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28743,8 +28733,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, padding) = ExactLen (l, Star (Named ("zero_byte", ZeroByteFmt)))
-            .parse(&rest)?;
+            let (n2, padding) = ExactLen (l, Star (ZeroByteFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PaddingExtension {
@@ -28788,7 +28777,7 @@ mod exec_impls {
                 padding,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("zero_byte", ZeroByteFmt)))).prepare (padding) ?;
+            let l2 = (ExactLen (l, Star (ZeroByteFmt))).prepare (padding) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28937,8 +28926,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("psk_identity", PskIdentityFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (PskIdentityFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskIdentities {
@@ -28982,7 +28970,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("psk_identity", PskIdentityFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (PskIdentityFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29006,8 +28994,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("psk_binder_entry", PskBinderEntryFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (PskBinderEntryFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskBinderEntries {
@@ -29051,7 +29038,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("psk_binder_entry", PskBinderEntryFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (PskBinderEntryFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29283,8 +29270,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("protocol_version", ProtocolVersionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (ProtocolVersionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = SupportedVersionsClient {
@@ -29328,7 +29314,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("protocol_version", ProtocolVersionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (ProtocolVersionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29469,8 +29455,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("psk_key_exchange_mode", PskKeyExchangeModeFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (PskKeyExchangeModeFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PskKeyExchangeModes {
@@ -29514,7 +29499,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("psk_key_exchange_mode", PskKeyExchangeModeFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (PskKeyExchangeModeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29572,8 +29557,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("distinguished_name", DistinguishedNameFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (DistinguishedNameFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateAuthoritiesExtension {
@@ -29617,7 +29601,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("distinguished_name", DistinguishedNameFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (DistinguishedNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29697,8 +29681,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("oid_filter", OidFilterFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (OidFilterFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OidFilterExtension {
@@ -29734,7 +29717,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("oid_filter", OidFilterFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (OidFilterFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29830,8 +29813,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("key_share_entry", KeyShareEntryFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (KeyShareEntryFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = KeyShareClientHello {
@@ -29867,7 +29849,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("key_share_entry", KeyShareEntryFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (KeyShareEntryFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31354,8 +31336,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("cipher_suite", CipherSuiteFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (CipherSuiteFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CipherSuiteList {
@@ -31399,7 +31380,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("cipher_suite", CipherSuiteFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CipherSuiteFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31491,8 +31472,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("client_hello_extension", ClientHelloExtensionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (ClientHelloExtensionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClientExtensions {
@@ -31536,7 +31516,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("client_hello_extension", ClientHelloExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (ClientHelloExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31560,8 +31540,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("sever_hello_extension", SeverHelloExtensionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (SeverHelloExtensionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ServerExtensions {
@@ -31605,7 +31584,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("sever_hello_extension", SeverHelloExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (SeverHelloExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31629,8 +31608,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("hello_retry_extension", HelloRetryExtensionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (HelloRetryExtensionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = HelloRetryExtensions {
@@ -31674,7 +31652,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("hello_retry_extension", HelloRetryExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (HelloRetryExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31698,7 +31676,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("certificate_request_extension", CertificateRequestExtensionFmt)))
+            let (n2, list) = ExactLen (l, Star (CertificateRequestExtensionFmt))
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -31743,7 +31721,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("certificate_request_extension", CertificateRequestExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CertificateRequestExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31764,8 +31742,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("encrypted_extension", EncryptedExtensionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (EncryptedExtensionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = EncryptedExtensions {
@@ -31801,7 +31778,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("encrypted_extension", EncryptedExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (EncryptedExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31825,7 +31802,7 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("new_session_ticket_extension", NewSessionTicketExtensionFmt)))
+            let (n2, list) = ExactLen (l, Star (NewSessionTicketExtensionFmt))
             .parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -31870,7 +31847,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (Named ("new_session_ticket_extension", NewSessionTicketExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (NewSessionTicketExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31891,8 +31868,7 @@ mod exec_impls {
 
             let (n1, l) = U16Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("certificate_extension", CertificateExtensionFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (CertificateExtensionFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateExtensions {
@@ -31928,7 +31904,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("certificate_extension", CertificateExtensionFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CertificateExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -32146,8 +32122,7 @@ mod exec_impls {
 
             let (n1, l) = U24Be.parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen (l, Star (Named ("certificate_entry_opaque", CertificateEntryOpaqueFmt)))
-            .parse(&rest)?;
+            let (n2, list) = ExactLen (l, Star (CertificateEntryOpaqueFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CertificateList {
@@ -32183,7 +32158,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U24Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (Named ("certificate_entry_opaque", CertificateEntryOpaqueFmt)))).prepare (list) ?;
+            let l2 = (ExactLen (l, Star (CertificateEntryOpaqueFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
