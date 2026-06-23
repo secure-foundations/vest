@@ -144,47 +144,76 @@ impl DeepView for ChainParam {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-#[verifier::ext_equal]
-pub enum ChainA {
+pub enum ChainA<'i> {
     End(u8),
-    Step(u8, Box<ChainB>),
+    Step(u8, &'i [u8], u8, Box<ChainB<'i>>),
 }
 
-impl DeepView for ChainA {
-    type V = Self;
+#[verifier::ext_equal]
+pub enum ChainASpec {
+    End(u8),
+    Step(u8, Seq<u8>, u8, Box<ChainBSpec>),
+}
+
+pub open spec fn chain_a_view(a: &ChainA) -> ChainASpec
+    decreases a,
+{
+    match a {
+        ChainA::End(val) => ChainASpec::End(*val),
+        ChainA::Step(len, payload, next_tag, tail) => ChainASpec::Step(
+            *len,
+            payload.deep_view(),
+            *next_tag,
+            Box::new(chain_b_view(tail)),
+        ),
+    }
+}
+
+impl<'i> DeepView for ChainA<'i> {
+    type V = ChainASpec;
 
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        chain_a_view(self)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum ChainB<'i> {
+    End(u16),
+    Step(u32, u8, Box<ChainA<'i>>),
+}
+
 #[verifier::ext_equal]
-pub enum ChainB {
-    End(u8),
-    Step(u16, Box<ChainA>),
+pub enum ChainBSpec {
+    End(u16),
+    Step(u32, u8, Box<ChainASpec>),
 }
 
-impl DeepView for ChainB {
-    type V = Self;
-
-    open spec fn deep_view(&self) -> Self::V {
-        *self
+pub open spec fn chain_b_view(b: &ChainB) -> ChainBSpec
+    decreases b,
+{
+    match b {
+        ChainB::End(val) => ChainBSpec::End(*val),
+        ChainB::Step(payload, next_tag, tail) => ChainBSpec::Step(
+            *payload,
+            *next_tag,
+            Box::new(chain_a_view(tail)),
+        ),
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum ChainValue {
-    A { a: ChainA },
-    B { b: ChainB },
-}
-
-impl DeepView for ChainValue {
-    type V = Self;
+impl<'i> DeepView for ChainB<'i> {
+    type V = ChainBSpec;
 
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        chain_b_view(self)
     }
+}
+
+#[verifier::ext_equal]
+pub enum ChainValueSpec {
+    A { a: ChainASpec },
+    B { b: ChainBSpec },
 }
 
 // ============================================================
@@ -408,7 +437,9 @@ impl DeepView for WhichFmt2 {
 #[derive(Clone, Copy)]
 pub struct ByteListFmt<const LIMIT: usize>;
 
-pub type ByteListFmtSpec<const LIMIT: usize> = ByteListProj<FixWith<LIMIT, ByteListRecBody, WhichFmt2>>;
+pub type ByteListFmtSpec<const LIMIT: usize> = ByteListProj<
+    FixWith<LIMIT, ByteListRecBody, WhichFmt2>,
+>;
 
 impl<const LIMIT: usize> ByteListFmt<LIMIT> {
     pub open spec fn spec_inner() -> ByteListFmtSpec<LIMIT> {
@@ -416,9 +447,14 @@ impl<const LIMIT: usize> ByteListFmt<LIMIT> {
     }
 }
 
-pub type ByteListProj<Rec> = Mapped<Refined<Rec, PredFnSpec<ByteListValue>>, FnSpecMapper<ByteListValue, ByteListSpec>>;
+pub type ByteListProj<Rec> = Mapped<
+    Refined<Rec, PredFnSpec<ByteListValue>>,
+    FnSpecMapper<ByteListValue, ByteListSpec>,
+>;
 
-pub open spec fn byte_list_proj<Rec>(rec: Rec) -> ByteListProj<Rec> where Rec: SpecCombinator<T = ByteListValue> {
+pub open spec fn byte_list_proj<Rec>(rec: Rec) -> ByteListProj<Rec> where
+    Rec: SpecCombinator<T = ByteListValue>,
+ {
     Mapped {
         inner: Refined(rec, |v: ByteListValue| v is ByteList),
         mapper: (
@@ -437,7 +473,9 @@ pub struct ByteListRecBody;
 
 impl SpecRecBody for ByteListRecBody {
     type Param = WhichFmt2;
+
     type T = ByteListValue;
+
     type Body = ByteListBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
@@ -458,6 +496,7 @@ pub struct ByteListMapper;
 
 impl SpecMapper for ByteListMapper {
     type In = Sum<(), (u8, ByteListSpec)>;
+
     type Out = ByteListValue;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
@@ -476,7 +515,9 @@ impl SpecMapper for ByteListMapper {
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
             ByteListValue::ByteList { list: ByteListSpec::Nil } => Sum::Inl(()),
-            ByteListValue::ByteList { list: ByteListSpec::Cons(head, tail) } => Sum::Inr((head, *tail)),
+            ByteListValue::ByteList { list: ByteListSpec::Cons(head, tail) } => Sum::Inr(
+                (head, *tail),
+            ),
         }
     }
 }
@@ -484,7 +525,6 @@ impl SpecMapper for ByteListMapper {
 // ============================================================
 // Chain Mutually Recursive Format Specifications
 // ============================================================
-
 #[derive(Clone, Copy)]
 pub struct ChainAFmt<const LIMIT: usize> {
     pub tag: u8,
@@ -494,7 +534,12 @@ pub type ChainAFmtSpec<const LIMIT: usize> = ChainAProj<FixWith<LIMIT, ChainRecB
 
 impl<const LIMIT: usize> ChainAFmt<LIMIT> {
     pub open spec fn spec_inner(&self) -> ChainAFmtSpec<LIMIT> {
-        chain_a_proj(FixWith::<LIMIT, _, _>(ChainRecBody, ChainParam { which: WhichChain::A, tag: self.tag }))
+        chain_a_proj(
+            FixWith::<LIMIT, _, _>(
+                ChainRecBody,
+                ChainParam { which: WhichChain::A, tag: self.tag },
+            ),
+        )
     }
 }
 
@@ -507,41 +552,59 @@ pub type ChainBFmtSpec<const LIMIT: usize> = ChainBProj<FixWith<LIMIT, ChainRecB
 
 impl<const LIMIT: usize> ChainBFmt<LIMIT> {
     pub open spec fn spec_inner(&self) -> ChainBFmtSpec<LIMIT> {
-        chain_b_proj(FixWith::<LIMIT, _, _>(ChainRecBody, ChainParam { which: WhichChain::B, tag: self.tag }))
+        chain_b_proj(
+            FixWith::<LIMIT, _, _>(
+                ChainRecBody,
+                ChainParam { which: WhichChain::B, tag: self.tag },
+            ),
+        )
     }
 }
 
-pub type ChainAProj<Rec> = Mapped<Refined<Rec, PredFnSpec<ChainValue>>, FnSpecMapper<ChainValue, ChainA>>;
+pub type ChainAProj<Rec> = Mapped<
+    Refined<Rec, PredFnSpec<ChainValueSpec>>,
+    FnSpecMapper<ChainValueSpec, ChainASpec>,
+>;
 
-pub type ChainBProj<Rec> = Mapped<Refined<Rec, PredFnSpec<ChainValue>>, FnSpecMapper<ChainValue, ChainB>>;
+pub type ChainBProj<Rec> = Mapped<
+    Refined<Rec, PredFnSpec<ChainValueSpec>>,
+    FnSpecMapper<ChainValueSpec, ChainBSpec>,
+>;
 
-pub open spec fn chain_a_proj<Rec>(rec: Rec) -> ChainAProj<Rec> where Rec: SpecCombinator<T = ChainValue> {
+pub open spec fn chain_a_proj<Rec>(rec: Rec) -> ChainAProj<Rec> where
+    Rec: SpecCombinator<T = ChainValueSpec>,
+ {
     Mapped {
-        inner: Refined(rec, |v: ChainValue| v is A),
+        inner: Refined(rec, |v: ChainValueSpec| v is A),
         mapper: (
-            |v: ChainValue| -> ChainA { v->a },
-            |a: ChainA| -> ChainValue { ChainValue::A { a } },
+            |v: ChainValueSpec| -> ChainASpec { v->a },
+            |a: ChainASpec| -> ChainValueSpec { ChainValueSpec::A { a } },
         ),
     }
 }
 
-pub open spec fn chain_b_proj<Rec>(rec: Rec) -> ChainBProj<Rec> where Rec: SpecCombinator<T = ChainValue> {
+pub open spec fn chain_b_proj<Rec>(rec: Rec) -> ChainBProj<Rec> where
+    Rec: SpecCombinator<T = ChainValueSpec>,
+ {
     Mapped {
-        inner: Refined(rec, |v: ChainValue| v is B),
+        inner: Refined(rec, |v: ChainValueSpec| v is B),
         mapper: (
-            |v: ChainValue| -> ChainB { v->b },
-            |b: ChainB| -> ChainValue { ChainValue::B { b } },
+            |v: ChainValueSpec| -> ChainBSpec { v->b },
+            |b: ChainBSpec| -> ChainValueSpec { ChainValueSpec::B { b } },
         ),
     }
 }
 
 pub type ChainABodyFmt<Rec> = Mapped<
-    Sum<PrefixTagged<U8, Bind<U8, spec_fn(u8) -> ChainBProj<Rec>>>, Const<U8, u8>>,
+    Sum<
+        Refined<U8, PredFnSpec<u8>>,
+        Bind<U8, spec_fn(u8) -> Pair<Varied<u8>, Bind<U8, spec_fn(u8) -> ChainBProj<Rec>>>>,
+    >,
     ChainAMapper,
 >;
 
 pub type ChainBBodyFmt<Rec> = Mapped<
-    Sum<PrefixTagged<U8, Bind<U16Le, spec_fn(u16) -> ChainAProj<Rec>>>, Const<U8, u8>>,
+    Sum<Refined<U16Le, PredFnSpec<u16>>, Pair<U32Le, Bind<U8, spec_fn(u8) -> ChainAProj<Rec>>>>,
     ChainBMapper,
 >;
 
@@ -551,7 +614,9 @@ pub struct ChainRecBody;
 
 impl SpecRecBody for ChainRecBody {
     type Param = ChainParam;
-    type T = ChainValue;
+
+    type T = ChainValueSpec;
+
     type Body = ChainBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
@@ -569,7 +634,9 @@ pub struct ChainABodyRec;
 
 impl SpecRecBody for ChainABodyRec {
     type Param = ChainParam;
-    type T = ChainValue;
+
+    type T = ChainValueSpec;
+
     type Body = ChainABodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
@@ -578,15 +645,28 @@ impl SpecRecBody for ChainABodyRec {
     ) -> Self::Body {
         Mapped {
             inner: match param.tag {
-                0u8 => Sum::Inr(Const(U8, 0x00u8)),
-                _ => Sum::Inl(
-                    PrefixTagged(
+                0u8 => Sum::Inl(Refined(U8, |val: u8| val >= 1 && val <= 10)),
+                _ => Sum::Inr(
+                    Bind(
                         U8,
-                        param.tag,
-                        Bind(
-                            U8,
-                            |next_tag: u8| chain_b_proj(rec(ChainParam { which: WhichChain::B, tag: next_tag })),
-                        ),
+                        |len: u8|
+                            {
+                                Pair(
+                                    Varied::<u8>(len),
+                                    Bind(
+                                        U8,
+                                        |next_tag: u8|
+                                            chain_b_proj(
+                                                rec(
+                                                    ChainParam {
+                                                        which: WhichChain::B,
+                                                        tag: next_tag,
+                                                    },
+                                                ),
+                                            ),
+                                    ),
+                                )
+                            },
                     ),
                 ),
             },
@@ -599,7 +679,9 @@ pub struct ChainBBodyRec;
 
 impl SpecRecBody for ChainBBodyRec {
     type Param = ChainParam;
-    type T = ChainValue;
+
+    type T = ChainValueSpec;
+
     type Body = ChainBBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
@@ -608,16 +690,16 @@ impl SpecRecBody for ChainBBodyRec {
     ) -> Self::Body {
         Mapped {
             inner: match param.tag {
-                0u8 => Sum::Inr(Const(U8, 0x00u8)),
-                _ => Sum::Inl(
-                    PrefixTagged(
-                        U8,
-                        param.tag,
+                0u8 => Sum::Inl(Refined(U16Le, |val: u16| val >= 256)),
+                _ => Sum::Inr(
+                    Pair(
+                        U32Le,
                         Bind(
-                            U16Le,
-                            |next_tag: u16| {
-                                chain_a_proj(rec(ChainParam { which: WhichChain::A, tag: (next_tag % 256) as u8 }))
-                            },
+                            U8,
+                            |next_tag: u8|
+                                chain_a_proj(
+                                    rec(ChainParam { which: WhichChain::A, tag: next_tag }),
+                                ),
                         ),
                     ),
                 ),
@@ -630,13 +712,16 @@ impl SpecRecBody for ChainBBodyRec {
 pub struct ChainAMapper;
 
 impl SpecMapper for ChainAMapper {
-    type In = Sum<(u8, ChainB), u8>;
-    type Out = ChainValue;
+    type In = Sum<u8, (u8, (Seq<u8>, (u8, ChainBSpec)))>;
+
+    type Out = ChainValueSpec;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
-            Sum::Inl((next_tag, tail)) => ChainValue::A { a: ChainA::Step(next_tag, Box::new(tail)) },
-            Sum::Inr(val) => ChainValue::A { a: ChainA::End(val) },
+            Sum::Inl(val) => ChainValueSpec::A { a: ChainASpec::End(val) },
+            Sum::Inr((len, (payload, (next_tag, tail)))) => ChainValueSpec::A {
+                a: ChainASpec::Step(len, payload, next_tag, Box::new(tail)),
+            },
         }
     }
 
@@ -646,8 +731,10 @@ impl SpecMapper for ChainAMapper {
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
-            ChainValue::A { a: ChainA::Step(next_tag, tail) } => Sum::Inl((next_tag, *tail)),
-            ChainValue::A { a: ChainA::End(val) } => Sum::Inr(val),
+            ChainValueSpec::A { a: ChainASpec::End(val) } => Sum::Inl(val),
+            ChainValueSpec::A { a: ChainASpec::Step(len, payload, next_tag, tail) } => {
+                Sum::Inr((len, (payload, (next_tag, *tail))))
+            },
             _ => arbitrary(),
         }
     }
@@ -656,13 +743,16 @@ impl SpecMapper for ChainAMapper {
 pub struct ChainBMapper;
 
 impl SpecMapper for ChainBMapper {
-    type In = Sum<(u16, ChainA), u8>;
-    type Out = ChainValue;
+    type In = Sum<u16, (u32, (u8, ChainASpec))>;
+
+    type Out = ChainValueSpec;
 
     open spec fn spec_map(&self, i: Self::In) -> Self::Out {
         match i {
-            Sum::Inl((next_tag, tail)) => ChainValue::B { b: ChainB::Step(next_tag, Box::new(tail)) },
-            Sum::Inr(val) => ChainValue::B { b: ChainB::End(val) },
+            Sum::Inl(val) => ChainValueSpec::B { b: ChainBSpec::End(val) },
+            Sum::Inr((payload, (next_tag, tail))) => ChainValueSpec::B {
+                b: ChainBSpec::Step(payload, next_tag, Box::new(tail)),
+            },
         }
     }
 
@@ -672,8 +762,10 @@ impl SpecMapper for ChainBMapper {
 
     open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
         match o {
-            ChainValue::B { b: ChainB::Step(next_tag, tail) } => Sum::Inl((next_tag, *tail)),
-            ChainValue::B { b: ChainB::End(val) } => Sum::Inr(val),
+            ChainValueSpec::B { b: ChainBSpec::End(val) } => Sum::Inl(val),
+            ChainValueSpec::B { b: ChainBSpec::Step(payload, next_tag, tail) } => {
+                Sum::Inr((payload, (next_tag, *tail)))
+            },
             _ => arbitrary(),
         }
     }
@@ -1124,11 +1216,12 @@ mod derived_spec_proof {
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
             broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
         }
     }
 
     impl<const LIMIT: usize> SpecParser for ChainAFmt<LIMIT> {
-        type PVal = ChainA;
+        type PVal = ChainASpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self).spec_parse(ibuf)
@@ -1136,7 +1229,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> Consistency for ChainAFmt<LIMIT> {
-        type Val = ChainA;
+        type Val = ChainASpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
             Self::spec_inner(self).consistent(v)
@@ -1144,7 +1237,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecByteLen for ChainAFmt<LIMIT> {
-        type T = ChainA;
+        type T = ChainASpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self).byte_len(v)
@@ -1152,7 +1245,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecSerializerDps for ChainAFmt<LIMIT> {
-        type SValue = ChainA;
+        type SValue = ChainASpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self).spec_serialize_dps(v, obuf)
@@ -1160,7 +1253,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecSerializer for ChainAFmt<LIMIT> {
-        type SVal = ChainA;
+        type SVal = ChainASpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self).spec_serialize(v)
@@ -1168,7 +1261,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecParser for ChainBFmt<LIMIT> {
-        type PVal = ChainB;
+        type PVal = ChainBSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self).spec_parse(ibuf)
@@ -1176,7 +1269,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> Consistency for ChainBFmt<LIMIT> {
-        type Val = ChainB;
+        type Val = ChainBSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
             Self::spec_inner(self).consistent(v)
@@ -1184,7 +1277,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecByteLen for ChainBFmt<LIMIT> {
-        type T = ChainB;
+        type T = ChainBSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self).byte_len(v)
@@ -1192,7 +1285,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecSerializerDps for ChainBFmt<LIMIT> {
-        type SValue = ChainB;
+        type SValue = ChainBSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self).spec_serialize_dps(v, obuf)
@@ -1200,7 +1293,7 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SpecSerializer for ChainBFmt<LIMIT> {
-        type SVal = ChainB;
+        type SVal = ChainBSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self).spec_serialize(v)
@@ -1395,6 +1488,7 @@ mod derived_spec_proof {
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
             broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
         }
     }
 
@@ -1404,6 +1498,7 @@ mod derived_spec_proof {
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
             broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
         }
     }
 
@@ -1420,6 +1515,7 @@ mod derived_spec_proof {
             ChainBBodyRec::lemma_body_all_inv_preservation(param, rec);
         }
     }
+
 }
 
 // ============================================================
@@ -1728,7 +1824,11 @@ impl<const LIMIT: usize> ByteListFmt<LIMIT> {
                 LIMIT,
                 ByteListRecBody,
                 WhichFmt2,
-            >::spec_serialize_gas(gas as nat, WhichFmt2::BYTELIST, ByteListValue::ByteList { list: v.deep_view() }),
+            >::spec_serialize_gas(
+                gas as nat,
+                WhichFmt2::BYTELIST,
+                ByteListValue::ByteList { list: v.deep_view() },
+            ),
         decreases gas,
     {
         match v {
@@ -1804,7 +1904,7 @@ impl<const LIMIT: usize> Prepare<ByteList> for ByteListFmt<LIMIT> {
 }
 
 impl<const LIMIT: usize> ChainAFmt<LIMIT> {
-    fn parse_gas(&self, gas: usize, ibuf: &&[u8]) -> (r: PResult<ChainA>)
+    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ChainA<'i>>)
         ensures
             parse_matches_spec(
                 r,
@@ -1825,81 +1925,99 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
         let _ = ibuf.len();
         match self.tag {
             0u8 => {
-                let (n1, val) = Const(U8, 0x00u8).parse(ibuf)?;
-                Ok((n1, ChainA::End(val)))
+                let (n1, val) = U8.parse(ibuf)?;
+                if val >= 1 && val <= 10 {
+                    Ok((n1, ChainA::End(val)))
+                } else {
+                    Err(ParseError::cond_rejected())
+                }
             },
             _ => {
-                let (n1, _) = Const(U8, self.tag).parse(ibuf)?;
+                let (n1, len) = U8.parse(ibuf)?;
                 let rest = ibuf.skip(n1);
-                let (n2, next_tag) = U8.parse(&rest)?;
+                let (n2, payload) = Varied(len).parse(&rest)?;
                 let rest2 = rest.skip(n2);
+                let (n3, next_tag) = U8.parse(&rest2)?;
+                let rest3 = rest2.skip(n3);
                 if gas > 0 {
-                    let (n3, tail) = ChainBFmt::<LIMIT> { tag: next_tag }.parse_gas(gas - 1, &rest2)?;
-                    Ok((n1 + n2 + n3, ChainA::Step(next_tag, Box::new(tail))))
+                    let (n4, tail) = ChainBFmt::<LIMIT> { tag: next_tag }.parse_gas(
+                        gas - 1,
+                        &rest3,
+                    )?;
+                    Ok((n1 + n2 + n3 + n4, ChainA::Step(len, payload, next_tag, Box::new(tail))))
                 } else {
                     Err(ParseError::recursion_limit_exceeded())
                 }
-            }
+            },
         }
     }
 
-    fn serialize_gas(&self, gas: usize, v: &ChainA, obuf: &mut Vec<u8>)
+    fn serialize_gas<'i>(&self, gas: usize, v: &ChainA<'i>, obuf: &mut Vec<u8>)
         requires
             FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
                 gas as nat,
                 ChainParam { which: WhichChain::A, tag: self.tag },
-                ChainValue::A { a: v.deep_view() },
+                ChainValueSpec::A { a: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
                 ChainRecBody,
                 ChainParam,
-            >::spec_serialize_gas(gas as nat, ChainParam { which: WhichChain::A, tag: self.tag }, ChainValue::A { a: v.deep_view() }),
+            >::spec_serialize_gas(
+                gas as nat,
+                ChainParam { which: WhichChain::A, tag: self.tag },
+                ChainValueSpec::A { a: v.deep_view() },
+            ),
         decreases gas,
     {
         match v {
             ChainA::End(val) => {
                 U8.serialize(val, obuf);
             },
-            ChainA::Step(next_tag, tail) => {
-                U8.serialize(&self.tag, obuf);
+            ChainA::Step(len, payload, next_tag, tail) => {
+                U8.serialize(len, obuf);
+                Varied(*len).serialize(payload, obuf);
                 U8.serialize(next_tag, obuf);
                 ChainBFmt::<LIMIT> { tag: *next_tag }.serialize_gas(gas - 1, tail, obuf);
             },
         }
     }
 
-    fn prepare_gas(&self, gas: usize, v: &ChainA) -> (checked: Result<usize, PreSerializeError>)
+    fn prepare_gas<'i>(&self, gas: usize, v: &ChainA<'i>) -> (checked: Result<
+        usize,
+        PreSerializeError,
+    >)
         ensures
             checked matches Ok(len) ==> {
                 &&& FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
                     gas as nat,
                     ChainParam { which: WhichChain::A, tag: self.tag },
-                    ChainValue::A { a: v.deep_view() },
+                    ChainValueSpec::A { a: v.deep_view() },
                 )
                 &&& len == FixWith::<LIMIT, ChainRecBody, ChainParam>::byte_len_gas(
                     gas as nat,
                     ChainParam { which: WhichChain::A, tag: self.tag },
-                    ChainValue::A { a: v.deep_view() },
+                    ChainValueSpec::A { a: v.deep_view() },
                 )
             },
         decreases gas,
     {
         match v {
             ChainA::End(val) => {
-                if self.tag == 0u8 && *val == 0x00u8 {
+                if self.tag == 0u8 && *val >= 1 && *val <= 10 {
                     U8.prepare(val)
                 } else {
                     Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
                 }
             },
-            ChainA::Step(next_tag, tail) => {
+            ChainA::Step(len, payload, next_tag, tail) => {
                 if self.tag == 0u8 {
                     return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
                 }
-                let l1 = U8.prepare(&self.tag)?;
-                let l2 = U8.prepare(next_tag)?;
+                let l1 = U8.prepare(len)?;
+                let l2 = Varied(*len).prepare(payload)?;
+                let l3 = U8.prepare(next_tag)?;
                 if gas == 0 {
                     return Err(
                         PreSerializeError::not_compliant(
@@ -1907,9 +2025,10 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
                         ),
                     );
                 }
-                let l3 = ChainBFmt::<LIMIT> { tag: *next_tag }.prepare_gas(gas - 1, tail)?;
+                let l4 = ChainBFmt::<LIMIT> { tag: *next_tag }.prepare_gas(gas - 1, tail)?;
                 let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                let total = sum2.checked_add(l4).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
             },
         }
@@ -1917,7 +2036,7 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
 }
 
 impl<const LIMIT: usize> ChainBFmt<LIMIT> {
-    fn parse_gas(&self, gas: usize, ibuf: &&[u8]) -> (r: PResult<ChainB>)
+    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ChainB<'i>>)
         ensures
             parse_matches_spec(
                 r,
@@ -1938,83 +2057,95 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
         let _ = ibuf.len();
         match self.tag {
             0u8 => {
-                let (n1, val) = Const(U8, 0x00u8).parse(ibuf)?;
-                Ok((n1, ChainB::End(val)))
+                let (n1, val) = U16Le.parse(ibuf)?;
+                if val >= 256 {
+                    Ok((n1, ChainB::End(val)))
+                } else {
+                    Err(ParseError::cond_rejected())
+                }
             },
             _ => {
-                let (n1, _) = Const(U8, self.tag).parse(ibuf)?;
+                let (n1, payload) = U32Le.parse(ibuf)?;
                 let rest = ibuf.skip(n1);
-                let (n2, next_tag) = U16Le.parse(&rest)?;
+                let (n2, next_tag) = U8.parse(&rest)?;
                 let rest2 = rest.skip(n2);
                 if gas > 0 {
-                    let next_a_tag = (next_tag % 256) as u8;
-                    let (n3, tail) = ChainAFmt::<LIMIT> { tag: next_a_tag }.parse_gas(gas - 1, &rest2)?;
-                    Ok((n1 + n2 + n3, ChainB::Step(next_tag, Box::new(tail))))
+                    let (n3, tail) = ChainAFmt::<LIMIT> { tag: next_tag }.parse_gas(
+                        gas - 1,
+                        &rest2,
+                    )?;
+                    Ok((n1 + n2 + n3, ChainB::Step(payload, next_tag, Box::new(tail))))
                 } else {
                     Err(ParseError::recursion_limit_exceeded())
                 }
-            }
+            },
         }
     }
 
-    fn serialize_gas(&self, gas: usize, v: &ChainB, obuf: &mut Vec<u8>)
+    fn serialize_gas<'i>(&self, gas: usize, v: &ChainB<'i>, obuf: &mut Vec<u8>)
         requires
             FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
                 gas as nat,
                 ChainParam { which: WhichChain::B, tag: self.tag },
-                ChainValue::B { b: v.deep_view() },
+                ChainValueSpec::B { b: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
                 ChainRecBody,
                 ChainParam,
-            >::spec_serialize_gas(gas as nat, ChainParam { which: WhichChain::B, tag: self.tag }, ChainValue::B { b: v.deep_view() }),
+            >::spec_serialize_gas(
+                gas as nat,
+                ChainParam { which: WhichChain::B, tag: self.tag },
+                ChainValueSpec::B { b: v.deep_view() },
+            ),
         decreases gas,
     {
         match v {
             ChainB::End(val) => {
-                U8.serialize(val, obuf);
+                U16Le.serialize(val, obuf);
             },
-            ChainB::Step(next_tag, tail) => {
-                U8.serialize(&self.tag, obuf);
-                U16Le.serialize(next_tag, obuf);
-                let next_a_tag = (*next_tag % 256) as u8;
-                ChainAFmt::<LIMIT> { tag: next_a_tag }.serialize_gas(gas - 1, tail, obuf);
+            ChainB::Step(payload, next_tag, tail) => {
+                U32Le.serialize(payload, obuf);
+                U8.serialize(next_tag, obuf);
+                ChainAFmt::<LIMIT> { tag: *next_tag }.serialize_gas(gas - 1, tail, obuf);
             },
         }
     }
 
-    fn prepare_gas(&self, gas: usize, v: &ChainB) -> (checked: Result<usize, PreSerializeError>)
+    fn prepare_gas<'i>(&self, gas: usize, v: &ChainB<'i>) -> (checked: Result<
+        usize,
+        PreSerializeError,
+    >)
         ensures
             checked matches Ok(len) ==> {
                 &&& FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
                     gas as nat,
                     ChainParam { which: WhichChain::B, tag: self.tag },
-                    ChainValue::B { b: v.deep_view() },
+                    ChainValueSpec::B { b: v.deep_view() },
                 )
                 &&& len == FixWith::<LIMIT, ChainRecBody, ChainParam>::byte_len_gas(
                     gas as nat,
                     ChainParam { which: WhichChain::B, tag: self.tag },
-                    ChainValue::B { b: v.deep_view() },
+                    ChainValueSpec::B { b: v.deep_view() },
                 )
             },
         decreases gas,
     {
         match v {
             ChainB::End(val) => {
-                if self.tag == 0u8 && *val == 0x00u8 {
-                    U8.prepare(val)
+                if self.tag == 0u8 && *val >= 256 {
+                    U16Le.prepare(val)
                 } else {
                     Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
                 }
             },
-            ChainB::Step(next_tag, tail) => {
+            ChainB::Step(payload, next_tag, tail) => {
                 if self.tag == 0u8 {
                     return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
                 }
-                let l1 = U8.prepare(&self.tag)?;
-                let l2 = U16Le.prepare(next_tag)?;
+                let l1 = U32Le.prepare(payload)?;
+                let l2 = U8.prepare(next_tag)?;
                 if gas == 0 {
                     return Err(
                         PreSerializeError::not_compliant(
@@ -2022,8 +2153,7 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
                         ),
                     );
                 }
-                let next_a_tag = (*next_tag % 256) as u8;
-                let l3 = ChainAFmt::<LIMIT> { tag: next_a_tag }.prepare_gas(gas - 1, tail)?;
+                let l3 = ChainAFmt::<LIMIT> { tag: *next_tag }.prepare_gas(gas - 1, tail)?;
                 let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
                 let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
                 Ok(total)
@@ -2033,69 +2163,68 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
 }
 
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ChainAFmt<LIMIT> {
-    type PT = ChainA;
+    type PT = ChainA<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         self.parse_gas(LIMIT, ibuf)
     }
 }
 
-impl<const LIMIT: usize> Serializer<ChainA> for ChainAFmt<LIMIT> {
-    fn serialize(&self, v: &ChainA, obuf: &mut Vec<u8>) {
+impl<'i, const LIMIT: usize> Serializer<ChainA<'i>> for ChainAFmt<LIMIT> {
+    fn serialize(&self, v: &ChainA<'i>, obuf: &mut Vec<u8>) {
         self.serialize_gas(LIMIT, v, obuf);
     }
 }
 
-impl<const LIMIT: usize> Prepare<ChainA> for ChainAFmt<LIMIT> {
-    fn prepare(&self, v: &ChainA) -> Result<usize, PreSerializeError> {
+impl<'i, const LIMIT: usize> Prepare<ChainA<'i>> for ChainAFmt<LIMIT> {
+    fn prepare(&self, v: &ChainA<'i>) -> Result<usize, PreSerializeError> {
         self.prepare_gas(LIMIT, v)
     }
 }
 
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ChainBFmt<LIMIT> {
-    type PT = ChainB;
+    type PT = ChainB<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         self.parse_gas(LIMIT, ibuf)
     }
 }
 
-impl<const LIMIT: usize> Serializer<ChainB> for ChainBFmt<LIMIT> {
-    fn serialize(&self, v: &ChainB, obuf: &mut Vec<u8>) {
+impl<'i, const LIMIT: usize> Serializer<ChainB<'i>> for ChainBFmt<LIMIT> {
+    fn serialize(&self, v: &ChainB<'i>, obuf: &mut Vec<u8>) {
         self.serialize_gas(LIMIT, v, obuf);
     }
 }
 
-impl<const LIMIT: usize> Prepare<ChainB> for ChainBFmt<LIMIT> {
-    fn prepare(&self, v: &ChainB) -> Result<usize, PreSerializeError> {
+impl<'i, const LIMIT: usize> Prepare<ChainB<'i>> for ChainBFmt<LIMIT> {
+    fn prepare(&self, v: &ChainB<'i>) -> Result<usize, PreSerializeError> {
         self.prepare_gas(LIMIT, v)
     }
 }
 
 } // verus!
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn chain_mutual_exec_roundtrip() {
+        let payload: &[u8] = &[10, 20, 30];
         let chain = ChainA::Step(
-            2,
-            Box::new(ChainB::Step(
-                0,
-                Box::new(ChainA::End(0)),
-            )),
+            3,
+            payload,
+            1,
+            Box::new(ChainB::Step(0x12345678, 0, Box::new(ChainA::End(5)))),
         );
 
         let fmt = ChainAFmt::<10> { tag: 1 };
         let mut obuf = Vec::new();
         fmt.serialize(&chain, &mut obuf);
-        assert_eq!(obuf, vec![1, 2, 2, 0, 0, 0]);
+        assert_eq!(obuf, vec![3, 10, 20, 30, 1, 0x78, 0x56, 0x34, 0x12, 0, 5]);
 
         let mut ibuf = obuf.as_slice();
         let (n, parsed) = fmt.parse(&&mut ibuf).unwrap();
-        assert_eq!(n, 6);
+        assert_eq!(n, 11);
         assert_eq!(parsed, chain);
     }
 }
