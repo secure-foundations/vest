@@ -38,7 +38,7 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     /// 𝚞𝑁	::=	𝑛:𝚋𝚢𝚝𝚎          		⇒		𝑛		if 𝑛 < 2^7
     ///
     /// |	𝑛:𝚋𝚢𝚝𝚎  𝑚:𝚞(𝑁−7)		⇒		2^7 * 𝑚 + (𝑛 − 2^7)		  if 𝑛 >= 2^7
-    open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+    open spec fn spec_body(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
         Alt(
             terminal_byte_nat(),
             Mapped {
@@ -214,6 +214,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> SafeParserRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_body_safe_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -222,6 +223,7 @@ mod leb128_derived_proofs {
 
     impl SoundParserRecBody for ULeb128RecBody<true> {
         proof fn lemma_body_sound_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -230,6 +232,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> NoLookAheadRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_body_no_lookahead_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -239,6 +242,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> ProductiveRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_body_productive_inv_preservation(
+            &self,
             param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -247,6 +251,7 @@ mod leb128_derived_proofs {
 
     impl NonMalleableRecBody for ULeb128RecBody<true> {
         proof fn lemma_body_nonmal_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -255,6 +260,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> GoodSerializerRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_s_body_serialize_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -263,6 +269,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> NonTailFmtRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_s_body_dps_serialize_dps_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -271,6 +278,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> SPRoundTripDpsRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_body_sp_roundtrip_dps_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
@@ -280,6 +288,7 @@ mod leb128_derived_proofs {
 
     impl<const MINIMAL: bool> EquivSerializersGeneralRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_s_body_equiv_general_inv_preservation(
+            &self,
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {

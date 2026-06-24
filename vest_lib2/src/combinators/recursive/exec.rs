@@ -36,7 +36,7 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
                     spec_rec(pp.deep_view()).2(i@),
                 ),
         ensures
-            parse_matches_spec(r, Self::spec_body(param.deep_view(), spec_rec).spec_parse(ibuf@)),
+            parse_matches_spec(r, self.spec_body(param.deep_view(), spec_rec).spec_parse(ibuf@)),
     ;
 }
 
@@ -56,7 +56,7 @@ pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
         obuf: &mut Vec<u8>,
     ) where Exec: Fn(&Self::EP, &T, &mut Vec<u8>)
         requires
-            Self::spec_body(param.deep_view(), spec_rec).consistent(v.deep_view()),
+            self.spec_body(param.deep_view(), spec_rec).consistent(v.deep_view()),
             forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
                 spec_rec(pp.deep_view()).0(vv.deep_view()) ==> call_requires(
                     exec_rec,
@@ -67,10 +67,9 @@ pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
                     pp.deep_view(),
                 ).3(vv.deep_view()),
         ensures
-            final(obuf)@ == old(obuf)@ + Self::spec_body(
-                param.deep_view(),
-                spec_rec,
-            ).spec_serialize(v.deep_view()),
+            final(obuf)@ == old(obuf)@ + self.spec_body(param.deep_view(), spec_rec).spec_serialize(
+                v.deep_view(),
+            ),
     ;
 }
 
@@ -99,8 +98,8 @@ pub trait PrepareRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
                 }),
         ensures
             checked matches Ok(len) ==> {
-                &&& Self::spec_body(param.deep_view(), spec_rec).consistent(v.deep_view())
-                &&& len == Self::spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view())
+                &&& self.spec_body(param.deep_view(), spec_rec).consistent(v.deep_view())
+                &&& len == self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view())
             },
     ;
 }
@@ -116,12 +115,12 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         Body::Body: SafeParser,
 
         ensures
-            parse_matches_spec(r, Self::spec_parse_gas(gas as nat, param.deep_view(), ibuf@)),
+            parse_matches_spec(r, self.spec_parse_gas(gas as nat, param.deep_view(), ibuf@)),
         decreases gas,
     {
         let exec_callback = |pp: &Param, i: &I| -> (rr: PResult<Body::O>)
             ensures
-                parse_matches_spec(rr, Self::spec_parse_callback(gas as nat, pp.deep_view())(i@)),
+                parse_matches_spec(rr, self.spec_parse_callback(gas as nat, pp.deep_view())(i@)),
             {
                 if gas > 0 {
                     self.parse_gas((gas - 1) as usize, pp, i)
@@ -130,7 +129,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
                 }
             };
 
-        let ghost spec_callback = Self::specs_callback(gas as nat);
+        let ghost spec_callback = self.specs_callback(gas as nat);
         proof {
             assert forall|p: Body::Param, input: Seq<u8>| #[trigger]
                 spec_callback(p).2(input) matches Some((n, _v)) ==> 0 <= n <= input.len() by {
@@ -154,9 +153,9 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         Body: SerializerRecBody<T, EP = Param>,
 
         requires
-            Self::consistent_gas(gas as nat, param.deep_view(), v.deep_view()),
+            self.consistent_gas(gas as nat, param.deep_view(), v.deep_view()),
         ensures
-            final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
+            final(obuf)@ == old(obuf)@ + self.spec_serialize_gas(
                 gas as nat,
                 param.deep_view(),
                 v.deep_view(),
@@ -165,9 +164,9 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     {
         let exec_callback = |pp: &Param, vv: &T, oo: &mut Vec<u8>| -> ()
             requires
-                Self::consistent_callback(gas as nat, pp.deep_view())(vv.deep_view()),
+                self.consistent_callback(gas as nat, pp.deep_view())(vv.deep_view()),
             ensures
-                final(oo)@ == old(oo)@ + Self::spec_serialize_callback(gas as nat, pp.deep_view())(
+                final(oo)@ == old(oo)@ + self.spec_serialize_callback(gas as nat, pp.deep_view())(
                     vv.deep_view(),
                 ),
             {
@@ -176,7 +175,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
                 }
             };
 
-        let ghost spec_callback = Self::specs_callback(gas as nat);
+        let ghost spec_callback = self.specs_callback(gas as nat);
         self.0.serialize_body(param, Ghost(spec_callback), exec_callback, v, obuf)
     }
 
@@ -190,16 +189,16 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         ensures
             checked matches Ok(len) ==> {
-                &&& Self::consistent_gas(gas as nat, param.deep_view(), v.deep_view())
-                &&& len == Self::byte_len_gas(gas as nat, param.deep_view(), v.deep_view())
+                &&& self.consistent_gas(gas as nat, param.deep_view(), v.deep_view())
+                &&& len == self.byte_len_gas(gas as nat, param.deep_view(), v.deep_view())
             },
         decreases gas,
     {
         let exec_callback = |pp: &Param, vv: &T| -> (rr: Result<usize, PreSerializeError>)
             ensures
                 rr matches Ok(len) ==> {
-                    &&& Self::consistent_callback(gas as nat, pp.deep_view())(vv.deep_view())
-                    &&& len == Self::byte_len_callback(gas as nat, pp.deep_view())(vv.deep_view())
+                    &&& self.consistent_callback(gas as nat, pp.deep_view())(vv.deep_view())
+                    &&& len == self.byte_len_callback(gas as nat, pp.deep_view())(vv.deep_view())
                 },
             {
                 if gas > 0 {
@@ -213,7 +212,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
                 }
             };
 
-        let ghost spec_callback = Self::specs_callback(gas as nat);
+        let ghost spec_callback = self.specs_callback(gas as nat);
         self.0.prepare_body(param, Ghost(spec_callback), exec_callback, v)
     }
 }

@@ -109,6 +109,7 @@ impl SpecRecBody for TreeNodeRecBody {
     type Body  = BundledSpecs<TreeNodeValueSpec>;
 
     open spec fn spec_body(
+        &self,
         _which: Self::Param,
         _rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
@@ -119,6 +120,7 @@ impl SpecRecBody for TreeNodeRecBody {
 impl StrictRecBody for TreeNodeRecBody {
     #[verifier::external_body]
     proof fn lemma_body_all_inv_preservation(
+        &self,
         _param: Self::Param,
         _rec: ParamRecSpecs<Self::Param, Self::T>,
     ) {}

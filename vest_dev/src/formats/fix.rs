@@ -116,7 +116,7 @@ impl SpecRecBody for NestedBracesBody {
 
     type Body = NestedBracesBodyComb<BundledSpecs<Self::T>>;
 
-    open spec fn spec_body(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+    open spec fn spec_body(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
         nested_braces_body(rec(()))
     }
 }
@@ -207,7 +207,7 @@ impl PrepareRecBody<NestedBracesT> for NestedBracesBody {
 }
 
 impl StrictRecBody for NestedBracesBody {
-    proof fn lemma_body_all_inv_preservation(_param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
+    proof fn lemma_body_all_inv_preservation(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
         reveal(disjoint_domains);
     }
 }
@@ -220,7 +220,7 @@ proof fn nested_braces_sound_parser() {
     assert(nested_braces.spec_parse(input) == Some(
         (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
     )) by {
-        let cb = FixWith::<10, NestedBracesBody, ()>::specs_callback(10);
+        let cb = nested_braces.specs_callback(10);
         let body10 = nested_braces_body(cb(()));
         assert(body10.spec_parse(input) == Some(
             (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
@@ -269,6 +269,7 @@ impl SpecRecBody for TaggedChainBody {
     type Body = TaggedChainBodyComb<ParamRecSpecs<Self::Param, Self::T>>;
 
     open spec fn spec_body(
+        &self,
         current_tag: Self::Param,
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
@@ -400,6 +401,7 @@ impl PrepareRecBody<TaggedChainT> for TaggedChainBody {
 
 impl StrictRecBody for TaggedChainBody {
     proof fn lemma_body_all_inv_preservation(
+        &self,
         _param: Self::Param,
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) {
