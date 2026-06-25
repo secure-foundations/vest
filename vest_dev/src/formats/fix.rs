@@ -220,7 +220,7 @@ proof fn nested_braces_sound_parser() {
     assert(nested_braces.spec_parse(input) == Some(
         (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
     )) by {
-        let cb = nested_braces.specs_callback(10);
+        let cb = FixWith::<10, NestedBracesBody, ()>::specs_callback(&NestedBracesBody, 10);
         let body10 = nested_braces_body(cb(()));
         assert(body10.spec_parse(input) == Some(
             (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),

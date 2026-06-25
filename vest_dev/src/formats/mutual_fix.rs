@@ -608,43 +608,43 @@ mod derived_spec_proof {
         }
     }
 
-    impl StrictRecBody for ExprRecBody {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+}
 
-        }
+impl StrictRecBody for ExprRecBody {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        broadcast use crate::combinators::disjoint::disjointness_lemmas;
+
     }
+}
 
-    impl StrictRecBody for ListRecBody {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+impl StrictRecBody for ListRecBody {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
-        }
     }
+}
 
-    impl StrictRecBody for ExprListRecBody {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            hide(<ExprRecBody as SpecRecBody>::spec_body);
-            hide(<ListRecBody as SpecRecBody>::spec_body);
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
+impl StrictRecBody for ExprListRecBody {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        hide(<ExprRecBody as SpecRecBody>::spec_body);
+        hide(<ListRecBody as SpecRecBody>::spec_body);
+        broadcast use crate::combinators::disjoint::disjointness_lemmas;
 
-            ExprRecBody.lemma_body_all_inv_preservation(WhichFmt::EXPR, rec);
-            ListRecBody.lemma_body_all_inv_preservation(WhichFmt::LIST, rec);
-        }
+        ExprRecBody.lemma_body_all_inv_preservation(WhichFmt::EXPR, rec);
+        ListRecBody.lemma_body_all_inv_preservation(WhichFmt::LIST, rec);
     }
-
 }
 
 // ============================================================
@@ -809,7 +809,8 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::EXPR).spec_parse_gas(
+                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>::spec_parse_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::EXPR,
                     ibuf@,
@@ -846,7 +847,8 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
 
     fn serialize_gas(&self, gas: usize, v: &Expr, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::EXPR).consistent_gas(
+            FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                &ExprListRecBody,
                 gas as nat,
                 WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
@@ -856,7 +858,8 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
                 LIMIT,
                 ExprListRecBody,
                 WhichFmt,
-            >(ExprListRecBody, WhichFmt::EXPR).spec_serialize_gas(
+            >::spec_serialize_gas(
+                &ExprListRecBody,
                 gas as nat,
                 WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
@@ -878,12 +881,14 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
     fn prepare_gas(&self, gas: usize, v: &Expr) -> (checked: Result<usize, PreSerializeError>)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::EXPR).consistent_gas(
+                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::EXPR,
                     ValueSpec::Expr { expr: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::EXPR).byte_len_gas(
+                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::EXPR,
                     ValueSpec::Expr { expr: v.deep_view() },
@@ -920,7 +925,8 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::LIST).spec_parse_gas(
+                match FixWith::<LIMIT, ExprListRecBody, WhichFmt>::spec_parse_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::LIST,
                     ibuf@,
@@ -955,7 +961,8 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
 
     fn serialize_gas(&self, gas: usize, v: &List, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::LIST).consistent_gas(
+            FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                &ExprListRecBody,
                 gas as nat,
                 WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
@@ -965,7 +972,8 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
                 LIMIT,
                 ExprListRecBody,
                 WhichFmt,
-            >(ExprListRecBody, WhichFmt::LIST).spec_serialize_gas(
+            >::spec_serialize_gas(
+                &ExprListRecBody,
                 gas as nat,
                 WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
@@ -987,12 +995,14 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
     fn prepare_gas(&self, gas: usize, v: &List) -> (checked: Result<usize, PreSerializeError>)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::LIST).consistent_gas(
+                &&& FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::LIST,
                     ValueSpec::List { list: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>(ExprListRecBody, WhichFmt::LIST).byte_len_gas(
+                &&& len == FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    &ExprListRecBody,
                     gas as nat,
                     WhichFmt::LIST,
                     ValueSpec::List { list: v.deep_view() },
@@ -1099,7 +1109,11 @@ impl SpecRecBody for ByteListRecBody {
 
     type Body = ByteListBodyFmt<BundledSpecs<Self::T>>;
 
-    open spec fn spec_body(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+    open spec fn spec_body(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
         Mapped {
             inner: Choice(
                 PrefixTagged(U8, 0x20u8, Empty),
