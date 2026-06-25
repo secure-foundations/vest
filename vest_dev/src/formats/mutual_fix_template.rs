@@ -279,7 +279,7 @@ pub enum SCC1 {
 }
 
 # [derive (Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub enum WhichSCC1 {
+pub enum SCC1Which {
     EXPR,
     LIST,
     EXPRV,
@@ -287,7 +287,7 @@ pub enum WhichSCC1 {
     LISTV,
 }
 
-impl DeepView for WhichSCC1 {
+impl DeepView for SCC1Which {
     type V = Self;
 
     open spec fn deep_view(&self) -> Self::V {
@@ -296,144 +296,18 @@ impl DeepView for WhichSCC1 {
 }
 
 # [derive (Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub struct ExprListParam {
-    pub which: WhichSCC1,
+pub struct SCC1Param {
+    pub which: SCC1Which,
     pub expr_kind: ExprKind,
     pub list_kind: ListKind,
 }
 
-impl DeepView for ExprListParam {
+impl DeepView for SCC1Param {
     type V = Self;
 
     open spec fn deep_view(&self) -> Self::V {
         *self
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[verifier::ext_equal]
-pub enum ByteList {
-    Nil,
-    Cons(u8, Box<ByteList>),
-}
-
-pub type ByteListSpec = ByteList;
-
-impl DeepView for ByteList {
-    type V = ByteListSpec;
-
-    open spec fn deep_view(&self) -> Self::V {
-        *self
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum ByteListValue {
-    ByteList { list: ByteList },
-}
-
-// ============================================================
-// Chain Mutually Recursive Data Types
-// ============================================================
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub enum WhichChain {
-    A,
-    B,
-}
-
-impl DeepView for WhichChain {
-    type V = Self;
-
-    open spec fn deep_view(&self) -> Self::V {
-        *self
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub struct ChainParam {
-    pub which: WhichChain,
-    pub tag: u8,
-}
-
-impl DeepView for ChainParam {
-    type V = Self;
-
-    open spec fn deep_view(&self) -> Self::V {
-        *self
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum ChainA<'i> {
-    End(u8),
-    Step(u8, &'i [u8], u8, Box<ChainB<'i>>),
-}
-
-#[verifier::ext_equal]
-pub enum ChainASpec {
-    End(u8),
-    Step(u8, Seq<u8>, u8, Box<ChainBSpec>),
-}
-
-pub open spec fn chain_a_view(a: &ChainA) -> ChainASpec
-    decreases a,
-{
-    match a {
-        ChainA::End(val) => ChainASpec::End(*val),
-        ChainA::Step(len, payload, next_tag, tail) => ChainASpec::Step(
-            *len,
-            payload.deep_view(),
-            *next_tag,
-            Box::new(chain_b_view(tail)),
-        ),
-    }
-}
-
-impl<'i> DeepView for ChainA<'i> {
-    type V = ChainASpec;
-
-    open spec fn deep_view(&self) -> Self::V {
-        chain_a_view(self)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum ChainB<'i> {
-    End(u16),
-    Step(u32, u8, Box<ChainA<'i>>),
-}
-
-#[verifier::ext_equal]
-pub enum ChainBSpec {
-    End(u16),
-    Step(u32, u8, Box<ChainASpec>),
-}
-
-pub open spec fn chain_b_view(b: &ChainB) -> ChainBSpec
-    decreases b,
-{
-    match b {
-        ChainB::End(val) => ChainBSpec::End(*val),
-        ChainB::Step(payload, next_tag, tail) => ChainBSpec::Step(
-            *payload,
-            *next_tag,
-            Box::new(chain_a_view(tail)),
-        ),
-    }
-}
-
-impl<'i> DeepView for ChainB<'i> {
-    type V = ChainBSpec;
-
-    open spec fn deep_view(&self) -> Self::V {
-        chain_b_view(self)
-    }
-}
-
-#[verifier::ext_equal]
-pub enum ChainValueSpec {
-    A { a: ChainASpec },
-    B { b: ChainBSpec },
 }
 
 // ============================================================
@@ -578,70 +452,66 @@ pub open spec fn list_v_proj<Rec>(rec: Rec) -> ListVProj<Rec> where Rec: SpecCom
     }
 }
 
-pub type ExprFmtSpec<const LIMIT: usize> = ExprProj<FixWith<LIMIT, ExprListRecBody, ExprListParam>>;
+pub type ExprFmtSpec<const LIMIT: usize> = ExprProj<FixWith<LIMIT, SCC1RecBody, SCC1Param>>;
 
 # [derive (Clone, Copy)]
 pub struct ExprFmt<const LIMIT: usize>;
 
 impl<const LIMIT: usize> ExprFmt<LIMIT> {
-    pub open spec fn spec_inner() -> ExprProj<FixWith<LIMIT, ExprListRecBody, ExprListParam>> {
+    pub open spec fn spec_inner() -> ExprFmtSpec<LIMIT> {
         expr_proj(
             FixWith::<LIMIT, _, _>(
-                ExprListRecBody,
-                ExprListParam {
-                    which: WhichSCC1::EXPR,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
+                SCC1RecBody,
+                SCC1Param {
+                    which: SCC1Which::EXPR,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
                 },
             ),
         )
     }
 }
 
-pub type ListFmtSpec<const LIMIT: usize> = ListProj<FixWith<LIMIT, ExprListRecBody, ExprListParam>>;
+pub type ListFmtSpec<const LIMIT: usize> = ListProj<FixWith<LIMIT, SCC1RecBody, SCC1Param>>;
 
 # [derive (Clone, Copy)]
 pub struct ListFmt<const LIMIT: usize>;
 
 impl<const LIMIT: usize> ListFmt<LIMIT> {
-    pub open spec fn spec_inner() -> ListProj<FixWith<LIMIT, ExprListRecBody, ExprListParam>> {
+    pub open spec fn spec_inner() -> ListFmtSpec<LIMIT> {
         list_proj(
             FixWith::<LIMIT, _, _>(
-                ExprListRecBody,
-                ExprListParam {
-                    which: WhichSCC1::LIST,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
+                SCC1RecBody,
+                SCC1Param {
+                    which: SCC1Which::LIST,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
                 },
             ),
         )
     }
 }
 
-pub type ExprVFmtSpec<const LIMIT: usize> = ExprVProj<
-    FixWith<LIMIT, ExprListRecBody, ExprListParam>,
->;
+pub type ExprVFmtSpec<const LIMIT: usize> = ExprVProj<FixWith<LIMIT, SCC1RecBody, SCC1Param>>;
 
 # [derive (Clone, Copy)]
-pub struct ExprVFmt<const LIMIT: usize>;
+pub struct ExprVFmt<const LIMIT: usize> {
+    pub expr_kind: ExprKind,
+}
 
 impl<const LIMIT: usize> ExprVFmt<LIMIT> {
-    pub open spec fn spec_inner() -> ExprVFmtSpec<LIMIT> {
+    pub open spec fn spec_inner(expr_kind: ExprKind) -> ExprVFmtSpec<LIMIT> {
         expr_v_proj(
             FixWith::<LIMIT, _, _>(
-                ExprListRecBody,
-                ExprListParam {
-                    which: WhichSCC1::EXPRV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
+                SCC1RecBody,
+                SCC1Param { which: SCC1Which::EXPRV, expr_kind, list_kind: arbitrary() },
             ),
         )
     }
 }
 
 pub type ListVConsFmtSpec<const LIMIT: usize> = ListVConsProj<
-    FixWith<LIMIT, ExprListRecBody, ExprListParam>,
+    FixWith<LIMIT, SCC1RecBody, SCC1Param>,
 >;
 
 # [derive (Clone, Copy)]
@@ -651,34 +521,30 @@ impl<const LIMIT: usize> ListVConsFmt<LIMIT> {
     pub open spec fn spec_inner() -> ListVConsFmtSpec<LIMIT> {
         list_v_cons_proj(
             FixWith::<LIMIT, _, _>(
-                ExprListRecBody,
-                ExprListParam {
-                    which: WhichSCC1::LISTVCONS,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
+                SCC1RecBody,
+                SCC1Param {
+                    which: SCC1Which::LISTVCONS,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
                 },
             ),
         )
     }
 }
 
-pub type ListVFmtSpec<const LIMIT: usize> = ListVProj<
-    FixWith<LIMIT, ExprListRecBody, ExprListParam>,
->;
+pub type ListVFmtSpec<const LIMIT: usize> = ListVProj<FixWith<LIMIT, SCC1RecBody, SCC1Param>>;
 
 # [derive (Clone, Copy)]
-pub struct ListVFmt<const LIMIT: usize>;
+pub struct ListVFmt<const LIMIT: usize> {
+    pub list_kind: ListKind,
+}
 
 impl<const LIMIT: usize> ListVFmt<LIMIT> {
-    pub open spec fn spec_inner() -> ListVFmtSpec<LIMIT> {
+    pub open spec fn spec_inner(list_kind: ListKind) -> ListVFmtSpec<LIMIT> {
         list_v_proj(
             FixWith::<LIMIT, _, _>(
-                ExprListRecBody,
-                ExprListParam {
-                    which: WhichSCC1::LISTV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
+                SCC1RecBody,
+                SCC1Param { which: SCC1Which::LISTV, expr_kind: arbitrary(), list_kind },
             ),
         )
     }
@@ -812,19 +678,19 @@ impl SpecMapper for ListVMapper {
     }
 }
 
-pub type ExprBodyFmt = Mapped<
-    Bind<ExprKindFmt, spec_fn(ExprKindSpec) -> ExprVProj<BundledSpecs<SCC1>>>,
+pub type ExprBodyFmt<Rec> = Mapped<
+    Bind<ExprKindFmt, spec_fn(ExprKindSpec) -> ExprVProj<Rec>>,
     ExprMapper,
 >;
 
 pub struct ExprBodyRec;
 
 impl SpecRecBody for ExprBodyRec {
-    type Param = ExprListParam;
+    type Param = SCC1Param;
 
     type T = SCC1;
 
-    type Body = ExprBodyFmt;
+    type Body = ExprBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
         &self,
@@ -837,10 +703,10 @@ impl SpecRecBody for ExprBodyRec {
                 |t: ExprKindSpec|
                     expr_v_proj(
                         rec(
-                            ExprListParam {
-                                which: WhichSCC1::EXPRV,
+                            SCC1Param {
+                                which: SCC1Which::EXPRV,
                                 expr_kind: t,
-                                list_kind: ListKind::Nil,
+                                list_kind: arbitrary(),
                             },
                         ),
                     ),
@@ -850,19 +716,19 @@ impl SpecRecBody for ExprBodyRec {
     }
 }
 
-pub type ListBodyFmt = Mapped<
-    Bind<ListKindFmt, spec_fn(ListKindSpec) -> ListVProj<BundledSpecs<SCC1>>>,
+pub type ListBodyFmt<Rec> = Mapped<
+    Bind<ListKindFmt, spec_fn(ListKindSpec) -> ListVProj<Rec>>,
     ListMapper,
 >;
 
 pub struct ListBodyRec;
 
 impl SpecRecBody for ListBodyRec {
-    type Param = ExprListParam;
+    type Param = SCC1Param;
 
     type T = SCC1;
 
-    type Body = ListBodyFmt;
+    type Body = ListBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
         &self,
@@ -875,9 +741,9 @@ impl SpecRecBody for ListBodyRec {
                 |t: ListKindSpec|
                     list_v_proj(
                         rec(
-                            ExprListParam {
-                                which: WhichSCC1::LISTV,
-                                expr_kind: ExprKind::Num,
+                            SCC1Param {
+                                which: SCC1Which::LISTV,
+                                expr_kind: arbitrary(),
                                 list_kind: t,
                             },
                         ),
@@ -888,16 +754,16 @@ impl SpecRecBody for ListBodyRec {
     }
 }
 
-pub type ExprVBodyFmt = Mapped<Sum<U8, ListProj<BundledSpecs<SCC1>>>, ExprVMapper>;
+pub type ExprVBodyFmt<Rec> = Mapped<Sum<U8, ListProj<Rec>>, ExprVMapper>;
 
 pub struct ExprVBodyRec;
 
 impl SpecRecBody for ExprVBodyRec {
-    type Param = ExprListParam;
+    type Param = SCC1Param;
 
     type T = SCC1;
 
-    type Body = ExprVBodyFmt;
+    type Body = ExprVBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
         &self,
@@ -910,10 +776,10 @@ impl SpecRecBody for ExprVBodyRec {
                 ExprKind::Group => Sum::Inr(
                     list_proj(
                         rec(
-                            ExprListParam {
-                                which: WhichSCC1::LIST,
-                                expr_kind: ExprKind::Num,
-                                list_kind: ListKind::Nil,
+                            SCC1Param {
+                                which: SCC1Which::LIST,
+                                expr_kind: arbitrary(),
+                                list_kind: arbitrary(),
                             },
                         ),
                     ),
@@ -924,19 +790,16 @@ impl SpecRecBody for ExprVBodyRec {
     }
 }
 
-pub type ListVConsBodyFmt = Mapped<
-    Pair<ExprProj<BundledSpecs<SCC1>>, ListProj<BundledSpecs<SCC1>>>,
-    ListVConsMapper,
->;
+pub type ListVConsBodyFmt<Rec> = Mapped<Pair<ExprProj<Rec>, ListProj<Rec>>, ListVConsMapper>;
 
 pub struct ListVConsBodyRec;
 
 impl SpecRecBody for ListVConsBodyRec {
-    type Param = ExprListParam;
+    type Param = SCC1Param;
 
     type T = SCC1;
 
-    type Body = ListVConsBodyFmt;
+    type Body = ListVConsBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
         &self,
@@ -947,19 +810,19 @@ impl SpecRecBody for ListVConsBodyRec {
             inner: Pair(
                 expr_proj(
                     rec(
-                        ExprListParam {
-                            which: WhichSCC1::EXPR,
-                            expr_kind: ExprKind::Num,
-                            list_kind: ListKind::Nil,
+                        SCC1Param {
+                            which: SCC1Which::EXPR,
+                            expr_kind: arbitrary(),
+                            list_kind: arbitrary(),
                         },
                     ),
                 ),
                 list_proj(
                     rec(
-                        ExprListParam {
-                            which: WhichSCC1::LIST,
-                            expr_kind: ExprKind::Num,
-                            list_kind: ListKind::Nil,
+                        SCC1Param {
+                            which: SCC1Which::LIST,
+                            expr_kind: arbitrary(),
+                            list_kind: arbitrary(),
                         },
                     ),
                 ),
@@ -969,16 +832,16 @@ impl SpecRecBody for ListVConsBodyRec {
     }
 }
 
-pub type ListVBodyFmt = Mapped<Sum<Fixed<0>, ListVConsProj<BundledSpecs<SCC1>>>, ListVMapper>;
+pub type ListVBodyFmt<Rec> = Mapped<Sum<Fixed<0>, ListVConsProj<Rec>>, ListVMapper>;
 
 pub struct ListVBodyRec;
 
 impl SpecRecBody for ListVBodyRec {
-    type Param = ExprListParam;
+    type Param = SCC1Param;
 
     type T = SCC1;
 
-    type Body = ListVBodyFmt;
+    type Body = ListVBodyFmt<BundledSpecs<Self::T>>;
 
     open spec fn spec_body(
         &self,
@@ -991,10 +854,10 @@ impl SpecRecBody for ListVBodyRec {
                 ListKind::Cons => Sum::Inr(
                     list_v_cons_proj(
                         rec(
-                            ExprListParam {
-                                which: WhichSCC1::LISTVCONS,
-                                expr_kind: ExprKind::Num,
-                                list_kind: ListKind::Nil,
+                            SCC1Param {
+                                which: SCC1Which::LISTVCONS,
+                                expr_kind: arbitrary(),
+                                list_kind: arbitrary(),
                             },
                         ),
                     ),
@@ -1005,18 +868,24 @@ impl SpecRecBody for ListVBodyRec {
     }
 }
 
-pub struct ExprListRecBody;
+pub struct SCC1RecBody;
 
-impl SpecRecBody for ExprListRecBody {
-    type Param = ExprListParam;
+impl SpecRecBody for SCC1RecBody {
+    type Param = SCC1Param;
 
     type T = SCC1;
 
     type Body = Alt<
-        Cond<ExprBodyFmt>,
+        Cond<ExprBodyFmt<BundledSpecs<SCC1>>>,
         Alt<
-            Cond<ListBodyFmt>,
-            Alt<Cond<ExprVBodyFmt>, Alt<Cond<ListVConsBodyFmt>, Cond<ListVBodyFmt>>>,
+            Cond<ListBodyFmt<BundledSpecs<SCC1>>>,
+            Alt<
+                Cond<ExprVBodyFmt<BundledSpecs<SCC1>>>,
+                Alt<
+                    Cond<ListVConsBodyFmt<BundledSpecs<SCC1>>>,
+                    Cond<ListVBodyFmt<BundledSpecs<SCC1>>>,
+                >,
+            >,
         >,
     >;
 
@@ -1026,375 +895,21 @@ impl SpecRecBody for ExprListRecBody {
         rec: ParamRecSpecs<Self::Param, Self::T>,
     ) -> Self::Body {
         Alt(
-            Cond(param.which == WhichSCC1::EXPR, ExprBodyRec.spec_body(param, rec)),
+            Cond(param.which == SCC1Which::EXPR, ExprBodyRec.spec_body(param, rec)),
             Alt(
-                Cond(param.which == WhichSCC1::LIST, ListBodyRec.spec_body(param, rec)),
+                Cond(param.which == SCC1Which::LIST, ListBodyRec.spec_body(param, rec)),
                 Alt(
-                    Cond(param.which == WhichSCC1::EXPRV, ExprVBodyRec.spec_body(param, rec)),
+                    Cond(param.which == SCC1Which::EXPRV, ExprVBodyRec.spec_body(param, rec)),
                     Alt(
                         Cond(
-                            param.which == WhichSCC1::LISTVCONS,
+                            param.which == SCC1Which::LISTVCONS,
                             ListVConsBodyRec.spec_body(param, rec),
                         ),
-                        Cond(param.which == WhichSCC1::LISTV, ListVBodyRec.spec_body(param, rec)),
+                        Cond(param.which == SCC1Which::LISTV, ListVBodyRec.spec_body(param, rec)),
                     ),
                 ),
             ),
         )
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Structural)]
-pub enum WhichFmt2 {
-    BYTELIST,
-}
-
-impl DeepView for WhichFmt2 {
-    type V = Self;
-
-    open spec fn deep_view(&self) -> Self::V {
-        *self
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct ByteListFmt<const LIMIT: usize>;
-
-pub type ByteListFmtSpec<const LIMIT: usize> = ByteListProj<
-    FixWith<LIMIT, ByteListRecBody, WhichFmt2>,
->;
-
-impl<const LIMIT: usize> ByteListFmt<LIMIT> {
-    pub open spec fn spec_inner() -> ByteListFmtSpec<LIMIT> {
-        byte_list_proj(FixWith::<LIMIT, _, _>(ByteListRecBody, WhichFmt2::BYTELIST))
-    }
-}
-
-pub type ByteListProj<Rec> = Mapped<
-    Refined<Rec, PredFnSpec<ByteListValue>>,
-    FnSpecMapper<ByteListValue, ByteListSpec>,
->;
-
-pub open spec fn byte_list_proj<Rec>(rec: Rec) -> ByteListProj<Rec> where
-    Rec: SpecCombinator<T = ByteListValue>,
- {
-    Mapped {
-        inner: Refined(rec, |v: ByteListValue| v is ByteList),
-        mapper: (
-            |v: ByteListValue| -> ByteListSpec { v->list },
-            |list: ByteListSpec| -> ByteListValue { ByteListValue::ByteList { list } },
-        ),
-    }
-}
-
-pub type ByteListBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<U8, ByteListProj<Rec>>>>,
-    ByteListMapper,
->;
-
-pub struct ByteListRecBody;
-
-impl SpecRecBody for ByteListRecBody {
-    type Param = WhichFmt2;
-
-    type T = ByteListValue;
-
-    type Body = ByteListBodyFmt<BundledSpecs<Self::T>>;
-
-    open spec fn spec_body(
-        &self,
-        _param: WhichFmt2,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) -> Self::Body {
-        Mapped {
-            inner: Choice(
-                PrefixTagged(U8, 0x20u8, Empty),
-                PrefixTagged(U8, 0x21u8, Pair(U8, byte_list_proj(rec(WhichFmt2::BYTELIST)))),
-            ),
-            mapper: ByteListMapper,
-        }
-    }
-}
-
-pub struct ByteListMapper;
-
-impl SpecMapper for ByteListMapper {
-    type In = Sum<(), (u8, ByteListSpec)>;
-
-    type Out = ByteListValue;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        match i {
-            Sum::Inl(_) => ByteListValue::ByteList { list: ByteListSpec::Nil },
-            Sum::Inr((head, tail)) => ByteListValue::ByteList {
-                list: ByteListSpec::Cons(head, Box::new(tail)),
-            },
-        }
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o is ByteList
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        match o {
-            ByteListValue::ByteList { list: ByteListSpec::Nil } => Sum::Inl(()),
-            ByteListValue::ByteList { list: ByteListSpec::Cons(head, tail) } => Sum::Inr(
-                (head, *tail),
-            ),
-        }
-    }
-}
-
-// ============================================================
-// Chain Mutually Recursive Format Specifications
-// ============================================================
-#[derive(Clone, Copy)]
-pub struct ChainAFmt<const LIMIT: usize> {
-    pub tag: u8,
-}
-
-pub type ChainAFmtSpec<const LIMIT: usize> = ChainAProj<FixWith<LIMIT, ChainRecBody, ChainParam>>;
-
-impl<const LIMIT: usize> ChainAFmt<LIMIT> {
-    pub open spec fn spec_inner(&self) -> ChainAFmtSpec<LIMIT> {
-        chain_a_proj(
-            FixWith::<LIMIT, _, _>(
-                ChainRecBody,
-                ChainParam { which: WhichChain::A, tag: self.tag },
-            ),
-        )
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct ChainBFmt<const LIMIT: usize> {
-    pub tag: u8,
-}
-
-pub type ChainBFmtSpec<const LIMIT: usize> = ChainBProj<FixWith<LIMIT, ChainRecBody, ChainParam>>;
-
-impl<const LIMIT: usize> ChainBFmt<LIMIT> {
-    pub open spec fn spec_inner(&self) -> ChainBFmtSpec<LIMIT> {
-        chain_b_proj(
-            FixWith::<LIMIT, _, _>(
-                ChainRecBody,
-                ChainParam { which: WhichChain::B, tag: self.tag },
-            ),
-        )
-    }
-}
-
-pub type ChainAProj<Rec> = Mapped<
-    Refined<Rec, PredFnSpec<ChainValueSpec>>,
-    FnSpecMapper<ChainValueSpec, ChainASpec>,
->;
-
-pub type ChainBProj<Rec> = Mapped<
-    Refined<Rec, PredFnSpec<ChainValueSpec>>,
-    FnSpecMapper<ChainValueSpec, ChainBSpec>,
->;
-
-pub open spec fn chain_a_proj<Rec>(rec: Rec) -> ChainAProj<Rec> where
-    Rec: SpecCombinator<T = ChainValueSpec>,
- {
-    Mapped {
-        inner: Refined(rec, |v: ChainValueSpec| v is A),
-        mapper: (
-            |v: ChainValueSpec| -> ChainASpec { v->a },
-            |a: ChainASpec| -> ChainValueSpec { ChainValueSpec::A { a } },
-        ),
-    }
-}
-
-pub open spec fn chain_b_proj<Rec>(rec: Rec) -> ChainBProj<Rec> where
-    Rec: SpecCombinator<T = ChainValueSpec>,
- {
-    Mapped {
-        inner: Refined(rec, |v: ChainValueSpec| v is B),
-        mapper: (
-            |v: ChainValueSpec| -> ChainBSpec { v->b },
-            |b: ChainBSpec| -> ChainValueSpec { ChainValueSpec::B { b } },
-        ),
-    }
-}
-
-pub type ChainABodyFmt<Rec> = Mapped<
-    Sum<
-        Refined<U8, PredFnSpec<u8>>,
-        Bind<U8, spec_fn(u8) -> Pair<Varied<u8>, Bind<U8, spec_fn(u8) -> ChainBProj<Rec>>>>,
-    >,
-    ChainAMapper,
->;
-
-pub type ChainBBodyFmt<Rec> = Mapped<
-    Sum<Refined<U16Le, PredFnSpec<u16>>, Pair<U32Le, Bind<U8, spec_fn(u8) -> ChainAProj<Rec>>>>,
-    ChainBMapper,
->;
-
-pub type ChainBodyFmt<Rec> = Alt<Cond<ChainABodyFmt<Rec>>, Cond<ChainBBodyFmt<Rec>>>;
-
-pub struct ChainRecBody;
-
-impl SpecRecBody for ChainRecBody {
-    type Param = ChainParam;
-
-    type T = ChainValueSpec;
-
-    type Body = ChainBodyFmt<BundledSpecs<Self::T>>;
-
-    open spec fn spec_body(
-        &self,
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) -> Self::Body {
-        Alt(
-            Cond(param.which == WhichChain::A, ChainABodyRec.spec_body(param, rec)),
-            Cond(param.which == WhichChain::B, ChainBBodyRec.spec_body(param, rec)),
-        )
-    }
-}
-
-pub struct ChainABodyRec;
-
-impl SpecRecBody for ChainABodyRec {
-    type Param = ChainParam;
-
-    type T = ChainValueSpec;
-
-    type Body = ChainABodyFmt<BundledSpecs<Self::T>>;
-
-    open spec fn spec_body(
-        &self,
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) -> Self::Body {
-        Mapped {
-            inner: match param.tag {
-                0u8 => Sum::Inl(Refined(U8, |val: u8| val >= 1 && val <= 10)),
-                _ => Sum::Inr(
-                    Bind(
-                        U8,
-                        |len: u8|
-                            {
-                                Pair(
-                                    Varied::<u8>(len),
-                                    Bind(
-                                        U8,
-                                        |next_tag: u8|
-                                            chain_b_proj(
-                                                rec(
-                                                    ChainParam {
-                                                        which: WhichChain::B,
-                                                        tag: next_tag,
-                                                    },
-                                                ),
-                                            ),
-                                    ),
-                                )
-                            },
-                    ),
-                ),
-            },
-            mapper: ChainAMapper,
-        }
-    }
-}
-
-pub struct ChainBBodyRec;
-
-impl SpecRecBody for ChainBBodyRec {
-    type Param = ChainParam;
-
-    type T = ChainValueSpec;
-
-    type Body = ChainBBodyFmt<BundledSpecs<Self::T>>;
-
-    open spec fn spec_body(
-        &self,
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) -> Self::Body {
-        Mapped {
-            inner: match param.tag {
-                0u8 => Sum::Inl(Refined(U16Le, |val: u16| val >= 256)),
-                _ => Sum::Inr(
-                    Pair(
-                        U32Le,
-                        Bind(
-                            U8,
-                            |next_tag: u8|
-                                chain_a_proj(
-                                    rec(ChainParam { which: WhichChain::A, tag: next_tag }),
-                                ),
-                        ),
-                    ),
-                ),
-            },
-            mapper: ChainBMapper,
-        }
-    }
-}
-
-pub struct ChainAMapper;
-
-impl SpecMapper for ChainAMapper {
-    type In = Sum<u8, (u8, (Seq<u8>, (u8, ChainBSpec)))>;
-
-    type Out = ChainValueSpec;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        match i {
-            Sum::Inl(val) => ChainValueSpec::A { a: ChainASpec::End(val) },
-            Sum::Inr((len, (payload, (next_tag, tail)))) => ChainValueSpec::A {
-                a: ChainASpec::Step(len, payload, next_tag, Box::new(tail)),
-            },
-        }
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o is A
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        match o {
-            ChainValueSpec::A { a: ChainASpec::End(val) } => Sum::Inl(val),
-            ChainValueSpec::A { a: ChainASpec::Step(len, payload, next_tag, tail) } => {
-                Sum::Inr((len, (payload, (next_tag, *tail))))
-            },
-            _ => arbitrary(),
-        }
-    }
-}
-
-pub struct ChainBMapper;
-
-impl SpecMapper for ChainBMapper {
-    type In = Sum<u16, (u32, (u8, ChainASpec))>;
-
-    type Out = ChainValueSpec;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        match i {
-            Sum::Inl(val) => ChainValueSpec::B { b: ChainBSpec::End(val) },
-            Sum::Inr((payload, (next_tag, tail))) => ChainValueSpec::B {
-                b: ChainBSpec::Step(payload, next_tag, Box::new(tail)),
-            },
-        }
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o is B
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        match o {
-            ChainValueSpec::B { b: ChainBSpec::End(val) } => Sum::Inl(val),
-            ChainValueSpec::B { b: ChainBSpec::Step(payload, next_tag, tail) } => {
-                Sum::Inr((payload, (next_tag, *tail)))
-            },
-            _ => arbitrary(),
-        }
     }
 }
 
@@ -1576,7 +1091,7 @@ mod derived_spec_proof {
         type PVal = ExprVSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
+            Self::spec_inner(self.expr_kind.deep_view()).spec_parse(ibuf)
         }
     }
 
@@ -1584,7 +1099,7 @@ mod derived_spec_proof {
         type Val = ExprVSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner(self.expr_kind.deep_view()).consistent(v)
         }
     }
 
@@ -1592,7 +1107,7 @@ mod derived_spec_proof {
         type T = ExprVSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner(self.expr_kind.deep_view()).byte_len(v)
         }
     }
 
@@ -1600,7 +1115,7 @@ mod derived_spec_proof {
         type SValue = ExprVSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner(self.expr_kind.deep_view()).spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1608,7 +1123,7 @@ mod derived_spec_proof {
         type SVal = ExprVSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
+            Self::spec_inner(self.expr_kind.deep_view()).spec_serialize(v)
         }
     }
 
@@ -1656,7 +1171,7 @@ mod derived_spec_proof {
         type PVal = ListVSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
+            Self::spec_inner(self.list_kind.deep_view()).spec_parse(ibuf)
         }
     }
 
@@ -1664,7 +1179,7 @@ mod derived_spec_proof {
         type Val = ListVSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner(self.list_kind.deep_view()).consistent(v)
         }
     }
 
@@ -1672,7 +1187,7 @@ mod derived_spec_proof {
         type T = ListVSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner(self.list_kind.deep_view()).byte_len(v)
         }
     }
 
@@ -1680,7 +1195,7 @@ mod derived_spec_proof {
         type SValue = ListVSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner(self.list_kind.deep_view()).spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1688,7 +1203,7 @@ mod derived_spec_proof {
         type SVal = ListVSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
+            Self::spec_inner(self.list_kind.deep_view()).spec_serialize(v)
         }
     }
 
@@ -2073,19 +1588,19 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> SafeParser for ExprVFmt<LIMIT> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Self::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner(self.expr_kind.deep_view()).lemma_parse_safe(ibuf);
         }
     }
 
     impl<const LIMIT: usize> SoundParser for ExprVFmt<LIMIT> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2093,13 +1608,13 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> NonTailFmt for ExprVFmt<LIMIT> {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -2107,7 +1622,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> GoodSerializer for ExprVFmt<LIMIT> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2115,7 +1630,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> SPRoundTripDps for ExprVFmt<LIMIT> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2123,7 +1638,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> NonMalleable for ExprVFmt<LIMIT> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2131,7 +1646,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> EquivSerializersGeneral for ExprVFmt<LIMIT> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2139,7 +1654,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> EquivSerializers for ExprVFmt<LIMIT> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -2221,19 +1736,19 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> SafeParser for ListVFmt<LIMIT> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Self::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner(self.list_kind.deep_view()).lemma_parse_safe(ibuf);
         }
     }
 
     impl<const LIMIT: usize> SoundParser for ListVFmt<LIMIT> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2241,13 +1756,13 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> NonTailFmt for ListVFmt<LIMIT> {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -2255,7 +1770,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> GoodSerializer for ListVFmt<LIMIT> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2263,7 +1778,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> SPRoundTripDps for ListVFmt<LIMIT> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2271,7 +1786,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> NonMalleable for ListVFmt<LIMIT> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2279,7 +1794,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> EquivSerializersGeneral for ListVFmt<LIMIT> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2287,7 +1802,7 @@ mod derived_spec_proof {
 
     impl<const LIMIT: usize> EquivSerializers for ListVFmt<LIMIT> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -2437,7 +1952,7 @@ mod derived_spec_proof {
         }
     }
 
-    impl StrictRecBody for ExprListRecBody {
+    impl StrictRecBody for SCC1RecBody {
         proof fn lemma_body_all_inv_preservation(
             &self,
             param: Self::Param,
@@ -2458,1900 +1973,272 @@ mod derived_spec_proof {
         }
     }
 
-    impl<const LIMIT: usize> SpecParser for ByteListFmt<LIMIT> {
-        type PVal = ByteListSpec;
-
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
-        }
-    }
-
-    impl<const LIMIT: usize> Consistency for ByteListFmt<LIMIT> {
-        type Val = ByteListSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecByteLen for ByteListFmt<LIMIT> {
-        type T = ByteListSpec;
-
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializerDps for ByteListFmt<LIMIT> {
-        type SValue = ByteListSpec;
-
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializer for ByteListFmt<LIMIT> {
-        type SVal = ByteListSpec;
-
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SafeParser for ByteListFmt<LIMIT> {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Self::spec_inner().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> SoundParser for ByteListFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonTailFmt for ByteListFmt<LIMIT> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> GoodSerializer for ByteListFmt<LIMIT> {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl<const LIMIT: usize> SPRoundTripDps for ByteListFmt<LIMIT> {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonMalleable for ByteListFmt<LIMIT> {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializersGeneral for ByteListFmt<LIMIT> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializers for ByteListFmt<LIMIT> {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl LossyMapper for ByteListMapper {
-        proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        }
-
-        proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        }
-    }
-
-    impl LosslessMapper for ByteListMapper {
-        proof fn lemma_lossless_mapper(&self, i: Self::In) {
-            assert(self.spec_map_rev(self.spec_map(i)) == i);
-        }
-
-        proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        }
-    }
-
-    impl StrictRecBody for ByteListRecBody {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            _param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
-        }
-    }
-
-    impl<const LIMIT: usize> SpecParser for ChainAFmt<LIMIT> {
-        type PVal = ChainASpec;
-
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner(self).spec_parse(ibuf)
-        }
-    }
-
-    impl<const LIMIT: usize> Consistency for ChainAFmt<LIMIT> {
-        type Val = ChainASpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self).consistent(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecByteLen for ChainAFmt<LIMIT> {
-        type T = ChainASpec;
-
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self).byte_len(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializerDps for ChainAFmt<LIMIT> {
-        type SValue = ChainASpec;
-
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner(self).spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializer for ChainAFmt<LIMIT> {
-        type SVal = ChainASpec;
-
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner(self).spec_serialize(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecParser for ChainBFmt<LIMIT> {
-        type PVal = ChainBSpec;
-
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner(self).spec_parse(ibuf)
-        }
-    }
-
-    impl<const LIMIT: usize> Consistency for ChainBFmt<LIMIT> {
-        type Val = ChainBSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self).consistent(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecByteLen for ChainBFmt<LIMIT> {
-        type T = ChainBSpec;
-
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self).byte_len(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializerDps for ChainBFmt<LIMIT> {
-        type SValue = ChainBSpec;
-
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner(self).spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl<const LIMIT: usize> SpecSerializer for ChainBFmt<LIMIT> {
-        type SVal = ChainBSpec;
-
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner(self).spec_serialize(v)
-        }
-    }
-
-    impl<const LIMIT: usize> SafeParser for ChainAFmt<LIMIT> {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Self::spec_inner(self).lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> SoundParser for ChainAFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonTailFmt for ChainAFmt<LIMIT> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> GoodSerializer for ChainAFmt<LIMIT> {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl<const LIMIT: usize> SPRoundTripDps for ChainAFmt<LIMIT> {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonMalleable for ChainAFmt<LIMIT> {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializersGeneral for ChainAFmt<LIMIT> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializers for ChainAFmt<LIMIT> {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl<const LIMIT: usize> SafeParser for ChainBFmt<LIMIT> {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Self::spec_inner(self).lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> SoundParser for ChainBFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonTailFmt for ChainBFmt<LIMIT> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> GoodSerializer for ChainBFmt<LIMIT> {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl<const LIMIT: usize> SPRoundTripDps for ChainBFmt<LIMIT> {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> NonMalleable for ChainBFmt<LIMIT> {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializersGeneral for ChainBFmt<LIMIT> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl<const LIMIT: usize> EquivSerializers for ChainBFmt<LIMIT> {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            let fmt = Self::spec_inner(self);
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl LossyMapper for ChainAMapper {
-        proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        }
-
-        proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        }
-    }
-
-    impl LosslessMapper for ChainAMapper {
-        proof fn lemma_lossless_mapper(&self, i: Self::In) {
-            assert(self.spec_map_rev(self.spec_map(i)) == i);
-        }
-
-        proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        }
-    }
-
-    impl LossyMapper for ChainBMapper {
-        proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        }
-
-        proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        }
-    }
-
-    impl LosslessMapper for ChainBMapper {
-        proof fn lemma_lossless_mapper(&self, i: Self::In) {
-            assert(self.spec_map_rev(self.spec_map(i)) == i);
-        }
-
-        proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        }
-    }
-
-    impl StrictRecBody for ChainABodyRec {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            _param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
-        }
-    }
-
-    impl StrictRecBody for ChainBBodyRec {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            _param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
-        }
-    }
-
-    impl StrictRecBody for ChainRecBody {
-        proof fn lemma_body_all_inv_preservation(
-            &self,
-            param: Self::Param,
-            rec: ParamRecSpecs<Self::Param, Self::T>,
-        ) {
-            hide(<ChainABodyRec as SpecRecBody>::spec_body);
-            hide(<ChainBBodyRec as SpecRecBody>::spec_body);
-            broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
-            ChainABodyRec.lemma_body_all_inv_preservation(param, rec);
-            ChainBBodyRec.lemma_body_all_inv_preservation(param, rec);
-        }
-    }
-
 }
 
 // ============================================================
 // Executable Implementations
 // ============================================================
-impl<'i> Parser<&'i [u8]> for ExprKindFmt {
-    type PT = ExprKind;
+mod derived_execs {
+    use super::*;
 
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        reveal(<ExprKindFmt as SpecParser>::spec_parse);
-        let _ = ibuf.len();
-        let rest = *ibuf;
+    impl<'i> Parser<&'i [u8]> for ExprKindFmt {
+        type PT = ExprKind;
 
-        let (n, v) = U8.parse(&rest)?;
-        let enum_val = match v {
-            16 => ExprKind::Num,
-            17 => ExprKind::Group,
-            _ => return Err(ParseError::invalid_tag()),
-        };
-        assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
-        Ok((n, enum_val))
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<ExprKindFmt as SpecParser>::spec_parse);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = U8.parse(&rest)?;
+            let enum_val = match v {
+                16 => ExprKind::Num,
+                17 => ExprKind::Group,
+                _ => return Err(ParseError::invalid_tag()),
+            };
+            assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
+            Ok((n, enum_val))
+        }
     }
-}
 
-impl Serializer<ExprKind> for ExprKindFmt {
-    fn serialize(&self, v: &ExprKind, obuf: &mut Vec<u8>) {
-        reveal(<ExprKindFmt as SpecSerializer>::spec_serialize);
-        let ghost old_obuf = obuf@;
+    impl Serializer<ExprKind> for ExprKindFmt {
+        fn serialize(&self, v: &ExprKind, obuf: &mut Vec<u8>) {
+            reveal(<ExprKindFmt as SpecSerializer>::spec_serialize);
+            let ghost old_obuf = obuf@;
 
-        let tag = match *v {
-            ExprKind::Num => 16,
-            ExprKind::Group => 17,
-        };
-        U8.serialize(&tag, obuf);
+            let tag = match *v {
+                ExprKind::Num => 16,
+                ExprKind::Group => 17,
+            };
+            U8.serialize(&tag, obuf);
 
-        assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
     }
-}
 
-impl Prepare<ExprKind> for ExprKindFmt {
-    fn prepare(&self, v: &ExprKind) -> Result<usize, PreSerializeError> {
-        reveal(<ExprKindFmt as SpecByteLen>::byte_len);
-        let tag = match *v {
-            ExprKind::Num => 16,
-            ExprKind::Group => 17,
-        };
-        U8.prepare(&tag)
+    impl Prepare<ExprKind> for ExprKindFmt {
+        fn prepare(&self, v: &ExprKind) -> Result<usize, PreSerializeError> {
+            reveal(<ExprKindFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ExprKind::Num => 16,
+                ExprKind::Group => 17,
+            };
+            U8.prepare(&tag)
+        }
     }
-}
 
-impl<'i> Parser<&'i [u8]> for ListKindFmt {
-    type PT = ListKind;
+    impl<'i> Parser<&'i [u8]> for ListKindFmt {
+        type PT = ListKind;
 
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        reveal(<ListKindFmt as SpecParser>::spec_parse);
-        let _ = ibuf.len();
-        let rest = *ibuf;
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<ListKindFmt as SpecParser>::spec_parse);
+            let _ = ibuf.len();
+            let rest = *ibuf;
 
-        let (n, v) = U8.parse(&rest)?;
-        let enum_val = match v {
-            32 => ListKind::Nil,
-            33 => ListKind::Cons,
-            _ => return Err(ParseError::invalid_tag()),
-        };
-        assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
-        Ok((n, enum_val))
+            let (n, v) = U8.parse(&rest)?;
+            let enum_val = match v {
+                32 => ListKind::Nil,
+                33 => ListKind::Cons,
+                _ => return Err(ParseError::invalid_tag()),
+            };
+            assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
+            Ok((n, enum_val))
+        }
     }
-}
 
-impl Serializer<ListKind> for ListKindFmt {
-    fn serialize(&self, v: &ListKind, obuf: &mut Vec<u8>) {
-        reveal(<ListKindFmt as SpecSerializer>::spec_serialize);
-        let ghost old_obuf = obuf@;
+    impl Serializer<ListKind> for ListKindFmt {
+        fn serialize(&self, v: &ListKind, obuf: &mut Vec<u8>) {
+            reveal(<ListKindFmt as SpecSerializer>::spec_serialize);
+            let ghost old_obuf = obuf@;
 
-        let tag = match *v {
-            ListKind::Nil => 32,
-            ListKind::Cons => 33,
-        };
-        U8.serialize(&tag, obuf);
+            let tag = match *v {
+                ListKind::Nil => 32,
+                ListKind::Cons => 33,
+            };
+            U8.serialize(&tag, obuf);
 
-        assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
     }
-}
 
-impl Prepare<ListKind> for ListKindFmt {
-    fn prepare(&self, v: &ListKind) -> Result<usize, PreSerializeError> {
-        reveal(<ListKindFmt as SpecByteLen>::byte_len);
-        let tag = match *v {
-            ListKind::Nil => 32,
-            ListKind::Cons => 33,
-        };
-        U8.prepare(&tag)
+    impl Prepare<ListKind> for ListKindFmt {
+        fn prepare(&self, v: &ListKind) -> Result<usize, PreSerializeError> {
+            reveal(<ListKindFmt as SpecByteLen>::byte_len);
+            let tag = match *v {
+                ListKind::Nil => 32,
+                ListKind::Cons => 33,
+            };
+            U8.prepare(&tag)
+        }
     }
+
+    impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
+        type PT = Expr<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            self.parse_gas(LIMIT, ibuf)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Serializer<Expr<'i>> for ExprFmt<LIMIT> {
+        fn serialize(&self, v: &Expr<'i>, obuf: &mut Vec<u8>) {
+            self.serialize_gas(LIMIT, v, obuf);
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Prepare<Expr<'i>> for ExprFmt<LIMIT> {
+        fn prepare(&self, v: &Expr<'i>) -> Result<usize, PreSerializeError> {
+            self.prepare_gas(LIMIT, v)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListFmt<LIMIT> {
+        type PT = List<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            self.parse_gas(LIMIT, ibuf)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Serializer<List<'i>> for ListFmt<LIMIT> {
+        fn serialize(&self, v: &List<'i>, obuf: &mut Vec<u8>) {
+            self.serialize_gas(LIMIT, v, obuf);
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Prepare<List<'i>> for ListFmt<LIMIT> {
+        fn prepare(&self, v: &List<'i>) -> Result<usize, PreSerializeError> {
+            self.prepare_gas(LIMIT, v)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprVFmt<LIMIT> {
+        type PT = ExprV<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            self.parse_gas(LIMIT, ibuf)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Serializer<ExprV<'i>> for ExprVFmt<LIMIT> {
+        fn serialize(&self, v: &ExprV<'i>, obuf: &mut Vec<u8>) {
+            self.serialize_gas(LIMIT, v, obuf);
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Prepare<ExprV<'i>> for ExprVFmt<LIMIT> {
+        fn prepare(&self, v: &ExprV<'i>) -> Result<usize, PreSerializeError> {
+            self.prepare_gas(LIMIT, v)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListVConsFmt<LIMIT> {
+        type PT = ListVCons<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            self.parse_gas(LIMIT, ibuf)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Serializer<ListVCons<'i>> for ListVConsFmt<LIMIT> {
+        fn serialize(&self, v: &ListVCons<'i>, obuf: &mut Vec<u8>) {
+            self.serialize_gas(LIMIT, v, obuf);
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Prepare<ListVCons<'i>> for ListVConsFmt<LIMIT> {
+        fn prepare(&self, v: &ListVCons<'i>) -> Result<usize, PreSerializeError> {
+            self.prepare_gas(LIMIT, v)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListVFmt<LIMIT> {
+        type PT = ListV<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            self.parse_gas(LIMIT, ibuf)
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Serializer<ListV<'i>> for ListVFmt<LIMIT> {
+        fn serialize(&self, v: &ListV<'i>, obuf: &mut Vec<u8>) {
+            self.serialize_gas(LIMIT, v, obuf);
+        }
+    }
+
+    impl<'i, const LIMIT: usize> Prepare<ListV<'i>> for ListVFmt<LIMIT> {
+        fn prepare(&self, v: &ListV<'i>) -> Result<usize, PreSerializeError> {
+            self.prepare_gas(LIMIT, v)
+        }
+    }
+
 }
 
 impl<const LIMIT: usize> ExprFmt<LIMIT> {
-    fn parse_expr_gas<'i>(&self, gas: usize, param: ExprListParam, ibuf: &&'i [u8]) -> (r: PResult<
-        Expr<'i>,
-    >)
-        requires
-            param.which == WhichSCC1::EXPR,
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::Expr { expr })) => Some((n, expr)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-        decreases gas, 1nat,
-    {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        let (n1, tag) = ExprKindFmt.parse(ibuf)?;
-        let rest = ibuf.skip(n1);
-        let param_v = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: tag,
-            list_kind: ListKind::Nil,
-        };
-        if gas > 0 {
-            let (n2, v) = self.parse_expr_v_gas(gas - 1, param_v, &rest)?;
-            Ok((n1 + n2, Expr { t: tag, v: Box::new(v) }))
-        } else {
-            Err(ParseError::recursion_limit_exceeded())
-        }
-    }
-
-    fn parse_expr_v_gas<'i>(&self, gas: usize, param: ExprListParam, ibuf: &&'i [u8]) -> (r:
-        PResult<ExprV<'i>>)
-        requires
-            param.which == WhichSCC1::EXPRV,
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ExprV { expr_v })) => Some((n, expr_v)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-        decreases gas, 0nat,
-    {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        match param.expr_kind {
-            ExprKind::Num => {
-                let (n, val) = U8.parse(ibuf)?;
-                Ok((n, ExprV::Num(val)))
-            },
-            ExprKind::Group => {
-                if gas > 0 {
-                    let param_list = ExprListParam {
-                        which: WhichSCC1::LIST,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    };
-                    let (n, list) = self.parse_list_gas(gas - 1, param_list, ibuf)?;
-                    Ok((n, ExprV::Group(Box::new(list))))
-                } else {
-                    Err(ParseError::recursion_limit_exceeded())
-                }
-            },
-        }
-    }
-
-    fn parse_list_gas<'i>(&self, gas: usize, param: ExprListParam, ibuf: &&'i [u8]) -> (r: PResult<
-        List<'i>,
-    >)
-        requires
-            param.which == WhichSCC1::LIST,
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::List { list })) => Some((n, list)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-        decreases gas, 4nat,
-    {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        let (n1, tag) = ListKindFmt.parse(ibuf)?;
-        let rest = ibuf.skip(n1);
-        let param_v = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: tag,
-        };
-        if gas > 0 {
-            let (n2, v) = self.parse_list_v_gas(gas - 1, param_v, &rest)?;
-            Ok((n1 + n2, List { t: tag, v: Box::new(v) }))
-        } else {
-            Err(ParseError::recursion_limit_exceeded())
-        }
-    }
-
-    fn parse_list_v_gas<'i>(&self, gas: usize, param: ExprListParam, ibuf: &&'i [u8]) -> (r:
-        PResult<ListV<'i>>)
-        requires
-            param.which == WhichSCC1::LISTV,
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ListV { list_v })) => Some((n, list_v)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-        decreases gas, 3nat,
-    {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        match param.list_kind {
-            ListKind::Nil => {
-                let (n, val) = Fixed::<0>.parse(ibuf)?;
-                Ok((n, ListV::Nil(val)))
-            },
-            ListKind::Cons => {
-                if gas > 0 {
-                    let param_cons = ExprListParam {
-                        which: WhichSCC1::LISTVCONS,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    };
-                    let (n, cons) = self.parse_list_v_cons_gas(gas - 1, param_cons, ibuf)?;
-                    Ok((n, ListV::Cons(Box::new(cons))))
-                } else {
-                    Err(ParseError::recursion_limit_exceeded())
-                }
-            },
-        }
-    }
-
-    fn parse_list_v_cons_gas<'i>(&self, gas: usize, param: ExprListParam, ibuf: &&'i [u8]) -> (r:
-        PResult<ListVCons<'i>>)
-        requires
-            param.which == WhichSCC1::LISTVCONS,
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ListVCons { list_v_cons })) => Some((n, list_v_cons)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-        decreases gas, 2nat,
-    {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let _ = ibuf.len();
-        if gas > 0 {
-            let param_head = ExprListParam {
-                which: WhichSCC1::EXPR,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            let (n1, head) = self.parse_expr_gas(gas - 1, param_head, ibuf)?;
-            let rest = ibuf.skip(n1);
-            let param_tail = ExprListParam {
-                which: WhichSCC1::LIST,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            let (n2, tail) = self.parse_list_gas(gas - 1, param_tail, &rest)?;
-            Ok((n1 + n2, ListVCons { head: Box::new(head), tail: Box::new(tail) }))
-        } else {
-            Err(ParseError::recursion_limit_exceeded())
-        }
-    }
-
-    fn serialize_expr_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &Expr<'i>,
-        obuf: &mut Vec<u8>,
-    )
-        requires
-            param.which == WhichSCC1::EXPR,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::Expr { expr: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::Expr { expr: v.deep_view() },
-            ),
-        decreases gas, 1nat,
-    {
-        ExprKindFmt.serialize(&v.t, obuf);
-        let param_v = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: v.t,
-            list_kind: ListKind::Nil,
-        };
-        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-            &ExprListRecBody,
-            gas as nat,
-            param,
-            SCC1::Expr { expr: v.deep_view() },
-        ));
-        assert(ExprListRecBody.spec_body(
-            param,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            ),
-        ).consistent(SCC1::Expr { expr: v.deep_view() }));
-        assert(ExprBodyRec.spec_body(
-            param,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            ),
-        ).consistent(SCC1::Expr { expr: v.deep_view() }));
-        assert(Bind(
-            ExprKindFmt,
-            |t: ExprKindSpec|
-                expr_v_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(
-                        ExprListParam {
-                            which: WhichSCC1::EXPRV,
-                            expr_kind: t,
-                            list_kind: ListKind::Nil,
-                        },
-                    ),
-                ),
-        ).consistent((v.t.deep_view(), v.v.deep_view())));
-        assert(expr_v_proj(
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            )(param_v),
-        ).consistent(v.v.deep_view()));
-        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-            &ExprListRecBody,
-            (gas - 1) as nat,
-            param_v,
-            SCC1::ExprV { expr_v: v.v.deep_view() },
-        ));
-        if gas > 0 {
-            self.serialize_expr_v_gas(gas - 1, param_v, &*v.v, obuf);
-        }
-    }
-
-    fn serialize_expr_v_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &ExprV<'i>,
-        obuf: &mut Vec<u8>,
-    )
-        requires
-            param.which == WhichSCC1::EXPRV,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ExprV { expr_v: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ExprV { expr_v: v.deep_view() },
-            ),
-        decreases gas, 0nat,
-    {
-        match v {
-            ExprV::Num(num_val) => {
-                U8.serialize(num_val, obuf);
-            },
-            ExprV::Group(list_val) => {
-                if gas > 0 {
-                    let param_list = ExprListParam {
-                        which: WhichSCC1::LIST,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    };
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                        &ExprListRecBody,
-                        gas as nat,
-                        param,
-                        SCC1::ExprV { expr_v: v.deep_view() },
-                    ));
-                    assert(ExprListRecBody.spec_body(
-                        param,
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        ),
-                    ).consistent(SCC1::ExprV { expr_v: v.deep_view() }));
-                    assert(ExprVBodyRec.spec_body(
-                        param,
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        ),
-                    ).consistent(SCC1::ExprV { expr_v: v.deep_view() }));
-                    assert(Sum::<U8, ListProj<BundledSpecs<SCC1>>>::Inr(
-                        list_proj(
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            )(param_list),
-                        ),
-                    ).consistent(ExprVMapper.spec_map_rev(SCC1::ExprV { expr_v: v.deep_view() })));
-                    assert(list_proj(
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        )(param_list),
-                    ).consistent(list_val.deep_view()));
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                        &ExprListRecBody,
-                        (gas - 1) as nat,
-                        param_list,
-                        SCC1::List { list: list_val.deep_view() },
-                    ));
-                    self.serialize_list_gas(gas - 1, param_list, list_val, obuf);
-                }
-            },
-        }
-    }
-
-    fn serialize_list_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &List<'i>,
-        obuf: &mut Vec<u8>,
-    )
-        requires
-            param.which == WhichSCC1::LIST,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::List { list: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::List { list: v.deep_view() },
-            ),
-        decreases gas, 4nat,
-    {
-        ListKindFmt.serialize(&v.t, obuf);
-        let param_v = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: v.t,
-        };
-        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-            &ExprListRecBody,
-            gas as nat,
-            param,
-            SCC1::List { list: v.deep_view() },
-        ));
-        assert(ExprListRecBody.spec_body(
-            param,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            ),
-        ).consistent(SCC1::List { list: v.deep_view() }));
-        assert(ListBodyRec.spec_body(
-            param,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            ),
-        ).consistent(SCC1::List { list: v.deep_view() }));
-        assert(Bind(
-            ListKindFmt,
-            |t: ListKindSpec|
-                list_v_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(
-                        ExprListParam {
-                            which: WhichSCC1::LISTV,
-                            expr_kind: ExprKind::Num,
-                            list_kind: t,
-                        },
-                    ),
-                ),
-        ).consistent((v.t.deep_view(), v.v.deep_view())));
-        assert(list_v_proj(
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                &ExprListRecBody,
-                gas as nat,
-            )(param_v),
-        ).consistent(v.v.deep_view()));
-        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-            &ExprListRecBody,
-            (gas - 1) as nat,
-            param_v,
-            SCC1::ListV { list_v: v.v.deep_view() },
-        ));
-        if gas > 0 {
-            self.serialize_list_v_gas(gas - 1, param_v, &*v.v, obuf);
-        }
-    }
-
-    fn serialize_list_v_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &ListV<'i>,
-        obuf: &mut Vec<u8>,
-    )
-        requires
-            param.which == WhichSCC1::LISTV,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListV { list_v: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListV { list_v: v.deep_view() },
-            ),
-        decreases gas, 3nat,
-    {
-        match v {
-            ListV::Nil(bytes_val) => {
-                Fixed::<0>.serialize(bytes_val, obuf);
-            },
-            ListV::Cons(cons_val) => {
-                if gas > 0 {
-                    let param_cons = ExprListParam {
-                        which: WhichSCC1::LISTVCONS,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    };
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                        &ExprListRecBody,
-                        gas as nat,
-                        param,
-                        SCC1::ListV { list_v: v.deep_view() },
-                    ));
-                    assert(ExprListRecBody.spec_body(
-                        param,
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        ),
-                    ).consistent(SCC1::ListV { list_v: v.deep_view() }));
-                    assert(ListVBodyRec.spec_body(
-                        param,
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        ),
-                    ).consistent(SCC1::ListV { list_v: v.deep_view() }));
-                    assert(Sum::<Fixed<0>, ListVConsProj<BundledSpecs<SCC1>>>::Inr(
-                        list_v_cons_proj(
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            )(param_cons),
-                        ),
-                    ).consistent(ListVMapper.spec_map_rev(SCC1::ListV { list_v: v.deep_view() })));
-                    assert(list_v_cons_proj(
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        )(param_cons),
-                    ).consistent(cons_val.deep_view()));
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                        &ExprListRecBody,
-                        (gas - 1) as nat,
-                        param_cons,
-                        SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                    ));
-                    self.serialize_list_v_cons_gas(gas - 1, param_cons, cons_val, obuf);
-                }
-            },
-        }
-    }
-
-    fn serialize_list_v_cons_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &ListVCons<'i>,
-        obuf: &mut Vec<u8>,
-    )
-        requires
-            param.which == WhichSCC1::LISTVCONS,
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ),
-        decreases gas, 2nat,
-    {
-        if gas > 0 {
-            let param_head = ExprListParam {
-                which: WhichSCC1::EXPR,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            let param_tail = ExprListParam {
-                which: WhichSCC1::LIST,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ));
-            assert(ExprListRecBody.spec_body(
-                param,
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                ),
-            ).consistent(SCC1::ListVCons { list_v_cons: v.deep_view() }));
-            assert(ListVConsBodyRec.spec_body(
-                param,
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                ),
-            ).consistent(SCC1::ListVCons { list_v_cons: v.deep_view() }));
-            assert(Pair(
-                expr_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_head),
-                ),
-                list_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_tail),
-                ),
-            ).consistent(
-                ListVConsMapper.spec_map_rev(SCC1::ListVCons { list_v_cons: v.deep_view() }),
-            ));
-            assert(expr_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_head),
-            ).consistent(v.head.deep_view()));
-            assert(list_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_tail),
-            ).consistent(v.tail.deep_view()));
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                (gas - 1) as nat,
-                param_head,
-                SCC1::Expr { expr: v.head.deep_view() },
-            ));
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                (gas - 1) as nat,
-                param_tail,
-                SCC1::List { list: v.tail.deep_view() },
-            ));
-            self.serialize_expr_gas(gas - 1, param_head, &v.head, obuf);
-            self.serialize_list_gas(gas - 1, param_tail, &v.tail, obuf);
-        }
-    }
-
-    fn prepare_expr_gas<'i>(&self, gas: usize, param: ExprListParam, v: &Expr<'i>) -> (checked:
-        Result<usize, PreSerializeError>)
-        requires
-            param.which == WhichSCC1::EXPR,
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::Expr { expr: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::Expr { expr: v.deep_view() },
-                )
-            },
-        decreases gas, 1nat,
-    {
-        let l1 = ExprKindFmt.prepare(&v.t)?;
-        let param_v = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: v.t,
-            list_kind: ListKind::Nil,
-        };
-        if gas > 0 {
-            let l2 = self.prepare_expr_v_gas(gas - 1, param_v, &*v.v)?;
-            proof {
-                assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ExprV { expr_v: v.v.deep_view() },
-                ));
-                let rec = FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                );
-                assert(rec(param_v).0(SCC1::ExprV { expr_v: v.v.deep_view() }) == FixWith::<
-                    LIMIT,
-                    ExprListRecBody,
-                    ExprListParam,
-                >::consistent_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ExprV { expr_v: v.v.deep_view() },
-                ));
-                assert(rec(param_v).1(SCC1::ExprV { expr_v: v.v.deep_view() }) == FixWith::<
-                    LIMIT,
-                    ExprListRecBody,
-                    ExprListParam,
-                >::byte_len_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ExprV { expr_v: v.v.deep_view() },
-                ));
-
-                assert(expr_v_proj(rec(param_v)).consistent(v.v.deep_view()));
-                assert(Bind(
-                    ExprKindFmt,
-                    |t: ExprKindSpec|
-                        expr_v_proj(
-                            rec(
-                                ExprListParam {
-                                    which: WhichSCC1::EXPRV,
-                                    expr_kind: t,
-                                    list_kind: ListKind::Nil,
-                                },
-                            ),
-                        ),
-                ).consistent((v.t.deep_view(), v.v.deep_view())));
-                assert(ExprBodyRec.spec_body(param, rec).consistent(
-                    SCC1::Expr { expr: v.deep_view() },
-                ));
-                assert(ExprListRecBody.spec_body(param, rec).consistent(
-                    SCC1::Expr { expr: v.deep_view() },
-                ));
-
-                assert(l2 == expr_v_proj(rec(param_v)).byte_len(v.v.deep_view()));
-                assert(Bind(
-                    ExprKindFmt,
-                    |t: ExprKindSpec|
-                        expr_v_proj(
-                            rec(
-                                ExprListParam {
-                                    which: WhichSCC1::EXPRV,
-                                    expr_kind: t,
-                                    list_kind: ListKind::Nil,
-                                },
-                            ),
-                        ),
-                ).byte_len((v.t.deep_view(), v.v.deep_view())) == l1 + l2);
-                assert(ExprBodyRec.spec_body(param, rec).byte_len(
-                    SCC1::Expr { expr: v.deep_view() },
-                ) == l1 + l2);
-                assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::Expr { expr: v.deep_view() },
-                ) == l1 + l2);
-            }
-            Ok(l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?)
-        } else {
-            Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded))
-        }
-    }
-
-    fn prepare_expr_v_gas<'i>(&self, gas: usize, param: ExprListParam, v: &ExprV<'i>) -> (checked:
-        Result<usize, PreSerializeError>)
-        requires
-            param.which == WhichSCC1::EXPRV,
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ExprV { expr_v: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ExprV { expr_v: v.deep_view() },
-                )
-            },
-        decreases gas, 0nat,
-    {
-        match v {
-            ExprV::Num(num_val) => {
-                if param.expr_kind == ExprKind::Num {
-                    let len = U8.prepare(num_val)?;
-                    assert(ExprListRecBody.spec_body(
-                        param,
-                        FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                            &ExprListRecBody,
-                            gas as nat,
-                        ),
-                    ).consistent(SCC1::ExprV { expr_v: v.deep_view() }));
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                        &ExprListRecBody,
-                        gas as nat,
-                        param,
-                        SCC1::ExprV { expr_v: v.deep_view() },
-                    ));
-                    assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                        &ExprListRecBody,
-                        gas as nat,
-                        param,
-                        SCC1::ExprV { expr_v: v.deep_view() },
-                    ) == len);
-                    Ok(len)
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice))
-                }
-            },
-            ExprV::Group(list_val) => {
-                if param.expr_kind == ExprKind::Group {
-                    if gas > 0 {
-                        let param_list = ExprListParam {
-                            which: WhichSCC1::LIST,
-                            expr_kind: ExprKind::Num,
-                            list_kind: ListKind::Nil,
-                        };
-                        let len = self.prepare_list_gas(gas - 1, param_list, list_val)?;
-                        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                            &ExprListRecBody,
-                            (gas - 1) as nat,
-                            param_list,
-                            SCC1::List { list: list_val.deep_view() },
-                        ));
-                        assert(list_proj(
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            )(param_list),
-                        ).consistent(list_val.deep_view()));
-                        assert(Sum::<U8, ListProj<BundledSpecs<SCC1>>>::Inr(
-                            list_proj(
-                                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                    &ExprListRecBody,
-                                    gas as nat,
-                                )(param_list),
-                            ),
-                        ).consistent(
-                            ExprVMapper.spec_map_rev(SCC1::ExprV { expr_v: v.deep_view() }),
-                        ));
-                        assert(ExprVBodyRec.spec_body(
-                            param,
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            ),
-                        ).consistent(SCC1::ExprV { expr_v: v.deep_view() }));
-                        assert(ExprListRecBody.spec_body(
-                            param,
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            ),
-                        ).consistent(SCC1::ExprV { expr_v: v.deep_view() }));
-
-                        assert(len == list_proj(
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            )(param_list),
-                        ).byte_len(list_val.deep_view()));
-                        assert(Sum::<U8, ListProj<BundledSpecs<SCC1>>>::Inr(
-                            list_proj(
-                                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                    &ExprListRecBody,
-                                    gas as nat,
-                                )(param_list),
-                            ),
-                        ).byte_len(ExprVMapper.spec_map_rev(SCC1::ExprV { expr_v: v.deep_view() }))
-                            == len);
-                        assert(ExprVBodyRec.spec_body(
-                            param,
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            ),
-                        ).byte_len(SCC1::ExprV { expr_v: v.deep_view() }) == len);
-                        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                            &ExprListRecBody,
-                            gas as nat,
-                            param,
-                            SCC1::ExprV { expr_v: v.deep_view() },
-                        ) == len);
-                        Ok(len)
-                    } else {
-                        Err(
-                            PreSerializeError::not_compliant(
-                                ComplianceErrorKind::RecursionLimitExceeded,
-                            ),
-                        )
-                    }
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice))
-                }
-            },
-        }
-    }
-
-    fn prepare_list_gas<'i>(&self, gas: usize, param: ExprListParam, v: &List<'i>) -> (checked:
-        Result<usize, PreSerializeError>)
-        requires
-            param.which == WhichSCC1::LIST,
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::List { list: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::List { list: v.deep_view() },
-                )
-            },
-        decreases gas, 4nat,
-    {
-        let l1 = ListKindFmt.prepare(&v.t)?;
-        let param_v = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: v.t,
-        };
-        if gas > 0 {
-            let l2 = self.prepare_list_v_gas(gas - 1, param_v, &*v.v)?;
-            proof {
-                assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ListV { list_v: v.v.deep_view() },
-                ));
-                let rec = FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                );
-                assert(rec(param_v).0(SCC1::ListV { list_v: v.v.deep_view() }) == FixWith::<
-                    LIMIT,
-                    ExprListRecBody,
-                    ExprListParam,
-                >::consistent_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ListV { list_v: v.v.deep_view() },
-                ));
-                assert(rec(param_v).1(SCC1::ListV { list_v: v.v.deep_view() }) == FixWith::<
-                    LIMIT,
-                    ExprListRecBody,
-                    ExprListParam,
-                >::byte_len_gas(
-                    &ExprListRecBody,
-                    (gas - 1) as nat,
-                    param_v,
-                    SCC1::ListV { list_v: v.v.deep_view() },
-                ));
-
-                assert(list_v_proj(rec(param_v)).consistent(v.v.deep_view()));
-                assert(Bind(
-                    ListKindFmt,
-                    |t: ListKindSpec|
-                        list_v_proj(
-                            rec(
-                                ExprListParam {
-                                    which: WhichSCC1::LISTV,
-                                    expr_kind: ExprKind::Num,
-                                    list_kind: t,
-                                },
-                            ),
-                        ),
-                ).consistent((v.t.deep_view(), v.v.deep_view())));
-                assert(ListBodyRec.spec_body(param, rec).consistent(
-                    SCC1::List { list: v.deep_view() },
-                ));
-                assert(ExprListRecBody.spec_body(param, rec).consistent(
-                    SCC1::List { list: v.deep_view() },
-                ));
-
-                assert(l2 == list_v_proj(rec(param_v)).byte_len(v.v.deep_view()));
-                assert(Bind(
-                    ListKindFmt,
-                    |t: ListKindSpec|
-                        list_v_proj(
-                            rec(
-                                ExprListParam {
-                                    which: WhichSCC1::LISTV,
-                                    expr_kind: ExprKind::Num,
-                                    list_kind: t,
-                                },
-                            ),
-                        ),
-                ).byte_len((v.t.deep_view(), v.v.deep_view())) == l1 + l2);
-                assert(ListBodyRec.spec_body(param, rec).byte_len(
-                    SCC1::List { list: v.deep_view() },
-                ) == l1 + l2);
-                assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::List { list: v.deep_view() },
-                ) == l1 + l2);
-            }
-            Ok(l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?)
-        } else {
-            Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded))
-        }
-    }
-
-    fn prepare_list_v_gas<'i>(&self, gas: usize, param: ExprListParam, v: &ListV<'i>) -> (checked:
-        Result<usize, PreSerializeError>)
-        requires
-            param.which == WhichSCC1::LISTV,
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ListV { list_v: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ListV { list_v: v.deep_view() },
-                )
-            },
-        decreases gas, 3nat,
-    {
-        match v {
-            ListV::Nil(bytes_val) => {
-                if param.list_kind == ListKind::Nil {
-                    let len = Fixed::<0>.prepare(bytes_val)?;
-                    proof {
-                        assert(ExprListRecBody.spec_body(
-                            param,
-                            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                                &ExprListRecBody,
-                                gas as nat,
-                            ),
-                        ).consistent(SCC1::ListV { list_v: v.deep_view() }));
-                        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                            &ExprListRecBody,
-                            gas as nat,
-                            param,
-                            SCC1::ListV { list_v: v.deep_view() },
-                        ));
-                        assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                            &ExprListRecBody,
-                            gas as nat,
-                            param,
-                            SCC1::ListV { list_v: v.deep_view() },
-                        ) == len);
-                    }
-                    Ok(len)
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice))
-                }
-            },
-            ListV::Cons(cons_val) => {
-                if param.list_kind == ListKind::Cons {
-                    if gas > 0 {
-                        let param_cons = ExprListParam {
-                            which: WhichSCC1::LISTVCONS,
-                            expr_kind: ExprKind::Num,
-                            list_kind: ListKind::Nil,
-                        };
-                        let len = self.prepare_list_v_cons_gas(gas - 1, param_cons, cons_val)?;
-                        proof {
-                            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                                &ExprListRecBody,
-                                (gas - 1) as nat,
-                                param_cons,
-                                SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                            ));
-                            let rec = FixWith::<
-                                LIMIT,
-                                ExprListRecBody,
-                                ExprListParam,
-                            >::specs_callback(&ExprListRecBody, gas as nat);
-                            assert(rec(param_cons).0(
-                                SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                            ) == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                                &ExprListRecBody,
-                                (gas - 1) as nat,
-                                param_cons,
-                                SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                            ));
-                            assert(rec(param_cons).1(
-                                SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                            ) == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                                &ExprListRecBody,
-                                (gas - 1) as nat,
-                                param_cons,
-                                SCC1::ListVCons { list_v_cons: cons_val.deep_view() },
-                            ));
-
-                            assert(list_v_cons_proj(rec(param_cons)).consistent(
-                                cons_val.deep_view(),
-                            ));
-                            assert(Sum::<Fixed<0>, ListVConsProj<BundledSpecs<SCC1>>>::Inr(
-                                list_v_cons_proj(rec(param_cons)),
-                            ).consistent(
-                                ListVMapper.spec_map_rev(SCC1::ListV { list_v: v.deep_view() }),
-                            ));
-                            assert(ListVBodyRec.spec_body(param, rec).consistent(
-                                SCC1::ListV { list_v: v.deep_view() },
-                            ));
-                            assert(ExprListRecBody.spec_body(param, rec).consistent(
-                                SCC1::ListV { list_v: v.deep_view() },
-                            ));
-
-                            assert(len == list_v_cons_proj(rec(param_cons)).byte_len(
-                                cons_val.deep_view(),
-                            ));
-                            assert(Sum::<Fixed<0>, ListVConsProj<BundledSpecs<SCC1>>>::Inr(
-                                list_v_cons_proj(rec(param_cons)),
-                            ).byte_len(
-                                ListVMapper.spec_map_rev(SCC1::ListV { list_v: v.deep_view() }),
-                            ) == len);
-                            assert(ListVBodyRec.spec_body(param, rec).byte_len(
-                                SCC1::ListV { list_v: v.deep_view() },
-                            ) == len);
-                            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                                &ExprListRecBody,
-                                gas as nat,
-                                param,
-                                SCC1::ListV { list_v: v.deep_view() },
-                            ) == len);
-                        }
-                        Ok(len)
-                    } else {
-                        Err(
-                            PreSerializeError::not_compliant(
-                                ComplianceErrorKind::RecursionLimitExceeded,
-                            ),
-                        )
-                    }
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidChoice))
-                }
-            },
-        }
-    }
-
-    fn prepare_list_v_cons_gas<'i>(
-        &self,
-        gas: usize,
-        param: ExprListParam,
-        v: &ListVCons<'i>,
-    ) -> (checked: Result<usize, PreSerializeError>)
-        requires
-            param.which == WhichSCC1::LISTVCONS,
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ListVCons { list_v_cons: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    param,
-                    SCC1::ListVCons { list_v_cons: v.deep_view() },
-                )
-            },
-        decreases gas, 2nat,
-    {
-        if gas > 0 {
-            let param_head = ExprListParam {
-                which: WhichSCC1::EXPR,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            let l1 = self.prepare_expr_gas(gas - 1, param_head, &v.head)?;
-            let param_tail = ExprListParam {
-                which: WhichSCC1::LIST,
-                expr_kind: ExprKind::Num,
-                list_kind: ListKind::Nil,
-            };
-            let l2 = self.prepare_list_gas(gas - 1, param_tail, &v.tail)?;
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                (gas - 1) as nat,
-                param_head,
-                SCC1::Expr { expr: v.head.deep_view() },
-            ));
-            assert(expr_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_head),
-            ).consistent(v.head.deep_view()));
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                (gas - 1) as nat,
-                param_tail,
-                SCC1::List { list: v.tail.deep_view() },
-            ));
-            assert(list_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_tail),
-            ).consistent(v.tail.deep_view()));
-            assert(Pair(
-                expr_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_head),
-                ),
-                list_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_tail),
-                ),
-            ).consistent(
-                ListVConsMapper.spec_map_rev(SCC1::ListVCons { list_v_cons: v.deep_view() }),
-            ));
-            assert(ListVConsBodyRec.spec_body(
-                param,
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                ),
-            ).consistent(SCC1::ListVCons { list_v_cons: v.deep_view() }));
-            assert(ExprListRecBody.spec_body(
-                param,
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                ),
-            ).consistent(SCC1::ListVCons { list_v_cons: v.deep_view() }));
-
-            assert(l1 == expr_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_head),
-            ).byte_len(v.head.deep_view()));
-            assert(l2 == list_proj(
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                )(param_tail),
-            ).byte_len(v.tail.deep_view()));
-            assert(Pair(
-                expr_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_head),
-                ),
-                list_proj(
-                    FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                        &ExprListRecBody,
-                        gas as nat,
-                    )(param_tail),
-                ),
-            ).byte_len(ListVConsMapper.spec_map_rev(SCC1::ListVCons { list_v_cons: v.deep_view() }))
-                == l1 + l2);
-            assert(ListVConsBodyRec.spec_body(
-                param,
-                FixWith::<LIMIT, ExprListRecBody, ExprListParam>::specs_callback(
-                    &ExprListRecBody,
-                    gas as nat,
-                ),
-            ).byte_len(SCC1::ListVCons { list_v_cons: v.deep_view() }) == l1 + l2);
-            assert(FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                &ExprListRecBody,
-                gas as nat,
-                param,
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ) == l1 + l2);
-            Ok(l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?)
-        } else {
-            Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded))
-        }
-    }
-
     fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<Expr<'i>>)
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
+                match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPR,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
+                    SCC1Param {
+                        which: SCC1Which::EXPR,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
                     },
                     ibuf@,
                 ) {
-                    Some((n, SCC1::Expr { expr })) => Some((n, expr)),
+                    Some((n, v)) => Some((n, v->expr)),
                     _ => None,
                 },
             ),
             r matches Ok((n, _)) ==> n <= ibuf@.len(),
+        decreases gas,
     {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPR,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        self.parse_expr_gas(gas, param, ibuf)
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _ = ibuf.len();
+        let (n1, expr_kind) = ExprKindFmt.parse(ibuf)?;
+        let rest = ibuf.skip(n1);
+        if gas > 0 {
+            let (n2, v) = ExprVFmt::<LIMIT> { expr_kind }.parse_gas(gas - 1, &rest)?;
+            Ok((n1 + n2, Expr { t: expr_kind, v: Box::new(v) }))
+        } else {
+            Err(ParseError::recursion_limit_exceeded())
+        }
     }
 
     fn serialize_gas<'i>(&self, gas: usize, v: &Expr<'i>, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
+            FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                &SCC1RecBody,
                 gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::EXPR,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
+                SCC1Param {
+                    which: SCC1Which::EXPR,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
                 },
                 SCC1::Expr { expr: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
-                ExprListRecBody,
-                ExprListParam,
+                SCC1RecBody,
+                SCC1Param,
             >::spec_serialize_gas(
-                &ExprListRecBody,
+                &SCC1RecBody,
                 gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::EXPR,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
+                SCC1Param {
+                    which: SCC1Which::EXPR,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
                 },
                 SCC1::Expr { expr: v.deep_view() },
             ),
+        decreases gas,
     {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPR,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        self.serialize_expr_gas(gas, param, v, obuf);
+        ExprKindFmt.serialize(&v.t, obuf);
+        ExprVFmt::<LIMIT> { expr_kind: v.t }.serialize_gas(gas - 1, &v.v, obuf);
     }
 
     fn prepare_gas<'i>(&self, gas: usize, v: &Expr<'i>) -> (checked: Result<
@@ -4360,34 +2247,38 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
     >)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
+                &&& FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPR,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
+                    SCC1Param {
+                        which: SCC1Which::EXPR,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
                     },
                     SCC1::Expr { expr: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
+                &&& len == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::byte_len_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPR,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
+                    SCC1Param {
+                        which: SCC1Which::EXPR,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
                     },
                     SCC1::Expr { expr: v.deep_view() },
                 )
             },
+        decreases gas,
     {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPR,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        self.prepare_expr_gas(gas, param, v)
+        let l1 = ExprKindFmt.prepare(&v.t)?;
+        if gas == 0 {
+            return Err(
+                PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
+            );
+        }
+        let l2 = ExprVFmt::<LIMIT> { expr_kind: v.t }.prepare_gas(gas - 1, &v.v)?;
+        let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+        Ok(total)
     }
 }
 
@@ -4396,518 +2287,14 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
+                match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LIST,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
+                    SCC1Param {
+                        which: SCC1Which::LIST,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
                     },
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::List { list })) => Some((n, list)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LIST,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.parse_list_gas(gas, param, ibuf)
-    }
-
-    fn serialize_gas<'i>(&self, gas: usize, v: &List<'i>, obuf: &mut Vec<u8>)
-        requires
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LIST,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::List { list: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LIST,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::List { list: v.deep_view() },
-            ),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LIST,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.serialize_list_gas(gas, param, v, obuf);
-    }
-
-    fn prepare_gas<'i>(&self, gas: usize, v: &List<'i>) -> (checked: Result<
-        usize,
-        PreSerializeError,
-    >)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LIST,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::List { list: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LIST,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::List { list: v.deep_view() },
-                )
-            },
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LIST,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.prepare_list_gas(gas, param, v)
-    }
-}
-
-impl<const LIMIT: usize> ExprVFmt<LIMIT> {
-    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ExprV<'i>>)
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPRV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ExprV { expr_v })) => Some((n, expr_v)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.parse_expr_v_gas(gas, param, ibuf)
-    }
-
-    fn serialize_gas<'i>(&self, gas: usize, v: &ExprV<'i>, obuf: &mut Vec<u8>)
-        requires
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::EXPRV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ExprV { expr_v: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::EXPRV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ExprV { expr_v: v.deep_view() },
-            ),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.serialize_expr_v_gas(gas, param, v, obuf);
-    }
-
-    fn prepare_gas<'i>(&self, gas: usize, v: &ExprV<'i>) -> (checked: Result<
-        usize,
-        PreSerializeError,
-    >)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPRV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ExprV { expr_v: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::EXPRV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ExprV { expr_v: v.deep_view() },
-                )
-            },
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::EXPRV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.prepare_expr_v_gas(gas, param, v)
-    }
-}
-
-impl<const LIMIT: usize> ListVConsFmt<LIMIT> {
-    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ListVCons<'i>>)
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTVCONS,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ListVCons { list_v_cons })) => Some((n, list_v_cons)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTVCONS,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.parse_list_v_cons_gas(gas, param, ibuf)
-    }
-
-    fn serialize_gas<'i>(&self, gas: usize, v: &ListVCons<'i>, obuf: &mut Vec<u8>)
-        requires
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LISTVCONS,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LISTVCONS,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ListVCons { list_v_cons: v.deep_view() },
-            ),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTVCONS,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.serialize_list_v_cons_gas(gas, param, v, obuf);
-    }
-
-    fn prepare_gas<'i>(&self, gas: usize, v: &ListVCons<'i>) -> (checked: Result<
-        usize,
-        PreSerializeError,
-    >)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTVCONS,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ListVCons { list_v_cons: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTVCONS,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ListVCons { list_v_cons: v.deep_view() },
-                )
-            },
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTVCONS,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.prepare_list_v_cons_gas(gas, param, v)
-    }
-}
-
-impl<const LIMIT: usize> ListVFmt<LIMIT> {
-    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ListV<'i>>)
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ExprListRecBody, ExprListParam>::spec_parse_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    ibuf@,
-                ) {
-                    Some((n, SCC1::ListV { list_v })) => Some((n, list_v)),
-                    _ => None,
-                },
-            ),
-            r matches Ok((n, _)) ==> n <= ibuf@.len(),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.parse_list_v_gas(gas, param, ibuf)
-    }
-
-    fn serialize_gas<'i>(&self, gas: usize, v: &ListV<'i>, obuf: &mut Vec<u8>)
-        requires
-            FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LISTV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ListV { list_v: v.deep_view() },
-            ),
-        ensures
-            final(obuf)@ == old(obuf)@ + FixWith::<
-                LIMIT,
-                ExprListRecBody,
-                ExprListParam,
-            >::spec_serialize_gas(
-                &ExprListRecBody,
-                gas as nat,
-                ExprListParam {
-                    which: WhichSCC1::LISTV,
-                    expr_kind: ExprKind::Num,
-                    list_kind: ListKind::Nil,
-                },
-                SCC1::ListV { list_v: v.deep_view() },
-            ),
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.serialize_list_v_gas(gas, param, v, obuf);
-    }
-
-    fn prepare_gas<'i>(&self, gas: usize, v: &ListV<'i>) -> (checked: Result<
-        usize,
-        PreSerializeError,
-    >)
-        ensures
-            checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ExprListRecBody, ExprListParam>::consistent_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ListV { list_v: v.deep_view() },
-                )
-                &&& len == FixWith::<LIMIT, ExprListRecBody, ExprListParam>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    ExprListParam {
-                        which: WhichSCC1::LISTV,
-                        expr_kind: ExprKind::Num,
-                        list_kind: ListKind::Nil,
-                    },
-                    SCC1::ListV { list_v: v.deep_view() },
-                )
-            },
-    {
-        let param = ExprListParam {
-            which: WhichSCC1::LISTV,
-            expr_kind: ExprKind::Num,
-            list_kind: ListKind::Nil,
-        };
-        ExprFmt::<LIMIT>.prepare_list_v_gas(gas, param, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprFmt<LIMIT> {
-    type PT = Expr<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<Expr<'i>> for ExprFmt<LIMIT> {
-    fn serialize(&self, v: &Expr<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<Expr<'i>> for ExprFmt<LIMIT> {
-    fn prepare(&self, v: &Expr<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListFmt<LIMIT> {
-    type PT = List<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<List<'i>> for ListFmt<LIMIT> {
-    fn serialize(&self, v: &List<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<List<'i>> for ListFmt<LIMIT> {
-    fn prepare(&self, v: &List<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ExprVFmt<LIMIT> {
-    type PT = ExprV<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<ExprV<'i>> for ExprVFmt<LIMIT> {
-    fn serialize(&self, v: &ExprV<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<ExprV<'i>> for ExprVFmt<LIMIT> {
-    fn prepare(&self, v: &ExprV<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListVConsFmt<LIMIT> {
-    type PT = ListVCons<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<ListVCons<'i>> for ListVConsFmt<LIMIT> {
-    fn serialize(&self, v: &ListVCons<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<ListVCons<'i>> for ListVConsFmt<LIMIT> {
-    fn prepare(&self, v: &ListVCons<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ListVFmt<LIMIT> {
-    type PT = ListV<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<ListV<'i>> for ListVFmt<LIMIT> {
-    fn serialize(&self, v: &ListV<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<ListV<'i>> for ListVFmt<LIMIT> {
-    fn prepare(&self, v: &ListV<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<const LIMIT: usize> ByteListFmt<LIMIT> {
-    fn parse_gas(&self, gas: usize, ibuf: &&[u8]) -> (r: PResult<ByteList>)
-        ensures
-            parse_matches_spec(
-                r,
-                match FixWith::<LIMIT, ByteListRecBody, WhichFmt2>::spec_parse_gas(
-                    &ByteListRecBody,
-                    gas as nat,
-                    WhichFmt2::BYTELIST,
                     ibuf@,
                 ) {
                     Some((n, v)) => Some((n, v->list)),
@@ -4920,131 +2307,106 @@ impl<const LIMIT: usize> ByteListFmt<LIMIT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
         let _ = ibuf.len();
-        let (n1, tag) = U8.parse(ibuf)?;
+        let (n1, list_kind) = ListKindFmt.parse(ibuf)?;
         let rest = ibuf.skip(n1);
-        match tag {
-            0x20u8 => { Ok((n1, ByteList::Nil)) },
-            0x21u8 => {
-                if gas > 0 {
-                    let (n2, head) = U8.parse(&rest)?;
-                    let rest2 = rest.skip(n2);
-                    let (n3, tail) = self.parse_gas(gas - 1, &rest2)?;
-                    Ok((n1 + n2 + n3, ByteList::Cons(head, Box::new(tail))))
-                } else {
-                    Err(ParseError::recursion_limit_exceeded())
-                }
-            },
-            _ => { Err(ParseError::invalid_tag()) },
+        if gas > 0 {
+            let (n2, v) = ListVFmt::<LIMIT> { list_kind }.parse_gas(gas - 1, &rest)?;
+            Ok((n1 + n2, List { t: list_kind, v: Box::new(v) }))
+        } else {
+            Err(ParseError::recursion_limit_exceeded())
         }
     }
 
-    fn serialize_gas(&self, gas: usize, v: &ByteList, obuf: &mut Vec<u8>)
+    fn serialize_gas<'i>(&self, gas: usize, v: &List<'i>, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ByteListRecBody, WhichFmt2>::consistent_gas(
-                &ByteListRecBody,
+            FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                &SCC1RecBody,
                 gas as nat,
-                WhichFmt2::BYTELIST,
-                ByteListValue::ByteList { list: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::LIST,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
+                },
+                SCC1::List { list: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
-                ByteListRecBody,
-                WhichFmt2,
+                SCC1RecBody,
+                SCC1Param,
             >::spec_serialize_gas(
-                &ByteListRecBody,
+                &SCC1RecBody,
                 gas as nat,
-                WhichFmt2::BYTELIST,
-                ByteListValue::ByteList { list: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::LIST,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
+                },
+                SCC1::List { list: v.deep_view() },
             ),
         decreases gas,
     {
-        match v {
-            ByteList::Nil => {
-                U8.serialize(&0x20u8, obuf);
-            },
-            ByteList::Cons(head, tail) => {
-                U8.serialize(&0x21u8, obuf);
-                U8.serialize(head, obuf);
-                self.serialize_gas(gas - 1, tail, obuf);
-            },
-        }
+        ListKindFmt.serialize(&v.t, obuf);
+        ListVFmt::<LIMIT> { list_kind: v.t }.serialize_gas(gas - 1, &v.v, obuf);
     }
 
-    fn prepare_gas(&self, gas: usize, v: &ByteList) -> (checked: Result<usize, PreSerializeError>)
+    fn prepare_gas<'i>(&self, gas: usize, v: &List<'i>) -> (checked: Result<
+        usize,
+        PreSerializeError,
+    >)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ByteListRecBody, WhichFmt2>::consistent_gas(
-                    &ByteListRecBody,
+                &&& FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    WhichFmt2::BYTELIST,
-                    ByteListValue::ByteList { list: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::LIST,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::List { list: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ByteListRecBody, WhichFmt2>::byte_len_gas(
-                    &ByteListRecBody,
+                &&& len == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::byte_len_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    WhichFmt2::BYTELIST,
-                    ByteListValue::ByteList { list: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::LIST,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::List { list: v.deep_view() },
                 )
             },
         decreases gas,
     {
-        match v {
-            ByteList::Nil => {
-                let total = U8.prepare(&0x20u8)?;
-                Ok(total)
-            },
-            ByteList::Cons(head, tail) => {
-                let l1 = U8.prepare(&0x21u8)?;
-                let l2 = U8.prepare(head)?;
-                if gas == 0 {
-                    return Err(
-                        PreSerializeError::not_compliant(
-                            ComplianceErrorKind::RecursionLimitExceeded,
-                        ),
-                    );
-                }
-                let l3 = self.prepare_gas(gas - 1, tail)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
-            },
+        let l1 = ListKindFmt.prepare(&v.t)?;
+        if gas == 0 {
+            return Err(
+                PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
+            );
         }
+        let l2 = ListVFmt::<LIMIT> { list_kind: v.t }.prepare_gas(gas - 1, &v.v)?;
+        let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+        Ok(total)
     }
 }
 
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ByteListFmt<LIMIT> {
-    type PT = ByteList;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<const LIMIT: usize> Serializer<ByteList> for ByteListFmt<LIMIT> {
-    fn serialize(&self, v: &ByteList, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<const LIMIT: usize> Prepare<ByteList> for ByteListFmt<LIMIT> {
-    fn prepare(&self, v: &ByteList) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<const LIMIT: usize> ChainAFmt<LIMIT> {
-    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ChainA<'i>>)
+impl<const LIMIT: usize> ExprVFmt<LIMIT> {
+    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ExprV<'i>>)
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ChainRecBody, ChainParam>::spec_parse_gas(
-                    &ChainRecBody,
+                match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::A, tag: self.tag },
+                    SCC1Param {
+                        which: SCC1Which::EXPRV,
+                        expr_kind: self.expr_kind.deep_view(),
+                        list_kind: arbitrary(),
+                    },
                     ibuf@,
                 ) {
-                    Some((n, v)) => Some((n, v->a)),
+                    Some((n, v)) => Some((n, v->expr_v)),
                     _ => None,
                 },
             ),
@@ -5054,28 +2416,15 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
         let _ = ibuf.len();
-        match self.tag {
-            0u8 => {
-                let (n1, val) = U8.parse(ibuf)?;
-                if val >= 1 && val <= 10 {
-                    Ok((n1, ChainA::End(val)))
-                } else {
-                    Err(ParseError::cond_rejected())
-                }
+        match self.expr_kind {
+            ExprKind::Num => {
+                let (n1, v) = U8.parse(ibuf)?;
+                Ok((n1, ExprV::Num(v)))
             },
-            _ => {
-                let (n1, len) = U8.parse(ibuf)?;
-                let rest = ibuf.skip(n1);
-                let (n2, payload) = Varied(len).parse(&rest)?;
-                let rest2 = rest.skip(n2);
-                let (n3, next_tag) = U8.parse(&rest2)?;
-                let rest3 = rest2.skip(n3);
+            ExprKind::Group => {
                 if gas > 0 {
-                    let (n4, tail) = ChainBFmt::<LIMIT> { tag: next_tag }.parse_gas(
-                        gas - 1,
-                        &rest3,
-                    )?;
-                    Ok((n1 + n2 + n3 + n4, ChainA::Step(len, payload, next_tag, Box::new(tail))))
+                    let (n1, v) = ListFmt::<LIMIT>.parse_gas(gas - 1, ibuf)?;
+                    Ok((n1, ExprV::Group(Box::new(v))))
                 } else {
                     Err(ParseError::recursion_limit_exceeded())
                 }
@@ -5083,76 +2432,77 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
         }
     }
 
-    fn serialize_gas<'i>(&self, gas: usize, v: &ChainA<'i>, obuf: &mut Vec<u8>)
+    fn serialize_gas<'i>(&self, gas: usize, v: &ExprV<'i>, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
-                &ChainRecBody,
+            FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                &SCC1RecBody,
                 gas as nat,
-                ChainParam { which: WhichChain::A, tag: self.tag },
-                ChainValueSpec::A { a: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::EXPRV,
+                    expr_kind: self.expr_kind.deep_view(),
+                    list_kind: arbitrary(),
+                },
+                SCC1::ExprV { expr_v: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
-                ChainRecBody,
-                ChainParam,
+                SCC1RecBody,
+                SCC1Param,
             >::spec_serialize_gas(
-                &ChainRecBody,
+                &SCC1RecBody,
                 gas as nat,
-                ChainParam { which: WhichChain::A, tag: self.tag },
-                ChainValueSpec::A { a: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::EXPRV,
+                    expr_kind: self.expr_kind,
+                    list_kind: arbitrary(),
+                },
+                SCC1::ExprV { expr_v: v.deep_view() },
             ),
         decreases gas,
     {
         match v {
-            ChainA::End(val) => {
-                U8.serialize(val, obuf);
+            ExprV::Num(n) => {
+                U8.serialize(n, obuf);
             },
-            ChainA::Step(len, payload, next_tag, tail) => {
-                U8.serialize(len, obuf);
-                Varied(*len).serialize(payload, obuf);
-                U8.serialize(next_tag, obuf);
-                ChainBFmt::<LIMIT> { tag: *next_tag }.serialize_gas(gas - 1, tail, obuf);
+            ExprV::Group(list) => {
+                ListFmt::<LIMIT>.serialize_gas(gas - 1, list, obuf);
             },
         }
     }
 
-    fn prepare_gas<'i>(&self, gas: usize, v: &ChainA<'i>) -> (checked: Result<
+    fn prepare_gas<'i>(&self, gas: usize, v: &ExprV<'i>) -> (checked: Result<
         usize,
         PreSerializeError,
     >)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
-                    &ChainRecBody,
+                &&& FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::A, tag: self.tag },
-                    ChainValueSpec::A { a: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::EXPRV,
+                        expr_kind: self.expr_kind.deep_view(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::ExprV { expr_v: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ChainRecBody, ChainParam>::byte_len_gas(
-                    &ChainRecBody,
+                &&& len == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::byte_len_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::A, tag: self.tag },
-                    ChainValueSpec::A { a: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::EXPRV,
+                        expr_kind: self.expr_kind.deep_view(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::ExprV { expr_v: v.deep_view() },
                 )
             },
         decreases gas,
     {
-        match v {
-            ChainA::End(val) => {
-                if self.tag == 0u8 && *val >= 1 && *val <= 10 {
-                    U8.prepare(val)
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
-                }
-            },
-            ChainA::Step(len, payload, next_tag, tail) => {
-                if self.tag == 0u8 {
-                    return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
-                }
-                let l1 = U8.prepare(len)?;
-                let l2 = Varied(*len).prepare(payload)?;
-                let l3 = U8.prepare(next_tag)?;
+        match (self.expr_kind, v) {
+            (ExprKind::Num, ExprV::Num(n)) => { U8.prepare(n) },
+            (ExprKind::Group, ExprV::Group(list)) => {
                 if gas == 0 {
                     return Err(
                         PreSerializeError::not_compliant(
@@ -5160,28 +2510,29 @@ impl<const LIMIT: usize> ChainAFmt<LIMIT> {
                         ),
                     );
                 }
-                let l4 = ChainBFmt::<LIMIT> { tag: *next_tag }.prepare_gas(gas - 1, tail)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
-                let total = sum2.checked_add(l4).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
+                ListFmt::<LIMIT>.prepare_gas(gas - 1, list)
             },
+            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected)),
         }
     }
 }
 
-impl<const LIMIT: usize> ChainBFmt<LIMIT> {
-    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ChainB<'i>>)
+impl<const LIMIT: usize> ListVConsFmt<LIMIT> {
+    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ListVCons<'i>>)
         ensures
             parse_matches_spec(
                 r,
-                match FixWith::<LIMIT, ChainRecBody, ChainParam>::spec_parse_gas(
-                    &ChainRecBody,
+                match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::B, tag: self.tag },
+                    SCC1Param {
+                        which: SCC1Which::LISTVCONS,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
+                    },
                     ibuf@,
                 ) {
-                    Some((n, v)) => Some((n, v->b)),
+                    Some((n, v)) => Some((n, v->list_v_cons)),
                     _ => None,
                 },
             ),
@@ -5191,26 +2542,124 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 
         let _ = ibuf.len();
-        match self.tag {
-            0u8 => {
-                let (n1, val) = U16Le.parse(ibuf)?;
-                if val >= 256 {
-                    Ok((n1, ChainB::End(val)))
-                } else {
-                    Err(ParseError::cond_rejected())
-                }
+        if gas > 0 {
+            let (n1, head) = ExprFmt::<LIMIT>.parse_gas(gas - 1, ibuf)?;
+            let rest = ibuf.skip(n1);
+            let (n2, tail) = ListFmt::<LIMIT>.parse_gas(gas - 1, &rest)?;
+            Ok((n1 + n2, ListVCons { head: Box::new(head), tail: Box::new(tail) }))
+        } else {
+            Err(ParseError::recursion_limit_exceeded())
+        }
+    }
+
+    fn serialize_gas<'i>(&self, gas: usize, v: &ListVCons<'i>, obuf: &mut Vec<u8>)
+        requires
+            FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                &SCC1RecBody,
+                gas as nat,
+                SCC1Param {
+                    which: SCC1Which::LISTVCONS,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
+                },
+                SCC1::ListVCons { list_v_cons: v.deep_view() },
+            ),
+        ensures
+            final(obuf)@ == old(obuf)@ + FixWith::<
+                LIMIT,
+                SCC1RecBody,
+                SCC1Param,
+            >::spec_serialize_gas(
+                &SCC1RecBody,
+                gas as nat,
+                SCC1Param {
+                    which: SCC1Which::LISTVCONS,
+                    expr_kind: arbitrary(),
+                    list_kind: arbitrary(),
+                },
+                SCC1::ListVCons { list_v_cons: v.deep_view() },
+            ),
+        decreases gas,
+    {
+        ExprFmt::<LIMIT>.serialize_gas(gas - 1, &v.head, obuf);
+        ListFmt::<LIMIT>.serialize_gas(gas - 1, &v.tail, obuf);
+    }
+
+    fn prepare_gas<'i>(&self, gas: usize, v: &ListVCons<'i>) -> (checked: Result<
+        usize,
+        PreSerializeError,
+    >)
+        ensures
+            checked matches Ok(len) ==> {
+                &&& FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                    &SCC1RecBody,
+                    gas as nat,
+                    SCC1Param {
+                        which: SCC1Which::LISTVCONS,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::ListVCons { list_v_cons: v.deep_view() },
+                )
+                &&& len == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::byte_len_gas(
+                    &SCC1RecBody,
+                    gas as nat,
+                    SCC1Param {
+                        which: SCC1Which::LISTVCONS,
+                        expr_kind: arbitrary(),
+                        list_kind: arbitrary(),
+                    },
+                    SCC1::ListVCons { list_v_cons: v.deep_view() },
+                )
             },
-            _ => {
-                let (n1, payload) = U32Le.parse(ibuf)?;
-                let rest = ibuf.skip(n1);
-                let (n2, next_tag) = U8.parse(&rest)?;
-                let rest2 = rest.skip(n2);
+        decreases gas,
+    {
+        if gas == 0 {
+            return Err(
+                PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded),
+            );
+        }
+        let l1 = ExprFmt::<LIMIT>.prepare_gas(gas - 1, &v.head)?;
+        let l2 = ListFmt::<LIMIT>.prepare_gas(gas - 1, &v.tail)?;
+        let total = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+        Ok(total)
+    }
+}
+
+impl<const LIMIT: usize> ListVFmt<LIMIT> {
+    fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<ListV<'i>>)
+        ensures
+            parse_matches_spec(
+                r,
+                match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+                    &SCC1RecBody,
+                    gas as nat,
+                    SCC1Param {
+                        which: SCC1Which::LISTV,
+                        expr_kind: arbitrary(),
+                        list_kind: self.list_kind.deep_view(),
+                    },
+                    ibuf@,
+                ) {
+                    Some((n, v)) => Some((n, v->list_v)),
+                    _ => None,
+                },
+            ),
+            r matches Ok((n, _)) ==> n <= ibuf@.len(),
+        decreases gas,
+    {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _ = ibuf.len();
+        match self.list_kind {
+            ListKind::Nil => {
+                let (n1, v) = Fixed::<0>.parse(ibuf)?;
+                Ok((n1, ListV::Nil(v)))
+            },
+            ListKind::Cons => {
                 if gas > 0 {
-                    let (n3, tail) = ChainAFmt::<LIMIT> { tag: next_tag }.parse_gas(
-                        gas - 1,
-                        &rest2,
-                    )?;
-                    Ok((n1 + n2 + n3, ChainB::Step(payload, next_tag, Box::new(tail))))
+                    let (n1, v) = ListVConsFmt::<LIMIT>.parse_gas(gas - 1, ibuf)?;
+                    Ok((n1, ListV::Cons(Box::new(v))))
                 } else {
                     Err(ParseError::recursion_limit_exceeded())
                 }
@@ -5218,74 +2667,77 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
         }
     }
 
-    fn serialize_gas<'i>(&self, gas: usize, v: &ChainB<'i>, obuf: &mut Vec<u8>)
+    fn serialize_gas<'i>(&self, gas: usize, v: &ListV<'i>, obuf: &mut Vec<u8>)
         requires
-            FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
-                &ChainRecBody,
+            FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                &SCC1RecBody,
                 gas as nat,
-                ChainParam { which: WhichChain::B, tag: self.tag },
-                ChainValueSpec::B { b: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::LISTV,
+                    expr_kind: arbitrary(),
+                    list_kind: self.list_kind.deep_view(),
+                },
+                SCC1::ListV { list_v: v.deep_view() },
             ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
-                ChainRecBody,
-                ChainParam,
+                SCC1RecBody,
+                SCC1Param,
             >::spec_serialize_gas(
-                &ChainRecBody,
+                &SCC1RecBody,
                 gas as nat,
-                ChainParam { which: WhichChain::B, tag: self.tag },
-                ChainValueSpec::B { b: v.deep_view() },
+                SCC1Param {
+                    which: SCC1Which::LISTV,
+                    expr_kind: arbitrary(),
+                    list_kind: self.list_kind.deep_view(),
+                },
+                SCC1::ListV { list_v: v.deep_view() },
             ),
         decreases gas,
     {
         match v {
-            ChainB::End(val) => {
-                U16Le.serialize(val, obuf);
+            ListV::Nil(bytes) => {
+                Fixed::<0>.serialize(bytes, obuf);
             },
-            ChainB::Step(payload, next_tag, tail) => {
-                U32Le.serialize(payload, obuf);
-                U8.serialize(next_tag, obuf);
-                ChainAFmt::<LIMIT> { tag: *next_tag }.serialize_gas(gas - 1, tail, obuf);
+            ListV::Cons(cons) => {
+                ListVConsFmt::<LIMIT>.serialize_gas(gas - 1, cons, obuf);
             },
         }
     }
 
-    fn prepare_gas<'i>(&self, gas: usize, v: &ChainB<'i>) -> (checked: Result<
+    fn prepare_gas<'i>(&self, gas: usize, v: &ListV<'i>) -> (checked: Result<
         usize,
         PreSerializeError,
     >)
         ensures
             checked matches Ok(len) ==> {
-                &&& FixWith::<LIMIT, ChainRecBody, ChainParam>::consistent_gas(
-                    &ChainRecBody,
+                &&& FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::B, tag: self.tag },
-                    ChainValueSpec::B { b: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::LISTV,
+                        expr_kind: arbitrary(),
+                        list_kind: self.list_kind.deep_view(),
+                    },
+                    SCC1::ListV { list_v: v.deep_view() },
                 )
-                &&& len == FixWith::<LIMIT, ChainRecBody, ChainParam>::byte_len_gas(
-                    &ChainRecBody,
+                &&& len == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::byte_len_gas(
+                    &SCC1RecBody,
                     gas as nat,
-                    ChainParam { which: WhichChain::B, tag: self.tag },
-                    ChainValueSpec::B { b: v.deep_view() },
+                    SCC1Param {
+                        which: SCC1Which::LISTV,
+                        expr_kind: arbitrary(),
+                        list_kind: self.list_kind.deep_view(),
+                    },
+                    SCC1::ListV { list_v: v.deep_view() },
                 )
             },
         decreases gas,
     {
-        match v {
-            ChainB::End(val) => {
-                if self.tag == 0u8 && *val >= 256 {
-                    U16Le.prepare(val)
-                } else {
-                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
-                }
-            },
-            ChainB::Step(payload, next_tag, tail) => {
-                if self.tag == 0u8 {
-                    return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
-                }
-                let l1 = U32Le.prepare(payload)?;
-                let l2 = U8.prepare(next_tag)?;
+        match (self.list_kind, v) {
+            (ListKind::Nil, ListV::Nil(bytes)) => { Fixed::<0>.prepare(bytes) },
+            (ListKind::Cons, ListV::Cons(cons)) => {
                 if gas == 0 {
                     return Err(
                         PreSerializeError::not_compliant(
@@ -5293,78 +2745,11 @@ impl<const LIMIT: usize> ChainBFmt<LIMIT> {
                         ),
                     );
                 }
-                let l3 = ChainAFmt::<LIMIT> { tag: *next_tag }.prepare_gas(gas - 1, tail)?;
-                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-                let total = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
-                Ok(total)
+                ListVConsFmt::<LIMIT>.prepare_gas(gas - 1, cons)
             },
+            _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected)),
         }
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ChainAFmt<LIMIT> {
-    type PT = ChainA<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<ChainA<'i>> for ChainAFmt<LIMIT> {
-    fn serialize(&self, v: &ChainA<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<ChainA<'i>> for ChainAFmt<LIMIT> {
-    fn prepare(&self, v: &ChainA<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
-    }
-}
-
-impl<'i, const LIMIT: usize> Parser<&'i [u8]> for ChainBFmt<LIMIT> {
-    type PT = ChainB<'i>;
-
-    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        self.parse_gas(LIMIT, ibuf)
-    }
-}
-
-impl<'i, const LIMIT: usize> Serializer<ChainB<'i>> for ChainBFmt<LIMIT> {
-    fn serialize(&self, v: &ChainB<'i>, obuf: &mut Vec<u8>) {
-        self.serialize_gas(LIMIT, v, obuf);
-    }
-}
-
-impl<'i, const LIMIT: usize> Prepare<ChainB<'i>> for ChainBFmt<LIMIT> {
-    fn prepare(&self, v: &ChainB<'i>) -> Result<usize, PreSerializeError> {
-        self.prepare_gas(LIMIT, v)
     }
 }
 
 } // verus!
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn chain_mutual_exec_roundtrip() {
-        let payload: &[u8] = &[10, 20, 30];
-        let chain = ChainA::Step(
-            3,
-            payload,
-            1,
-            Box::new(ChainB::Step(0x12345678, 0, Box::new(ChainA::End(5)))),
-        );
-
-        let fmt = ChainAFmt::<10> { tag: 1 };
-        let mut obuf = Vec::new();
-        fmt.serialize(&chain, &mut obuf);
-        assert_eq!(obuf, vec![3, 10, 20, 30, 1, 0x78, 0x56, 0x34, 0x12, 0, 5]);
-
-        let mut ibuf = obuf.as_slice();
-        let (n, parsed) = fmt.parse(&&mut ibuf).unwrap();
-        assert_eq!(n, 11);
-        assert_eq!(parsed, chain);
-    }
-}
