@@ -174,6 +174,25 @@ pub broadcast proof fn lemma_disjoint_choice<S1: SpecParser, S2: SpecParser, S3:
     reveal(disjoint_domains);
 }
 
+/// An [`Alt`] parser is disjoint from another parser if both branches are.
+///
+/// ## NOTE
+///
+/// The trigger `disjoint_domains(other, choice)` matches `Alt(..., Alt(..., ...))` but not `Alt(Alt(..., ...), ...)`.
+pub broadcast proof fn lemma_disjoint_alt<
+    S1: SpecParser,
+    S2: SpecParser<PVal = S1::PVal>,
+    S3: SpecParser<PVal = S1::PVal>,
+>(alt: Alt<S1, S2>, other: S3)
+    requires
+        disjoint_domains(other, alt.0),
+        disjoint_domains(other, alt.1),
+    ensures
+        #[trigger] disjoint_domains(other, alt),
+{
+    reveal(disjoint_domains);
+}
+
 /// An [`Optional<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
 pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: SpecParser>(
     p: P,
@@ -281,6 +300,7 @@ pub broadcast proof fn lemma_disjoint_repeat_till_end<P: Productive, A: SpecPars
 
 pub broadcast group disjointness_lemmas {
     lemma_disjoint_choice,
+    lemma_disjoint_alt,
     lemma_disjoint_const,
     lemma_disjoint_prefix_tagged,
     lemma_disjoint_refined,

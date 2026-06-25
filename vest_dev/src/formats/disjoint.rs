@@ -107,4 +107,28 @@ proof fn test_disjointness_shared_prefix() {
     assert(c_main.unambiguous());
 }
 
+# [derive (Debug, Clone, Copy, PartialEq, Eq, Structural)]
+pub enum WhichSCC1 {
+    EXPR,
+    LIST,
+    EXPRV,
+    LISTVCONS,
+    LISTV,
+}
+
+proof fn test_disjointness_alt_cond(which: WhichSCC1) {
+    let nested_alt: Alt<Cond<U8>, Alt<Cond<U8>, Alt<Cond<U8>, Alt<Cond<U8>, Cond<U8>>>>> = Alt(
+        Cond(which == WhichSCC1::EXPR, U8),
+        Alt(
+            Cond(which == WhichSCC1::LIST, U8),
+            Alt(
+                Cond(which == WhichSCC1::EXPRV, U8),
+                Alt(Cond(which == WhichSCC1::LISTVCONS, U8), Cond(which == WhichSCC1::LISTV, U8)),
+            ),
+        ),
+    );
+
+    assert(nested_alt.unambiguous());
+}
+
 } // verus!
