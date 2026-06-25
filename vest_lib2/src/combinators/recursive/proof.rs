@@ -352,22 +352,22 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         v2: Body::T,
     )
         ensures
-            self.spec_parse_gas(gas, param, buf1) == Some((n1, v1)) ==>
-            self.spec_parse_gas(gas, param, buf2) == Some((n2, v2)) ==>
+            Self::spec_parse_gas(&self.0, gas, param, buf1) == Some((n1, v1)) ==>
+            Self::spec_parse_gas(&self.0, gas, param, buf2) == Some((n2, v2)) ==>
             v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
         decreases gas,
     {
-        if !(self.spec_parse_gas(gas, param, buf1) == Some((n1, v1))) {
+        if !(Self::spec_parse_gas(&self.0, gas, param, buf1) == Some((n1, v1))) {
             return ;
         }
-        if !(self.spec_parse_gas(gas, param, buf2) == Some((n2, v2))) {
+        if !(Self::spec_parse_gas(&self.0, gas, param, buf2) == Some((n2, v2))) {
             return ;
         }
         if !(v1 == v2) {
             return ;
         }
 
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(&self.0, gas);
         let callback_p = callback(param).2;
         let callback_c = callback(param).0;
         let callback_b = callback(param).1;
@@ -417,8 +417,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         body.lemma_parse_non_malleable(buf1, buf2);
 
-        assert(self.spec_parse_gas(gas, param, buf1) == body.spec_parse(buf1));
-        assert(self.spec_parse_gas(gas, param, buf2) == body.spec_parse(buf2));
+        assert(Self::spec_parse_gas(&self.0, gas, param, buf1) == body.spec_parse(buf1));
+        assert(Self::spec_parse_gas(&self.0, gas, param, buf2) == body.spec_parse(buf2));
     }
 }
 
@@ -460,13 +460,17 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         obuf: Seq<u8>,
     )
         requires
-            self.consistent_gas(gas, param, v),
+            Self::consistent_gas(&self.0, gas, param, v),
         ensures
-            self.spec_parse_gas(gas, param, self.spec_serialize_dps_gas(gas, param, v, obuf))
-                == Some((self.byte_len_gas(gas, param, v) as int, v)),
+            Self::spec_parse_gas(
+                &self.0,
+                gas,
+                param,
+                Self::spec_serialize_dps_gas(&self.0, gas, param, v, obuf),
+            ) == Some((Self::byte_len_gas(&self.0, gas, param, v) as int, v)),
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(&self.0, gas);
 
         assert forall|p: Body::Param, vv: Body::T, buf: Seq<u8>|
             (callback(p).0(vv)) implies #[trigger] callback(p).2(callback(p).4(vv, buf)) == Some(
@@ -492,7 +496,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             if gas > 0 {
                 self.nontail_dps_by_induction((gas - 1) as nat, p, vv, buf);
                 let witness = choose|w: Seq<u8>|
-                    self.spec_serialize_dps_gas((gas - 1) as nat, p, vv, buf) == w + buf;
+                    Self::spec_serialize_dps_gas(&self.0, (gas - 1) as nat, p, vv, buf) == w + buf;
                 assert(callback(p).4(vv, buf) == witness + buf);
             } else {
                 assert(callback(p).4(vv, buf) == Seq::<u8>::empty() + buf);
@@ -509,13 +513,17 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.lemma_body_sp_roundtrip_dps_inv_preservation(param, callback);
         let body = self.0.spec_body(param, callback);
 
-        assert(self.consistent_gas(gas, param, v) == body.consistent(v));
+        assert(Self::consistent_gas(&self.0, gas, param, v) == body.consistent(v));
 
         body.theorem_serialize_dps_parse_roundtrip(v, obuf);
 
-        assert(self.spec_parse_gas(gas, param, self.spec_serialize_dps_gas(gas, param, v, obuf))
-            == body.spec_parse(body.spec_serialize_dps(v, obuf)));
-        assert(self.byte_len_gas(gas, param, v) == body.byte_len(v));
+        assert(Self::spec_parse_gas(
+            &self.0,
+            gas,
+            param,
+            Self::spec_serialize_dps_gas(&self.0, gas, param, v, obuf),
+        ) == body.spec_parse(body.spec_serialize_dps(v, obuf)));
+        assert(Self::byte_len_gas(&self.0, gas, param, v) == body.byte_len(v));
     }
 }
 
@@ -542,14 +550,15 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         obuf: Seq<u8>,
     )
         ensures
-            self.spec_serialize_dps_gas(gas, param, v, obuf) == self.spec_serialize_gas(
+            Self::spec_serialize_dps_gas(&self.0, gas, param, v, obuf) == Self::spec_serialize_gas(
+                &self.0,
                 gas,
                 param,
                 v,
             ) + obuf,
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(&self.0, gas);
 
         assert forall|p: Body::Param, vv: Body::T, buf: Seq<u8>| #[trigger]
             callback(p).4(vv, buf) == callback(p).3(vv) + buf by {
@@ -570,11 +579,9 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         body.lemma_serialize_equiv(v, obuf);
 
-        assert(self.spec_serialize_dps_gas(gas, param, v, obuf) == body.spec_serialize_dps(
-            v,
-            obuf,
-        ));
-        assert(self.spec_serialize_gas(gas, param, v) == body.spec_serialize(v));
+        assert(Self::spec_serialize_dps_gas(&self.0, gas, param, v, obuf)
+            == body.spec_serialize_dps(v, obuf));
+        assert(Self::spec_serialize_gas(&self.0, gas, param, v) == body.spec_serialize(v));
     }
 }
 
@@ -617,14 +624,14 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         v: Body::T,
     )
         requires
-            self.spec_parse_gas(gas, param, i1) == Some((n, v)),
+            Self::spec_parse_gas(&self.0, gas, param, i1) == Some((n, v)),
             0 <= n <= i2.len(),
             i2.take(n) == i1.take(n),
         ensures
-            self.spec_parse_gas(gas, param, i2) == Some((n, v)),
+            Self::spec_parse_gas(&self.0, gas, param, i2) == Some((n, v)),
         decreases gas,
     {
-        let callback = self.specs_callback(gas);
+        let callback = Self::specs_callback(&self.0, gas);
 
         assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
             callback(p).2(rem) matches Some((nn, _vv)) ==> 0 <= nn <= rem.len() by {
@@ -656,8 +663,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.lemma_body_no_lookahead_inv_preservation(param, callback);
         let body = self.0.spec_body(param, callback);
 
-        assert(self.spec_parse_gas(gas, param, i1) == body.spec_parse(i1));
-        assert(self.spec_parse_gas(gas, param, i2) == body.spec_parse(i2));
+        assert(Self::spec_parse_gas(&self.0, gas, param, i1) == body.spec_parse(i1));
+        assert(Self::spec_parse_gas(&self.0, gas, param, i2) == body.spec_parse(i2));
 
         body.lemma_no_lookahead(i1, i2);
 
