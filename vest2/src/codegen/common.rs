@@ -52,6 +52,10 @@ pub(crate) struct Analysis<'a> {
     pub(crate) infos: HashMap<String, FormatInfo>,
     /// Index into `sccs` for each member of a recursive SCC.
     pub(crate) scc_of: HashMap<String, usize>,
+    /// `(scc_idx, member_idx)` for each recursive SCC member.
+    pub(crate) scc_member_of: HashMap<String, (usize, usize)>,
+    /// Definition index in `defs` for each entry in `sccs`.
+    pub(crate) scc_def_indices: Vec<usize>,
     /// Metadata for each recursive SCC, indexed by `scc_of`.
     pub(crate) sccs: Vec<SccInfo>,
 }
@@ -381,17 +385,22 @@ impl<'a> Analysis<'a> {
             endianness,
             infos: HashMap::new(),
             scc_of: HashMap::new(),
+            scc_member_of: HashMap::new(),
+            scc_def_indices: Vec::new(),
             sccs: Vec::new(),
         };
         // Pre-assign SCC indices in source (file) order so SCC numbering is stable.
         let mut scc_source_order: std::collections::HashMap<*const RecursiveScc, usize> =
             Default::default();
+        let mut scc_def_index: std::collections::HashMap<*const RecursiveScc, usize> =
+            Default::default();
         let mut scc_counter = 0usize;
-        for def in defs {
+        for (def_idx, def) in defs.iter().enumerate() {
             if let Definition::RecursiveScc(scc) = def {
                 let ptr = scc as *const RecursiveScc;
                 if !scc_source_order.contains_key(&ptr) {
                     scc_source_order.insert(ptr, scc_counter);
+                    scc_def_index.insert(ptr, def_idx);
                     scc_counter += 1;
                 }
             }
@@ -415,9 +424,15 @@ impl<'a> Analysis<'a> {
                 let scc_idx = this.sccs.len();
                 let member_names: Vec<String> =
                     scc.members.iter().map(|m| m.name.clone()).collect();
-                for m in &member_names {
+                for (member_idx, m) in member_names.iter().enumerate() {
                     this.scc_of.insert(m.clone(), scc_idx);
+                    this.scc_member_of.insert(m.clone(), (scc_idx, member_idx));
                 }
+                this.scc_def_indices.push(
+                    *scc_def_index
+                        .get(&(scc as *const RecursiveScc))
+                        .expect("recursive SCC missing def index"),
+                );
                 // Compute shared needs_lifetime: any member with Bytes/Tail leaf
                 // or out-of-SCC reference that needs lifetime.
                 let nl = scc
@@ -609,6 +624,15 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn scc_info_for(&self, name: &str) -> Option<&SccInfo> {
         self.scc_of.get(name).map(|&idx| &self.sccs[idx])
+    }
+
+    pub(crate) fn recursive_member_for(&self, name: &str) -> Option<&'a SccMember> {
+        let (scc_idx, member_idx) = *self.scc_member_of.get(name)?;
+        let def_idx = *self.scc_def_indices.get(scc_idx)?;
+        match &self.defs[def_idx] {
+            Definition::RecursiveScc(scc) => scc.members.get(member_idx),
+            _ => None,
+        }
     }
 
     pub(crate) fn eval_const_length_expr(&self, len: &LengthExpr) -> Option<usize> {

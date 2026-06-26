@@ -253,14 +253,13 @@ impl<'a> Analysis<'a> {
     ) -> String {
         let info = self.info(name);
         let fmt_ident = format_ident!("{}", info.names.fmt);
-        let inner_ident = info.names.spec_ctor_ident();
         let top_value_ty = self.render_nominal_type(name, TypeMode::Spec);
         let wrapper_generics = self.wrapper_generics(param_defns);
         let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
 
         self.gen_derived_spec_impls(
             &fmt_ident,
-            &inner_ident,
+            &wrapper_generics,
             &wrapper_generics,
             &wrapper_call_args,
             &top_value_ty,
@@ -368,62 +367,62 @@ impl<'a> Analysis<'a> {
         out.finish()
     }
 
-    fn gen_derived_spec_impls(
+    pub(crate) fn gen_derived_spec_impls(
         &self,
         fmt_ident: &proc_macro2::Ident,
-        inner_ident: &proc_macro2::Ident,
-        wrapper_generics: &TokenStream,
+        impl_generics: &TokenStream,
+        type_generics: &TokenStream,
         wrapper_call_args: &[TokenStream],
         top_value_ty: &TokenStream,
     ) -> String {
-        let opaque = if wrapper_generics.is_empty() {
+        let opaque = if impl_generics.is_empty() {
             quote! { #[verifier::opaque] }
         } else {
             quote! {}
         };
 
         render_ts(quote! {
-            impl #wrapper_generics SpecParser for #fmt_ident #wrapper_generics {
+            impl #impl_generics SpecParser for #fmt_ident #type_generics {
                 type PVal = #top_value_ty;
 
                 #opaque
                 open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_parse(ibuf)
+                    Self::spec_inner(#(#wrapper_call_args),*).spec_parse(ibuf)
                 }
             }
 
-            impl #wrapper_generics Consistency for #fmt_ident #wrapper_generics {
+            impl #impl_generics Consistency for #fmt_ident #type_generics {
                 type Val = #top_value_ty;
 
                 open spec fn consistent(&self, v: Self::Val) -> bool {
-                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).consistent(v)
+                    Self::spec_inner(#(#wrapper_call_args),*).consistent(v)
                 }
             }
 
-            impl #wrapper_generics SpecSerializerDps for #fmt_ident #wrapper_generics {
+            impl #impl_generics SpecSerializerDps for #fmt_ident #type_generics {
                 type SValue = #top_value_ty;
 
                 #opaque
                 open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_serialize_dps(v, obuf)
+                    Self::spec_inner(#(#wrapper_call_args),*).spec_serialize_dps(v, obuf)
                 }
             }
 
-            impl #wrapper_generics SpecSerializer for #fmt_ident #wrapper_generics {
+            impl #impl_generics SpecSerializer for #fmt_ident #type_generics {
                 type SVal = #top_value_ty;
 
                 #opaque
                 open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).spec_serialize(v)
+                    Self::spec_inner(#(#wrapper_call_args),*).spec_serialize(v)
                 }
             }
 
-            impl #wrapper_generics SpecByteLen for #fmt_ident #wrapper_generics {
+            impl #impl_generics SpecByteLen for #fmt_ident #type_generics {
                 type T = #top_value_ty;
 
                 #opaque
                 open spec fn byte_len(&self, v: Self::T) -> nat {
-                    #fmt_ident::#inner_ident(#(#wrapper_call_args),*).byte_len(v)
+                    Self::spec_inner(#(#wrapper_call_args),*).byte_len(v)
                 }
             }
         })
@@ -693,11 +692,19 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_struct_fields(&self, fields: &[StructField]) -> RenderedSpec {
+        self.render_struct_fields_with(fields, &|combinator| self.render_spec_combinator(combinator))
+    }
+
+    pub(crate) fn render_struct_fields_with(
+        &self,
+        fields: &[StructField],
+        render_comb: &dyn Fn(&Combinator) -> RenderedSpec,
+    ) -> RenderedSpec {
         if fields.is_empty() {
             return RenderedSpec::new(quote! { Empty }, quote! { Empty }, quote! { () }, false);
         }
         let first = &fields[0];
-        let rest = self.render_struct_fields(&fields[1..]);
+        let rest = self.render_struct_fields_with(&fields[1..], render_comb);
         match first {
             StructField::Const { combinator, .. } => {
                 let c = self.render_const_spec(combinator);
@@ -707,18 +714,20 @@ impl<'a> Analysis<'a> {
                 )
             }
             StructField::Ordinary { combinator, .. } => {
-                if let Some(rendered) = self.render_optional_or_repeat_with_rest(combinator, &rest)
+                if let Some(rendered) =
+                    self.render_optional_or_repeat_with_rest_with(combinator, &rest, render_comb)
                 {
                     return rendered;
                 }
-                self.render_sequence_with_rest(self.render_spec_combinator(combinator), &rest)
+                self.render_sequence_with_rest(render_comb(combinator), &rest)
             }
             StructField::Dependent { label, combinator } => {
-                if let Some(rendered) = self.render_optional_or_repeat_with_rest(combinator, &rest)
+                if let Some(rendered) =
+                    self.render_optional_or_repeat_with_rest_with(combinator, &rest, render_comb)
                 {
                     return rendered;
                 }
-                let cur = self.render_spec_combinator(combinator);
+                let cur = render_comb(combinator);
                 let label_ident = format_ident!("{}", label);
                 let cur_ty = &cur.ty;
                 let cur_expr = &cur.expr;
@@ -747,10 +756,11 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_optional_or_repeat_with_rest(
+    fn render_optional_or_repeat_with_rest_with(
         &self,
         combinator: &Combinator,
         rest: &RenderedSpec,
+        render_comb: &dyn Fn(&Combinator) -> RenderedSpec,
     ) -> Option<RenderedSpec> {
         if matches!(combinator, Combinator::AndThen(_, _)) {
             return None;
@@ -758,7 +768,7 @@ impl<'a> Analysis<'a> {
 
         match self.ctx.resolve_alias(combinator) {
             Combinator::Option(opt) => {
-                let inner = self.render_spec_combinator(&opt.0);
+                let inner = render_comb(&opt.0);
                 let inner_ty = &inner.ty;
                 let inner_expr = &inner.expr;
                 let inner_value_ty = &inner.value_ty;
@@ -785,7 +795,7 @@ impl<'a> Analysis<'a> {
             }
             Combinator::Vec(vec_comb) => match vec_comb {
                 vestir::VecCombinator::Vec(inner_comb) => {
-                    let inner = self.render_spec_combinator(inner_comb);
+                    let inner = render_comb(inner_comb);
                     let inner_ty = &inner.ty;
                     let inner_expr = &inner.expr;
                     let inner_value_ty = &inner.value_ty;
@@ -813,6 +823,18 @@ impl<'a> Analysis<'a> {
             },
             _ => None,
         }
+    }
+
+    pub(crate) fn render_choice_branches_with(
+        &self,
+        choices: &[(ChoicePattern, Combinator)],
+        render_comb: &dyn Fn(&Combinator) -> RenderedSpec,
+    ) -> RenderedSpec {
+        let branches = choices
+            .iter()
+            .map(|(_, combinator)| render_comb(combinator))
+            .collect::<Vec<_>>();
+        fold_choice(branches)
     }
 
     fn render_tag_spec(&self, combinator: &ConstCombinator) -> ConstRendered {
@@ -1893,12 +1915,6 @@ impl<'a> Analysis<'a> {
         self.render_spec_combinator(combinator)
     }
 
-    /// Public bridge for `recursive.rs`: render a const combinator spec.
-    /// Returns (ty, expr, value_ty).
-    pub(crate) fn render_const_spec_pub(&self, combinator: &ConstCombinator) -> (TokenStream, TokenStream, TokenStream) {
-        let c = self.render_const_spec(combinator);
-        (c.ty, c.expr, c.value_ty)
-    }
 }
 
 struct ConstRendered {
