@@ -1959,13 +1959,13 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, a) = U8.parse(&rest)?;
+            let (n1, a) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, b) = U16Le.parse(&rest)?;
+            let (n2, b) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, c) = Fixed::<3>.parse(&rest)?;
+            let (n3, c) = (Fixed::<3>).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, data) = Tail.parse(&rest)?;
+            let (n4, data) = (Tail).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = Msg1 { a, b, c, data };
@@ -2017,11 +2017,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, a) = U8.parse(&rest)?;
+            let (n1, a) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, b) = U16Le.parse(&rest)?;
+            let (n2, b) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, c) = U32Le.parse(&rest)?;
+            let (n3, c) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg2 { a, b, c };
@@ -2069,7 +2069,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, data) = Fixed::<6>.parse(&rest)?;
+            let (n1, data) = (Fixed::<6>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = Msg3 { data };
@@ -2160,14 +2160,14 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = Named("msg_type", MsgTypeFmt).parse(&rest)?;
+            let (n1, tag) = (Named("msg_type", MsgTypeFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, len) = U16Le.parse(&rest)?;
+            let (n2, len) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, content) = ExactLen(
+            let (n3, content) = (ExactLen(
                 len,
                 Named("msg_content", MsgContentFmt { tag: tag }),
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg { tag, len, content };
@@ -2290,14 +2290,14 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = U8.parse(&rest)?;
+            let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, len) = U16Le.parse(&rest)?;
+            let (n2, len) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, content) = ExactLen(
+            let (n3, content) = (ExactLen(
                 len,
                 Named("msg_alt_content", MsgAltContentFmt { len: len, tag: tag }),
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = MsgAlt { tag, len, content };

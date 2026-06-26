@@ -1,11 +1,13 @@
-use super::common::{bits_tuple_pattern_tokens, int_literal, syn_usize, Analysis, TypeMode};
+use super::common::{
+    bits_tuple_pattern_tokens, int_literal, is_combinator_in_scc, syn_usize, Analysis, Op, TypeMode,
+};
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
     self, BitsCombinator, ChoiceCombinator, ChoicePattern, Combinator, ConstArray, ConstCombinator,
-    EnumCombinator, Param, ParamDefn, StructCombinator, StructField,
+    EnumCombinator, Param, ParamDefn, SccMember, StructCombinator, StructField,
 };
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote};
 
 const SPINOFF_PROVER_THRESHOLD: usize = 16;
 
@@ -160,13 +162,13 @@ impl<'a> Analysis<'a> {
             name,
             param_defns,
             |w| {
-                self.emit_combinator_parser_body(w, combinator, param_defns);
+                self.emit_combinator_body_impl(w, combinator, param_defns, Op::Parse, None);
             },
             |w| {
-                self.emit_combinator_serializer_body(w, combinator, param_defns);
+                self.emit_combinator_body_impl(w, combinator, param_defns, Op::Serialize, None);
             },
             |w| {
-                self.emit_combinator_prepare_body(w, combinator, param_defns);
+                self.emit_combinator_body_impl(w, combinator, param_defns, Op::Prepare, None);
             },
             false,
             false,
@@ -184,13 +186,13 @@ impl<'a> Analysis<'a> {
             name,
             param_defns,
             |w| {
-                self.emit_struct_parser_body(w, name, combinator, param_defns);
+                self.emit_struct_body_impl(w, name, combinator, param_defns, Op::Parse, None);
             },
             |w| {
-                self.emit_struct_serializer_body(w, name, combinator, param_defns);
+                self.emit_struct_body_impl(w, name, combinator, param_defns, Op::Serialize, None);
             },
             |w| {
-                self.emit_struct_prepare_body(w, name, combinator, param_defns);
+                self.emit_struct_body_impl(w, name, combinator, param_defns, Op::Prepare, None);
             },
             use_spinoff,
             true,
@@ -208,13 +210,13 @@ impl<'a> Analysis<'a> {
             name,
             param_defns,
             |w| {
-                self.emit_choice_parser_body(w, name, combinator, param_defns);
+                self.emit_choice_body_impl(w, name, combinator, param_defns, Op::Parse, None);
             },
             |w| {
-                self.emit_choice_serializer_body(w, name, combinator, param_defns);
+                self.emit_choice_body_impl(w, name, combinator, param_defns, Op::Serialize, None);
             },
             |w| {
-                self.emit_choice_prepare_body(w, name, combinator, param_defns);
+                self.emit_choice_body_impl(w, name, combinator, param_defns, Op::Prepare, None);
             },
             use_spinoff,
             false,
@@ -408,180 +410,255 @@ impl<'a> Analysis<'a> {
         w.line(format!("{}.prepare(&packed)", repr_fmt_str));
     }
 
-    fn emit_struct_parser_body(
+    pub(crate) fn emit_struct_body_impl(
         &self,
         w: &mut CodeWriter,
         name: &str,
-        comb: &StructCombinator,
+        s: &StructCombinator,
         param_defns: &[ParamDefn],
+        op: Op,
+        rec: Option<(
+            &SccMember,
+            &super::recursive::RecCtx<'_>,
+            super::recursive::RecExecParamAccess,
+        )>,
     ) {
-        let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let fields = &comb.0;
-        let mut n_vars: Vec<String> = Vec::new();
-
-        for (i, field) in fields.iter().enumerate() {
-            let n_var = format!("n{}", i + 1);
-            match field {
-                StructField::Const { label, combinator } => {
-                    let fmt_expr =
-                        self.render_exec_const_expr(combinator, param_defns, CodegenMode::Parse);
-                    let fmt_str = render_ts(quote! { #fmt_expr });
-                    w.call_chain_stmt(
-                        Some(&format!("({}, {})", n_var, label)),
-                        &fmt_str,
-                        "parse",
-                        &["&rest"],
-                        Some("?;"),
-                    );
-                    w.line(format!("let rest = rest.skip({});", n_var));
-                }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let fmt_expr = self.render_exec_combinator_expr_named(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Parse,
-                    );
-                    let fmt_str = render_ts(quote! { #fmt_expr });
-                    w.call_chain_stmt(
-                        Some(&format!("({}, {})", n_var, label)),
-                        &fmt_str,
-                        "parse",
-                        &["&rest"],
-                        Some("?;"),
-                    );
-                    let label_ident = format_ident!("{}", label);
-                    if let Some(pred) =
-                        self.gen_constraint_pred(combinator, quote! { #label_ident })
-                    {
-                        w.if_block(format!("!({})", render_ts(pred)), |w| {
-                            w.line("return Err(ParseError::predicate_failed());");
-                        });
+        match op {
+            Op::Parse => {
+                let mut sizes = Vec::new();
+                let mut seen_recursive = false;
+                for (idx, field) in s.0.iter().enumerate() {
+                    let n_var = format!("n{}", idx + 1);
+                    match field {
+                        StructField::Const { label, combinator } => {
+                            let fmt_expr = self.render_exec_const_expr(
+                                combinator,
+                                param_defns,
+                                CodegenMode::Parse,
+                            );
+                            let fmt_str = render_ts(quote! { #fmt_expr });
+                            w.call_chain_stmt(
+                                Some(&format!("({}, {})", n_var, label)),
+                                &fmt_str,
+                                "parse",
+                                &["&rest"],
+                                Some("?;"),
+                            );
+                        }
+                        StructField::Dependent { label, combinator }
+                        | StructField::Ordinary { label, combinator } => {
+                            let n_ident = format_ident!("{}", n_var);
+                            let label_ident = format_ident!("{}", label);
+                            let (parse_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_parse_expr(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { &rest },
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr_named(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Parse,
+                                );
+                                (quote! { (#fmt_expr).parse(&rest) }, false)
+                            };
+                            if recursive && !seen_recursive {
+                                w.if_block("gas == 0", |w| {
+                                    w.line("return Err(ParseError::recursion_limit_exceeded());");
+                                });
+                                seen_recursive = true;
+                            }
+                            w.push_multiline(render_ts(quote! {
+                                let (#n_ident, #label_ident) = #parse_expr?;
+                            }));
+                            if let Some(pred) =
+                                self.gen_constraint_pred(combinator, quote! { #label_ident })
+                            {
+                                w.if_block(format!("!({})", render_ts(pred)), |w| {
+                                    w.line("return Err(ParseError::predicate_failed());");
+                                });
+                            }
+                            if rec.is_none() && idx == s.0.len() - 1 {
+                                if matches!(
+                                    self.ctx.resolve_alias(combinator),
+                                    Combinator::Option(_) | Combinator::Vec(_)
+                                ) {
+                                    w.call_chain_stmt(
+                                        Some("_"),
+                                        "Eof",
+                                        "parse",
+                                        &["&rest"],
+                                        Some("?;"),
+                                    );
+                                }
+                            }
+                        }
                     }
                     w.line(format!("let rest = rest.skip({});", n_var));
-                    if i == fields.len() - 1 {
-                        if matches!(
-                            self.ctx.resolve_alias(combinator),
-                            Combinator::Option(_) | Combinator::Vec(_)
-                        ) {
-                            w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
+                    sizes.push(n_var);
+                }
+
+                let total_n_expr = if sizes.is_empty() {
+                    "0usize".to_string()
+                } else {
+                    sizes.join(" + ")
+                };
+                let exec_ident = format_ident!("{}", self.info(name).names.exec);
+                w.line(format!("let total_n = {};", total_n_expr));
+                let struct_field_names = struct_field_name_strings(&s.0);
+                if let Some((_, ctx, _)) = rec {
+                    let ctor_fields: Vec<String> =
+                        s.0.iter()
+                            .filter_map(|f| match f {
+                                StructField::Const { .. } => None,
+                                StructField::Dependent { label, combinator }
+                                | StructField::Ordinary { label, combinator } => {
+                                    let expr = if is_combinator_in_scc(combinator, ctx.members) {
+                                        format!("{}: Box::new({})", label, label)
+                                    } else {
+                                        format!("{}: {}", label, label)
+                                    };
+                                    Some(expr)
+                                }
+                            })
+                            .collect();
+                    w.record_constructor_stmt("final_v", &exec_ident.to_string(), &ctor_fields);
+                    w.line("assert(parse_spec == Some((total_n as int, final_v.deep_view())));");
+                } else {
+                    w.record_constructor_stmt(
+                        "final_v",
+                        &exec_ident.to_string(),
+                        &struct_field_names,
+                    );
+                    w.line("assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));");
+                }
+                w.line("Ok((total_n, final_v))");
+            }
+            Op::Serialize => {
+                let exec_ident = format_ident!("{}", self.info(name).names.exec);
+                let struct_field_names = struct_field_name_strings(&s.0);
+                w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
+
+                for field in &s.0 {
+                    match field {
+                        StructField::Const { label, combinator } => {
+                            let fmt_expr = self.render_exec_const_expr(
+                                combinator,
+                                param_defns,
+                                CodegenMode::Serialize,
+                            );
+                            let fmt_str = render_ts(quote! { #fmt_expr });
+                            w.call_chain_stmt(
+                                None,
+                                &fmt_str,
+                                "serialize",
+                                &[label, "obuf"].as_slice(),
+                                Some(";"),
+                            );
+                        }
+                        StructField::Dependent { label, combinator }
+                        | StructField::Ordinary { label, combinator } => {
+                            let label_ident = format_ident!("{}", label);
+                            if let Some((member, ctx, access)) = rec {
+                                let ser = self.render_recursive_child_serialize_stmt(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { #label_ident },
+                                    None,
+                                );
+                                w.line(render_ts(quote! { #ser; }));
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                let fmt_str = render_ts(quote! { #fmt_expr });
+                                w.call_chain_stmt(
+                                    None,
+                                    &fmt_str,
+                                    "serialize",
+                                    &[label, "obuf"].as_slice(),
+                                    Some(";"),
+                                );
+                            }
                         }
                     }
                 }
             }
-            n_vars.push(n_var);
-        }
+            Op::Prepare => {
+                let exec_ident = format_ident!("{}", self.info(name).names.exec);
+                let struct_field_names = struct_field_name_strings(&s.0);
+                w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
 
-        // total_n
-        let total_n_expr = if n_vars.is_empty() {
-            "0usize".to_string()
-        } else {
-            n_vars.join(" + ")
-        };
-        w.line(format!("let total_n = {};", total_n_expr));
-
-        let struct_field_names = struct_field_name_strings(fields);
-        w.record_constructor_stmt("final_v", &exec_ident.to_string(), &struct_field_names);
-        w.line("assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));");
-        w.line("Ok((total_n, final_v))");
-    }
-
-    fn emit_struct_serializer_body(
-        &self,
-        w: &mut CodeWriter,
-        name: &str,
-        comb: &StructCombinator,
-        param_defns: &[ParamDefn],
-    ) {
-        let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let fields = &comb.0;
-
-        // Destructure the value
-        let struct_field_names = struct_field_name_strings(fields);
-        w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
-
-        for field in fields {
-            match field {
-                StructField::Const { label, combinator } => {
-                    let fmt_expr = self.render_exec_const_expr(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let fmt_str = render_ts(quote! { #fmt_expr });
-                    w.call_chain_stmt(
-                        None,
-                        &fmt_str,
-                        "serialize",
-                        &[label, "obuf"].as_slice(),
-                        Some(";"),
-                    );
+                let mut lens = Vec::new();
+                let mut seen_recursive = false;
+                for (idx, field) in s.0.iter().enumerate() {
+                    let l_var = format!("l{}", idx + 1);
+                    let l_ident = format_ident!("{}", l_var);
+                    match field {
+                        StructField::Const { label, combinator } => {
+                            let label_ident = format_ident!("{}", label);
+                            let fmt_expr = self.render_exec_const_expr(
+                                combinator,
+                                param_defns,
+                                CodegenMode::Serialize,
+                            );
+                            w.push_multiline(render_ts(quote! {
+                                let #l_ident = (#fmt_expr).prepare(#label_ident)?;
+                            }));
+                        }
+                        StructField::Dependent { label, combinator }
+                        | StructField::Ordinary { label, combinator } => {
+                            let label_ident = format_ident!("{}", label);
+                            let (prep_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_prepare_expr(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { #label_ident },
+                                    None,
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr_named(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                (
+                                    self.render_prepare_value(
+                                        quote! { #label_ident },
+                                        fmt_expr,
+                                        combinator,
+                                    ),
+                                    false,
+                                )
+                            };
+                            if recursive && !seen_recursive {
+                                w.if_block("gas == 0", |w| {
+                                    w.line(
+                                        "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded));",
+                                    );
+                                });
+                                seen_recursive = true;
+                            }
+                            w.push_multiline(render_ts(quote! {
+                                let #l_ident = #prep_expr?;
+                            }));
+                        }
+                    }
+                    lens.push(l_var);
                 }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let fmt_expr = self.render_exec_combinator_expr(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let fmt_str = render_ts(quote! { #fmt_expr });
-                    w.call_chain_stmt(
-                        None,
-                        &fmt_str,
-                        "serialize",
-                        &[label, "obuf"].as_slice(),
-                        Some(";"),
-                    );
-                }
+                let total_len_var = if rec.is_some() { "total" } else { "total_len" };
+                self.emit_checked_add_return(w, total_len_var, &lens);
             }
         }
-    }
-
-    fn emit_struct_prepare_body(
-        &self,
-        w: &mut CodeWriter,
-        name: &str,
-        comb: &StructCombinator,
-        param_defns: &[ParamDefn],
-    ) {
-        let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let fields = &comb.0;
-
-        // Destructure the value
-        let struct_field_names = struct_field_name_strings(fields);
-        w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
-
-        let mut l_vars: Vec<String> = Vec::new();
-        for (i, field) in fields.iter().enumerate() {
-            let l_var = format!("l{}", i + 1);
-            let l_var_tok: TokenStream = l_var.parse().unwrap();
-            match field {
-                StructField::Const { label, combinator } => {
-                    let label_ident: TokenStream = format_ident!("{}", label).into_token_stream();
-                    let fmt_expr = self.render_exec_const_expr(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let prep = quote! { (#fmt_expr).prepare(#label_ident) };
-                    w.push_multiline(render_ts(quote! { let #l_var_tok = #prep?; }));
-                }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let label_ident: TokenStream = format_ident!("{}", label).into_token_stream();
-                    let fmt_expr = self.render_exec_combinator_expr_named(
-                        combinator,
-                        param_defns,
-                        CodegenMode::Serialize,
-                    );
-                    let prep = self.render_prepare_value(label_ident, fmt_expr, combinator);
-                    w.push_multiline(render_ts(quote! { let #l_var_tok = #prep?; }));
-                }
-            }
-            l_vars.push(l_var);
-        }
-
-        self.emit_checked_add_return(w, "total_len", &l_vars);
     }
 }
 
@@ -590,504 +667,553 @@ impl<'a> Analysis<'a> {
 // ============================================================
 
 impl<'a> Analysis<'a> {
-    fn emit_choice_parser_body(
+    pub(crate) fn emit_choice_body_impl(
         &self,
         w: &mut CodeWriter,
         name: &str,
-        comb: &ChoiceCombinator,
+        c: &ChoiceCombinator,
         param_defns: &[ParamDefn],
+        op: Op,
+        rec: Option<(
+            &SccMember,
+            &super::recursive::RecCtx<'_>,
+            super::recursive::RecExecParamAccess,
+        )>,
     ) {
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let variant_names = self.choice_variant_names(comb);
-
-        if let Some(dep) = &comb.depend_id {
-            // Dependent choice: match on the selector field
-            let match_arms: Vec<TokenStream> =
-                self.render_choice_parser_arms(comb, &variant_names, &exec_ident, dep, param_defns);
-            w.match_block_stmt(Some("(n, v)"), &format!("self.{}", dep), |w| {
-                for arm in match_arms {
-                    w.push_multiline(render_ts(arm));
-                }
-            });
-        } else {
-            // Non-dependent choice: delegate to the spec fmt combinator
-            let branches: TokenStream = self.render_choice_parse_arms_nondep(
-                comb,
-                &variant_names,
-                &exec_ident,
-                param_defns,
-            );
-            w.call_chain_stmt(
-                Some("(n, v)"),
-                &render_ts(branches),
-                "",
-                &[] as &[&str],
-                Some("?;"),
-            );
-        }
-        w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
-        w.line("Ok((n, v))");
-    }
-
-    fn render_choice_parser_arms(
-        &self,
-        comb: &ChoiceCombinator,
-        variant_names: &[String],
-        exec_ident: &proc_macro2::Ident,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Vec<TokenStream> {
-        comb.choices
+        let variant_names = self.choice_variant_names(c);
+        let variants: Vec<_> = c
+            .choices
             .iter()
             .zip(variant_names.iter())
-            .map(|((pat, combinator), variant_name)| {
-                let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr_named(
-                    combinator,
-                    param_defns,
-                    CodegenMode::Parse,
-                );
-                let check = if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                    quote! {
-                        if !(#pred) {
-                            return Err(ParseError::predicate_failed());
-                        }
-                    }
-                } else {
-                    quote! {}
-                };
-                match pat {
-                    ChoicePattern::Enum(name) => {
-                        let pat_ident = format_ident!("{}", name);
-                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                        quote! {
-                            #ty::#pat_ident => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        }
-                    }
-                    ChoicePattern::Int(elem) => {
-                        let pat_ts = self.render_constraint_elem_pat(elem);
-                        quote! {
-                            #pat_ts => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        }
-                    }
-                    ChoicePattern::Array(arr) => {
-                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                        quote! {
-                            x if x.deep_eq(&#pat_expr) => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        }
-                    }
-                    ChoicePattern::Wildcard => {
-                        quote! {
-                            _ => {
-                                let (n, v) = (#fmt_expr).parse(&rest)?;
-                                #check
-                                (n, #exec_ident::#variant_ident(v))
-                            },
-                        }
-                    }
-                }
-            })
-            .collect()
-    }
+            .map(|((pat, combinator), name)| (pat, combinator, format_ident!("{}", name)))
+            .collect();
 
-    fn render_choice_parse_arms_nondep(
-        &self,
-        comb: &ChoiceCombinator,
-        variant_names: &[String],
-        exec_ident: &proc_macro2::Ident,
-        param_defns: &[ParamDefn],
-    ) -> TokenStream {
-        // For non-dependent choices we try each branch in order
-        let mut chain = quote! { Err(ParseError::invalid_choice()) };
-        for (combinator, variant_name) in self
-            .choice_combinators_and_names(comb, variant_names)
-            .into_iter()
-            .rev()
-        {
-            let variant_ident = format_ident!("{}", variant_name);
-            let fmt_expr =
-                self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Parse);
-            if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va }) {
-                chain = quote! {
-                    match (#fmt_expr).parse(&rest) {
-                        Ok((n, va)) if #pred => {
-                            Ok((n, #exec_ident::#variant_ident(va)))
-                        },
-                        _ => #chain,
-                    }
-                };
+        if let Some(dep) = &c.depend_id {
+            let dep_expr = if let Some((_member, _, access)) = rec {
+                self.render_recursive_runtime_dep_expr(dep, param_defns, access, None, op)
             } else {
-                chain = quote! {
-                    match (#fmt_expr).parse(&rest) {
-                        Ok((n, va)) => {
-                            Ok((n, #exec_ident::#variant_ident(va)))
-                        },
-                        _ => #chain,
-                    }
-                };
-            }
-        }
-        chain
-    }
+                self.resolve_dep(dep, param_defns)
+            };
 
-    fn emit_choice_serializer_body(
-        &self,
-        w: &mut CodeWriter,
-        name: &str,
-        comb: &ChoiceCombinator,
-        param_defns: &[ParamDefn],
-    ) {
-        let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let variant_names = self.choice_variant_names(comb);
+            let scrutinee = match op {
+                Op::Parse => render_ts(quote! { #dep_expr }),
+                _ => format!("({}, v)", render_ts(dep_expr)),
+            };
 
-        if let Some(dep) = &comb.depend_id {
-            let dep_expr = self.resolve_dep(dep, param_defns);
-            let arms = self.render_choice_serializer_arms_dep(
-                comb,
-                &variant_names,
-                &exec_ident,
-                dep,
-                param_defns,
-            );
-            w.match_block_stmt(None, &format!("({}, v)", render_ts(dep_expr)), |w| {
-                for arm in arms {
-                    w.push_multiline(render_ts(arm));
-                }
-                w.line("_ => {},");
-            });
-            return;
-        }
-
-        let arms: Vec<TokenStream> = self
-            .choice_combinators_and_names(comb, &variant_names)
-            .into_iter()
-            .map(|(combinator, variant_name)| {
-                let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr(
-                    combinator,
-                    param_defns,
-                    CodegenMode::Serialize,
-                );
-                let ser = quote! { (#fmt_expr).serialize(v, obuf); };
-                quote! {
-                    #exec_ident::#variant_ident(v) => { #ser }
-                }
-            })
-            .collect();
-
-        w.match_block_stmt(None, "v", |w| {
-            for arm in arms {
-                w.push_multiline(render_ts(arm));
-            }
-        });
-    }
-
-    fn render_choice_serializer_arms_dep(
-        &self,
-        comb: &ChoiceCombinator,
-        variant_names: &[String],
-        exec_ident: &proc_macro2::Ident,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Vec<TokenStream> {
-        comb.choices
-            .iter()
-            .zip(variant_names.iter())
-            .map(|((pat, combinator), variant_name)| {
-                let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr(
-                    combinator,
-                    param_defns,
-                    CodegenMode::Serialize,
-                );
-                let ser = quote! { (#fmt_expr).serialize(v, obuf); };
-                match pat {
-                    ChoicePattern::Enum(name) => {
-                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                        let pat_ident = format_ident!("{}", name);
-                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                        quote! {
-                            (#ty::#pat_ident, #exec_ident::#variant_ident(v)) => { #ser }
-                        }
-                    }
-                    ChoicePattern::Int(elem) => match elem {
-                        vestir::ConstraintElem::Single(v) => {
-                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                            quote! {
-                                (#lit, #exec_ident::#variant_ident(v)) => { #ser }
-                            }
-                        }
-                        _ => {
-                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
-                            quote! {
-                                (x, #exec_ident::#variant_ident(v)) if #cond => { #ser }
-                            }
-                        }
-                    },
-                    ChoicePattern::Array(arr) => {
-                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                        quote! {
-                            (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => { #ser }
-                        }
-                    }
-                    ChoicePattern::Wildcard => {
-                        quote! {
-                            (_, #exec_ident::#variant_ident(v)) => { #ser }
-                        }
-                    }
-                }
-            })
-            .collect()
-    }
-
-    fn emit_choice_prepare_body(
-        &self,
-        w: &mut CodeWriter,
-        name: &str,
-        comb: &ChoiceCombinator,
-        param_defns: &[ParamDefn],
-    ) {
-        let exec_ident = format_ident!("{}", self.info(name).names.exec);
-        let variant_names = self.choice_variant_names(comb);
-
-        if let Some(dep) = &comb.depend_id {
-            // Array choices need a disjointness proof upfront
-            let array_branches: Vec<&(ChoicePattern, Combinator)> = comb
-                .choices
-                .iter()
-                .filter(|(pat, _)| {
-                    matches!(pat, ChoicePattern::Array(_)) || matches!(pat, ChoicePattern::Wildcard)
-                })
-                .collect();
-            if !array_branches.is_empty() {
-                let arrays: Vec<(Option<ConstArray>, Combinator)> = array_branches
-                    .iter()
-                    .map(|(pat, c)| match pat {
-                        ChoicePattern::Array(arr) => (Some(arr.clone()), c.clone()),
-                        ChoicePattern::Wildcard => (None, c.clone()),
-                        _ => unreachable!(),
-                    })
-                    .collect();
-                self.emit_array_choice_prepare_disjointness_proof(w, &arrays);
-            }
-            let dep_expr = self.resolve_dep(dep, param_defns);
-            let arms = self.render_choice_prepare_arms_dep(
-                comb,
-                &variant_names,
-                &exec_ident,
-                dep,
-                param_defns,
-            );
-            w.match_block_stmt(None, &format!("({}, v)", render_ts(dep_expr)), |w| {
-                for arm in arms {
-                    w.push_multiline(render_ts(arm));
-                }
-                w.line(
-                    " _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),",
-                );
-            });
-            return;
-        }
-
-        let arms: Vec<TokenStream> = self
-            .choice_combinators_and_names(comb, &variant_names)
-            .into_iter()
-            .map(|(combinator, variant_name)| {
-                let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr_named(
-                    combinator,
-                    param_defns,
-                    CodegenMode::Serialize,
-                );
-                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
-                quote! {
-                    #exec_ident::#variant_ident(v) => #prep,
-                }
-            })
-            .collect();
-
-        w.match_block_stmt(None, "v", |w| {
-            for arm in arms {
-                w.push_multiline(render_ts(arm));
-            }
-        });
-    }
-
-    fn render_choice_prepare_arms_dep(
-        &self,
-        comb: &ChoiceCombinator,
-        variant_names: &[String],
-        exec_ident: &proc_macro2::Ident,
-        dep: &str,
-        param_defns: &[ParamDefn],
-    ) -> Vec<TokenStream> {
-        // Collect which enum variant names are explicitly covered (for wildcard expansion)
-        let covered_enum_pats: Vec<&str> = comb
-            .choices
-            .iter()
-            .filter_map(|(pat, _)| match pat {
-                ChoicePattern::Enum(name) if name != "_" => Some(name.as_str()),
-                _ => None,
-            })
-            .collect();
-        // Collect which int conditions are known (for negation guard on wildcard)
-        let known_int_conds: Vec<TokenStream> = comb
-            .choices
-            .iter()
-            .filter_map(|(pat, _)| match pat {
-                ChoicePattern::Int(elem) => {
-                    Some(self.render_constraint_elem_pred(elem, quote! { x }))
-                }
-                _ => None,
-            })
-            .collect();
-        // Collect which array patterns are known (for negation guard on wildcard)
-        let known_array_pats: Vec<&ConstArray> = comb
-            .choices
-            .iter()
-            .filter_map(|(pat, _)| match pat {
-                ChoicePattern::Array(arr) => Some(arr),
-                _ => None,
-            })
-            .collect();
-
-        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-        let enum_comb = self
-            .resolve_dep_enum_info(dep, param_defns)
-            .map(|(_, comb)| comb);
-        let is_enum = comb
-            .choices
-            .iter()
-            .any(|(pat, _)| matches!(pat, ChoicePattern::Enum(_)));
-
-        comb.choices
-            .iter()
-            .zip(variant_names.iter())
-            .flat_map(|((pat, combinator), variant_name)| {
-                let variant_ident = format_ident!("{}", variant_name);
-                let fmt_expr = self.render_exec_combinator_expr_named(
-                    combinator,
-                    param_defns,
-                    CodegenMode::Serialize,
-                );
-                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
-                match pat {
-                    ChoicePattern::Enum(name) => {
-                        let pat_ident = format_ident!("{}", name);
-                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                        vec![quote! {
-                            (#ty::#pat_ident, #exec_ident::#variant_ident(v)) => #prep,
-                        }]
-                    }
-                    ChoicePattern::Int(elem) => match elem {
-                        vestir::ConstraintElem::Single(v) => {
-                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                            vec![quote! {
-                                (#lit, #exec_ident::#variant_ident(v)) => #prep,
-                            }]
-                        }
-                        _ => {
-                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
-                            vec![quote! {
-                                (x, #exec_ident::#variant_ident(v)) if #cond => #prep,
-                            }]
-                        }
-                    },
-                    ChoicePattern::Array(arr) => {
-                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                        vec![quote! {
-                            (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) => #prep,
-                        }]
-                    }
-                    ChoicePattern::Wildcard => {
-                        if is_enum {
-                            let mut arms = Vec::new();
-                            if let (Some(ref ty), Some(ec)) = (&enum_ty, enum_comb) {
-                                let variants = match ec {
-                                    EnumCombinator::Exhaustive { enums, .. }
-                                    | EnumCombinator::NonExhaustive { enums, .. } => enums,
-                                };
-                                for variant in variants {
-                                    if covered_enum_pats
-                                        .iter()
-                                        .any(|p| *p == variant.name.as_str())
-                                    {
-                                        continue;
+            match op {
+                Op::Parse => {
+                    w.match_block_stmt(Some("(n, v)"), &scrutinee, |w| {
+                        for (pat, combinator, variant_ident) in &variants {
+                            let (pat_ts, _is_enum) = if let Some((member, _, _)) = rec {
+                                (
+                                    self.render_recursive_choice_parse_pat(pat, dep, member),
+                                    false,
+                                )
+                            } else {
+                                match pat {
+                                    ChoicePattern::Enum(pat_str) => {
+                                        let pat_ident = format_ident!("{}", pat_str);
+                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                                        (quote! { #ty::#pat_ident }, true)
                                     }
-                                    let known_ident = format_ident!("{}", variant.name);
-                                    arms.push(quote! {
-                                        (#ty::#known_ident, #exec_ident::#variant_ident(v)) => #prep,
-                                    });
+                                    ChoicePattern::Int(elem) => {
+                                        (self.render_constraint_elem_pat(elem), false)
+                                    }
+                                    ChoicePattern::Array(arr) => {
+                                        let pat_expr =
+                                            self.render_const_array_expr(arr, TypeMode::Exec);
+                                        (quote! { x if x.deep_eq(&#pat_expr) }, false)
+                                    }
+                                    ChoicePattern::Wildcard => (quote! { _ }, false),
                                 }
-                                if let EnumCombinator::NonExhaustive { enums, inferred } = ec {
-                                    let disjuncts: Vec<TokenStream> = enums
-                                        .iter()
-                                        .map(|variant| {
-                                            let lit = int_literal(variant.value, inferred);
-                                            quote! { x != #lit }
-                                        })
-                                        .collect();
-                                    let guard = if disjuncts.is_empty() {
-                                        quote! { true }
-                                    } else {
-                                        let mut it = disjuncts.into_iter();
-                                        let first = it.next().unwrap();
-                                        it.fold(first, |acc, item| quote! { #acc && #item })
-                                    };
-                                    arms.push(quote! {
-                                        (#ty::Unknown(x), #exec_ident::#variant_ident(v)) if #guard => #prep,
-                                    });
+                            };
+
+                            let (parse_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_parse_expr(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { ibuf },
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr_named(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Parse,
+                                );
+                                (quote! { (#fmt_expr).parse(&rest) }, false)
+                            };
+
+                            let check = if let Some(pred) =
+                                self.gen_constraint_pred(combinator, quote! { v })
+                            {
+                                quote! {
+                                    if !(#pred) {
+                                        return Err(ParseError::predicate_failed());
+                                    }
                                 }
                             } else {
-                                arms.push(quote! {
-                                    (_, #exec_ident::#variant_ident(v)) => #prep,
-                                });
+                                quote! {}
+                            };
+
+                            if let Some((_, ctx, _)) = rec {
+                                let inner_ident = format_ident!("inner");
+                                let parse_stmt = self.render_recursive_parse_binding(
+                                    parse_expr,
+                                    recursive,
+                                    &inner_ident,
+                                );
+                                let ctor = self.render_recursive_choice_ctor(
+                                    combinator,
+                                    ctx,
+                                    &exec_ident,
+                                    variant_ident,
+                                    quote! { inner },
+                                );
+                                w.push_multiline(render_ts(quote! {
+                                    #pat_ts => {
+                                        #parse_stmt
+                                        (n, #ctor)
+                                    },
+                                }));
+                            } else {
+                                w.push_multiline(render_ts(quote! {
+                                    #pat_ts => {
+                                        let (n, v) = #parse_expr?;
+                                        #check
+                                        (n, #exec_ident::#variant_ident(v))
+                                    },
+                                }));
                             }
-                            arms
-                        } else if !known_array_pats.is_empty() {
-                            let guard = known_array_pats
+                        }
+                    });
+                }
+                Op::Serialize => {
+                    w.match_block_stmt(None, &scrutinee, |w| {
+                        for (pat, combinator, variant_ident) in &variants {
+                            let pat_ts = if let Some((member, _, _)) = rec {
+                                self.render_recursive_choice_pair_pat(
+                                    pat, dep, member, &exec_ident, variant_ident,
+                                )
+                            } else {
+                                match pat {
+                                    ChoicePattern::Enum(pat_str) => {
+                                        let pat_ident = format_ident!("{}", pat_str);
+                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                                        quote! { (#ty::#pat_ident, #exec_ident::#variant_ident(v)) }
+                                    }
+                                    ChoicePattern::Int(elem) => match elem {
+                                        vestir::ConstraintElem::Single(v) => {
+                                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                                            quote! { (#lit, #exec_ident::#variant_ident(v)) }
+                                        }
+                                        _ => {
+                                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
+                                            quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
+                                        }
+                                    },
+                                    ChoicePattern::Array(arr) => {
+                                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                                        quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
+                                    }
+                                    ChoicePattern::Wildcard => {
+                                        quote! { (_, #exec_ident::#variant_ident(v)) }
+                                    }
+                                }
+                            };
+
+                            let ser = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_serialize_stmt(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { v },
+                                    Some("v"),
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                quote! { (#fmt_expr).serialize(v, obuf) }
+                            };
+
+                            w.push_multiline(render_ts(quote! {
+                                #pat_ts => { #ser; },
+                            }));
+                        }
+                        w.line("_ => {},");
+                    });
+                }
+                Op::Prepare => {
+                    if rec.is_none() {
+                        let array_branches: Vec<&(ChoicePattern, Combinator)> = c
+                            .choices
+                            .iter()
+                            .filter(|(pat, _)| {
+                                matches!(pat, ChoicePattern::Array(_))
+                                    || matches!(pat, ChoicePattern::Wildcard)
+                            })
+                            .collect();
+                        if !array_branches.is_empty() {
+                            let arrays: Vec<(Option<ConstArray>, Combinator)> = array_branches
                                 .iter()
-                                .map(|p| {
-                                    let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
-                                    quote! { !x.deep_eq(&#pat_expr) }
+                                .map(|(pat, c)| match pat {
+                                    ChoicePattern::Array(arr) => (Some(arr.clone()), c.clone()),
+                                    ChoicePattern::Wildcard => (None, c.clone()),
+                                    _ => unreachable!(),
                                 })
-                                .reduce(|acc, cond| quote! { #acc && #cond })
-                                .unwrap();
-                            vec![quote! {
-                                (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
-                            }]
-                        } else if !known_int_conds.is_empty() {
-                            let guard = known_int_conds
-                                .iter()
-                                .cloned()
-                                .map(|cond| quote! { !(#cond) })
-                                .reduce(|acc, cond| quote! { #acc && #cond })
-                                .unwrap();
-                            vec![quote! {
-                                (x, #exec_ident::#variant_ident(v)) if #guard => #prep,
-                            }]
-                        } else {
-                            vec![quote! {
-                                (_, #exec_ident::#variant_ident(v)) => #prep,
-                            }]
+                                .collect();
+                            self.emit_array_choice_prepare_disjointness_proof(w, &arrays);
                         }
                     }
+
+                    w.match_block_stmt(None, &scrutinee, |w| {
+                        for (pat, combinator, variant_ident) in &variants {
+                            let pat_ts = if let Some((member, _, _)) = rec {
+                                self.render_recursive_choice_pair_pat(
+                                    pat, dep, member, &exec_ident, variant_ident,
+                                )
+                            } else {
+                                match pat {
+                                    ChoicePattern::Enum(pat_str) => {
+                                        let pat_ident = format_ident!("{}", pat_str);
+                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                                        quote! { (#ty::#pat_ident, #exec_ident::#variant_ident(v)) }
+                                    }
+                                    ChoicePattern::Int(elem) => match elem {
+                                        vestir::ConstraintElem::Single(v) => {
+                                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                                            quote! { (#lit, #exec_ident::#variant_ident(v)) }
+                                        }
+                                        _ => {
+                                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
+                                            quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
+                                        }
+                                    },
+                                    ChoicePattern::Array(arr) => {
+                                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                                        quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
+                                    }
+                                    ChoicePattern::Wildcard => {
+                                        quote! { (_, #exec_ident::#variant_ident(v)) }
+                                    }
+                                }
+                            };
+
+                            let (prep_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_prepare_expr(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { v },
+                                    Some("v"),
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr_named(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                (self.render_prepare_value(quote! { v }, fmt_expr, combinator), false)
+                            };
+
+                            if let Some((_, _, _)) = rec {
+                                let prep = self.render_recursive_prepare_result(prep_expr, recursive);
+                                w.push_multiline(render_ts(quote! {
+                                    #pat_ts => #prep,
+                                }));
+                            } else {
+                                if matches!(pat, ChoicePattern::Wildcard) {
+                                    let covered_enum_pats: Vec<&str> = c
+                                        .choices
+                                        .iter()
+                                        .filter_map(|(pat, _)| match pat {
+                                            ChoicePattern::Enum(name) if name != "_" => Some(name.as_str()),
+                                            _ => None,
+                                        })
+                                        .collect();
+                                    let known_int_conds: Vec<TokenStream> = c
+                                        .choices
+                                        .iter()
+                                        .filter_map(|(pat, _)| match pat {
+                                            ChoicePattern::Int(elem) => {
+                                                Some(self.render_constraint_elem_pred(elem, quote! { x }))
+                                            }
+                                            _ => None,
+                                        })
+                                        .collect();
+                                    let known_array_pats: Vec<&ConstArray> = c
+                                        .choices
+                                        .iter()
+                                        .filter_map(|(pat, _)| match pat {
+                                            ChoicePattern::Array(arr) => Some(arr),
+                                            _ => None,
+                                        })
+                                        .collect();
+                                    let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                                    let enum_comb = self
+                                        .resolve_dep_enum_info(dep, param_defns)
+                                        .map(|(_, comb)| comb);
+                                    let is_enum = c
+                                        .choices
+                                        .iter()
+                                        .any(|(pat, _)| matches!(pat, ChoicePattern::Enum(_)));
+
+                                    if is_enum {
+                                        if let (Some(ref ty), Some(ec)) = (&enum_ty, enum_comb) {
+                                            let variants = match ec {
+                                                EnumCombinator::Exhaustive { enums, .. }
+                                                | EnumCombinator::NonExhaustive { enums, .. } => enums,
+                                            };
+                                            for variant in variants {
+                                                if covered_enum_pats.iter().any(|p| *p == variant.name.as_str()) {
+                                                    continue;
+                                                }
+                                                let known_ident = format_ident!("{}", variant.name);
+                                                w.push_multiline(render_ts(quote! {
+                                                    (#ty::#known_ident, #exec_ident::#variant_ident(v)) => #prep_expr,
+                                                }));
+                                            }
+                                            if let EnumCombinator::NonExhaustive { enums, inferred } = ec {
+                                                let disjuncts: Vec<TokenStream> = enums
+                                                    .iter()
+                                                    .map(|variant| {
+                                                        let lit = int_literal(variant.value, inferred);
+                                                        quote! { x != #lit }
+                                                    })
+                                                    .collect();
+                                                let guard = if disjuncts.is_empty() {
+                                                    quote! { true }
+                                                } else {
+                                                    let mut it = disjuncts.into_iter();
+                                                    let first = it.next().unwrap();
+                                                    it.fold(first, |acc, item| quote! { #acc && #item })
+                                                };
+                                                w.push_multiline(render_ts(quote! {
+                                                    (#ty::Unknown(x), #exec_ident::#variant_ident(v)) if #guard => #prep_expr,
+                                                }));
+                                            }
+                                        } else {
+                                            w.push_multiline(render_ts(quote! {
+                                                (_, #exec_ident::#variant_ident(v)) => #prep_expr,
+                                            }));
+                                        }
+                                    } else if !known_array_pats.is_empty() {
+                                        let guard = known_array_pats
+                                            .iter()
+                                            .map(|p| {
+                                                let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
+                                                quote! { !x.deep_eq(&#pat_expr) }
+                                            })
+                                            .reduce(|acc, cond| quote! { #acc && #cond })
+                                            .unwrap();
+                                        w.push_multiline(render_ts(quote! {
+                                            (x, #exec_ident::#variant_ident(v)) if #guard => #prep_expr,
+                                        }));
+                                    } else if !known_int_conds.is_empty() {
+                                        let guard = known_int_conds
+                                            .iter()
+                                            .cloned()
+                                            .map(|cond| quote! { !(#cond) })
+                                            .reduce(|acc, cond| quote! { #acc && #cond })
+                                            .unwrap();
+                                        w.push_multiline(render_ts(quote! {
+                                            (x, #exec_ident::#variant_ident(v)) if #guard => #prep_expr,
+                                        }));
+                                    } else {
+                                        w.push_multiline(render_ts(quote! {
+                                            (_, #exec_ident::#variant_ident(v)) => #prep_expr,
+                                        }));
+                                    }
+                                } else {
+                                    w.push_multiline(render_ts(quote! {
+                                        #pat_ts => #prep_expr,
+                                    }));
+                                }
+                            }
+                        }
+                        w.line(
+                            " _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),",
+                        );
+                    });
                 }
-            })
-            .collect()
+            }
+        } else {
+            // Non-dependent choice
+            match op {
+                Op::Parse => {
+                    let mut chain = quote! { Err(ParseError::invalid_choice()) };
+                    for (combinator, variant_name) in self
+                        .choice_combinators_and_names(c, &variant_names)
+                        .into_iter()
+                        .rev()
+                    {
+                        let variant_ident = format_ident!("{}", variant_name);
+                        let (parse_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                            self.render_recursive_child_parse_expr(
+                                combinator,
+                                member,
+                                ctx,
+                                access,
+                                quote! { ibuf },
+                            )
+                        } else {
+                            let fmt_expr = self.render_exec_combinator_expr_named(
+                                combinator,
+                                param_defns,
+                                CodegenMode::Parse,
+                            );
+                            (quote! { (#fmt_expr).parse(&rest) }, false)
+                        };
+
+                        if let Some((_, ctx, _)) = rec {
+                            let ctor = self.render_recursive_choice_ctor(
+                                combinator,
+                                ctx,
+                                &exec_ident,
+                                &variant_ident,
+                                quote! { va },
+                            );
+                            chain = if recursive {
+                                quote! {
+                                    if gas == 0 {
+                                        Err(ParseError::recursion_limit_exceeded())
+                                    } else {
+                                        match #parse_expr {
+                                            Ok((n, va)) => Ok((n, #ctor)),
+                                            _ => #chain,
+                                        }
+                                    }
+                                }
+                            } else {
+                                quote! {
+                                    match #parse_expr {
+                                        Ok((n, va)) => Ok((n, #ctor)),
+                                        _ => #chain,
+                                    }
+                                }
+                            };
+                        } else {
+                            if let Some(pred) = self.gen_constraint_pred(combinator, quote! { va })
+                            {
+                                chain = quote! {
+                                    match #parse_expr {
+                                        Ok((n, va)) if #pred => {
+                                            Ok((n, #exec_ident::#variant_ident(va)))
+                                        },
+                                        _ => #chain,
+                                    }
+                                };
+                            } else {
+                                chain = quote! {
+                                    match #parse_expr {
+                                        Ok((n, va)) => {
+                                            Ok((n, #exec_ident::#variant_ident(va)))
+                                        },
+                                        _ => #chain,
+                                    }
+                                };
+                            }
+                        }
+                    }
+
+                    w.line(render_ts(quote! {
+                        let (n, v) = #chain?;
+                    }));
+                    if rec.is_some() {
+                        w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
+                    } else {
+                        w.line(
+                            "assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));",
+                        );
+                    }
+                    w.line("Ok((n, v))");
+                }
+                Op::Serialize => {
+                    w.match_block_stmt(None, "v", |w| {
+                        for (_, combinator, variant_ident) in &variants {
+                            let ser = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_serialize_stmt(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { v },
+                                    Some("v"),
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                quote! { (#fmt_expr).serialize(v, obuf) }
+                            };
+                            w.push_multiline(render_ts(quote! {
+                                #exec_ident::#variant_ident(v) => { #ser; },
+                            }));
+                        }
+                    });
+                }
+                Op::Prepare => {
+                    w.match_block_stmt(None, "v", |w| {
+                        for (_, combinator, variant_ident) in &variants {
+                            let (prep_expr, recursive) = if let Some((member, ctx, access)) = rec {
+                                self.render_recursive_child_prepare_expr(
+                                    combinator,
+                                    member,
+                                    ctx,
+                                    access,
+                                    quote! { v },
+                                    Some("v"),
+                                )
+                            } else {
+                                let fmt_expr = self.render_exec_combinator_expr_named(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                (
+                                    self.render_prepare_value(quote! { v }, fmt_expr, combinator),
+                                    false,
+                                )
+                            };
+
+                            if let Some((_, _, _)) = rec {
+                                let prep =
+                                    self.render_recursive_prepare_result(prep_expr, recursive);
+                                w.push_multiline(render_ts(quote! {
+                                    #exec_ident::#variant_ident(v) => #prep,
+                                }));
+                            } else {
+                                w.push_multiline(render_ts(quote! {
+                                    #exec_ident::#variant_ident(v) => #prep_expr,
+                                }));
+                            }
+                        }
+                    });
+                }
+            }
+            return;
+        }
+
+        if let Op::Parse = op {
+            if rec.is_some() {
+                w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
+            } else {
+                w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
+            }
+            w.line("Ok((n, v))");
+        }
     }
 
     fn emit_array_choice_prepare_disjointness_proof(
@@ -1290,93 +1416,182 @@ impl<'a> Analysis<'a> {
 // ============================================================
 
 impl<'a> Analysis<'a> {
-    fn emit_combinator_parser_body(
+    pub(crate) fn emit_combinator_body_impl(
         &self,
         w: &mut CodeWriter,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
+        op: Op,
+        rec: Option<(
+            &SccMember,
+            &super::recursive::RecCtx<'_>,
+            super::recursive::RecExecParamAccess,
+        )>,
     ) {
-        let fmt_expr =
-            self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Parse);
+        if let Some((member, ctx, access)) = rec {
+            if let Combinator::Invocation(inv) = combinator {
+                if ctx.is_in_scc(&inv.func) {
+                    match op {
+                        Op::Parse => {
+                            w.if_block("gas == 0", |w| {
+                                w.line("return Err(ParseError::recursion_limit_exceeded());");
+                            });
+                            let call = self.render_recursive_method_call(
+                                inv,
+                                member,
+                                access,
+                                Op::Parse,
+                                quote! { ibuf },
+                                None,
+                            );
+                            w.push_multiline(render_ts(quote! {
+                                let (n, v) = #call?;
+                            }));
+                            w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
+                            w.line("Ok((n, v))");
+                        }
+                        Op::Serialize => {
+                            let call = self.render_recursive_method_call(
+                                inv,
+                                member,
+                                access,
+                                Op::Serialize,
+                                quote! { v },
+                                Some("v"),
+                            );
+                            w.line(render_ts(quote! { #call; }));
+                        }
+                        Op::Prepare => {
+                            w.if_block("gas == 0", |w| {
+                                w.line(
+                                    "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded));",
+                                );
+                            });
+                            let call = self.render_recursive_method_call(
+                                inv,
+                                member,
+                                access,
+                                Op::Prepare,
+                                quote! { v },
+                                Some("v"),
+                            );
+                            w.line(render_ts(call));
+                        }
+                    }
+                    return;
+                }
+            }
+        }
 
-        w.call_chain_stmt(
-            Some("(n, v)"),
-            &render_ts(quote! { #fmt_expr }),
-            "parse",
-            &["ibuf"],
-            Some("?;"),
-        );
-        if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-            w.if_block(format!("!({})", render_ts(pred)), |w| {
-                w.line("return Err(ParseError::predicate_failed());");
-            });
-        }
-        if matches!(
-            self.ctx.resolve_alias(combinator),
-            Combinator::Option(_) | Combinator::Vec(_)
-        ) {
-            w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
-            w.line("let rest = ibuf.skip(n);");
-            w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
-        }
-        w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
-        w.line("Ok((n, v))");
-    }
+        match op {
+            Op::Parse => {
+                let fmt_expr = if rec.is_some() {
+                    self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Parse)
+                } else {
+                    self.render_exec_combinator_expr_named(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Parse,
+                    )
+                };
 
-    fn emit_combinator_serializer_body(
-        &self,
-        w: &mut CodeWriter,
-        combinator: &Combinator,
-        param_defns: &[ParamDefn],
-    ) {
-        if let Some(invocation) = self.direct_alias(combinator) {
-            let target_args =
-                self.render_exec_invocation_expr(invocation, param_defns, CodegenMode::Serialize);
-            w.call_chain_stmt(
-                None,
-                &render_ts(quote! { #target_args }),
-                "serialize",
-                &["v", "obuf"],
-                Some(";"),
-            );
-            return;
+                w.call_chain_stmt(
+                    Some("(n, v)"),
+                    &render_ts(quote! { #fmt_expr }),
+                    "parse",
+                    &["ibuf"],
+                    Some("?;"),
+                );
+                if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
+                    w.if_block(format!("!({})", render_ts(pred)), |w| {
+                        w.line("return Err(ParseError::predicate_failed());");
+                    });
+                }
+                if rec.is_none() {
+                    if matches!(
+                        self.ctx.resolve_alias(combinator),
+                        Combinator::Option(_) | Combinator::Vec(_)
+                    ) {
+                        w.line(
+                            "broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;",
+                        );
+                        w.line("let rest = ibuf.skip(n);");
+                        w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
+                    }
+                }
+                if rec.is_some() {
+                    w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
+                } else {
+                    w.line("assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));");
+                }
+                w.line("Ok((n, v))");
+            }
+            Op::Serialize => {
+                if rec.is_none() {
+                    if let Some(invocation) = self.direct_alias(combinator) {
+                        let target_args = self.render_exec_invocation_expr(
+                            invocation,
+                            param_defns,
+                            CodegenMode::Serialize,
+                        );
+                        w.call_chain_stmt(
+                            None,
+                            &render_ts(quote! { #target_args }),
+                            "serialize",
+                            &["v", "obuf"],
+                            Some(";"),
+                        );
+                        return;
+                    }
+                }
+                let fmt_expr = self.render_exec_combinator_expr(
+                    combinator,
+                    param_defns,
+                    CodegenMode::Serialize,
+                );
+                w.call_chain_stmt(
+                    None,
+                    &render_ts(quote! { #fmt_expr }),
+                    "serialize",
+                    &["v", "obuf"],
+                    Some(";"),
+                );
+            }
+            Op::Prepare => {
+                if rec.is_none() {
+                    if let Some(invocation) = self.direct_alias(combinator) {
+                        let target_args = self.render_named_exec_invocation_expr(
+                            invocation,
+                            param_defns,
+                            CodegenMode::Serialize,
+                        );
+                        w.call_chain_stmt(
+                            None,
+                            &render_ts(quote! { #target_args }),
+                            "prepare",
+                            &["v"],
+                            None,
+                        );
+                        return;
+                    }
+                }
+                let fmt_expr = if rec.is_some() {
+                    self.render_exec_combinator_expr(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Serialize,
+                    )
+                } else {
+                    self.render_exec_combinator_expr_named(
+                        combinator,
+                        param_defns,
+                        CodegenMode::Serialize,
+                    )
+                };
+                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
+                w.line(render_ts(prep));
+            }
         }
-        let fmt_expr =
-            self.render_exec_combinator_expr(combinator, param_defns, CodegenMode::Serialize);
-        w.call_chain_stmt(
-            None,
-            &render_ts(quote! { #fmt_expr }),
-            "serialize",
-            &["v", "obuf"],
-            Some(";"),
-        );
-    }
-
-    fn emit_combinator_prepare_body(
-        &self,
-        w: &mut CodeWriter,
-        combinator: &Combinator,
-        param_defns: &[ParamDefn],
-    ) {
-        if let Some(invocation) = self.direct_alias(combinator) {
-            let target_args = self.render_named_exec_invocation_expr(
-                invocation,
-                param_defns,
-                CodegenMode::Serialize,
-            );
-            w.call_chain_stmt(
-                None,
-                &render_ts(quote! { #target_args }),
-                "prepare",
-                &["v"],
-                None,
-            );
-            return;
-        }
-        let fmt_expr =
-            self.render_exec_combinator_expr_named(combinator, param_defns, CodegenMode::Serialize);
-        let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
-        w.line(render_ts(prep));
     }
 }
 
@@ -1465,24 +1680,16 @@ impl<'a> Analysis<'a> {
                 body_expr
             }
             Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
-                let inner_expr = self.render_exec_combinator_expr_impl(
-                    inner,
-                    param_defns,
-                    mode,
-                    false,
-                );
+                let inner_expr =
+                    self.render_exec_combinator_expr_impl(inner, param_defns, mode, false);
                 quote! { Star(#inner_expr) }
             }
             Combinator::Array(vestir::ArrayCombinator {
                 combinator: inner,
                 len,
             }) => {
-                let inner_expr = self.render_exec_combinator_expr_impl(
-                    inner,
-                    param_defns,
-                    mode,
-                    false,
-                );
+                let inner_expr =
+                    self.render_exec_combinator_expr_impl(inner, param_defns, mode, false);
                 match self.eval_const_length_expr(len) {
                     Some(n) => {
                         let n_tok = syn_usize(n);
@@ -1514,12 +1721,8 @@ impl<'a> Analysis<'a> {
             },
             Combinator::Tail(_) => quote! { Tail },
             Combinator::Option(vestir::OptionCombinator(inner)) => {
-                let inner_expr = self.render_exec_combinator_expr_impl(
-                    inner,
-                    param_defns,
-                    mode,
-                    false,
-                );
+                let inner_expr =
+                    self.render_exec_combinator_expr_impl(inner, param_defns, mode, false);
                 quote! { Opt(#inner_expr) }
             }
             Combinator::Invocation(_) | Combinator::AndThen(_, _) => unreachable!(),

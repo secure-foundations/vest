@@ -2385,9 +2385,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, b) = Fixed::<32>.parse(&rest)?;
+            let (n1, b) = (Fixed::<32>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = Named("msg1_payload", Msg1PayloadFmt { b: b }).parse(&rest)?;
+            let (n2, payload) = (Named("msg1_payload", Msg1PayloadFmt { b: b })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg1 { b, payload };
@@ -2495,9 +2495,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, b) = Fixed::<3>.parse(&rest)?;
+            let (n1, b) = (Fixed::<3>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Named("msg2_content", Msg2ContentFmt { b: b }).parse(&rest)?;
+            let (n2, content) = (Named("msg2_content", Msg2ContentFmt { b: b })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg2 { b, content };
@@ -2541,9 +2541,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = U8.parse(&rest)?;
+            let (n1, i) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Named("msg3_content", Msg3ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = (Named("msg3_content", Msg3ContentFmt { i: i })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg3 { i, content };
@@ -2587,9 +2587,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = U24Le.parse(&rest)?;
+            let (n1, i) = (U24Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Named("msg4_content", Msg4ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = (Named("msg4_content", Msg4ContentFmt { i: i })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg4 { i, content };
@@ -2633,9 +2633,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, i) = VarInt::<true>.parse(&rest)?;
+            let (n1, i) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, content) = Named("msg5_content", Msg5ContentFmt { i: i }).parse(&rest)?;
+            let (n2, content) = (Named("msg5_content", Msg5ContentFmt { i: i })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Msg5 { i, content };

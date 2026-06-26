@@ -2993,21 +2993,21 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, version) = U32Le.parse(&rest)?;
+            let (n1, version) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, prev_block) = Fixed::<32>.parse(&rest)?;
+            let (n2, prev_block) = (Fixed::<32>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, merkle_root) = Fixed::<32>.parse(&rest)?;
+            let (n3, merkle_root) = (Fixed::<32>).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, timestamp) = U32Le.parse(&rest)?;
+            let (n4, timestamp) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, bits) = U32Le.parse(&rest)?;
+            let (n5, bits) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, nonce) = U32Le.parse(&rest)?;
+            let (n6, nonce) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n6);
-            let (n7, tx_count) = VarInt::<true>.parse(&rest)?;
+            let (n7, tx_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n7);
-            let (n8, txs) = RepeatN(tx_count, TxFmt).parse(&rest)?;
+            let (n8, txs) = (RepeatN(tx_count, TxFmt)).parse(&rest)?;
             let rest = rest.skip(n8);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8;
             let final_v = Block {
@@ -3082,11 +3082,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, version) = U32Le.parse(&rest)?;
+            let (n1, version) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
+            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, rem) = Named("tx_rem", TxRemFmt { txin_count: txin_count }).parse(&rest)?;
+            let (n3, rem) = (Named("tx_rem", TxRemFmt { txin_count: txin_count })).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Tx { version, txin_count, rem };
@@ -3136,17 +3136,17 @@ mod exec_impls {
 
             let (n1, flag) = Const(U8, 1).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = VarInt::<true>.parse(&rest)?;
+            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txins) = RepeatN(txin_count, TxinFmt).parse(&rest)?;
+            let (n3, txins) = (RepeatN(txin_count, TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, txout_count) = VarInt::<true>.parse(&rest)?;
+            let (n4, txout_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
+            let (n5, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, witness) = RepeatN(txin_count, WitnessFmt).parse(&rest)?;
+            let (n6, witness) = (RepeatN(txin_count, WitnessFmt)).parse(&rest)?;
             let rest = rest.skip(n6);
-            let (n7, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
+            let (n7, lock_time) = (Named("lock_time", LockTimeFmt)).parse(&rest)?;
             let rest = rest.skip(n7);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7;
             let final_v = TxSegwit {
@@ -3214,9 +3214,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, count) = VarInt::<true>.parse(&rest)?;
+            let (n1, count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(count, WitnessComponentFmt).parse(&rest)?;
+            let (n2, data) = (RepeatN(count, WitnessComponentFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Witness { count, data };
@@ -3260,9 +3260,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = VarInt::<true>.parse(&rest)?;
+            let (n1, l) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = Varied(l).parse(&rest)?;
+            let (n2, data) = (Varied(l)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = WitnessComponent { l, data };
@@ -3310,13 +3310,13 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, txins) = RepeatN(self.txin_count, TxinFmt).parse(&rest)?;
+            let (n1, txins) = (RepeatN(self.txin_count, TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txout_count) = VarInt::<true>.parse(&rest)?;
+            let (n2, txout_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txouts) = RepeatN(txout_count, TxoutFmt).parse(&rest)?;
+            let (n3, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, lock_time) = Named("lock_time", LockTimeFmt).parse(&rest)?;
+            let (n4, lock_time) = (Named("lock_time", LockTimeFmt)).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TxNonsegwit { txins, txout_count, txouts, lock_time };
@@ -3436,9 +3436,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, value) = U64Le.parse(&rest)?;
+            let (n1, value) = (U64Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_pubkey) = Named("script", ScriptFmt).parse(&rest)?;
+            let (n2, script_pubkey) = (Named("script", ScriptFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Txout { value, script_pubkey };
@@ -3482,9 +3482,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = VarInt::<true>.parse(&rest)?;
+            let (n1, l) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = Varied(l).parse(&rest)?;
+            let (n2, data) = (Varied(l)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Script { l, data };
@@ -3528,11 +3528,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, previous_output) = Named("outpoint", OutpointFmt).parse(&rest)?;
+            let (n1, previous_output) = (Named("outpoint", OutpointFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_sig) = Named("script_sig", ScriptSigFmt).parse(&rest)?;
+            let (n2, script_sig) = (Named("script_sig", ScriptSigFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, sequence) = U32Le.parse(&rest)?;
+            let (n3, sequence) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Txin { previous_output, script_sig, sequence };
@@ -3580,9 +3580,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hash) = Fixed::<32>.parse(&rest)?;
+            let (n1, hash) = (Fixed::<32>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, index) = U32Le.parse(&rest)?;
+            let (n2, index) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Outpoint { hash, index };
@@ -3626,9 +3626,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = VarInt::<true>.parse(&rest)?;
+            let (n1, l) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = Varied(l).parse(&rest)?;
+            let (n2, data) = (Varied(l)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ScriptSig { l, data };

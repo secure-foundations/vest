@@ -1551,11 +1551,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, next_type) = U8.parse(&rest)?;
+            let (n1, next_type) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, reserved) = U8.parse(&rest)?;
+            let (n2, reserved) = (U8).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, payload_length) = U32Le.parse(&rest)?;
+            let (n3, payload_length) = (U32Le).parse(&rest)?;
             if !(payload_length >= 8 && payload_length <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1612,9 +1612,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
+            let (n1, hdr) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = Varied((hdr.payload_length - 4)).parse(&rest)?;
+            let (n2, body) = (Varied((hdr.payload_length - 4))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PayloadWithHeader { hdr, body };
@@ -1658,9 +1658,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, magic) = U32Le.parse(&rest)?;
+            let (n1, magic) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, inner) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
+            let (n2, inner) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OuterHeader { magic, inner };
@@ -1704,9 +1704,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, outer) = Named("outer_header", OuterHeaderFmt).parse(&rest)?;
+            let (n1, outer) = (Named("outer_header", OuterHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = Varied((outer.inner.payload_length - 8)).parse(&rest)?;
+            let (n2, data) = (Varied((outer.inner.payload_length - 8))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = DeepNested { outer, data };
@@ -1756,7 +1756,7 @@ mod exec_impls {
 
             let (n1, flag) = Const(U32Le, 0).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = Varied((self.hdr_payload.hdr.payload_length - 8)).parse(&rest)?;
+            let (n2, data) = (Varied((self.hdr_payload.hdr.payload_length - 8))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedComplex { flag, data };
@@ -1812,9 +1812,9 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, header) = Named("generic_header", GenericHeaderFmt).parse(&rest)?;
+            let (n1, header) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = Varied((self.total_len - header.payload_length)).parse(&rest)?;
+            let (n2, body) = (Varied((self.total_len - header.payload_length))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CombinedExample { header, body };
@@ -1866,24 +1866,24 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, total_len) = U32Le.parse(&rest)?;
+            let (n1, total_len) = (U32Le).parse(&rest)?;
             if !(total_len >= 16777215 && total_len <= 4294967295) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, body) = Named(
+            let (n2, body) = (Named(
                 "combined_example",
                 CombinedExampleFmt { total_len: total_len },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, hdr_payload) = Named("payload_with_header", PayloadWithHeaderFmt).parse(
+            let (n3, hdr_payload) = (Named("payload_with_header", PayloadWithHeaderFmt)).parse(
                 &rest,
             )?;
             let rest = rest.skip(n3);
-            let (n4, nested) = Named(
+            let (n4, nested) = (Named(
                 "nested_complex",
                 NestedComplexFmt { hdr_payload: hdr_payload },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = FinalMsg { total_len, body, hdr_payload, nested };

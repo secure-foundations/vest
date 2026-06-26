@@ -1267,7 +1267,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, reserved) = Fixed::<10>.parse(&rest)?;
+            let (n1, reserved) = (Fixed::<10>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = Const10 { reserved };
@@ -1348,9 +1348,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, x) = Fixed::<10>.parse(&rest)?;
+            let (n1, x) = (Fixed::<10>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1)).parse(&rest)?;
+            let (n2, y) = (PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = B { x, y };
@@ -1394,15 +1394,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, x) = Opt(PrefixTagged(U8, 10, Const10Fmt)).parse(&rest)?;
+            let (n1, x) = (Opt(PrefixTagged(U8, 10, Const10Fmt))).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = Star(PrefixTagged(U8, 11, AFmt)).parse(&rest)?;
+            let (n2, y) = (Star(PrefixTagged(U8, 11, AFmt))).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, z) = Opt(PrefixTagged(U8, 12, BFmt)).parse(&rest)?;
+            let (n3, z) = (Opt(PrefixTagged(U8, 12, BFmt))).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, w) = Star(PrefixTagged(U8, 13, MsgFmt)).parse(&rest)?;
-            let rest = rest.skip(n4);
+            let (n4, w) = (Star(PrefixTagged(U8, 13, MsgFmt))).parse(&rest)?;
             let _ = Eof.parse(&rest)?;
+            let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TaggedMix { x, y, z, w };
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));

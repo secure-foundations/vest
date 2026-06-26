@@ -1287,14 +1287,14 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, a) = U8.parse(&rest)?;
+            let (n1, a) = (U8).parse(&rest)?;
             if !(a >= 0 && a <= 10 || a == 32 || a >= 100) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, b) = U16Le.parse(&rest)?;
+            let (n2, b) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, c) = Fixed::<3>.parse(&rest)?;
+            let (n3, c) = (Fixed::<3>).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg1 { a, b, c };
@@ -1348,11 +1348,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, a) = U8.parse(&rest)?;
+            let (n1, a) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, b) = U16Le.parse(&rest)?;
+            let (n2, b) = (U16Le).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, c) = U32Le.parse(&rest)?;
+            let (n3, c) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg2 { a, b, c };
@@ -1481,11 +1481,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, t) = Named("a_type", ATypeFmt).parse(&rest)?;
+            let (n1, t) = (Named("a_type", ATypeFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, val) = Named("msg4_val", Msg4ValFmt { t: t }).parse(&rest)?;
+            let (n2, val) = (Named("msg4_val", Msg4ValFmt { t: t })).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, tail) = Tail.parse(&rest)?;
+            let (n3, tail) = (Tail).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
             let final_v = Msg4 { t, val, tail };

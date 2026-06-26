@@ -65,8 +65,6 @@ pub(crate) struct Analysis<'a> {
 pub(crate) struct SccInfo {
     /// Member names in source order.
     pub(crate) members: Vec<String>,
-    /// True if any member has a lifetime-bearing field (Bytes/Tail or out-of-SCC ref).
-    pub(crate) needs_lifetime: bool,
     /// Identifier for the `WhichFmt` / `WhichXxx` discriminant enum (e.g. `WhichExpr`).
     pub(crate) which_ident: String,
     /// Identifier for the `Value` union enum (e.g. `ExprListValue`).
@@ -168,6 +166,13 @@ pub(crate) fn tuple_index_expr(base: TokenStream, idx: usize) -> TokenStream {
 pub(crate) enum TypeMode {
     Exec,
     Spec,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Op {
+    Parse,
+    Serialize,
+    Prepare,
 }
 
 impl<'a> Analysis<'a> {
@@ -454,7 +459,6 @@ impl<'a> Analysis<'a> {
                     scc_names(scc_n, parameterized);
                 this.sccs.push(SccInfo {
                     members: member_names.clone(),
-                    needs_lifetime: nl,
                     which_ident,
                     value_ident,
                     rec_body_ident,

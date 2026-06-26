@@ -1585,9 +1585,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = Fixed::< 2 >.parse(&rest)?;
+            let (n1, foo) = (Fixed::< 2 >).parse (& rest) ?;
             let rest = rest.skip(n1);
-            let (n2, bar) = Fixed::< 2 >.parse(&rest)?;
+            let (n2, bar) = (Fixed::< 2 >).parse (& rest) ?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Mydata {
@@ -1642,13 +1642,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = Named ("tst_tag", TstTagFmt).parse(&rest)?;
+            let (n1, tag) = (Named ("tst_tag", TstTagFmt)).parse (& rest) ?;
             let rest = rest.skip(n1);
-            let (n2, mydata) = Named ("tst_mydata", TstMydataFmt {
+            let (n2, mydata) = (Named ("tst_mydata", TstMydataFmt {
                 tag: tag
             }
-            )
-            .parse(&rest)?;
+            )).parse (& rest) ?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Tst {
@@ -1710,41 +1709,41 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f1) = U8.parse(&rest)?;
+            let (n1, f1) = (U8).parse (& rest) ?;
             let rest = rest.skip(n1);
-            let (n2, f2) = U16Le.parse(&rest)?;
+            let (n2, f2) = (U16Le).parse (& rest) ?;
             let rest = rest.skip(n2);
-            let (n3, f3) = U32Le.parse(&rest)?;
+            let (n3, f3) = (U32Le).parse (& rest) ?;
             let rest = rest.skip(n3);
-            let (n4, f4) = U8.parse(&rest)?;
+            let (n4, f4) = (U8).parse (& rest) ?;
             let rest = rest.skip(n4);
-            let (n5, f5) = U8.parse(&rest)?;
+            let (n5, f5) = (U8).parse (& rest) ?;
             let rest = rest.skip(n5);
-            let (n6, f6) = U8.parse(&rest)?;
+            let (n6, f6) = (U8).parse (& rest) ?;
             let rest = rest.skip(n6);
-            let (n7, f7) = U8.parse(&rest)?;
+            let (n7, f7) = (U8).parse (& rest) ?;
             let rest = rest.skip(n7);
-            let (n8, f8) = U8.parse(&rest)?;
+            let (n8, f8) = (U8).parse (& rest) ?;
             let rest = rest.skip(n8);
-            let (n9, f9) = U8.parse(&rest)?;
+            let (n9, f9) = (U8).parse (& rest) ?;
             let rest = rest.skip(n9);
-            let (n10, f10) = U8.parse(&rest)?;
+            let (n10, f10) = (U8).parse (& rest) ?;
             let rest = rest.skip(n10);
-            let (n11, f11) = U8.parse(&rest)?;
+            let (n11, f11) = (U8).parse (& rest) ?;
             let rest = rest.skip(n11);
-            let (n12, f12) = U8.parse(&rest)?;
+            let (n12, f12) = (U8).parse (& rest) ?;
             let rest = rest.skip(n12);
-            let (n13, f13) = U8.parse(&rest)?;
+            let (n13, f13) = (U8).parse (& rest) ?;
             let rest = rest.skip(n13);
-            let (n14, f14) = U8.parse(&rest)?;
+            let (n14, f14) = (U8).parse (& rest) ?;
             let rest = rest.skip(n14);
-            let (n15, f15) = U8.parse(&rest)?;
+            let (n15, f15) = (U8).parse (& rest) ?;
             let rest = rest.skip(n15);
-            let (n16, f16) = U8.parse(&rest)?;
+            let (n16, f16) = (U8).parse (& rest) ?;
             let rest = rest.skip(n16);
-            let (n17, f17) = U8.parse(&rest)?;
+            let (n17, f17) = (U8).parse (& rest) ?;
             let rest = rest.skip(n17);
-            let (n18, f18) = U8.parse(&rest)?;
+            let (n18, f18) = (U8).parse (& rest) ?;
             let rest = rest.skip(n18);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10 + n11 + n12 + n13 + n14 + n15 + n16 + n17 + n18;
             let final_v = PairStress {
@@ -2160,130 +2159,162 @@ mod exec_impls {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C1, TstMydata::C1 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C2, TstMydata::C2 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C3, TstMydata::C3 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C4, TstMydata::C4 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C5, TstMydata::C5 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C6, TstMydata::C6 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C7, TstMydata::C7 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C8, TstMydata::C8 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C9, TstMydata::C9 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C10, TstMydata::C10 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C11, TstMydata::C11 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C12, TstMydata::C12 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C13, TstMydata::C13 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C14, TstMydata::C14 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C15, TstMydata::C15 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C16, TstMydata::C16 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C17, TstMydata::C17 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C18, TstMydata::C18 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C19, TstMydata::C19 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C20, TstMydata::C20 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C21, TstMydata::C21 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C22, TstMydata::C22 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C23, TstMydata::C23 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C24, TstMydata::C24 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C25, TstMydata::C25 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C26, TstMydata::C26 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C27, TstMydata::C27 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C28, TstMydata::C28 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C29, TstMydata::C29 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (TstTag::C30, TstMydata::C30 (v)) => {
                     (MydataFmt).serialize (v,
                     obuf) ;
                 }
+                ,
                 (_, TstMydata::Default (v)) => {
                     (Tail).serialize (v,
                     obuf) ;
                 }
+                ,
                 _ => {},
             }
 

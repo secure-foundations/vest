@@ -9,6 +9,7 @@ pub mod enums;
 pub mod josh;
 pub mod length_expr;
 pub mod matches;
+pub mod mutual_rec;
 pub mod nested_access;
 pub mod opt;
 pub mod repeat;

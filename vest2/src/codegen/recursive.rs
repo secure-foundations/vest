@@ -1,20 +1,20 @@
 //! Code generation for mutually-recursive (and self-recursive) format SCCs.
 
 use super::common::{
-    format_names, is_combinator_in_scc, sum_pattern, tuple_chain, Analysis, SccInfo, TypeMode,
+    format_names, is_combinator_in_scc, sum_pattern, tuple_chain, Analysis, Op, SccInfo, TypeMode,
 };
 use super::specs::RenderedSpec;
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
     ChoiceCombinator, ChoicePattern, Combinator, ConstraintElem, RecursiveScc, SccMember,
-    SccMemberBody, StructCombinator, StructField,
+    SccMemberBody, StructField,
 };
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum RecExecParamAccess {
+pub(crate) enum RecExecParamAccess {
     SelfFields,
 }
 
@@ -24,13 +24,6 @@ enum RecSpecHelperKind {
     Consistent,
     Serialize,
     ByteLen,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Op {
-    Parse,
-    Serialize,
-    Prepare,
 }
 
 // ============================================================
@@ -48,7 +41,7 @@ pub(crate) struct RecCtx<'a> {
 }
 
 impl<'a> RecCtx<'a> {
-    fn is_in_scc(&self, name: &str) -> bool {
+    pub(crate) fn is_in_scc(&self, name: &str) -> bool {
         self.members.contains(&name.to_string())
     }
 
@@ -1221,6 +1214,7 @@ impl<'a> Analysis<'a> {
         current_member: &SccMember,
         access: RecExecParamAccess,
         value_base: Option<&str>,
+        op: Op,
     ) -> TokenStream {
         let fmt_ident = format_ident!("{}", self.info(&invocation.func).names.fmt);
         let target_member = self
@@ -1246,6 +1240,7 @@ impl<'a> Analysis<'a> {
                         &current_member.param_defns,
                         access,
                         value_base,
+                        op,
                     );
                     quote! { #field_ident: #value }
                 }
@@ -1254,12 +1249,13 @@ impl<'a> Analysis<'a> {
         quote! { #fmt_ident::<LIMIT> { #(#field_inits),* } }
     }
 
-    fn render_recursive_runtime_dep_expr(
+    pub(crate) fn render_recursive_runtime_dep_expr(
         &self,
         dep: &str,
         current_param_defns: &[crate::vestir::ParamDefn],
         access: RecExecParamAccess,
         value_base: Option<&str>,
+        op: Op,
     ) -> TokenStream {
         let base = dep.split('.').next().unwrap();
         let suffix = &dep[base.len()..];
@@ -1293,12 +1289,16 @@ impl<'a> Analysis<'a> {
             let path: TokenStream = format!("{}.{}", value_base, dep).parse().unwrap();
             path
         } else {
-            let ts: TokenStream = dep.parse().unwrap();
+            let ts: TokenStream = if suffix.is_empty() && !matches!(op, Op::Parse) {
+                format!("*{}", dep).parse().unwrap()
+            } else {
+                dep.parse().unwrap()
+            };
             ts
         }
     }
 
-    fn render_recursive_method_call(
+    pub(crate) fn render_recursive_method_call(
         &self,
         invocation: &crate::vestir::CombinatorInvocation,
         current_member: &SccMember,
@@ -1308,7 +1308,7 @@ impl<'a> Analysis<'a> {
         value_base: Option<&str>,
     ) -> TokenStream {
         let fmt_expr =
-            self.fmt_expr_for_recursive_invocation(invocation, current_member, access, value_base);
+            self.fmt_expr_for_recursive_invocation(invocation, current_member, access, value_base, method);
         match method {
             Op::Parse => quote! { (#fmt_expr).parse_gas(gas - 1, #primary_arg) },
             Op::Serialize => {
@@ -1318,7 +1318,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_recursive_child_parse_expr(
+    pub(crate) fn render_recursive_child_parse_expr(
         &self,
         combinator: &Combinator,
         current_member: &SccMember,
@@ -1354,7 +1354,7 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    fn render_recursive_child_serialize_stmt(
+    pub(crate) fn render_recursive_child_serialize_stmt(
         &self,
         combinator: &Combinator,
         current_member: &SccMember,
@@ -1383,7 +1383,7 @@ impl<'a> Analysis<'a> {
         quote! { (#fmt_expr).serialize(#value_expr, obuf) }
     }
 
-    fn render_recursive_child_prepare_expr(
+    pub(crate) fn render_recursive_child_prepare_expr(
         &self,
         combinator: &Combinator,
         current_member: &SccMember,
@@ -1418,7 +1418,7 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    fn render_recursive_choice_parse_pat(
+    pub(crate) fn render_recursive_choice_parse_pat(
         &self,
         pat: &ChoicePattern,
         dep: &str,
@@ -1441,7 +1441,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_recursive_choice_pair_pat(
+    pub(crate) fn render_recursive_choice_pair_pat(
         &self,
         pat: &ChoicePattern,
         dep: &str,
@@ -1475,20 +1475,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn recursive_choice_variants<'b>(
-        &self,
-        c: &'b ChoiceCombinator,
-    ) -> Vec<(&'b ChoicePattern, &'b Combinator, proc_macro2::Ident)> {
-        c.choices
-            .iter()
-            .zip(self.choice_variant_names(c).into_iter())
-            .map(|((pat, combinator), variant_name)| {
-                (pat, combinator, format_ident!("{}", variant_name))
-            })
-            .collect()
-    }
-
-    fn render_recursive_choice_ctor(
+    pub(crate) fn render_recursive_choice_ctor(
         &self,
         combinator: &Combinator,
         ctx: &RecCtx<'_>,
@@ -1503,7 +1490,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_recursive_parse_binding(
+    pub(crate) fn render_recursive_parse_binding(
         &self,
         parse_expr: TokenStream,
         recursive: bool,
@@ -1521,7 +1508,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_recursive_prepare_result(
+    pub(crate) fn render_recursive_prepare_result(
         &self,
         prep_expr: TokenStream,
         recursive: bool,
@@ -1539,36 +1526,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_struct_exec_local_binding(
-        &self,
-        combinator: &Combinator,
-        label_ident: &proc_macro2::Ident,
-    ) -> TokenStream {
-        match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(_)
-            | Combinator::ConstraintEnum(_)
-            | Combinator::Tail(_)
-            | Combinator::Bytes(_) => quote! { src.#label_ident },
-            Combinator::Invocation(inv) => match self.def_by_name(&inv.func) {
-                Some(crate::vestir::Definition::EnumDef { .. }) => quote! { src.#label_ident },
-                _ => quote! { &src.#label_ident },
-            },
-            _ => quote! { &src.#label_ident },
-        }
-    }
 
-    fn emit_recursive_struct_local_bindings(&self, w: &mut CodeWriter, s: &StructCombinator) {
-        w.line("let src = v;");
-        for field in &s.0 {
-            if let StructField::Dependent { label, combinator }
-            | StructField::Ordinary { label, combinator } = field
-            {
-                let label_ident = format_ident!("{}", label);
-                let bind_expr = self.render_struct_exec_local_binding(combinator, &label_ident);
-                w.line(render_ts(quote! { let #label_ident = #bind_expr; }));
-            }
-        }
-    }
 
     pub(crate) fn gen_recursive_execs_fragment(&self, scc: &RecursiveScc) -> String {
         let scc_info = match self.scc_info_for(&scc.members[0].name) {
@@ -1776,486 +1734,33 @@ impl<'a> Analysis<'a> {
     ) {
         match &member.body {
             SccMemberBody::Struct(s) => {
-                self.emit_recursive_struct_body(w, member, s, ctx, access, op);
+                self.emit_struct_body_impl(
+                    w,
+                    &member.name,
+                    s,
+                    &member.param_defns,
+                    op,
+                    Some((member, ctx, access)),
+                );
             }
             SccMemberBody::Choice(c) => {
-                self.emit_recursive_choice_body(w, member, c, ctx, access, op);
+                self.emit_choice_body_impl(
+                    w,
+                    &member.name,
+                    c,
+                    &member.param_defns,
+                    op,
+                    Some((member, ctx, access)),
+                );
             }
             SccMemberBody::Combinator(c) => {
-                self.emit_recursive_combinator_body(w, member, c, ctx, access, op)
-            }
-        }
-    }
-}
-
-impl<'a> Analysis<'a> {
-    fn emit_recursive_struct_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        s: &StructCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-        op: Op,
-    ) {
-        match op {
-            Op::Parse => {
-                let mut sizes = Vec::new();
-                let mut seen_recursive = false;
-                for (idx, field) in s.0.iter().enumerate() {
-                    let n_var = format!("n{}", idx + 1);
-                    match field {
-                        StructField::Const { label, combinator } => {
-                            let fmt_expr = self.render_exec_const_expr(
-                                combinator,
-                                &member.param_defns,
-                                super::execs::CodegenMode::Parse,
-                            );
-                            let fmt_str = render_ts(quote! { #fmt_expr });
-                            w.call_chain_stmt(
-                                Some(&format!("({}, {})", n_var, label)),
-                                &fmt_str,
-                                "parse",
-                                &["&rest"],
-                                Some("?;"),
-                            );
-                        }
-                        StructField::Dependent { label, combinator }
-                        | StructField::Ordinary { label, combinator } => {
-                            let n_ident = format_ident!("{}", n_var);
-                            let label_ident = format_ident!("{}", label);
-                            let (parse_expr, recursive) = self.render_recursive_child_parse_expr(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { &rest },
-                            );
-                            if recursive && !seen_recursive {
-                                w.if_block("gas == 0", |w| {
-                                    w.line("return Err(ParseError::recursion_limit_exceeded());");
-                                });
-                                seen_recursive = true;
-                            }
-                            w.push_multiline(render_ts(quote! {
-                                let (#n_ident, #label_ident) = #parse_expr?;
-                            }));
-                            if let Some(pred) =
-                                self.gen_constraint_pred(combinator, quote! { #label_ident })
-                            {
-                                w.if_block(format!("!({})", render_ts(pred)), |w| {
-                                    w.line("return Err(ParseError::predicate_failed());");
-                                });
-                            }
-                        }
-                    }
-                    w.line(format!("let rest = rest.skip({});", n_var));
-                    sizes.push(n_var);
-                }
-
-                let total_n_expr = if sizes.is_empty() {
-                    "0usize".to_string()
-                } else {
-                    sizes.join(" + ")
-                };
-                let exec_ident = format_ident!("{}", self.info(&member.name).names.exec);
-                let ctor_fields: Vec<String> =
-                    s.0.iter()
-                        .filter_map(|f| match f {
-                            StructField::Const { .. } => None,
-                            StructField::Dependent { label, combinator }
-                            | StructField::Ordinary { label, combinator } => {
-                                let expr = if is_combinator_in_scc(combinator, ctx.members) {
-                                    format!("{}: Box::new({})", label, label)
-                                } else {
-                                    format!("{}: {}", label, label)
-                                };
-                                Some(expr)
-                            }
-                        })
-                        .collect();
-                w.line(format!("let total_n = {};", total_n_expr));
-                w.record_constructor_stmt("final_v", &exec_ident.to_string(), &ctor_fields);
-                w.line("assert(parse_spec == Some((total_n as int, final_v.deep_view())));");
-                w.line("Ok((total_n, final_v))");
-            }
-            Op::Serialize => {
-                self.emit_recursive_struct_local_bindings(w, s);
-                for field in &s.0 {
-                    match field {
-                        StructField::Const { label, combinator } => {
-                            let fmt_expr = self.render_exec_const_expr(
-                                combinator,
-                                &member.param_defns,
-                                super::execs::CodegenMode::Serialize,
-                            );
-                            let fmt_str = render_ts(quote! { #fmt_expr });
-                            w.call_chain_stmt(
-                                None,
-                                &fmt_str,
-                                "serialize",
-                                &[label, "obuf"].as_slice(),
-                                Some(";"),
-                            );
-                        }
-                        StructField::Dependent { label, combinator }
-                        | StructField::Ordinary { label, combinator } => {
-                            let label_ident = format_ident!("{}", label);
-                            let val_expr = match self.ctx.resolve_alias(combinator) {
-                                Combinator::ConstraintInt(_)
-                                | Combinator::ConstraintEnum(_)
-                                | Combinator::Tail(_)
-                                | Combinator::Bytes(_) => quote! { &#label_ident },
-                                Combinator::Invocation(inv) => match self.def_by_name(&inv.func) {
-                                    Some(crate::vestir::Definition::EnumDef { .. }) => {
-                                        quote! { &#label_ident }
-                                    }
-                                    _ => quote! { #label_ident },
-                                },
-                                _ => quote! { #label_ident },
-                            };
-                            let ser = self.render_recursive_child_serialize_stmt(
-                                combinator, member, ctx, access, val_expr, None,
-                            );
-                            w.line(render_ts(quote! { #ser; }));
-                        }
-                    }
-                }
-            }
-            Op::Prepare => {
-                self.emit_recursive_struct_local_bindings(w, s);
-                let mut lens = Vec::new();
-                let mut seen_recursive = false;
-                for (idx, field) in s.0.iter().enumerate() {
-                    let l_var = format!("l{}", idx + 1);
-                    let l_ident = format_ident!("{}", l_var);
-                    match field {
-                        StructField::Const { label, combinator } => {
-                            let label_ident = format_ident!("{}", label);
-                            let fmt_expr = self.render_exec_const_expr(
-                                combinator,
-                                &member.param_defns,
-                                super::execs::CodegenMode::Serialize,
-                            );
-                            w.push_multiline(render_ts(quote! {
-                                let #l_ident = (#fmt_expr).prepare(#label_ident)?;
-                            }));
-                        }
-                        StructField::Dependent { label, combinator }
-                        | StructField::Ordinary { label, combinator } => {
-                            let label_ident = format_ident!("{}", label);
-                            let (prep_expr, recursive) = self.render_recursive_child_prepare_expr(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { &src.#label_ident },
-                                None,
-                            );
-                            if recursive && !seen_recursive {
-                                w.if_block("gas == 0", |w| {
-                                    w.line(
-                                        "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded));",
-                                    );
-                                });
-                                seen_recursive = true;
-                            }
-                            w.push_multiline(render_ts(quote! {
-                                let #l_ident = #prep_expr?;
-                            }));
-                        }
-                    }
-                    lens.push(l_var);
-                }
-                self.emit_checked_add_return(w, "total", &lens);
-            }
-        }
-    }
-
-    fn emit_recursive_choice_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        c: &ChoiceCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-        op: Op,
-    ) {
-        let exec_ident = format_ident!("{}", self.info(&member.name).names.exec);
-        let variants = self.recursive_choice_variants(c);
-        if let Some(dep) = &c.depend_id {
-            let dep_expr =
-                self.render_recursive_runtime_dep_expr(dep, &member.param_defns, access, None);
-            let bind = match op {
-                Op::Parse => Some("(n, v)"),
-                _ => None,
-            };
-            let scrutinee = match op {
-                Op::Parse => render_ts(dep_expr),
-                _ => format!("({}, v)", render_ts(dep_expr)),
-            };
-            w.match_block_stmt(bind, &scrutinee, |w| {
-                for (pat, combinator, variant_ident) in &variants {
-                    match op {
-                        Op::Parse => {
-                            let pat_ts = self.render_recursive_choice_parse_pat(pat, dep, member);
-                            let (parse_expr, recursive) = self.render_recursive_child_parse_expr(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { ibuf },
-                            );
-                            let inner_ident = format_ident!("inner");
-                            let parse_stmt = self.render_recursive_parse_binding(
-                                parse_expr,
-                                recursive,
-                                &inner_ident,
-                            );
-                            let ctor = self.render_recursive_choice_ctor(
-                                combinator,
-                                ctx,
-                                &exec_ident,
-                                variant_ident,
-                                quote! { inner },
-                            );
-                            w.push_multiline(render_ts(quote! {
-                                #pat_ts => {
-                                    #parse_stmt
-                                    (n, #ctor)
-                                },
-                            }));
-                        }
-                        Op::Serialize => {
-                            let pat_ts = self.render_recursive_choice_pair_pat(
-                                pat, dep, member, &exec_ident, variant_ident,
-                            );
-                            let ser = self.render_recursive_child_serialize_stmt(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { v },
-                                Some("v"),
-                            );
-                            w.push_multiline(render_ts(quote! {
-                                #pat_ts => { #ser; },
-                            }));
-                        }
-                        Op::Prepare => {
-                            let pat_ts = self.render_recursive_choice_pair_pat(
-                                pat, dep, member, &exec_ident, variant_ident,
-                            );
-                            let (prep_expr, recursive) = self.render_recursive_child_prepare_expr(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { v },
-                                Some("v"),
-                            );
-                            let prep = self.render_recursive_prepare_result(prep_expr, recursive);
-                            w.push_multiline(render_ts(quote! {
-                                #pat_ts => #prep,
-                            }));
-                        }
-                    }
-                }
-                match op {
-                    Op::Parse => {}
-                    Op::Serialize => w.line("_ => {},"),
-                    Op::Prepare => w.line(
-                        "_ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),",
-                    ),
-                }
-            });
-        } else {
-            match op {
-                Op::Parse => {
-                    let mut chain = quote! { Err(ParseError::invalid_choice()) };
-                    for (_, combinator, variant_ident) in variants.iter().rev() {
-                        let ctor = self.render_recursive_choice_ctor(
-                            combinator,
-                            ctx,
-                            &exec_ident,
-                            variant_ident,
-                            quote! { va },
-                        );
-                        let (parse_expr, recursive) = self.render_recursive_child_parse_expr(
-                            combinator,
-                            member,
-                            ctx,
-                            access,
-                            quote! { ibuf },
-                        );
-                        chain = if recursive {
-                            quote! {
-                                if gas == 0 {
-                                    Err(ParseError::recursion_limit_exceeded())
-                                } else {
-                                    match #parse_expr {
-                                        Ok((n, va)) => Ok((n, #ctor)),
-                                        _ => #chain,
-                                    }
-                                }
-                            }
-                        } else {
-                            quote! {
-                                match #parse_expr {
-                                    Ok((n, va)) => Ok((n, #ctor)),
-                                    _ => #chain,
-                                }
-                            }
-                        };
-                    }
-                    w.line(render_ts(quote! {
-                        let (n, v) = match #chain {
-                            Ok(parsed) => parsed,
-                            Err(err) => return Err(err),
-                        };
-                    }));
-                    w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
-                    w.line("Ok((n, v))");
-                }
-                Op::Serialize => {
-                    w.match_block_stmt(None, "v", |w| {
-                        for (_, combinator, variant_ident) in &variants {
-                            let ser = self.render_recursive_child_serialize_stmt(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { v },
-                                Some("v"),
-                            );
-                            w.push_multiline(render_ts(quote! {
-                                #exec_ident::#variant_ident(v) => { #ser; },
-                            }));
-                        }
-                    });
-                }
-                Op::Prepare => {
-                    w.match_block_stmt(None, "v", |w| {
-                        for (_, combinator, variant_ident) in &variants {
-                            let (prep_expr, recursive) = self.render_recursive_child_prepare_expr(
-                                combinator,
-                                member,
-                                ctx,
-                                access,
-                                quote! { v },
-                                Some("v"),
-                            );
-                            let prep = self.render_recursive_prepare_result(prep_expr, recursive);
-                            w.push_multiline(render_ts(quote! {
-                                #exec_ident::#variant_ident(v) => #prep,
-                            }));
-                        }
-                    });
-                }
-            }
-            return;
-        }
-        if let Op::Parse = op {
-            w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
-            w.line("Ok((n, v))");
-        }
-    }
-
-    fn emit_recursive_combinator_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        combinator: &Combinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-        op: Op,
-    ) {
-        if let Combinator::Invocation(inv) = combinator {
-            if ctx.is_in_scc(&inv.func) {
-                match op {
-                    Op::Parse => {
-                        w.if_block("gas == 0", |w| {
-                            w.line("return Err(ParseError::recursion_limit_exceeded());");
-                        });
-                        let call = self.render_recursive_method_call(
-                            inv,
-                            member,
-                            access,
-                            Op::Parse,
-                            quote! { ibuf },
-                            None,
-                        );
-                        w.push_multiline(render_ts(quote! {
-                            let (n, v) = #call?;
-                        }));
-                        w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
-                        w.line("Ok((n, v))");
-                    }
-                    Op::Serialize => {
-                        let call = self.render_recursive_method_call(
-                            inv,
-                            member,
-                            access,
-                            Op::Serialize,
-                            quote! { v },
-                            Some("v"),
-                        );
-                        w.line(render_ts(quote! { #call; }));
-                    }
-                    Op::Prepare => {
-                        w.if_block("gas == 0", |w| {
-                            w.line(
-                                "return Err(PreSerializeError::not_compliant(ComplianceErrorKind::RecursionLimitExceeded));",
-                            );
-                        });
-                        let call = self.render_recursive_method_call(
-                            inv,
-                            member,
-                            access,
-                            Op::Prepare,
-                            quote! { v },
-                            Some("v"),
-                        );
-                        w.line(render_ts(call));
-                    }
-                }
-                return;
-            }
-        }
-        match op {
-            Op::Parse => {
-                let fmt_expr = self.render_exec_combinator_expr(
-                    combinator,
+                self.emit_combinator_body_impl(
+                    w,
+                    c,
                     &member.param_defns,
-                    super::execs::CodegenMode::Parse,
+                    op,
+                    Some((member, ctx, access)),
                 );
-                w.push_multiline(render_ts(quote! {
-                    let (n, v) = (#fmt_expr).parse(ibuf)?;
-                }));
-                if let Some(pred) = self.gen_constraint_pred(combinator, quote! { v }) {
-                    w.if_block(format!("!({})", render_ts(pred)), |w| {
-                        w.line("return Err(ParseError::predicate_failed());");
-                    });
-                }
-                w.line("assert(parse_spec == Some((n as int, v.deep_view())));");
-                w.line("Ok((n, v))");
-            }
-            Op::Serialize => {
-                let fmt_expr = self.render_exec_combinator_expr(
-                    combinator,
-                    &member.param_defns,
-                    super::execs::CodegenMode::Serialize,
-                );
-                w.line(render_ts(quote! { (#fmt_expr).serialize(v, obuf); }));
-            }
-            Op::Prepare => {
-                let fmt_expr = self.render_exec_combinator_expr(
-                    combinator,
-                    &member.param_defns,
-                    super::execs::CodegenMode::Serialize,
-                );
-                let prep = self.render_prepare_value(quote! { v }, fmt_expr, combinator);
-                w.line(render_ts(prep));
             }
         }
     }

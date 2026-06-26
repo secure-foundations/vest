@@ -1023,12 +1023,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = U16Le.parse(&rest)?;
+            let (n1, l) = (U16Le).parse(&rest)?;
             if !(l >= 1 && l <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, data) = Varied(l).parse(&rest)?;
+            let (n2, data) = (Varied(l)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = OpaqueU16 { l, data };
@@ -1110,12 +1110,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = U16Le.parse(&rest)?;
+            let (n1, l) = (U16Le).parse(&rest)?;
             if !(l >= 0 && l <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, list) = ExactLen(l, Star(ResponderIdFmt)).parse(&rest)?;
+            let (n2, list) = (ExactLen(l, Star(ResponderIdFmt))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ResponderIdList { l, list };
@@ -1197,9 +1197,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = VarInt::<true>.parse(&rest)?;
+            let (n1, l) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = RepeatN(l, ResponderIdListFmt).parse(&rest)?;
+            let (n2, data) = (RepeatN(l, ResponderIdListFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = RepeatDyn { l, data };

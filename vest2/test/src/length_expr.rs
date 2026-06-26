@@ -3369,12 +3369,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = U16Le.parse(&rest)?;
+            let (n1, len) = (U16Le).parse(&rest)?;
             if !(len >= 3 && len <= 65535) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, flags) = U8.parse(&rest)?;
+            let (n2, flags) = (U8).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = Header { len, flags };
@@ -3424,9 +3424,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, byte) = Fixed::<1>.parse(&rest)?;
+            let (n1, byte) = (Fixed::<1>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, word) = Fixed::<2>.parse(&rest)?;
+            let (n2, word) = (Fixed::<2>).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = PrimitiveSizes { byte, word };
@@ -3470,7 +3470,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = Fixed::<3>.parse(&rest)?;
+            let (n1, bytes) = (Fixed::<3>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = NamedSize { bytes };
@@ -3544,7 +3544,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = Fixed::<3>.parse(&rest)?;
+            let (n1, bytes) = (Fixed::<3>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = AliasSize { bytes };
@@ -3651,7 +3651,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = Fixed::<2>.parse(&rest)?;
+            let (n1, bytes) = (Fixed::<2>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ChoiceFormatSize { bytes };
@@ -3725,12 +3725,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = Named("choice_tag", ChoiceTagFmt).parse(&rest)?;
+            let (n1, tag) = (Named("choice_tag", ChoiceTagFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = Named(
+            let (n2, body) = (Named(
                 "choice_arrays_folded_body",
                 ChoiceArraysFoldedBodyFmt { tag: tag },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ChoiceArraysFolded { tag, body };
@@ -3777,7 +3777,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, bytes) = Fixed::<4>.parse(&rest)?;
+            let (n1, bytes) = (Fixed::<4>).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = SizeArith { bytes };
@@ -3823,7 +3823,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = Varied(((self.len - 3) - 1)).parse(&rest)?;
+            let (n1, data) = (Varied(((self.len - 3) - 1))).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = SimpleSub { data };
@@ -3877,7 +3877,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, body) = Varied(((self.total - self.hdr_len) - 8)).parse(&rest)?;
+            let (n1, body) = (Varied(((self.total - self.hdr_len) - 8))).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MultiArith { body };
@@ -3931,7 +3931,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = Varied(((self.a - self.b) + self.c)).parse(&rest)?;
+            let (n1, data) = (Varied(((self.a - self.b) + self.c))).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = ParenExpr { data };
@@ -3985,7 +3985,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = Varied(((self.len - 4) + 2)).parse(&rest)?;
+            let (n1, data) = (Varied(((self.len - 4) + 2))).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MixedConst { data };
@@ -4039,7 +4039,7 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, data) = Varied((self.hdr.len - 3)).parse(&rest)?;
+            let (n1, data) = (Varied((self.hdr.len - 3))).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = PayloadWithHeader { data };

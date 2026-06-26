@@ -2504,12 +2504,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = Named("packet_header", PacketHeaderFmt).parse(&rest)?;
+            let (n1, hdr) = (Named("packet_header", PacketHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = Named(
+            let (n2, payload) = (Named(
                 "choice_packet_payload",
                 ChoicePacketPayloadFmt { hdr: hdr },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ChoicePacket { hdr, payload };
@@ -2613,12 +2613,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, hdr) = Named("closed_packet_header", ClosedPacketHeaderFmt).parse(&rest)?;
+            let (n1, hdr) = (Named("closed_packet_header", ClosedPacketHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = Named(
+            let (n2, payload) = (Named(
                 "closed_choice_packet_payload",
                 ClosedChoicePacketPayloadFmt { hdr: hdr },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = ClosedChoicePacket { hdr, payload };

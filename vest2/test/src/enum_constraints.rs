@@ -1013,17 +1013,17 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = Named("my_enum", MyEnumFmt).parse(&rest)?;
+            let (n1, foo) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
             if !(foo == MyEnum::A) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = Named("my_enum", MyEnumFmt).parse(&rest)?;
+            let (n2, bar) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
             if !(!(bar == MyEnum::B)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = Named("my_enum", MyEnumFmt).parse(&rest)?;
+            let (n3, baz) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
             if !(baz == MyEnum::A || baz == MyEnum::C) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1147,17 +1147,17 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, foo) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
+            let (n1, foo) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
             if !(foo == MyTypedEnum::X) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, bar) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
+            let (n2, bar) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
             if !(!(bar == MyTypedEnum::Y)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
-            let (n3, baz) = Named("my_typed_enum", MyTypedEnumFmt).parse(&rest)?;
+            let (n3, baz) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
             if !(baz == MyTypedEnum::X || baz == MyTypedEnum::Z) {
                 return Err(ParseError::predicate_failed());
             }

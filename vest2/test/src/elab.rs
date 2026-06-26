@@ -1571,7 +1571,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f1) = Named("msg_d", MsgDFmt).parse(&rest)?;
+            let (n1, f1) = (Named("msg_d", MsgDFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = MsgB { f1 };
@@ -1613,9 +1613,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f1) = Named("msg_b", MsgBFmt).parse(&rest)?;
+            let (n1, f1) = (Named("msg_b", MsgBFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, f2) = Tail.parse(&rest)?;
+            let (n2, f2) = (Tail).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = MsgA { f1, f2 };
@@ -1710,11 +1710,11 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, f2) = Named("content_type", ContentTypeFmt).parse(&rest)?;
+            let (n1, f2) = (Named("content_type", ContentTypeFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, f3) = U24Be.parse(&rest)?;
+            let (n2, f3) = (U24Be).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, f4) = ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: f2, f3: f3 })).parse(
+            let (n3, f4) = (ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: f2, f3: f3 }))).parse(
                 &rest,
             )?;
             let rest = rest.skip(n3);

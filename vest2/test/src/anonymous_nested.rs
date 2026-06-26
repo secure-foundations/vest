@@ -4868,12 +4868,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = U32Le.parse(&rest)?;
+            let (n1, len) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, val) = ExactLen(
+            let (n2, val) = (ExactLen(
                 len,
                 Named("nested_inner_struct_val", NestedInnerStructValFmt),
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedInnerStruct { len, val };
@@ -4924,10 +4924,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = Named(
+            let (n1, x) = (Named(
                 "nested_inner_choice_x",
                 NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = NestedInnerChoice { x };
@@ -4983,18 +4983,18 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, frame_len) = U8.parse(&rest)?;
+            let (n1, frame_len) = (U8).parse(&rest)?;
             if !(frame_len >= 1) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
-            let (n2, payload) = ExactLen(
+            let (n2, payload) = (ExactLen(
                 frame_len,
                 Named(
                     "capture_outer_and_local_payload",
                     CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
                 ),
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocal { frame_len, payload };
@@ -5053,10 +5053,10 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, wrapper) = Named(
+            let (n1, wrapper) = (Named(
                 "capture_local_in_anon_struct_wrapper",
                 CaptureLocalInAnonStructWrapperFmt,
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureLocalInAnonStruct { wrapper };
@@ -5105,10 +5105,10 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, x) = Named(
+            let (n1, x) = (Named(
                 "capture_param_and_local_x",
                 CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
             let final_v = CaptureParamAndLocal { x };
@@ -5164,9 +5164,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, x) = U8.parse(&rest)?;
+            let (n1, x) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = Tail.parse(&rest)?;
+            let (n2, y) = (Tail).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = NestedInnerStructVal { x, y };
@@ -5346,9 +5346,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, count) = U8.parse(&rest)?;
+            let (n1, count) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, items) = Varied(count).parse(&rest)?;
+            let (n2, items) = (Varied(count)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocalPayloadBodyChoice1 { count, items };
@@ -5481,12 +5481,12 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, tag) = U8.parse(&rest)?;
+            let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = Named(
+            let (n2, body) = (Named(
                 "capture_outer_and_local_payload_body",
                 CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: tag },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureOuterAndLocalPayload { tag, body };
@@ -5544,9 +5544,9 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, len) = U8.parse(&rest)?;
+            let (n1, len) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, bytes) = Varied(len).parse(&rest)?;
+            let (n2, bytes) = (Varied(len)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes };
@@ -5682,12 +5682,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = U8.parse(&rest)?;
+            let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, value) = Named(
+            let (n2, value) = (Named(
                 "capture_local_in_anon_struct_wrapper_value",
                 CaptureLocalInAnonStructWrapperValueFmt { tag: tag },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureLocalInAnonStructWrapper { tag, value };
@@ -5811,12 +5811,12 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, len) = U8.parse(&rest)?;
+            let (n1, len) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, payload) = Named(
+            let (n2, payload) = (Named(
                 "capture_param_and_local_x_a_payload",
                 CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: len },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXA { len, payload };
@@ -5939,12 +5939,12 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, tag) = U8.parse(&rest)?;
+            let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = Named(
+            let (n2, y) = (Named(
                 "capture_param_and_local_x_b_y",
                 CaptureParamAndLocalXBYFmt { tag: tag },
-            ).parse(&rest)?;
+            )).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
             let final_v = CaptureParamAndLocalXB { tag, y };
