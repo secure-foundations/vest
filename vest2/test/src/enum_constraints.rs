@@ -1,5 +1,6 @@
 #![allow(warnings)]
 use vest_lib2::combinators::mapped::spec::*;
+use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
@@ -339,7 +340,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            MyEnumFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -347,7 +348,7 @@ mod derived_specs {
         type Val = MyEnumSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            MyEnumFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -356,7 +357,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            MyEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -365,7 +366,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            MyEnumFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -374,7 +375,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            MyEnumFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -383,7 +384,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            EnumConstraintsFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -391,7 +392,7 @@ mod derived_specs {
         type Val = EnumConstraintsSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            EnumConstraintsFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -400,7 +401,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            EnumConstraintsFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -409,7 +410,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            EnumConstraintsFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -418,7 +419,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            EnumConstraintsFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -427,7 +428,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            MyTypedEnumFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -435,7 +436,7 @@ mod derived_specs {
         type Val = MyTypedEnumSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            MyTypedEnumFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -444,7 +445,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            MyTypedEnumFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -453,7 +454,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            MyTypedEnumFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -462,7 +463,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            MyTypedEnumFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -471,7 +472,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            TypedEnumConstraintsFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -479,7 +480,7 @@ mod derived_specs {
         type Val = TypedEnumConstraintsSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            TypedEnumConstraintsFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -488,7 +489,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            TypedEnumConstraintsFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -497,7 +498,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            TypedEnumConstraintsFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -506,7 +507,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            TypedEnumConstraintsFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -523,18 +524,18 @@ mod derived_proofs {
     impl SafeParser for MyEnumFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
-            MyEnumFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for MyEnumFmt {
         open spec fn productive_inv(&self) -> bool {
-            MyEnumFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -544,7 +545,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -552,7 +553,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as Consistency>::consistent);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -561,7 +562,7 @@ mod derived_proofs {
     impl NonTailFmt for MyEnumFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -569,7 +570,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -579,7 +580,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -591,7 +592,7 @@ mod derived_proofs {
             reveal(<MyEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyEnumFmt as Consistency>::consistent);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -600,7 +601,7 @@ mod derived_proofs {
     impl NonMalleable for MyEnumFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -610,7 +611,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -620,7 +621,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<MyEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
-            let fmt = MyEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -629,18 +630,18 @@ mod derived_proofs {
     impl SafeParser for EnumConstraintsFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
-            EnumConstraintsFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for EnumConstraintsFmt {
         open spec fn productive_inv(&self) -> bool {
-            EnumConstraintsFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -650,7 +651,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -658,7 +659,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraintsFmt as Consistency>::consistent);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -667,7 +668,7 @@ mod derived_proofs {
     impl NonTailFmt for EnumConstraintsFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -675,7 +676,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -685,7 +686,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -697,7 +698,7 @@ mod derived_proofs {
             reveal(<EnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<EnumConstraintsFmt as Consistency>::consistent);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -706,7 +707,7 @@ mod derived_proofs {
     impl NonMalleable for EnumConstraintsFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -716,7 +717,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -726,7 +727,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<EnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
-            let fmt = EnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -735,18 +736,18 @@ mod derived_proofs {
     impl SafeParser for MyTypedEnumFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
-            MyTypedEnumFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for MyTypedEnumFmt {
         open spec fn productive_inv(&self) -> bool {
-            MyTypedEnumFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -756,7 +757,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -764,7 +765,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as Consistency>::consistent);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -773,7 +774,7 @@ mod derived_proofs {
     impl NonTailFmt for MyTypedEnumFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -781,7 +782,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -791,7 +792,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -803,7 +804,7 @@ mod derived_proofs {
             reveal(<MyTypedEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyTypedEnumFmt as Consistency>::consistent);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -812,7 +813,7 @@ mod derived_proofs {
     impl NonMalleable for MyTypedEnumFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -822,7 +823,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -832,7 +833,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<MyTypedEnumFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
-            let fmt = MyTypedEnumFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -841,18 +842,18 @@ mod derived_proofs {
     impl SafeParser for TypedEnumConstraintsFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
-            TypedEnumConstraintsFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for TypedEnumConstraintsFmt {
         open spec fn productive_inv(&self) -> bool {
-            TypedEnumConstraintsFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -862,7 +863,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -870,7 +871,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraintsFmt as Consistency>::consistent);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -879,7 +880,7 @@ mod derived_proofs {
     impl NonTailFmt for TypedEnumConstraintsFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -887,7 +888,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -897,7 +898,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -909,7 +910,7 @@ mod derived_proofs {
             reveal(<TypedEnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TypedEnumConstraintsFmt as Consistency>::consistent);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -918,7 +919,7 @@ mod derived_proofs {
     impl NonMalleable for TypedEnumConstraintsFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -928,7 +929,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -938,7 +939,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<TypedEnumConstraintsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
-            let fmt = TypedEnumConstraintsFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }

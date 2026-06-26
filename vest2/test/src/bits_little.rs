@@ -1,5 +1,6 @@
 #![allow(warnings)]
 use vest_lib2::combinators::mapped::spec::*;
+use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
@@ -1110,7 +1111,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            VersionIhlFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1118,7 +1119,7 @@ mod derived_specs {
         type Val = VersionIhlSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            VersionIhlFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1127,7 +1128,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            VersionIhlFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1136,7 +1137,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            VersionIhlFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1145,7 +1146,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            VersionIhlFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1154,7 +1155,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            CrossByteSpanFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1162,7 +1163,7 @@ mod derived_specs {
         type Val = CrossByteSpanSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            CrossByteSpanFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1171,7 +1172,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            CrossByteSpanFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1180,7 +1181,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            CrossByteSpanFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1189,7 +1190,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            CrossByteSpanFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1198,7 +1199,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            PacketHeaderFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1206,7 +1207,7 @@ mod derived_specs {
         type Val = PacketHeaderSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            PacketHeaderFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1215,7 +1216,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            PacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1224,7 +1225,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            PacketHeaderFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1233,7 +1234,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            PacketHeaderFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1242,7 +1243,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            ChoicePacketFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1250,7 +1251,7 @@ mod derived_specs {
         type Val = ChoicePacketSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            ChoicePacketFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1259,7 +1260,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            ChoicePacketFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1268,7 +1269,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            ChoicePacketFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1277,7 +1278,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            ChoicePacketFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1286,7 +1287,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            ClosedPacketHeaderFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1294,7 +1295,7 @@ mod derived_specs {
         type Val = ClosedPacketHeaderSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            ClosedPacketHeaderFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1303,7 +1304,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            ClosedPacketHeaderFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1312,7 +1313,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            ClosedPacketHeaderFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1321,7 +1322,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            ClosedPacketHeaderFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1330,7 +1331,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            ClosedChoicePacketFmt::spec_inner().spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
@@ -1338,7 +1339,7 @@ mod derived_specs {
         type Val = ClosedChoicePacketSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            ClosedChoicePacketFmt::spec_inner().consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
@@ -1347,7 +1348,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            ClosedChoicePacketFmt::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1356,7 +1357,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            ClosedChoicePacketFmt::spec_inner().spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
@@ -1365,7 +1366,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            ClosedChoicePacketFmt::spec_inner().byte_len(v)
+            Self::spec_inner().byte_len(v)
         }
     }
 
@@ -1374,7 +1375,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_parse(ibuf)
+            Self::spec_inner(self.hdr_spec()).spec_parse(ibuf)
         }
     }
 
@@ -1382,7 +1383,7 @@ mod derived_specs {
         type Val = ChoicePacketPayloadSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).consistent(v)
+            Self::spec_inner(self.hdr_spec()).consistent(v)
         }
     }
 
@@ -1391,7 +1392,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_serialize_dps(v, obuf)
+            Self::spec_inner(self.hdr_spec()).spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1400,7 +1401,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_serialize(v)
+            Self::spec_inner(self.hdr_spec()).spec_serialize(v)
         }
     }
 
@@ -1409,7 +1410,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).byte_len(v)
+            Self::spec_inner(self.hdr_spec()).byte_len(v)
         }
     }
 
@@ -1418,7 +1419,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_parse(ibuf)
+            Self::spec_inner(self.hdr_spec()).spec_parse(ibuf)
         }
     }
 
@@ -1426,7 +1427,7 @@ mod derived_specs {
         type Val = ClosedChoicePacketPayloadSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).consistent(v)
+            Self::spec_inner(self.hdr_spec()).consistent(v)
         }
     }
 
@@ -1435,7 +1436,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_serialize_dps(v, obuf)
+            Self::spec_inner(self.hdr_spec()).spec_serialize_dps(v, obuf)
         }
     }
 
@@ -1444,7 +1445,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).spec_serialize(v)
+            Self::spec_inner(self.hdr_spec()).spec_serialize(v)
         }
     }
 
@@ -1453,7 +1454,7 @@ mod derived_specs {
 
         # [verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).byte_len(v)
+            Self::spec_inner(self.hdr_spec()).byte_len(v)
         }
     }
 
@@ -1470,18 +1471,18 @@ mod derived_proofs {
     impl SafeParser for VersionIhlFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecParser>::spec_parse);
-            VersionIhlFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for VersionIhlFmt {
         open spec fn productive_inv(&self) -> bool {
-            VersionIhlFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecParser>::spec_parse);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -1512,7 +1513,7 @@ mod derived_proofs {
     impl NonTailFmt for VersionIhlFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -1520,7 +1521,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -1530,7 +1531,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<VersionIhlFmt as SpecSerializer>::spec_serialize);
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -1563,7 +1564,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<VersionIhlFmt as SpecSerializer>::spec_serialize);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -1573,7 +1574,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<VersionIhlFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<VersionIhlFmt as SpecSerializer>::spec_serialize);
-            let fmt = VersionIhlFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -1582,18 +1583,18 @@ mod derived_proofs {
     impl SafeParser for CrossByteSpanFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
-            CrossByteSpanFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for CrossByteSpanFmt {
         open spec fn productive_inv(&self) -> bool {
-            CrossByteSpanFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -1624,7 +1625,7 @@ mod derived_proofs {
     impl NonTailFmt for CrossByteSpanFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -1632,7 +1633,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -1642,7 +1643,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<CrossByteSpanFmt as SpecSerializer>::spec_serialize);
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -1675,7 +1676,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<CrossByteSpanFmt as SpecSerializer>::spec_serialize);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -1685,7 +1686,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<CrossByteSpanFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<CrossByteSpanFmt as SpecSerializer>::spec_serialize);
-            let fmt = CrossByteSpanFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -1694,18 +1695,18 @@ mod derived_proofs {
     impl SafeParser for PacketHeaderFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
-            PacketHeaderFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for PacketHeaderFmt {
         open spec fn productive_inv(&self) -> bool {
-            PacketHeaderFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -1736,7 +1737,7 @@ mod derived_proofs {
     impl NonTailFmt for PacketHeaderFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -1744,7 +1745,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -1754,7 +1755,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<PacketHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -1787,7 +1788,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PacketHeaderFmt as SpecSerializer>::spec_serialize);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -1797,7 +1798,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<PacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PacketHeaderFmt as SpecSerializer>::spec_serialize);
-            let fmt = PacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -1806,18 +1807,18 @@ mod derived_proofs {
     impl SafeParser for ChoicePacketFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
-            ChoicePacketFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ChoicePacketFmt {
         open spec fn productive_inv(&self) -> bool {
-            ChoicePacketFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -1827,7 +1828,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1835,7 +1836,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as Consistency>::consistent);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1844,7 +1845,7 @@ mod derived_proofs {
     impl NonTailFmt for ChoicePacketFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -1852,7 +1853,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -1862,7 +1863,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<ChoicePacketFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -1874,7 +1875,7 @@ mod derived_proofs {
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as Consistency>::consistent);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1883,7 +1884,7 @@ mod derived_proofs {
     impl NonMalleable for ChoicePacketFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1893,7 +1894,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as SpecSerializer>::spec_serialize);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -1903,7 +1904,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as SpecSerializer>::spec_serialize);
-            let fmt = ChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -1912,18 +1913,18 @@ mod derived_proofs {
     impl SafeParser for ClosedPacketHeaderFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
-            ClosedPacketHeaderFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ClosedPacketHeaderFmt {
         open spec fn productive_inv(&self) -> bool {
-            ClosedPacketHeaderFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -1960,7 +1961,7 @@ mod derived_proofs {
     impl NonTailFmt for ClosedPacketHeaderFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -1968,7 +1969,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -1978,7 +1979,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2014,7 +2015,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedPacketHeaderFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2024,7 +2025,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedPacketHeaderFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -2033,18 +2034,18 @@ mod derived_proofs {
     impl SafeParser for ClosedChoicePacketFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
-            ClosedChoicePacketFmt::spec_inner().lemma_parse_safe(ibuf);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ClosedChoicePacketFmt {
         open spec fn productive_inv(&self) -> bool {
-            ClosedChoicePacketFmt::spec_inner().productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -2054,7 +2055,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2062,7 +2063,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as Consistency>::consistent);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2071,7 +2072,7 @@ mod derived_proofs {
     impl NonTailFmt for ClosedChoicePacketFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -2079,7 +2080,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -2089,7 +2090,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<ClosedChoicePacketFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2101,7 +2102,7 @@ mod derived_proofs {
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as Consistency>::consistent);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2110,7 +2111,7 @@ mod derived_proofs {
     impl NonMalleable for ClosedChoicePacketFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2120,7 +2121,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2130,7 +2131,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedChoicePacketFmt::spec_inner();
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -2139,18 +2140,18 @@ mod derived_proofs {
     impl SafeParser for ChoicePacketPayloadFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).lemma_parse_safe(ibuf);
+            Self::spec_inner(self.hdr_spec()).lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ChoicePacketPayloadFmt {
         open spec fn productive_inv(&self) -> bool {
-            ChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).productive_inv()
+            Self::spec_inner(self.hdr_spec()).productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -2160,7 +2161,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2168,7 +2169,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as Consistency>::consistent);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2177,7 +2178,7 @@ mod derived_proofs {
     impl NonTailFmt for ChoicePacketPayloadFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -2185,7 +2186,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -2195,7 +2196,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2207,7 +2208,7 @@ mod derived_proofs {
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as Consistency>::consistent);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2216,7 +2217,7 @@ mod derived_proofs {
     impl NonMalleable for ChoicePacketPayloadFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2226,7 +2227,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2236,7 +2237,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
-            let fmt = ChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -2245,18 +2246,18 @@ mod derived_proofs {
     impl SafeParser for ClosedChoicePacketPayloadFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).lemma_parse_safe(ibuf);
+            Self::spec_inner(self.hdr_spec()).lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ClosedChoicePacketPayloadFmt {
         open spec fn productive_inv(&self) -> bool {
-            ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec()).productive_inv()
+            Self::spec_inner(self.hdr_spec()).productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
@@ -2266,7 +2267,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2274,7 +2275,7 @@ mod derived_proofs {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as Consistency>::consistent);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2283,7 +2284,7 @@ mod derived_proofs {
     impl NonTailFmt for ClosedChoicePacketPayloadFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
@@ -2291,7 +2292,7 @@ mod derived_proofs {
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
@@ -2301,7 +2302,7 @@ mod derived_proofs {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
@@ -2313,7 +2314,7 @@ mod derived_proofs {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as Consistency>::consistent);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2322,7 +2323,7 @@ mod derived_proofs {
     impl NonMalleable for ClosedChoicePacketPayloadFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2332,7 +2333,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
@@ -2342,7 +2343,7 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
-            let fmt = ClosedChoicePacketPayloadFmt::spec_inner(self.hdr_spec());
+            let fmt = Self::spec_inner(self.hdr_spec());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
