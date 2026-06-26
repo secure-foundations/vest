@@ -1,6 +1,8 @@
 //! Code generation for mutually-recursive (and self-recursive) format SCCs.
 
-use super::common::{format_names, sum_pattern, tuple_chain, Analysis, SccInfo, TypeMode};
+use super::common::{
+    format_names, is_combinator_in_scc, sum_pattern, tuple_chain, Analysis, SccInfo, TypeMode,
+};
 use super::specs::RenderedSpec;
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
@@ -90,16 +92,7 @@ impl<'a> RecCtx<'a> {
 // Module-level helpers
 // ============================================================
 
-fn is_combinator_in_scc(c: &Combinator, members: &[String]) -> bool {
-    matches!(c, Combinator::Invocation(inv) if members.contains(&inv.func))
-}
 
-fn get_invocation_name(c: &Combinator) -> &str {
-    match c {
-        Combinator::Invocation(inv) => &inv.func,
-        _ => panic!("expected Invocation"),
-    }
-}
 
 /// Build `Alt<Cond<ABodyFmt>, Alt<Cond<BBodyFmt>, ...>>` from alias idents.
 fn alt_chain_by_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
@@ -149,237 +142,11 @@ impl<'a> Analysis<'a> {
 
     fn gen_scc_member_data_type(&self, member: &SccMember, ctx: &RecCtx<'_>) -> String {
         match &member.body {
-            SccMemberBody::Struct(s) => self.gen_scc_struct_data_type(&member.name, s, ctx),
-            SccMemberBody::Choice(c) => self.gen_scc_choice_data_type(&member.name, c, ctx),
+            SccMemberBody::Struct(s) => self.gen_struct_value_types(&member.name, s, ctx.members),
+            SccMemberBody::Choice(c) => self.gen_choice_value_types(&member.name, c, ctx.members),
             SccMemberBody::Combinator(comb) => {
-                self.gen_scc_combinator_data_type(&member.name, comb, ctx)
+                self.gen_combinator_value_types(&member.name, comb, ctx.members)
             }
-        }
-    }
-
-    fn gen_scc_struct_data_type(
-        &self,
-        name: &str,
-        s: &StructCombinator,
-        ctx: &RecCtx<'_>,
-    ) -> String {
-        let info = self.info(name);
-        let exec_id = format_ident!("{}", info.names.exec);
-        let spec_id = format_ident!("{}", info.names.spec);
-        let inner_id = format_ident!("{}", info.names.inner);
-        let lt = if ctx.scc.needs_lifetime {
-            quote! { <'i> }
-        } else {
-            quote! {}
-        };
-
-        let exec_fields: Vec<_> = s
-            .0
-            .iter()
-            .filter_map(|f| match f {
-                StructField::Const { .. } => None,
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let id = format_ident!("{}", label);
-                    let ty = self.render_value_type_scc(combinator, TypeMode::Exec, ctx.members);
-                    Some(quote! { pub #id: #ty })
-                }
-            })
-            .collect();
-
-        let spec_fields: Vec<_> = s
-            .0
-            .iter()
-            .filter_map(|f| match f {
-                StructField::Const { .. } => None,
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let id = format_ident!("{}", label);
-                    let ty = self.render_value_type_scc(combinator, TypeMode::Spec, ctx.members);
-                    Some(quote! { pub #id: #ty })
-                }
-            })
-            .collect();
-
-        let inner_parts: Vec<_> =
-            s.0.iter()
-                .map(|f| match f {
-                    StructField::Const { combinator, .. } => {
-                        self.render_const_value_type(combinator, TypeMode::Spec)
-                    }
-                    StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } => {
-                        self.render_value_type_scc(combinator, TypeMode::Spec, ctx.members)
-                    }
-                })
-                .collect();
-        let inner_ty = super::common::tuple_chain(&inner_parts);
-
-        let view_fields: Vec<_> =
-            s.0.iter()
-                .filter_map(|f| match f {
-                    StructField::Const { .. } => None,
-                    StructField::Dependent { label, combinator }
-                    | StructField::Ordinary { label, combinator } => {
-                        let id = format_ident!("{}", label);
-                        let expr = if is_combinator_in_scc(combinator, ctx.members) {
-                            let vfn = format_ident!("{}_view", get_invocation_name(combinator));
-                            quote! { Box::new(#vfn(&*x.#id)) }
-                        } else {
-                            quote! { x.#id.deep_view() }
-                        };
-                        Some(quote! { #id: #expr })
-                    }
-                })
-                .collect();
-
-        let view_fn = format_ident!("{}_view", info.names.dsl);
-        let deep_view_impl = if ctx.scc.needs_lifetime {
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_id) -> #spec_id decreases *x, {
-                    #spec_id { #(#view_fields,)* }
-                }
-                impl<'i> DeepView for #exec_id<'i> {
-                    type V = #spec_id;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
-                }
-            }
-        } else {
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_id) -> #spec_id decreases *x, {
-                    #spec_id { #(#view_fields,)* }
-                }
-                impl DeepView for #exec_id {
-                    type V = #spec_id;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
-                }
-            }
-        };
-
-        let doc = format!("data type for `{}`.", name);
-        render_ts(quote! {
-            #[doc = #doc]
-            #[derive(Debug, PartialEq, Eq)]
-            pub struct #exec_id #lt { #(#exec_fields,)* }
-            #[verifier::ext_equal]
-            pub struct #spec_id { #(#spec_fields,)* }
-            pub type #inner_id = #inner_ty;
-            #deep_view_impl
-        })
-    }
-
-    fn gen_scc_choice_data_type(
-        &self,
-        name: &str,
-        c: &ChoiceCombinator,
-        ctx: &RecCtx<'_>,
-    ) -> String {
-        let info = self.info(name);
-        let exec_id = format_ident!("{}", info.names.exec);
-        let spec_id = format_ident!("{}", info.names.spec);
-        let inner_id = format_ident!("{}", info.names.inner);
-        let lt = if ctx.scc.needs_lifetime {
-            quote! { <'i> }
-        } else {
-            quote! {}
-        };
-        let vnames = self.choice_variant_names(c);
-
-        let exec_vars: Vec<_> = vnames
-            .iter()
-            .zip(&c.choices)
-            .map(|(vn, (_, comb))| {
-                let id = format_ident!("{}", vn);
-                let ty = self.render_value_type_scc(comb, TypeMode::Exec, ctx.members);
-                quote! { #id(#ty) }
-            })
-            .collect();
-        let spec_vars: Vec<_> = vnames
-            .iter()
-            .zip(&c.choices)
-            .map(|(vn, (_, comb))| {
-                let id = format_ident!("{}", vn);
-                let ty = self.render_value_type_scc(comb, TypeMode::Spec, ctx.members);
-                quote! { #id(#ty) }
-            })
-            .collect();
-        let spec_tys: Vec<_> = c
-            .choices
-            .iter()
-            .map(|(_, comb)| self.render_value_type_scc(comb, TypeMode::Spec, ctx.members))
-            .collect();
-        let inner_ty = self.render_choice_sum_type(&spec_tys);
-
-        let view_arms: Vec<_> = vnames
-            .iter()
-            .zip(&c.choices)
-            .map(|(vn, (_, comb))| {
-                let id = format_ident!("{}", vn);
-                let expr = if is_combinator_in_scc(comb, ctx.members) {
-                    let vfn = format_ident!("{}_view", get_invocation_name(comb));
-                    quote! { Box::new(#vfn(&**v)) }
-                } else {
-                    quote! { v.deep_view() }
-                };
-                quote! { #exec_id::#id(v) => #spec_id::#id(#expr), }
-            })
-            .collect();
-
-        let view_fn = format_ident!("{}_view", info.names.dsl);
-        let deep_view_impl = if ctx.scc.needs_lifetime {
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_id) -> #spec_id decreases *x, {
-                    match x { #(#view_arms)* }
-                }
-                impl<'i> DeepView for #exec_id<'i> {
-                    type V = #spec_id;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
-                }
-            }
-        } else {
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_id) -> #spec_id decreases *x, {
-                    match x { #(#view_arms)* }
-                }
-                impl DeepView for #exec_id {
-                    type V = #spec_id;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
-                }
-            }
-        };
-
-        let doc = format!("data type for `{}`.", name);
-        render_ts(quote! {
-            #[doc = #doc]
-            #[derive(Debug, PartialEq, Eq)]
-            pub enum #exec_id #lt { #(#exec_vars,)* }
-            #[verifier::ext_equal]
-            pub enum #spec_id { #(#spec_vars,)* }
-            pub type #inner_id = #inner_ty;
-            #deep_view_impl
-        })
-    }
-
-    fn gen_scc_combinator_data_type(
-        &self,
-        name: &str,
-        comb: &Combinator,
-        ctx: &RecCtx<'_>,
-    ) -> String {
-        let info = self.info(name);
-        let exec_id = format_ident!("{}", info.names.exec);
-        let spec_id = format_ident!("{}", info.names.spec);
-        let exec_ty = self.render_value_type_scc(comb, TypeMode::Exec, ctx.members);
-        let spec_ty = self.render_value_type_scc(comb, TypeMode::Spec, ctx.members);
-        let doc = format!("data type for `{}`.", name);
-        if ctx.scc.needs_lifetime {
-            render_ts(
-                quote! { #[doc = #doc] pub type #exec_id<'i> = #exec_ty; pub type #spec_id = #spec_ty; },
-            )
-        } else {
-            render_ts(
-                quote! { #[doc = #doc] pub type #exec_id = #exec_ty; pub type #spec_id = #spec_ty; },
-            )
         }
     }
 
@@ -630,9 +397,9 @@ impl<'a> Analysis<'a> {
             })
             .collect();
         let spec_inner_sig = if spec_params_sig.is_empty() {
-            quote! { pub open spec fn spec_inner() -> #fmt_spec_ty }
+            quote! { pub open spec fn spec_inner() -> #fmt_spec_id<LIMIT> }
         } else {
-            quote! { pub open spec fn spec_inner(#(#spec_params_sig),*) -> #fmt_spec_ty }
+            quote! { pub open spec fn spec_inner(#(#spec_params_sig),*) -> #fmt_spec_id<LIMIT> }
         };
         render_ts(quote! {
             pub type #fmt_spec_id<const LIMIT: usize> = #fmt_spec_ty;
@@ -687,7 +454,7 @@ impl<'a> Analysis<'a> {
             .map(|(shared, _)| {
                 let shared_id = format_ident!("{}", shared);
                 if own_fields.contains(&shared) {
-                    quote! { #shared_id: #shared_id }
+                    quote! { #shared_id }
                 } else {
                     quote! { #shared_id: arbitrary() }
                 }
@@ -1157,12 +924,12 @@ impl<'a> Analysis<'a> {
                 // Non-SCC: resolve the alias to get raw spec (avoids Named<> opacity issues).
                 let resolved = self.ctx.resolve_alias(comb);
                 if !matches!(resolved, Combinator::Invocation(_)) {
-                    self.render_spec_combinator_pub(resolved)
+                    self.render_spec_combinator(resolved)
                 } else {
-                    self.render_spec_combinator_pub(comb)
+                    self.render_spec_combinator(comb)
                 }
             }
-            _ => self.render_spec_combinator_pub(comb),
+            _ => self.render_spec_combinator(comb),
         }
     }
 
@@ -1276,10 +1043,6 @@ fn scc_param_field_name(name: &str, combinator: &Combinator) -> String {
         Combinator::Invocation(inv) => inv.func.clone(),
         _ => name.to_string(),
     }
-}
-
-fn normalize_verus_signature(s: String) -> String {
-    s.replace("== >", "==>").replace("&& &", "&&&")
 }
 
 // ============================================================
@@ -2032,13 +1795,13 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::Parse,
             &[quote! { ibuf@ }],
         );
-        let header = normalize_verus_signature(render_ts(quote! {
+        let header = render_ts(quote! {
             fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<#exec_ty>)
                 ensures
                     parse_matches_spec(r, #spec_match),
                     r matches Ok((n, _)) ==> n <= ibuf@.len(),
                 decreases gas,
-        }));
+        });
         out.block(header, |w| {
             w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
             w.blank_line();
@@ -2072,14 +1835,14 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::Serialize,
             &[quote! { v.deep_view() }],
         );
-        let header = normalize_verus_signature(render_ts(quote! {
+        let header = render_ts(quote! {
             fn serialize_gas<'i>(&self, gas: usize, v: &#exec_ty, obuf: &mut Vec<u8>)
                 requires
                     #consistent,
                 ensures
                     final(obuf)@ == old(obuf)@ + #serialize_spec,
                 decreases gas,
-        }));
+        });
         out.block(header, |w| {
             self.emit_recursive_member_body(w, member, ctx, access, Op::Serialize);
         });
@@ -2107,7 +1870,7 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::ByteLen,
             &[quote! { v.deep_view() }],
         );
-        let header = normalize_verus_signature(render_ts(quote! {
+        let header = render_ts(quote! {
             fn prepare_gas<'i>(&self, gas: usize, v: &#exec_ty) -> (checked: Result<usize, PreSerializeError>)
                 ensures
                     checked matches Ok(len) ==> {
@@ -2115,7 +1878,7 @@ impl<'a> Analysis<'a> {
                         &&& len == #byte_len
                     },
                 decreases gas,
-        }));
+        });
         out.block(header, |w| {
             self.emit_recursive_member_body(w, member, ctx, access, Op::Prepare);
         });

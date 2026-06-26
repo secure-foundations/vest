@@ -34,14 +34,21 @@ impl<'a> Analysis<'a> {
         out.finish()
     }
 
-    pub(crate) fn gen_combinator_value_types(&self, name: &str, combinator: &Combinator) -> String {
+    pub(crate) fn gen_combinator_value_types(
+        &self,
+        name: &str,
+        combinator: &Combinator,
+        scc_members: &[String],
+    ) -> String {
         let info = self.info(name);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
         let doc = Self::type_doc(name);
         if let Some(invocation) = self.direct_alias(combinator) {
-            let exec_ty = self.render_nominal_type(&invocation.func, TypeMode::Exec);
-            let spec_ty = self.render_nominal_type(&invocation.func, TypeMode::Spec);
+            let exec_ty =
+                self.render_nominal_type_scc(&invocation.func, TypeMode::Exec, scc_members);
+            let spec_ty =
+                self.render_nominal_type_scc(&invocation.func, TypeMode::Spec, scc_members);
             return self.emit_exec_spec_aliases(
                 &exec_ident,
                 &spec_ident,
@@ -51,8 +58,8 @@ impl<'a> Analysis<'a> {
                 &doc,
             );
         }
-        let exec_ty = self.render_value_type(combinator, TypeMode::Exec);
-        let spec_ty = self.render_value_type(combinator, TypeMode::Spec);
+        let exec_ty = self.render_value_type_scc(combinator, TypeMode::Exec, scc_members);
+        let spec_ty = self.render_value_type_scc(combinator, TypeMode::Spec, scc_members);
         self.emit_exec_spec_aliases(
             &exec_ident,
             &spec_ident,
@@ -67,26 +74,89 @@ impl<'a> Analysis<'a> {
         &self,
         name: &str,
         struct_comb: &StructCombinator,
+        scc_members: &[String],
     ) -> String {
         let info = self.info(name);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
         let doc = Self::type_doc(name);
-        let exec_fields = self.struct_value_fields(struct_comb, TypeMode::Exec);
-        let spec_fields = self.struct_value_fields(struct_comb, TypeMode::Spec);
-        let inner_ty = self.render_struct_inner_type(struct_comb, TypeMode::Spec);
+
+        let exec_fields: Vec<_> = struct_comb
+            .0
+            .iter()
+            .filter_map(|field| match field {
+                StructField::Const { label, combinator } => {
+                    if scc_members.is_empty() {
+                        let id = format_ident!("{}", label);
+                        let ty = self.render_const_value_type(combinator, TypeMode::Exec);
+                        Some(quote! { pub #id: #ty })
+                    } else {
+                        None
+                    }
+                }
+                StructField::Dependent { label, combinator }
+                | StructField::Ordinary { label, combinator } => {
+                    let id = format_ident!("{}", label);
+                    let ty = self.render_value_type_scc(combinator, TypeMode::Exec, scc_members);
+                    Some(quote! { pub #id: #ty })
+                }
+            })
+            .collect();
+
+        let spec_fields: Vec<_> = struct_comb
+            .0
+            .iter()
+            .filter_map(|field| match field {
+                StructField::Const { label, combinator } => {
+                    if scc_members.is_empty() {
+                        let id = format_ident!("{}", label);
+                        let ty = self.render_const_value_type(combinator, TypeMode::Spec);
+                        Some(quote! { pub #id: #ty })
+                    } else {
+                        None
+                    }
+                }
+                StructField::Dependent { label, combinator }
+                | StructField::Ordinary { label, combinator } => {
+                    let id = format_ident!("{}", label);
+                    let ty = self.render_value_type_scc(combinator, TypeMode::Spec, scc_members);
+                    Some(quote! { pub #id: #ty })
+                }
+            })
+            .collect();
+
+        let mut retained = Vec::new();
+        for field in &struct_comb.0 {
+            match field {
+                StructField::Const { combinator, .. } => {
+                    retained.push(self.render_const_value_type(combinator, TypeMode::Spec));
+                }
+                StructField::Dependent { combinator, .. }
+                | StructField::Ordinary { combinator, .. } => {
+                    retained.push(self.render_value_type_scc(
+                        combinator,
+                        TypeMode::Spec,
+                        scc_members,
+                    ));
+                }
+            }
+        }
+        let inner_ty = tuple_chain(&retained);
+
         let exec_lifetime = if info.needs_lifetime {
             quote! { <'i> }
         } else {
             quote! {}
         };
-        let derives = if self.is_copyable(name) {
+        let derives = if !scc_members.is_empty() {
+            quote! { #[derive(Debug, PartialEq, Eq)] }
+        } else if self.is_copyable(name) {
             quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
-        let self_view = self.is_selfview(name);
+        let self_view = scc_members.is_empty() && self.is_selfview(name);
         let spec_derive = if self_view {
             quote! { #[verifier::ext_equal] }
         } else {
@@ -111,17 +181,64 @@ impl<'a> Analysis<'a> {
                 }
             }
         };
+
+        let self_or_x = if !scc_members.is_empty() {
+            quote! { x }
+        } else {
+            quote! { self }
+        };
+        let deep_view_fields: Vec<_> = struct_comb
+            .0
+            .iter()
+            .filter_map(|field| match field {
+                StructField::Const { label, .. } => {
+                    if scc_members.is_empty() {
+                        let id = format_ident!("{}", label);
+                        Some(quote! { #id: #self_or_x.#id.deep_view() })
+                    } else {
+                        None
+                    }
+                }
+                StructField::Dependent { label, combinator }
+                | StructField::Ordinary { label, combinator } => {
+                    let id = format_ident!("{}", label);
+                    let expr = if !scc_members.is_empty()
+                        && super::common::is_combinator_in_scc(combinator, scc_members)
+                    {
+                        let vfn = format_ident!(
+                            "{}_view",
+                            super::common::get_invocation_name(combinator)
+                        );
+                        quote! { Box::new(#vfn(&*#self_or_x.#id)) }
+                    } else {
+                        quote! { #self_or_x.#id.deep_view() }
+                    };
+                    Some(quote! { #id: #expr })
+                }
+            })
+            .collect();
+
         let deep_view_impl = if self_view {
             quote! {
-                impl DeepView for #exec_ident {
+                impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
                     type V = Self;
                     open spec fn deep_view(&self) -> Self::V {
                         *self
                     }
                 }
             }
+        } else if !scc_members.is_empty() {
+            let view_fn = format_ident!("{}_view", info.names.dsl);
+            quote! {
+                pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
+                    #spec_ident { #(#deep_view_fields,)* }
+                }
+                impl<'i> DeepView for #exec_ident<'i> {
+                    type V = #spec_ident;
+                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+                }
+            }
         } else {
-            let deep_view_fields = self.struct_deep_view_fields(struct_comb);
             quote! {
                 impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
                     type V = #spec_ident;
@@ -131,6 +248,7 @@ impl<'a> Analysis<'a> {
                 }
             }
         };
+
         render_ts(quote! {
             #[doc = #doc]
             #exec_struct
@@ -188,38 +306,27 @@ impl<'a> Analysis<'a> {
         })
     }
 
-    fn render_struct_inner_type(
-        &self,
-        struct_comb: &StructCombinator,
-        mode: TypeMode,
-    ) -> TokenStream {
-        let mut retained = Vec::new();
-        for field in &struct_comb.0 {
-            match field {
-                StructField::Const { combinator, .. } => {
-                    retained.push(self.render_const_value_type(combinator, mode));
-                }
-                StructField::Dependent { combinator, .. }
-                | StructField::Ordinary { combinator, .. } => {
-                    retained.push(self.render_value_type(combinator, mode));
-                }
-            }
-        }
-        tuple_chain(&retained)
-    }
-
     pub(crate) fn gen_choice_value_types(
         &self,
         name: &str,
         choice_comb: &ChoiceCombinator,
+        scc_members: &[String],
     ) -> String {
         let names = &self.info(name).names;
         let exec_ident = format_ident!("{}", names.exec);
         let spec_ident = format_ident!("{}", names.spec);
         let inner_ident = format_ident!("{}", names.inner);
         let variant_names = self.choice_variant_names(choice_comb);
-        let branch_exec_types = self.choice_branch_types(choice_comb, TypeMode::Exec);
-        let branch_spec_types = self.choice_branch_types(choice_comb, TypeMode::Spec);
+        let branch_exec_types: Vec<_> = choice_comb
+            .choices
+            .iter()
+            .map(|(_, comb)| self.render_value_type_scc(comb, TypeMode::Exec, scc_members))
+            .collect();
+        let branch_spec_types: Vec<_> = choice_comb
+            .choices
+            .iter()
+            .map(|(_, comb)| self.render_value_type_scc(comb, TypeMode::Spec, scc_members))
+            .collect();
         let inner_ty = self.render_choice_sum_type(&branch_spec_types);
         let exec_lifetime = if branch_exec_types.iter().any(type_needs_exec_lifetime) {
             quote! { <'i> }
@@ -242,12 +349,14 @@ impl<'a> Analysis<'a> {
                 quote! { #ident(#ty) }
             });
         let doc = format!("data type for `{}`.", names.dsl);
-        let derives = if self.is_copyable(name) {
+        let derives = if !scc_members.is_empty() {
+            quote! { #[derive(Debug, PartialEq, Eq)] }
+        } else if self.is_copyable(name) {
             quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
-        let self_view = self.is_selfview(name);
+        let self_view = scc_members.is_empty() && self.is_selfview(name);
         let spec_derive = if self_view {
             quote! { #[verifier::ext_equal] }
         } else {
@@ -272,6 +381,25 @@ impl<'a> Analysis<'a> {
                 }
             }
         };
+
+        let deep_view_arms =
+            variant_names
+                .iter()
+                .zip(&choice_comb.choices)
+                .map(|(vn, (_, comb))| {
+                    let ident = format_ident!("{}", vn);
+                    let expr = if !scc_members.is_empty()
+                        && super::common::is_combinator_in_scc(comb, scc_members)
+                    {
+                        let vfn =
+                            format_ident!("{}_view", super::common::get_invocation_name(comb));
+                        quote! { Box::new(#vfn(&**v)) }
+                    } else {
+                        quote! { v.deep_view() }
+                    };
+                    quote! { #exec_ident::#ident(v) => #spec_ident::#ident(#expr), }
+                });
+
         let deep_view_impl = if self_view {
             quote! {
                 impl #exec_generics DeepView for #exec_ident #exec_generics {
@@ -281,11 +409,18 @@ impl<'a> Analysis<'a> {
                     }
                 }
             }
+        } else if !scc_members.is_empty() {
+            let view_fn = format_ident!("{}_view", names.dsl);
+            quote! {
+                pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
+                    match x { #(#deep_view_arms)* }
+                }
+                impl #exec_generics DeepView for #exec_ident #exec_generics {
+                    type V = #spec_ident;
+                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+                }
+            }
         } else {
-            let deep_view_arms = variant_names.iter().map(|name| {
-                let ident = format_ident!("{}", name);
-                quote! { #exec_ident::#ident(v) => #spec_ident::#ident(v.deep_view()), }
-            });
             quote! {
                 impl #exec_generics DeepView for #exec_ident #exec_generics {
                     type V = #spec_ident;
@@ -304,18 +439,6 @@ impl<'a> Analysis<'a> {
             pub type #inner_ident = #inner_ty;
             #deep_view_impl
         })
-    }
-
-    fn choice_branch_types(
-        &self,
-        choice_comb: &ChoiceCombinator,
-        mode: TypeMode,
-    ) -> Vec<TokenStream> {
-        choice_comb
-            .choices
-            .iter()
-            .map(|(_, combinator)| self.render_value_type(combinator, mode))
-            .collect()
     }
 
     pub(crate) fn gen_enum_value_types(&self, name: &str, enum_comb: &EnumCombinator) -> String {
@@ -396,7 +519,11 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    pub(crate) fn render_const_value_type(&self, combinator: &ConstCombinator, mode: TypeMode) -> TokenStream {
+    pub(crate) fn render_const_value_type(
+        &self,
+        combinator: &ConstCombinator,
+        mode: TypeMode,
+    ) -> TokenStream {
         match self.ctx.resolve_const(combinator) {
             ConstCombinator::ConstBytes(bytes) => match mode {
                 TypeMode::Exec => {
@@ -413,47 +540,5 @@ impl<'a> Analysis<'a> {
                 self.render_nominal_type(name, mode)
             }
         }
-    }
-
-    fn struct_value_fields(
-        &self,
-        struct_comb: &StructCombinator,
-        mode: TypeMode,
-    ) -> Vec<proc_macro2::TokenStream> {
-        struct_comb
-            .0
-            .iter()
-            .map(|field| match field {
-                StructField::Const { label, combinator } => {
-                    let ident = format_ident!("{}", label);
-                    let ty = self.render_const_value_type(combinator, mode);
-                    quote! { pub #ident: #ty }
-                }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let ident = format_ident!("{}", label);
-                    let ty = self.render_value_type(combinator, mode);
-                    quote! { pub #ident: #ty }
-                }
-            })
-            .collect()
-    }
-
-    fn struct_deep_view_fields(
-        &self,
-        struct_comb: &StructCombinator,
-    ) -> Vec<proc_macro2::TokenStream> {
-        struct_comb
-            .0
-            .iter()
-            .map(|field| match field {
-                StructField::Const { label, .. }
-                | StructField::Dependent { label, .. }
-                | StructField::Ordinary { label, .. } => {
-                    let ident = format_ident!("{}", label);
-                    quote! { #ident: self.#ident.deep_view() }
-                }
-            })
-            .collect()
     }
 }

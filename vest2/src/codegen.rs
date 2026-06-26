@@ -113,10 +113,10 @@ impl<'a> Analysis<'a> {
         match def {
             Definition::StructDef {
                 name, combinator, ..
-            } => self.gen_struct_value_types(name, combinator),
+            } => self.gen_struct_value_types(name, combinator, &[]),
             Definition::ChoiceDef {
                 name, combinator, ..
-            } => self.gen_choice_value_types(name, combinator),
+            } => self.gen_choice_value_types(name, combinator, &[]),
             Definition::EnumDef {
                 name, combinator, ..
             } => self.gen_enum_value_types(name, combinator),
@@ -125,7 +125,7 @@ impl<'a> Analysis<'a> {
             } => self.gen_bits_value_types(name, combinator),
             Definition::CombinatorDef {
                 name, combinator, ..
-            } => self.gen_combinator_value_types(name, combinator),
+            } => self.gen_combinator_value_types(name, combinator, &[]),
             Definition::ConstCombinatorDef {
                 name,
                 const_combinator,

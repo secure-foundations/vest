@@ -1,7 +1,8 @@
 use super::common::{
     bits_tuple_expr_from_idents, bits_tuple_expr_tokens, bits_tuple_pattern_tokens,
     bits_tuple_type_tokens, int_literal, nested_tuple_pattern_idents,
-    nested_tuple_value_expr_idents, sum_pattern, syn_usize, tuple_index_expr, Analysis, FormatNames, TypeMode,
+    nested_tuple_value_expr_idents, sum_pattern, syn_usize, tuple_index_expr, Analysis,
+    FormatNames, TypeMode,
 };
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
@@ -33,7 +34,12 @@ struct RenderedBitsField {
 }
 
 impl RenderedSpec {
-    pub(crate) fn new(ty: TokenStream, expr: TokenStream, value_ty: TokenStream, has_value: bool) -> Self {
+    pub(crate) fn new(
+        ty: TokenStream,
+        expr: TokenStream,
+        value_ty: TokenStream,
+        has_value: bool,
+    ) -> Self {
         Self {
             ty,
             expr,
@@ -692,7 +698,9 @@ impl<'a> Analysis<'a> {
     }
 
     fn render_struct_fields(&self, fields: &[StructField]) -> RenderedSpec {
-        self.render_struct_fields_with(fields, &|combinator| self.render_spec_combinator(combinator))
+        self.render_struct_fields_with(fields, &|combinator| {
+            self.render_spec_combinator(combinator)
+        })
     }
 
     pub(crate) fn render_struct_fields_with(
@@ -1909,12 +1917,6 @@ impl<'a> Analysis<'a> {
             })
         }
     }
-
-    /// Public bridge for `recursive.rs`: render a spec combinator expression.
-    pub(crate) fn render_spec_combinator_pub(&self, combinator: &Combinator) -> RenderedSpec {
-        self.render_spec_combinator(combinator)
-    }
-
 }
 
 struct ConstRendered {
@@ -2011,7 +2013,6 @@ fn bit_mask_literal(mask: u64, int_ty: &vestir::IntCombinator) -> TokenStream {
     let lit_str = format!("{binary_str}{suffix}");
     lit_str.parse().unwrap()
 }
-
 
 fn sum_injection(idx: usize, total: usize, leaf_expr: TokenStream) -> TokenStream {
     if total == 1 {

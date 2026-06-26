@@ -1773,3 +1773,14 @@ pub(crate) fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> To
         t
     }
 }
+
+pub(crate) fn is_combinator_in_scc(c: &Combinator, members: &[String]) -> bool {
+    matches!(c, Combinator::Invocation(inv) if members.contains(&inv.func))
+}
+
+pub(crate) fn get_invocation_name(c: &Combinator) -> &str {
+    match c {
+        Combinator::Invocation(inv) => &inv.func,
+        _ => panic!("expected Invocation"),
+    }
+}

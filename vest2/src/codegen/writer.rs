@@ -211,6 +211,8 @@ pub(crate) fn cleanup_verus_spacing(input: &str) -> String {
     let mut s = input.to_string();
 
     for (from, to) in [
+        ("== >", "==>"),
+        ("&& &", "&&&"),
         (" . ", "."),
         (":: ", "::"),
         (" ::", "::"),
