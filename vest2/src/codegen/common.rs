@@ -1210,14 +1210,17 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn param_defns_for(&self, name: &str) -> &[ParamDefn] {
-        match self.definition_for(name) {
-            Some(def) => def.param_defns(),
-            _ => &[],
+    pub(crate) fn param_defns_for(&self, name: &str) -> &'a [ParamDefn] {
+        if let Some(member) = self.recursive_member_for(name) {
+            &member.param_defns
+        } else if let Some(def) = self.definition_for(name) {
+            def.param_defns()
+        } else {
+            &[]
         }
     }
 
-    fn definition_for(&self, name: &str) -> Option<&Definition> {
+    fn definition_for(&self, name: &str) -> Option<&'a Definition> {
         self.defs
             .iter()
             .find(|def| definition_name(def).is_some_and(|def_name| def_name == name))
@@ -1762,13 +1765,13 @@ pub(crate) fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> To
     if idx == total - 1 {
         let mut t = leaf_pat;
         for _ in 0..idx {
-            t = quote! { Sum::Inr(#t) };
+            t = quote! { R(#t) };
         }
         t
     } else {
-        let mut t = quote! { Sum::Inl(#leaf_pat) };
+        let mut t = quote! { L(#leaf_pat) };
         for _ in 0..idx {
-            t = quote! { Sum::Inr(#t) };
+            t = quote! { R(#t) };
         }
         t
     }

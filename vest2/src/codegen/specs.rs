@@ -1502,17 +1502,19 @@ impl<'a> Analysis<'a> {
         fold_choice(branches)
     }
 
-    fn render_dependent_choice_raw(
+    pub(crate) fn render_dependent_choice_with(
         &self,
         choice_comb: &ChoiceCombinator,
         owner_name: Option<&str>,
+        dep_expr: TokenStream,
+        render_comb: &dyn Fn(&Combinator) -> RenderedSpec,
     ) -> RenderedSpec {
         let (branch_specs, match_arms): (Vec<_>, Vec<_>) = choice_comb
             .choices
             .iter()
             .enumerate()
             .map(|(idx, (pat, combinator))| {
-                let fmt = self.render_spec_combinator(combinator);
+                let fmt = render_comb(combinator);
                 let inj = sum_injection(idx, choice_comb.choices.len(), fmt.expr.clone());
                 let arm = match pat {
                     ChoicePattern::Enum(pat_str) => {
@@ -1553,20 +1555,32 @@ impl<'a> Analysis<'a> {
             .collect::<Vec<_>>();
         let ty = self.render_choice_sum_type(&branch_tys);
         let value_ty = self.render_choice_sum_type(&branch_value_tys);
-        let dep = path_tokens(
-            choice_comb
-                .depend_id
-                .as_ref()
-                .expect("dependent choose should have a selector"),
-        );
 
         let expr = quote! {
-            match #dep {
+            match #dep_expr {
                 #(#match_arms)*
             }
         };
 
         RenderedSpec::new(ty, expr, value_ty, true)
+    }
+
+    fn render_dependent_choice_raw(
+        &self,
+        choice_comb: &ChoiceCombinator,
+        owner_name: Option<&str>,
+    ) -> RenderedSpec {
+        let dep_id = choice_comb
+            .depend_id
+            .as_ref()
+            .expect("dependent choose should have a selector");
+        let dep_expr = path_tokens(dep_id);
+        self.render_dependent_choice_with(
+            choice_comb,
+            owner_name,
+            dep_expr,
+            &|combinator| self.render_spec_combinator(combinator),
+        )
     }
 
     fn render_enum_top_level(&self, name: &str, enum_comb: &EnumCombinator) -> RenderedSpec {

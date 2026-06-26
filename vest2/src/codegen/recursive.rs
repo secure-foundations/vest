@@ -9,7 +9,7 @@ use crate::vestir::{
     ChoiceCombinator, ChoicePattern, Combinator, ConstraintElem, RecursiveScc, SccMember,
     SccMemberBody, StructCombinator, StructField,
 };
-use heck::ToUpperCamelCase;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -778,7 +778,7 @@ impl<'a> Analysis<'a> {
             SccMemberBody::Choice(c) => {
                 // Any choice with a depend_id dispatches on param.<dep> via match/Sum.
                 if c.depend_id.is_some() {
-                    self.render_scc_param_choice_body(c, ctx, member_deps)
+                    self.render_scc_param_choice_body(c, ctx, member_deps, &member.name)
                 } else {
                     self.render_choice_branches_with(&c.choices, &|combinator| {
                         self.render_scc_comb_spec(combinator, ctx)
@@ -795,64 +795,23 @@ impl<'a> Analysis<'a> {
         c: &ChoiceCombinator,
         ctx: &RecCtx<'_>,
         member_deps: &std::collections::HashMap<String, (String, Option<String>)>,
+        owner_name: &str,
     ) -> RenderedSpec {
         let dep = c.depend_id.as_deref().unwrap_or("param");
         // Use per-member dep map first, then fall back to ctx.
-        let (param_field, enum_type_opt) = if let Some((field, ety)) = member_deps.get(dep) {
-            (field.as_str().to_string(), ety.clone())
+        let param_field = if let Some((field, _)) = member_deps.get(dep) {
+            field.as_str().to_string()
         } else {
-            (ctx.param_field_for_dep(dep).to_string(), None)
+            ctx.param_field_for_dep(dep).to_string()
         };
         let param_field_id = format_ident!("{}", param_field);
-        let branches: Vec<RenderedSpec> = c
-            .choices
-            .iter()
-            .map(|(_, comb)| self.render_scc_comb_spec(comb, ctx))
-            .collect();
-        let tys: Vec<_> = branches.iter().map(|b| b.ty.clone()).collect();
-        let vtys: Vec<_> = branches.iter().map(|b| b.value_ty.clone()).collect();
-        let n = branches.len();
-        let match_arms: Vec<_> = c
-            .choices
-            .iter()
-            .zip(branches.iter())
-            .enumerate()
-            .map(|(idx, ((pat, _), branch))| {
-                let pat_tok =
-                    self.render_int_choice_pattern_qualified(pat, enum_type_opt.as_deref());
-                let sum_expr = sum_pattern(idx, n, branch.expr.clone());
-                quote! { #pat_tok => #sum_expr, }
-            })
-            .collect();
-        let sum_ty = self.render_choice_sum_type(&tys);
-        let sum_val = self.render_choice_sum_type(&vtys);
-        RenderedSpec::new(
-            sum_ty,
-            quote! { match param.#param_field_id { #(#match_arms)* } },
-            sum_val,
-            true,
+        let dep_expr = quote! { param.#param_field_id };
+        self.render_dependent_choice_with(
+            c,
+            Some(owner_name),
+            dep_expr,
+            &|combinator| self.render_scc_comb_spec(combinator, ctx),
         )
-    }
-
-    fn render_int_choice_pattern_qualified(
-        &self,
-        pat: &ChoicePattern,
-        enum_type: Option<&str>,
-    ) -> TokenStream {
-        match pat {
-            ChoicePattern::Int(elem) => self.render_constraint_elem_pat(elem),
-            ChoicePattern::Wildcard => quote! { _ },
-            ChoicePattern::Enum(name) => {
-                let id = format_ident!("{}", name);
-                if let Some(et) = enum_type {
-                    let et_id = format_ident!("{}", et.to_upper_camel_case());
-                    quote! { #et_id::#id }
-                } else {
-                    quote! { #id }
-                }
-            }
-            ChoicePattern::Array(arr) => self.render_const_array_expr(arr, TypeMode::Exec),
-        }
     }
 
     /// Build extra Param fields from an invocation's args, mapping each arg to the
