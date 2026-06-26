@@ -92,8 +92,6 @@ impl<'a> RecCtx<'a> {
 // Module-level helpers
 // ============================================================
 
-
-
 /// Build `Alt<Cond<ABodyFmt>, Alt<Cond<BBodyFmt>, ...>>` from alias idents.
 fn alt_chain_by_idents(idents: &[proc_macro2::Ident]) -> TokenStream {
     match idents {
@@ -806,12 +804,9 @@ impl<'a> Analysis<'a> {
         };
         let param_field_id = format_ident!("{}", param_field);
         let dep_expr = quote! { param.#param_field_id };
-        self.render_dependent_choice_with(
-            c,
-            Some(owner_name),
-            dep_expr,
-            &|combinator| self.render_scc_comb_spec(combinator, ctx),
-        )
+        self.render_dependent_choice_with(c, Some(owner_name), dep_expr, &|combinator| {
+            self.render_scc_comb_spec(combinator, ctx)
+        })
     }
 
     /// Build extra Param fields from an invocation's args, mapping each arg to the
@@ -1051,8 +1046,6 @@ impl<'a> Analysis<'a> {
         let member_names: Vec<String> = scc.members.iter().map(|m| m.name.clone()).collect();
         let ctx = self.make_ctx(&member_names, scc, scc_info);
         let mut out = String::new();
-        // NoLookAhead for enum formats referenced in bodies (non-SCC invocations)
-        out.push_str(&self.gen_no_lookahead_for_scc(scc, &ctx));
         // Proof stack for all SCC member fmts.
         for m in &scc.members {
             out.push_str(&self.gen_scc_fmt_proof_stack(&m.name));
@@ -1121,76 +1114,6 @@ impl<'a> Analysis<'a> {
                     assert(self.spec_map_rev(self.spec_map(i)) == i);
                 }
                 proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {}
-            }
-        })
-    }
-
-    fn gen_no_lookahead_for_scc(&self, scc: &RecursiveScc, ctx: &RecCtx<'_>) -> String {
-        let mut seen: std::collections::HashSet<String> = Default::default();
-        for m in &scc.members {
-            self.collect_non_scc_invocations(m, ctx, &mut seen);
-        }
-        seen.iter()
-            .filter(|n| {
-                matches!(
-                    self.def_by_name(n),
-                    Some(crate::vestir::Definition::EnumDef { .. })
-                )
-            })
-            .map(|n| self.gen_no_lookahead_impl(n))
-            .collect::<Vec<_>>()
-            .join("\n\n")
-    }
-
-    fn collect_non_scc_invocations(
-        &self,
-        member: &SccMember,
-        ctx: &RecCtx<'_>,
-        out: &mut std::collections::HashSet<String>,
-    ) {
-        match &member.body {
-            SccMemberBody::Struct(s) => s.0.iter().for_each(|f| match f {
-                StructField::Const { .. } => {}
-                StructField::Dependent { combinator, .. }
-                | StructField::Ordinary { combinator, .. } => {
-                    self.collect_comb_invocations(combinator, ctx, out)
-                }
-            }),
-            SccMemberBody::Choice(c) => c
-                .choices
-                .iter()
-                .for_each(|(_, comb)| self.collect_comb_invocations(comb, ctx, out)),
-            SccMemberBody::Combinator(c) => self.collect_comb_invocations(c, ctx, out),
-        }
-    }
-
-    fn collect_comb_invocations(
-        &self,
-        c: &Combinator,
-        ctx: &RecCtx<'_>,
-        out: &mut std::collections::HashSet<String>,
-    ) {
-        match c {
-            Combinator::Invocation(inv) if !ctx.is_in_scc(&inv.func) => {
-                out.insert(inv.func.clone());
-            }
-            Combinator::AndThen(l, r) => {
-                self.collect_comb_invocations(l, ctx, out);
-                self.collect_comb_invocations(r, ctx, out);
-            }
-            _ => {}
-        }
-    }
-
-    fn gen_no_lookahead_impl(&self, name: &str) -> String {
-        let fmt_id = format_ident!("{}", self.info(name).names.fmt);
-        render_ts(quote! {
-            impl NoLookAhead for #fmt_id {
-                proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-                    reveal(<#fmt_id as SpecParser>::spec_parse);
-                    let fmt = #fmt_id::spec_inner();
-                    fmt.lemma_no_lookahead(i1, i2);
-                }
             }
         })
     }
@@ -1852,20 +1775,12 @@ impl<'a> Analysis<'a> {
         op: Op,
     ) {
         match &member.body {
-            SccMemberBody::Struct(s) => match op {
-                Op::Parse => self.emit_recursive_struct_parse_body(w, member, s, ctx, access),
-                Op::Serialize => {
-                    self.emit_recursive_struct_serialize_body(w, member, s, ctx, access)
-                }
-                Op::Prepare => self.emit_recursive_struct_prepare_body(w, member, s, ctx, access),
-            },
-            SccMemberBody::Choice(c) => match op {
-                Op::Parse => self.emit_recursive_choice_parse_body(w, member, c, ctx, access),
-                Op::Serialize => {
-                    self.emit_recursive_choice_serialize_body(w, member, c, ctx, access)
-                }
-                Op::Prepare => self.emit_recursive_choice_prepare_body(w, member, c, ctx, access),
-            },
+            SccMemberBody::Struct(s) => {
+                self.emit_recursive_struct_body(w, member, s, ctx, access, op);
+            }
+            SccMemberBody::Choice(c) => {
+                self.emit_recursive_choice_body(w, member, c, ctx, access, op);
+            }
             SccMemberBody::Combinator(c) => {
                 self.emit_recursive_combinator_body(w, member, c, ctx, access, op)
             }
@@ -2055,72 +1970,6 @@ impl<'a> Analysis<'a> {
                 self.emit_checked_add_return(w, "total", &lens);
             }
         }
-    }
-
-    fn emit_recursive_struct_parse_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        s: &StructCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_struct_body(w, member, s, ctx, access, Op::Parse);
-    }
-
-    fn emit_recursive_struct_serialize_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        s: &StructCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_struct_body(w, member, s, ctx, access, Op::Serialize);
-    }
-
-    fn emit_recursive_struct_prepare_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        s: &StructCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_struct_body(w, member, s, ctx, access, Op::Prepare);
-    }
-
-    fn emit_recursive_choice_parse_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        c: &ChoiceCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_choice_body(w, member, c, ctx, access, Op::Parse);
-    }
-
-    fn emit_recursive_choice_serialize_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        c: &ChoiceCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_choice_body(w, member, c, ctx, access, Op::Serialize);
-    }
-
-    fn emit_recursive_choice_prepare_body(
-        &self,
-        w: &mut CodeWriter,
-        member: &SccMember,
-        c: &ChoiceCombinator,
-        ctx: &RecCtx<'_>,
-        access: RecExecParamAccess,
-    ) {
-        self.emit_recursive_choice_body(w, member, c, ctx, access, Op::Prepare);
     }
 
     fn emit_recursive_choice_body(
