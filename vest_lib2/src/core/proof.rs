@@ -276,7 +276,6 @@ pub trait StrictCombinator:
     GoodSerializer +
     NonTailFmt +
     SPRoundTripDps +
-    NoLookAhead +
     EquivSerializersGeneral {
 
 }
@@ -289,7 +288,6 @@ impl<Body> StrictCombinator for Body where
         GoodSerializer +
         NonTailFmt +
         SPRoundTripDps +
-        NoLookAhead +
         EquivSerializersGeneral,
  {
 
@@ -309,7 +307,6 @@ pub trait Leaf:
     GoodSerializer +
     NonTailFmt +
     SPRoundTripDps +
-    NoLookAhead +
     EquivSerializersGeneral {
     proof fn leaf_inv(&self)
         ensures
@@ -317,7 +314,6 @@ pub trait Leaf:
             self.safe_inv(),
             self.serialize_inv(),
             self.serialize_dps_inv(),
-            self.no_lookahead_inv(),
             self.equiv_general_inv(),
     ;
 }
@@ -335,7 +331,6 @@ pub trait LeafNonMalleable:
             self.nonmal_inv(),
             self.serialize_inv(),
             self.serialize_dps_inv(),
-            self.no_lookahead_inv(),
             self.equiv_general_inv(),
     ;
 }

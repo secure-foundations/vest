@@ -235,9 +235,6 @@ pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
             && (forall| p: Self::Param| #![trigger rec(p)] rec(p).serialize_dps_inv())
             ==> self.spec_body(param, rec).unambiguous(),
 
-            (forall|p: Self::Param| #![trigger rec(p)] rec(p).no_lookahead_inv())
-            ==> self.spec_body(param, rec).no_lookahead_inv(),
-
             (forall|p: Self::Param| #![trigger rec(p)] rec(p).equiv_general_inv())
             ==> self.spec_body(param, rec).equiv_general_inv(),
     ;
@@ -306,17 +303,6 @@ impl<Body: StrictRecBody> SPRoundTripDpsRecBody for Body where Body::Body: Stric
     ) {
         self.lemma_body_all_inv_preservation(param, rec);
         assert(self.spec_body(param, rec).unambiguous());
-    }
-}
-
-impl<Body: StrictRecBody> NoLookAheadRecBody for Body where Body::Body: StrictCombinator {
-    proof fn lemma_body_no_lookahead_inv_preservation(
-        &self,
-        param: Self::Param,
-        rec: ParamRecSpecs<Self::Param, Self::T>,
-    ) {
-        self.lemma_body_all_inv_preservation(param, rec);
-        assert(self.spec_body(param, rec).no_lookahead_inv());
     }
 }
 
