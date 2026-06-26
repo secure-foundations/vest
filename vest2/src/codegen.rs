@@ -2,6 +2,7 @@ mod common;
 mod datatypes;
 mod execs;
 mod proofs;
+mod recursive;
 mod specs;
 mod writer;
 
@@ -130,6 +131,7 @@ impl<'a> Analysis<'a> {
                 const_combinator,
             } => self.gen_const_value_aliases(name, const_combinator),
             Definition::Endianess(_) => String::new(),
+            Definition::RecursiveScc(scc) => self.gen_recursive_data_fragment(scc),
         }
     }
 
@@ -171,6 +173,7 @@ impl<'a> Analysis<'a> {
                 self.info(name).names.exec
             ),
             Definition::Endianess(_) => String::new(),
+            Definition::RecursiveScc(scc) => self.gen_recursive_specs_fragment(scc),
         }
     }
 
@@ -199,6 +202,7 @@ impl<'a> Analysis<'a> {
                 self.info(name).names.exec
             ),
             Definition::Endianess(_) => String::new(),
+            Definition::RecursiveScc(scc) => self.gen_recursive_derived_specs_fragment(scc),
         }
     }
 
@@ -229,6 +233,7 @@ impl<'a> Analysis<'a> {
                 self.info(name).names.exec
             ),
             Definition::Endianess(_) => String::new(),
+            Definition::RecursiveScc(scc) => self.gen_recursive_proofs_fragment(scc),
         }
     }
 
@@ -270,6 +275,7 @@ impl<'a> Analysis<'a> {
                 self.info(name).names.exec
             ),
             Definition::Endianess(_) => String::new(),
+            Definition::RecursiveScc(scc) => self.gen_recursive_execs_fragment(scc),
         }
     }
 }
@@ -279,6 +285,7 @@ pub(crate) fn prelude() -> String {
         #![allow(warnings)]
         use vest_lib2::combinators::mapped::spec::*;
         use vest_lib2::combinators::*;
+        use vest_lib2::combinators::recursive::*;
         use Sum::Inl as L;
         use Sum::Inr as R;
         use vest_lib2::core::exec::{DeepEq, SelfView};

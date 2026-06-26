@@ -1,7 +1,7 @@
 use super::common::{
     bits_tuple_expr_from_idents, bits_tuple_expr_tokens, bits_tuple_pattern_tokens,
     bits_tuple_type_tokens, int_literal, nested_tuple_pattern_idents,
-    nested_tuple_value_expr_idents, syn_usize, tuple_index_expr, Analysis, FormatNames, TypeMode,
+    nested_tuple_value_expr_idents, sum_pattern, syn_usize, tuple_index_expr, Analysis, FormatNames, TypeMode,
 };
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
@@ -12,11 +12,11 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 #[derive(Clone)]
-struct RenderedSpec {
-    ty: TokenStream,
-    expr: TokenStream,
-    value_ty: TokenStream,
-    has_value: bool,
+pub(crate) struct RenderedSpec {
+    pub(crate) ty: TokenStream,
+    pub(crate) expr: TokenStream,
+    pub(crate) value_ty: TokenStream,
+    pub(crate) has_value: bool,
 }
 
 struct RenderedBitsField {
@@ -33,7 +33,7 @@ struct RenderedBitsField {
 }
 
 impl RenderedSpec {
-    fn new(ty: TokenStream, expr: TokenStream, value_ty: TokenStream, has_value: bool) -> Self {
+    pub(crate) fn new(ty: TokenStream, expr: TokenStream, value_ty: TokenStream, has_value: bool) -> Self {
         Self {
             ty,
             expr,
@@ -536,7 +536,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
+    pub(crate) fn render_spec_combinator(&self, combinator: &Combinator) -> RenderedSpec {
         match combinator {
             Combinator::AndThen(lhs, rhs) => return self.render_and_then_spec(lhs, rhs),
             Combinator::Invocation(invocation) => return self.render_invocation_spec(invocation),
@@ -1887,6 +1887,18 @@ impl<'a> Analysis<'a> {
             })
         }
     }
+
+    /// Public bridge for `recursive.rs`: render a spec combinator expression.
+    pub(crate) fn render_spec_combinator_pub(&self, combinator: &Combinator) -> RenderedSpec {
+        self.render_spec_combinator(combinator)
+    }
+
+    /// Public bridge for `recursive.rs`: render a const combinator spec.
+    /// Returns (ty, expr, value_ty).
+    pub(crate) fn render_const_spec_pub(&self, combinator: &ConstCombinator) -> (TokenStream, TokenStream, TokenStream) {
+        let c = self.render_const_spec(combinator);
+        (c.ty, c.expr, c.value_ty)
+    }
 }
 
 struct ConstRendered {
@@ -1984,17 +1996,6 @@ fn bit_mask_literal(mask: u64, int_ty: &vestir::IntCombinator) -> TokenStream {
     lit_str.parse().unwrap()
 }
 
-fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> TokenStream {
-    if total == 1 {
-        return leaf_pat;
-    }
-    if idx == 0 {
-        quote! { L(#leaf_pat) }
-    } else {
-        let rest = sum_pattern(idx - 1, total - 1, leaf_pat);
-        quote! { R(#rest) }
-    }
-}
 
 fn sum_injection(idx: usize, total: usize, leaf_expr: TokenStream) -> TokenStream {
     if total == 1 {

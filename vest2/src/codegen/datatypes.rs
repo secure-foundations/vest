@@ -396,7 +396,7 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    fn render_const_value_type(&self, combinator: &ConstCombinator, mode: TypeMode) -> TokenStream {
+    pub(crate) fn render_const_value_type(&self, combinator: &ConstCombinator, mode: TypeMode) -> TokenStream {
         match self.ctx.resolve_const(combinator) {
             ConstCombinator::ConstBytes(bytes) => match mode {
                 TypeMode::Exec => {

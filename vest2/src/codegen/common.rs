@@ -2,7 +2,8 @@ use crate::vestir::{
     self, ArrayCombinator, ChoiceCombinator, ChoicePattern, Combinator, CombinatorInvocation,
     ConstArray, ConstCombinator, ConstraintElem, ConstraintEnumCombinator, ConstraintIntCombinator,
     Definition, Endianess, EnumCombinator, GlobalCtx, IntCombinator, LengthExpr, OptionCombinator,
-    ParamDefn, StructCombinator, StructField, TailCombinator, VecCombinator, WrapCombinator,
+    ParamDefn, RecursiveScc, SccMember, SccMemberBody, StructCombinator, StructField,
+    TailCombinator, VecCombinator, WrapCombinator,
 };
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
@@ -49,6 +50,28 @@ pub(crate) struct Analysis<'a> {
     pub(crate) ctx: &'a GlobalCtx,
     pub(crate) endianness: Endianess,
     pub(crate) infos: HashMap<String, FormatInfo>,
+    /// Index into `sccs` for each member of a recursive SCC.
+    pub(crate) scc_of: HashMap<String, usize>,
+    /// Metadata for each recursive SCC, indexed by `scc_of`.
+    pub(crate) sccs: Vec<SccInfo>,
+}
+
+/// Metadata about one recursive SCC, computed once in `Analysis::new`.
+#[derive(Debug, Clone)]
+pub(crate) struct SccInfo {
+    /// Member names in source order.
+    pub(crate) members: Vec<String>,
+    /// True if any member has a lifetime-bearing field (Bytes/Tail or out-of-SCC ref).
+    pub(crate) needs_lifetime: bool,
+    /// Identifier for the `WhichFmt` / `WhichXxx` discriminant enum (e.g. `WhichExpr`).
+    pub(crate) which_ident: String,
+    /// Identifier for the `Value` union enum (e.g. `ExprListValue`).
+    pub(crate) value_ident: String,
+    /// Identifier for the combined `RecBody` struct (e.g. `ExprListRecBody`).
+    pub(crate) rec_body_ident: String,
+    /// Identifier for the `Param` type (same as `which_ident` for non-parameterized SCCs;
+    /// `XxxParam` for parameterized SCCs).
+    pub(crate) param_ident: String,
 }
 
 #[derive(Debug, Clone)]
@@ -357,12 +380,87 @@ impl<'a> Analysis<'a> {
             ctx,
             endianness,
             infos: HashMap::new(),
+            scc_of: HashMap::new(),
+            sccs: Vec::new(),
         };
-        // `definition_needs_lifetime`/`non_tail`/`non_malleable` query the info of the
-        // formats a definition invokes, so each format's dependencies must be analysed
-        // first. Process definitions in dependency (callee-before-caller) order rather
-        // than relying on the input being topologically pre-sorted.
+        // Pre-assign SCC indices in source (file) order so SCC numbering is stable.
+        let mut scc_source_order: std::collections::HashMap<*const RecursiveScc, usize> =
+            Default::default();
+        let mut scc_counter = 0usize;
+        for def in defs {
+            if let Definition::RecursiveScc(scc) = def {
+                let ptr = scc as *const RecursiveScc;
+                if !scc_source_order.contains_key(&ptr) {
+                    scc_source_order.insert(ptr, scc_counter);
+                    scc_counter += 1;
+                }
+            }
+        }
+        // Process definitions in dependency (callee-before-caller) order.
         for name in this.dependency_order() {
+            // If this name belongs to a recursive SCC, handle the whole SCC at once
+            // when we hit its first member in dependency order.
+            if this.scc_of.contains_key(&name) {
+                continue; // already processed as part of its SCC
+            }
+            // Check if this name is an SCC member (by finding it in defs).
+            if let Some(scc) = this.find_scc_for(&name) {
+                // Look up source-order index for this SCC (1-based).
+                let scc_n = scc_source_order
+                    .get(&(scc as *const RecursiveScc))
+                    .copied()
+                    .unwrap_or(this.sccs.len())
+                    + 1;
+                // Runtime index for the sccs Vec — we still push in dep order.
+                let scc_idx = this.sccs.len();
+                let member_names: Vec<String> =
+                    scc.members.iter().map(|m| m.name.clone()).collect();
+                for m in &member_names {
+                    this.scc_of.insert(m.clone(), scc_idx);
+                }
+                // Compute shared needs_lifetime: any member with Bytes/Tail leaf
+                // or out-of-SCC reference that needs lifetime.
+                let nl = scc
+                    .members
+                    .iter()
+                    .any(|m| this.scc_member_needs_lifetime(m, &member_names));
+                // Detect parameterization across the whole SCC. After elaboration every SCC
+                // member is a top-level format in its own right, so there is no "root" vs
+                // "helper" distinction here.
+                let parameterized = scc.members.iter().any(|m| {
+                    m.param_defns.iter().any(|p| match p {
+                        vestir::ParamDefn::Dependent { combinator, .. } => {
+                            !matches!(combinator, vestir::Combinator::Invocation(_))
+                        }
+                    })
+                });
+                // Generate stable naming: SCC{n} where n = 1-based source order index.
+                let (which_ident, value_ident, rec_body_ident, param_ident) =
+                    scc_names(scc_n, parameterized);
+                this.sccs.push(SccInfo {
+                    members: member_names.clone(),
+                    needs_lifetime: nl,
+                    which_ident,
+                    value_ident,
+                    rec_body_ident,
+                    param_ident,
+                });
+                // Insert FormatInfo for every member (non_tail=true, non_malleable=true).
+                for m in &scc.members {
+                    let names = format_names(&m.name);
+                    this.infos.insert(
+                        m.name.clone(),
+                        FormatInfo {
+                            names,
+                            needs_lifetime: nl,
+                            non_tail: true,
+                            non_malleable: true,
+                        },
+                    );
+                }
+                continue;
+            }
+            // Normal non-recursive definition.
             let Some(def) = this.def_by_name(&name) else {
                 continue;
             };
@@ -383,8 +481,64 @@ impl<'a> Analysis<'a> {
         this
     }
 
+    /// If `name` is a member of a `RecursiveScc`, return a reference to that SCC.
+    fn find_scc_for(&self, name: &str) -> Option<&'a RecursiveScc> {
+        for def in self.defs {
+            if let Definition::RecursiveScc(scc) = def {
+                if scc.members.iter().any(|m| m.name == name) {
+                    return Some(scc);
+                }
+            }
+        }
+        None
+    }
+
+    /// True if a combinator references a format outside the given SCC member set
+    /// that itself needs a lifetime, or directly contains Bytes/Tail.
+    fn scc_member_needs_lifetime(&self, member: &SccMember, members: &[String]) -> bool {
+        match &member.body {
+            SccMemberBody::Struct(s) => s.0.iter().any(|f| match f {
+                vestir::StructField::Const { .. } => false,
+                vestir::StructField::Dependent { combinator, .. }
+                | vestir::StructField::Ordinary { combinator, .. } => {
+                    self.combinator_needs_lifetime_scc(combinator, members)
+                }
+            }),
+            SccMemberBody::Choice(c) => c
+                .choices
+                .iter()
+                .any(|(_, comb)| self.combinator_needs_lifetime_scc(comb, members)),
+            SccMemberBody::Combinator(c) => self.combinator_needs_lifetime_scc(c, members),
+        }
+    }
+
+    fn combinator_needs_lifetime_scc(&self, combinator: &Combinator, members: &[String]) -> bool {
+        match combinator {
+            Combinator::Bytes(_) | Combinator::Tail(_) => true,
+            Combinator::Invocation(inv) => {
+                if members.contains(&inv.func) {
+                    false // in-SCC: lifetime shared; don't count it as a source here
+                } else {
+                    self.infos
+                        .get(&inv.func)
+                        .map_or(false, |i| i.needs_lifetime)
+                }
+            }
+            Combinator::AndThen(_, rhs) => self.combinator_needs_lifetime_scc(rhs, members),
+            Combinator::Vec(vestir::VecCombinator::Vec(c))
+            | Combinator::Array(vestir::ArrayCombinator { combinator: c, .. })
+            | Combinator::Option(vestir::OptionCombinator(c)) => {
+                self.combinator_needs_lifetime_scc(c, members)
+            }
+            Combinator::Wrap(vestir::WrapCombinator { combinator: c, .. }) => {
+                self.combinator_needs_lifetime_scc(c, members)
+            }
+            _ => false,
+        }
+    }
+
     /// Look up a definition by its format name.
-    fn def_by_name(&self, name: &str) -> Option<&'a Definition> {
+    pub(crate) fn def_by_name(&self, name: &str) -> Option<&'a Definition> {
         self.defs
             .iter()
             .find(|def| definition_name(def) == Some(name))
@@ -396,33 +550,65 @@ impl<'a> Analysis<'a> {
     /// in. The call graph among generated formats is acyclic; if a cycle is ever
     /// encountered we fall back to the input order.
     fn dependency_order(&self) -> Vec<String> {
-        use crate::utils::{topological_sort, VestHasherBuilder};
+        use crate::utils::{tarjan_scc, VestHasherBuilder};
 
-        let names: std::collections::HashSet<&str> =
-            self.defs.iter().filter_map(definition_name).collect();
+        // Build a name set covering both flat defs and SCC members.
+        let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for def in self.defs {
+            match def {
+                Definition::RecursiveScc(scc) => {
+                    for m in &scc.members {
+                        names.insert(m.name.clone());
+                    }
+                }
+                other => {
+                    if let Some(n) = definition_name(other) {
+                        names.insert(n.to_string());
+                    }
+                }
+            }
+        }
+
+        // Build the full call graph.
         let mut graph: HashMap<String, Vec<String>, VestHasherBuilder> =
             HashMap::with_hasher(VestHasherBuilder);
         for def in self.defs {
-            if let Some(name) = definition_name(def) {
-                let deps: Vec<String> = definition_dependencies(def)
-                    .into_iter()
-                    .filter(|dep| names.contains(dep.as_str()))
-                    .collect();
-                graph.insert(name.to_string(), deps);
+            match def {
+                Definition::RecursiveScc(scc) => {
+                    for m in &scc.members {
+                        let deps = scc_member_dependencies(m)
+                            .into_iter()
+                            .filter(|d| names.contains(d))
+                            .collect();
+                        graph.insert(m.name.clone(), deps);
+                    }
+                }
+                other => {
+                    if let Some(name) = definition_name(other) {
+                        let deps = definition_dependencies(other)
+                            .into_iter()
+                            .filter(|d| names.contains(d.as_str()))
+                            .collect();
+                        graph.insert(name.to_string(), deps);
+                    }
+                }
             }
         }
-        topological_sort(&graph).unwrap_or_else(|_| {
-            self.defs
-                .iter()
-                .filter_map(|def| definition_name(def).map(str::to_string))
-                .collect()
-        })
+
+        // Use Tarjan SCC to get callee-before-caller order; flatten.
+        // Convert to standard HashMap first (tarjan_scc expects std::collections::HashMap).
+        let std_graph: std::collections::HashMap<String, Vec<String>> = graph.into_iter().collect();
+        tarjan_scc(&std_graph).into_iter().flatten().collect()
     }
 
     pub(crate) fn info(&self, name: &str) -> &FormatInfo {
         self.infos
             .get(name)
             .unwrap_or_else(|| panic!("missing format info for `{name}`"))
+    }
+
+    pub(crate) fn scc_info_for(&self, name: &str) -> Option<&SccInfo> {
+        self.scc_of.get(name).map(|&idx| &self.sccs[idx])
     }
 
     pub(crate) fn eval_const_length_expr(&self, len: &LengthExpr) -> Option<usize> {
@@ -550,8 +736,18 @@ impl<'a> Analysis<'a> {
     }
 
     pub(crate) fn render_value_type(&self, combinator: &Combinator, mode: TypeMode) -> TokenStream {
+        self.render_value_type_scc(combinator, mode, &[])
+    }
+
+    /// Like `render_value_type` but boxes in-SCC references.
+    pub(crate) fn render_value_type_scc(
+        &self,
+        combinator: &Combinator,
+        mode: TypeMode,
+        scc_members: &[String],
+    ) -> TokenStream {
         if let Combinator::Invocation(invocation) = combinator {
-            return self.render_nominal_type(&invocation.func, mode);
+            return self.render_nominal_type_scc(&invocation.func, mode, scc_members);
         }
 
         match self.ctx.resolve_alias(combinator) {
@@ -559,20 +755,20 @@ impl<'a> Analysis<'a> {
                 self.render_int_type(combinator)
             }
             Combinator::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
-                self.render_nominal_type(&combinator.func, mode)
+                self.render_nominal_type_scc(&combinator.func, mode, scc_members)
             }
             Combinator::Wrap(WrapCombinator { combinator, .. }) => {
-                self.render_value_type(combinator, mode)
+                self.render_value_type_scc(combinator, mode, scc_members)
             }
             Combinator::Vec(VecCombinator::Vec(combinator)) => {
-                let inner_ty = self.render_value_type(combinator, mode);
+                let inner_ty = self.render_value_type_scc(combinator, mode, scc_members);
                 match mode {
                     TypeMode::Exec => quote! { Vec<#inner_ty> },
                     TypeMode::Spec => quote! { Seq<#inner_ty> },
                 }
             }
             Combinator::Array(ArrayCombinator { combinator, len }) => {
-                let inner_ty = self.render_value_type(combinator, mode);
+                let inner_ty = self.render_value_type_scc(combinator, mode, scc_members);
                 match (mode, self.eval_const_length_expr(len)) {
                     (TypeMode::Exec, Some(n)) => {
                         let n = syn_usize(n);
@@ -587,24 +783,41 @@ impl<'a> Analysis<'a> {
                 TypeMode::Spec => quote! { Seq<u8> },
             },
             Combinator::Option(OptionCombinator(combinator)) => {
-                let inner_ty = self.render_value_type(combinator, mode);
+                let inner_ty = self.render_value_type_scc(combinator, mode, scc_members);
                 quote! { Option<#inner_ty> }
             }
-            Combinator::Invocation(invocation) => self.render_nominal_type(&invocation.func, mode),
-            Combinator::AndThen(_, rhs) => self.render_value_type(rhs, mode),
+            Combinator::Invocation(invocation) => {
+                self.render_nominal_type_scc(&invocation.func, mode, scc_members)
+            }
+            Combinator::AndThen(_, rhs) => self.render_value_type_scc(rhs, mode, scc_members),
         }
     }
 
     pub(crate) fn render_nominal_type(&self, dsl_name: &str, mode: TypeMode) -> TokenStream {
+        self.render_nominal_type_scc(dsl_name, mode, &[])
+    }
+
+    pub(crate) fn render_nominal_type_scc(
+        &self,
+        dsl_name: &str,
+        mode: TypeMode,
+        scc_members: &[String],
+    ) -> TokenStream {
         let info = self.info(dsl_name);
         let ident = match mode {
             TypeMode::Exec => format_ident!("{}", info.names.exec),
             TypeMode::Spec => format_ident!("{}", info.names.spec),
         };
-        if matches!(mode, TypeMode::Exec) && info.needs_lifetime {
+        let base = if matches!(mode, TypeMode::Exec) && info.needs_lifetime {
             quote! { #ident <'i> }
         } else {
             quote! { #ident }
+        };
+        // Box in-SCC references to break the recursive type.
+        if scc_members.contains(&dsl_name.to_string()) {
+            quote! { Box< #base > }
+        } else {
+            base
         }
     }
     pub(crate) fn render_choice_sum_type(&self, branch_types: &[TokenStream]) -> TokenStream {
@@ -1006,7 +1219,7 @@ impl<'a> Analysis<'a> {
             Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_needs_lifetime(const_combinator),
-            Definition::Endianess(_) => false,
+            Definition::Endianess(_) | Definition::RecursiveScc(_) => false,
         }
     }
 
@@ -1080,7 +1293,7 @@ impl<'a> Analysis<'a> {
             Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_non_tail(const_combinator),
-            Definition::Endianess(_) => true,
+            Definition::Endianess(_) | Definition::RecursiveScc(_) => true,
         }
     }
 
@@ -1169,7 +1382,7 @@ impl<'a> Analysis<'a> {
             Definition::ConstCombinatorDef {
                 const_combinator, ..
             } => self.const_non_malleable(const_combinator),
-            Definition::Endianess(_) => true,
+            Definition::Endianess(_) | Definition::RecursiveScc(_) => true,
         }
     }
 
@@ -1339,14 +1552,14 @@ pub(crate) fn definition_name(def: &Definition) -> Option<&str> {
         | Definition::EnumDef { name, .. }
         | Definition::CombinatorDef { name, .. }
         | Definition::ConstCombinatorDef { name, .. } => Some(name),
-        Definition::Endianess(_) => None,
+        Definition::Endianess(_) | Definition::RecursiveScc(_) => None,
     }
 }
 
 /// Names of the formats directly invoked by `def` (a superset of the formats whose
 /// [`FormatInfo`] is queried while analysing `def`). Used to order analysis so that
 /// callees are processed before callers.
-fn definition_dependencies(def: &Definition) -> Vec<String> {
+pub(crate) fn definition_dependencies(def: &Definition) -> Vec<String> {
     let mut out = Vec::new();
     match def {
         Definition::StructDef { combinator, .. } => {
@@ -1362,7 +1575,7 @@ fn definition_dependencies(def: &Definition) -> Vec<String> {
         Definition::ConstCombinatorDef {
             const_combinator, ..
         } => collect_const_invocations(const_combinator, &mut out),
-        Definition::EnumDef { .. } | Definition::Endianess(_) => {}
+        Definition::EnumDef { .. } | Definition::Endianess(_) | Definition::RecursiveScc(_) => {}
     }
     out
 }
@@ -1425,6 +1638,27 @@ fn collect_bits_invocations(bits_comb: &vestir::BitsCombinator, out: &mut Vec<St
             out.push(inv.func.clone());
         }
     }
+}
+
+/// Dependencies of a single SCC member (same logic as `definition_dependencies` for its body).
+pub(crate) fn scc_member_dependencies(member: &SccMember) -> Vec<String> {
+    let mut out = Vec::new();
+    match &member.body {
+        SccMemberBody::Struct(s) => collect_struct_invocations(s, &mut out),
+        SccMemberBody::Choice(c) => collect_choice_invocations(c, &mut out),
+        SccMemberBody::Combinator(c) => collect_combinator_invocations(c, &mut out),
+    }
+    out
+}
+
+/// Derive stable identifiers for an SCC from its 1-based index.
+/// Returns `(which_ident, value_ident, rec_body_ident, param_ident)`.
+pub(crate) fn scc_names(n: usize, _parameterized: bool) -> (String, String, String, String) {
+    let which = format!("SCC{}Which", n);
+    let value = format!("SCC{}", n);
+    let rec_body = format!("SCC{}RecBody", n);
+    let param = format!("SCC{}Param", n);
+    (which, value, rec_body, param)
 }
 
 pub(crate) fn format_names(name: &str) -> FormatNames {
@@ -1497,5 +1731,21 @@ pub(crate) fn int_literal(value: i128, combinator: &vestir::IntCombinator) -> To
             quote! { #lit }
         }
         other => panic!("unsupported integer literal combinator: {:?}", other),
+    }
+}
+
+pub(crate) fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> TokenStream {
+    if idx == total - 1 {
+        let mut t = leaf_pat;
+        for _ in 0..idx {
+            t = quote! { Sum::Inr(#t) };
+        }
+        t
+    } else {
+        let mut t = quote! { Sum::Inl(#leaf_pat) };
+        for _ in 0..idx {
+            t = quote! { Sum::Inr(#t) };
+        }
+        t
     }
 }

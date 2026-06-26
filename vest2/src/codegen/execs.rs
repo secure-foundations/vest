@@ -1402,7 +1402,7 @@ impl<'a> Analysis<'a> {
         self.render_exec_combinator_expr_impl(combinator, param_defns, mode, false)
     }
 
-    fn render_exec_combinator_expr_named(
+    pub(crate) fn render_exec_combinator_expr_named(
         &self,
         combinator: &Combinator,
         param_defns: &[ParamDefn],
@@ -1653,7 +1653,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_exec_const_expr(
+    pub(crate) fn render_exec_const_expr(
         &self,
         combinator: &ConstCombinator,
         param_defns: &[ParamDefn],
@@ -1698,7 +1698,7 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn render_prepare_value(
+    pub(crate) fn render_prepare_value(
         &self,
         value_expr: TokenStream,
         fmt_expr: TokenStream,
@@ -1718,7 +1718,12 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    fn emit_checked_add_return(&self, w: &mut CodeWriter, total_name: &str, terms: &[String]) {
+    pub(crate) fn emit_checked_add_return(
+        &self,
+        w: &mut CodeWriter,
+        total_name: &str,
+        terms: &[String],
+    ) {
         if terms.is_empty() {
             w.line("Ok(0usize)");
             return;
@@ -1734,7 +1739,11 @@ impl<'a> Analysis<'a> {
     }
 
     /// Try to resolve the enum type of a dependent field `dep` in the struct or params context.
-    fn resolve_dep_enum_type(&self, dep: &str, param_defns: &[ParamDefn]) -> Option<TokenStream> {
+    pub(crate) fn resolve_dep_enum_type(
+        &self,
+        dep: &str,
+        param_defns: &[ParamDefn],
+    ) -> Option<TokenStream> {
         self.resolve_dep_enum_info(dep, param_defns)
             .map(|(name, _)| self.render_nominal_type(name, TypeMode::Exec))
     }
@@ -1792,7 +1801,7 @@ impl<'a> Analysis<'a> {
         None
     }
 
-    fn gen_constraint_pred(
+    pub(crate) fn gen_constraint_pred(
         &self,
         combinator: &Combinator,
         val_tokens: TokenStream,

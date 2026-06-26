@@ -40,6 +40,32 @@ pub enum Definition {
         const_combinator: ConstCombinator,
     },
     Endianess(Endianess),
+    /// A group of mutually-recursive format definitions, produced by the post-lowering
+    /// SCC grouping pass. All members share a single `FixWith`-based implementation.
+    RecursiveScc(RecursiveScc),
+}
+
+/// A group of mutually-recursive (or self-recursive) format definitions.
+#[derive(Debug, Clone)]
+pub struct RecursiveScc {
+    /// Members in source order (the order they appear in the lowered IR).
+    pub members: Vec<SccMember>,
+}
+
+/// One participant in a recursive SCC.
+#[derive(Debug, Clone)]
+pub struct SccMember {
+    pub name: String,
+    pub param_defns: Vec<ParamDefn>,
+    pub body: SccMemberBody,
+}
+
+/// The elaborated body of one SCC member.
+#[derive(Debug, Clone)]
+pub enum SccMemberBody {
+    Struct(StructCombinator),
+    Choice(ChoiceCombinator),
+    Combinator(Combinator),
 }
 
 impl Definition {
@@ -51,7 +77,7 @@ impl Definition {
             | Definition::BitsDef { name, .. }
             | Definition::CombinatorDef { name, .. }
             | Definition::ConstCombinatorDef { name, .. } => Some(name.as_str()),
-            Definition::Endianess(_) => None,
+            Definition::Endianess(_) | Definition::RecursiveScc(_) => None,
         }
     }
 
@@ -459,6 +485,10 @@ impl Display for Definition {
                 Endianess::Little => write!(f, "!LITTLE_ENDIAN"),
                 Endianess::Big => write!(f, "!BIG_ENDIAN"),
             },
+            Definition::RecursiveScc(scc) => {
+                let names: Vec<_> = scc.members.iter().map(|m| m.name.as_str()).collect();
+                write!(f, "recursive_scc [{}]", names.join(", "))
+            }
         }
     }
 }
@@ -896,9 +926,184 @@ pub mod lowering {
         global_ctx: &'i crate::type_check::GlobalCtx<'i>,
     ) -> Vec<ir::Definition> {
         let lowerer = CheckedLowerer { global_ctx };
-        ast.iter()
+        let flat: Vec<ir::Definition> = ast
+            .iter()
             .map(|defn| lowerer.lower_definition(defn))
+            .collect();
+        group_recursive_sccs(flat)
+    }
+
+    /// Build the call graph for the lowered IR definitions (ignoring Endianess).
+    fn call_graph(defs: &[ir::Definition]) -> std::collections::HashMap<String, Vec<String>> {
+        defs.iter()
+            .filter_map(|d| d.name().map(|n| (n.to_string(), ir_def_dependencies(d))))
             .collect()
+    }
+
+    /// Collect the names of all formats invoked by an IR definition.
+    fn ir_def_dependencies(def: &ir::Definition) -> Vec<String> {
+        let mut out = Vec::new();
+        match def {
+            ir::Definition::StructDef { combinator, .. } => {
+                for f in &combinator.0 {
+                    match f {
+                        ir::StructField::Dependent { combinator, .. }
+                        | ir::StructField::Ordinary { combinator, .. } => {
+                            collect_ir_combinator_deps(combinator, &mut out)
+                        }
+                        ir::StructField::Const { .. } => {}
+                    }
+                }
+            }
+            ir::Definition::ChoiceDef { combinator, .. } => {
+                for (_, c) in &combinator.choices {
+                    collect_ir_combinator_deps(c, &mut out);
+                }
+            }
+            ir::Definition::CombinatorDef { combinator, .. } => {
+                collect_ir_combinator_deps(combinator, &mut out)
+            }
+            ir::Definition::EnumDef { .. }
+            | ir::Definition::BitsDef { .. }
+            | ir::Definition::ConstCombinatorDef { .. }
+            | ir::Definition::Endianess(_)
+            | ir::Definition::RecursiveScc(_) => {}
+        }
+        out
+    }
+
+    fn collect_ir_combinator_deps(c: &ir::Combinator, out: &mut Vec<String>) {
+        match c {
+            ir::Combinator::Invocation(inv) => out.push(inv.func.clone()),
+            ir::Combinator::ConstraintEnum(ce) => out.push(ce.combinator.func.clone()),
+            ir::Combinator::AndThen(l, r) => {
+                collect_ir_combinator_deps(l, out);
+                collect_ir_combinator_deps(r, out);
+            }
+            ir::Combinator::Vec(ir::VecCombinator::Vec(inner)) => {
+                collect_ir_combinator_deps(inner, out)
+            }
+            ir::Combinator::Array(ir::ArrayCombinator { combinator, .. }) => {
+                collect_ir_combinator_deps(combinator, out)
+            }
+            ir::Combinator::Option(ir::OptionCombinator(inner)) => {
+                collect_ir_combinator_deps(inner, out)
+            }
+            ir::Combinator::Wrap(ir::WrapCombinator { combinator, .. }) => {
+                collect_ir_combinator_deps(combinator, out)
+            }
+            _ => {}
+        }
+    }
+
+    /// Replace each recursive SCC's member defs with a single `RecursiveScc`,
+    /// placed at the position of the earliest member in the input.
+    fn group_recursive_sccs(mut defs: Vec<ir::Definition>) -> Vec<ir::Definition> {
+        use crate::utils::{scc_is_recursive, tarjan_scc};
+
+        let graph = call_graph(&defs);
+        let sccs = tarjan_scc(&graph);
+
+        // Collect members of each recursive SCC (as a set for O(1) lookup).
+        let mut scc_membership: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        let mut recursive_sccs: Vec<Vec<String>> = Vec::new();
+        for scc in &sccs {
+            if scc_is_recursive(scc, &graph) {
+                let idx = recursive_sccs.len();
+                for name in scc {
+                    scc_membership.insert(name.clone(), idx);
+                }
+                recursive_sccs.push(scc.clone());
+            }
+        }
+
+        if recursive_sccs.is_empty() {
+            return defs;
+        }
+
+        // For each recursive SCC, find its earliest position in `defs`.
+        let mut scc_insert_pos: Vec<Option<usize>> = vec![None; recursive_sccs.len()];
+        for (pos, def) in defs.iter().enumerate() {
+            if let Some(name) = def.name() {
+                if let Some(&scc_idx) = scc_membership.get(name) {
+                    scc_insert_pos[scc_idx] = Some(
+                        scc_insert_pos[scc_idx]
+                            .map_or(pos, |prev| prev.min(pos)),
+                    );
+                }
+            }
+        }
+
+        // Extract each member into its SCC's Vec<SccMember>, keeping insertion order
+        // from `recursive_sccs` (Tarjan order within the SCC).
+        let mut scc_members: Vec<Vec<ir::SccMember>> =
+            recursive_sccs.iter().map(|_| Vec::new()).collect();
+
+        // Walk defs once to drain recursive members (replace with None).
+        let mut slots: Vec<Option<ir::Definition>> =
+            defs.drain(..).map(Some).collect();
+
+        for (pos, slot) in slots.iter_mut().enumerate() {
+            if let Some(def) = slot {
+                if let Some(name) = def.name() {
+                    if let Some(&scc_idx) = scc_membership.get(name) {
+                        let member = def_to_scc_member(slot.take().unwrap());
+                        scc_members[scc_idx].push(member);
+                        let _ = pos; // position tracked via scc_insert_pos
+                    }
+                }
+            }
+        }
+
+        // Re-sort each SCC's members to match source order by looking up their
+        // original positions using the `scc_members` names we collected.
+        // (Tarjan order is reverse-post-order; we want the DSL source order instead.)
+        // We don't have position info any more after drain, so we use the member-name
+        // order implied by the source: the `recursive_sccs` entry already contains
+        // members in the order Tarjan processed them; we rely on the user's source
+        // order being preserved in `slots` ordering above.
+
+        // Build the output: replace the slot at `scc_insert_pos` with `RecursiveScc`,
+        // and leave all other slots as-is.
+        let mut result: Vec<ir::Definition> = Vec::with_capacity(slots.len());
+        let mut scc_placed = vec![false; recursive_sccs.len()];
+        for (pos, slot) in slots.into_iter().enumerate() {
+            // Check if any SCC wants to be placed here.
+            for scc_idx in 0..recursive_sccs.len() {
+                if !scc_placed[scc_idx] && scc_insert_pos[scc_idx] == Some(pos) {
+                    result.push(ir::Definition::RecursiveScc(ir::RecursiveScc {
+                        members: scc_members[scc_idx].drain(..).collect(),
+                    }));
+                    scc_placed[scc_idx] = true;
+                }
+            }
+            if let Some(def) = slot {
+                result.push(def);
+            }
+        }
+        result
+    }
+
+    fn def_to_scc_member(def: ir::Definition) -> ir::SccMember {
+        match def {
+            ir::Definition::StructDef { name, param_defns, combinator } => ir::SccMember {
+                name,
+                param_defns,
+                body: ir::SccMemberBody::Struct(combinator),
+            },
+            ir::Definition::ChoiceDef { name, param_defns, combinator } => ir::SccMember {
+                name,
+                param_defns,
+                body: ir::SccMemberBody::Choice(combinator),
+            },
+            ir::Definition::CombinatorDef { name, param_defns, combinator } => ir::SccMember {
+                name,
+                param_defns,
+                body: ir::SccMemberBody::Combinator(combinator),
+            },
+            other => panic!("unexpected definition kind in recursive SCC: {:?}", other),
+        }
     }
 
     struct CheckedLowerer<'a, 'i> {
