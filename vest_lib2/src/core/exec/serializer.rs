@@ -37,6 +37,7 @@ pub enum ComplianceErrorKind {
     CondRejected,
     RecursionLimitExceeded,
     InvalidChoice,
+    Custom(&'static str),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -464,6 +465,7 @@ impl fmt::Display for ComplianceErrorKind {
             ComplianceErrorKind::InvalidChoice => {
                 f.write_str("value does not match any choice branch")
             }
+            ComplianceErrorKind::Custom(s) => f.write_str(s),
         }
     }
 }

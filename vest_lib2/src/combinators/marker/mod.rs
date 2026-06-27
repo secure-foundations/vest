@@ -27,7 +27,7 @@ pub struct Empty;
 ///
 /// No value is consistent with `Void`.
 #[derive(Clone, Copy)]
-pub struct Void;
+pub struct Void(pub &'static str);
 
 impl LeafNonMalleable for Empty {
     proof fn nonmal_leaf_inv(&self) {

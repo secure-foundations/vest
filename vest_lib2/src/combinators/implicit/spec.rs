@@ -415,7 +415,7 @@ impl<Tag> DepCombinator for VoidTag<Tag> {
     type Body = Void;
 
     open spec fn apply(&self, _key: Self::Key) -> Self::Body {
-        Void
+        Void("Impossible")
     }
 
     open spec fn recover(&self, value: Self::Val) -> Self::Key {

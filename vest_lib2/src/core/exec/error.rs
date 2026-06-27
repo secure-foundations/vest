@@ -184,6 +184,8 @@ pub enum ParseErrorKind {
     Overflow,
     /// Recursion limit exceeded.
     RecursionLimitExceeded,
+    /// A custom error message.
+    Custom(&'static str),
 }
 
 impl Clone for ParseErrorKind {
@@ -217,6 +219,7 @@ impl fmt::Display for ParseErrorKind {
             ParseErrorKind::NonCanonical => f.write_str("non-canonical encoding"),
             ParseErrorKind::Overflow => f.write_str("integer or size computation overflowed"),
             ParseErrorKind::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
+            ParseErrorKind::Custom(s) => f.write_str(s),
         }
     }
 }

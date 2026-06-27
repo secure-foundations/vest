@@ -1,11 +1,24 @@
+use crate::core::exec::ComplianceErrorKind;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+    ParseError, ParseErrorKind,
 };
 use crate::Never;
 use vstd::prelude::*;
 
 verus! {
+
+/// An uninhabited type that implements DeepView.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[verifier::external_body]
+pub struct ExecNever;
+
+impl DeepView for ExecNever {
+    type V = Never;
+
+    uninterp spec fn deep_view(&self) -> Self::V;
+}
 
 impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
     type PT = ();
@@ -35,6 +48,37 @@ impl ByteLen<()> for super::Empty {
 impl Prepare<()> for super::Empty {
     fn prepare(&self, _v: &()) -> (checked: Result<usize, PreSerializeError>) {
         Ok(0)
+    }
+}
+
+impl<I: View<V = Seq<u8>>> Parser<I> for super::Void {
+    type PT = ExecNever;
+
+    fn parse(&self, _ibuf: &I) -> (r: PResult<Self::PT>) {
+        Err(ParseError::new(ParseErrorKind::Custom(self.0)))
+    }
+}
+
+impl Serializer<ExecNever> for super::Void {
+    fn serialize(&self, _v: &ExecNever, _obuf: &mut Vec<u8>) {
+    }
+}
+
+impl Compliance<ExecNever> for super::Void {
+    fn check_compliance(&self, _v: &ExecNever) -> (yes: bool) {
+        false
+    }
+}
+
+impl ByteLen<ExecNever> for super::Void {
+    fn length(&self, _v: &ExecNever) -> (len: usize) {
+        0
+    }
+}
+
+impl Prepare<ExecNever> for super::Void {
+    fn prepare(&self, _v: &ExecNever) -> (checked: Result<usize, PreSerializeError>) {
+        Err(PreSerializeError::not_compliant(ComplianceErrorKind::Custom(self.0)))
     }
 }
 
