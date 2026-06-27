@@ -207,3 +207,18 @@ mod tls_error_sanity {
         assert_eq!(tls::HelloRetryRequestFmt.prepare(&v).unwrap(), buf.len());
     }
 }
+
+#[cfg(test)]
+mod never_error_sanity {
+    use super::matches;
+    use vest_lib2::core::exec::parser::Parser;
+
+    #[test]
+    fn test_never_error_message() {
+        let input = [0x02, 0x00, 0x00];
+        let err = matches::Msg4Fmt.parse(&&input[..]).unwrap_err();
+        let err_msg = err.to_string();
+        println!("Never combinator error: {}", err_msg);
+        assert!(err_msg.contains("i for msg4 can only be 1"));
+    }
+}

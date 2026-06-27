@@ -87,6 +87,8 @@ pub enum CombinatorInner<'i> {
     Bytes(BytesCombinator<'i>),
     Tail(TailCombinator<'i>),
     Option(OptionCombinator<'i>),
+    Nothing(NothingCombinator<'i>),
+    Never(NeverCombinator<'i>),
     Invocation(CombinatorInvocation<'i>),
     MacroInvocation {
         name: String,
@@ -746,6 +748,29 @@ impl PartialEq for TailCombinator<'_> {
 }
 
 #[derive(Debug, Clone, Eq, Hash)]
+pub struct NothingCombinator<'i> {
+    pub span: Span<'i>,
+}
+
+impl PartialEq for NothingCombinator<'_> {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
+pub struct NeverCombinator<'i> {
+    pub msg: String,
+    pub span: Span<'i>,
+}
+
+impl PartialEq for NeverCombinator<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.msg == other.msg
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct CombinatorInvocation<'i> {
     pub func: Identifier<'i>,
     pub args: Vec<Param<'i>>,
@@ -970,11 +995,25 @@ impl Display for CombinatorInner<'_> {
             CombinatorInner::Bytes(a) => write!(f, "{}", a),
             CombinatorInner::Tail(t) => write!(f, "{}", t),
             CombinatorInner::Option(o) => write!(f, "{}", o),
+            CombinatorInner::Nothing(n) => write!(f, "{}", n),
+            CombinatorInner::Never(n) => write!(f, "{}", n),
             CombinatorInner::Invocation(i) => write!(f, "{}", i),
             CombinatorInner::MacroInvocation { name, args } => {
                 write!(f, "{}!({})", name, args.iter().join(","))
             }
         }
+    }
+}
+
+impl Display for NothingCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Nothing")
+    }
+}
+
+impl Display for NeverCombinator<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Never({:?})", self.msg)
     }
 }
 
@@ -1327,6 +1366,8 @@ impl<'i> CombinatorInner<'i> {
             CombinatorInner::Bytes(b) => b.span,
             CombinatorInner::Tail(t) => t.span,
             CombinatorInner::Option(o) => o.0.span,
+            CombinatorInner::Nothing(n) => n.span,
+            CombinatorInner::Never(n) => n.span,
             CombinatorInner::Invocation(i) => i.span,
             CombinatorInner::MacroInvocation { .. } => Span::new("", 0, 0).unwrap(),
         }
@@ -1603,6 +1644,17 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let mut inner_rules = rule.into_inner();
             let combinator = build_combinator(inner_rules.next().unwrap());
             CombinatorInner::Option(OptionCombinator(Box::new(combinator)))
+        }
+        Rule::nothing_combinator => CombinatorInner::Nothing(NothingCombinator { span }),
+        Rule::never_combinator => {
+            let mut inner_rules = rule.into_inner();
+            let char_array_rule = inner_rules.next().unwrap();
+            let str_val = char_array_rule.as_str();
+            let str_val = &str_val[1..str_val.len() - 1]; // strip quotes
+            CombinatorInner::Never(NeverCombinator {
+                msg: str_val.to_string(),
+                span,
+            })
         }
         Rule::tail_combinator => CombinatorInner::Tail(TailCombinator { span }),
         Rule::combinator_invocation => {

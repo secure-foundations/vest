@@ -11,6 +11,7 @@ use vest_lib2::core::{proof::*, spec::*};
 use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
+use vest_lib2::Never;
 use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;

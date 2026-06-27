@@ -132,6 +132,8 @@ pub enum Combinator {
     Tail(TailCombinator),
     Option(OptionCombinator),
     Invocation(CombinatorInvocation),
+    Empty,
+    Void(String),
     /// `lhs >>= rhs`
     AndThen(Box<Combinator>, Box<Combinator>),
 }
@@ -513,6 +515,8 @@ impl Display for Combinator {
             Combinator::Tail(t) => write!(f, "{}", t),
             Combinator::Option(o) => write!(f, "{}", o),
             Combinator::Invocation(i) => write!(f, "{}", i),
+            Combinator::Empty => write!(f, "Nothing"),
+            Combinator::Void(s) => write!(f, "Never({:?})", s),
             Combinator::AndThen(lhs, rhs) => write!(f, "{} >>= {}", lhs, rhs),
         }
     }
@@ -1027,10 +1031,8 @@ pub mod lowering {
         for (pos, def) in defs.iter().enumerate() {
             if let Some(name) = def.name() {
                 if let Some(&scc_idx) = scc_membership.get(name) {
-                    scc_insert_pos[scc_idx] = Some(
-                        scc_insert_pos[scc_idx]
-                            .map_or(pos, |prev| prev.min(pos)),
-                    );
+                    scc_insert_pos[scc_idx] =
+                        Some(scc_insert_pos[scc_idx].map_or(pos, |prev| prev.min(pos)));
                 }
             }
         }
@@ -1041,8 +1043,7 @@ pub mod lowering {
             recursive_sccs.iter().map(|_| Vec::new()).collect();
 
         // Walk defs once to drain recursive members (replace with None).
-        let mut slots: Vec<Option<ir::Definition>> =
-            defs.drain(..).map(Some).collect();
+        let mut slots: Vec<Option<ir::Definition>> = defs.drain(..).map(Some).collect();
 
         for (pos, slot) in slots.iter_mut().enumerate() {
             if let Some(def) = slot {
@@ -1087,17 +1088,29 @@ pub mod lowering {
 
     fn def_to_scc_member(def: ir::Definition) -> ir::SccMember {
         match def {
-            ir::Definition::StructDef { name, param_defns, combinator } => ir::SccMember {
+            ir::Definition::StructDef {
+                name,
+                param_defns,
+                combinator,
+            } => ir::SccMember {
                 name,
                 param_defns,
                 body: ir::SccMemberBody::Struct(combinator),
             },
-            ir::Definition::ChoiceDef { name, param_defns, combinator } => ir::SccMember {
+            ir::Definition::ChoiceDef {
+                name,
+                param_defns,
+                combinator,
+            } => ir::SccMember {
                 name,
                 param_defns,
                 body: ir::SccMemberBody::Choice(combinator),
             },
-            ir::Definition::CombinatorDef { name, param_defns, combinator } => ir::SccMember {
+            ir::Definition::CombinatorDef {
+                name,
+                param_defns,
+                combinator,
+            } => ir::SccMember {
                 name,
                 param_defns,
                 body: ir::SccMemberBody::Combinator(combinator),
@@ -1255,6 +1268,8 @@ pub mod lowering {
                 A::Option(x) => ir::Combinator::Option(ir::OptionCombinator(Box::new(
                     self.lower_combinator(&x.0, param_defns, local_deps),
                 ))),
+                A::Nothing(_) => ir::Combinator::Empty,
+                A::Never(x) => ir::Combinator::Void(x.msg.clone()),
                 A::Invocation(x) => ir::Combinator::Invocation(self.lower_invocation(x)),
                 A::MacroInvocation { .. } => unreachable!(
                     "Macro invocations should have been expanded before lowering to IR"

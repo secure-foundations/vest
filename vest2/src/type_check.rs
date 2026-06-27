@@ -251,6 +251,7 @@ impl<'ast> StaticSizeEnv<'ast> {
             Enum(enum_comb) => enum_static_size(enum_comb),
             Choice(ChoiceCombinator { choices, .. }) => self.choice_size(choices),
             Vec(..) | Tail(..) | Option(..) => None,
+            Nothing(..) | Never(..) => Some(0),
             Array(ArrayCombinator {
                 combinator, len, ..
             }) => {
@@ -555,8 +556,12 @@ pub fn check<'ast>(
             } => {
                 // Resolve combinator invocations (aliases) and `and_then`s against
                 // the complete definition set, so this no longer depends on order.
-                let resolved_combinator =
-                    resolve_combinator_to_inner(combinator, &raw_combinators, source, &mut Vec::new())?;
+                let resolved_combinator = resolve_combinator_to_inner(
+                    combinator,
+                    &raw_combinators,
+                    source,
+                    &mut Vec::new(),
+                )?;
 
                 match global_ctx.combinators.iter().find(|sig| &sig.name == name) {
                     Some(sig) => {
@@ -662,8 +667,6 @@ pub fn check<'ast>(
     Ok(global_ctx)
 }
 
-
-
 fn check_defn<'ast>(
     defn: &'ast Definition<'ast>,
     local_ctx: &mut LocalCtx<'ast>,
@@ -678,7 +681,10 @@ fn check_defn<'ast>(
             ..
         } => {
             for param in param_defns {
-                let ParamDefn::Dependent { combinator: param_comb, .. } = param;
+                let ParamDefn::Dependent {
+                    combinator: param_comb,
+                    ..
+                } = param;
                 let mut dummy_local_ctx = LocalCtx::new();
                 check_combinator_inner(param_comb, &[], &mut dummy_local_ctx, global_ctx, source)?;
             }
@@ -1125,9 +1131,16 @@ fn check_combinator_inner<'ast>(
         Option(OptionCombinator(combinator)) => {
             check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
         }
-        Invocation(combinator) => {
-            check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source, false)
-        }
+        Nothing(NothingCombinator { .. }) => Ok(()),
+        Never(NeverCombinator { .. }) => Ok(()),
+        Invocation(combinator) => check_combinator_invocation(
+            combinator,
+            param_defns,
+            local_ctx,
+            global_ctx,
+            source,
+            false,
+        ),
         MacroInvocation { .. } => unreachable!("macro invocation should be resolved by now"),
         Bits(bits_comb) => check_bits_combinator(
             bits_comb,
@@ -1193,7 +1206,9 @@ fn check_combinator_invocation<'ast>(
                     };
                     let inferred = resolve_enum_type(enums);
                     let is_byte_aligned = match inferred {
-                        IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => bits % 8 == 0,
+                        IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => {
+                            bits % 8 == 0
+                        }
                         IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
                     };
                     if !is_byte_aligned {
@@ -1201,7 +1216,9 @@ fn check_combinator_invocation<'ast>(
                             .with_message("bit-sized enum used outside of bitfield")
                             .with_label(
                                 Label::new((source.0, span_as_range(span)))
-                                    .with_message("bit-sized enums may only be used inside bits members")
+                                    .with_message(
+                                        "bit-sized enums may only be used inside bits members",
+                                    )
                                     .with_color(Color::Red),
                             )
                             .finish()
@@ -2961,7 +2978,9 @@ fn check_bits_combinator<'ast>(
                                 .with_message("invalid bitfield member")
                                 .with_label(
                                     Label::new((source.0, span_as_range(field_span)))
-                                        .with_message("bitfield enum must have an unsigned backing type")
+                                        .with_message(
+                                            "bitfield enum must have an unsigned backing type",
+                                        )
                                         .with_color(Color::Red),
                                 )
                                 .finish()
@@ -3066,7 +3085,14 @@ fn check_constraint_enum_combinator<'ast>(
     source: (&str, &Source),
 ) -> Result<(), VestError> {
     // First ensure the invocation is well-formed
-    check_combinator_invocation(combinator, param_defns, local_ctx, global_ctx, source, false)?;
+    check_combinator_invocation(
+        combinator,
+        param_defns,
+        local_ctx,
+        global_ctx,
+        source,
+        false,
+    )?;
     // Resolve the invocation target
     let resolved = global_ctx
         .combinators

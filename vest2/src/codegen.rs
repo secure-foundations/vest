@@ -288,6 +288,7 @@ pub(crate) fn prelude() -> String {
         use vest_lib2::combinators::recursive::*;
         use Sum::Inl as L;
         use Sum::Inr as R;
+        use vest_lib2::Never;
         use vest_lib2::core::exec::{DeepEq, SelfView};
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
         use vest_lib2::core::exec::parser::*;

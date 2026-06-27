@@ -1765,6 +1765,8 @@ impl<'a> Analysis<'a> {
                 }
             },
             Combinator::Tail(_) => quote! { Tail },
+            Combinator::Empty => quote! { Empty },
+            Combinator::Void(s) => quote! { Void(#s) },
             Combinator::Option(vestir::OptionCombinator(inner)) => {
                 let inner_expr =
                     self.render_exec_combinator_expr_impl(inner, param_defns, mode, false);

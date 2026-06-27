@@ -680,6 +680,12 @@ impl<'a> Analysis<'a> {
             Combinator::Tail(_) => {
                 RenderedSpec::new(quote! { Tail }, quote! { Tail }, quote! { Seq<u8> }, true)
             }
+            Combinator::Empty => {
+                RenderedSpec::new(quote! { Empty }, quote! { Empty }, quote! { () }, true)
+            }
+            Combinator::Void(s) => {
+                RenderedSpec::new(quote! { Void }, quote! { Void(#s) }, quote! { Never }, true)
+            }
             Combinator::Option(opt) => {
                 let inner = self.render_spec_combinator(&opt.0);
                 let inner_ty = &inner.ty;
@@ -1575,12 +1581,9 @@ impl<'a> Analysis<'a> {
             .as_ref()
             .expect("dependent choose should have a selector");
         let dep_expr = path_tokens(dep_id);
-        self.render_dependent_choice_with(
-            choice_comb,
-            owner_name,
-            dep_expr,
-            &|combinator| self.render_spec_combinator(combinator),
-        )
+        self.render_dependent_choice_with(choice_comb, owner_name, dep_expr, &|combinator| {
+            self.render_spec_combinator(combinator)
+        })
     }
 
     fn render_enum_top_level(&self, name: &str, enum_comb: &EnumCombinator) -> RenderedSpec {

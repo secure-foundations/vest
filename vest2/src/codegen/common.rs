@@ -810,6 +810,8 @@ impl<'a> Analysis<'a> {
                 TypeMode::Exec => quote! { &'i [u8] },
                 TypeMode::Spec => quote! { Seq<u8> },
             },
+            Combinator::Empty => quote! { () },
+            Combinator::Void(_) => quote! { Never },
             Combinator::Option(OptionCombinator(combinator)) => {
                 let inner_ty = self.render_value_type_scc(combinator, mode, scc_members);
                 quote! { Option<#inner_ty> }
@@ -1263,7 +1265,10 @@ impl<'a> Analysis<'a> {
 
     fn inner_needs_lifetime(&self, inner: &Combinator) -> bool {
         match self.ctx.resolve_alias(inner) {
-            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) => false,
+            Combinator::ConstraintInt(_)
+            | Combinator::ConstraintEnum(_)
+            | Combinator::Empty
+            | Combinator::Void(_) => false,
             Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
@@ -1344,9 +1349,11 @@ impl<'a> Analysis<'a> {
         }
         match self.ctx.resolve_alias(combinator) {
             Combinator::Tail(_) => false,
-            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) | Combinator::Bytes(_) => {
-                true
-            }
+            Combinator::ConstraintInt(_)
+            | Combinator::ConstraintEnum(_)
+            | Combinator::Bytes(_)
+            | Combinator::Empty
+            | Combinator::Void(_) => true,
             Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
@@ -1423,9 +1430,11 @@ impl<'a> Analysis<'a> {
             _ => {}
         }
         match self.ctx.resolve_alias(combinator) {
-            Combinator::ConstraintInt(_) | Combinator::ConstraintEnum(_) | Combinator::Bytes(_) => {
-                true
-            }
+            Combinator::ConstraintInt(_)
+            | Combinator::ConstraintEnum(_)
+            | Combinator::Bytes(_)
+            | Combinator::Empty
+            | Combinator::Void(_) => true,
             Combinator::Wrap(WrapCombinator {
                 prior,
                 combinator,
@@ -1510,6 +1519,7 @@ impl<'a> Analysis<'a> {
                     && self.combinator_is_copyable(&arr.combinator)
             }
             Combinator::Bytes(_) | Combinator::Tail(_) => true,
+            Combinator::Empty | Combinator::Void(_) => true,
             Combinator::Option(OptionCombinator(inner)) => self.combinator_is_copyable(inner),
             Combinator::Invocation(invocation) => self.is_copyable(&invocation.func),
             Combinator::AndThen(_, rhs) => self.combinator_is_copyable(rhs),
@@ -1560,6 +1570,7 @@ impl<'a> Analysis<'a> {
                     && self.combinator_is_selfview(&arr.combinator)
             }
             Combinator::Bytes(_) | Combinator::Tail(_) => false,
+            Combinator::Empty | Combinator::Void(_) => true,
             Combinator::Option(OptionCombinator(inner)) => self.combinator_is_selfview(inner),
             Combinator::Invocation(invocation) => self.is_selfview(&invocation.func),
             Combinator::AndThen(_, rhs) => self.combinator_is_selfview(rhs),
@@ -1613,7 +1624,11 @@ pub(crate) fn definition_dependencies(def: &Definition) -> Vec<String> {
 
 fn collect_combinator_invocations(combinator: &Combinator, out: &mut Vec<String>) {
     match combinator {
-        Combinator::ConstraintInt(_) | Combinator::Bytes(_) | Combinator::Tail(_) => {}
+        Combinator::ConstraintInt(_)
+        | Combinator::Bytes(_)
+        | Combinator::Tail(_)
+        | Combinator::Empty
+        | Combinator::Void(_) => {}
         Combinator::ConstraintEnum(ce) => out.push(ce.combinator.func.clone()),
         Combinator::Wrap(WrapCombinator {
             prior,

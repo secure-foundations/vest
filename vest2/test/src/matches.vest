@@ -19,7 +19,7 @@ msg2 = {
     [0x16, 0x03, 0x01] => u16,
     [0x16, 0x03, 0x02] => u32,
     [0x16, 0x03, 0x03] => u64,
-    _ => Tail,
+    _ => Nothing,
   },
 }
 
@@ -29,7 +29,7 @@ msg3 = {
     1 => u16,
     2 => u32,
     3 => u32,
-    _ => Tail,
+    _ => Nothing,
   },
 }
 
@@ -37,14 +37,14 @@ msg4 = {
   @i: u24,
   content: choose(@i) {
     1 => u16,
-    _ => Tail,
+    _ => Never("i for msg4 can only be 1"),
   },
 }
 
 msg5 = {
   @i: btc_varint,
   content: choose(@i) {
-    1 => u16,
-    _ => Tail,
+    2 => u16,
+    _ => Never("i for msg5 can only be 1"),
   },
 }

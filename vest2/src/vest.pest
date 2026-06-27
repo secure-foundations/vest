@@ -29,6 +29,8 @@ combinator_inner = {
   | tail_combinator
   | array_combinator
   | option_combinator
+  | nothing_combinator
+  | never_combinator
   | combinator_invocation
 }
 
@@ -113,6 +115,9 @@ div_op = { "/" }
 /// an optional `combinator`
 option_combinator = { option ~ "<" ~ combinator ~ ">" }
 
+nothing_combinator = { nothing }
+never_combinator   = { never ~ "(" ~ const_char_array ~ ")" }
+
 /// tail combinator that consumes the rest of the input
 tail_combinator = { tail }
 
@@ -162,6 +167,8 @@ reserved_word  = _{
   | "Option"
   | "Vec"
   | "Tail"
+  | "Nothing"
+  | "Never"
   | btc_varint
   | uleb128
   | ((unsigned | signed) ~ int_width)
@@ -186,6 +193,8 @@ uleb128    =  { "uleb128" }
 option     = _{ "Option" }
 vec        =  { "Vec" }
 tail       =  { "Tail" }
+nothing    = _{ "Nothing" }
+never      = _{ "Never" }
 
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" | "\r\n" }
 

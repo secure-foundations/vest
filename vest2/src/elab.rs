@@ -630,7 +630,9 @@ fn collect_params_with_bound<'ast>(
         }
         CombinatorInner::Enum(..)
         | CombinatorInner::ConstraintInt(..)
-        | CombinatorInner::ConstraintEnum(..) => {}
+        | CombinatorInner::ConstraintEnum(..)
+        | CombinatorInner::Nothing(..)
+        | CombinatorInner::Never(..) => {}
 
         CombinatorInner::MacroInvocation { .. } => {
             unreachable!("macro invocation should be resolved by now")
