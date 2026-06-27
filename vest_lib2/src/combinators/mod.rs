@@ -104,7 +104,7 @@ pub use cond::Cond;
 pub use implicit::{DepCombinator, Implicit, KVFormat, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
 pub use mapped::{Mapped, TryMap};
-pub use marker::{Empty, Void};
+pub use marker::{Empty, Void, exec::ExecNever};
 pub use named::Named;
 pub use opt::{Opt, Optional};
 pub use permute::{Permute2, Permute3, Permute4};

@@ -17,7 +17,9 @@ pub struct ExecNever;
 impl DeepView for ExecNever {
     type V = Never;
 
-    uninterp spec fn deep_view(&self) -> Self::V;
+    open spec fn deep_view(&self) -> Self::V {
+        *self
+    }
 }
 
 impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {

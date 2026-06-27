@@ -55,11 +55,7 @@
 extern crate alloc;
 
 /// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
-#[cfg(verus_only)]
-pub type Never = !;
-/// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
-#[cfg(not(verus_only))]
-pub type Never = ::core::convert::Infallible;
+pub type Never = combinators::marker::exec::ExecNever;
 
 pub mod asn1;
 pub mod combinators;
