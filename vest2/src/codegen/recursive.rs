@@ -6,8 +6,7 @@ use super::common::{
 use super::specs::RenderedSpec;
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
-    ChoiceCombinator, ChoicePattern, Combinator, ConstraintElem, RecursiveScc, SccMember,
-    SccMemberBody, StructField,
+    ChoiceCombinator, Combinator, RecursiveScc, SccMember, SccMemberBody, StructField,
 };
 
 use proc_macro2::TokenStream;
@@ -1307,8 +1306,13 @@ impl<'a> Analysis<'a> {
         primary_arg: TokenStream,
         value_base: Option<&str>,
     ) -> TokenStream {
-        let fmt_expr =
-            self.fmt_expr_for_recursive_invocation(invocation, current_member, access, value_base, method);
+        let fmt_expr = self.fmt_expr_for_recursive_invocation(
+            invocation,
+            current_member,
+            access,
+            value_base,
+            method,
+        );
         match method {
             Op::Parse => quote! { (#fmt_expr).parse_gas(gas - 1, #primary_arg) },
             Op::Serialize => {
@@ -1418,63 +1422,6 @@ impl<'a> Analysis<'a> {
         )
     }
 
-    pub(crate) fn render_recursive_choice_parse_pat(
-        &self,
-        pat: &ChoicePattern,
-        dep: &str,
-        member: &SccMember,
-    ) -> TokenStream {
-        match pat {
-            ChoicePattern::Enum(name) => {
-                let enum_ty = self
-                    .resolve_dep_enum_type(dep, &member.param_defns)
-                    .unwrap_or_else(|| quote! { _ });
-                let pat_ident = format_ident!("{}", name);
-                quote! { #enum_ty::#pat_ident }
-            }
-            ChoicePattern::Int(elem) => self.render_constraint_elem_pat(elem),
-            ChoicePattern::Array(arr) => {
-                let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                quote! { x if x.deep_eq(&#pat_expr) }
-            }
-            ChoicePattern::Wildcard => quote! { _ },
-        }
-    }
-
-    pub(crate) fn render_recursive_choice_pair_pat(
-        &self,
-        pat: &ChoicePattern,
-        dep: &str,
-        member: &SccMember,
-        exec_ident: &proc_macro2::Ident,
-        variant_ident: &proc_macro2::Ident,
-    ) -> TokenStream {
-        match pat {
-            ChoicePattern::Enum(name) => {
-                let enum_ty = self
-                    .resolve_dep_enum_type(dep, &member.param_defns)
-                    .unwrap_or_else(|| quote! { _ });
-                let pat_ident = format_ident!("{}", name);
-                quote! { (#enum_ty::#pat_ident, #exec_ident::#variant_ident(v)) }
-            }
-            ChoicePattern::Int(elem) => match elem {
-                ConstraintElem::Single(v) => {
-                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                    quote! { (#lit, #exec_ident::#variant_ident(v)) }
-                }
-                _ => {
-                    let cond = self.render_constraint_elem_pred(elem, quote! { x });
-                    quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
-                }
-            },
-            ChoicePattern::Array(arr) => {
-                let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
-            }
-            ChoicePattern::Wildcard => quote! { (_, #exec_ident::#variant_ident(v)) },
-        }
-    }
-
     pub(crate) fn render_recursive_choice_ctor(
         &self,
         combinator: &Combinator,
@@ -1525,8 +1472,6 @@ impl<'a> Analysis<'a> {
             prep_expr
         }
     }
-
-
 
     pub(crate) fn gen_recursive_execs_fragment(&self, scc: &RecursiveScc) -> String {
         let scc_info = match self.scc_info_for(&scc.members[0].name) {

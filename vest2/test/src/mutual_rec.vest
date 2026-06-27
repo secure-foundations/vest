@@ -1,0 +1,63 @@
+expr_kind = enum {
+  Num   = 0x10,
+  Group = 0x11,
+}
+
+list_kind = enum {
+  Nil  = 0x20,
+  Cons = 0x21,
+}
+
+expr = {
+  @t: expr_kind,
+  v: choose(@t) {
+    Num => u8,
+    Group => list,
+  },
+}
+
+list = {
+  @t: list_kind,
+  v: choose(@t) {
+    Nil => [u8; 0],
+    Cons => {
+       head: expr,
+       tail: list,
+    },
+  },
+}
+
+// byte_list_kind = enum {
+//   Nil  = 0x20,
+//   Cons = 0x21,
+// }
+// 
+// byte_list = {
+//   @t: byte_list_kind,
+//   v: choose(@t) {
+//     Nil => [u8; 0],
+//     Cons => {
+//        head: u8,
+//        tail: byte_list,
+//     },
+//   },
+// }
+// 
+chain_a(@tag: u8) = choose(@tag) {
+  0 => u8 | 1..10,
+  _ => {
+    @len: u8,
+    payload: [u8; @len],
+    @next_tag: u8,
+    tail: chain_b(@next_tag),
+  },
+}
+
+chain_b(@tag: u8) = choose(@tag) {
+  0 => u16 | 256..,
+  _ => {
+    payload: u32,
+    @next_tag: u8,
+    tail: chain_a(@next_tag),
+  },
+}

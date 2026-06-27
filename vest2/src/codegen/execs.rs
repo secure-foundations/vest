@@ -667,6 +667,120 @@ impl<'a> Analysis<'a> {
 // ============================================================
 
 impl<'a> Analysis<'a> {
+    fn render_wildcard_pair_pat(
+        &self,
+        c: &ChoiceCombinator,
+        exec_ident: &proc_macro2::Ident,
+        variant_ident: &proc_macro2::Ident,
+    ) -> TokenStream {
+        let known_int_conds: Vec<TokenStream> = c
+            .choices
+            .iter()
+            .filter_map(|(pat, _)| match pat {
+                ChoicePattern::Int(elem) => {
+                    Some(self.render_constraint_elem_pred(elem, quote! { x }))
+                }
+                _ => None,
+            })
+            .collect();
+        let known_array_pats: Vec<&ConstArray> = c
+            .choices
+            .iter()
+            .filter_map(|(pat, _)| match pat {
+                ChoicePattern::Array(arr) => Some(arr),
+                _ => None,
+            })
+            .collect();
+
+        if !known_int_conds.is_empty() {
+            let guard = known_int_conds
+                .iter()
+                .cloned()
+                .map(|cond| quote! { !(#cond) })
+                .reduce(|acc, cond| quote! { #acc && #cond })
+                .unwrap();
+            quote! { (x, #exec_ident::#variant_ident(v)) if #guard }
+        } else if !known_array_pats.is_empty() {
+            let guard = known_array_pats
+                .iter()
+                .map(|p| {
+                    let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
+                    quote! { !x.deep_eq(&#pat_expr) }
+                })
+                .reduce(|acc, cond| quote! { #acc && #cond })
+                .unwrap();
+            quote! { (x, #exec_ident::#variant_ident(v)) if #guard }
+        } else {
+            quote! { (_, #exec_ident::#variant_ident(v)) }
+        }
+    }
+
+    fn render_choice_parse_pat(
+        &self,
+        pat: &ChoicePattern,
+        dep: &str,
+        param_defns: &[ParamDefn],
+    ) -> TokenStream {
+        match pat {
+            ChoicePattern::Enum(name) => {
+                let enum_ty = self
+                    .resolve_dep_enum_type(dep, param_defns)
+                    .unwrap_or_else(|| quote! { _ });
+                let pat_ident = format_ident!("{}", name);
+                quote! { #enum_ty::#pat_ident }
+            }
+            ChoicePattern::Int(elem) => self.render_constraint_elem_pat(elem),
+            ChoicePattern::Array(arr) => {
+                let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                quote! { x if x.deep_eq(&#pat_expr) }
+            }
+            ChoicePattern::Wildcard => quote! { _ },
+        }
+    }
+
+    fn render_choice_pair_pat(
+        &self,
+        c: &ChoiceCombinator,
+        pat: &ChoicePattern,
+        dep: &str,
+        param_defns: &[ParamDefn],
+        exec_ident: &proc_macro2::Ident,
+        variant_ident: &proc_macro2::Ident,
+        is_rec: bool,
+        op: Op,
+    ) -> TokenStream {
+        if is_rec && !matches!(op, Op::Serialize) {
+            if matches!(pat, ChoicePattern::Wildcard) {
+                return self.render_wildcard_pair_pat(c, exec_ident, variant_ident);
+            }
+        }
+        match pat {
+            ChoicePattern::Enum(pat_str) => {
+                let pat_ident = format_ident!("{}", pat_str);
+                let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
+                let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
+                quote! { (#ty::#pat_ident, #exec_ident::#variant_ident(v)) }
+            }
+            ChoicePattern::Int(elem) => match elem {
+                vestir::ConstraintElem::Single(v) => {
+                    let lit = proc_macro2::Literal::i128_unsuffixed(*v);
+                    quote! { (#lit, #exec_ident::#variant_ident(v)) }
+                }
+                _ => {
+                    let cond = self.render_constraint_elem_pred(elem, quote! { x });
+                    quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
+                }
+            },
+            ChoicePattern::Array(arr) => {
+                let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
+                quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
+            }
+            ChoicePattern::Wildcard => {
+                quote! { (_, #exec_ident::#variant_ident(v)) }
+            }
+        }
+    }
+
     pub(crate) fn emit_choice_body_impl(
         &self,
         w: &mut CodeWriter,
@@ -698,37 +812,14 @@ impl<'a> Analysis<'a> {
 
             let scrutinee = match op {
                 Op::Parse => render_ts(quote! { #dep_expr }),
-                _ => format!("({}, v)", render_ts(dep_expr)),
+                _ => format!("({}, v)", render_ts(dep_expr.clone())),
             };
 
             match op {
                 Op::Parse => {
                     w.match_block_stmt(Some("(n, v)"), &scrutinee, |w| {
                         for (pat, combinator, variant_ident) in &variants {
-                            let (pat_ts, _is_enum) = if let Some((member, _, _)) = rec {
-                                (
-                                    self.render_recursive_choice_parse_pat(pat, dep, member),
-                                    false,
-                                )
-                            } else {
-                                match pat {
-                                    ChoicePattern::Enum(pat_str) => {
-                                        let pat_ident = format_ident!("{}", pat_str);
-                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                                        (quote! { #ty::#pat_ident }, true)
-                                    }
-                                    ChoicePattern::Int(elem) => {
-                                        (self.render_constraint_elem_pat(elem), false)
-                                    }
-                                    ChoicePattern::Array(arr) => {
-                                        let pat_expr =
-                                            self.render_const_array_expr(arr, TypeMode::Exec);
-                                        (quote! { x if x.deep_eq(&#pat_expr) }, false)
-                                    }
-                                    ChoicePattern::Wildcard => (quote! { _ }, false),
-                                }
-                            };
+                            let pat_ts = self.render_choice_parse_pat(pat, dep, param_defns);
 
                             let (parse_expr, recursive) = if let Some((member, ctx, access)) = rec {
                                 self.render_recursive_child_parse_expr(
@@ -766,6 +857,17 @@ impl<'a> Analysis<'a> {
                                     recursive,
                                     &inner_ident,
                                 );
+                                let inner_check = if let Some(pred) =
+                                    self.gen_constraint_pred(combinator, quote! { inner })
+                                {
+                                    quote! {
+                                        if !(#pred) {
+                                            return Err(ParseError::predicate_failed());
+                                        }
+                                    }
+                                } else {
+                                    quote! {}
+                                };
                                 let ctor = self.render_recursive_choice_ctor(
                                     combinator,
                                     ctx,
@@ -776,6 +878,7 @@ impl<'a> Analysis<'a> {
                                 w.push_multiline(render_ts(quote! {
                                     #pat_ts => {
                                         #parse_stmt
+                                        #inner_check
                                         (n, #ctor)
                                     },
                                 }));
@@ -794,37 +897,16 @@ impl<'a> Analysis<'a> {
                 Op::Serialize => {
                     w.match_block_stmt(None, &scrutinee, |w| {
                         for (pat, combinator, variant_ident) in &variants {
-                            let pat_ts = if let Some((member, _, _)) = rec {
-                                self.render_recursive_choice_pair_pat(
-                                    pat, dep, member, &exec_ident, variant_ident,
-                                )
-                            } else {
-                                match pat {
-                                    ChoicePattern::Enum(pat_str) => {
-                                        let pat_ident = format_ident!("{}", pat_str);
-                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                                        quote! { (#ty::#pat_ident, #exec_ident::#variant_ident(v)) }
-                                    }
-                                    ChoicePattern::Int(elem) => match elem {
-                                        vestir::ConstraintElem::Single(v) => {
-                                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                                            quote! { (#lit, #exec_ident::#variant_ident(v)) }
-                                        }
-                                        _ => {
-                                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
-                                            quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
-                                        }
-                                    },
-                                    ChoicePattern::Array(arr) => {
-                                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                                        quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
-                                    }
-                                    ChoicePattern::Wildcard => {
-                                        quote! { (_, #exec_ident::#variant_ident(v)) }
-                                    }
-                                }
-                            };
+                            let pat_ts = self.render_choice_pair_pat(
+                                c,
+                                pat,
+                                dep,
+                                param_defns,
+                                &exec_ident,
+                                variant_ident,
+                                rec.is_some(),
+                                op,
+                            );
 
                             let ser = if let Some((member, ctx, access)) = rec {
                                 self.render_recursive_child_serialize_stmt(
@@ -876,37 +958,16 @@ impl<'a> Analysis<'a> {
 
                     w.match_block_stmt(None, &scrutinee, |w| {
                         for (pat, combinator, variant_ident) in &variants {
-                            let pat_ts = if let Some((member, _, _)) = rec {
-                                self.render_recursive_choice_pair_pat(
-                                    pat, dep, member, &exec_ident, variant_ident,
-                                )
-                            } else {
-                                match pat {
-                                    ChoicePattern::Enum(pat_str) => {
-                                        let pat_ident = format_ident!("{}", pat_str);
-                                        let enum_ty = self.resolve_dep_enum_type(dep, param_defns);
-                                        let ty = enum_ty.clone().unwrap_or_else(|| quote! { _ });
-                                        quote! { (#ty::#pat_ident, #exec_ident::#variant_ident(v)) }
-                                    }
-                                    ChoicePattern::Int(elem) => match elem {
-                                        vestir::ConstraintElem::Single(v) => {
-                                            let lit = proc_macro2::Literal::i128_unsuffixed(*v);
-                                            quote! { (#lit, #exec_ident::#variant_ident(v)) }
-                                        }
-                                        _ => {
-                                            let cond = self.render_constraint_elem_pred(elem, quote! { x });
-                                            quote! { (x, #exec_ident::#variant_ident(v)) if #cond }
-                                        }
-                                    },
-                                    ChoicePattern::Array(arr) => {
-                                        let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                                        quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
-                                    }
-                                    ChoicePattern::Wildcard => {
-                                        quote! { (_, #exec_ident::#variant_ident(v)) }
-                                    }
-                                }
-                            };
+                            let pat_ts = self.render_choice_pair_pat(
+                                c,
+                                pat,
+                                dep,
+                                param_defns,
+                                &exec_ident,
+                                variant_ident,
+                                rec.is_some(),
+                                op,
+                            );
 
                             let (prep_expr, recursive) = if let Some((member, ctx, access)) = rec {
                                 self.render_recursive_child_prepare_expr(
@@ -938,24 +999,6 @@ impl<'a> Analysis<'a> {
                                         .iter()
                                         .filter_map(|(pat, _)| match pat {
                                             ChoicePattern::Enum(name) if name != "_" => Some(name.as_str()),
-                                            _ => None,
-                                        })
-                                        .collect();
-                                    let known_int_conds: Vec<TokenStream> = c
-                                        .choices
-                                        .iter()
-                                        .filter_map(|(pat, _)| match pat {
-                                            ChoicePattern::Int(elem) => {
-                                                Some(self.render_constraint_elem_pred(elem, quote! { x }))
-                                            }
-                                            _ => None,
-                                        })
-                                        .collect();
-                                    let known_array_pats: Vec<&ConstArray> = c
-                                        .choices
-                                        .iter()
-                                        .filter_map(|(pat, _)| match pat {
-                                            ChoicePattern::Array(arr) => Some(arr),
                                             _ => None,
                                         })
                                         .collect();
@@ -1007,31 +1050,10 @@ impl<'a> Analysis<'a> {
                                                 (_, #exec_ident::#variant_ident(v)) => #prep_expr,
                                             }));
                                         }
-                                    } else if !known_array_pats.is_empty() {
-                                        let guard = known_array_pats
-                                            .iter()
-                                            .map(|p| {
-                                                let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
-                                                quote! { !x.deep_eq(&#pat_expr) }
-                                            })
-                                            .reduce(|acc, cond| quote! { #acc && #cond })
-                                            .unwrap();
-                                        w.push_multiline(render_ts(quote! {
-                                            (x, #exec_ident::#variant_ident(v)) if #guard => #prep_expr,
-                                        }));
-                                    } else if !known_int_conds.is_empty() {
-                                        let guard = known_int_conds
-                                            .iter()
-                                            .cloned()
-                                            .map(|cond| quote! { !(#cond) })
-                                            .reduce(|acc, cond| quote! { #acc && #cond })
-                                            .unwrap();
-                                        w.push_multiline(render_ts(quote! {
-                                            (x, #exec_ident::#variant_ident(v)) if #guard => #prep_expr,
-                                        }));
                                     } else {
+                                        let pat_ts = self.render_wildcard_pair_pat(c, &exec_ident, variant_ident);
                                         w.push_multiline(render_ts(quote! {
-                                            (_, #exec_ident::#variant_ident(v)) => #prep_expr,
+                                            #pat_ts => #prep_expr,
                                         }));
                                     }
                                 } else {
@@ -1083,22 +1105,45 @@ impl<'a> Analysis<'a> {
                                 &variant_ident,
                                 quote! { va },
                             );
+                            let pred = self.gen_constraint_pred(combinator, quote! { va });
                             chain = if recursive {
-                                quote! {
-                                    if gas == 0 {
-                                        Err(ParseError::recursion_limit_exceeded())
-                                    } else {
-                                        match #parse_expr {
-                                            Ok((n, va)) => Ok((n, #ctor)),
-                                            _ => #chain,
+                                if let Some(pred) = pred {
+                                    quote! {
+                                        if gas == 0 {
+                                            Err(ParseError::recursion_limit_exceeded())
+                                        } else {
+                                            match #parse_expr {
+                                                Ok((n, va)) if #pred => Ok((n, #ctor)),
+                                                _ => #chain,
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    quote! {
+                                        if gas == 0 {
+                                            Err(ParseError::recursion_limit_exceeded())
+                                        } else {
+                                            match #parse_expr {
+                                                Ok((n, va)) => Ok((n, #ctor)),
+                                                _ => #chain,
+                                            }
                                         }
                                     }
                                 }
                             } else {
-                                quote! {
-                                    match #parse_expr {
-                                        Ok((n, va)) => Ok((n, #ctor)),
-                                        _ => #chain,
+                                if let Some(pred) = pred {
+                                    quote! {
+                                        match #parse_expr {
+                                            Ok((n, va)) if #pred => Ok((n, #ctor)),
+                                            _ => #chain,
+                                        }
+                                    }
+                                } else {
+                                    quote! {
+                                        match #parse_expr {
+                                            Ok((n, va)) => Ok((n, #ctor)),
+                                            _ => #chain,
+                                        }
                                     }
                                 }
                             };
