@@ -62,6 +62,12 @@ impl<A, B, BVal, T, const CHECK: bool> Serializer<T> for super::Terminated<A, B,
     A: Serializer<T>,
     B: Serializer<BVal>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.a.exec_inv()
+        &&& self.b.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         proof {
             self.b_val.self_view();

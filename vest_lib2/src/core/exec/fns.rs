@@ -291,4 +291,88 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
     }
 }
 
+/// Pairs an executable serializer closure with a ghost specification serializer.
+#[verifier::reject_recursive_types(T)]
+pub struct FnSerializer<
+    T: DeepView + ?Sized,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Vec<u8>),
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnSerializer<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Vec<u8>),
+ {
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
+        requires
+            forall|v: &T, obuf: &mut Vec<u8>|
+                spec_fn.consistent(v.deep_view()) ==> #[trigger] call_requires(exec_fn, (v, obuf)),
+            forall|v: &T, obuf: &mut Vec<u8>|
+                (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
+                    exec_fn,
+                    (v, obuf),
+                    (),
+                )) ==> final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view()),
+        ensures
+            serializer.exec_inv(),
+            serializer.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> SpecSerializer for FnSerializer<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Vec<u8>),
+ {
+    type SVal = T::V;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.spec_serialize(v)
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnSerializer<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Vec<u8>),
+ {
+    type Val = T::V;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.consistent(v)
+    }
+}
+
+impl<T, Spec, Exec> Serializer<T> for FnSerializer<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Vec<u8>),
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        &&& forall|v: &T, obuf: &mut Vec<u8>|
+            spec_fn.consistent(v.deep_view()) ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
+        &&& forall|v: &T, obuf: &mut Vec<u8>|
+            (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
+                self.exec_fn,
+                (v, obuf),
+                (),
+            )) ==> final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+    }
+
+    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+        (self.exec_fn)(v, obuf)
+    }
+}
+
 } // verus!

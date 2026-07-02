@@ -20,6 +20,8 @@ pub use spec::{
     SafeParserRecBody, SoundParserRecBody, SpecRecBody,
 };
 
+use crate::core::{proof::*, spec::*};
+
 verus! {
 
 /// Bounded fixpoint combinator for parameterized recursive formats.
@@ -28,6 +30,22 @@ verus! {
 /// Context-free recursive formats use `Param = ()`.
 #[derive(Copy)]
 pub struct FixWith<const LIMIT: usize, Body, Param>(pub Body, pub Param);
+
+// spec fn fix_<T>(r: spec_fn(ParserFnSpec<T>) -> impl SpecParser<PVal = T>, input: Seq<u8>) -> impl SpecParser<PVal = T>
+spec fn fix_<T>(r: spec_fn(ParserFnSpec<T>) -> impl SpecParser<PVal = T>, input: Seq<u8>) -> Option<
+    (int, T),
+>
+    decreases input.len(),
+{
+    let f = r;
+    let call_back = |buf: Seq<u8>|
+        if buf.len() < input.len() {
+            fix_(r, buf)
+        } else {
+            None
+        };
+    f(call_back).spec_parse(input)
+}
 
 impl<const LIMIT: usize, Body: Clone, Param: Clone> Clone for FixWith<LIMIT, Body, Param> {
     fn clone(&self) -> (cloned: Self)

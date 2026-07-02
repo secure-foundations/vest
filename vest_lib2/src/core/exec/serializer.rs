@@ -14,8 +14,14 @@ pub trait Serializer<T> where
     Self: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     T: DeepView + ?Sized,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        true
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>)
         requires
+            self.exec_inv(),
             self.consistent(v.deep_view()),
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
@@ -169,6 +175,11 @@ impl<S: Consistency> Consistency for &S {
 }
 
 impl<T, S> Serializer<T> for &S where T: DeepView, S: Serializer<T> {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        (*self).exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         (*self).serialize(v, obuf)
     }

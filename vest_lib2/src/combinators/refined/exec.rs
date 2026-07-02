@@ -56,6 +56,11 @@ impl<A, PredFn, T> Serializer<T> for super::Refined<A, PredFn> where
     A: Serializer<T>,
     PredFn: SpecPred<T::V>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.0.serialize(v, obuf);
     }
@@ -121,6 +126,11 @@ impl<Inner, T> Serializer<T> for super::Const<Inner, T> where
     T: DeepView<V = T>,
     Inner: Serializer<T>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.0.serialize(v, obuf);
     }
@@ -267,6 +277,12 @@ impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
     T: DeepView,
     Of: Serializer<T>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.2.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
@@ -357,6 +373,12 @@ impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
     T: DeepView,
     Of: Serializer<T>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let fmt = Terminated::<_, _, _, false> {
             a: &self.0,

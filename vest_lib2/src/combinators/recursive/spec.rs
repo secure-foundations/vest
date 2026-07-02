@@ -636,6 +636,24 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     Body::Body: SafeParser,
     Param: DeepView<V = Body::Param>,
  {
+    pub proof fn lemma_specs_callback_safe_inv(&self, gas: nat, param: Body::Param)
+        ensures
+            Self::specs_callback(&self.0, gas)(param).safe_inv(),
+        decreases gas,
+    {
+        let callback = Self::specs_callback(&self.0, gas);
+
+        assert forall|p: Body::Param, input: Seq<u8>| #[trigger]
+            callback(p).2(input) matches Some((n, _v)) ==> 0 <= n <= input.len() by {
+            if let Some((n, v)) = callback(p).2(input) {
+                self.safe_parser_by_induction((gas - 1) as nat, p, input, n, v);
+                assert(Self::spec_parse_gas(&self.0, (gas - 1) as nat, p, input) == Some((n, v)));
+            }
+        }
+
+        assert(callback(param).safe_inv());
+    }
+
     /// Inductive proof that `spec_parse_gas` satisfies [`safe_parser`].
     pub(crate) proof fn safe_parser_by_induction(
         &self,
@@ -695,7 +713,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     Param: DeepView<V = Body::Param>,
  {
     /// Inductive proof that `spec_parse_gas` satisfies [`sound_parser`].
-    pub(crate) proof fn sound_parser_by_induction(
+    pub proof fn sound_parser_by_induction(
         &self,
         gas: nat,
         param: Body::Param,

@@ -230,6 +230,7 @@ pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>
     Inner: Serializer<T>,
 
     requires
+        inner.exec_inv(),
         (super::Star(*inner)).consistent(values.deep_view()),
     ensures
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
@@ -238,6 +239,7 @@ pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>
 
     for i in 0..values.len()
         invariant
+            inner.exec_inv(),
             (super::Star(*inner)).consistent(values.deep_view()),
             obuf@ == old_obuf + spec_serialize_seq(inner, values.deep_view().take(i as int)),
     {
@@ -347,6 +349,11 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
 }
 
 impl<Inner, T> Serializer<[T]> for super::Star<Inner> where T: DeepView, Inner: Serializer<T> {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, v, obuf);
@@ -424,6 +431,11 @@ impl<Inner, N, T> Serializer<[T]> for super::RepeatN<Inner, N> where
     Inner: Serializer<T>,
     N: AsLen,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
         serialize_slice(&self.1, v, obuf);
     }
@@ -469,6 +481,11 @@ impl<Inner, T, const N: usize> Serializer<[T; N]> for super::Array<N, Inner> whe
     T: DeepView,
     Inner: Serializer<T>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn serialize(&self, v: &[T; N], obuf: &mut Vec<u8>) {
         serialize_slice(&self.0, v, obuf);
     }

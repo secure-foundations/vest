@@ -76,6 +76,11 @@ impl<Inner, M, MRev, T, InnerT> Serializer<T> for super::Mapped<Inner, BiMap<M, 
     M: SpecMap<Input = Inner::SVal, Output = T::V>,
     MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::SVal>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         let inner_v = self.mapper.1.map(v);
         proof {

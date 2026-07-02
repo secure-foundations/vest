@@ -74,6 +74,12 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match v {
             super::Sum::Inl(va) => self.0.serialize(va, obuf),
@@ -173,6 +179,12 @@ impl<A, B, T> Serializer<T> for super::Alt<A, B, false> where
     A: Serializer<T> + Compliance<T>,
     B: Serializer<T> + Consistency<Val = T::V>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         if self.0.check_compliance(v) {
             self.0.serialize(v, obuf);
@@ -216,6 +228,14 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
     A: Serializer<TA>,
     B: Serializer<TB>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        match self {
+            super::Sum::Inl(a) => a.exec_inv(),
+            super::Sum::Inr(b) => b.exec_inv(),
+        }
+    }
+
     fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
         match (self, v) {
             (super::Sum::Inl(a), super::Sum::Inl(va)) => a.serialize(va, obuf),

@@ -147,6 +147,11 @@ impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
     T: DeepView + ?Sized,
     Inner: Serializer<T> + SpecByteLen<T = T::V>,
  {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.1.serialize(v, obuf);
     }

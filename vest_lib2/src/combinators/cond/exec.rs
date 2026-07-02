@@ -29,6 +29,11 @@ impl<I, Inner> Parser<I> for super::Cond<Inner> where I: View<V = Seq<u8>>, Inne
 }
 
 impl<Inner, T> Serializer<T> for super::Cond<Inner> where T: DeepView, Inner: Serializer<T> {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
         self.1.serialize(v, obuf);
     }

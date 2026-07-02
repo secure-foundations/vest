@@ -38,7 +38,11 @@ impl<const MINIMAL: bool> SpecRecBody for ULeb128RecBody<MINIMAL> {
     /// 𝚞𝑁	::=	𝑛:𝚋𝚢𝚝𝚎          		⇒		𝑛		if 𝑛 < 2^7
     ///
     /// |	𝑛:𝚋𝚢𝚝𝚎  𝑚:𝚞(𝑁−7)		⇒		2^7 * 𝑚 + (𝑛 − 2^7)		  if 𝑛 >= 2^7
-    open spec fn spec_body(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+    open spec fn spec_body(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
         Alt(
             terminal_byte_nat(),
             Mapped {
