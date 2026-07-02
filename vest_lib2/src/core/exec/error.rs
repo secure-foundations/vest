@@ -128,6 +128,11 @@ impl ParseError {
     pub fn recursion_limit_exceeded() -> Self {
         Self::new(ParseErrorKind::RecursionLimitExceeded)
     }
+
+    /// Creates a custom error with the given message.
+    pub fn custom(msg: &'static str) -> Self {
+        Self::new(ParseErrorKind::Custom(msg))
+    }
 }
 
 } // verus!

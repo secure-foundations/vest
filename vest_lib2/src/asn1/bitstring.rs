@@ -1,133 +1,235 @@
+use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::{
-    combinators::{bytes::ExactLen, length::AsLen, Bind, Refined, Tail, U8},
+    combinators::{
+        bytes::ExactLen, length::AsLen, mapped::spec::FnSpecMapper, Bind, Mapped, Pair, Refined,
+        Tail, U8,
+    },
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
 
 verus! {
 
-/// Primitive BIT STRING contents, represented as:
+/// The ASN.1 BIT STRING.
+///
+/// Represented as:
 /// `(number_of_unused_bits_in_final_octet, payload_octets)`.
-pub type BitStringValue = (u8, Seq<u8>);
+pub struct BitString<'a, const DER: bool = true> {
+    /// Number of unused bits in the final octet of the BIT STRING.
+    unused: u8,
+    /// The payload octets of the BIT STRING.
+    bits: &'a [u8],
+}
 
-pub type BitStringFmt<const DER: bool> = Bind<
-    Refined<U8, PredFnSpec<u8>>,
-    spec_fn(u8) -> Refined<Tail, PredFnSpec<Seq<u8>>>,
+#[verifier::ext_equal]
+pub struct BitStringSpec {
+    pub unused: u8,
+    pub bits: Seq<u8>,
+}
+
+impl<'a, const DER: bool> DeepView for BitString<'a, DER> {
+    type V = BitStringSpec;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        BitStringSpec { unused: self.unused, bits: self.bits.deep_view() }
+    }
+}
+
+impl<'a, const DER: bool> BitString<'a, DER> {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        self.deep_view().wf::<DER>()
+    }
+
+    pub fn new(unused: u8, bits: &'a [u8]) -> (bs: Self)
+        requires
+            unused <= 7,
+            bits.len() == 0 ==> unused == 0,
+            DER ==> bits.len() > 0 ==> bits@.last().trailing_zeros() >= unused,
+        ensures
+            (bs.deep_view() == BitStringSpec { unused, bits: bits.deep_view() }),
+    {
+        BitString { unused, bits }
+    }
+}
+
+impl BitStringSpec {
+    #[verusfmt::skip]
+    pub open spec fn wf<const DER: bool>(&self) -> bool {
+        &&& self.unused <= 7
+        // 8.6.2.3 If the bitstring is empty, there shall be no subsequent octets, and the initial octet shall be zero.
+        &&& (self.bits.len() == 0 ==> self.unused == 0)
+        // 11.2.1 Each unused bit in the final octet of the encoding of a bit string value shall be set to zero.
+        &&& (DER ==> self.bits.len() > 0 ==> self.bits.last().trailing_zeros() >= self.unused)
+    }
+}
+
+type BitStringFmt<const DER: bool> = Mapped<
+    Refined<Pair<U8, Tail>, PredFnSpec<(u8, Seq<u8>)>>,
+    FnSpecMapper<(u8, Seq<u8>), BitStringSpec>,
 >;
 
-pub open spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<DER> {
-    #[verusfmt::skip]
-    Bind(
-        // 8.6.2.2 The initial octet shall encode, as an unsigned binary integer with bit 1 as the least significant bit, the number of
-        // unused bits in the final subsequent octet. The number shall be in the range zero to seven.
-        Refined(U8, |unused: u8| unused <= 7),
-        |unused: u8|
-            Refined(
-                Tail,
-                |payload: Seq<u8>|
-                    {
-                        // 8.6.2.3 If the bitstring is empty, there shall be no subsequent octets, and the initial octet shall be zero.
-                        &&& payload.len() == 0 ==> unused == 0
-                        // 11.2.1 Each unused bit in the final octet of the encoding of a bit string value shall be set to zero.
-                        &&& payload.len() > 0 ==> DER ==> payload.last().trailing_zeros() >= unused
-                    },
-            ),
-    )
-}
-
-impl<const DER: bool> SpecParser for super::BitString<DER> {
-    type PVal = BitStringValue;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        bitstring_fmt::<DER>().spec_parse(ibuf)
+pub(super) open(super) spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<DER> {
+    Mapped {
+        inner: Refined(
+            Pair(U8, Tail),
+            |r: (u8, Seq<u8>)|
+                {
+                    let (unused, bits) = r;
+                    BitStringSpec { unused, bits }.wf::<DER>()
+                },
+        ),
+        mapper: (
+            |r: (u8, Seq<u8>)|
+                {
+                    let (unused, bits) = r;
+                    BitStringSpec { unused, bits }
+                },
+            |spec: BitStringSpec| (spec.unused, spec.bits),
+        ),
     }
 }
 
-impl<const DER: bool> Consistency for super::BitString<DER> {
-    type Val = BitStringValue;
+mod derived_specs {
+    use super::*;
+    use super::super::BitStringFmt;
 
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        bitstring_fmt::<DER>().consistent(v)
+    impl<const DER: bool> SpecParser for BitStringFmt<DER> {
+        type PVal = BitStringSpec;
+
+        open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            bitstring_fmt::<DER>().spec_parse(ibuf)
+        }
+    }
+
+    impl<const DER: bool> Consistency for BitStringFmt<DER> {
+        type Val = BitStringSpec;
+
+        open(super) spec fn consistent(&self, v: Self::Val) -> bool {
+            bitstring_fmt::<DER>().consistent(v)
+        }
+    }
+
+    impl<const DER: bool> SpecSerializerDps for BitStringFmt<DER> {
+        type SValue = BitStringSpec;
+
+        open(super) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            bitstring_fmt::<DER>().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl<const DER: bool> SpecSerializer for BitStringFmt<DER> {
+        type SVal = BitStringSpec;
+
+        open(super) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            bitstring_fmt::<DER>().spec_serialize(v)
+        }
+    }
+
+    impl<const DER: bool> SpecByteLen for BitStringFmt<DER> {
+        type T = BitStringSpec;
+
+        open(super) spec fn byte_len(&self, v: Self::T) -> nat {
+            bitstring_fmt::<DER>().byte_len(v)
+        }
+    }
+
+}
+
+mod derived_proofs {
+    use super::*;
+    use super::super::BitStringFmt;
+
+    impl<const DER: bool> SafeParser for BitStringFmt<DER> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<const DER: bool> Productive for BitStringFmt<DER> {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_productive(s);
+        }
+    }
+
+    impl<const DER: bool> SoundParser for BitStringFmt<DER> {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const DER: bool> GoodSerializer for BitStringFmt<DER> {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            bitstring_fmt::<DER>().lemma_serialize_len(v);
+        }
+    }
+
+    impl<const DER: bool> SPRoundTripDps for BitStringFmt<DER> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            bitstring_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl<const DER: bool> NonMalleable for BitStringFmt<DER> {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<const DER: bool> EquivSerializers for BitStringFmt<DER> {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            bitstring_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+}
+
+impl<'i, const DER: bool> Parser<&'i [u8]> for super::BitStringFmt<DER> {
+    type PT = BitString<'i, DER>;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        let (n, (unused, bits)): (usize, (u8, &[u8])) = Pair(U8, Tail).parse(ibuf)?;
+        if unused > 7 {
+            return Err(ParseError::custom("Invalid number of unused bits in BIT STRING"));
+        }
+        if bits.len() == 0 && unused != 0 {
+            return Err(ParseError::custom("Invalid number of unused bits in BIT STRING"));
+        }
+        if DER && bits.len() > 0 && bits[bits.len() - 1].trailing_zeros() < unused as u32 {
+            return Err(ParseError::custom("Non-canonical encoding of BIT STRING."));
+        }
+        Ok((n, BitString::new(unused, bits)))
     }
 }
 
-impl<const DER: bool> SafeParser for super::BitString<DER> {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        bitstring_fmt::<DER>().lemma_parse_safe(ibuf);
+impl<'i, const DER: bool> Serializer<BitString<'i, DER>> for super::BitStringFmt<DER> {
+    fn serialize(&self, v: &BitString<'i, DER>, obuf: &mut Vec<u8>) {
+        U8.serialize(&v.unused, obuf);
+        Tail.serialize(&v.bits, obuf);
     }
 }
 
-impl<const DER: bool> Productive for super::BitString<DER> {
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        bitstring_fmt::<DER>().lemma_productive(s);
+impl<'i, const DER: bool> Prepare<BitString<'i, DER>> for super::BitStringFmt<DER> {
+    fn prepare(&self, v: &BitString<'i, DER>) -> Result<usize, PreSerializeError> {
+        proof {
+            use_type_invariant(v);
+        }
+        let n1 = U8.prepare(&v.unused)?;
+        let n2 = Tail.prepare(&v.bits)?;
+        let total_len = n1.checked_add(n2).ok_or(PreSerializeError::length_too_large())?;
+        Ok(total_len)
     }
 }
 
-impl<const DER: bool> SoundParser for super::BitString<DER> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        bitstring_fmt::<DER>().lemma_parse_sound_consumption(ibuf);
-    }
-
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        bitstring_fmt::<DER>().lemma_parse_sound_value(ibuf);
-    }
-}
-
-impl<const DER: bool> SpecSerializerDps for super::BitString<DER> {
-    type SValue = BitStringValue;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        bitstring_fmt::<DER>().spec_serialize_dps(v, obuf)
-    }
-}
-
-impl<const DER: bool> SpecSerializer for super::BitString<DER> {
-    type SVal = BitStringValue;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        bitstring_fmt::<DER>().spec_serialize(v)
-    }
-}
-
-impl<const DER: bool> GoodSerializer for super::BitString<DER> {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        bitstring_fmt::<DER>().lemma_serialize_len(v);
-    }
-}
-
-impl<const DER: bool> SpecByteLen for super::BitString<DER> {
-    type T = BitStringValue;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        bitstring_fmt::<DER>().byte_len(v)
-    }
-}
-
-impl<const DER: bool> ValueByteLen for super::BitString<DER> {
-    open spec fn value_byte_len(v: Self::T) -> nat {
-        BitStringFmt::<DER>::value_byte_len(v)
-    }
-
-    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-        bitstring_fmt::<DER>().lemma_value_len_matches_byte_len(v);
-    }
-}
-
-impl<const DER: bool> SPRoundTripDps for super::BitString<DER> {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        bitstring_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
-    }
-}
-
-impl<const DER: bool> NonMalleable for super::BitString<DER> {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        bitstring_fmt::<DER>().lemma_parse_non_malleable(buf1, buf2);
-    }
-}
-
-impl<const DER: bool> EquivSerializers for super::BitString<DER> {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        bitstring_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
+impl<'i, const DER: bool> ByteLen<BitString<'i, DER>> for super::BitStringFmt<DER> {
+    fn length(&self, v: &BitString<'i, DER>) -> usize {
+        let n1 = U8.length(&v.unused);
+        let n2 = Tail.length(&v.bits);
+        n1 + n2
     }
 }
 

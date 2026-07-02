@@ -89,13 +89,13 @@ pub struct Integer;
 ///
 /// When `DER = false`, the parser allows any value for the trailing unused bits.
 #[derive(Clone, Copy)]
-pub struct BitString<const DER: bool = true>;
+pub struct BitStringFmt<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BIT STRING.
-pub type BerBitString = BitString<false>;
+pub type BerBitString = BitStringFmt<false>;
 
 /// Convenience type alias for the DER variant of ASN.1 BIT STRING.
-pub type DerBitString = BitString<true>;
+pub type DerBitString = BitStringFmt<true>;
 
 /// ASN.1 OCTET STRING contents format.
 pub type OctetString = Tail;

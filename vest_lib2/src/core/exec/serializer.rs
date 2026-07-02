@@ -89,6 +89,10 @@ impl PreSerializeError {
         Self::new(PreSerializeErrorKind::NotCompliant(kind))
     }
 
+    pub fn custom(msg: &'static str) -> Self {
+        Self::new(PreSerializeErrorKind::NotCompliant(ComplianceErrorKind::Custom(msg)))
+    }
+
     pub fn push_format(self, current_format: &'static str) -> Self {
         let mut err = self;
         if err.failed_format.is_none() {
