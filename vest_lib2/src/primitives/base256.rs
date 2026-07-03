@@ -194,6 +194,20 @@ pub proof fn lemma_to_be_bytes_len_bound(n: nat, max_len: nat)
     }
 }
 
+pub proof fn lemma_usize_to_be_bytes_len_bound(n: usize)
+    ensures
+        usize::BITS == 32 ==> nat_to_be_bytes(n as nat).len() <= 4,
+        usize::BITS == 64 ==> nat_to_be_bytes(n as nat).len() <= 8,
+{
+    if usize::BITS == 32 {
+        reveal_with_fuel(pow, 5);
+        lemma_to_be_bytes_len_bound(n as nat, 4);
+    } else {
+        reveal_with_fuel(pow, 9);
+        lemma_to_be_bytes_len_bound(n as nat, 8);
+    }
+}
+
 pub proof fn lemma_to_from_be_bytes_roundtrip(n: nat)
     ensures
         nat_from_be_bytes(nat_to_be_bytes(n)) == n,
@@ -305,6 +319,47 @@ pub fn usize_to_be_bytes_exec(v: usize) -> (buf: Vec<u8>)
         let mut buf = usize_to_be_bytes_exec(v >> 8);
         buf.push((v & 0xff) as u8);
         buf
+    }
+}
+
+/// Executable loop-based byte-length computation.
+/// verified against [`nat_to_be_bytes`].
+pub fn usize_to_be_bytes_len(v: usize) -> (len: usize)
+    ensures
+        len == nat_to_be_bytes(v as nat).len(),
+{
+    let mut cur = v;
+    let mut len: usize = 1;
+    while cur >= 256
+        invariant
+            len + nat_to_be_bytes(cur as nat).len() == nat_to_be_bytes(v as nat).len() + 1,
+        decreases cur,
+    {
+        proof {
+            lemma_usize_shr8_is_div256(cur);
+            lemma_usize_to_be_bytes_len_bound(v);
+        }
+        cur >>= 8;
+        len += 1;
+    }
+    len
+}
+
+#[verifier::external_body]
+fn bytes_needed(n: usize) -> (need: usize)
+    ensures
+        need == nat_to_be_bytes(n as nat).len(),
+{
+    let active_bits = match usize::BITS {
+        total @ 32 => total - (n as u32).leading_zeros(),
+        total @ 64 => total - (n as u64).leading_zeros(),
+        _ => 0,  // unreachable
+    };
+
+    if active_bits == 0 {
+        1
+    } else {
+        ((active_bits + 7) / 8) as usize
     }
 }
 
