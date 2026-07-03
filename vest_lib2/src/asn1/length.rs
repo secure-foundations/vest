@@ -231,6 +231,35 @@ proof fn lemma_length_fmt_usize_unambiguous<const DER: bool>()
     }
 }
 
+proof fn lemma_length_fmt_usize_props<const DER: bool>(o: usize)
+    ensures
+        length_fmt::<DER>().consistent(o),
+        length_fmt::<DER>().byte_len(o) == if o <= SHORT_FORM_MAX as usize {
+            1
+        } else {
+            1 + nat_to_be_bytes(o as nat).len()
+        },
+{
+    lemma_to_be_bytes_props(o as nat);
+    lemma_usize_to_be_bytes_len_bound(o);
+    if o <= SHORT_FORM_MAX as usize {
+    } else {
+        let bytes = nat_to_be_bytes(o as nat);
+        let count = bytes.len() as u8;
+        let b1 = 0b1000_0000u8 | count;
+        if DER {
+            assert(der_long_len_bytes_minimal(bytes)) by {
+                reveal_with_fuel(nat_to_be_bytes, 2);
+            }
+        }
+        assert(0b1000_0000u8 < b1 < 0b1111_1111u8 && (b1 & 0b0111_1111u8) == count) by (bit_vector)
+            requires
+                0u8 < count <= 8u8,
+                b1 == (0b1000_0000u8 | count),
+        ;
+    }
+}
+
 mod derived_specs {
     use super::*;
     use super::super::{NatLength, Length};
@@ -517,16 +546,28 @@ impl<const DER: bool> Serializer<usize> for super::Length<DER> {
 }
 
 impl<const DER: bool> Prepare<usize> for super::Length<DER> {
-    #[verifier::external_body]
     fn prepare(&self, v: &usize) -> Result<usize, PreSerializeError> {
-        todo!()
+        proof {
+            lemma_length_fmt_usize_props::<DER>(*v);
+        }
+        if *v <= SHORT_FORM_MAX as usize {
+            Ok(1usize)
+        } else {
+            Ok(1 + usize_to_be_bytes_len(*v))
+        }
     }
 }
 
 impl<const DER: bool> ByteLen<usize> for super::Length<DER> {
-    #[verifier::external_body]
     fn length(&self, v: &usize) -> usize {
-        todo!()
+        proof {
+            lemma_length_fmt_usize_props::<DER>(*v);
+        }
+        if *v <= SHORT_FORM_MAX as usize {
+            1
+        } else {
+            1 + usize_to_be_bytes_len(*v)
+        }
     }
 }
 
