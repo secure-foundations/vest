@@ -32,7 +32,7 @@ pub enum ASN1Tag {
 
 pub type TagFmt = TryMap<U8, FnSpecMapper<u8, ASN1Tag>>;
 
-pub type ASN1TLV<T, Len = usize> = PrefixTagged<TagFmt, Implicit<Length, NBytesOf<Len, T>>>;
+pub type ASN1TLV<T, Len = usize> = PrefixTagged<TagFmt, Implicit<NatLength, NBytesOf<Len, T>>>;
 
 /// ASN.1 BOOLEAN format.
 ///
@@ -55,6 +55,10 @@ pub const BerBool: Bool<false> = Bool;
 
 /// Convenience value alias for the DER variant of ASN.1 BOOLEAN.
 pub const DerBool: Bool<true> = Bool;
+
+/// ASN.1 definite length format whose codomain is `nat`
+#[derive(Clone, Copy)]
+pub struct NatLength<const DER: bool = true>;
 
 /// ASN.1 definite length format.
 ///
@@ -113,14 +117,14 @@ impl Leaf for BerBool {
     }
 }
 
-impl LeafNonMalleable for DerLength {
-    proof fn nonmal_leaf_inv(&self) {
-    }
-}
+// impl LeafNonMalleable for DerLength {
+//     proof fn nonmal_leaf_inv(&self) {
+//     }
+// }
 
-impl Leaf for BerLength {
-    proof fn leaf_inv(&self) {
-    }
-}
+// impl Leaf for BerLength {
+//     proof fn leaf_inv(&self) {
+//     }
+// }
 
 } // verus!
