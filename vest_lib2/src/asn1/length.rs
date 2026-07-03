@@ -47,32 +47,22 @@ type LengthFmt<const DER: bool> = Mapped<
 /// b) bits 7 to 1 shall encode the number of subsequent octets in the length octets, as an unsigned binary integer with
 /// bit 7 as the most significant bit;
 /// c) the value 11111111 shall not be used.
-pub(super) open(super) spec fn length_wire<const DER: bool, const BOUNDED: bool>() -> LengthWire<
-    DER,
-    BOUNDED,
-> {
-    Bind(
-        U8,
-        |b1: u8|
-            {
-                match b1 {
-                    b if b <= SHORT_FORM_MAX => L(Empty),
-                    b if 0b1000_0000 < b < 0b1111_1111 => R(
-                        L(
-                            Refined(
-                                Varied(b & 0b0111_1111),  // clear the high bit to get the count
-                                |bytes: Seq<u8>|
-                                    {
-                                        &&& DER ==> der_long_len_bytes_minimal(bytes)
-                                        &&& BOUNDED ==> bytes.len() <= size_of_usize()
-                                    },
-                            ),
-                        ),
-                    ),
-                    _ => R(R(Void("Invalid first byte for ASN1 length"))),
-                }
-            },
-    )
+#[verusfmt::skip]
+pub(super) open(super) spec fn length_wire<const DER: bool, const BOUNDED: bool>() -> LengthWire<DER, BOUNDED > {
+    Bind(U8, |b1: u8| {
+        match b1 {
+            b if b <= SHORT_FORM_MAX => L(Empty),
+            b if 0b1000_0000 < b < 0b1111_1111 => R(L(
+                Refined(Varied(b & 0b0111_1111),  // clear the high bit to get the count
+                    |bytes: Seq<u8>| {
+                        &&& DER ==> der_long_len_bytes_minimal(bytes)
+                        &&& BOUNDED ==> bytes.len() <= size_of_usize()
+                    }),
+                ),
+            ),
+            _ => R(R(Void("Invalid first byte for ASN1 length"))),
+        }
+    })
 }
 
 pub(super) open(super) spec fn nat_length_fmt<const DER: bool>() -> NatLengthFmt<DER> {
