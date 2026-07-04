@@ -1,6 +1,5 @@
 use super::leb128::*;
 use crate::combinators::disjoint::disjointness_lemmas;
-use crate::combinators::star::proof::lemma_fold_left_accumulate_seq;
 use crate::core::exec::parser::*;
 use crate::{
     combinators::mapped::spec::*,
@@ -414,27 +413,13 @@ proof fn lemma_base128_fmt_consistent<const MINIMAL: bool>(v: UInt)
         by (bit_vector);
 }
 
-proof fn lemma_cont_bytes_byte_len(cont_bytes: Seq<u8>)
-    ensures
-        Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).byte_len(cont_bytes)
-            == cont_bytes.len(),
-    decreases cont_bytes.len(),
-{
-    reveal(<Star<_> as SpecByteLen>::byte_len);
-    if cont_bytes.len() == 0 {
-    } else {
-        let prefix = cont_bytes.drop_last();
-        lemma_cont_bytes_byte_len(prefix);
-    }
-}
-
 proof fn lemma_base128_fmt_byte_len<const MINIMAL: bool>(v: UInt)
     ensures
         base128_fmt::<MINIMAL>().byte_len(v) == nat_to_base128(v as nat).len(),
 {
     let bytes = nat_to_base128(v as nat);
     let cont_bytes = bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
-    lemma_cont_bytes_byte_len(cont_bytes);
+    lemma_star_byte_len_seq_u8(cont_bytes);
 }
 
 fn scan_base128_bytes<'a>(ibuf: &&'a [u8]) -> (out: Result<(usize, &'a [u8]), ParseError>)
@@ -630,7 +615,6 @@ proof fn lemma_star_parse_rec_cont_bytes(ibuf: Seq<u8>, n: int, cont_bytes: Seq<
     if n > 1 {
         assert(cont_bytes.skip(1) == ibuf.skip(1).take(n - 2));
         lemma_star_parse_rec_cont_bytes(ibuf.skip(1), (n - 1) as int, cont_bytes.skip(1));
-        assert(seq![ibuf[0]] + cont_bytes.skip(1) == cont_bytes);
     }
 }
 
@@ -655,160 +639,29 @@ proof fn lemma_scan_implies_spec_parse<const MINIMAL: bool>(ibuf: Seq<u8>, n: in
     assert(cont_bytes.push(bytes.last()) =~= bytes);
 }
 
-proof fn lemma_star_parse_rec_non_negative(ibuf: Seq<u8>)
+proof fn lemma_star_serialize_seq_u8(vs: Seq<u8>)
     ensures
-        Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).parse_rec(ibuf).0 >= 0,
-    decreases ibuf.len(),
-{
-    let star = Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0));
-    if let Some((n, _)) = star.0.spec_parse(ibuf) {
-        if 0 < n && n <= ibuf.len() {
-            lemma_star_parse_rec_non_negative(ibuf.skip(n));
-        }
-    }
-}
-
-proof fn lemma_star_parse_rec_properties(ibuf: Seq<u8>, k: int, cont_bytes: Seq<u8>)
-    requires
-        0 <= k <= ibuf.len(),
-        Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).parse_rec(ibuf) == (k, cont_bytes),
-    ensures
-        cont_bytes.len() == k,
-        forall|i: int| #![auto] 0 <= i < k ==> ibuf[i] & CONTINUATION_MASK != 0,
-        k < ibuf.len() ==> ibuf[k] & CONTINUATION_MASK == 0,
-    decreases k,
-{
-    let star = Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0));
-    if k == 0 {
-        if star.0.spec_parse(ibuf) is Some {
-            let n_first = (star.0.spec_parse(ibuf)->0).0;
-            assert(n_first == 1);
-            lemma_star_parse_rec_non_negative(ibuf.skip(1));
-            assert(false);
-        }
-        assert(cont_bytes =~= Seq::<u8>::empty());
-        if 0 < ibuf.len() {
-            assert(ibuf[0] & CONTINUATION_MASK == 0);
-        }
-    } else {
-        let (_, first_val) = star.0.spec_parse(ibuf)->0;
-        let (_, rest_vs) = star.parse_rec(ibuf.skip(1));
-        assert(cont_bytes == seq![first_val] + rest_vs);
-        assert(rest_vs == cont_bytes.skip(1));
-        assert(star.parse_rec(ibuf.skip(1)) == ((k - 1) as int, cont_bytes.skip(1)));
-        lemma_star_parse_rec_properties(ibuf.skip(1), (k - 1) as int, cont_bytes.skip(1));
-        assert forall|i: int| #![auto] 0 <= i < k implies ibuf[i] & CONTINUATION_MASK != 0 by {
-            if i > 0 {
-                assert(ibuf.skip(1)[i - 1] == ibuf[i]);
-            }
-        }
-    }
-}
-
-proof fn lemma_scan_non_canonical_implies_spec_none<const MINIMAL: bool>(
-    ibuf: Seq<u8>,
-    n: int,
-    bytes: Seq<u8>,
-)
-    requires
-        0 < n <= BASE128_MAX_BYTES,
-        n <= ibuf.len(),
-        bytes == ibuf.take(n),
-        bytes[n - 1] & CONTINUATION_MASK == 0,
-        forall|i: int| #![auto] 0 <= i < n - 1 ==> bytes[i] & CONTINUATION_MASK != 0,
-        MINIMAL,
-        n > 1,
-        bytes[0] & PAYLOAD_MASK == 0,
-    ensures
-        base128_fmt::<MINIMAL>().spec_parse(ibuf) == None,
-{
-    reveal(<Star::<_> as SpecParser>::spec_parse);
-    let cont_bytes = bytes.drop_last();
-    assert(cont_bytes =~= ibuf.take(n - 1));
-    assert forall|i: int| #![auto] 0 <= i < n - 1 implies ibuf[i] & CONTINUATION_MASK != 0 by {
-        assert(bytes[i] & CONTINUATION_MASK != 0);
-    }
-    lemma_star_parse_rec_cont_bytes(ibuf, n, cont_bytes);
-
-    if base128_fmt::<MINIMAL>().spec_parse(ibuf) is Some {
-        let (_, pair_spec) = base128_fmt::<MINIMAL>().inner.spec_parse(ibuf)->0;
-        let repeat = Repeat(
-            Refined(U8, |b: u8| b & CONTINUATION_MASK != 0),
-            Refined(U8, |b: u8| b & CONTINUATION_MASK == 0),
-        );
-        assert(repeat.spec_parse(ibuf) == Some((n, (cont_bytes, bytes.last()))));
-        assert(pair_spec == (cont_bytes, bytes.last()));
-        assert(cont_bytes[0] == bytes[0]);
-        assert(false);
-    }
-}
-
-proof fn lemma_scan_err_implies_spec_none<const MINIMAL: bool>(ibuf: Seq<u8>)
-    requires
-        (forall|j: int| #![auto] 0 <= j < ibuf.len() ==> ibuf[j] & CONTINUATION_MASK != 0) || (
-        ibuf.len() >= BASE128_MAX_BYTES && forall|j: int|
-            #![auto]
-            0 <= j < BASE128_MAX_BYTES as int ==> ibuf[j] & CONTINUATION_MASK != 0),
-    ensures
-        base128_fmt::<MINIMAL>().spec_parse(ibuf) == None,
-{
-    reveal(<Star::<_> as SpecParser>::spec_parse);
-    let star = Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0));
-    if base128_fmt::<MINIMAL>().spec_parse(ibuf) is Some {
-        let fmt = base128_fmt::<MINIMAL>();
-        fmt.lemma_parse_safe(ibuf);
-        fmt.inner.lemma_parse_safe(ibuf);
-        let (n, _) = fmt.spec_parse(ibuf)->0;
-        let (_, pair) = fmt.inner.spec_parse(ibuf)->0;
-        let (cont_bytes, _) = pair;
-        star.lemma_parse_safe(ibuf);
-        let k = n - 1;
-        assert(n >= 1);
-        assert(star.spec_parse(ibuf) == Some((k, cont_bytes)));
-        assert(star.parse_rec(ibuf) == (k, cont_bytes));
-        lemma_star_parse_rec_properties(ibuf, k, cont_bytes);
-        assert(false);
-    }
-}
-
-proof fn lemma_spec_serialize_seq_u8(vs: Seq<u8>)
-    ensures
-        ({
-            let inner = Refined(U8, |b: u8| b & CONTINUATION_MASK != 0);
-            let f = |buf: Seq<u8>, elem: u8| buf + inner.spec_serialize(elem);
-            vs.fold_left(Seq::<u8>::empty(), f) == vs
-        }),
+        Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).spec_serialize(vs) == vs,
     decreases vs.len(),
 {
-    let inner = Refined(U8, |b: u8| b & CONTINUATION_MASK != 0);
-    let f = |buf: Seq<u8>, elem: u8| buf + inner.spec_serialize(elem);
+    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
     if vs.len() > 0 {
-        let v0 = vs[0];
-        let rest = vs.skip(1);
-        lemma_spec_serialize_seq_u8(rest);
-        assert(f(Seq::empty(), v0) == seq![v0]);
-        assert forall|acc: Seq<u8>, x: Seq<u8>, y: u8| #[trigger]
-            f(acc + x, y) == acc + #[trigger] f(x, y) by {}
-        lemma_fold_left_accumulate_seq(rest, seq![v0], f);
-        vs.lemma_fold_left_alt(Seq::empty(), f);
-        rest.lemma_fold_left_alt(Seq::empty(), f);
-        rest.lemma_fold_left_alt(seq![v0], f);
+        let prefix = vs.drop_last();
+        lemma_star_serialize_seq_u8(prefix);
     }
 }
 
-proof fn lemma_base128_fmt_spec_serialize<const MINIMAL: bool>(v: UInt)
+proof fn lemma_star_byte_len_seq_u8(vs: Seq<u8>)
     ensures
-        ({
-            let bytes = nat_to_base128(v as nat);
-            let cont_bytes = bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
-            let term_byte = bytes.last();
-            base128_fmt::<MINIMAL>().spec_serialize(v) == cont_bytes.push(term_byte)
-        }),
+        Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).byte_len(vs) == vs.len(),
+    decreases vs.len(),
 {
-    reveal(<Star::<_> as SpecSerializer>::spec_serialize);
-    let bytes = nat_to_base128(v as nat);
-    let cont_bytes = bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
-    lemma_spec_serialize_seq_u8(cont_bytes);
+    reveal(<Star<_> as SpecByteLen>::byte_len);
+    if vs.len() == 0 {
+    } else {
+        let prefix = vs.drop_last();
+        lemma_star_byte_len_seq_u8(prefix);
+    }
 }
 
 impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
@@ -818,27 +671,17 @@ impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
         broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
 
-        let res = scan_base128_bytes(ibuf);
-        match res {
+        reveal(<Star::<_> as SpecParser>::spec_parse);
+
+        match scan_base128_bytes(ibuf) {
             Ok((n, bytes)) => {
-                if MINIMAL && bytes.len() > 1 && (bytes[0] & PAYLOAD_MASK == 0) {
-                    proof {
-                        assert(bytes.deep_view().len() == n);
-                        assert(n > 1);
-                        lemma_scan_non_canonical_implies_spec_none::<MINIMAL>(
-                            ibuf@,
-                            n as int,
-                            bytes.deep_view(),
-                        );
-                    }
+                let ghost scanned = bytes.deep_view();
+                assert(scanned.len() == n);
+                if MINIMAL && n > 1 && (bytes[0] & PAYLOAD_MASK == 0) {
+                    assert(scanned[0] & PAYLOAD_MASK == 0);
                     return Err(ParseError::non_canonical());
                 }
                 proof {
-                    assert(bytes.deep_view().len() == n);
-                    if MINIMAL && n > 1 {
-                        assert(bytes.len() > 1);
-                        assert(bytes[0] & PAYLOAD_MASK != 0);
-                    }
                     lemma_scan_implies_spec_parse::<MINIMAL>(ibuf@, n as int, bytes.deep_view());
                 }
                 let value = uint_from_base128(bytes);
@@ -846,7 +689,20 @@ impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
             },
             Err(err) => {
                 proof {
-                    lemma_scan_err_implies_spec_none::<MINIMAL>(ibuf@);
+                    let fmt = base128_fmt::<MINIMAL>();
+                    if fmt.spec_parse(ibuf@) is Some {
+                        let (n, (cont_bytes, term_byte)) = fmt.inner.spec_parse(ibuf@)->0;
+                        let k = n - 1;
+                        assert(cont_bytes.len() == k) by {
+                            Star(
+                                Refined(U8, |b: u8| b & CONTINUATION_MASK != 0),
+                            ).lemma_parse_sound_consumption(ibuf@);
+                            lemma_star_byte_len_seq_u8(cont_bytes);
+                        }
+                        assert(ibuf@[k] == term_byte);
+                        assert(ibuf@[k] & CONTINUATION_MASK != 0);
+                        assert(term_byte & CONTINUATION_MASK == 0);
+                    }
                 }
                 Err(err)
             },
@@ -858,50 +714,23 @@ impl<const MINIMAL: bool> Serializer<UInt> for Base128Fmt<MINIMAL> {
     fn serialize(&self, v: &UInt, obuf: &mut Vec<u8>) {
         let bytes = uint_to_base128(*v);
         let n = bytes.len();
-        if n > 0 {
-            let mut i: usize = 0;
-            let ghost cont_bytes = bytes@.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
-            while i < n - 1
-                invariant
-                    n == bytes.len(),
-                    i <= n - 1,
-                    cont_bytes.len() == n - 1,
-                    obuf@ == old(obuf)@ + cont_bytes.take(i as int),
-                    forall|j: int|
-                        #![auto]
-                        0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
-                            | CONTINUATION_MASK,
-                decreases n - 1 - i,
-            {
-                let b = bytes[i];
-                proof {
-                    let ghost cb_i = cont_bytes[i as int];
-                    let ghost byte_i = bytes@.drop_last()[i as int];
-                    assert(byte_i == b);
-                    assert(cb_i == byte_i | CONTINUATION_MASK);
-                    assert(cb_i == (b | CONTINUATION_MASK)) by (bit_vector)
-                        requires
-                            byte_i == b,
-                            cb_i == byte_i | CONTINUATION_MASK,
-                    ;
-                    assert(cont_bytes.take(i as int + 1) == cont_bytes.take(i as int).push(
-                        cont_bytes[i as int],
-                    ));
-                }
-                obuf.push((b | CONTINUATION_MASK) as u8);
-                i += 1;
-            }
-            proof {
-                assert(cont_bytes.take(i as int) == cont_bytes);
-            }
-            obuf.push(bytes[n - 1]);
-            proof {
-                lemma_base128_fmt_spec_serialize::<MINIMAL>(*v);
-                assert(bytes@.last() == bytes[n - 1]);
-                assert(cont_bytes.push(bytes[n - 1]) == bytes@.drop_last().map_values(
-                    |b: u8| b | CONTINUATION_MASK,
-                ).push(bytes@.last()));
-            }
+        let ghost cont_bytes = bytes@.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
+        for i in 0..n - 1
+            invariant
+                n == bytes.len(),
+                cont_bytes.len() == n - 1,
+                obuf@ == old(obuf)@ + cont_bytes.take(i as int),
+                forall|j: int|
+                    #![auto]
+                    0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
+                        | CONTINUATION_MASK,
+        {
+            let b = bytes[i];
+            obuf.push((b | CONTINUATION_MASK) as u8);
+        }
+        obuf.push(bytes[n - 1]);
+        proof {
+            lemma_star_serialize_seq_u8(cont_bytes);
         }
     }
 }
