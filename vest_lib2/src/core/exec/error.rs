@@ -38,7 +38,10 @@ impl Clone for ParseError {
 
 impl ParseError {
     /// Creates a new parse error.
-    pub fn new(kind: ParseErrorKind) -> Self {
+    pub fn new(kind: ParseErrorKind) -> (e: Self)
+        ensures
+            e.kind == kind,
+    {
         Self {
             kind,
             failed_format: None,
@@ -75,7 +78,10 @@ impl ParseError {
 
 impl ParseError {
     /// Creates an unexpected end-of-input error.
-    pub fn unexpected_eof() -> Self {
+    pub fn unexpected_eof() -> (e: Self)
+        ensures
+            e.kind == ParseErrorKind::UnexpectedEof,
+    {
         Self::new(ParseErrorKind::UnexpectedEof)
     }
 
@@ -120,7 +126,10 @@ impl ParseError {
     }
 
     /// Creates an overflow error.
-    pub fn overflow() -> Self {
+    pub fn overflow() -> (e: Self)
+        ensures
+            e.kind == ParseErrorKind::Overflow,
+    {
         Self::new(ParseErrorKind::Overflow)
     }
 
