@@ -1,4 +1,5 @@
 use super::leb128::*;
+use crate::combinators::disjoint::disjointness_lemmas;
 use crate::core::exec::parser::*;
 use crate::{
     combinators::mapped::spec::*,
@@ -12,122 +13,14 @@ use vstd::prelude::*;
 
 verus! {
 
-pub type Base128Fmt<const MINIMAL: bool> = Mapped<Base128WireFmt<MINIMAL>, NatFromToBE128<MINIMAL>>;
-
-pub type Base128WireFmt<const MINIMAL: bool> = Mapped<
-    Refined<Repeat<ContinuationByte, TerminalByte>, PredFnSpec<(Seq<u8>, u8)>>,
-    ConcatSplitBytes,
->;
-
-pub open spec fn base128_fmt<const MINIMAL: bool>() -> Base128Fmt<MINIMAL> {
-    Mapped { inner: base128_wire_fmt::<MINIMAL>(), mapper: NatFromToBE128::<MINIMAL> }
-}
-
-pub open spec fn base128_wire_fmt<const MINIMAL: bool>() -> Base128WireFmt<MINIMAL> {
-    Mapped {
-        inner: Refined(
-            Repeat(continuation_byte(), terminal_byte()),
-            // No leading zeros allowed if MINIMAL
-            |pair: (Seq<u8>, u8)| MINIMAL ==> (pair.0.len() > 0 ==> pair.0[0] != 0),
-        ),
-        mapper: ConcatSplitBytes,
-    }
-}
-
-pub struct ConcatSplitBytes;
-
-impl SpecMapper for ConcatSplitBytes {
-    type In = (Seq<u8>, u8);
-
-    type Out = Seq<u8>;
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o.len() > 0
-    }
-
-    open spec fn spec_map(&self, pair: Self::In) -> Self::Out {
-        pair.0.push(pair.1)
-    }
-
-    open spec fn spec_map_rev(&self, bytes: Self::Out) -> Self::In {
-        (bytes.drop_last(), bytes.last())
-    }
-}
-
-impl LosslessMapper for ConcatSplitBytes {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        assert(i.0.push(i.1).drop_last() == i.0);
-        assert(i.0.push(i.1).last() == i.1);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-        assert(i.0.push(i.1).len() > 0);
-    }
-}
-
-impl LossyMapper for ConcatSplitBytes {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        assert(o.len() > 0);
-        let pair = (o.drop_last(), o.last());
-        assert(pair.0.push(pair.1) == o);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        assert(o.len() > 0);
-    }
-}
-
-pub struct NatFromToBE128<const MINIMAL: bool>;
-
-impl<const MINIMAL: bool> SpecMapper for NatFromToBE128<MINIMAL> {
-    type In = Seq<u8>;
-
-    type Out = nat;
-
-    open spec fn wf_in(&self, bytes: Self::In) -> bool {
-        &&& forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128
-        &&& bytes.len() > 0
-        &&& MINIMAL ==> (bytes.len() > 1 ==> bytes[0] != 0)
-    }
-
-    open spec fn spec_map(&self, bytes: Self::In) -> Self::Out {
-        nat_from_base128(bytes)
-    }
-
-    open spec fn spec_map_rev(&self, v: Self::Out) -> Self::In {
-        nat_to_base128(v)
-    }
-}
-
-impl<const MINIMAL: bool> LossyMapper for NatFromToBE128<MINIMAL> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        lemma_to_from_base128_roundtrip(o);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        lemma_nat_to_base128_props(o);
-    }
-}
-
-impl LosslessMapper for NatFromToBE128<true> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_from_to_base128_roundtrip(i);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
 /// Unsigned big-endian base-128 decoding.
 pub open spec fn nat_from_base128(bytes: Seq<u8>) -> nat
-    recommends
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
     decreases bytes.len(),
 {
     if bytes.len() == 0 {
         0
     } else {
-        nat_from_base128(bytes.drop_last()) * 128 + bytes.last() as nat
+        nat_from_base128(bytes.drop_last()) * 128 + (bytes.last() % 128) as nat
     }
 }
 
@@ -138,521 +31,17 @@ pub open spec fn nat_to_base128(n: nat) -> Seq<u8>
     if n < 128 {
         seq![n as u8]
     } else {
-        nat_to_base128(n / 128).push((n % 128) as u8)
+        nat_to_base128((n / 128) as nat).push((n % 128) as u8)
     }
 }
 
-pub open spec fn usize_from_base128(bytes: Seq<u8>) -> usize
-    recommends
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-        nat_from_base128(bytes) <= usize::MAX,
-    decreases bytes.len(),
-{
-    if bytes.len() == 0 {
-        0
-    } else {
-        (usize_from_base128(bytes.drop_last()) << 7) | bytes.last() as usize
-    }
-}
-
-pub open spec fn usize_to_base128(v: usize) -> Seq<u8>
-    decreases v,
-    via usize_shr_decreases
-{
-    if v < 128 {
-        seq![v as u8]
-    } else {
-        usize_to_base128(v >> 7).push((v & 0x7f) as u8)
-    }
-}
-
-#[via_fn]
-proof fn usize_shr_decreases(v: usize) {
-    assert(v != 0 ==> v >> 7 < v) by (bit_vector);
-}
-
-proof fn lemma_usize_shr7_is_div128(v: usize)
+pub proof fn lemma_from_base128_push(bytes: Seq<u8>, b: u8)
     ensures
-        (v >> 7usize) as nat == v as nat / 128,
-{
-    lemma_usize_shr_is_div(v, 7);
-    lemma2_to64();
-}
-
-proof fn lemma_usize_low7_is_mod128(v: usize)
-    by (bit_vector)
-    ensures
-        (v & 0x7fusize) as nat == v as nat % 128,
-{
-}
-
-proof fn lemma_usize_shl7_or_is_base128(v: usize, b: u8)
-    by (bit_vector)
-    requires
-        b < 128,
-        v as nat * 128 + b as nat <= usize::MAX,
-    ensures
-        (((v << 7usize) | b as usize) as nat) == v as nat * 128 + b as nat,
-{
-}
-
-pub proof fn lemma_usize_from_base128_equiv_nat(bytes: Seq<u8>)
-    requires
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-        nat_from_base128(bytes) <= usize::MAX,
-    ensures
-        usize_from_base128(bytes) as nat == nat_from_base128(bytes),
-    decreases bytes.len(),
-{
-    if bytes.len() == 0 {
-    } else {
-        let prefix = bytes.drop_last();
-        let last = bytes.last();
-
-        lemma_usize_from_base128_equiv_nat(prefix);
-        let prefix_usize = usize_from_base128(prefix);
-        lemma_usize_shl7_or_is_base128(prefix_usize, last);
-    }
-}
-
-pub proof fn lemma_usize_to_base128_eq_nat(v: usize)
-    ensures
-        usize_to_base128(v) == nat_to_base128(v as nat),
-    decreases v,
-{
-    if v < 128 {
-    } else {
-        // v >= 128: usize_to_base128(v) = usize_to_base128(v >> 7).push((v & 0x7f) as u8)
-        //            nat_to_base128(v) = nat_to_base128(v / 128).push((v % 128) as u8)
-        lemma_usize_shr7_is_div128(v);
-        lemma_usize_low7_is_mod128(v);
-        let vd = v >> 7usize;
-        lemma_usize_to_base128_eq_nat(vd);
-    }
-}
-
-pub proof fn lemma_usize_to_from_base128_roundtrip(v: usize)
-    ensures
-        usize_from_base128(usize_to_base128(v)) == v,
-{
-    lemma_usize_to_base128_eq_nat(v);
-    lemma_nat_to_base128_props(v as nat);
-    lemma_to_from_base128_roundtrip(v as nat);
-    let bytes = usize_to_base128(v);
-    lemma_usize_from_base128_equiv_nat(bytes);
-}
-
-pub proof fn lemma_usize_from_to_base128_roundtrip(bytes: Seq<u8>)
-    requires
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-        bytes.len() > 0,
-        bytes.len() > 1 ==> bytes[0] != 0,
-        nat_from_base128(bytes) <= usize::MAX,
-    ensures
-        usize_to_base128(usize_from_base128(bytes)) == bytes,
-{
-    lemma_usize_from_base128_equiv_nat(bytes);
-    lemma_from_to_base128_roundtrip(bytes);
-    let v = usize_from_base128(bytes);
-    lemma_usize_to_base128_eq_nat(v);
-}
-
-pub proof fn lemma_nat_from_base128_push(bytes: Seq<u8>, b: u8)
-    ensures
-        nat_from_base128(bytes.push(b)) == nat_from_base128(bytes) * 128 + b as nat,
+        nat_from_base128(bytes.push(b)) == nat_from_base128(bytes) * 128 + (b % 128) as nat,
 {
     assert(bytes.push(b).drop_last() == bytes);
 }
 
-pub proof fn lemma_to_from_base128_roundtrip(n: nat)
-    ensures
-        nat_from_base128(nat_to_base128(n)) == n,
-    decreases n,
-{
-    if n < 128 {
-        lemma_nat_from_base128_push(seq![], n as u8);
-    } else {
-        let q = (n / 128) as nat;
-        let r = (n % 128) as nat;
-        lemma_to_from_base128_roundtrip(q);
-        lemma_nat_from_base128_push(nat_to_base128(q), r as u8);
-    }
-}
-
-pub proof fn lemma_from_to_base128_roundtrip(bytes: Seq<u8>)
-    requires
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-        bytes.len() > 0,
-        bytes.len() > 1 ==> bytes[0] != 0,
-    ensures
-        nat_to_base128(nat_from_base128(bytes)) == bytes,
-    decreases bytes.len(),
-{
-    if bytes.len() == 1 {
-        lemma_nat_from_base128_push(seq![], bytes[0]);
-        assert(bytes == seq![bytes[0]]);
-    } else {
-        let prefix = bytes.drop_last();
-        lemma_from_to_base128_roundtrip(prefix);
-    }
-}
-
-pub proof fn lemma_nat_to_base128_props(n: nat)
-    ensures
-        nat_to_base128(n).len() > 0,
-        n > 0 ==> nat_to_base128(n)[0] != 0,
-        forall|i: int| 0 <= i < nat_to_base128(n).len() ==> nat_to_base128(n)[i] < 128,
-    decreases n,
-{
-    if n < 128 {
-    } else {
-        let q = (n / 128) as nat;
-        lemma_nat_to_base128_props(q);
-    }
-}
-
-pub broadcast proof fn lemma_base128_wire_fmt_props<const MINIMAL: bool>(bytes: Seq<u8>)
-    requires
-        #[trigger] base128_wire_fmt::<MINIMAL>().consistent(bytes),
-    ensures
-        #[trigger] NatFromToBE128::<MINIMAL>.wf_in(bytes),
-{
-    reveal(<Star::<_> as Consistency>::consistent);
-    let pair = ConcatSplitBytes.spec_map_rev(bytes);
-
-    assert forall|i: int| 0 <= i < bytes.len() implies bytes[i] < 128 by {
-        if i < bytes.len() - 1 {
-            assert(pair.0[i] < 128);
-        } else {
-            assert(pair.1 < 128);
-        }
-    }
-}
-
-pub struct Base128<const MINIMAL: bool>;
-
-mod base128_derived_specs {
-    use super::*;
-
-    impl<const MINIMAL: bool> SpecParser for Base128<MINIMAL> {
-        type PVal = nat;
-
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            base128_fmt::<MINIMAL>().spec_parse(ibuf)
-        }
-    }
-
-    impl<const MINIMAL: bool> Consistency for Base128<MINIMAL> {
-        type Val = nat;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            base128_fmt::<MINIMAL>().consistent(v)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecSerializerDps for Base128<MINIMAL> {
-        type SValue = nat;
-
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            base128_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecSerializer for Base128<MINIMAL> {
-        type SVal = nat;
-
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            base128_fmt::<MINIMAL>().spec_serialize(v)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecByteLen for Base128<MINIMAL> {
-        type T = nat;
-
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            base128_fmt::<MINIMAL>().byte_len(v)
-        }
-    }
-
-}
-
-mod base128_derived_proofs {
-    use super::*;
-
-    impl<const MINIMAL: bool> SafeParser for Base128<MINIMAL> {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            base128_fmt::<MINIMAL>().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> Productive for Base128<MINIMAL> {
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            base128_fmt::<MINIMAL>().lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for Base128<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            assert(base128_fmt::<true>().sound_inv());
-            base128_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            assert(base128_fmt::<true>().sound_inv());
-            base128_fmt::<true>().lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> NonTailFmt for Base128<MINIMAL> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            base128_fmt::<MINIMAL>().lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            base128_fmt::<MINIMAL>().lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> GoodSerializer for Base128<MINIMAL> {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            base128_fmt::<MINIMAL>().lemma_serialize_len(v);
-        }
-    }
-
-    impl<const MINIMAL: bool> SPRoundTripDps for Base128<MINIMAL> {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            assert(base128_fmt::<MINIMAL>().inner.unambiguous()) by {
-                reveal(disjoint_domains);
-            }
-            base128_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> NoLookAhead for Base128<MINIMAL> {
-        proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-            assert(base128_fmt::<MINIMAL>().no_lookahead_inv()) by {
-                reveal(disjoint_domains);
-            }
-            base128_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
-        }
-    }
-
-    impl NonMalleable for Base128<true> {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            assert(base128_fmt::<true>().nonmal_inv());
-            base128_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<const MINIMAL: bool> EquivSerializersGeneral for Base128<MINIMAL> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            base128_fmt::<MINIMAL>().lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> EquivSerializers for Base128<MINIMAL> {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            base128_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-}
-
-pub type Base128BoundedFmt<const MINIMAL: bool> = TryMap<
-    Base128WireFmt<MINIMAL>,
-    UsizeFromToBE128<MINIMAL>,
->;
-
-pub open spec fn base128_bounded_fmt<const MINIMAL: bool>() -> Base128BoundedFmt<MINIMAL> {
-    TryMap { inner: base128_wire_fmt::<MINIMAL>(), mapper: UsizeFromToBE128::<MINIMAL> }
-}
-
-pub struct Base128Bounded<const MINIMAL: bool>;
-
-pub struct UsizeFromToBE128<const MINIMAL: bool>;
-
-impl<const MINIMAL: bool> SpecMapper for UsizeFromToBE128<MINIMAL> {
-    type In = Seq<u8>;
-
-    type Out = usize;
-
-    open spec fn wf_in(&self, bytes: Self::In) -> bool {
-        &&& NatFromToBE128::<MINIMAL>.wf_in(bytes)
-        &&& nat_from_base128(bytes) <= usize::MAX
-    }
-
-    open spec fn spec_map(&self, bytes: Self::In) -> Self::Out {
-        usize_from_base128(bytes)
-    }
-
-    open spec fn spec_map_rev(&self, v: Self::Out) -> Self::In {
-        usize_to_base128(v)
-    }
-}
-
-impl<const MINIMAL: bool> LossyMapper for UsizeFromToBE128<MINIMAL> {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        lemma_usize_to_from_base128_roundtrip(o);
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        lemma_usize_to_base128_eq_nat(o);
-        lemma_nat_to_base128_props(o as nat);
-        lemma_to_from_base128_roundtrip(o as nat);
-    }
-}
-
-impl LosslessMapper for UsizeFromToBE128<true> {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        lemma_usize_from_to_base128_roundtrip(i);
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
-    }
-}
-
-mod base128_bounded_derived_specs {
-    use super::*;
-
-    impl<const MINIMAL: bool> SpecParser for Base128Bounded<MINIMAL> {
-        type PVal = usize;
-
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            base128_bounded_fmt::<MINIMAL>().spec_parse(ibuf)
-        }
-    }
-
-    impl<const MINIMAL: bool> Consistency for Base128Bounded<MINIMAL> {
-        type Val = usize;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            base128_bounded_fmt::<MINIMAL>().consistent(v)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecSerializerDps for Base128Bounded<MINIMAL> {
-        type SValue = usize;
-
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            base128_bounded_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecSerializer for Base128Bounded<MINIMAL> {
-        type SVal = usize;
-
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            base128_bounded_fmt::<MINIMAL>().spec_serialize(v)
-        }
-    }
-
-    impl<const MINIMAL: bool> SpecByteLen for Base128Bounded<MINIMAL> {
-        type T = usize;
-
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            base128_bounded_fmt::<MINIMAL>().byte_len(v)
-        }
-    }
-
-}
-
-mod base128_bounded_derived_proofs {
-    use super::*;
-
-    impl<const MINIMAL: bool> SafeParser for Base128Bounded<MINIMAL> {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            base128_bounded_fmt::<MINIMAL>().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> Productive for Base128Bounded<MINIMAL> {
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            base128_bounded_fmt::<MINIMAL>().lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for Base128Bounded<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            let fmt = base128_bounded_fmt::<true>();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            let fmt = base128_bounded_fmt::<true>();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> NonTailFmt for Base128Bounded<MINIMAL> {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            base128_bounded_fmt::<MINIMAL>().lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            base128_bounded_fmt::<MINIMAL>().lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> GoodSerializer for Base128Bounded<MINIMAL> {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            base128_bounded_fmt::<MINIMAL>().lemma_serialize_len(v);
-        }
-    }
-
-    impl<const MINIMAL: bool> SPRoundTripDps for Base128Bounded<MINIMAL> {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            assert(base128_bounded_fmt::<MINIMAL>().inner.unambiguous()) by {
-                reveal(disjoint_domains);
-            }
-            base128_bounded_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> NoLookAhead for Base128Bounded<MINIMAL> {
-        proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-            assert(base128_bounded_fmt::<MINIMAL>().no_lookahead_inv()) by {
-                reveal(disjoint_domains);
-            }
-            base128_bounded_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
-        }
-    }
-
-    impl NonMalleable for Base128Bounded<true> {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            broadcast use lemma_base128_wire_fmt_props;
-
-            assert(base128_bounded_fmt::<true>().nonmal_inv());
-            base128_bounded_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl<const MINIMAL: bool> EquivSerializersGeneral for Base128Bounded<MINIMAL> {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            base128_bounded_fmt::<MINIMAL>().lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl<const MINIMAL: bool> EquivSerializers for Base128Bounded<MINIMAL> {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            base128_bounded_fmt::<MINIMAL>().lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-}
-
-// Overflow-related proofs
 pub proof fn lemma_pow128_succ(exp: nat)
     ensures
         pow(128, exp + 1) == pow(128, exp) * 128,
@@ -661,9 +50,7 @@ pub proof fn lemma_pow128_succ(exp: nat)
     lemma_pow1(128);
 }
 
-pub proof fn lemma_nat_from_base128_upper_bound(bytes: Seq<u8>)
-    requires
-        forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
+pub proof fn lemma_from_base128_upper_bound(bytes: Seq<u8>)
     ensures
         nat_from_base128(bytes) < pow(128, bytes.len()),
     decreases bytes.len(),
@@ -672,349 +59,338 @@ pub proof fn lemma_nat_from_base128_upper_bound(bytes: Seq<u8>)
         lemma_pow0(128);
     } else {
         let prefix = bytes.drop_last();
-        lemma_nat_from_base128_upper_bound(prefix);
+        lemma_from_base128_upper_bound(prefix);
         lemma_pow128_succ(prefix.len());
     }
 }
 
-/// Number of base-128 bytes that fit in `usize`:
-/// - 32-bit `usize`: 4 bytes (128^4 = 2^28 ≤ 2^32 - 1)
-/// - 64-bit `usize`: 9 bytes (128^9 = 2^63 ≤ 2^64 - 1)
-pub open spec fn size_of_base128_usize() -> nat {
-    if usize::BITS == 32 {
-        4
+pub proof fn lemma_nat_from_base128_bounds(bytes: Seq<u8>)
+    ensures
+        bytes.len() <= 4 ==> nat_from_base128(bytes) <= u32::MAX,
+        bytes.len() <= 9 ==> nat_from_base128(bytes) <= u64::MAX,
+{
+    lemma_from_base128_upper_bound(bytes);
+    reveal_with_fuel(pow, 10);
+}
+
+pub proof fn lemma_to_base128_props(n: nat)
+    ensures
+        nat_to_base128(n).len() > 0,
+        n > 0 ==> nat_to_base128(n)[0] != 0,
+        n > 0 ==> pow(128, (nat_to_base128(n).len() - 1) as nat) <= n,
+    decreases n,
+{
+    if n < 128 {
+        lemma_pow0(128);
     } else {
-        9
+        let q = (n / 128) as nat;
+        lemma_to_base128_props(q);
+        lemma_pow128_succ((nat_to_base128(q).len() - 1) as nat);
+        assert(pow(128, (nat_to_base128(q).len() - 1) as nat) * 128 <= q * 128) by (nonlinear_arith)
+            requires
+                pow(128, (nat_to_base128(q).len() - 1) as nat) <= q,
+        ;
     }
 }
 
-pub proof fn lemma_nat_from_base128_fits_usize(bytes: Seq<u8>)
+pub proof fn lemma_to_base128_len_bound(n: nat, max_len: nat)
     requires
+        0 < max_len,
+        n < pow(128, max_len),
+    ensures
+        nat_to_base128(n).len() <= max_len,
+{
+    if n == 0 {
+    } else {
+        lemma_to_base128_props(n);
+        lemma_pow_strictly_increases_converse(128, (nat_to_base128(n).len() - 1) as nat, max_len);
+    }
+}
+
+pub proof fn lemma_to_base128_len_bounds()
+    ensures
+        forall|n: u32| #[trigger] nat_to_base128(n as nat).len() <= 5,
+        forall|n: u64| #[trigger] nat_to_base128(n as nat).len() <= 10,
+{
+    reveal_with_fuel(pow, 11);
+    assert forall|n: u32| #[trigger] nat_to_base128(n as nat).len() <= 5 by {
+        lemma_to_base128_len_bound(n as nat, 5);
+    }
+    assert forall|n: u64| #[trigger] nat_to_base128(n as nat).len() <= 10 by {
+        lemma_to_base128_len_bound(n as nat, 10);
+    }
+}
+
+pub proof fn lemma_to_from_base128_roundtrip(n: nat)
+    ensures
+        nat_from_base128(nat_to_base128(n)) == n,
+    decreases n,
+{
+    if n < 128 {
+        reveal_with_fuel(nat_from_base128, 2);
+    } else {
+        let q = (n / 128) as nat;
+        let r = (n % 128) as nat;
+        lemma_to_from_base128_roundtrip(q);
+        lemma_from_base128_push(nat_to_base128(q), r as u8);
+    }
+}
+
+pub proof fn lemma_from_to_base128_roundtrip(bytes: Seq<u8>)
+    requires
+        bytes.len() > 0,
+        bytes.len() > 1 ==> bytes[0] != 0,
         forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-        bytes.len() <= size_of_base128_usize(),
     ensures
-        nat_from_base128(bytes) <= usize::MAX,
+        nat_to_base128(nat_from_base128(bytes)) == bytes,
+    decreases bytes.len(),
 {
-    lemma_nat_from_base128_upper_bound(bytes);
-    assert(usize::BITS == 32 || usize::BITS == 64);
-    if usize::BITS == 32 {
-        assert(size_of_base128_usize() == 4);
-        // pow(128, 4) = 2^28 < 2^32 = USIZE_MODULUS_32
-        reveal_with_fuel(pow, 5);
+    if bytes.len() == 1 {
+        reveal_with_fuel(nat_from_base128, 2);
+        assert(bytes == seq![bytes[0]]);
     } else {
-        assert(usize::BITS == 64);
-        assert(size_of_base128_usize() == 9);
-        // pow(128, 9) = 2^63 < 2^64 = USIZE_MODULUS_64
-        reveal_with_fuel(pow, 10);
+        let prefix = bytes.drop_last();
+        lemma_from_to_base128_roundtrip(prefix);
     }
 }
 
-#[derive(Clone, Copy)]
-struct ContByteFmt;
+pub const CONTINUATION_MASK: u8 = 0b1000_0000;
 
-#[derive(Clone, Copy)]
-struct TermByteFmt;
+pub const PAYLOAD_MASK: u8 = 0b0111_1111;
 
-impl SpecParser for ContByteFmt {
-    type PVal = u8;
+// ceil(log_128(2^32)) = 5
+// pub const BASE128_MAX_BYTES: usize = 4;
+// pub type UInt = u32;
+// ceil(log_128(2^64)) = 10
+pub const BASE128_MAX_BYTES: usize = 9;
 
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        continuation_byte().spec_parse(ibuf)
+pub type UInt = u64;
+
+pub type Base128Fmt<const MINIMAL: bool> = Mapped<
+    Refined<
+        Repeat<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
+        PredFnSpec<(Seq<u8>, u8)>,
+    >,
+    FnSpecMapper<(Seq<u8>, u8), UInt>,
+>;
+
+pub open spec fn base128_fmt<const MINIMAL: bool>() -> Base128Fmt<MINIMAL> {
+    Mapped {
+        inner: Refined(
+            Repeat(
+                Refined(U8, |b: u8| b & CONTINUATION_MASK != 0),
+                Refined(U8, |b: u8| b & CONTINUATION_MASK == 0),
+            ),
+            |pair: (Seq<u8>, u8)|
+                {
+                    // 1. No overflow: the number of bytes must be <= BASE128_MAX_BYTES
+                    // 2. No leading zeros if MINIMAL is true
+                    let (cont_bytes, term_byte) = pair;
+                    &&& cont_bytes.len() <= BASE128_MAX_BYTES - 1
+                    &&& MINIMAL ==> (cont_bytes.len() > 0 ==> cont_bytes[0] & PAYLOAD_MASK != 0)
+                },
+        ),
+        mapper: (
+            |pair: (Seq<u8>, u8)|
+                {
+                    let (cont_bytes, term_byte) = pair;
+                    let bytes = cont_bytes.push(term_byte);
+                    nat_from_base128(bytes) as UInt
+                },
+            |n: UInt|
+                {
+                    let bytes = nat_to_base128(n as nat);
+                    let cont_bytes = bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
+                    let term_byte = bytes.last();
+                    (cont_bytes, term_byte)
+                },
+        ),
     }
 }
 
-impl SpecParser for TermByteFmt {
-    type PVal = u8;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        terminal_byte().spec_parse(ibuf)
-    }
-}
-
-impl SafeParser for ContByteFmt {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        continuation_byte().lemma_parse_safe(ibuf);
-    }
-}
-
-impl SafeParser for TermByteFmt {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        terminal_byte().lemma_parse_safe(ibuf);
-    }
-}
-
-impl Productive for ContByteFmt {
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        continuation_byte().lemma_productive(s);
-    }
-}
-
-impl Parser<&[u8]> for ContByteFmt {
-    type PT = u8;
-
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-        let (_, b) = U8.parse(ibuf)?;
-        if b < 128 {
-            Err(ParseError::cond_rejected())
-        } else {
-            assert(b >= 128 ==> b & 0x7F == b - 128) by (bit_vector);
-            Ok((1, b & 0x7F))
-        }
-    }
-}
-
-impl Parser<&[u8]> for TermByteFmt {
-    type PT = u8;
-
-    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-        let (_, b) = U8.parse(ibuf)?;
-        if b < 128 {
-            Ok((1, b))
-        } else {
-            Err(ParseError::cond_rejected())
-        }
-    }
-}
-
-proof fn lemma_cont_byte_fmt_parse_rec_eq(ibuf: Seq<u8>)
+proof fn lemma_nat_from_base128_modulo(bytes: Seq<u8>)
     ensures
-        (Star(ContByteFmt)).parse_rec(ibuf) == (Star(continuation_byte())).parse_rec(ibuf),
-    decreases ibuf.len(),
+        nat_from_base128(bytes) == nat_from_base128(bytes.map_values(|b: u8| (b % 128) as u8)),
+    decreases bytes.len(),
 {
-    let star1 = Star(ContByteFmt);
-    if ibuf.len() == 0 {
+    if bytes.len() == 0 {
     } else {
-        match star1.0.spec_parse(ibuf) {
-            Some((n, v)) if 0 < n <= ibuf.len() => {
-                lemma_cont_byte_fmt_parse_rec_eq(ibuf.skip(n));
-            },
-            _ => {},
-        }
+        let prefix = bytes.drop_last();
+        lemma_nat_from_base128_modulo(prefix);
+        assert(bytes.map_values(|b: u8| (b % 128) as u8).drop_last() == prefix.map_values(
+            |b: u8| (b % 128) as u8,
+        ));
     }
 }
 
-proof fn lemma_repeat_spec_parse_eq(ibuf: Seq<u8>)
+broadcast proof fn lemma_mask_modulo(b: u8)
+    by (bit_vector)
     ensures
-        Repeat(ContByteFmt, TermByteFmt).spec_parse(ibuf) == Repeat(
-            continuation_byte(),
-            terminal_byte(),
-        ).spec_parse(ibuf),
+        #[trigger] (b & PAYLOAD_MASK) == (b % 128) as u8,
 {
-    reveal(<Star::<_> as SpecParser>::spec_parse);
-    lemma_cont_byte_fmt_parse_rec_eq(ibuf);
 }
 
-impl<const MINIMAL: bool> Base128Bounded<MINIMAL> {
-    pub fn parse_base128_wire_fmt(input: &[u8]) -> (r: PResult<Vec<u8>>)
-        ensures
-            parse_matches_spec(r, base128_wire_fmt::<MINIMAL>().spec_parse(input@)),
+pub proof fn lemma_base128_fmt_sound_nonmal_inv()
+    ensures
+        base128_fmt::<true>().sound_inv(),
+        base128_fmt::<true>().nonmal_inv(),
+{
+    reveal(<Star::<_> as Consistency>::consistent);
+    let fmt = base128_fmt::<true>();
+    assert forall|pair| fmt.inner.consistent(pair) implies (fmt.mapper.1)((fmt.mapper.0)(pair))
+        == pair by {
+        let (cont_bytes, term_byte) = pair;
+        let bytes = cont_bytes.push(term_byte);
+        assert(bytes.len() <= BASE128_MAX_BYTES);
+        lemma_nat_from_base128_bounds(bytes);
+
+        broadcast use lemma_mask_modulo;
+
+        let payload_bytes = bytes.map_values(|b: u8| (b % 128) as u8);
+        let n = nat_from_base128(bytes);
+        lemma_from_to_base128_roundtrip(payload_bytes);  // ==> nat_to_base128(nat_from_base128(payload_bytes)) == payload_bytes
+        lemma_nat_from_base128_modulo(bytes);  // ==> nat_from_base128(bytes) == nat_from_base128(payload_bytes)
+        // need to show: map_rev(nat_from_base128(bytes) as UInt) == (cont_bytes, term_byte)
+
+        let encoded_bytes = nat_to_base128(n);
+        assert(encoded_bytes == payload_bytes);
+
+        assert(term_byte & PAYLOAD_MASK == term_byte) by (bit_vector)
+            requires
+                term_byte & CONTINUATION_MASK == 0,
+        ;
+        assert(encoded_bytes.last() == term_byte);
+        assert forall|i: int|
+            0 <= i < cont_bytes.len() implies encoded_bytes.drop_last().map_values(
+            |b: u8| b | CONTINUATION_MASK,
+        )[i] == cont_bytes[i] by {
+            let b_orig = cont_bytes[i];
+            assert(b_orig & CONTINUATION_MASK != 0);
+            assert(((b_orig & PAYLOAD_MASK) | 128) == b_orig) by (bit_vector)
+                requires
+                    b_orig & CONTINUATION_MASK != 0,
+            ;
+        }
+        assert(encoded_bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK) =~= cont_bytes);
+    }
+}
+
+pub proof fn lemma_base128_fmt_unambiguous<const MINIMAL: bool>()
+    ensures
+        base128_fmt::<MINIMAL>().unambiguous(),
+{
+    broadcast use disjointness_lemmas;
+
+    let fmt = base128_fmt::<MINIMAL>();
+    // the following holds true even without `fmt.consistent(o) implies`
+    assert forall|o: UInt| #[trigger] (fmt.mapper.0)((fmt.mapper.1)(o)) == o by {
+        let bytes = nat_to_base128(o as nat);
+        let cont_bytes = bytes.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
+        let term_byte = bytes.last();
+        let bytes2 = cont_bytes.push(term_byte);
+
+        lemma_to_from_base128_roundtrip(o as nat);  // ==> nat_from_base128(bytes) == o
+        // need to show: nat_from_base128(bytes) == nat_from_base128(bytes2)
+        lemma_nat_from_base128_modulo(bytes);
+        lemma_nat_from_base128_modulo(bytes2);
+        let m1 = bytes2.map_values(|b: u8| (b % 128) as u8);
+        let m2 = bytes.map_values(|b: u8| (b % 128) as u8);
+        // need to show: m1 == m2
+        assert(forall|b: u8| ((b | 128) % 128) as u8 == b % 128) by (bit_vector);
+        assert(m1 == m2);
+
+    }
+}
+
+proof fn lemma_uint_shr7_is_div128(v: u64)
+    by (bit_vector)
+    ensures
+        (v >> 7usize) as nat == v as nat / 128,
+{
+}
+
+proof fn lemma_uint_low7_is_mod128(v: u64)
+    by (bit_vector)
+    ensures
+        (v & PAYLOAD_MASK as u64) as nat == v as nat % 128,
+{
+}
+
+proof fn lemma_uint64_shl7_or_is_base128(v: u64, b: u8)
+    by (bit_vector)
+    ensures
+        (((v << 7usize) | (b & 0x7fu8) as u64) as nat) == (v as nat * 128 + (b % 128) as nat) % (
+        0x1_0000_0000_0000_0000nat),
+{
+}
+
+pub fn uint_from_base128(bytes: &[u8]) -> (result: UInt)
+    requires
+        bytes.len() <= BASE128_MAX_BYTES,
+    ensures
+        result as nat == nat_from_base128(bytes.deep_view()),
+{
+    let n = bytes.len();
+    let mut acc: UInt = 0;
+    let mut i: usize = 0;
+    for i in 0..n
+        invariant
+            n == bytes.len(),
+            n <= BASE128_MAX_BYTES,
+            acc == nat_from_base128(bytes@.take(i as int)),
+    {
+        let b = bytes[i];
+        proof {
+            let prefix = bytes@.take(i as int);
+            let current = prefix.push(b);
+            assert(bytes@.take(i as int + 1) == current);
+            assert(current.drop_last() == prefix);
+            lemma_nat_from_base128_bounds(current);
+            lemma_uint64_shl7_or_is_base128(acc, b);
+        }
+        acc = (acc << 7usize) | ((b & PAYLOAD_MASK) as UInt);
+    }
+    assert(bytes@.take(n as int) == bytes.deep_view());
+    acc
+}
+
+pub fn uint_to_base128(v: UInt) -> (buf: Vec<u8>)
+    ensures
+        buf@ == nat_to_base128(v as nat),
+    decreases v,
+{
+    if v < 128 {
+        vec![v as u8]
+    } else {
+        proof {
+            lemma_uint_shr7_is_div128(v);
+            lemma_uint_low7_is_mod128(v);
+        }
+        let mut buf = uint_to_base128(v >> 7);
+        buf.push((v & PAYLOAD_MASK as u64) as u8);
+        buf
+    }
+}
+
+pub fn uint_to_base128_len(v: UInt) -> (len: usize)
+    ensures
+        len == nat_to_base128(v as nat).len(),
+{
+    let mut cur = v;
+    let mut len: usize = 1;
+    while cur >= 128
+        invariant
+            len + nat_to_base128(cur as nat).len() == nat_to_base128(v as nat).len() + 1,
+        decreases cur,
     {
         proof {
-            lemma_repeat_spec_parse_eq(input@);
+            lemma_uint_shr7_is_div128(cur);
+            lemma_to_base128_len_bounds();
         }
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-
-        let (n, (mut bytes, term_byte)) = Repeat(ContByteFmt, TermByteFmt).parse(&input)?;
-        let ghost bytes_before = bytes.deep_view();
-
-        // check for minimality
-        if MINIMAL {
-            if bytes.len() > 0 && bytes[0] == 0 {
-                return Err(ParseError::non_canonical());
-            }
-        }
-        bytes.push(term_byte);
-
-        assert(bytes.deep_view() == bytes_before.push(term_byte));
-
-        Ok((n, bytes))
+        cur >>= 7;
+        len += 1;
     }
-
-    pub fn from_base128_bytes(bytes: &[u8]) -> (v: usize)
-        requires
-            forall|i: int| 0 <= i < bytes.len() ==> bytes[i] < 128,
-            nat_from_base128(bytes@) <= usize::MAX,
-        ensures
-            v == usize_from_base128(bytes@),
-        decreases bytes.len(),
-    {
-        let n = bytes.len();
-        if n == 0 {
-            0
-        } else {
-            (Self::from_base128_bytes(bytes.take(n - 1)) << 7) | bytes[n - 1] as usize
-        }
-    }
-
-    pub fn to_base128_bytes(v: usize) -> (bytes: Vec<u8>)
-        ensures
-            bytes@ == usize_to_base128(v),
-        decreases v,
-    {
-        if v < 128 {
-            vec![v as u8]
-        } else {
-            assert(v != 0 ==> v >> 7 < v) by (bit_vector);
-            let mut bytes = Self::to_base128_bytes(v >> 7);
-            bytes.push((v & 0x7f) as u8);
-            bytes
-        }
-    }
+    len
 }
 
-// impl<const MINIMAL: bool> Parser<&[u8]> for Base128Bounded<MINIMAL> {
-//     type PT = usize;
-//     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
-//         broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
-//         broadcast use lemma_base128_wire_fmt_props;
-//         let (n, bytes) = Self::parse_base128_wire_fmt(*ibuf)?;
-//         // check for overflow
-//         if usize::BITS == 32 {
-//             if bytes.len() > 4 {
-//                 return Err(ParseError::overflow());
-//             }
-//         } else {
-//             if bytes.len() > 9 {
-//                 return Err(ParseError::overflow());
-//             }
-//         }
-//         proof {
-//             lemma_nat_from_base128_fits_usize(bytes@);
-//         }
-//         let r = Self::from_base128_bytes(&bytes);
-//         assert(self.spec_parse(ibuf@) == Some((n as int, r)));
-//         Ok((n, r))
-//     }
-// }
-// pub struct Base128RecBody;
-// impl SpecRecBody for Base128RecBody {
-//     type Param = usize;
-//     type T = nat;
-//     type Body = ExactLen<
-//         Alt<
-//             Mapped<Eof, BiMapper<(), nat>>,
-//             Mapped<PairRev<BundledSpecs<nat>, U8>, BiMapper<(nat, u8), nat>>,
-//         >,
-//         usize,
-//     >;
-//     open spec fn spec_body(
-//         full_len: Self::Param,
-//         rec: ParamRecSpecs<Self::Param, Self::T>,
-//     ) -> Self::Body {
-//         ExactLen(
-//             full_len,
-//             Alt(
-//                 Mapped { inner: Eof, mapper: BiMap(|_eof: ()| 0nat, |_n: nat| ()) },
-//                 Mapped {
-//                     inner: PairRev(U8, rec((full_len - 1) as usize)),
-//                     // map: (lsb, rest) -> lsb | (rest << 7)
-//                     // map_rev: o -> (lsb = o & 0x7F, rest = o >> 7)
-//                     mapper: BiMap(
-//                         |pair: (nat, u8)| 128 * pair.0 + pair.1 as nat,
-//                         |o: nat| (o / 128, (o % 128) as u8),
-//                     ),
-//                 },
-//             ),
-//         )
-//     }
-// }
-// pub struct Base128RecBody;
-// impl SpecRecBody for Base128RecBody {
-//     type Param = nat;
-//     type T = nat;
-//     type Body = Alt<
-//         Mapped<Refined<U8, PredFnSpec<u8>>, BiMapper<u8, nat>>,
-//         Implicit<ContinuationByte, KVFormat<u8, nat, BundledSpecs<nat>>>,
-//     >;
-//     /// vN(A) ::= n:byte            => A * 2^7 + n                                       if n < 2^7
-//     ///
-//     ///          |  n:byte  m:v(N-7)(A * 2^7 + (n - 2^7))  => m                            if n >= 2^7
-//     open spec fn spec_body(
-//         acc: Self::Param,
-//         rec: ParamRecSpecs<Self::Param, Self::T>,
-//     ) -> Self::Body {
-//         Alt(
-//             Mapped {
-//                 inner: Refined(U8, |b: u8| b < CONTINUATION_BIT),
-//                 mapper: BiMap(|b: u8| acc * 128 + b as nat, |n: nat| (n - acc * 128) as u8),
-//             },
-//             Implicit(
-//                 continuation_byte(),
-//                 (|b: u8| rec(acc * 128 + b as nat), |n: nat| (n - acc * 128) as u8),
-//             ),
-//         // Mapped {
-//         //     inner: Bind(continuation_byte(), |b: u8| rec(acc * 128 + b as nat)),
-//         //     mapper: BiMap(|pair: (u8, nat)| pair.1, |n: nat| -> (u8, nat) {
-//         //     }
-//         // }
-//         )
-//     }
-// }
 } // verus!
-#[cfg(test)]
-mod tests {
-    use super::Base128Bounded;
-
-    #[test]
-    fn test_to_base128_bytes() {
-        assert_eq!(Base128Bounded::<true>::to_base128_bytes(0x00), vec![0x00]);
-        assert_eq!(Base128Bounded::<true>::to_base128_bytes(0x7f), vec![0x7f]);
-        assert_eq!(
-            Base128Bounded::<true>::to_base128_bytes(0x80),
-            vec![0x01, 0x00]
-        );
-        assert_eq!(
-            Base128Bounded::<true>::to_base128_bytes(0x12c),
-            vec![0x02, 0x2c]
-        );
-        assert_eq!(
-            Base128Bounded::<true>::to_base128_bytes(0x4000),
-            vec![0x01, 0x00, 0x00]
-        );
-        assert_eq!(
-            Base128Bounded::<true>::to_base128_bytes(usize::MAX),
-            vec![0x01, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f]
-        );
-    }
-
-    #[test]
-    fn test_from_base128_bytes() {
-        assert_eq!(Base128Bounded::<true>::from_base128_bytes(&[0x00]), 0x00);
-        assert_eq!(Base128Bounded::<true>::from_base128_bytes(&[0x7f]), 0x7f);
-        assert_eq!(
-            Base128Bounded::<true>::from_base128_bytes(&[0x01, 0x00]),
-            0x80
-        );
-        assert_eq!(
-            Base128Bounded::<true>::from_base128_bytes(&[0x02, 0x2c]),
-            0x12c
-        );
-        assert_eq!(
-            Base128Bounded::<true>::from_base128_bytes(&[0x01, 0x00, 0x00]),
-            0x4000
-        );
-    }
-
-    #[test]
-    fn test_base128_roundtrip() {
-        let test_values = vec![
-            0x00,
-            0x01,
-            0x7f,
-            0x80,
-            0xff,
-            0x100,
-            0x12c,
-            0x3fff,
-            0x4000,
-            0x4001,
-            0xf_4240,
-            usize::MAX,
-        ];
-        for v in test_values {
-            let encoded = Base128Bounded::<true>::to_base128_bytes(v);
-            let decoded = Base128Bounded::<true>::from_base128_bytes(&encoded);
-            assert_eq!(v, decoded);
-        }
-    }
-}
