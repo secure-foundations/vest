@@ -10,6 +10,8 @@ pub mod boolean;
 pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
+/// ASN.1 tag octets.
+pub mod tag;
 
 use crate::{
     combinators::{
@@ -20,19 +22,6 @@ use crate::{
 use vstd::prelude::*;
 
 verus! {
-
-#[derive(Clone, Copy)]
-pub enum ASN1Tag {
-    Boolean = 0x01,
-    Integer = 0x02,
-    BitString = 0x03,
-    OctetString = 0x04,
-    // ...
-}
-
-pub type TagFmt = TryMap<U8, FnSpecMapper<u8, ASN1Tag>>;
-
-pub type ASN1TLV<T, Len = usize> = PrefixTagged<TagFmt, Implicit<NatLength, NBytesOf<Len, T>>>;
 
 /// ASN.1 BOOLEAN format.
 ///
@@ -98,6 +87,14 @@ pub struct BitStringFmt<const DER: bool = true>;
 /// Convenience type alias for the BER variant of ASN.1 BIT STRING.
 pub type BerBitString = BitStringFmt<false>;
 
+/// ASN.1 tag format combinator.
+///
+/// Only the canonical DER form is accepted:
+/// - Tag numbers 0–30 must use the short (1-byte) form.
+/// - High tag numbers must have no leading zero in the base-128 encoding.
+#[derive(Clone, Copy)]
+pub struct TagFmt;
+
 /// Convenience type alias for the DER variant of ASN.1 BIT STRING.
 pub type DerBitString = BitStringFmt<true>;
 
@@ -121,10 +118,8 @@ impl Leaf for BerBool {
 //     proof fn nonmal_leaf_inv(&self) {
 //     }
 // }
-
 // impl Leaf for BerLength {
 //     proof fn leaf_inv(&self) {
 //     }
 // }
-
 } // verus!
