@@ -91,7 +91,7 @@ pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> 
 }
 
 type NestedBracesBodyComb<Rec> = Mapped<
-    Choice<SuffixTagged<PrefixTagged<U8, Rec>, U8>, Const<U8, u8>>,
+    Choice<SuffixTagged<PrefixTagged<U8, u8, Rec>, U8, u8>, Const<U8, u8>>,
     BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
 >;
 
@@ -101,7 +101,7 @@ type NestedBracesBodyComb<Rec> = Mapped<
 //         u8,
 //         NestedBracesTSpec,
 //         Mapped<
-//             Sum<SuffixTagged<Rec, U8>, Const<U8, u8>>,
+//             Sum<SuffixTagged<Rec, u8, U8>, Const<U8, u8>>,
 //             BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
 //         >,
 //     >,
@@ -212,6 +212,12 @@ impl StrictRecBody for NestedBracesBody {
     }
 }
 
+impl NoLookAheadRecBody for NestedBracesBody {
+    proof fn lemma_body_no_lookahead_inv_preservation(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
+        reveal(disjoint_domains);
+    }
+}
+
 proof fn nested_braces_sound_parser() {
     let nested_braces = FixWith::<10, _, _>(NestedBracesBody, ());
 
@@ -255,7 +261,7 @@ pub enum TaggedChainT {
 }
 
 type TaggedChainBodyComb<Rec> = Mapped<
-    Sum<PrefixTagged<U8, Bind<U8, Rec>>, Const<U8, u8>>,
+    Sum<PrefixTagged<U8, u8, Bind<U8, Rec>>, Const<U8, u8>>,
     BiMapper<Sum<(u8, TaggedChainTSpec), u8>, TaggedChainTSpec>,
 >;
 
@@ -508,9 +514,7 @@ fn nested_braces_exec_parse() {
     assert!(matches!(
         too_deep_prepared,
         Err(PreSerializeError {
-            kind: PreSerializeErrorKind::NotCompliant(
-                ComplianceErrorKind::RecursionLimitExceeded
-            ),
+            kind: PreSerializeErrorKind::NotCompliant(ComplianceErrorKind::RecursionLimitExceeded),
             ..
         })
     ));

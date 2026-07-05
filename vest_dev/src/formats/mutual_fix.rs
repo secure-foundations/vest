@@ -194,12 +194,12 @@ impl DeepView for WhichFmt {
 }
 
 pub type ExprBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, U8>, PrefixTagged<U8, ListProj<Rec>>>,
+    Choice<PrefixTagged<U8, u8, U8>, PrefixTagged<U8, u8, ListProj<Rec>>>,
     ExprMapper,
 >;
 
 pub type ListBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<ExprProj<Rec>, ListProj<Rec>>>>,
+    Choice<PrefixTagged<U8, u8, Empty>, PrefixTagged<U8, u8, Pair<ExprProj<Rec>, ListProj<Rec>>>>,
     ListMapper,
 >;
 
@@ -1096,7 +1096,7 @@ impl DeepView for ByteList {
 }
 
 pub type ByteListBodyFmt<Rec> = Mapped<
-    Choice<PrefixTagged<U8, Empty>, PrefixTagged<U8, Pair<U8, Rec>>>,
+    Choice<PrefixTagged<U8, u8, Empty>, PrefixTagged<U8, u8, Pair<U8, Rec>>>,
     BiMapper<Sum<(), (u8, ByteListSpec)>, ByteListSpec>,
 >;
 

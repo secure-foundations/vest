@@ -10,7 +10,7 @@ mod implicit;
 mod malleable;
 mod mapped;
 pub mod mutual_fix;
-pub mod mutual_fix_template;
+// pub mod mutual_fix_template;
 mod opt;
 pub mod overhead_study;
 // mod recursive;

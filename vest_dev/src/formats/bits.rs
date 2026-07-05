@@ -68,7 +68,6 @@ use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::*;
 use crate::core::exec::ParseError;
-use crate::core::exec::{DeepEq, SelfView};
 use crate::core::spec::*;
 use crate::core::{proof::*, spec};
 use vstd::prelude::*;
@@ -135,20 +134,7 @@ impl DeepView for PayloadKind {
     }
 }
 
-impl DeepEq for PayloadKind {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
 
-impl SelfView for PayloadKind {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]
@@ -241,20 +227,7 @@ impl DeepView for ClosedPayloadKind {
     }
 }
 
-impl DeepEq for ClosedPayloadKind {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
 
-impl SelfView for ClosedPayloadKind {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]

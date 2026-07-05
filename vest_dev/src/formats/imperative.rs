@@ -72,17 +72,14 @@ impl<'i> DeepView for BtcTx<'i> {
 
 pub open spec fn btc_tx_fmt() -> Named<
     Mapped<
-        PrefixTagged<
-            U8,
-            Bind<
+        PrefixTagged<U8, u8, Bind<
                 U8,
                 spec_fn(txin_count: u8) -> Pair<
                     Varied,
                     Bind<
                         Refined<U8, PredFnSpec<u8>>,
                         spec_fn(txout_count: u8) -> Pair<RepeatN<U16Le>, Pair<RepeatN<U16Le>, U8>>,
-                    >,
-                >,
+                    >,>,
             >,
         >,
         FnSpecMapper<BtcTxInner, BtcTxSpec>,

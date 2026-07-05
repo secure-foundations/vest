@@ -9,7 +9,7 @@ std = ["alloc", "vstd/std", "vest_lib2/std"]
 alloc = ["vstd/alloc", "vest_lib2/alloc"]
 
 [dependencies]
-vstd = "=0.0.0-2026-05-31-0205"
+vstd = "=0.0.0-2026-06-14-0213"
 vest_lib2 = { path = "../vest_lib2", default-features = false }
 vest_derive = { path = "../vest_derive" }
 

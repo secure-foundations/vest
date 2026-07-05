@@ -6,12 +6,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-/// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
-#[cfg(verus_only)]
-pub type Never = !;
-/// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
-#[cfg(not(verus_only))]
-pub type Never = ::core::convert::Infallible;
+pub type Never = vest_lib2::Never;
 
 pub use vest_lib2::*;
 

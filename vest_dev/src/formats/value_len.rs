@@ -8,11 +8,11 @@ use PrefixTagged as Tagged;
 
 verus! {
 
-type DemoFmt1 = Pair<BerBool, Choice<Tagged<U8, U16Le>, RepeatTillEnd<U16Le>>>;
+type DemoFmt1 = Pair<BerBool, Choice<Tagged<U8, u8, U16Le>, RepeatTillEnd<U16Le>>>;
 
 type DemoFmt2 = Pair<
     BerBool,
-    Choice<Tagged<U8, U16Le>, RepeatTillEnd<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>>,
+    Choice<Tagged<U8, u8, U16Le>, RepeatTillEnd<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>>,
 >;
 
 

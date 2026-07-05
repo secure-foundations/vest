@@ -19,7 +19,7 @@ type PrecededFmt = Preceded<U8, u8, U16Le>;
 
 type TerminatedFmt = Terminated<U16Le, U8, u8>;
 
-type TaggedFmt = Tagged<U8, U16Le>;
+type TaggedFmt = Tagged<U8, u8, U16Le>;
 
 type DispatchFmt = Dispatch<u8, U16Le, 2>;
 
@@ -32,9 +32,9 @@ type NestedPairFmt = Mapped<
     FnSpecMapper<((u8, u16), u32), ((u8, u16), u32)>,
 >;
 
-type TaggedDispatchFmt = Tagged<U8, Dispatch<u8, Pair<U8, U16Le>, 2>>;
+type TaggedDispatchFmt = Tagged<U8, u8, Dispatch<u8, Pair<U8, U16Le>, 2>>;
 
-type ArrayOfTaggedFmt = Array<5, Tagged<U8, U16Le>>;
+type ArrayOfTaggedFmt = Array<5, Tagged<U8, u8, U16Le>>;
 
 type Permute3Fmt = Permute3<U8, DerBool, U32Le>;
 
