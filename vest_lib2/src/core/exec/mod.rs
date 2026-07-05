@@ -13,28 +13,6 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Executable equality that is tied to `DeepView` equality.
-pub trait DeepEq: PartialEq + DeepView {
-    fn deep_eq(&self, other: &Self) -> (eq: bool)
-        ensures
-            eq == (self.deep_view() == other.deep_view()),
-    ;
-}
-
-pub trait SelfView: DeepEq<V = Self> + Sized {
-    proof fn self_view(&self)
-        ensures
-            self == self.deep_view(),
-    ;
-
-    fn eq(&self, other: &Self) -> (eq: bool)
-        ensures
-            eq == (self == other),
-            self.deep_view() == *self,
-            other.deep_view() == *other,
-    ;
-}
-
 #[verifier::external_body]
 #[inline(always)]
 pub fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
@@ -45,34 +23,6 @@ pub fn cmp_byte_slices(a: &[u8], b: &[u8]) -> (r: bool)
         r == (a.deep_view() == b.deep_view()),
 {
     a == b
-}
-
-impl DeepEq for [u8] {
-    fn deep_eq(&self, other: &Self) -> (eq: bool) {
-        if self.len() != other.len() {
-            assert(self.deep_view().len() != other.deep_view().len());
-            false
-        } else {
-            cmp_byte_slices(self, other)
-        }
-    }
-}
-
-impl<const N: usize> DeepEq for [u8; N] {
-    fn deep_eq(&self, other: &Self) -> (eq: bool) {
-        cmp_byte_slices(self.as_slice(), other.as_slice())
-    }
-}
-
-impl DeepEq for Vec<u8> {
-    fn deep_eq(&self, other: &Self) -> (eq: bool) {
-        if self.len() != other.len() {
-            assert(self.deep_view().len() != other.deep_view().len());
-            false
-        } else {
-            cmp_byte_slices(self.as_slice(), other.as_slice())
-        }
-    }
 }
 
 } // verus!

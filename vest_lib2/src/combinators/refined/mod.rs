@@ -6,7 +6,6 @@ pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
-use crate::core::spec::SpecByteLen;
 use vstd::prelude::*;
 
 use super::{Preceded, Terminated};
@@ -104,13 +103,13 @@ impl<Inner: Clone, Value: Clone> Clone for Const<Inner, Value> {
 // }
 /// Sugar for `Preceded { a: Const(inner, tag), a_val: tag, b: body }`.
 #[derive(Copy)]
-pub struct PrefixTagged<Tg: SpecByteLen, Of>(pub Tg, pub Tg::T, pub Of);
+pub struct PrefixTagged<Tg, Tag, Of>(pub Tg, pub Tag, pub Of);
 
-impl<Tg: SpecByteLen + Clone, Of: Clone> Clone for PrefixTagged<Tg, Of> where Tg::T: Clone {
+impl<Tg: Clone, Tag: Clone, Of: Clone> Clone for PrefixTagged<Tg, Tag, Of> {
     fn clone(&self) -> (cloned: Self)
         ensures
             call_ensures(Tg::clone, (&self.0,), cloned.0),
-            call_ensures(Tg::T::clone, (&self.1,), cloned.1),
+            call_ensures(Tag::clone, (&self.1,), cloned.1),
             call_ensures(Of::clone, (&self.2,), cloned.2),
     {
         PrefixTagged(self.0.clone(), self.1.clone(), self.2.clone())
@@ -119,14 +118,14 @@ impl<Tg: SpecByteLen + Clone, Of: Clone> Clone for PrefixTagged<Tg, Of> where Tg
 
 /// Sugar for `Terminated { a: body, b: Const(inner, tag), b_val: tag }`.
 #[derive(Copy)]
-pub struct SuffixTagged<Of, Tg: SpecByteLen>(pub Of, pub Tg, pub Tg::T);
+pub struct SuffixTagged<Of, Tg, Tag>(pub Of, pub Tg, pub Tag);
 
-impl<Of: Clone, Tg: SpecByteLen + Clone> Clone for SuffixTagged<Of, Tg> where Tg::T: Clone {
+impl<Of: Clone, Tg: Clone, Tag: Clone> Clone for SuffixTagged<Of, Tg, Tag> {
     fn clone(&self) -> (cloned: Self)
         ensures
             call_ensures(Of::clone, (&self.0,), cloned.0),
             call_ensures(Tg::clone, (&self.1,), cloned.1),
-            call_ensures(Tg::T::clone, (&self.2,), cloned.2),
+            call_ensures(Tag::clone, (&self.2,), cloned.2),
     {
         SuffixTagged(self.0.clone(), self.1.clone(), self.2.clone())
     }

@@ -228,7 +228,7 @@ impl<const N: usize> EquivSerializers for super::Const<Fixed::<N>, [u8; N]> {
     }
 }
 
-impl<Tg, Of> SPRoundTripDps for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SPRoundTripDps for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SPRoundTripDps + NonTailFmt,
     Of: SPRoundTripDps,
  {
@@ -241,7 +241,7 @@ impl<Tg, Of> SPRoundTripDps for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NonMalleable for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> NonMalleable for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
@@ -254,7 +254,7 @@ impl<Tg, Of> NonMalleable for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NoLookAhead for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> NoLookAhead for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
     Of: NoLookAhead,
  {
@@ -267,7 +267,7 @@ impl<Tg, Of> NoLookAhead for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> Productive for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> Productive for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + Productive<PVal = Tg::T>,
     Of: Productive,
  {
@@ -280,7 +280,7 @@ impl<Tg, Of> Productive for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> EquivSerializersGeneral for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> EquivSerializersGeneral for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
@@ -295,7 +295,7 @@ impl<Tg, Of> EquivSerializersGeneral for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> EquivSerializers for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> EquivSerializers for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
@@ -310,7 +310,7 @@ impl<Tg, Of> EquivSerializers for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Of, Tg> SPRoundTripDps for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SPRoundTripDps for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SPRoundTripDps,
     Of: SPRoundTripDps + NonTailFmt,
  {
@@ -323,7 +323,7 @@ impl<Of, Tg> SPRoundTripDps for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> NonMalleable for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> NonMalleable for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SoundParser + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
@@ -336,7 +336,7 @@ impl<Of, Tg> NonMalleable for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> NoLookAhead for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> NoLookAhead for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + NoLookAhead<PVal = Tg::T>,
     Of: NoLookAhead,
  {
@@ -349,7 +349,7 @@ impl<Of, Tg> NoLookAhead for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> Productive for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> Productive for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + Productive<PVal = Tg::T>,
     Of: Productive,
  {
@@ -362,7 +362,7 @@ impl<Of, Tg> Productive for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> EquivSerializersGeneral for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> EquivSerializersGeneral for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + EquivSerializersGeneral<SVal = Tg::T, SValue = Tg::T> + Consistency<
         Val = Tg::T,
     >,
@@ -377,7 +377,7 @@ impl<Of, Tg> EquivSerializersGeneral for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> EquivSerializers for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> EquivSerializers for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + EquivSerializers<SVal = Tg::T, SValue = Tg::T> + Consistency<Val = Tg::T>,
     Of: EquivSerializersGeneral,
  {

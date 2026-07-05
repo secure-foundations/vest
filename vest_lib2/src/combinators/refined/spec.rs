@@ -438,7 +438,7 @@ pub open spec fn with_suffix_tag<Tg: SpecByteLen, Of>(
     Terminated { a: of, b: super::Const(tag_inner, tag), b_val: tag }
 }
 
-impl<Tg, Of> SpecParser for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SpecParser for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     Of: SpecParser,
  {
@@ -449,7 +449,7 @@ impl<Tg, Of> SpecParser for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> Consistency for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> Consistency for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
     Of: Consistency,
  {
@@ -460,7 +460,7 @@ impl<Tg, Of> Consistency for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SafeParser for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SafeParser for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
     Of: SafeParser,
  {
@@ -473,7 +473,7 @@ impl<Tg, Of> SafeParser for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
@@ -490,7 +490,7 @@ impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecSerializerDps for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SpecSerializerDps for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
     Of: SpecSerializerDps,
  {
@@ -501,7 +501,7 @@ impl<Tg, Of> SpecSerializerDps for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecSerializer for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> SpecSerializer for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
     Of: SpecSerializer,
  {
@@ -512,7 +512,7 @@ impl<Tg, Of> SpecSerializer for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> NonTailFmt for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> NonTailFmt for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + NonTailFmt,
     Of: NonTailFmt,
  {
@@ -529,7 +529,7 @@ impl<Tg, Of> NonTailFmt for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> GoodSerializer for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> GoodSerializer for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + GoodSerializer,
     Of: GoodSerializer,
  {
@@ -542,7 +542,10 @@ impl<Tg, Of> GoodSerializer for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> SpecByteLen for super::PrefixTagged<Tg, Of> where Tg: SpecByteLen, Of: SpecByteLen {
+impl<Tg, Of> SpecByteLen for super::PrefixTagged<Tg, Tg::T, Of> where
+    Tg: SpecByteLen,
+    Of: SpecByteLen,
+ {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -550,7 +553,7 @@ impl<Tg, Of> SpecByteLen for super::PrefixTagged<Tg, Of> where Tg: SpecByteLen, 
     }
 }
 
-impl<Tg, Of> MinMaxByteLen for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> MinMaxByteLen for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: SpecByteLen + MinMaxByteLen,
     Of: MinMaxByteLen,
  {
@@ -567,7 +570,7 @@ impl<Tg, Of> MinMaxByteLen for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> StaticByteLen for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> StaticByteLen for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: StaticByteLen,
     Of: StaticByteLen,
  {
@@ -580,7 +583,7 @@ impl<Tg, Of> StaticByteLen for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of> ValueByteLen for super::PrefixTagged<Tg, Of> where
+impl<Tg, Of> ValueByteLen for super::PrefixTagged<Tg, Tg::T, Of> where
     Tg: StaticByteLen,
     Of: ValueByteLen,
  {
@@ -593,7 +596,7 @@ impl<Tg, Of> ValueByteLen for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Of, Tg> SpecParser for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SpecParser for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     Of: SpecParser,
  {
@@ -604,7 +607,7 @@ impl<Of, Tg> SpecParser for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> Consistency for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> Consistency for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + Consistency<Val = Tg::T>,
     Of: Consistency,
  {
@@ -615,7 +618,7 @@ impl<Of, Tg> Consistency for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> SafeParser for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SafeParser for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SafeParser<PVal = Tg::T>,
     Of: SafeParser,
  {
@@ -628,7 +631,7 @@ impl<Of, Tg> SafeParser for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SoundParser,
     Of: SoundParser,
  {
@@ -645,7 +648,7 @@ impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> SpecSerializerDps for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SpecSerializerDps for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SpecSerializerDps<SValue = Tg::T>,
     Of: SpecSerializerDps,
  {
@@ -656,7 +659,7 @@ impl<Of, Tg> SpecSerializerDps for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> SpecSerializer for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> SpecSerializer for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + SpecSerializer<SVal = Tg::T>,
     Of: SpecSerializer,
  {
@@ -667,7 +670,7 @@ impl<Of, Tg> SpecSerializer for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> NonTailFmt for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> NonTailFmt for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + NonTailFmt,
     Of: NonTailFmt,
  {
@@ -684,7 +687,7 @@ impl<Of, Tg> NonTailFmt for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> GoodSerializer for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> GoodSerializer for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + GoodSerializer,
     Of: GoodSerializer,
  {
@@ -697,7 +700,10 @@ impl<Of, Tg> GoodSerializer for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> SpecByteLen for super::SuffixTagged<Of, Tg> where Tg: SpecByteLen, Of: SpecByteLen {
+impl<Of, Tg> SpecByteLen for super::SuffixTagged<Of, Tg, Tg::T> where
+    Tg: SpecByteLen,
+    Of: SpecByteLen,
+ {
     type T = Of::T;
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -705,7 +711,7 @@ impl<Of, Tg> SpecByteLen for super::SuffixTagged<Of, Tg> where Tg: SpecByteLen, 
     }
 }
 
-impl<Of, Tg> MinMaxByteLen for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> MinMaxByteLen for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: SpecByteLen + MinMaxByteLen,
     Of: MinMaxByteLen,
  {
@@ -722,7 +728,7 @@ impl<Of, Tg> MinMaxByteLen for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> StaticByteLen for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> StaticByteLen for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: StaticByteLen,
     Of: StaticByteLen,
  {
@@ -735,7 +741,7 @@ impl<Of, Tg> StaticByteLen for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg> ValueByteLen for super::SuffixTagged<Of, Tg> where
+impl<Of, Tg> ValueByteLen for super::SuffixTagged<Of, Tg, Tg::T> where
     Tg: StaticByteLen,
     Of: ValueByteLen,
  {

@@ -1,7 +1,6 @@
 use crate::combinators::{Fixed, Preceded, Terminated};
 use crate::core::exec::cmp_byte_slices;
 use crate::core::exec::input::InputBuf;
-use crate::core::exec::{DeepEq, SelfView};
 use crate::core::{
     exec::{
         fns::Pred,
@@ -12,7 +11,9 @@ use crate::core::{
     },
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
 };
+use vstd::laws_eq::obeys_concrete_eq;
 use vstd::prelude::*;
+use vstd::std_specs::cmp::PartialEqSpec;
 
 verus! {
 
@@ -96,21 +97,21 @@ impl<A, PredFn, T> Prepare<T> for super::Refined<A, PredFn> where
     }
 }
 
-impl<I, Inner> Parser<I> for super::Const<Inner, Inner::PVal> where
+impl<I, Inner, T> Parser<I> for super::Const<Inner, T> where
     I: InputBuf,
-    Inner: Parser<I, PT = <Inner as SpecParser>::PVal>,
-    Inner::PVal: SelfView,
-// Inner::PVal: DeepView<V = Inner::PVal> + PartialEq + Structural,
+    Inner: Parser<I, PT = T, PVal = T>,
+    T: DeepView<V = T> + PartialEq + Structural,
  {
     type PT = Inner::PVal;
 
     open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
+        &&& self.0.exec_inv()
+        &&& forall|v: Inner::PVal| v.deep_view() == v
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let (n, v) = self.0.parse(ibuf)?;
-        if SelfView::eq(&v, &self.1) {
+        if v == self.1 {
             Ok((n, v))
         } else {
             Err(ParseError::invalid_tag())
@@ -145,13 +146,17 @@ impl<Inner, V, T> ByteLen<T> for super::Const<Inner, V> where
     }
 }
 
-impl<Inner, T> Prepare<T> for super::Const<Inner, T> where T: SelfView, Inner: Prepare<T> {
+impl<Inner, T> Prepare<T> for super::Const<Inner, T> where
+    T: DeepView<V = T> + PartialEq + Structural,
+    Inner: Prepare<T>,
+ {
     open spec fn exec_inv(&self) -> bool {
-        self.0.exec_inv()
+        &&& self.0.exec_inv()
+        &&& forall|v: T| v.deep_view() == v
     }
 
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
-        if SelfView::eq(v, &self.1) {
+        if v == &self.1 {
             self.0.prepare(v)
         } else {
             Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag))
@@ -166,6 +171,10 @@ impl<const N: usize> Serializer<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
 }
 
 impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
+    open spec fn exec_inv(&self) -> bool {
+        true
+    }
+
     fn length(&self, _v: &[u8; N]) -> (len: usize) {
         N
     }
@@ -226,10 +235,10 @@ impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
     }
 }
 
-impl<I, Tg, Of> Parser<I> for super::PrefixTagged<Tg, Of> where
+impl<I, Tg, TagVal, Of> Parser<I> for super::PrefixTagged<Tg, TagVal, Of> where
     I: InputBuf,
-    Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
-    Tg::T: SelfView + Copy,
+    Tg: SpecByteLen<T = TagVal> + Parser<I, PT = TagVal, PVal = TagVal> + SafeParser,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     Of: Parser<I> + SafeParser,
  {
     type PT = Of::PT;
@@ -252,9 +261,9 @@ impl<I, Tg, Of> Parser<I> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
-    Tg: SpecByteLen + Serializer<Tg::T>,
-    Tg::T: SelfView + Copy,
+impl<Tg, TagVal, Of, T> Serializer<T> for super::PrefixTagged<Tg, TagVal, Of> where
+    Tg: SpecByteLen<T = TagVal> + Serializer<TagVal>,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: Serializer<T>,
  {
@@ -262,6 +271,7 @@ impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
+        &&& forall|v: Tg::T| v.deep_view() == v
     }
 
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
@@ -274,15 +284,16 @@ impl<Tg, Of, T> Serializer<T> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, T> ByteLen<T> for super::PrefixTagged<Tg, Of> where
+impl<Tg, TagVal, Of, T> ByteLen<T> for super::PrefixTagged<Tg, TagVal, Of> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
-    TagVal: SelfView + Copy,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: ByteLen<T>,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
+        &&& forall|v: TagVal| v.deep_view() == v
     }
 
     fn length(&self, v: &T) -> (len: usize) {
@@ -295,15 +306,16 @@ impl<Tg, TagVal, Of, T> ByteLen<T> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<Tg, TagVal, Of, T> Prepare<T> for super::PrefixTagged<Tg, Of> where
+impl<Tg, TagVal, Of, T> Prepare<T> for super::PrefixTagged<Tg, TagVal, Of> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
-    TagVal: SelfView + Copy,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: Prepare<T>,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
+        &&& forall|v: TagVal| v.deep_view() == v
     }
 
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
@@ -316,10 +328,10 @@ impl<Tg, TagVal, Of, T> Prepare<T> for super::PrefixTagged<Tg, Of> where
     }
 }
 
-impl<I, Of, Tg> Parser<I> for super::SuffixTagged<Of, Tg> where
+impl<I, Of, Tg, TagVal> Parser<I> for super::SuffixTagged<Of, Tg, TagVal> where
     I: InputBuf,
-    Tg: SpecByteLen + Parser<I, PT = Tg::T, PVal = Tg::T> + SafeParser,
-    Tg::T: SelfView + Copy,
+    Tg: SpecByteLen<T = TagVal> + Parser<I, PT = TagVal, PVal = TagVal> + SafeParser,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     Of: Parser<I> + SafeParser,
  {
     type PT = Of::PT;
@@ -342,9 +354,9 @@ impl<I, Of, Tg> Parser<I> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
-    Tg: SpecByteLen + Serializer<Tg::T>,
-    Tg::T: SelfView + Copy,
+impl<Of, Tg, TagVal, T> Serializer<T> for super::SuffixTagged<Of, Tg, TagVal> where
+    Tg: SpecByteLen<T = TagVal> + Serializer<TagVal>,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: Serializer<T>,
  {
@@ -352,6 +364,7 @@ impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
+        &&& forall|v: TagVal| v.deep_view() == v
     }
 
     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
@@ -364,15 +377,16 @@ impl<Of, Tg, T> Serializer<T> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, TagVal, Tg, T> ByteLen<T> for super::SuffixTagged<Of, Tg> where
+impl<Of, TagVal, Tg, T> ByteLen<T> for super::SuffixTagged<Of, Tg, TagVal> where
     Tg: SpecByteLen<T = TagVal> + ByteLen<TagVal>,
-    TagVal: SelfView + Copy,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: ByteLen<T>,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
+        &&& forall|v: TagVal| v.deep_view() == v
     }
 
     fn length(&self, v: &T) -> (len: usize) {
@@ -385,15 +399,16 @@ impl<Of, TagVal, Tg, T> ByteLen<T> for super::SuffixTagged<Of, Tg> where
     }
 }
 
-impl<Of, TagVal, Tg, T> Prepare<T> for super::SuffixTagged<Of, Tg> where
+impl<Of, TagVal, Tg, T> Prepare<T> for super::SuffixTagged<Of, Tg, TagVal> where
     Tg: SpecByteLen<T = TagVal> + Prepare<TagVal>,
-    TagVal: SelfView + Copy,
+    TagVal: DeepView<V = TagVal> + PartialEq + Structural + Copy,
     T: DeepView,
     Of: Prepare<T>,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
+        &&& forall|v: TagVal| v.deep_view() == v
     }
 
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {

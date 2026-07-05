@@ -28,7 +28,7 @@ pub broadcast proof fn lemma_disjoint_prefix_tagged<
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     A: SpecParser,
     B: SpecParser,
->(prefix1: PrefixTagged<Tg, A>, prefix2: PrefixTagged<Tg, B>)
+>(prefix1: PrefixTagged<Tg, Tg::T, A>, prefix2: PrefixTagged<Tg, Tg::T, B>)
     requires
         prefix1.0 == prefix2.0,
         prefix1.1 != prefix2.1,

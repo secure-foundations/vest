@@ -33,15 +33,17 @@ pub type VarIntU8Form = Mapped<Refined<U8, PredFnSpec<u8>>, U8AsU64>;
 
 pub type VarIntU16Form<const MINIMAL: bool> = Tagged<
     U8,
+    u8,
     Mapped<Refined<U16Le, PredFnSpec<u16>>, U16FromToU64>,
 >;
 
 pub type VarIntU32Form<const MINIMAL: bool> = Tagged<
     U8,
+    u8,
     Mapped<Refined<U32Le, PredFnSpec<u32>>, U32FromToU64>,
 >;
 
-pub type VarIntU64Form<const MINIMAL: bool> = Tagged<U8, Refined<U64Le, PredFnSpec<u64>>>;
+pub type VarIntU64Form<const MINIMAL: bool> = Tagged<U8, u8, Refined<U64Le, PredFnSpec<u64>>>;
 
 pub open spec fn varint_fmt<const MINIMAL: bool>() -> VarIntFmt<MINIMAL> {
     Alt(

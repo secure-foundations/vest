@@ -126,7 +126,7 @@ pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: D
     ;
 }
 
-pub trait ByteLen<T>: SpecByteLen<T = T::V> where T: DeepView + ?Sized {
+pub trait ByteLen<T> where Self: SpecByteLen<T = T::V>, T: DeepView + ?Sized {
     open spec fn exec_inv(&self) -> bool {
         true
     }

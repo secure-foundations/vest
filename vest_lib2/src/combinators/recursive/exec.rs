@@ -259,6 +259,10 @@ impl<T, const LIMIT: usize, Body, Param> Prepare<T> for super::FixWith<LIMIT, Bo
     Param: DeepView<V = Body::Param>,
     Body: PrepareRecBody<T, EP = Param>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        true
+    }
+
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         self.prepare_gas(LIMIT, &self.1, v)
     }
