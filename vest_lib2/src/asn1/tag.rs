@@ -24,29 +24,31 @@ pub const TAG_LONG_FORM_SENTINEL: u8 = 0b0001_1111u8;
 
 #[derive(Structural, Clone, Copy, PartialEq, Eq, Debug)]
 #[verifier::ext_equal]
-pub enum UniversalTag {
-    Boolean,  // 1
-    Integer,  // 2
-    BitString,  // 3
-    OctetString,  // 4
-    Null,  // 5
-    ObjectIdentifier,  // 6
-    Real,  // 9
-    Enumerated,  // 10
-    Utf8String,  // 12
-    RelativeOid,  // 13
-    Sequence,  // 16
-    Set,  // 17
-    NumericString,  // 18
-    PrintableString,  // 19
-    TeletexString,  // 20
-    VideotexString,  // 21
-    Ia5String,  // 22
-    UtcTime,  // 23
-    GeneralizedTime,  // 24
-    VisibleString,  // 26
-    GeneralString,  // 27
-    BmpString,  // 30
+#[repr(u64)]
+pub enum TagNumber {
+    Boolean = 1,
+    Integer = 2,
+    BitString = 3,
+    OctetString = 4,
+    Null = 5,
+    ObjectIdentifier = 6,
+    Real = 9,
+    Enumerated = 10,
+    Utf8String = 12,
+    RelativeOid = 13,
+    Sequence = 16,
+    Set = 17,
+    NumericString = 18,
+    PrintableString = 19,
+    TeletexString = 20,
+    VideotexString = 21,
+    Ia5String = 22,
+    UtcTime = 23,
+    GeneralizedTime = 24,
+    VisibleString = 26,
+    GeneralString = 27,
+    BmpString = 30,
+    Other { tag_num: UInt },
 }
 
 #[derive(Structural, Clone, Copy, PartialEq, Eq, Debug)]
@@ -63,10 +65,93 @@ pub enum Class {
 pub struct Tag {
     pub class: Class,
     pub constructed: bool,
-    pub number: UInt,
+    pub number: TagNumber,
 }
 
-impl DeepView for UniversalTag {
+pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
+    match num {
+        TagNumber::Boolean => 1,
+        TagNumber::Integer => 2,
+        TagNumber::BitString => 3,
+        TagNumber::OctetString => 4,
+        TagNumber::Null => 5,
+        TagNumber::ObjectIdentifier => 6,
+        TagNumber::Real => 9,
+        TagNumber::Enumerated => 10,
+        TagNumber::Utf8String => 12,
+        TagNumber::RelativeOid => 13,
+        TagNumber::Sequence => 16,
+        TagNumber::Set => 17,
+        TagNumber::NumericString => 18,
+        TagNumber::PrintableString => 19,
+        TagNumber::TeletexString => 20,
+        TagNumber::VideotexString => 21,
+        TagNumber::Ia5String => 22,
+        TagNumber::UtcTime => 23,
+        TagNumber::GeneralizedTime => 24,
+        TagNumber::VisibleString => 26,
+        TagNumber::GeneralString => 27,
+        TagNumber::BmpString => 30,
+        TagNumber::Other { tag_num } => tag_num,
+    }
+}
+
+pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
+    match num {
+        1 => TagNumber::Boolean,
+        2 => TagNumber::Integer,
+        3 => TagNumber::BitString,
+        4 => TagNumber::OctetString,
+        5 => TagNumber::Null,
+        6 => TagNumber::ObjectIdentifier,
+        9 => TagNumber::Real,
+        10 => TagNumber::Enumerated,
+        12 => TagNumber::Utf8String,
+        13 => TagNumber::RelativeOid,
+        16 => TagNumber::Sequence,
+        17 => TagNumber::Set,
+        18 => TagNumber::NumericString,
+        19 => TagNumber::PrintableString,
+        20 => TagNumber::TeletexString,
+        21 => TagNumber::VideotexString,
+        22 => TagNumber::Ia5String,
+        23 => TagNumber::UtcTime,
+        24 => TagNumber::GeneralizedTime,
+        26 => TagNumber::VisibleString,
+        27 => TagNumber::GeneralString,
+        30 => TagNumber::BmpString,
+        other => TagNumber::Other { tag_num: other },
+    }
+}
+
+pub open spec fn tag_number_wf(num: TagNumber) -> bool {
+    num matches TagNumber::Other { tag_num } ==> {
+        &&& tag_num != 1
+        &&& tag_num != 2
+        &&& tag_num != 3
+        &&& tag_num != 4
+        &&& tag_num != 5
+        &&& tag_num != 6
+        &&& tag_num != 9
+        &&& tag_num != 10
+        &&& tag_num != 12
+        &&& tag_num != 13
+        &&& tag_num != 16
+        &&& tag_num != 17
+        &&& tag_num != 18
+        &&& tag_num != 19
+        &&& tag_num != 20
+        &&& tag_num != 21
+        &&& tag_num != 22
+        &&& tag_num != 23
+        &&& tag_num != 24
+        &&& tag_num != 26
+        &&& tag_num != 27
+        &&& tag_num != 30
+    }
+}
+
+impl DeepView for TagNumber {
     type V = Self;
 
     open spec fn deep_view(&self) -> Self::V {
@@ -146,19 +231,21 @@ pub(super) open(super) spec fn tag_fmt() -> TagFmt__ {
             |r: (u8, Sum<(), UInt>)|
                 {
                     let (b1, rest) = r;
+                    let num = match rest {
+                        L(()) => (b1 & TAG_NUMBER_MASK) as UInt,
+                        R(n) => n,
+                    };
                     Tag {
                         class: class_of_first_byte(b1),
                         constructed: constructed_of_first_byte(b1),
-                        number: match rest {
-                            L(()) => (b1 & TAG_NUMBER_MASK) as UInt,
-                            R(n) => n,
-                        },
+                        number: uint_to_tag_num(num),
                     }
                 },
             |tag: Tag|
                 {
-                    if tag.number < TAG_LONG_FORM_SENTINEL as UInt {
-                        (first_byte_from_parts(tag.class, tag.constructed, tag.number as u8), L(()))
+                    let num = tag_num_to_uint(tag.number);
+                    if num < TAG_LONG_FORM_SENTINEL as UInt {
+                        (first_byte_from_parts(tag.class, tag.constructed, num as u8), L(()))
                     } else {
                         (
                             first_byte_from_parts(
@@ -166,7 +253,7 @@ pub(super) open(super) spec fn tag_fmt() -> TagFmt__ {
                                 tag.constructed,
                                 TAG_LONG_FORM_SENTINEL,
                             ),
-                            R(tag.number),
+                            R(num),
                         )
                     }
                 },
@@ -271,35 +358,30 @@ proof fn lemma_tag_fmt_sound_nonmal_inv()
     }
 }
 
-proof fn lemma_tag_fmt_unambiguous()
+proof fn lemma_tag_fmt_unambiguous(tag: Tag)
+    requires
+        tag_fmt().consistent(tag),
+        tag_number_wf(tag.number),
     ensures
-        tag_fmt().unambiguous(),
+        (tag_fmt().mapper.0)((tag_fmt().mapper.1)(tag)) == tag,
 {
-    let fmt = tag_fmt();
-    assert forall|tag: Tag| fmt.consistent(tag) implies (fmt.mapper.0)((fmt.mapper.1)(tag))
-        == tag by {
-        if tag.number < TAG_LONG_FORM_SENTINEL as UInt {
-            let num = tag.number;
-            let low = num as u8;
-            let cons_flag = tag.constructed;
-            lemma_first_byte_from_parts_roundtrip(tag.class, cons_flag, low);
-            lemma_class_bits_only_class_mask(tag.class);
-            let fb = first_byte_from_parts(tag.class, cons_flag, low);
-            let cb = class_bits(tag.class);
-            assert((fb & TAG_NUMBER_MASK) as UInt == num) by (bit_vector)
-                requires
-                    fb == cb | constructed_bit(cons_flag) | (low & TAG_NUMBER_MASK),
-                    cb & TAG_NUMBER_MASK == 0u8,
-                    low == num as u8,
-                    num < TAG_LONG_FORM_SENTINEL as UInt,
-            ;
-        } else {
-            lemma_first_byte_from_parts_roundtrip(
-                tag.class,
-                tag.constructed,
-                TAG_LONG_FORM_SENTINEL,
-            );
-        }
+    let num = tag_num_to_uint(tag.number);
+    if num < TAG_LONG_FORM_SENTINEL as UInt {
+        let low = num as u8;
+        let cons_flag = tag.constructed;
+        lemma_first_byte_from_parts_roundtrip(tag.class, cons_flag, low);
+        lemma_class_bits_only_class_mask(tag.class);
+        let fb = first_byte_from_parts(tag.class, cons_flag, low);
+        let cb = class_bits(tag.class);
+        assert((fb & TAG_NUMBER_MASK) as UInt == num) by (bit_vector)
+            requires
+                fb == cb | constructed_bit(cons_flag) | (low & TAG_NUMBER_MASK),
+                cb & TAG_NUMBER_MASK == 0u8,
+                low == num as u8,
+                num < TAG_LONG_FORM_SENTINEL as UInt,
+        ;
+    } else {
+        lemma_first_byte_from_parts_roundtrip(tag.class, tag.constructed, TAG_LONG_FORM_SENTINEL);
     }
 }
 
@@ -319,7 +401,8 @@ mod derived_specs {
         type Val = Tag;
 
         open(super) spec fn consistent(&self, v: Self::Val) -> bool {
-            tag_fmt().consistent(v)
+            &&& tag_fmt().consistent(v)
+            &&& tag_number_wf(v.number)
         }
     }
 
@@ -395,8 +478,8 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TagFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            lemma_tag_fmt_unambiguous();
-            tag_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
+            lemma_tag_fmt_unambiguous(v);
+            tag_fmt().inner.theorem_serialize_dps_parse_roundtrip(tag_fmt().mapper.1(v), obuf);
         }
     }
 
