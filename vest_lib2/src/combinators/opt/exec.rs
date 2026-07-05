@@ -2,7 +2,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     },
     spec::{SafeParser, SpecParser},
 };
@@ -43,16 +43,11 @@ impl<A, T> Serializer<Option<T>> for super::Opt<A> where T: DeepView, A: Seriali
     }
 }
 
-impl<A, T> Compliance<Option<T>> for super::Opt<A> where T: DeepView, A: Compliance<T> {
-    fn check_compliance(&self, v: &Option<T>) -> (yes: bool) {
-        match v {
-            Some(vv) => self.0.check_compliance(vv),
-            None => true,
-        }
-    }
-}
-
 impl<A, T> ByteLen<Option<T>> for super::Opt<A> where T: DeepView, A: ByteLen<T> {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn length(&self, v: &Option<T>) -> (len: usize) {
         match v {
             Some(vv) => self.0.length(vv),
@@ -62,6 +57,10 @@ impl<A, T> ByteLen<Option<T>> for super::Opt<A> where T: DeepView, A: ByteLen<T>
 }
 
 impl<A, T> Prepare<Option<T>> for super::Opt<A> where T: DeepView, A: Prepare<T> {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn prepare(&self, v: &Option<T>) -> (checked: Result<usize, PreSerializeError>) {
         match v {
             Some(vv) => self.0.prepare(vv),
@@ -106,23 +105,17 @@ impl<A, B, TA, TB> Serializer<(Option<TA>, TB)> for super::Optional<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Compliance<(Option<TA>, TB)> for super::Optional<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Compliance<TA>,
-    B: Compliance<TB>,
- {
-    fn check_compliance(&self, v: &(Option<TA>, TB)) -> (yes: bool) {
-        crate::combinators::Pair(super::Opt(&self.0), &self.1).check_compliance(v)
-    }
-}
-
 impl<A, B, TA, TB> ByteLen<(Option<TA>, TB)> for super::Optional<A, B> where
     TA: DeepView,
     TB: DeepView,
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn length(&self, v: &(Option<TA>, TB)) -> (len: usize) {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).length(v)
     }
@@ -134,6 +127,11 @@ impl<A, B, TA, TB> Prepare<(Option<TA>, TB)> for super::Optional<A, B> where
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn prepare(&self, v: &(Option<TA>, TB)) -> Result<usize, PreSerializeError> {
         crate::combinators::Pair(super::Opt(&self.0), &self.1).prepare(v)
     }

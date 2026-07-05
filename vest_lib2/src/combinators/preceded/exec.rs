@@ -4,7 +4,7 @@ use crate::{
         exec::{
             input::InputBuf,
             parser::{PResult, Parser},
-            serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+            serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
             ParseError, SelfView,
         },
         spec::{SafeParser, SpecParser, SpecSerializer},
@@ -79,26 +79,17 @@ impl<A, AVal, B, T, const CHECK: bool> Serializer<T> for super::Preceded<A, AVal
     }
 }
 
-impl<A, AVal, B, BVal, const CHECK: bool> Compliance<BVal> for super::Preceded<
-    A,
-    AVal,
-    B,
-    CHECK,
-> where AVal: SelfView, BVal: DeepView, A: Compliance<AVal>, B: Compliance<BVal> {
-    fn check_compliance(&self, v: &BVal) -> (yes: bool) {
-        proof {
-            self.a_val.self_view();
-        }
-        self.a.check_compliance(&self.a_val) && self.b.check_compliance(v)
-    }
-}
-
 impl<A, AVal, B, BVal, const CHECK: bool> ByteLen<BVal> for super::Preceded<
     A,
     AVal,
     B,
     CHECK,
 > where AVal: SelfView, BVal: DeepView, A: ByteLen<AVal>, B: ByteLen<BVal> {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.a.exec_inv()
+        &&& self.b.exec_inv()
+    }
+
     fn length(&self, v: &BVal) -> (len: usize) {
         proof {
             self.a_val.self_view();
@@ -113,6 +104,11 @@ impl<A, AVal, B, BVal, const CHECK: bool> Prepare<BVal> for super::Preceded<
     B,
     CHECK,
 > where AVal: SelfView, BVal: DeepView, A: Prepare<AVal>, B: Prepare<BVal> {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.a.exec_inv()
+        &&& self.b.exec_inv()
+    }
+
     fn prepare(&self, v: &BVal) -> (checked: Result<usize, PreSerializeError>) {
         proof {
             self.a_val.self_view();

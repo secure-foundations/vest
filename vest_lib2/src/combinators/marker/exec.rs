@@ -1,7 +1,7 @@
 use crate::core::exec::ComplianceErrorKind;
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     ParseError, ParseErrorKind,
 };
 use crate::Never;
@@ -35,12 +35,6 @@ impl Serializer<()> for super::Empty {
     }
 }
 
-impl Compliance<()> for super::Empty {
-    fn check_compliance(&self, _v: &()) -> (yes: bool) {
-        true
-    }
-}
-
 impl ByteLen<()> for super::Empty {
     fn length(&self, _v: &()) -> (len: usize) {
         0
@@ -63,12 +57,6 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Void {
 
 impl Serializer<ExecNever> for super::Void {
     fn serialize(&self, _v: &ExecNever, _obuf: &mut Vec<u8>) {
-    }
-}
-
-impl Compliance<ExecNever> for super::Void {
-    fn check_compliance(&self, _v: &ExecNever) -> (yes: bool) {
-        false
     }
 }
 

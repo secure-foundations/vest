@@ -2,9 +2,7 @@ use crate::combinators::AsLen;
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::{
     parser::{PResult, Parser},
-    serializer::{
-        ByteLen, Compliance, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
-    },
+    serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::spec::SpecByteLen;
@@ -36,12 +34,6 @@ impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
 //         obuf.extend_from_slice(v);
 //     }
 // }
-impl<const N: usize> Compliance<[u8]> for super::Fixed<N> {
-    fn check_compliance(&self, v: &[u8]) -> (yes: bool) {
-        v.len() == N
-    }
-}
-
 impl<const N: usize> ByteLen<[u8]> for super::Fixed<N> {
     fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
@@ -74,12 +66,6 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
 impl<Len: AsLen> Serializer<[u8]> for super::Varied<Len> {
     fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
-    }
-}
-
-impl<Len: AsLen> Compliance<[u8]> for super::Varied<Len> {
-    fn check_compliance(&self, v: &[u8]) -> (yes: bool) {
-        v.len() == self.0.get()
     }
 }
 
@@ -157,20 +143,15 @@ impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
     }
 }
 
-// impl<Len, Inner, InnerST> Compliance<InnerST> for super::ExactLen<Inner, Len> where
-//     Len: AsLen,
-//     InnerST: DeepView + Copy,
-//     Inner: Compliance<InnerST> + ByteLen<InnerST>,
-//  {
-//     fn check_compliance(&self, v: InnerST) -> (yes: bool) {
-//         self.1.check_compliance(v) && self.1.length(v) == self.0.get()
-//     }
-// }
 impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     InnerST: DeepView + ?Sized,
     Inner: ByteLen<InnerST>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn length(&self, v: &InnerST) -> (len: usize) {
         self.1.length(v)
     }
@@ -181,6 +162,10 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
     InnerST: DeepView + ?Sized,
     Inner: Prepare<InnerST>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn prepare(&self, v: &InnerST) -> (checked: Result<usize, PreSerializeError>) {
         let len = self.1.prepare(v)?;
         if len == self.0.get() {
@@ -195,6 +180,10 @@ impl<A, Then, ThenST> ByteLen<ThenST> for super::AndThen<A, Then> where
     ThenST: DeepView + ?Sized,
     Then: ByteLen<ThenST>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn length(&self, v: &ThenST) -> (len: usize) {
         self.1.length(v)
     }

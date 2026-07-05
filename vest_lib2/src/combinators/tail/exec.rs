@@ -2,7 +2,7 @@ use crate::combinators::{Eof, Opt, Optional, Pair, Repeat, Star};
 use crate::core::exec::{
     input::InputBuf,
     parser::{PResult, Parser},
-    serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use crate::core::proof::Productive;
@@ -28,12 +28,6 @@ impl<I: InputBuf> Parser<I> for super::Tail {
 impl Serializer<[u8]> for super::Tail {
     fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
         obuf.extend_from_slice(v);
-    }
-}
-
-impl Compliance<[u8]> for super::Tail {
-    fn check_compliance(&self, _v: &[u8]) -> (yes: bool) {
-        true
     }
 }
 
@@ -67,12 +61,6 @@ impl Serializer<()> for super::Eof {
     }
 }
 
-impl Compliance<()> for super::Eof {
-    fn check_compliance(&self, _v: &()) -> (yes: bool) {
-        true
-    }
-}
-
 impl ByteLen<()> for super::Eof {
     fn length(&self, _v: &()) -> (len: usize) {
         0
@@ -85,23 +73,17 @@ impl Prepare<()> for super::Eof {
     }
 }
 
-impl<A, B, AVal, BVal> Compliance<(AVal, BVal)> for super::PairRev<A, B> where
-    AVal: DeepView,
-    BVal: DeepView,
-    A: Compliance<AVal>,
-    B: Compliance<BVal>,
- {
-    fn check_compliance(&self, v: &(AVal, BVal)) -> (yes: bool) {
-        self.1.check_compliance(&v.0) && self.0.check_compliance(&v.1)
-    }
-}
-
 impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     AVal: DeepView,
     BVal: DeepView,
     A: ByteLen<AVal>,
     B: ByteLen<BVal>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn length(&self, v: &(AVal, BVal)) -> (len: usize) {
         let la = self.1.length(&v.0);
         let lb = self.0.length(&v.1);
@@ -118,6 +100,11 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
     A: Prepare<AVal>,
     B: Prepare<BVal>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn prepare(&self, v: &(AVal, BVal)) -> Result<usize, PreSerializeError> {
         let la = self.1.prepare(&v.0)?;
         let lb = self.0.prepare(&v.1)?;
@@ -175,19 +162,21 @@ impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
     }
 }
 
-impl<A, T> Compliance<&[T]> for super::RepeatTillEnd<A> where A: Compliance<T> + Copy, T: DeepView {
-    fn check_compliance(&self, v: &&[T]) -> (yes: bool) {
-        Star(self.0).check_compliance(v)
-    }
-}
-
 impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn length(&self, v: &&[T]) -> (len: usize) {
         Star(self.0).length(v)
     }
 }
 
 impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn prepare(&self, v: &&[T]) -> Result<usize, PreSerializeError> {
         Star(self.0).prepare(v)
     }
@@ -207,22 +196,21 @@ impl<A, T> Serializer<Option<T>> for super::OptionalEnd<A> where
     }
 }
 
-impl<A, AST> Compliance<Option<AST>> for super::OptionalEnd<A> where
-    A: Compliance<AST>,
-    AST: DeepView,
- {
-    fn check_compliance(&self, v: &Option<AST>) -> (yes: bool) {
-        Opt(&self.0).check_compliance(v)
-    }
-}
-
 impl<A, AST> ByteLen<Option<AST>> for super::OptionalEnd<A> where A: ByteLen<AST>, AST: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn length(&self, v: &Option<AST>) -> (len: usize) {
         Opt(&self.0).length(v)
     }
 }
 
 impl<A, AST> Prepare<Option<AST>> for super::OptionalEnd<A> where A: Prepare<AST>, AST: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
     fn prepare(&self, v: &Option<AST>) -> Result<usize, PreSerializeError> {
         Opt(&self.0).prepare(v)
     }

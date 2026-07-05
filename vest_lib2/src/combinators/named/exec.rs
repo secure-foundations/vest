@@ -1,7 +1,7 @@
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     },
     spec::SpecSerializer,
 };
@@ -35,22 +35,21 @@ impl<T, Inner> Serializer<T> for super::Named<Inner> where T: DeepView, Inner: S
     }
 }
 
-impl<T, Inner> Compliance<T> for super::Named<Inner> where
-    T: DeepView + ?Sized,
-    Inner: Compliance<T>,
- {
-    fn check_compliance(&self, v: &T) -> (yes: bool) {
-        self.1.check_compliance(v)
-    }
-}
-
 impl<T, Inner> ByteLen<T> for super::Named<Inner> where T: DeepView, Inner: ByteLen<T> {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn length(&self, v: &T) -> (len: usize) {
         self.1.length(v)
     }
 }
 
 impl<T, Inner> Prepare<T> for super::Named<Inner> where T: DeepView, Inner: Prepare<T> {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
         match self.1.prepare(v) {
             Err(err) => Err(err.push_format(self.0)),

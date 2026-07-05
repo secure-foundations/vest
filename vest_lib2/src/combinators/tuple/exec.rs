@@ -4,7 +4,7 @@ use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, Compliance, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     },
     spec::{SafeParser, SpecParser, SpecSerializer},
 };
@@ -63,23 +63,17 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Pair<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Compliance<(TA, TB)> for super::Pair<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Compliance<TA>,
-    B: Compliance<TB>,
- {
-    fn check_compliance(&self, v: &(TA, TB)) -> (yes: bool) {
-        self.0.check_compliance(&v.0) && self.1.check_compliance(&v.1)
-    }
-}
-
 impl<A, B, TA, TB> Prepare<(TA, TB)> for super::Pair<A, B> where
     TA: DeepView,
     TB: DeepView,
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn prepare(&self, v: &(TA, TB)) -> Result<usize, PreSerializeError> {
         let la = self.0.prepare(&v.0)?;
         let lb = self.1.prepare(&v.1)?;
@@ -97,6 +91,11 @@ impl<A, B, TA, TB> ByteLen<(TA, TB)> for super::Pair<A, B> where
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
     fn length(&self, v: &(TA, TB)) -> (len: usize) {
         let la = self.0.length(&v.0);
         let lb = self.1.length(&v.1);
@@ -157,19 +156,6 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Bind<A, B> where
     }
 }
 
-impl<A, B, STA, STB> Compliance<(STA, STB)> for super::Bind<A, B> where
-    STA: DeepView,
-    STB: DeepView,
-    A: Compliance<STA>,
-    B::O: Compliance<STB>,
-    B: MapRef<STA, Input = STA::V>,
- {
-    fn check_compliance(&self, v: &(STA, STB)) -> (yes: bool) {
-        let next = self.1.map(&v.0);
-        self.0.check_compliance(&v.0) && next.check_compliance(&v.1)
-    }
-}
-
 impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     STA: DeepView,
     STB: DeepView,
@@ -177,6 +163,11 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     B::O: ByteLen<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& forall|pb: B::O| #[trigger] pb.exec_inv()
+    }
+
     fn length(&self, v: &(STA, STB)) -> (len: usize) {
         let next = self.1.map(&v.0);
         let la = self.0.length(&v.0);
@@ -192,6 +183,11 @@ impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Bind<A, B> where
     B::O: Prepare<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& forall|pb: B::O| #[trigger] pb.exec_inv()
+    }
+
     fn prepare(&self, v: &(STA, STB)) -> Result<usize, PreSerializeError> {
         let next = self.1.map(&v.0);
         let la = self.0.prepare(&v.0)?;
