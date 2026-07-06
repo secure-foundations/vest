@@ -684,6 +684,51 @@ impl Prepare<Tag> for super::TagFmt {
     }
 }
 
+impl ByteLen<Tag> for super::TagFmt {
+    fn length(&self, v: &Tag) -> usize {
+        let num = match v.number {
+            TagNumber::Boolean => 1,
+            TagNumber::Integer => 2,
+            TagNumber::BitString => 3,
+            TagNumber::OctetString => 4,
+            TagNumber::Null => 5,
+            TagNumber::ObjectIdentifier => 6,
+            TagNumber::Real => 9,
+            TagNumber::Enumerated => 10,
+            TagNumber::Utf8String => 12,
+            TagNumber::RelativeOid => 13,
+            TagNumber::Sequence => 16,
+            TagNumber::Set => 17,
+            TagNumber::NumericString => 18,
+            TagNumber::PrintableString => 19,
+            TagNumber::TeletexString => 20,
+            TagNumber::VideotexString => 21,
+            TagNumber::Ia5String => 22,
+            TagNumber::UtcTime => 23,
+            TagNumber::GeneralizedTime => 24,
+            TagNumber::VisibleString => 26,
+            TagNumber::GeneralString => 27,
+            TagNumber::BmpString => 30,
+            TagNumber::Other { tag_num } => tag_num,
+        };
+
+        proof {
+            lemma_to_base128_len_bounds();
+            lemma_base128_fmt_byte_len::<true>(num);
+            lemma_first_byte_from_parts_roundtrip(v.class, v.constructed, TAG_LONG_FORM_SENTINEL);
+            assert(TAG_LONG_FORM_SENTINEL & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL)
+                by (bit_vector);
+        }
+        let nbytes = Base128Fmt::<true>.length(&num);
+
+        if num < TAG_LONG_FORM_SENTINEL as UInt {
+            1
+        } else {
+            1 + nbytes
+        }
+    }
+}
+
 impl super::TagFmt {
     pub const BOOLEAN: Tag = Tag {
         class: Class::Universal,
@@ -935,6 +980,54 @@ impl super::TagFmt {
     pub const GENERAL_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::GENERAL_STRING);
 
     pub const BMP_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BMP_STRING);
+}
+
+pub broadcast proof fn lemma_const_tag_fmt_exec_inv(fmt: Const<TagFmt, Tag>)
+    ensures
+        #![all_triggers]
+        <_ as Parser<&[u8]>>::exec_inv(&fmt),
+        <_ as Prepare<Tag>>::exec_inv(&fmt),
+{
+    crate::combinators::refined::exec::lemma_const_exec_inv(&fmt);
+}
+
+} // verus!
+/*
+*
+some test functions
+*/
+verus! {
+
+fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
+    use crate::combinators::U16Be;
+    let const_u16_fmt = Const(U16Be, 0x1234u16);
+    let (n, v) = const_u16_fmt.parse(buf)?;
+    if let Ok(len) = const_u16_fmt.prepare(&v) {
+        let mut obuf = Vec::with_capacity(len);
+        const_u16_fmt.serialize(&v, &mut obuf);
+        proof {
+            const_u16_fmt.theorem_parse_serialize_roundtrip(buf@);
+            assert(obuf@ == buf@.take(n as int));
+        }
+    }
+    Err(ParseError::custom("Test function, not meant to succeed"))
+}
+
+fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
+    broadcast use lemma_const_tag_fmt_exec_inv;
+
+    let asn_bool_tag_fmt = TagFmt::BOOLEAN_TAG;
+    let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
+    if let Ok(len) = asn_bool_tag_fmt.prepare(&tag) {
+        let mut obuf = Vec::with_capacity(len);
+        asn_bool_tag_fmt.serialize(&tag, &mut obuf);
+
+        proof {
+            asn_bool_tag_fmt.theorem_parse_serialize_roundtrip(buf@);
+            assert(obuf@ == buf@.take(n as int));
+        }
+    }
+    Err(ParseError::custom("Test function, not meant to succeed"))
 }
 
 } // verus!
