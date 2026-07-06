@@ -12,16 +12,33 @@ pub mod integer;
 pub mod length;
 /// ASN.1 tag octets.
 pub mod tag;
+/// ASN.1 TLV wrapper.
+pub mod tlv;
+
+pub use tag::Tag;
 
 use crate::{
     combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Implicit, PrefixTagged, Tail, TryMap, U8,
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Implicit, PrefixTagged, Tail,
+        TryMap, U8,
     },
     core::proof::{Leaf, LeafNonMalleable},
 };
 use vstd::prelude::*;
 
 verus! {
+
+#[derive(Copy)]
+pub struct ASN1<Content, const DER: bool = true>(pub Const<TagFmt, Tag>, pub Content);
+
+impl<Content: Clone, const DER: bool> Clone for ASN1<Content, DER> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Content::clone, (&self.1,), cloned.1),
+    {
+        ASN1(self.0, self.1.clone())
+    }
+}
 
 /// ASN.1 BOOLEAN format.
 ///
