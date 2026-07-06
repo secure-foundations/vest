@@ -22,15 +22,11 @@ pub type ASN1Fmt__<Content, const DER: bool> = Mapped<
 >;
 
 pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
-    tag_fmt: Const<TagFmt, Tag>,
+    tag: Tag,
     content: Content,
 ) -> ASN1Fmt__<Content, DER> {
     Mapped {
-        inner: PrefixTagged(
-            tag_fmt.0,
-            tag_fmt.1,
-            Bind(Length::<DER>, |len: usize| ExactLen(len, content)),
-        ),
+        inner: PrefixTagged(TagFmt, tag, Bind(Length::<DER>, |len: usize| ExactLen(len, content))),
         mapper: (|i: (usize, Content::T)| i.1, |o: Content::T| (content.byte_len(o) as usize, o)),
     }
 }
@@ -98,7 +94,7 @@ mod derived_proofs {
     impl<Content: SpecCombinator + SoundParser> SoundParser for ASN1<Content, true> {
         open spec fn sound_inv(&self) -> bool {
             &&& self.1.sound_inv()
-            &&& self.0.0.consistent(self.0.1)
+            &&& TagFmt.consistent(self.0)
         }
 
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
@@ -170,7 +166,7 @@ mod derived_proofs {
             &&& self.1.nonmal_inv()
             &&& self.1.sound_inv()
             &&& self.1.safe_inv()
-            &&& self.0.0.consistent(self.0.1)
+            &&& TagFmt.consistent(self.0)
         }
 
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -222,7 +218,7 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
 
         let _ = ibuf.len();
 
-        let (n1, tag_val) = self.0.parse(ibuf)?;
+        let (n1, _tag_val) = Const(TagFmt, self.0).parse(ibuf)?;
         let rest = ibuf.skip(n1);
         let (n2, len) = Length::<DER>.parse(&rest)?;
         let rest = rest.skip(n2);
@@ -246,7 +242,8 @@ impl<Content, T, const DER: bool> Serializer<T> for ASN1<Content, DER> where
         assert(self.consistent(vv) == (self.1.byte_len(vv) as usize as nat == self.1.byte_len(vv)));
         assert(self.1.byte_len(vv) <= usize::MAX);
         let len = self.1.length(v);
-        self.0.serialize(&self.0.1, obuf);
+
+        Const(TagFmt, self.0).serialize(&self.0, obuf);
         Length::<DER>.serialize(&len, obuf);
         self.1.serialize(v, obuf);
     }
@@ -263,10 +260,10 @@ impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
     fn prepare(&self, v: &T) -> Result<usize, PreSerializeError> {
         broadcast use super::tag::lemma_const_tag_fmt_exec_inv;
 
-        let n1 = self.0.prepare(&self.0.1)?;
+        let n1 = Const(TagFmt, self.0).prepare(&self.0)?;
         let n3 = self.1.prepare(v)?;
         let n2 = Length::<DER>.prepare(&n3)?;
-        let total_len = n1.checked_add(n2).ok_or(
+        let _total_len = n1.checked_add(n2).ok_or(
             PreSerializeError::length_too_large(),
         )?.checked_add(n3).ok_or(PreSerializeError::length_too_large())?;
         Ok(n1 + n2 + n3)
@@ -282,7 +279,7 @@ impl<Content, T, const DER: bool> ByteLen<T> for ASN1<Content, DER> where
     }
 
     fn length(&self, v: &T) -> usize {
-        let n1 = self.0.length(&self.0.1);
+        let n1 = Const(TagFmt, self.0).length(&self.0);
         let n3 = self.1.length(v);
         let n2 = Length::<DER>.length(&n3);
         n1 + n2 + n3
@@ -290,3 +287,104 @@ impl<Content, T, const DER: bool> ByteLen<T> for ASN1<Content, DER> where
 }
 
 } // verus!
+/*
+*
+some test functions
+*/
+verus! {
+
+fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
+    use super::Bool;
+    use super::{BER, DER};
+
+    let asn_bool = ASN1::<_, DER>(TagFmt::BOOLEAN, Bool::<DER>);
+    let (_n, v) = asn_bool.parse(buf)?;
+    if let Ok(len) = asn_bool.prepare(&v) {
+        let mut obuf = Vec::with_capacity(len);
+        asn_bool.serialize(&v, &mut obuf);
+
+        proof {
+            asn_bool.theorem_parse_serialize_roundtrip(buf@);
+            assert(obuf@ == buf@.take(_n as int));
+        }
+    }
+    Err(ParseError::custom("Test function"))
+}
+
+} // verus!
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::asn1::bitstring::BitString;
+    use crate::asn1::tag::{Class, TagNumber};
+    use crate::asn1::{BitStringFmt, Bool, Tag, ASN1};
+    use crate::asn1::{BER, DER};
+    use crate::core::exec::{ByteLen, Parser, Prepare, Serializer};
+
+    #[test]
+    fn test_asn1_bool_der_and_ber() {
+        // DER Bool (canonical: TRUE must be 0xFF)
+        let der_bool = ASN1::<_, DER>(TagFmt::BOOLEAN, Bool::<DER>);
+
+        // Parse valid true
+        let input_true = [0x01, 0x01, 0xFF];
+        let (n, val) = der_bool.parse(&&input_true[..]).unwrap();
+        assert_eq!(n, 3);
+        assert_eq!(val, true);
+
+        // Parse valid false
+        let input_false = [0x01, 0x01, 0x00];
+        let (n, val) = der_bool.parse(&&input_false[..]).unwrap();
+        assert_eq!(n, 3);
+        assert_eq!(val, false);
+
+        // Parse invalid/non-canonical true (0x01) under DER -> should fail
+        let input_noncanonical = [0x01, 0x01, 0x01];
+        assert!(der_bool.parse(&&input_noncanonical[..]).is_err());
+
+        // BER Bool (permits any non-zero byte for true)
+        let ber_bool = ASN1::<_, BER>(TagFmt::BOOLEAN, Bool::<BER>);
+        let (n, val) = ber_bool.parse(&&input_noncanonical[..]).unwrap();
+        assert_eq!(n, 3);
+        assert_eq!(val, true);
+
+        // Serialize and check DER roundtrip
+        let mut out = Vec::new();
+        der_bool.serialize(&true, &mut out);
+        assert_eq!(out, input_true);
+        assert_eq!(der_bool.prepare(&true), Ok(3));
+        assert_eq!(der_bool.length(&true), 3);
+    }
+
+    #[test]
+    fn test_asn1_bitstring_der_and_ber() {
+        // DER BitString (requires trailing unused bits to be zero)
+        let der_bitstring = ASN1::<_, DER>(TagFmt::BIT_STRING, BitStringFmt::<DER>);
+
+        // Valid BIT STRING: 4 unused bits, last byte 0xA0 (0b1010_0000)
+        let input_valid = [0x03, 0x02, 0x04, 0xA0];
+        let (n, bs) = der_bitstring.parse(&&input_valid[..]).unwrap();
+        assert_eq!(n, 4);
+        assert_eq!(bs.unused(), 4);
+        assert_eq!(bs.bits(), &[0xA0]);
+
+        // Invalid BIT STRING under DER: 4 unused bits, but last byte is 0xA1 (0b1010_0001) - final bit is 1, not 0
+        let input_invalid = [0x03, 0x02, 0x04, 0xA1];
+        assert!(der_bitstring.parse(&&input_invalid[..]).is_err());
+
+        // Under BER, non-zero trailing bits are permitted
+        let ber_bitstring = ASN1::<_, BER>(TagFmt::BIT_STRING, BitStringFmt::<BER>);
+        let (n, bs) = ber_bitstring.parse(&&input_invalid[..]).unwrap();
+        assert_eq!(n, 4);
+        assert_eq!(bs.unused(), 4);
+        assert_eq!(bs.bits(), &[0xA1]);
+
+        // Roundtrip serialization for DER BitString
+        let valid_bs = BitString::new(4, &[0xA0]);
+        let mut out = Vec::new();
+        der_bitstring.serialize(&valid_bs, &mut out);
+        assert_eq!(out, input_valid);
+        assert_eq!(der_bitstring.prepare(&valid_bs), Ok(4));
+        assert_eq!(der_bitstring.length(&valid_bs), 4);
+    }
+}

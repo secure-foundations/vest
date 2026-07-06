@@ -51,6 +51,14 @@ impl<'a, const DER: bool> BitString<'a, DER> {
     {
         BitString { unused, bits }
     }
+
+    pub fn unused(&self) -> u8 {
+        self.unused
+    }
+
+    pub fn bits(&self) -> &'a [u8] {
+        self.bits
+    }
 }
 
 impl BitStringSpec {

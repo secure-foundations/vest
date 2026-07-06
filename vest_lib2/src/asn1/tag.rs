@@ -74,14 +74,6 @@ pub struct Tag {
     pub number: TagNumber,
 }
 
-/*
-// somehow needed for regular `cargo check/build`
-// unsafe impl Structural for TagNumber {}
-// unsafe impl Structural for Class {}
-// unsafe impl Structural for Tag {}
- *
- */
-
 pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
     match num {
         TagNumber::Boolean => 1,
@@ -949,51 +941,8 @@ impl super::TagFmt {
 }
 
 use crate::combinators::Const;
-use super::TagFmt;
 
-impl super::TagFmt {
-    pub const BOOLEAN_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BOOLEAN);
-
-    pub const INTEGER_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::INTEGER);
-
-    pub const NULL_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::NULL);
-
-    pub const OBJECT_IDENTIFIER_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::OBJECT_IDENTIFIER);
-
-    pub const REAL_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::REAL);
-
-    pub const ENUMERATED_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::ENUMERATED);
-
-    pub const RELATIVE_OID_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::RELATIVE_OID);
-
-    pub const BIT_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BIT_STRING);
-
-    pub const OCTET_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::OCTET_STRING);
-
-    pub const UTF8_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::UTF8_STRING);
-
-    pub const NUMERIC_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::NUMERIC_STRING);
-
-    pub const PRINTABLE_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::PRINTABLE_STRING);
-
-    pub const TELETEX_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::TELETEX_STRING);
-
-    pub const VIDEOTEX_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::VIDEOTEX_STRING);
-
-    pub const IA5_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::IA5_STRING);
-
-    pub const UTC_TIME_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::UTC_TIME);
-
-    pub const GENERALIZED_TIME_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::GENERALIZED_TIME);
-
-    pub const VISIBLE_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::VISIBLE_STRING);
-
-    pub const GENERAL_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::GENERAL_STRING);
-
-    pub const BMP_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BMP_STRING);
-}
-
-pub broadcast proof fn lemma_const_tag_fmt_exec_inv(fmt: Const<TagFmt, Tag>)
+pub broadcast proof fn lemma_const_tag_fmt_exec_inv(fmt: Const<super::TagFmt, Tag>)
     ensures
         #![all_triggers]
         <_ as Parser<&[u8]>>::exec_inv(&fmt),
@@ -1027,7 +976,7 @@ fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
 fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
     broadcast use lemma_const_tag_fmt_exec_inv;
 
-    let asn_bool_tag_fmt = TagFmt::BOOLEAN_TAG;
+    let asn_bool_tag_fmt = Const(super::TagFmt, super::TagFmt::BOOLEAN);
     let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
     if let Ok(len) = asn_bool_tag_fmt.prepare(&tag) {
         let mut obuf = Vec::with_capacity(len);
@@ -1042,3 +991,10 @@ fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
 }
 
 } // verus!
+/*
+// somehow needed for regular `cargo check/build/test`
+ *
+ */
+// unsafe impl Structural for TagNumber {}
+// unsafe impl Structural for Class {}
+// unsafe impl Structural for Tag {}
