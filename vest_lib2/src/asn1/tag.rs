@@ -1,7 +1,13 @@
 use crate::combinators::{Bind, Empty, Sum};
+use crate::core::exec::input::*;
+use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::primitives::base128::*;
 use crate::{
-    combinators::{implicit::*, mapped::spec::FnSpecMapper, Mapped, Refined, U8},
+    combinators::{
+        implicit::*,
+        mapped::spec::{FnSpecMapper, SpecMap},
+        Mapped, Refined, U8,
+    },
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
@@ -22,7 +28,7 @@ pub const TAG_NUMBER_MASK: u8 = 0b0001_1111u8;
 /// Sentinel value in bits 4–0 signalling the long (high-tag) form.
 pub const TAG_LONG_FORM_SENTINEL: u8 = 0b0001_1111u8;
 
-#[derive(Structural, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(StructuralEq, Clone, Copy, PartialEq, Eq, Debug)]
 #[verifier::ext_equal]
 #[repr(u64)]
 pub enum TagNumber {
@@ -51,7 +57,7 @@ pub enum TagNumber {
     Other { tag_num: UInt },
 }
 
-#[derive(Structural, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(StructuralEq, Clone, Copy, PartialEq, Eq, Debug)]
 #[verifier::ext_equal]
 pub enum Class {
     Universal,
@@ -60,7 +66,7 @@ pub enum Class {
     Private,
 }
 
-#[derive(Structural, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(StructuralEq, Clone, Copy, PartialEq, Eq, Debug)]
 #[verifier::ext_equal]
 pub struct Tag {
     pub class: Class,
@@ -126,28 +132,9 @@ pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
 
 pub open spec fn tag_number_wf(num: TagNumber) -> bool {
     num matches TagNumber::Other { tag_num } ==> {
-        &&& tag_num != 1
-        &&& tag_num != 2
-        &&& tag_num != 3
-        &&& tag_num != 4
-        &&& tag_num != 5
-        &&& tag_num != 6
-        &&& tag_num != 9
-        &&& tag_num != 10
-        &&& tag_num != 12
-        &&& tag_num != 13
-        &&& tag_num != 16
-        &&& tag_num != 17
-        &&& tag_num != 18
-        &&& tag_num != 19
-        &&& tag_num != 20
-        &&& tag_num != 21
-        &&& tag_num != 22
-        &&& tag_num != 23
-        &&& tag_num != 24
-        &&& tag_num != 26
-        &&& tag_num != 27
-        &&& tag_num != 30
+        &&& !matches!(tag_num, 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
+            | 22 | 23 | 24 | 26 | 27 | 30)
+        &&& nat_to_base128(tag_num as nat).len() <= BASE128_MAX_BYTES
     }
 }
 
@@ -299,18 +286,24 @@ proof fn lemma_first_byte_from_parts_roundtrip(class: Class, constructed: bool, 
         class_of_first_byte(first_byte_from_parts(class, constructed, low_bits)) == class,
         constructed_of_first_byte(first_byte_from_parts(class, constructed, low_bits))
             == constructed,
+        first_byte_from_parts(class, constructed, low_bits) & TAG_NUMBER_MASK == low_bits
+            & TAG_NUMBER_MASK,
 {
     let fb = first_byte_from_parts(class, constructed, low_bits);
     let cb = class_bits(class);
+    let cbit = constructed_bit(constructed);
     lemma_class_bits_only_class_mask(class);
 
-    assert(fb & TAG_CLASS_MASK == cb && (fb & TAG_CONSTRUCTED_MASK != 0u8) == constructed)
-        by (bit_vector)
+    assert(fb & TAG_CLASS_MASK == cb && (fb & TAG_CONSTRUCTED_MASK != 0u8) == constructed && fb
+        & TAG_NUMBER_MASK == low_bits & TAG_NUMBER_MASK) by (bit_vector)
         requires
-            fb == cb | constructed_bit(constructed) | (low_bits & TAG_NUMBER_MASK),
+            fb == cb | cbit | (low_bits & TAG_NUMBER_MASK),
             cb & TAG_CONSTRUCTED_MASK == 0u8,
             cb & TAG_NUMBER_MASK == 0u8,
             (cb & TAG_CLASS_MASK) == cb,
+            cbit == TAG_CONSTRUCTED_MASK || cbit == 0u8,
+            constructed ==> cbit == TAG_CONSTRUCTED_MASK,
+            !constructed ==> cbit == 0u8,
     ;
 }
 
@@ -368,20 +361,36 @@ proof fn lemma_tag_fmt_unambiguous(tag: Tag)
     let num = tag_num_to_uint(tag.number);
     if num < TAG_LONG_FORM_SENTINEL as UInt {
         let low = num as u8;
-        let cons_flag = tag.constructed;
-        lemma_first_byte_from_parts_roundtrip(tag.class, cons_flag, low);
-        lemma_class_bits_only_class_mask(tag.class);
-        let fb = first_byte_from_parts(tag.class, cons_flag, low);
-        let cb = class_bits(tag.class);
-        assert((fb & TAG_NUMBER_MASK) as UInt == num) by (bit_vector)
+        lemma_first_byte_from_parts_roundtrip(tag.class, tag.constructed, low);
+        assert(low & TAG_NUMBER_MASK == low) by (bit_vector)
             requires
-                fb == cb | constructed_bit(cons_flag) | (low & TAG_NUMBER_MASK),
-                cb & TAG_NUMBER_MASK == 0u8,
                 low == num as u8,
                 num < TAG_LONG_FORM_SENTINEL as UInt,
         ;
     } else {
         lemma_first_byte_from_parts_roundtrip(tag.class, tag.constructed, TAG_LONG_FORM_SENTINEL);
+    }
+}
+
+proof fn lemma_tag_wf_implies_tag_fmt_consistent(tag: Tag)
+    requires
+        tag_number_wf(tag.number),
+    ensures
+        tag_fmt().consistent(tag),
+{
+    let num = tag_num_to_uint(tag.number);
+    assert(TAG_LONG_FORM_SENTINEL & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL) by (bit_vector);
+    if num < TAG_LONG_FORM_SENTINEL as UInt {
+        let low = num as u8;
+        lemma_first_byte_from_parts_roundtrip(tag.class, tag.constructed, low);
+        assert(low & TAG_NUMBER_MASK == low) by (bit_vector)
+            requires
+                low == num as u8,
+                num < TAG_LONG_FORM_SENTINEL as UInt,
+        ;
+    } else {
+        lemma_first_byte_from_parts_roundtrip(tag.class, tag.constructed, TAG_LONG_FORM_SENTINEL);
+        lemma_base128_fmt_consistent::<true>(num);
     }
 }
 
@@ -508,6 +517,424 @@ mod derived_proofs {
         }
     }
 
+}
+
+impl Parser<&[u8]> for super::TagFmt {
+    type PT = Tag;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
+
+        let _ = ibuf.len();
+
+        let (n1, b1): (usize, u8) = U8.parse(ibuf)?;
+        let rest = ibuf.skip(n1);
+
+        let (n2, num) = if b1 & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL {
+            let (n2, num) = Base128Fmt::<true>.parse(&rest)?;
+            if num < TAG_LONG_FORM_SENTINEL as UInt {
+                return Err(ParseError::non_canonical());
+            }
+            (n2, num)
+        } else {
+            (0, (b1 & TAG_NUMBER_MASK) as UInt)
+        };
+
+        let class = match b1 & TAG_CLASS_MASK {
+            0b0000_0000u8 => Class::Universal,
+            0b0100_0000u8 => Class::Application,
+            0b1000_0000u8 => Class::ContextSpecific,
+            _ => Class::Private,
+        };
+        let constructed = b1 & TAG_CONSTRUCTED_MASK != 0;
+        let number = match num {
+            1 => TagNumber::Boolean,
+            2 => TagNumber::Integer,
+            3 => TagNumber::BitString,
+            4 => TagNumber::OctetString,
+            5 => TagNumber::Null,
+            6 => TagNumber::ObjectIdentifier,
+            9 => TagNumber::Real,
+            10 => TagNumber::Enumerated,
+            12 => TagNumber::Utf8String,
+            13 => TagNumber::RelativeOid,
+            16 => TagNumber::Sequence,
+            17 => TagNumber::Set,
+            18 => TagNumber::NumericString,
+            19 => TagNumber::PrintableString,
+            20 => TagNumber::TeletexString,
+            21 => TagNumber::VideotexString,
+            22 => TagNumber::Ia5String,
+            23 => TagNumber::UtcTime,
+            24 => TagNumber::GeneralizedTime,
+            26 => TagNumber::VisibleString,
+            27 => TagNumber::GeneralString,
+            30 => TagNumber::BmpString,
+            other => TagNumber::Other { tag_num: other },
+        };
+
+        Ok((n1 + n2, Tag { class, constructed, number }))
+    }
+}
+
+impl Serializer<Tag> for super::TagFmt {
+    fn serialize(&self, v: &Tag, obuf: &mut Vec<u8>) {
+        let num = match v.number {
+            TagNumber::Boolean => 1,
+            TagNumber::Integer => 2,
+            TagNumber::BitString => 3,
+            TagNumber::OctetString => 4,
+            TagNumber::Null => 5,
+            TagNumber::ObjectIdentifier => 6,
+            TagNumber::Real => 9,
+            TagNumber::Enumerated => 10,
+            TagNumber::Utf8String => 12,
+            TagNumber::RelativeOid => 13,
+            TagNumber::Sequence => 16,
+            TagNumber::Set => 17,
+            TagNumber::NumericString => 18,
+            TagNumber::PrintableString => 19,
+            TagNumber::TeletexString => 20,
+            TagNumber::VideotexString => 21,
+            TagNumber::Ia5String => 22,
+            TagNumber::UtcTime => 23,
+            TagNumber::GeneralizedTime => 24,
+            TagNumber::VisibleString => 26,
+            TagNumber::GeneralString => 27,
+            TagNumber::BmpString => 30,
+            TagNumber::Other { tag_num } => tag_num,
+        };
+
+        let class_bits = match v.class {
+            Class::Universal => 0b0000_0000u8,
+            Class::Application => 0b0100_0000u8,
+            Class::ContextSpecific => 0b1000_0000u8,
+            Class::Private => 0b1100_0000u8,
+        };
+        let constructed_bit = if v.constructed {
+            TAG_CONSTRUCTED_MASK
+        } else {
+            0u8
+        };
+        if num < TAG_LONG_FORM_SENTINEL as UInt {
+            let low = num as u8;
+            let b1 = class_bits | constructed_bit | (low & TAG_NUMBER_MASK);
+            U8.serialize(&b1, obuf);
+        } else {
+            let b1 = class_bits | constructed_bit | TAG_LONG_FORM_SENTINEL & TAG_NUMBER_MASK;
+            U8.serialize(&b1, obuf);
+            Base128Fmt::<true>.serialize(&num, obuf);
+        }
+    }
+}
+
+impl Prepare<Tag> for super::TagFmt {
+    fn prepare(&self, v: &Tag) -> Result<usize, PreSerializeError> {
+        let num = match v.number {
+            TagNumber::Boolean => 1,
+            TagNumber::Integer => 2,
+            TagNumber::BitString => 3,
+            TagNumber::OctetString => 4,
+            TagNumber::Null => 5,
+            TagNumber::ObjectIdentifier => 6,
+            TagNumber::Real => 9,
+            TagNumber::Enumerated => 10,
+            TagNumber::Utf8String => 12,
+            TagNumber::RelativeOid => 13,
+            TagNumber::Sequence => 16,
+            TagNumber::Set => 17,
+            TagNumber::NumericString => 18,
+            TagNumber::PrintableString => 19,
+            TagNumber::TeletexString => 20,
+            TagNumber::VideotexString => 21,
+            TagNumber::Ia5String => 22,
+            TagNumber::UtcTime => 23,
+            TagNumber::GeneralizedTime => 24,
+            TagNumber::VisibleString => 26,
+            TagNumber::GeneralString => 27,
+            TagNumber::BmpString => 30,
+            TagNumber::Other { tag_num } => {
+                if matches!(tag_num, 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
+                    | 22 | 23 | 24 | 26 | 27 | 30) {
+                    return Err(PreSerializeError::custom("Invalid tag number"));
+                }
+                tag_num
+            },
+        };
+
+        proof {
+            lemma_to_base128_len_bounds();
+            lemma_base128_fmt_byte_len::<true>(num);
+        }
+        let nbytes = Base128Fmt::<true>.length(&num);
+        if nbytes > BASE128_MAX_BYTES {
+            return Err(PreSerializeError::length_too_large());
+        }
+        proof {
+            assert(tag_number_wf(v.deep_view().number));
+            lemma_tag_wf_implies_tag_fmt_consistent(v.deep_view());
+        }
+
+        if num < TAG_LONG_FORM_SENTINEL as UInt {
+            Ok(1)
+        } else {
+            Ok(1 + nbytes)
+        }
+    }
+}
+
+impl super::TagFmt {
+    pub const BOOLEAN: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Boolean,
+    };
+
+    pub const INTEGER: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Integer,
+    };
+
+    pub const NULL: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Null,
+    };
+
+    pub const OBJECT_IDENTIFIER: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::ObjectIdentifier,
+    };
+
+    pub const REAL: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Real,
+    };
+
+    pub const ENUMERATED: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Enumerated,
+    };
+
+    pub const RELATIVE_OID: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::RelativeOid,
+    };
+
+    pub const BIT_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::BitString,
+    };
+
+    pub const OCTET_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::OctetString,
+    };
+
+    pub const UTF8_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Utf8String,
+    };
+
+    pub const NUMERIC_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::NumericString,
+    };
+
+    pub const PRINTABLE_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::PrintableString,
+    };
+
+    pub const TELETEX_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::TeletexString,
+    };
+
+    pub const VIDEOTEX_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::VideotexString,
+    };
+
+    pub const IA5_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::Ia5String,
+    };
+
+    pub const UTC_TIME: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::UtcTime,
+    };
+
+    pub const GENERALIZED_TIME: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::GeneralizedTime,
+    };
+
+    pub const VISIBLE_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::VisibleString,
+    };
+
+    pub const GENERAL_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::GeneralString,
+    };
+
+    pub const BMP_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::BmpString,
+    };
+
+    pub const BIT_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::BitString,
+    };
+
+    pub const OCTET_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::OctetString,
+    };
+
+    pub const UTF8_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::Utf8String,
+    };
+
+    pub const NUMERIC_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::NumericString,
+    };
+
+    pub const PRINTABLE_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::PrintableString,
+    };
+
+    pub const TELETEX_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::TeletexString,
+    };
+
+    pub const VIDEOTEX_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::VideotexString,
+    };
+
+    pub const IA5_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::Ia5String,
+    };
+
+    pub const UTC_TIME_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::UtcTime,
+    };
+
+    pub const GENERALIZED_TIME_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::GeneralizedTime,
+    };
+
+    pub const VISIBLE_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::VisibleString,
+    };
+
+    pub const GENERAL_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::GeneralString,
+    };
+
+    pub const BMP_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::BmpString,
+    };
+
+    pub const SEQUENCE: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::Sequence,
+    };
+
+    pub const SET: Tag = Tag { class: Class::Universal, constructed: true, number: TagNumber::Set };
+}
+
+use crate::combinators::Const;
+use super::TagFmt;
+
+impl super::TagFmt {
+    pub const BOOLEAN_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BOOLEAN);
+
+    pub const INTEGER_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::INTEGER);
+
+    pub const NULL_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::NULL);
+
+    pub const OBJECT_IDENTIFIER_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::OBJECT_IDENTIFIER);
+
+    pub const REAL_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::REAL);
+
+    pub const ENUMERATED_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::ENUMERATED);
+
+    pub const RELATIVE_OID_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::RELATIVE_OID);
+
+    pub const BIT_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BIT_STRING);
+
+    pub const OCTET_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::OCTET_STRING);
+
+    pub const UTF8_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::UTF8_STRING);
+
+    pub const NUMERIC_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::NUMERIC_STRING);
+
+    pub const PRINTABLE_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::PRINTABLE_STRING);
+
+    pub const TELETEX_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::TELETEX_STRING);
+
+    pub const VIDEOTEX_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::VIDEOTEX_STRING);
+
+    pub const IA5_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::IA5_STRING);
+
+    pub const UTC_TIME_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::UTC_TIME);
+
+    pub const GENERALIZED_TIME_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::GENERALIZED_TIME);
+
+    pub const VISIBLE_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::VISIBLE_STRING);
+
+    pub const GENERAL_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::GENERAL_STRING);
+
+    pub const BMP_STRING_TAG: Const<TagFmt, Tag> = Const(TagFmt, TagFmt::BMP_STRING);
 }
 
 } // verus!

@@ -325,7 +325,7 @@ proof fn lemma_uint64_shl7_or_is_base128(v: u64, b: u8)
 {
 }
 
-proof fn lemma_base128_fmt_consistent<const MINIMAL: bool>(v: UInt)
+pub(crate) proof fn lemma_base128_fmt_consistent<const MINIMAL: bool>(v: UInt)
     requires
         nat_to_base128(v as nat).len() <= BASE128_MAX_BYTES,
     ensures
@@ -344,7 +344,7 @@ proof fn lemma_base128_fmt_consistent<const MINIMAL: bool>(v: UInt)
         by (bit_vector);
 }
 
-proof fn lemma_base128_fmt_byte_len<const MINIMAL: bool>(v: UInt)
+pub proof fn lemma_base128_fmt_byte_len<const MINIMAL: bool>(v: UInt)
     ensures
         base128_fmt::<MINIMAL>().byte_len(v) == nat_to_base128(v as nat).len(),
 {
@@ -544,7 +544,7 @@ mod derived_specs {
     impl<const MINIMAL: bool> SpecParser for Base128Fmt<MINIMAL> {
         type PVal = UInt;
 
-        open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        open(crate) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             base128_fmt::<MINIMAL>().spec_parse(ibuf)
         }
     }
@@ -552,7 +552,7 @@ mod derived_specs {
     impl<const MINIMAL: bool> Consistency for Base128Fmt<MINIMAL> {
         type Val = UInt;
 
-        open(super) spec fn consistent(&self, v: Self::Val) -> bool {
+        open(crate) spec fn consistent(&self, v: Self::Val) -> bool {
             base128_fmt::<MINIMAL>().consistent(v)
         }
     }
@@ -560,7 +560,7 @@ mod derived_specs {
     impl<const MINIMAL: bool> SpecSerializerDps for Base128Fmt<MINIMAL> {
         type SValue = UInt;
 
-        open(super) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        open(crate) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             base128_fmt::<MINIMAL>().spec_serialize_dps(v, obuf)
         }
     }
@@ -568,7 +568,7 @@ mod derived_specs {
     impl<const MINIMAL: bool> SpecSerializer for Base128Fmt<MINIMAL> {
         type SVal = UInt;
 
-        open(super) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        open(crate) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             base128_fmt::<MINIMAL>().spec_serialize(v)
         }
     }
@@ -576,7 +576,7 @@ mod derived_specs {
     impl<const MINIMAL: bool> SpecByteLen for Base128Fmt<MINIMAL> {
         type T = UInt;
 
-        open(super) spec fn byte_len(&self, v: Self::T) -> nat {
+        open(crate) spec fn byte_len(&self, v: Self::T) -> nat {
             base128_fmt::<MINIMAL>().byte_len(v)
         }
     }
