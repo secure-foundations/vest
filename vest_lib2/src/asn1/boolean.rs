@@ -239,13 +239,13 @@ impl Serializer<bool> for super::Bool<true> {
 }
 
 impl Prepare<bool> for super::Bool<true> {
-    fn prepare(&self, v: &bool) -> Result<usize, PreSerializeError> {
+    fn prepare(&self, _v: &bool) -> Result<usize, PreSerializeError> {
         Ok(BOOL_BYTE_LEN)
     }
 }
 
 impl ByteLen<bool> for super::Bool<true> {
-    fn length(&self, v: &bool) -> usize {
+    fn length(&self, _v: &bool) -> usize {
         BOOL_BYTE_LEN
     }
 }

@@ -11,9 +11,7 @@ use crate::core::{
     },
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
 };
-use vstd::laws_eq::obeys_concrete_eq;
 use vstd::prelude::*;
-use vstd::std_specs::cmp::PartialEqSpec;
 
 verus! {
 

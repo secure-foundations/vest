@@ -274,7 +274,6 @@ pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
 {
     let n = bytes.len();
     let mut acc: usize = 0;
-    let mut i: usize = 0;
     for i in 0..n
         invariant
             n == bytes.len(),

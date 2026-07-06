@@ -74,6 +74,14 @@ pub struct Tag {
     pub number: TagNumber,
 }
 
+/*
+// somehow needed for regular `cargo check/build`
+// unsafe impl Structural for TagNumber {}
+// unsafe impl Structural for Class {}
+// unsafe impl Structural for Tag {}
+ *
+ */
+
 pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
     match num {
         TagNumber::Boolean => 1,

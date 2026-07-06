@@ -10,7 +10,6 @@ use crate::{
         spec::{SafeParser, SpecParser, SpecSerializer},
     },
 };
-use vstd::laws_eq::obeys_concrete_eq;
 use vstd::prelude::*;
 
 verus! {
