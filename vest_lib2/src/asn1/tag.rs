@@ -209,7 +209,7 @@ type TagWire = Bind<U8, spec_fn(u8) -> Sum<Empty, Refined<Base128Fmt<true>, Pred
 type TagFmt__ = Mapped<TagWire, FnSpecMapper<(u8, Sum<(), UInt>), Tag>>;
 
 #[verusfmt::skip]
-pub(super) open(super) spec fn tag_wire() -> TagWire {
+pub(crate) open(crate) spec fn tag_wire() -> TagWire {
     Bind(U8, |b1: u8| {
         if b1 & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL {
             R(Refined(Base128Fmt::<true>, |n: UInt| n >= TAG_LONG_FORM_SENTINEL as UInt))
@@ -219,7 +219,7 @@ pub(super) open(super) spec fn tag_wire() -> TagWire {
     })
 }
 
-pub(super) open(super) spec fn tag_fmt() -> TagFmt__ {
+pub(crate) open(crate) spec fn tag_fmt() -> TagFmt__ {
     Mapped {
         inner: tag_wire(),
         mapper: (
@@ -409,7 +409,7 @@ mod derived_specs {
     impl SpecParser for TagFmt {
         type PVal = Tag;
 
-        open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        open(crate) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             tag_fmt().spec_parse(ibuf)
         }
     }
@@ -417,16 +417,15 @@ mod derived_specs {
     impl Consistency for TagFmt {
         type Val = Tag;
 
-        open(super) spec fn consistent(&self, v: Self::Val) -> bool {
-            &&& tag_fmt().consistent(v)
-            &&& tag_number_wf(v.number)
+        open(crate) spec fn consistent(&self, v: Self::Val) -> bool {
+            tag_number_wf(v.number)
         }
     }
 
     impl SpecSerializerDps for TagFmt {
         type SValue = Tag;
 
-        open(super) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        open(crate) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             tag_fmt().spec_serialize_dps(v, obuf)
         }
     }
@@ -434,7 +433,7 @@ mod derived_specs {
     impl SpecSerializer for TagFmt {
         type SVal = Tag;
 
-        open(super) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        open(crate) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             tag_fmt().spec_serialize(v)
         }
     }
@@ -442,7 +441,7 @@ mod derived_specs {
     impl SpecByteLen for TagFmt {
         type T = Tag;
 
-        open(super) spec fn byte_len(&self, v: Self::T) -> nat {
+        open(crate) spec fn byte_len(&self, v: Self::T) -> nat {
             tag_fmt().byte_len(v)
         }
     }
@@ -495,6 +494,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TagFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            lemma_tag_wf_implies_tag_fmt_consistent(v);
             lemma_tag_fmt_unambiguous(v);
             tag_fmt().inner.theorem_serialize_dps_parse_roundtrip(tag_fmt().mapper.1(v), obuf);
         }
@@ -625,6 +625,9 @@ impl Serializer<Tag> for super::TagFmt {
         } else {
             0u8
         };
+        proof {
+            lemma_tag_wf_implies_tag_fmt_consistent(*v);
+        }
         if num < TAG_LONG_FORM_SENTINEL as UInt {
             let low = num as u8;
             let b1 = class_bits | constructed_bit | (low & TAG_NUMBER_MASK);
