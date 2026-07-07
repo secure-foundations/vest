@@ -4,22 +4,36 @@
 
 /// ASN.1 BIT STRING contents octets.
 pub mod bitstring;
+/// ASN.1 BMPString contents.
+pub mod bmpstring;
 /// ASN.1 BOOLEAN contents octet.
 pub mod boolean;
+/// ASN.1 GeneralizedTime contents.
+pub mod generalizedtime;
+/// ASN.1 IA5String contents.
+pub mod ia5string;
 /// ASN.1 INTEGER contents octets.
 pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
+/// ASN.1 PrintableString contents.
+pub mod printablestring;
 /// ASN.1 tag octets.
 pub mod tag;
+/// ASN.1 TeletexString contents.
+pub mod teletexstring;
 /// ASN.1 TLV wrapper.
 pub mod tlv;
+/// ASN.1 UTCTime contents.
+pub mod utctime;
+/// ASN.1 UTF8String contents.
+pub mod utf8string;
 
 pub use tag::Tag;
 
 use crate::{
     combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Implicit, PrefixTagged, Tail,
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Empty, Implicit, PrefixTagged, Tail,
         TryMap, U8,
     },
     core::proof::{Leaf, LeafNonMalleable},
@@ -119,11 +133,63 @@ pub struct TagFmt;
 /// Convenience type alias for the DER variant of ASN.1 BIT STRING.
 pub type DerBitString = BitStringFmt<true>;
 
-/// ASN.1 OCTET STRING contents format.
+/// ASN.1 OCTET STRING contents format (primitive).
 pub type OctetString = Tail;
 
 /// Convenience value alias for ASN.1 OCTET STRING contents format.
 pub const OctetString: Tail = Tail;
+
+/// ASN.1 NULL format.
+pub type Null = Empty;
+
+/// Convenience value alias for ASN.1 NULL format.
+pub const Null: Empty = Empty;
+
+/// ASN.1 UTCTime format.
+#[derive(Clone, Copy)]
+pub struct UtcTime;
+
+/// ASN.1 UTF8String format.
+#[derive(Clone, Copy)]
+pub struct Utf8String;
+
+/// ASN.1 PrintableString format.
+#[derive(Clone, Copy)]
+pub struct PrintableString;
+
+/// ASN.1 IA5String format.
+#[derive(Clone, Copy)]
+pub struct Ia5String;
+
+/// ASN.1 BMPString format.
+#[derive(Clone, Copy)]
+pub struct BmpString;
+
+/// ASN.1 TeletexString format.
+#[derive(Clone, Copy)]
+pub struct TeletexString;
+
+/// ASN.1 GeneralizedTime format.
+#[derive(Clone, Copy)]
+pub struct GeneralizedTime;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, StructuralEq)]
+pub struct DateTime {
+    pub year: u16,
+    pub month: u8,
+    pub day: u8,
+    pub hour: u8,
+    pub minutes: u8,
+    pub seconds: u8,
+}
+
+impl DeepView for DateTime {
+    type V = DateTime;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        *self
+    }
+}
 
 impl LeafNonMalleable for DerBool {
     proof fn nonmal_leaf_inv(&self) {

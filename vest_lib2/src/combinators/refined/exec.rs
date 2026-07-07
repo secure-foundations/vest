@@ -162,9 +162,7 @@ impl<Inner, T> Prepare<T> for super::Const<Inner, T> where
     }
 }
 
-pub proof fn lemma_const_exec_inv<Inner, T, I>(
-    fmt: &super::Const<Inner, T>,
-) where
+pub proof fn lemma_const_exec_inv<Inner, T, I>(fmt: &super::Const<Inner, T>) where
     I: InputBuf,
     Inner: Parser<I, PT = T, PVal = T> + Prepare<T>,
     T: DeepView<V = T> + PartialEq + Structural,

@@ -1,0 +1,256 @@
+use super::utf8string::{is_valid_utf8, utf8_from_bytes_unchecked};
+use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::{
+    parser::{PResult, Parser},
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+    ParseError,
+};
+use crate::{
+    combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, Tail},
+    core::{proof::*, spec::*},
+};
+use vstd::prelude::*;
+use vstd::string::StringSliceAdditionalSpecFns;
+
+verus! {
+
+pub struct Ia5String<'a> {
+    inner: &'a str,
+}
+
+#[verifier::ext_equal]
+pub struct Ia5StringSpec {
+    pub inner: Seq<char>,
+}
+
+impl<'a> DeepView for Ia5String<'a> {
+    type V = Ia5StringSpec;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        Ia5StringSpec { inner: self.inner.deep_view() }
+    }
+}
+
+impl<'a> Ia5String<'a> {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        self.deep_view().wf()
+    }
+
+    pub fn new(inner: &'a str) -> (res: Self)
+        requires
+            is_valid_ia5_string_spec(vstd::utf8::encode_utf8(inner.deep_view())),
+        ensures
+            res.deep_view() == (Ia5StringSpec { inner: inner.deep_view() }),
+    {
+        Ia5String { inner }
+    }
+
+    pub fn inner(&self) -> (res: &'a str)
+        ensures
+            res.deep_view() == self.deep_view().inner,
+    {
+        self.inner
+    }
+}
+
+impl Ia5StringSpec {
+    pub open spec fn wf(&self) -> bool {
+        is_valid_ia5_string_spec(vstd::utf8::encode_utf8(self.inner))
+    }
+}
+
+pub open spec fn is_valid_ia5_string_spec(bytes: Seq<u8>) -> bool {
+    forall|i: int| 0 <= i < bytes.len() ==> #[trigger] bytes[i] <= 127
+}
+
+pub fn is_valid_ia5_string(bytes: &[u8]) -> (res: bool)
+    ensures
+        res == is_valid_ia5_string_spec(bytes.deep_view()),
+{
+    for b in iter: bytes.iter()
+        invariant
+            forall|k: int| 0 <= k < iter.index() ==> #[trigger] bytes.deep_view()[k] <= 127,
+    {
+        if *b > 127 {
+            assert(bytes.deep_view()[iter.index()] > 127);
+            return false;
+        }
+    }
+    true
+}
+
+type Ia5StringFmt = Mapped<
+    Refined<Tail, PredFnSpec<Seq<u8>>>,
+    FnSpecMapper<Seq<u8>, Ia5StringSpec>,
+>;
+
+pub open spec fn ia5string_fmt() -> Ia5StringFmt {
+    Mapped {
+        inner: Refined(
+            Tail,
+            |bytes: Seq<u8>| is_valid_ia5_string_spec(bytes) && vstd::utf8::valid_utf8(bytes),
+        ),
+        mapper: (
+            |bytes: Seq<u8>| Ia5StringSpec { inner: vstd::utf8::decode_utf8(bytes) },
+            |s: Ia5StringSpec| vstd::utf8::encode_utf8(s.inner),
+        ),
+    }
+}
+
+mod derived_specs {
+    use super::*;
+
+    impl SpecParser for super::super::Ia5String {
+        type PVal = Ia5StringSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            ia5string_fmt().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for super::super::Ia5String {
+        type Val = Ia5StringSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            ia5string_fmt().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for super::super::Ia5String {
+        type SValue = Ia5StringSpec;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            ia5string_fmt().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for super::super::Ia5String {
+        type SVal = Ia5StringSpec;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            ia5string_fmt().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for super::super::Ia5String {
+        type T = Ia5StringSpec;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            ia5string_fmt().byte_len(v)
+        }
+    }
+
+}
+
+mod derived_proofs {
+    use super::*;
+
+    impl SafeParser for super::super::Ia5String {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            ia5string_fmt().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for super::super::Ia5String {
+        open spec fn productive_inv(&self) -> bool {
+            false
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+        }
+    }
+
+    impl SoundParser for super::super::Ia5String {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+            ia5string_fmt().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+            ia5string_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl GoodSerializer for super::super::Ia5String {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            ia5string_fmt().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for super::super::Ia5String {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            broadcast use vstd::utf8::encode_utf8_decode_utf8;
+
+            ia5string_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for super::super::Ia5String {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+            ia5string_fmt().lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializers for super::super::Ia5String {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            ia5string_fmt().lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+}
+
+impl<'i> Parser<&'i [u8]> for super::Ia5String {
+    type PT = Ia5String<'i>;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        let (n, bytes) = Tail.parse(ibuf)?;
+        if !is_valid_ia5_string(bytes) {
+            Err(ParseError::custom("Invalid Ia5String"))
+        } else if !is_valid_utf8(bytes) {
+            Err(ParseError::custom("Invalid UTF-8"))
+        } else {
+            let inner = utf8_from_bytes_unchecked(bytes);
+            Ok((n, Ia5String::new(inner)))
+        }
+    }
+}
+
+impl<'i> Serializer<Ia5String<'i>> for super::Ia5String {
+    fn serialize(&self, v: &Ia5String<'i>, obuf: &mut Vec<u8>) {
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_bytes();
+        Tail.serialize(&bytes, obuf);
+    }
+}
+
+impl<'i> Prepare<Ia5String<'i>> for super::Ia5String {
+    fn prepare(&self, v: &Ia5String<'i>) -> Result<usize, PreSerializeError> {
+        broadcast use vstd::utf8::encode_utf8_valid_utf8;
+
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_bytes();
+        Tail.prepare(&bytes)
+    }
+}
+
+impl<'i> ByteLen<Ia5String<'i>> for super::Ia5String {
+    fn length(&self, v: &Ia5String<'i>) -> usize {
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_bytes();
+        Tail.length(&bytes)
+    }
+}
+
+} // verus!

@@ -995,6 +995,9 @@ fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
 // somehow needed for regular `cargo check/build/test`
  *
  */
-// unsafe impl Structural for TagNumber {}
-// unsafe impl Structural for Class {}
-// unsafe impl Structural for Tag {}
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for TagNumber {}
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for Class {}
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for Tag {}
