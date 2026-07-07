@@ -7,10 +7,14 @@
 //! | [`Fixed<N>`] | Exactly `N` bytes |
 //! | [`Varied<Len>`] | Variable-length bytes determined by a length parameter |
 //! | [`U8`] | Unsigned 8-bit integer |
+//! | [`I8`] | Signed 8-bit integer |
 //! | [`U16Le`] / [`U16Be`] | Unsigned 16-bit integer (little/big-endian) |
+//! | [`I16Le`] / [`I16Be`] | Signed 16-bit integer (little/big-endian) |
 //! | [`U24Le`] / [`U24Be`] | Unsigned 24-bit integer represented as `u32` (little/big-endian) |
 //! | [`U32Le`] / [`U32Be`] | Unsigned 32-bit integer (little/big-endian) |
+//! | [`I32Le`] / [`I32Be`] | Signed 32-bit integer (little/big-endian) |
 //! | [`U64Le`] / [`U64Be`] | Unsigned 64-bit integer (little/big-endian) |
+//! | [`I64Le`] / [`I64Be`] | Signed 64-bit integer (little/big-endian) |
 //!
 //! # Higher-order combinators
 //!
@@ -91,6 +95,7 @@ pub mod permute;
 pub mod preceded;
 pub mod recursive;
 pub mod refined;
+pub mod sints;
 pub mod star;
 pub mod tail;
 pub mod terminated;
@@ -111,6 +116,7 @@ pub use permute::{Permute2, Permute3, Permute4};
 pub use preceded::Preceded;
 pub use recursive::FixWith;
 pub use refined::{Const, PrefixTagged, Refined, SuffixTagged};
+pub use sints::{I16Be, I16Le, I32Be, I32Le, I64Be, I64Le, I8};
 pub use star::{Array, Repeat, RepeatN, Star};
 pub use tail::{Eof, OptionalEnd, RepeatTillEnd, Tail};
 pub use terminated::Terminated;
