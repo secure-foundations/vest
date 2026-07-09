@@ -1,5 +1,5 @@
 use crate::combinators::{Fixed, Preceded, Terminated};
-use crate::core::exec::cmp_byte_slices;
+use crate::core::exec::bytes_eq;
 use crate::core::exec::input::InputBuf;
 use crate::core::{
     exec::{
@@ -197,7 +197,7 @@ impl<const N: usize> Prepare<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     fn prepare(&self, v: &[u8; N]) -> (checked: Result<usize, PreSerializeError>) {
         let v_slice = v.as_slice();
         let tag_slice = self.1.as_slice();
-        let eq = cmp_byte_slices(v_slice, tag_slice);
+        let eq = bytes_eq(v_slice, tag_slice);
         proof {
             assert(v_slice.deep_view() == v.deep_view());
             assert(tag_slice.deep_view() == self.1@);
@@ -240,7 +240,7 @@ impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
             v.deep_view_eq_view();
             tag.deep_view_eq_view();
         }
-        if cmp_byte_slices(tag, v) {
+        if bytes_eq(tag, v) {
             Ok((n, self.1))
         } else {
             Err(ParseError::invalid_tag())
