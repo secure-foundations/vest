@@ -1,8 +1,13 @@
-use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};
-use crate::combinators::{Alt, Mapped, PrefixTagged, Refined, U16Le, U32Le, U64Le, U8};
+use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper};
+use crate::combinators::{
+    Alt, Bind, Empty, Mapped, PrefixTagged, Refined, Sum, U16Le, U32Le, U64Le, Void, U8,
+};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::{exec::*, proof::*, spec::*};
+use crate::Never;
 use vstd::prelude::*;
+use Sum::Inl as L;
+use Sum::Inr as R;
 
 use PrefixTagged as Tagged;
 verus! {
@@ -24,175 +29,58 @@ pub const VARINT_TAG_U32: u8 = 0xFEu8;
 
 pub const VARINT_TAG_U64: u8 = 0xFFu8;
 
-pub type VarIntFmt<const MINIMAL: bool> = Alt<
-    VarIntU8Form,
-    Alt<VarIntU16Form<MINIMAL>, Alt<VarIntU32Form<MINIMAL>, VarIntU64Form<MINIMAL>>>,
+pub type VarIntFmt<const MINIMAL: bool> = Mapped<
+    Bind<
+        U8,
+        spec_fn(u8) -> Sum<
+            Empty,
+            Sum<
+                Refined<U16Le, PredFnSpec<u16>>,
+                Sum<Refined<U32Le, PredFnSpec<u32>>, Sum<Refined<U64Le, PredFnSpec<u64>>, Void>>,
+            >,
+        >,
+    >,
+    FnSpecMapper<(u8, Sum<(), Sum<u16, Sum<u32, Sum<u64, Never>>>>), u64>,
 >;
-
-pub type VarIntU8Form = Mapped<Refined<U8, PredFnSpec<u8>>, U8AsU64>;
-
-pub type VarIntU16Form<const MINIMAL: bool> = Tagged<
-    U8,
-    u8,
-    Mapped<Refined<U16Le, PredFnSpec<u16>>, U16FromToU64>,
->;
-
-pub type VarIntU32Form<const MINIMAL: bool> = Tagged<
-    U8,
-    u8,
-    Mapped<Refined<U32Le, PredFnSpec<u32>>, U32FromToU64>,
->;
-
-pub type VarIntU64Form<const MINIMAL: bool> = Tagged<U8, u8, Refined<U64Le, PredFnSpec<u64>>>;
 
 pub open spec fn varint_fmt<const MINIMAL: bool>() -> VarIntFmt<MINIMAL> {
-    Alt(
-        varint_u8_form(),
-        Alt(
-            varint_u16_form::<MINIMAL>(),
-            Alt(varint_u32_form::<MINIMAL>(), varint_u64_form::<MINIMAL>()),
+    Mapped {
+        inner: Bind(
+            U8,
+            |b1: u8|
+                match b1 {
+                    b if b < VARINT_TAG_U16 => L(Empty),
+                    VARINT_TAG_U16 => R(L(Refined(U16Le, |v| MINIMAL ==> VARINT_TAG_U16 <= v))),
+                    VARINT_TAG_U32 => R(R(L(Refined(U32Le, |v| MINIMAL ==> u16::MAX < v)))),
+                    VARINT_TAG_U64 => R(R(R(L(Refined(U64Le, |v| MINIMAL ==> u32::MAX < v))))),
+                    _ => R(R(R(R(Void("Impossible"))))),
+                },
         ),
-    )
-}
-
-pub open spec fn varint_u8_form() -> VarIntU8Form {
-    Mapped { inner: Refined(U8, |v: u8| v < VARINT_TAG_U16), mapper: U8AsU64 }
-}
-
-pub open spec fn varint_u16_form<const MINIMAL: bool>() -> VarIntU16Form<MINIMAL> {
-    Tagged(
-        U8,
-        VARINT_TAG_U16,
-        Mapped {
-            inner: Refined(U16Le, |v: u16| MINIMAL ==> VARINT_TAG_U16 <= v),
-            mapper: U16FromToU64,
-        },
-    )
-}
-
-pub open spec fn varint_u32_form<const MINIMAL: bool>() -> VarIntU32Form<MINIMAL> {
-    Tagged(
-        U8,
-        VARINT_TAG_U32,
-        Mapped { inner: Refined(U32Le, |v: u32| MINIMAL ==> u16::MAX < v), mapper: U32FromToU64 },
-    )
-}
-
-pub open spec fn varint_u64_form<const MINIMAL: bool>() -> VarIntU64Form<MINIMAL> {
-    Tagged(U8, VARINT_TAG_U64, Refined(U64Le, |v: u64| MINIMAL ==> u32::MAX < v))
-}
-
-pub struct U8AsU64;
-
-impl SpecMapper for U8AsU64 {
-    type In = u8;
-
-    type Out = u64;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        i as u64
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o <= u8::MAX
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        o as u8
-    }
-}
-
-impl LossyMapper for U8AsU64 {
-    proof fn lemma_sound_mapper(&self, _o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for U8AsU64 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, _i: Self::In) {
-    }
-}
-
-pub struct U16FromToU64;
-
-impl SpecMapper for U16FromToU64 {
-    type In = u16;
-
-    type Out = u64;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        i as u64
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o <= u16::MAX
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        o as u16
-    }
-}
-
-impl LossyMapper for U16FromToU64 {
-    proof fn lemma_sound_mapper(&self, _o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for U16FromToU64 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, _i: Self::In) {
-    }
-}
-
-pub struct U32FromToU64;
-
-impl SpecMapper for U32FromToU64 {
-    type In = u32;
-
-    type Out = u64;
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        i as u64
-    }
-
-    open spec fn wf_out(&self, o: Self::Out) -> bool {
-        o <= u32::MAX
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        o as u32
-    }
-}
-
-impl LossyMapper for U32FromToU64 {
-    proof fn lemma_sound_mapper(&self, _o: Self::Out) {
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, _o: Self::Out) {
-    }
-}
-
-impl LosslessMapper for U32FromToU64 {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, _i: Self::In) {
+        mapper: (
+            |parsed: (u8, Sum<(), Sum<u16, Sum<u32, Sum<u64, Never>>>>)|
+                match parsed {
+                    (b, L(_)) => b as u64,
+                    (VARINT_TAG_U16, R(L(v))) => v as u64,
+                    (VARINT_TAG_U32, R(R(L(v)))) => v as u64,
+                    (VARINT_TAG_U64, R(R(R(L(v))))) => v,
+                    _ => arbitrary(),  // unreachable
+                },
+            |v: u64|
+                {
+                    match v {
+                        v if v < VARINT_TAG_U16 as u64 => (v as u8, L(())),
+                        v if v <= u16::MAX as u64 => (VARINT_TAG_U16, R(L(v as u16))),
+                        v if v <= u32::MAX as u64 => (VARINT_TAG_U32, R(R(L(v as u32)))),
+                        _ => (VARINT_TAG_U64, R(R(R(L(v))))),
+                    }
+                },
+        ),
     }
 }
 
 pub struct VarInt<const MINIMAL: bool>;
 
-mod bitcoin_varint_derived_specs {
+mod derived_specs {
     use super::*;
 
     impl<const MINIMAL: bool> SpecParser for VarInt<MINIMAL> {
@@ -237,7 +125,7 @@ mod bitcoin_varint_derived_specs {
 
 }
 
-mod bitcoin_varint_derived_proofs {
+mod derived_proofs {
     use super::*;
 
     impl<const MINIMAL: bool> SafeParser for VarInt<MINIMAL> {
@@ -278,34 +166,14 @@ mod bitcoin_varint_derived_proofs {
         }
     }
 
-    impl<const MINIMAL: bool> MinMaxByteLen for VarInt<MINIMAL> {
-        open spec fn min(&self) -> nat {
-            varint_fmt::<MINIMAL>().min()
-        }
-
-        open spec fn max(&self) -> nat {
-            varint_fmt::<MINIMAL>().max()
-        }
-
-        proof fn lemma_min_max_byte_len(&self, v: Self::T) {
-            varint_fmt::<MINIMAL>().lemma_min_max_byte_len(v);
-        }
-    }
-
     impl<const MINIMAL: bool> SPRoundTripDps for VarInt<MINIMAL> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            assert(varint_fmt::<MINIMAL>().unambiguous()) by {
-                reveal(disjoint_domains);
-            }
             varint_fmt::<MINIMAL>().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
     impl<const MINIMAL: bool> NoLookAhead for VarInt<MINIMAL> {
         proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-            assert(varint_fmt::<MINIMAL>().no_lookahead_inv()) by {
-                reveal(disjoint_domains);
-            }
             varint_fmt::<MINIMAL>().lemma_no_lookahead(i1, i2);
         }
     }
