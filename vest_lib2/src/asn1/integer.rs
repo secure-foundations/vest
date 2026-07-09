@@ -1,8 +1,14 @@
+use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::{
+    parser::{PResult, Parser},
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+    ParseError,
+};
 use crate::primitives::base256::*;
 use crate::{
     combinators::{
-        mapped::spec::{LosslessMapper, LossyMapper, SpecMapper},
-        Tail, TryMap,
+        mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper},
+        Mapped, Refined, Tail,
     },
     core::{proof::*, spec::*},
 };
@@ -12,12 +18,13 @@ use vstd::prelude::*;
 
 verus! {
 
-pub struct IntFromToBytes;
-
-pub type IntegerFmt = TryMap<Tail, IntFromToBytes>;
+pub type IntegerFmt = Mapped<Refined<Tail, PredFnSpec<Seq<u8>>>, FnSpecMapper<Seq<u8>, int>>;
 
 pub open spec fn integer_fmt() -> IntegerFmt {
-    TryMap { inner: Tail, mapper: IntFromToBytes }
+    Mapped {
+        inner: Refined(Tail, |bytes: Seq<u8>| integer_bytes_wf(bytes)),
+        mapper: (|bytes: Seq<u8>| int_from_be_bytes(bytes), |o: int| int_to_be_bytes(o)),
+    }
 }
 
 pub open spec fn sign_bit_set(b: u8) -> bool {
@@ -130,206 +137,312 @@ pub proof fn lemma_from_be_bytes_invert(bytes: Seq<u8>)
     }
 }
 
-impl SpecMapper for IntFromToBytes {
-    type In = Seq<u8>;
-
-    type Out = int;
-
-    open spec fn wf_in(&self, i: Self::In) -> bool {
-        integer_bytes_wf(i)
-    }
-
-    open spec fn wf_out(&self, _o: Self::Out) -> bool {
-        true
-    }
-
-    open spec fn spec_map(&self, i: Self::In) -> Self::Out {
-        int_from_be_bytes(i)
-    }
-
-    open spec fn spec_map_rev(&self, o: Self::Out) -> Self::In {
-        int_to_be_bytes(o)
-    }
-}
-
-impl LossyMapper for IntFromToBytes {
-    proof fn lemma_sound_mapper(&self, o: Self::Out) {
-        if o >= 0 {
-            let n = o as nat;
-            let body = nat_to_be_bytes(n);
-            lemma_to_from_be_bytes_roundtrip(n);
-            if sign_bit_set(body[0]) {
-                lemma_from_be_bytes_prepend(body, 0x00u8);
-            }
+pub proof fn lemma_integer_from_to_bytes(i: Seq<u8>)
+    requires
+        integer_bytes_wf(i),
+    ensures
+        int_to_be_bytes(int_from_be_bytes(i)) == i,
+{
+    if sign_bit_set(i[0]) {
+        let c = invert_bytes(i);
+        lemma_invert_bytes_involutive(i);
+        lemma_from_be_bytes_invert(i);
+        assert((-1 - int_from_be_bytes(i)) as nat == nat_from_be_bytes(invert_bytes(i)));
+        if i.len() > 1 && i[0] == 0xFFu8 {
+            let body = i.drop_first();
+            let c_body = c.drop_first();
+            assert(!sign_bit_set(body[0]));
+            lemma_invert_byte_props(body[0]);
+            lemma_from_be_bytes_prepend(c_body, 0x00u8);
+            lemma_from_to_be_bytes_roundtrip(c_body);
+            lemma_invert_bytes_involutive(body);
+            let first = i[0];
+            assert(first == 0xFFu8);
+            assert(invert_byte(0xFFu8) == 0x00u8) by (bit_vector);
+            assert_seqs_equal!(c == seq![0x00u8] + c_body);
+            assert(i == seq![0xFFu8] + body);
         } else {
-            let n = (-1 - o) as nat;
-            let unsigned = nat_to_be_bytes(n);
-            let body = invert_bytes(unsigned);
-            lemma_to_from_be_bytes_roundtrip(n);
-            lemma_from_be_bytes_invert(unsigned);
-            if !sign_bit_set(body[0]) {
-                lemma_from_be_bytes_prepend(body, 0xFFu8);
-                lemma_pow256_succ(unsigned.len());
+            if c.len() > 1 {
+                lemma_invert_byte_props(i[0]);
+                assert(c[0] != 0x00u8);
             }
+            lemma_from_to_be_bytes_roundtrip(c);
         }
-    }
-
-    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
-        if o >= 0 {
-            let n = o as nat;
-            lemma_to_be_bytes_props(n);
+        lemma_from_be_bytes_upper_bound(i);
+        assert(int_from_be_bytes(i) < 0);
+        assert(int_to_be_bytes(int_from_be_bytes(i)) == i);
+    } else {
+        if i.len() == 1 {
+            lemma_from_be_bytes_singleton(i[0]);
+            assert(i == seq![i[0]]);
+        } else if i[0] == 0x00u8 {
+            let body = i.drop_first();
+            assert(sign_bit_set(body[0]));
+            lemma_from_be_bytes_prepend(body, 0x00u8);
+            lemma_from_to_be_bytes_roundtrip(body);
+            assert(i == seq![0x00u8] + body);
         } else {
-            let n = (-1 - o) as nat;
-            lemma_to_be_bytes_props(n);
-            lemma_invert_byte_props(nat_to_be_bytes(n)[0]);
+            lemma_from_to_be_bytes_roundtrip(i);
         }
     }
 }
 
-impl LosslessMapper for IntFromToBytes {
-    proof fn lemma_lossless_mapper(&self, i: Self::In) {
-        if sign_bit_set(i[0]) {
-            let c = invert_bytes(i);
-            lemma_invert_bytes_involutive(i);
-            lemma_from_be_bytes_invert(i);
-            assert((-1 - int_from_be_bytes(i)) as nat == nat_from_be_bytes(invert_bytes(i)));
-            if i.len() > 1 && i[0] == 0xFFu8 {
-                let body = i.drop_first();
-                let c_body = c.drop_first();
-                assert(!sign_bit_set(body[0]));
-                lemma_invert_byte_props(body[0]);
-                lemma_from_be_bytes_prepend(c_body, 0x00u8);
-                lemma_from_to_be_bytes_roundtrip(c_body);
-                lemma_invert_bytes_involutive(body);
-                let first = i[0];
-                assert(first == 0xFFu8);
-                assert(invert_byte(0xFFu8) == 0x00u8) by (bit_vector);
-                assert_seqs_equal!(c == seq![0x00u8] + c_body);
-                assert(i == seq![0xFFu8] + body);
-            } else {
-                if c.len() > 1 {
-                    lemma_invert_byte_props(i[0]);
-                    assert(c[0] != 0x00u8);
-                }
-                lemma_from_to_be_bytes_roundtrip(c);
+pub proof fn lemma_integer_to_from_bytes(o: int)
+    ensures
+        int_from_be_bytes(int_to_be_bytes(o)) == o,
+        integer_bytes_wf(int_to_be_bytes(o)),
+{
+    if o >= 0 {
+        let n = o as nat;
+        let body = nat_to_be_bytes(n);
+        lemma_to_from_be_bytes_roundtrip(n);
+        if sign_bit_set(body[0]) {
+            lemma_from_be_bytes_prepend(body, 0x00u8);
+        }
+        lemma_to_be_bytes_props(n);
+    } else {
+        let n = (-1 - o) as nat;
+        let unsigned = nat_to_be_bytes(n);
+        let body = invert_bytes(unsigned);
+        lemma_to_from_be_bytes_roundtrip(n);
+        lemma_from_be_bytes_invert(unsigned);
+        if !sign_bit_set(body[0]) {
+            lemma_from_be_bytes_prepend(body, 0xFFu8);
+            lemma_pow256_succ(unsigned.len());
+        }
+        lemma_to_be_bytes_props(n);
+        lemma_invert_byte_props(nat_to_be_bytes(n)[0]);
+    }
+}
+
+pub proof fn lemma_integer_fmt_sound_nonmal_inv()
+    ensures
+        integer_fmt().sound_inv(),
+        integer_fmt().nonmal_inv(),
+{
+    assert forall|v: Seq<u8>| #[trigger] integer_fmt().inner.consistent(v) implies (
+    integer_fmt().mapper.1)((integer_fmt().mapper.0)(v)) == v by {
+        lemma_integer_from_to_bytes(v);
+    }
+}
+
+pub proof fn lemma_integer_fmt_unambiguous()
+    ensures
+        integer_fmt().unambiguous(),
+{
+    assert forall|o: int| #[trigger] integer_fmt().consistent(o) implies (integer_fmt().mapper.0)(
+        (integer_fmt().mapper.1)(o),
+    ) == o by {
+        lemma_integer_to_from_bytes(o);
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct IntVal<'a> {
+    inner: &'a [u8],
+}
+
+impl<'a> DeepView for IntVal<'a> {
+    type V = int;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        int_from_be_bytes(self.view_bytes())
+    }
+}
+
+impl<'a> IntVal<'a> {
+    pub closed spec fn view_bytes(&self) -> Seq<u8> {
+        self.inner.deep_view()
+    }
+
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        integer_bytes_wf(self.view_bytes())
+    }
+
+    pub fn new(inner: &'a [u8]) -> (res: Self)
+        requires
+            integer_bytes_wf(inner.deep_view()),
+        ensures
+            res.view_bytes() == inner.deep_view(),
+    {
+        IntVal { inner }
+    }
+
+    pub fn inner(&self) -> (res: &'a [u8])
+        ensures
+            res.deep_view() == self.view_bytes(),
+    {
+        self.inner
+    }
+}
+
+mod derived_specs {
+    use super::*;
+    use super::super::Integer;
+
+    impl SpecParser for Integer {
+        type PVal = int;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            integer_fmt().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for Integer {
+        type Val = int;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            integer_fmt().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for Integer {
+        type SValue = int;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            integer_fmt().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for Integer {
+        type SVal = int;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            integer_fmt().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for Integer {
+        type T = int;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            integer_fmt().byte_len(v)
+        }
+    }
+
+    impl ValueByteLen for Integer {
+        open spec fn value_byte_len(v: Self::T) -> nat {
+            integer_fmt().byte_len(v)
+        }
+
+        proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        }
+    }
+
+}
+
+mod derived_proofs {
+    use super::*;
+    use super::super::Integer;
+
+    impl SafeParser for Integer {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            integer_fmt().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for Integer {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            if let Some((n, _)) = integer_fmt().spec_parse(s) {
+                assert(n > 0);
             }
-            lemma_from_be_bytes_upper_bound(i);
-            assert(int_from_be_bytes(i) < 0);
-            assert(int_to_be_bytes(int_from_be_bytes(i)) == i);
-        } else {
-            if i.len() == 1 {
-                lemma_from_be_bytes_singleton(i[0]);
-                assert(i == seq![i[0]]);
-            } else if i[0] == 0x00u8 {
-                let body = i.drop_first();
-                assert(sign_bit_set(body[0]));
-                lemma_from_be_bytes_prepend(body, 0x00u8);
-                lemma_from_to_be_bytes_roundtrip(body);
-                assert(i == seq![0x00u8] + body);
-            } else {
-                lemma_from_to_be_bytes_roundtrip(i);
+        }
+    }
+
+    impl SoundParser for Integer {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            lemma_integer_fmt_sound_nonmal_inv();
+            integer_fmt().lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            lemma_integer_fmt_sound_nonmal_inv();
+            integer_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl GoodSerializer for Integer {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            integer_fmt().lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for Integer {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_fmt_unambiguous();
+            integer_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for Integer {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            lemma_integer_fmt_sound_nonmal_inv();
+            integer_fmt().lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializers for Integer {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            integer_fmt().lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+}
+
+impl<'i> Parser<&'i [u8]> for super::Integer {
+    type PT = IntVal<'i>;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        let (n, bytes) = Tail.parse(ibuf)?;
+        if bytes.len() == 0 {
+            return Err(ParseError::custom("Empty integer"));
+        }
+        if bytes.len() > 1 {
+            let b0 = bytes[0];
+            let b1 = bytes[1];
+            if b0 == 0x00 && b1 < 0x80 {
+                return Err(ParseError::custom("Non-minimal integer"));
+            }
+            if b0 == 0xFF && b1 >= 0x80 {
+                return Err(ParseError::custom("Non-minimal integer"));
             }
         }
-    }
-
-    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+        Ok((n, IntVal::new(bytes)))
     }
 }
 
-impl SpecParser for super::Integer {
-    type PVal = int;
-
-    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-        integer_fmt().spec_parse(ibuf)
-    }
-}
-
-impl Consistency for super::Integer {
-    type Val = int;
-
-    open spec fn consistent(&self, v: Self::Val) -> bool {
-        integer_fmt().consistent(v)
-    }
-}
-
-impl SafeParser for super::Integer {
-    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-        integer_fmt().lemma_parse_safe(ibuf);
-    }
-}
-
-impl Productive for super::Integer {
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        if let Some((n, _)) = integer_fmt().spec_parse(s) {
-            assert(n > 0);
+impl<'i> Serializer<IntVal<'i>> for super::Integer {
+    fn serialize(&self, v: &IntVal<'i>, obuf: &mut Vec<u8>) {
+        proof {
+            use_type_invariant(v);
+            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_from_to_bytes(v.inner.deep_view());
         }
+        Tail.serialize(&v.inner, obuf);
     }
 }
 
-impl SoundParser for super::Integer {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        integer_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        integer_fmt().lemma_parse_sound_value(ibuf);
-    }
-}
-
-impl SpecSerializerDps for super::Integer {
-    type SValue = int;
-
-    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-        integer_fmt().spec_serialize_dps(v, obuf)
+impl<'i> Prepare<IntVal<'i>> for super::Integer {
+    fn prepare(&self, v: &IntVal<'i>) -> Result<usize, PreSerializeError> {
+        proof {
+            use_type_invariant(v);
+            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_from_to_bytes(v.inner.deep_view());
+        }
+        Tail.prepare(&v.inner)
     }
 }
 
-impl SpecSerializer for super::Integer {
-    type SVal = int;
-
-    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-        integer_fmt().spec_serialize(v)
-    }
-}
-
-impl GoodSerializer for super::Integer {
-    proof fn lemma_serialize_len(&self, v: Self::SVal) {
-        integer_fmt().lemma_serialize_len(v);
-    }
-}
-
-impl SpecByteLen for super::Integer {
-    type T = int;
-
-    open spec fn byte_len(&self, v: Self::T) -> nat {
-        integer_fmt().byte_len(v)
-    }
-}
-
-impl ValueByteLen for super::Integer {
-    open spec fn value_byte_len(v: Self::T) -> nat {
-        integer_fmt().byte_len(v)
-    }
-
-    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
-    }
-}
-
-impl SPRoundTripDps for super::Integer {
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        integer_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
-    }
-}
-
-impl NonMalleable for super::Integer {
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        integer_fmt().lemma_parse_non_malleable(buf1, buf2);
-    }
-}
-
-impl EquivSerializers for super::Integer {
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        integer_fmt().lemma_serialize_equiv_on_empty(v);
+impl<'i> ByteLen<IntVal<'i>> for super::Integer {
+    fn length(&self, v: &IntVal<'i>) -> usize {
+        proof {
+            use_type_invariant(v);
+            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_from_to_bytes(v.inner.deep_view());
+        }
+        Tail.length(&v.inner)
     }
 }
 
