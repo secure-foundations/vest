@@ -10,6 +10,7 @@ pub use parser::{PResult, Parser};
 pub use serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer};
 
 use vstd::prelude::*;
+#[cfg(verus_only)]
 use vstd::std_specs::cmp::PartialEqIs;
 
 verus! {
