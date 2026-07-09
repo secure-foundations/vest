@@ -585,7 +585,8 @@ impl<'a> Analysis<'a> {
                     let c_ty = &c.ty;
                     let c_expr = &c.expr;
                     let c_value_expr = &c.value_expr;
-                    let ty = quote! { SuffixTagged<#body_ty, #c_ty> };
+                    let c_value_ty = &c.value_ty;
+                    let ty = quote! { SuffixTagged<#body_ty, #c_ty, #c_value_ty> };
                     let expr = quote! { SuffixTagged(#body_expr, #c_expr, #c_value_expr) };
                     body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
                 }
@@ -596,7 +597,8 @@ impl<'a> Analysis<'a> {
                     let c_ty = &c.ty;
                     let c_expr = &c.expr;
                     let c_value_expr = &c.value_expr;
-                    let ty = quote! { PrefixTagged<#c_ty, #body_ty> };
+                    let c_value_ty = &c.value_ty;
+                    let ty = quote! { PrefixTagged<#c_ty, #c_value_ty, #body_ty> };
                     let expr = quote! { PrefixTagged(#c_expr, #c_value_expr, #body_expr) };
                     body = RenderedSpec::new(ty, expr, body.value_ty, body.has_value);
                 }

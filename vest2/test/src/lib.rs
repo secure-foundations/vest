@@ -1,7 +1,11 @@
+#![cfg_attr(verus_only, verifier::allow(autoderive_clone_without_spec))]
+// #![verifier::allow(autoderive_clone_without_spec)]
+
 pub mod anonymous_nested;
 pub mod bitcoin;
 pub mod bits;
 pub mod bits_little;
+// pub mod cbor;
 pub mod codegen;
 pub mod elab;
 pub mod enum_constraints;

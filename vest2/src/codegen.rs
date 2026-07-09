@@ -289,15 +289,14 @@ pub(crate) fn prelude() -> String {
         use Sum::Inl as L;
         use Sum::Inr as R;
         use vest_lib2::Never;
-        use vest_lib2::core::exec::{DeepEq, SelfView};
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
         use vest_lib2::core::exec::parser::*;
         use vest_lib2::core::exec::serializer::*;
         use vest_lib2::core::exec::ParseError;
+        use vest_lib2::core::exec::bytes_eq;
         use vest_lib2::core::{proof::*, spec::*};
         use vest_lib2::primitives::btcvarint::VarInt;
         use vest_lib2::primitives::leb128::ULeb128;
-        use vest_lib2::macros::impl_self_view_for;
         use vstd::prelude::*;
     })
 }

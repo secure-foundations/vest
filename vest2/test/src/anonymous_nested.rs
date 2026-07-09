@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -22,7 +21,7 @@ verus! {
 // ============================================================
 # [doc = "data type for `a_or_b`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AOrB {
     A = 1,
     B = 2,
@@ -40,24 +39,14 @@ impl DeepView for AOrB {
     }
 }
 
-impl DeepEq for AOrB {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for AOrB {
 
-impl SelfView for AOrB {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `c_or_d`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum COrD {
     C = 1,
     D = 2,
@@ -75,19 +64,9 @@ impl DeepView for COrD {
     }
 }
 
-impl DeepEq for COrD {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for COrD {
 
-impl SelfView for COrD {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `nested_inner_struct`."]

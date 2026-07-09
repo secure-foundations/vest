@@ -471,7 +471,7 @@ impl<'a> Analysis<'a> {
         render_ts(quote! {
             #[doc = #doc]
             #[repr(#repr_ty)]
-            #[derive(Debug, PartialEq, Eq, Clone, Copy, Structural)]
+            #[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
             pub enum #exec_ident {
                 #(#exec_variants,)*
                 #extra_exec
@@ -484,17 +484,8 @@ impl<'a> Analysis<'a> {
                     *self
                 }
             }
-            impl DeepEq for #exec_ident {
-                fn deep_eq(&self, other: &Self) -> bool {
-                    *self == *other
-                }
-            }
-            impl SelfView for #exec_ident {
-                proof fn self_view(&self) {}
-                fn eq(&self, other: &Self) -> bool {
-                    *self == *other
-                }
-            }
+            #[cfg(not(verus_keep_ghost))]
+            unsafe impl Structural for #exec_ident {}
         })
     }
 

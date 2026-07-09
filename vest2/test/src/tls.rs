@@ -1,20 +1,26 @@
-#![allow(warnings)]
-use vest_lib2::combinators::mapped::spec::*;
-use vest_lib2::combinators::recursive::*;
-use vest_lib2::combinators::*;
-use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-use vest_lib2::core::exec::parser::*;
-use vest_lib2::core::exec::serializer::*;
-use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
-use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
-use vest_lib2::primitives::btcvarint::VarInt;
-use vest_lib2::primitives::leb128::ULeb128;
-use vest_lib2::Never;
-use vstd::prelude::*;
-use Sum::Inl as L;
-use Sum::Inr as R;
+# ! [allow (warnings)] use vest_lib2::combinators::mapped::spec::* ;
+use vest_lib2::combinators::* ;
+use vest_lib2::combinators::recursive::* ;
+use Sum::Inl as L ;
+use Sum::Inr as R ;
+use vest_lib2::Never ;
+use vest_lib2::core::exec::input::{
+    InputBuf,
+    InputSlice
+}
+;
+use vest_lib2::core::exec::parser::* ;
+use vest_lib2::core::exec::serializer::* ;
+use vest_lib2::core::exec::ParseError ;
+use vest_lib2::core::exec::bytes_eq ;
+use vest_lib2::core::{
+    proof::*,
+    spec::*
+}
+;
+use vest_lib2::primitives::btcvarint::VarInt ;
+use vest_lib2::primitives::leb128::ULeb128 ;
+use vstd::prelude::* ;
 verus! {
 // ============================================================
 // Data Types
@@ -175,7 +181,7 @@ impl<'i> DeepView for Opaque1Ffffff<'i> {
 
 # [doc = "data type for `protocol_version`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ProtocolVersion {
     SSLv3 = 768,
     TLSv1_0 = 769,
@@ -192,24 +198,12 @@ impl DeepView for ProtocolVersion {
         * self
     }
 }
-impl DeepEq for ProtocolVersion {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for ProtocolVersion {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for ProtocolVersion {
 }
 
 # [doc = "data type for `extension_type`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ExtensionType {
     ServerName = 0,
     MaxFragmentLength = 1,
@@ -247,24 +241,12 @@ impl DeepView for ExtensionType {
         * self
     }
 }
-impl DeepEq for ExtensionType {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for ExtensionType {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for ExtensionType {
 }
 
 # [doc = "data type for `name_type`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum NameType {
     HostName = 0,
     Unknown (u8),
@@ -277,19 +259,7 @@ impl DeepView for NameType {
         * self
     }
 }
-impl DeepEq for NameType {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for NameType {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for NameType {
 }
 
 # [doc = "data type for `host_name`."]
@@ -348,7 +318,7 @@ impl<'i> DeepView for ServerNameList<'i> {
 
 # [doc = "data type for `max_fragment_length`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum MaxFragmentLength {
     Pow2_9 = 1,
     Pow2_10 = 2,
@@ -364,19 +334,7 @@ impl DeepView for MaxFragmentLength {
         * self
     }
 }
-impl DeepEq for MaxFragmentLength {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for MaxFragmentLength {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for MaxFragmentLength {
 }
 
 # [doc = "data type for `responder_id`."]
@@ -484,7 +442,7 @@ impl<'i> DeepView for CertificateStatus<'i> {
 
 # [doc = "data type for `named_group`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum NamedGroup {
     Sect163k1 = 1,
     Sect163r1 = 2,
@@ -528,19 +486,7 @@ impl DeepView for NamedGroup {
         * self
     }
 }
-impl DeepEq for NamedGroup {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for NamedGroup {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for NamedGroup {
 }
 
 # [doc = "data type for `named_group_list`."]
@@ -567,7 +513,7 @@ impl DeepView for NamedGroupList {
 
 # [doc = "data type for `ec_point_format`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum EcPointFormat {
     Uncompressed = 0,
     AnsiX962CompressedPrime = 1,
@@ -582,19 +528,7 @@ impl DeepView for EcPointFormat {
         * self
     }
 }
-impl DeepEq for EcPointFormat {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for EcPointFormat {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for EcPointFormat {
 }
 
 # [doc = "data type for `ec_point_format_list`."]
@@ -621,7 +555,7 @@ impl DeepView for EcPointFormatList {
 
 # [doc = "data type for `signature_scheme`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum SignatureScheme {
     RSA_PKCS1_MD5 = 257,
     RSA_PKCS1_SHA1 = 513,
@@ -651,19 +585,7 @@ impl DeepView for SignatureScheme {
         * self
     }
 }
-impl DeepEq for SignatureScheme {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for SignatureScheme {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for SignatureScheme {
 }
 
 # [doc = "data type for `signature_scheme_list`."]
@@ -739,7 +661,7 @@ impl<'i> DeepView for UseSrtpData<'i> {
 
 # [doc = "data type for `heartbeat_mode`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum HeartbeatMode {
     PeerAllowedToSend = 1,
     PeerNotAllowedToSend = 2,
@@ -753,19 +675,7 @@ impl DeepView for HeartbeatMode {
         * self
     }
 }
-impl DeepEq for HeartbeatMode {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for HeartbeatMode {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for HeartbeatMode {
 }
 
 # [doc = "data type for `heartbeat_extension`."]
@@ -839,7 +749,7 @@ impl<'i> DeepView for SignedCertificateTimestampList<'i> {
 
 # [doc = "data type for `certificate_type`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum CertificateType {
     X509 = 0,
     RawPublicKey = 2,
@@ -853,19 +763,7 @@ impl DeepView for CertificateType {
         * self
     }
 }
-impl DeepEq for CertificateType {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for CertificateType {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for CertificateType {
 }
 
 # [doc = "data type for `client_cert_type_client_extension`."]
@@ -1172,7 +1070,7 @@ pub type CookieSpec = Opaque1FfffSpec ;
 
 # [doc = "data type for `psk_key_exchange_mode`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum PskKeyExchangeMode {
     PSK_KE = 0,
     PSK_DHE_KE = 1,
@@ -1186,19 +1084,7 @@ impl DeepView for PskKeyExchangeMode {
         * self
     }
 }
-impl DeepEq for PskKeyExchangeMode {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for PskKeyExchangeMode {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for PskKeyExchangeMode {
 }
 
 # [doc = "data type for `psk_key_exchange_modes`."]
@@ -1550,7 +1436,7 @@ impl<'i> DeepView for Extension<'i> {
 
 # [doc = "data type for `alert_level`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AlertLevel {
     Warning = 1,
     Fatal = 2,
@@ -1563,24 +1449,12 @@ impl DeepView for AlertLevel {
         * self
     }
 }
-impl DeepEq for AlertLevel {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for AlertLevel {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for AlertLevel {
 }
 
 # [doc = "data type for `alert_description`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AlertDescription {
     CloseNotify = 0,
     UnexpectedMessage = 10,
@@ -1618,19 +1492,7 @@ impl DeepView for AlertDescription {
         * self
     }
 }
-impl DeepEq for AlertDescription {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for AlertDescription {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for AlertDescription {
 }
 
 # [doc = "data type for `alert`."]
@@ -1651,7 +1513,7 @@ impl DeepView for Alert {
 
 # [doc = "data type for `content_type`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ContentType {
     Invalid = 0,
     ChangeCipherSpec = 20,
@@ -1667,19 +1529,7 @@ impl DeepView for ContentType {
         * self
     }
 }
-impl DeepEq for ContentType {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for ContentType {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for ContentType {
 }
 
 # [doc = "data type for `tls_plaintext`."]
@@ -1734,7 +1584,7 @@ impl<'i> DeepView for TlsCiphertext<'i> {
 
 # [doc = "data type for `cipher_suite`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum CipherSuite {
     TLS_AES_128_GCM_SHA256 = 4865,
     TLS_AES_256_GCM_SHA384 = 4866,
@@ -1751,19 +1601,7 @@ impl DeepView for CipherSuite {
         * self
     }
 }
-impl DeepEq for CipherSuite {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for CipherSuite {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for CipherSuite {
 }
 
 # [doc = "data type for `client_hello`."]
@@ -2213,7 +2051,7 @@ impl<'i> DeepView for CertificateVerify<'i> {
 
 # [doc = "data type for `digest_size`."]
 # [repr (u32)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum DigestSize {
     Hash12 = 12,
     Hash20 = 20,
@@ -2231,19 +2069,7 @@ impl DeepView for DigestSize {
         * self
     }
 }
-impl DeepEq for DigestSize {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for DigestSize {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for DigestSize {
 }
 
 # [doc = "data type for `finished`."]
@@ -2318,7 +2144,7 @@ impl<'i> DeepView for NewSessionTicket<'i> {
 
 # [doc = "data type for `key_update_request`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum KeyUpdateRequest {
     UpdateNotRequested = 0,
     UpdateRequested = 1,
@@ -2331,19 +2157,7 @@ impl DeepView for KeyUpdateRequest {
         * self
     }
 }
-impl DeepEq for KeyUpdateRequest {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for KeyUpdateRequest {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for KeyUpdateRequest {
 }
 
 # [doc = "data type for `key_update`."]
@@ -2363,7 +2177,7 @@ impl DeepView for KeyUpdate {
 
 # [doc = "data type for `handshake_type`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum HandshakeType {
     ClientHello = 1,
     ServerHello = 2,
@@ -2384,19 +2198,7 @@ impl DeepView for HandshakeType {
         * self
     }
 }
-impl DeepEq for HandshakeType {
-    fn deep_eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
-}
-impl SelfView for HandshakeType {
-    proof fn self_view (& self) {
-    }
-    fn eq (& self,
-    other: & Self) -> bool {
-        * self == * other
-    }
+# [cfg (not (verus_keep_ghost))] unsafe impl Structural for HandshakeType {
 }
 
 # [doc = "data type for `handshake`."]
@@ -34247,7 +34049,7 @@ mod exec_impls {
             }
 
             let (n, v) = match self.random {
-                x if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
+                x if bytes_eq (x, &[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
                     let (n,
                     v) = (Named ("hello_retry_request",
                     HelloRetryRequestFmt)).parse (& rest) ?;
@@ -34279,7 +34081,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.random, v) {
-                (x, ShOrHrrPayload::Variant1 (v)) if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
+                (x, ShOrHrrPayload::Variant1 (v)) if bytes_eq (x, &[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
                     (HelloRetryRequestFmt).serialize (v,
                     obuf) ;
                 }
@@ -34304,8 +34106,8 @@ mod exec_impls {
             }
 
             match (self.random, v) {
-                (x, ShOrHrrPayload::Variant1 (v)) if x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("hello_retry_request", HelloRetryRequestFmt)).prepare (v),
-                (x, ShOrHrrPayload::Default (v)) if ! x.deep_eq (&[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("server_hello", ServerHelloFmt)).prepare (v),
+                (x, ShOrHrrPayload::Variant1 (v)) if bytes_eq (x, &[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("hello_retry_request", HelloRetryRequestFmt)).prepare (v),
+                (x, ShOrHrrPayload::Default (v)) if ! bytes_eq (x, &[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => (Named ("server_hello", ServerHelloFmt)).prepare (v),
                  _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }

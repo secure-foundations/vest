@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -63,7 +62,7 @@ impl DeepView for CrossByteSpan {
 
 # [doc = "data type for `payload_kind`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum PayloadKind {
     Raw = 0,
     Words = 1,
@@ -83,19 +82,9 @@ impl DeepView for PayloadKind {
     }
 }
 
-impl DeepEq for PayloadKind {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for PayloadKind {
 
-impl SelfView for PayloadKind {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `packet_header`."]
@@ -144,7 +133,7 @@ impl<'i> DeepView for ChoicePacket<'i> {
 
 # [doc = "data type for `closed_payload_kind`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ClosedPayloadKind {
     Raw = 0,
     Words = 1,
@@ -163,19 +152,9 @@ impl DeepView for ClosedPayloadKind {
     }
 }
 
-impl DeepEq for ClosedPayloadKind {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for ClosedPayloadKind {
 
-impl SelfView for ClosedPayloadKind {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `closed_packet_header`."]

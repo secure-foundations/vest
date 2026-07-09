@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -211,7 +210,9 @@ impl Const10Fmt {
 # [derive (Clone, Copy)]
 pub struct AFmt;
 
-pub type AFmtSpec = Named<PrefixTagged<U8, PrefixTagged<U8, SuffixTagged<Const10Fmt, U8>>>>;
+pub type AFmtSpec = Named<
+    PrefixTagged<U8, u8, PrefixTagged<U8, u8, SuffixTagged<Const10Fmt, U8, u8>>>,
+>;
 
 impl AFmt {
     # [doc = "specification constructor for `a`."]
@@ -226,7 +227,7 @@ pub struct BFmt;
 
 pub type BFmtSpec = Named<
     Mapped<
-        Pair<Fixed<10>, PrefixTagged<U16Le, SuffixTagged<AFmt, U8>>>,
+        Pair<Fixed<10>, PrefixTagged<U16Le, u16, SuffixTagged<AFmt, U8, u8>>>,
         FnSpecMapper<BInner, BSpec>,
     >,
 >;
@@ -262,10 +263,10 @@ pub struct TaggedMixFmt;
 pub type TaggedMixFmtSpec = Named<
     Mapped<
         Optional<
-            PrefixTagged<U8, Const10Fmt>,
+            PrefixTagged<U8, u8, Const10Fmt>,
             Repeat<
-                PrefixTagged<U8, AFmt>,
-                Optional<PrefixTagged<U8, BFmt>, RepeatTillEnd<PrefixTagged<U8, MsgFmt>>>,
+                PrefixTagged<U8, u8, AFmt>,
+                Optional<PrefixTagged<U8, u8, BFmt>, RepeatTillEnd<PrefixTagged<U8, u8, MsgFmt>>>,
             >,
         >,
         FnSpecMapper<TaggedMixInner, TaggedMixSpec>,
@@ -1401,8 +1402,7 @@ mod exec_impls {
             let rest = rest.skip(n2);
             let (n3, z) = (Opt(PrefixTagged(U8, 12, BFmt))).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, w) = (Star(PrefixTagged(U8, 13, MsgFmt))).parse(&rest)?;
-            let _ = Eof.parse(&rest)?;
+            let (n4, w) = (RepeatTillEnd(PrefixTagged(U8, 13, MsgFmt))).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TaggedMix { x, y, z, w };

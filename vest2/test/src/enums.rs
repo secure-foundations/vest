@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -22,7 +21,7 @@ verus! {
 // ============================================================
 # [doc = "data type for `a_closed_enum`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AClosedEnum {
     A = 0,
     B = 1,
@@ -41,19 +40,9 @@ impl DeepView for AClosedEnum {
     }
 }
 
-impl DeepEq for AClosedEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for AClosedEnum {
 
-impl SelfView for AClosedEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `a_regular_choose`."]
@@ -79,7 +68,7 @@ impl DeepView for ARegularChoose {
 
 # [doc = "data type for `an_open_enum`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AnOpenEnum {
     A = 0,
     B = 1,
@@ -99,19 +88,9 @@ impl DeepView for AnOpenEnum {
     }
 }
 
-impl DeepEq for AnOpenEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for AnOpenEnum {
 
-impl SelfView for AnOpenEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `a_choose_with_default`."]
@@ -169,7 +148,7 @@ impl DeepView for ANonDependentChoose {
 
 # [doc = "data type for `a_typed_closed_enum`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ATypedClosedEnum {
     X = 0,
     Y = 1,
@@ -188,19 +167,9 @@ impl DeepView for ATypedClosedEnum {
     }
 }
 
-impl DeepEq for ATypedClosedEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for ATypedClosedEnum {
 
-impl SelfView for ATypedClosedEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `a_typed_choose`."]
@@ -226,7 +195,7 @@ impl DeepView for ATypedChoose {
 
 # [doc = "data type for `a_typed_open_enum`."]
 # [repr (u32)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum ATypedOpenEnum {
     P = 0,
     Q = 1,
@@ -246,19 +215,9 @@ impl DeepView for ATypedOpenEnum {
     }
 }
 
-impl DeepEq for ATypedOpenEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for ATypedOpenEnum {
 
-impl SelfView for ATypedOpenEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `a_typed_choose_with_default`."]
@@ -297,7 +256,7 @@ impl<'i> DeepView for ATypedChooseWithDefault<'i> {
 
 # [doc = "data type for `a_mixed_typed_enum`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AMixedTypedEnum {
     M = 0,
     N = 1,
@@ -316,19 +275,9 @@ impl DeepView for AMixedTypedEnum {
     }
 }
 
-impl DeepEq for AMixedTypedEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for AMixedTypedEnum {
 
-impl SelfView for AMixedTypedEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 // ============================================================

@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -22,7 +21,7 @@ verus! {
 // ============================================================
 # [doc = "data type for `my_enum`."]
 # [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum MyEnum {
     A = 1,
     B = 2,
@@ -41,19 +40,9 @@ impl DeepView for MyEnum {
     }
 }
 
-impl DeepEq for MyEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for MyEnum {
 
-impl SelfView for MyEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `enum_constraints`."]
@@ -80,7 +69,7 @@ impl DeepView for EnumConstraints {
 
 # [doc = "data type for `my_typed_enum`."]
 # [repr (u16)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
+# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum MyTypedEnum {
     X = 1,
     Y = 2,
@@ -99,19 +88,9 @@ impl DeepView for MyTypedEnum {
     }
 }
 
-impl DeepEq for MyTypedEnum {
-    fn deep_eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
-}
+# [cfg (not (verus_keep_ghost))]
+unsafe impl Structural for MyTypedEnum {
 
-impl SelfView for MyTypedEnum {
-    proof fn self_view(&self) {
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        *self == *other
-    }
 }
 
 # [doc = "data type for `typed_enum_constraints`."]
@@ -1029,7 +1008,10 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
-            let (n4, tag) = Const(MyEnumFmt, MyEnum::A).parse(&rest)?;
+            let (n4, tag) = MyEnumFmt.parse(&rest)?;
+            if !(tag == MyEnum::A) {
+                return Err(ParseError::predicate_failed());
+            }
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = EnumConstraints { foo, bar, baz, tag };
@@ -1078,7 +1060,13 @@ mod exec_impls {
                     (Named("my_enum", MyEnumFmt)).prepare(baz)
                 }
             }?;
-            let l4 = (Const(MyEnumFmt, MyEnum::A)).prepare(tag)?;
+            let l4 = {
+                if !(*tag == MyEnum::A) {
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyEnumFmt).prepare(tag)
+                }
+            }?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
@@ -1163,7 +1151,10 @@ mod exec_impls {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
-            let (n4, tag) = Const(MyTypedEnumFmt, MyTypedEnum::X).parse(&rest)?;
+            let (n4, tag) = MyTypedEnumFmt.parse(&rest)?;
+            if !(tag == MyTypedEnum::X) {
+                return Err(ParseError::predicate_failed());
+            }
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
             let final_v = TypedEnumConstraints { foo, bar, baz, tag };
@@ -1212,7 +1203,13 @@ mod exec_impls {
                     (Named("my_typed_enum", MyTypedEnumFmt)).prepare(baz)
                 }
             }?;
-            let l4 = (Const(MyTypedEnumFmt, MyTypedEnum::X)).prepare(tag)?;
+            let l4 = {
+                if !(*tag == MyTypedEnum::X) {
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (MyTypedEnumFmt).prepare(tag)
+                }
+            }?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(

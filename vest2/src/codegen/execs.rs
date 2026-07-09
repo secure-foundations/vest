@@ -431,19 +431,45 @@ impl<'a> Analysis<'a> {
                     let n_var = format!("n{}", idx + 1);
                     match field {
                         StructField::Const { label, combinator } => {
-                            let fmt_expr = self.render_exec_const_expr(
-                                combinator,
-                                param_defns,
-                                CodegenMode::Parse,
+                            let is_enum = matches!(
+                                self.ctx.resolve_const(combinator),
+                                ConstCombinator::ConstEnum(_)
                             );
-                            let fmt_str = render_ts(quote! { #fmt_expr });
-                            w.call_chain_stmt(
-                                Some(&format!("({}, {})", n_var, label)),
-                                &fmt_str,
-                                "parse",
-                                &["&rest"],
-                                Some("?;"),
-                            );
+                            if is_enum {
+                                let (c_fmt, c_val) = self.render_exec_tag_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Parse,
+                                );
+                                let fmt_str = render_ts(quote! { #c_fmt });
+                                let tag = format!("{}", label);
+                                w.call_chain_stmt(
+                                    Some(&format!("({}, {})", n_var, tag)),
+                                    &fmt_str,
+                                    "parse",
+                                    &["&rest"],
+                                    Some("?;"),
+                                );
+                                let c_val_str = render_ts(quote! { #c_val });
+                                w.line(&format!(
+                                    "if !({} == {}) {{ return Err(ParseError::predicate_failed()); }}",
+                                    tag, c_val_str
+                                ));
+                            } else {
+                                let fmt_expr = self.render_exec_const_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Parse,
+                                );
+                                let fmt_str = render_ts(quote! { #fmt_expr });
+                                w.call_chain_stmt(
+                                    Some(&format!("({}, {})", n_var, label)),
+                                    &fmt_str,
+                                    "parse",
+                                    &["&rest"],
+                                    Some("?;"),
+                                );
+                            }
                         }
                         StructField::Dependent { label, combinator }
                         | StructField::Ordinary { label, combinator } => {
@@ -458,11 +484,43 @@ impl<'a> Analysis<'a> {
                                     quote! { &rest },
                                 )
                             } else {
-                                let fmt_expr = self.render_exec_combinator_expr_named(
-                                    combinator,
-                                    param_defns,
-                                    CodegenMode::Parse,
-                                );
+                                let is_last_opt_or_vec = if idx == s.0.len() - 1 {
+                                    match self.ctx.resolve_alias(combinator) {
+                                        Combinator::Option(_) | Combinator::Vec(_) => true,
+                                        _ => false,
+                                    }
+                                } else {
+                                    false
+                                };
+                                let fmt_expr = if is_last_opt_or_vec {
+                                    match self.ctx.resolve_alias(combinator) {
+                                        Combinator::Option(vestir::OptionCombinator(inner)) => {
+                                            let inner_expr = self.render_exec_combinator_expr_impl(
+                                                inner,
+                                                param_defns,
+                                                CodegenMode::Parse,
+                                                false,
+                                            );
+                                            quote! { OptionalEnd(#inner_expr) }
+                                        }
+                                        Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
+                                            let inner_expr = self.render_exec_combinator_expr_impl(
+                                                inner,
+                                                param_defns,
+                                                CodegenMode::Parse,
+                                                false,
+                                            );
+                                            quote! { RepeatTillEnd(#inner_expr) }
+                                        }
+                                        _ => unreachable!(),
+                                    }
+                                } else {
+                                    self.render_exec_combinator_expr_named(
+                                        combinator,
+                                        param_defns,
+                                        CodegenMode::Parse,
+                                    )
+                                };
                                 (quote! { (#fmt_expr).parse(&rest) }, false)
                             };
                             if recursive && !seen_recursive {
@@ -480,20 +538,6 @@ impl<'a> Analysis<'a> {
                                 w.if_block(format!("!({})", render_ts(pred)), |w| {
                                     w.line("return Err(ParseError::predicate_failed());");
                                 });
-                            }
-                            if rec.is_none() && idx == s.0.len() - 1 {
-                                if matches!(
-                                    self.ctx.resolve_alias(combinator),
-                                    Combinator::Option(_) | Combinator::Vec(_)
-                                ) {
-                                    w.call_chain_stmt(
-                                        Some("_"),
-                                        "Eof",
-                                        "parse",
-                                        &["&rest"],
-                                        Some("?;"),
-                                    );
-                                }
                             }
                         }
                     }
@@ -604,14 +648,35 @@ impl<'a> Analysis<'a> {
                     match field {
                         StructField::Const { label, combinator } => {
                             let label_ident = format_ident!("{}", label);
-                            let fmt_expr = self.render_exec_const_expr(
-                                combinator,
-                                param_defns,
-                                CodegenMode::Serialize,
+                            let is_enum = matches!(
+                                self.ctx.resolve_const(combinator),
+                                ConstCombinator::ConstEnum(_)
                             );
-                            w.push_multiline(render_ts(quote! {
-                                let #l_ident = (#fmt_expr).prepare(#label_ident)?;
-                            }));
+                            if is_enum {
+                                let (c_fmt, c_val) = self.render_exec_tag_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                w.push_multiline(render_ts(quote! {
+                                    let #l_ident = {
+                                        if !(*#label_ident == #c_val) {
+                                            Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                                        } else {
+                                            (#c_fmt).prepare(#label_ident)
+                                        }
+                                    }?;
+                                }));
+                            } else {
+                                let fmt_expr = self.render_exec_const_expr(
+                                    combinator,
+                                    param_defns,
+                                    CodegenMode::Serialize,
+                                );
+                                w.push_multiline(render_ts(quote! {
+                                    let #l_ident = (#fmt_expr).prepare(#label_ident)?;
+                                }));
+                            }
                         }
                         StructField::Dependent { label, combinator }
                         | StructField::Ordinary { label, combinator } => {
@@ -705,7 +770,7 @@ impl<'a> Analysis<'a> {
                 .iter()
                 .map(|p| {
                     let pat_expr = self.render_const_array_expr(p, TypeMode::Exec);
-                    quote! { !x.deep_eq(&#pat_expr) }
+                    quote! { !bytes_eq(x, &#pat_expr) }
                 })
                 .reduce(|acc, cond| quote! { #acc && #cond })
                 .unwrap();
@@ -732,7 +797,7 @@ impl<'a> Analysis<'a> {
             ChoicePattern::Int(elem) => self.render_constraint_elem_pat(elem),
             ChoicePattern::Array(arr) => {
                 let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                quote! { x if x.deep_eq(&#pat_expr) }
+                quote! { x if bytes_eq(x, &#pat_expr) }
             }
             ChoicePattern::Wildcard => quote! { _ },
         }
@@ -773,7 +838,7 @@ impl<'a> Analysis<'a> {
             },
             ChoicePattern::Array(arr) => {
                 let pat_expr = self.render_const_array_expr(arr, TypeMode::Exec);
-                quote! { (x, #exec_ident::#variant_ident(v)) if x.deep_eq(&#pat_expr) }
+                quote! { (x, #exec_ident::#variant_ident(v)) if bytes_eq(x, &#pat_expr) }
             }
             ChoicePattern::Wildcard => {
                 quote! { (_, #exec_ident::#variant_ident(v)) }
@@ -1893,7 +1958,7 @@ impl<'a> Analysis<'a> {
                     self.render_exec_invocation_expr(&enum_comb.combinator, param_defns, mode);
                 let enum_ty = self.render_nominal_type(&enum_comb.combinator.func, TypeMode::Exec);
                 let variant = format_ident!("{}", enum_comb.variant);
-                (quote! { ConstEnum(#inner) }, quote! { #enum_ty::#variant })
+                (inner, quote! { #enum_ty::#variant })
             }
             ConstCombinator::ConstCombinatorInvocation(name) => {
                 let info = self.info(name);

@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -4092,11 +4091,11 @@ mod exec_impls {
             }
 
             let (n, v) = match self.tag {
-                x if x.deep_eq(&[0x00, 0x00]) => {
+                x if bytes_eq(x, &[0x00, 0x00]) => {
                     let (n, v) = (U8).parse(&rest)?;
                     (n, ChoiceArraysFoldedBody::Variant1(v))
                 },
-                x if x.deep_eq(&[0x01, 0x01]) => {
+                x if bytes_eq(x, &[0x01, 0x01]) => {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, ChoiceArraysFoldedBody::Variant2(v))
                 },
@@ -4120,10 +4119,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.tag, v) {
-                (x, ChoiceArraysFoldedBody::Variant1(v)) if x.deep_eq(&[0x00, 0x00]) => {
+                (x, ChoiceArraysFoldedBody::Variant1(v)) if bytes_eq(x, &[0x00, 0x00]) => {
                     (U8).serialize(v, obuf);
                 },
-                (x, ChoiceArraysFoldedBody::Variant2(v)) if x.deep_eq(&[0x01, 0x01]) => {
+                (x, ChoiceArraysFoldedBody::Variant2(v)) if bytes_eq(x, &[0x01, 0x01]) => {
                     (U16Le).serialize(v, obuf);
                 },
                 (_, ChoiceArraysFoldedBody::Default(v)) => {
@@ -4152,11 +4151,12 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (x, ChoiceArraysFoldedBody::Variant1(v)) if x.deep_eq(&[0x00, 0x00]) => (
+                (x, ChoiceArraysFoldedBody::Variant1(v)) if bytes_eq(x, &[0x00, 0x00]) => (
                 U8).prepare(v),
-                (x, ChoiceArraysFoldedBody::Variant2(v)) if x.deep_eq(&[0x01, 0x01]) => (
+                (x, ChoiceArraysFoldedBody::Variant2(v)) if bytes_eq(x, &[0x01, 0x01]) => (
                 U16Le).prepare(v),
-                (x, ChoiceArraysFoldedBody::Default(v)) if !x.deep_eq(&[0x00, 0x00]) && !x.deep_eq(
+                (x, ChoiceArraysFoldedBody::Default(v)) if !bytes_eq(x, &[0x00, 0x00]) && !bytes_eq(
+                    x,
                     &[0x01, 0x01],
                 ) => (U16Le).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),

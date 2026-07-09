@@ -2,13 +2,12 @@
 use vest_lib2::combinators::mapped::spec::*;
 use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
+use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::exec::{DeepEq, SelfView};
 use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::macros::impl_self_view_for;
 use vest_lib2::primitives::btcvarint::VarInt;
 use vest_lib2::primitives::leb128::ULeb128;
 use vest_lib2::Never;
@@ -2852,7 +2851,8 @@ mod exec_impls {
             }
 
             let (n, v) = match self.b {
-                x if x.deep_eq(
+                x if bytes_eq(
+                    x,
                     &[
                         0xcf,
                         0x21,
@@ -2911,7 +2911,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.b, v) {
-                (x, Msg1Payload::Variant1(v)) if x.deep_eq(
+                (x, Msg1Payload::Variant1(v)) if bytes_eq(
+                    x,
                     &[
                         0xcf,
                         0x21,
@@ -2967,7 +2968,8 @@ mod exec_impls {
             }
 
             match (self.b, v) {
-                (x, Msg1Payload::Variant1(v)) if x.deep_eq(
+                (x, Msg1Payload::Variant1(v)) if bytes_eq(
+                    x,
                     &[
                         0xcf,
                         0x21,
@@ -3003,7 +3005,8 @@ mod exec_impls {
                         0x9c,
                     ],
                 ) => (Named("hello_retry_request", HelloRetryRequestFmt)).prepare(v),
-                (x, Msg1Payload::Default(v)) if !x.deep_eq(
+                (x, Msg1Payload::Default(v)) if !bytes_eq(
+                    x,
                     &[
                         0xcf,
                         0x21,
@@ -3057,15 +3060,15 @@ mod exec_impls {
             }
 
             let (n, v) = match self.b {
-                x if x.deep_eq(&[0x16, 0x03, 0x01]) => {
+                x if bytes_eq(x, &[0x16, 0x03, 0x01]) => {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, Msg2Content::Variant1(v))
                 },
-                x if x.deep_eq(&[0x16, 0x03, 0x02]) => {
+                x if bytes_eq(x, &[0x16, 0x03, 0x02]) => {
                     let (n, v) = (U32Le).parse(&rest)?;
                     (n, Msg2Content::Variant2(v))
                 },
-                x if x.deep_eq(&[0x16, 0x03, 0x03]) => {
+                x if bytes_eq(x, &[0x16, 0x03, 0x03]) => {
                     let (n, v) = (U64Le).parse(&rest)?;
                     (n, Msg2Content::Variant3(v))
                 },
@@ -3089,13 +3092,13 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.b, v) {
-                (x, Msg2Content::Variant1(v)) if x.deep_eq(&[0x16, 0x03, 0x01]) => {
+                (x, Msg2Content::Variant1(v)) if bytes_eq(x, &[0x16, 0x03, 0x01]) => {
                     (U16Le).serialize(v, obuf);
                 },
-                (x, Msg2Content::Variant2(v)) if x.deep_eq(&[0x16, 0x03, 0x02]) => {
+                (x, Msg2Content::Variant2(v)) if bytes_eq(x, &[0x16, 0x03, 0x02]) => {
                     (U32Le).serialize(v, obuf);
                 },
-                (x, Msg2Content::Variant3(v)) if x.deep_eq(&[0x16, 0x03, 0x03]) => {
+                (x, Msg2Content::Variant3(v)) if bytes_eq(x, &[0x16, 0x03, 0x03]) => {
                     (U64Le).serialize(v, obuf);
                 },
                 (_, Msg2Content::Default(v)) => {
@@ -3131,18 +3134,16 @@ mod exec_impls {
             }
 
             match (self.b, v) {
-                (x, Msg2Content::Variant1(v)) if x.deep_eq(&[0x16, 0x03, 0x01]) => (U16Le).prepare(
-                    v,
-                ),
-                (x, Msg2Content::Variant2(v)) if x.deep_eq(&[0x16, 0x03, 0x02]) => (U32Le).prepare(
-                    v,
-                ),
-                (x, Msg2Content::Variant3(v)) if x.deep_eq(&[0x16, 0x03, 0x03]) => (U64Le).prepare(
-                    v,
-                ),
-                (x, Msg2Content::Default(v)) if !x.deep_eq(&[0x16, 0x03, 0x01]) && !x.deep_eq(
+                (x, Msg2Content::Variant1(v)) if bytes_eq(x, &[0x16, 0x03, 0x01]) => (
+                U16Le).prepare(v),
+                (x, Msg2Content::Variant2(v)) if bytes_eq(x, &[0x16, 0x03, 0x02]) => (
+                U32Le).prepare(v),
+                (x, Msg2Content::Variant3(v)) if bytes_eq(x, &[0x16, 0x03, 0x03]) => (
+                U64Le).prepare(v),
+                (x, Msg2Content::Default(v)) if !bytes_eq(x, &[0x16, 0x03, 0x01]) && !bytes_eq(
+                    x,
                     &[0x16, 0x03, 0x02],
-                ) && !x.deep_eq(&[0x16, 0x03, 0x03]) => (Empty).prepare(v),
+                ) && !bytes_eq(x, &[0x16, 0x03, 0x03]) => (Empty).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
