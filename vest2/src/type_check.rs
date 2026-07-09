@@ -1829,22 +1829,13 @@ fn combinator_types_compatible<'ast>(
         (
             CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                 combinator: arg_comb,
-                constraint: arg_constraint,
                 ..
             }),
             CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                 combinator: expected_comb,
-                constraint: expected_constraint,
                 ..
             }),
-        ) => {
-            arg_comb == expected_comb
-                && int_constraint_is_subset(
-                    arg_comb,
-                    arg_constraint.as_ref(),
-                    expected_constraint.as_ref(),
-                )
-        }
+        ) => arg_comb == expected_comb,
         (CombinatorInner::Enum(arg_enum), CombinatorInner::Enum(expected_enum)) => {
             arg_enum == expected_enum
         }
@@ -2098,35 +2089,7 @@ fn check_choice_combinator<'ast>(
                     }
                     for (variant, combinator) in enums {
                         if variant.name == "_" {
-                            if !is_non_exhaustive {
-                                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                            .with_message("invalid choice variant")
-                                            .with_label(
-                                                Label::new((source.0, span_as_range(&variant.span)))
-                                                    .with_message("Wildcard `_` is not allowed in an exhaustive choice")
-                                                    .with_color(Color::Red),
-                                            )
-                                            .with_label(
-                                                Label::new((source.0, span_as_range(span)))
-                                                    .with_message(format!("This choice should only contain variants {}",
-                                                        enum_variants
-                                                            .iter()
-                                                            .map(|Enum { name, .. }| format!(
-                                                                "`{}`",
-                                                                &name.name
-                                                            ))
-                                                            .collect::<Vec<_>>()
-                                                            .join(", ")
-                                                        ))
-                                                    .with_color(Color::Yellow),
-                                            )
-                                            .finish()
-                                            .eprint(source)
-                                            .unwrap();
-                                return Err(VestError::TypeError);
-                            } else {
-                                continue;
-                            }
+                            continue;
                         } else if !enum_variants
                             .iter()
                             .any(|Enum { name, .. }| name == variant)
@@ -2188,7 +2151,7 @@ fn check_choice_combinator<'ast>(
                         }
                         check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
                     }
-                    if !is_non_exhaustive {
+                    if !is_non_exhaustive && wildcard_count == 0 {
                         // check for exhaustiveness
                         let defined_variants = enum_variants
                             .iter()
@@ -2228,7 +2191,7 @@ fn check_choice_combinator<'ast>(
                                 .unwrap();
                             return Err(VestError::TypeError);
                         }
-                    } else if wildcard_count == 0 {
+                    } else if is_non_exhaustive && wildcard_count == 0 {
                         return Err(report_missing_wildcard(span, source, "enum"));
                     }
                 } else {
