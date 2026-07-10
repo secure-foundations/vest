@@ -13,7 +13,9 @@ use crate::{
     core::{proof::*, spec::*},
 };
 use vstd::arithmetic::power::*;
+use vstd::arithmetic::power2::{lemma_pow2, pow2};
 use vstd::assert_seqs_equal;
+use vstd::bits::lemma_u64_shl_is_mul;
 use vstd::prelude::*;
 
 verus! {
@@ -443,6 +445,121 @@ impl<'i> ByteLen<IntVal<'i>> for super::Integer {
             lemma_integer_from_to_bytes(v.inner.deep_view());
         }
         Tail.length(&v.inner)
+    }
+}
+
+broadcast proof fn lemma_u64_as_i64(u: u64)
+    by (bit_vector)
+    ensures
+        u < 0x8000000000000000 ==> #[trigger] (u as i64) as int == u as int,
+        u >= 0x8000000000000000 ==> #[trigger] (u as i64) as int == u as int - 0x10000000000000000,
+{
+}
+
+/// Executable big-endian two's-complement decoding into `i64`.
+pub fn i64_from_be_bytes(bytes: &[u8]) -> (r: i64)
+    requires
+        usize::BITS == 64,
+        1 <= bytes.len() <= 8,
+    ensures
+        r as int == int_from_be_bytes(bytes.deep_view()),
+{
+    broadcast use {lemma_pow_multiplies, lemma_pow2, lemma_pow_increases};
+    broadcast use lemma_from_be_bytes_upper_bound;
+    broadcast use lemma_u64_as_i64;
+
+    let n = bytes.len();
+    let u = u64_from_be_bytes(bytes);
+
+    let ghost s = bytes.deep_view();
+    let ghost (first, rest) = (s.first(), s.drop_first());
+    let ghost pw = pow(256, (n - 1) as nat);
+    let ghost nfb_rest = nat_from_be_bytes(rest);
+    proof {
+        assert(s == seq![first] + rest);
+        lemma_from_be_bytes_prepend(rest, first);
+        // nat_from_be_bytes(s) == first * pow(256, n-1) + nfb_rest, with nfb_rest < pow(256, n-1)
+        assert(nat_from_be_bytes(s) == first * pw + nfb_rest);
+        reveal_with_fuel(pow, 9);
+    }
+    if bytes[0] >= 0x80 {
+        // Sign bit is set: int_from_be_bytes(s) == nat_from_be_bytes(s) - pow(256, n).
+        if n == 8 {
+            proof {
+                // u == nat_from_be_bytes(s) >= first * 2^56 >= 0x80 * 2^56 == 2^63
+                assert(first * pw + nfb_rest >= 0x8000000000000000) by (nonlinear_arith)
+                    requires
+                        first >= 0x80,
+                        pw == 0x100000000000000,
+                ;
+            }
+            // u >= 2^63, so (u as i64) reinterprets as u - 2^64 == nat_from_be_bytes(s) - pow(256,8).
+            u as i64
+        } else {  // n < 8
+            let shift: u64 = 8 * (n as u64);
+            proof {
+                // Establish pow(256, n) == pow2(8n) == 1u64 << (8n)
+                assert(pow(2, 8) == 256) by (compute_only);
+                lemma_u64_shl_is_mul(1u64, shift);
+            }
+            let sub: u64 = 1u64 << shift;
+            // u < pow(256, n) == sub <= 2^56, so both fit in i64 and the
+            // subtraction yields nat_from_be_bytes(s) - pow(256, n).
+            (u as i64) - (sub as i64)
+        }
+    } else {
+        // Sign bit clear: int_from_be_bytes(s) == nat_from_be_bytes(s), which fits in i64.
+        proof {
+            // nat_from_be_bytes(s) < (first + 1) * pow(256, n-1) <= 0x80 * 2^56 == 2^63
+            assert(nat_from_be_bytes(s) < 0x8000000000000000) by (nonlinear_arith)
+                requires
+                    nat_from_be_bytes(s) == first as nat * pw + nfb_rest,
+                    nfb_rest < pw,
+                    first < 0x80,
+                    pw <= 0x100000000000000,
+            ;
+        }
+        u as i64
+    }
+}
+
+/// Executable big-endian two's-complement encoding from `i64`.
+/// TODO: Optimize this function?
+pub fn i64_to_be_bytes(v: i64) -> (buf: Vec<u8>)
+    requires
+        usize::BITS == 64,
+    ensures
+        buf@ == int_to_be_bytes(v as int),
+{
+    if v >= 0 {
+        let mut body = u64_to_be_bytes(v as u64);
+        if body[0] >= 0x80 {  // sign bit set
+            body.insert(0, 0x00u8);
+            body
+        } else {  // sign bit clear
+            body
+        }
+    } else {
+        let m: u64 = (-1 - v) as u64;
+        let mut body = u64_to_be_bytes(m);
+        // Invert the bytes in place.
+        let ghost orig = body@;
+        let blen = body.len();
+        for i in 0..blen
+            invariant
+                blen == body.len(),
+                body@.len() == orig.len(),
+                forall|k: int| 0 <= k < i ==> body@[k] == #[trigger] invert_byte(orig[k]),
+                forall|k: int| i <= k < body@.len() ==> body@[k] == #[trigger] orig[k],
+        {
+            body[i] = !body[i];
+        }
+        if body[0] >= 0x80 {  // sign bit set
+            body
+        } else {  // sign bit clear
+            body.insert(0, 0xFFu8);
+            body
+        }
     }
 }
 
