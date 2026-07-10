@@ -240,42 +240,51 @@ pub proof fn lemma_integer_fmt_unambiguous()
 }
 
 #[derive(Copy, Clone)]
-pub struct IntVal<'a> {
-    inner: &'a [u8],
+pub struct BigInt<'a> {
+    raw: &'a [u8],
+}
+
+impl<'a> BigInt<'a> {
+    pub closed spec fn view(&self) -> Seq<u8> {
+        self.raw.deep_view()
+    }
+
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        integer_bytes_wf(self.view())
+    }
+
+    fn new(raw: &'a [u8]) -> (res: Self)
+        requires
+            integer_bytes_wf(raw.deep_view()),
+        ensures
+            res.view() == raw.deep_view(),
+    {
+        BigInt { raw }
+    }
+
+    pub fn as_slice(&self) -> (res: &'a [u8])
+        ensures
+            res.deep_view() == self.view(),
+    {
+        self.raw
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum IntVal<'a> {
+    Small { v: i64 },
+    Big { raw: BigInt<'a> },
 }
 
 impl<'a> DeepView for IntVal<'a> {
     type V = int;
 
     closed spec fn deep_view(&self) -> Self::V {
-        int_from_be_bytes(self.view_bytes())
-    }
-}
-
-impl<'a> IntVal<'a> {
-    pub closed spec fn view_bytes(&self) -> Seq<u8> {
-        self.inner.deep_view()
-    }
-
-    #[verifier::type_invariant]
-    spec fn wf(&self) -> bool {
-        integer_bytes_wf(self.view_bytes())
-    }
-
-    pub fn new(inner: &'a [u8]) -> (res: Self)
-        requires
-            integer_bytes_wf(inner.deep_view()),
-        ensures
-            res.view_bytes() == inner.deep_view(),
-    {
-        IntVal { inner }
-    }
-
-    pub fn inner(&self) -> (res: &'a [u8])
-        ensures
-            res.deep_view() == self.view_bytes(),
-    {
-        self.inner
+        match *self {
+            IntVal::Small { v } => v as int,
+            IntVal::Big { raw } => int_from_be_bytes(raw.view()),
+        }
     }
 }
 
@@ -411,40 +420,71 @@ impl<'i> Parser<&'i [u8]> for super::Integer {
                 return Err(ParseError::custom("Non-minimal integer"));
             }
         }
-        Ok((n, IntVal::new(bytes)))
+        if bytes.len() <= 8 {
+            Ok((n, IntVal::Small { v: i64_from_be_bytes(bytes) }))
+        } else {
+            Ok((n, IntVal::Big { raw: BigInt::new(bytes) }))
+        }
     }
 }
 
 impl<'i> Serializer<IntVal<'i>> for super::Integer {
     fn serialize(&self, v: &IntVal<'i>, obuf: &mut Vec<u8>) {
-        proof {
-            use_type_invariant(v);
-            lemma_integer_fmt_sound_nonmal_inv();
-            lemma_integer_from_to_bytes(v.inner.deep_view());
+        match v {
+            IntVal::Small { v } => {
+                let bytes = i64_to_be_bytes(*v);
+                Tail.serialize(&bytes, obuf);
+            },
+            IntVal::Big { raw } => {
+                let bytes = raw.as_slice();
+                proof {
+                    use_type_invariant(raw);
+                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_from_to_bytes(bytes.deep_view());
+                }
+                Tail.serialize(&bytes, obuf);
+            },
         }
-        Tail.serialize(&v.inner, obuf);
     }
 }
 
 impl<'i> Prepare<IntVal<'i>> for super::Integer {
     fn prepare(&self, v: &IntVal<'i>) -> Result<usize, PreSerializeError> {
-        proof {
-            use_type_invariant(v);
-            lemma_integer_fmt_sound_nonmal_inv();
-            lemma_integer_from_to_bytes(v.inner.deep_view());
+        match v {
+            IntVal::Small { v } => {
+                let len = i64_to_be_bytes_len(*v);
+                proof {
+                    lemma_integer_to_from_bytes(*v as int);
+                }
+                Ok(len)
+            },
+            IntVal::Big { raw } => {
+                let bytes = raw.as_slice();
+                proof {
+                    use_type_invariant(raw);
+                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_from_to_bytes(bytes.deep_view());
+                }
+                Tail.prepare(&bytes)
+            },
         }
-        Tail.prepare(&v.inner)
     }
 }
 
 impl<'i> ByteLen<IntVal<'i>> for super::Integer {
     fn length(&self, v: &IntVal<'i>) -> usize {
-        proof {
-            use_type_invariant(v);
-            lemma_integer_fmt_sound_nonmal_inv();
-            lemma_integer_from_to_bytes(v.inner.deep_view());
+        match v {
+            IntVal::Small { v } => { i64_to_be_bytes_len(*v) },
+            IntVal::Big { raw } => {
+                let bytes = raw.as_slice();
+                proof {
+                    use_type_invariant(raw);
+                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_from_to_bytes(bytes.deep_view());
+                }
+                Tail.length(&bytes)
+            },
         }
-        Tail.length(&v.inner)
     }
 }
 
@@ -560,6 +600,39 @@ pub fn i64_to_be_bytes(v: i64) -> (buf: Vec<u8>)
             body.insert(0, 0xFFu8);
             body
         }
+    }
+}
+
+/// Allocation-free length of the minimal big-endian two's-complement encoding.
+pub fn i64_to_be_bytes_len(v: i64) -> (len: usize)
+    requires
+        usize::BITS == 64,
+    ensures
+        len == int_to_be_bytes(v as int).len(),
+{
+    let magnitude = if v >= 0 {
+        v as u64
+    } else {
+        (-1 - v) as u64
+    };
+    let body_len = u64_to_be_bytes_len(magnitude);
+    let first = u64_to_be_bytes_first(magnitude);
+    proof {
+        lemma_usize_to_be_bytes_len_bound(magnitude as usize);
+        assert(body_len <= 8);
+        if v >= 0 {
+            assert(magnitude as nat == v as int);
+        } else {
+            assert(-1i64 - v >= 0);
+            assert(magnitude as int == (-1i64 - v) as int);
+            assert((-1i64 - v) as int == -1 - v as int);
+            lemma_invert_byte_props(first);
+        }
+    }
+    if first >= 0x80 {
+        body_len + 1
+    } else {
+        body_len
     }
 }
 

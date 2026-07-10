@@ -133,9 +133,9 @@ pub proof fn lemma_pow256_succ(exp: nat)
     lemma_pow1(256);
 }
 
-pub proof fn lemma_from_be_bytes_upper_bound(bytes: Seq<u8>)
+pub broadcast proof fn lemma_from_be_bytes_upper_bound(bytes: Seq<u8>)
     ensures
-        nat_from_be_bytes(bytes) < pow(256, bytes.len()),
+        #[trigger] nat_from_be_bytes(bytes) < pow(256, bytes.len()),
     decreases bytes.len(),
 {
     if bytes.len() == 0 {
@@ -299,6 +299,16 @@ pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
     acc
 }
 
+pub fn u64_from_be_bytes(bytes: &[u8]) -> (r: u64)
+    requires
+        usize::BITS == 64,
+        bytes.len() <= 8,
+    ensures
+        r as nat == nat_from_be_bytes(bytes.deep_view()),
+{
+    usize_from_be_bytes_exec(bytes) as u64
+}
+
 /// Executable big-endian base-256 encoding from `usize`.
 /// Verified against [`nat_to_be_bytes`].
 ///
@@ -319,6 +329,15 @@ pub fn usize_to_be_bytes_exec(v: usize) -> (buf: Vec<u8>)
         buf.push((v & 0xff) as u8);
         buf
     }
+}
+
+pub fn u64_to_be_bytes(v: u64) -> (buf: Vec<u8>)
+    requires
+        usize::BITS == 64,
+    ensures
+        buf@ == nat_to_be_bytes(v as nat),
+{
+    usize_to_be_bytes_exec(v as usize)
 }
 
 /// Executable loop-based byte-length computation.
@@ -342,6 +361,32 @@ pub fn usize_to_be_bytes_len(v: usize) -> (len: usize)
         len += 1;
     }
     len
+}
+
+pub fn u64_to_be_bytes_len(v: u64) -> (len: usize)
+    requires
+        usize::BITS == 64,
+    ensures
+        len == nat_to_be_bytes(v as nat).len(),
+{
+    usize_to_be_bytes_len(v as usize)
+}
+
+pub fn u64_to_be_bytes_first(v: u64) -> (first: u8)
+    requires
+        usize::BITS == 64,
+    ensures
+        first == nat_to_be_bytes(v as nat)[0],
+    decreases v,
+{
+    if v < 256 {
+        v as u8
+    } else {
+        proof {
+            lemma_usize_shr8_is_div256(v as usize);
+        }
+        u64_to_be_bytes_first(v >> 8)
+    }
 }
 
 #[verifier::external_body]
