@@ -14,6 +14,9 @@ use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;
 
+#[cfg(verus_only)]
+use vstd::std_specs::convert::FromSpecImpl;
+
 verus! {
 
 /// Bit-mask for the class bits (bits 7–6) of the first tag byte.
@@ -32,6 +35,7 @@ pub const TAG_LONG_FORM_SENTINEL: u8 = 0b0001_1111u8;
 #[verifier::ext_equal]
 #[repr(u64)]
 pub enum TagNumber {
+    EOC = 0,
     Boolean = 1,
     Integer = 2,
     BitString = 3,
@@ -76,6 +80,7 @@ pub struct Tag {
 
 pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
     match num {
+        TagNumber::EOC => 0,
         TagNumber::Boolean => 1,
         TagNumber::Integer => 2,
         TagNumber::BitString => 3,
@@ -104,6 +109,7 @@ pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
 
 pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
     match num {
+        0 => TagNumber::EOC,
         1 => TagNumber::Boolean,
         2 => TagNumber::Integer,
         3 => TagNumber::BitString,
@@ -132,9 +138,51 @@ pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
 
 pub open spec fn tag_number_wf(num: TagNumber) -> bool {
     num matches TagNumber::Other { tag_num } ==> {
-        &&& !matches!(tag_num, 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
+        &&& !matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
             | 22 | 23 | 24 | 26 | 27 | 30)
         &&& nat_to_base128(tag_num as nat).len() <= BASE128_MAX_BYTES
+    }
+}
+
+impl From<u64> for TagNumber {
+    fn from(num: u64) -> Self {
+        match num {
+            0 => TagNumber::EOC,
+            1 => TagNumber::Boolean,
+            2 => TagNumber::Integer,
+            3 => TagNumber::BitString,
+            4 => TagNumber::OctetString,
+            5 => TagNumber::Null,
+            6 => TagNumber::ObjectIdentifier,
+            9 => TagNumber::Real,
+            10 => TagNumber::Enumerated,
+            12 => TagNumber::Utf8String,
+            13 => TagNumber::RelativeOid,
+            16 => TagNumber::Sequence,
+            17 => TagNumber::Set,
+            18 => TagNumber::NumericString,
+            19 => TagNumber::PrintableString,
+            20 => TagNumber::TeletexString,
+            21 => TagNumber::VideotexString,
+            22 => TagNumber::Ia5String,
+            23 => TagNumber::UtcTime,
+            24 => TagNumber::GeneralizedTime,
+            26 => TagNumber::VisibleString,
+            27 => TagNumber::GeneralString,
+            30 => TagNumber::BmpString,
+            other => TagNumber::Other { tag_num: other as UInt },
+        }
+    }
+}
+
+#[cfg(verus_only)]
+impl FromSpecImpl<u64> for TagNumber {
+    open spec fn obeys_from_spec() -> bool {
+        true
+    }
+
+    open spec fn from_spec(v: u64) -> TagNumber {
+        uint_to_tag_num(v as UInt)
     }
 }
 
@@ -549,6 +597,7 @@ impl Parser<&[u8]> for super::TagFmt {
         };
         let constructed = b1 & TAG_CONSTRUCTED_MASK != 0;
         let number = match num {
+            0 => TagNumber::EOC,
             1 => TagNumber::Boolean,
             2 => TagNumber::Integer,
             3 => TagNumber::BitString,
@@ -581,6 +630,7 @@ impl Parser<&[u8]> for super::TagFmt {
 impl Serializer<Tag> for super::TagFmt {
     fn serialize(&self, v: &Tag, obuf: &mut Vec<u8>) {
         let num = match v.number {
+            TagNumber::EOC => 0,
             TagNumber::Boolean => 1,
             TagNumber::Integer => 2,
             TagNumber::BitString => 3,
@@ -635,6 +685,7 @@ impl Serializer<Tag> for super::TagFmt {
 impl Prepare<Tag> for super::TagFmt {
     fn prepare(&self, v: &Tag) -> Result<usize, PreSerializeError> {
         let num = match v.number {
+            TagNumber::EOC => 0,
             TagNumber::Boolean => 1,
             TagNumber::Integer => 2,
             TagNumber::BitString => 3,
@@ -658,7 +709,7 @@ impl Prepare<Tag> for super::TagFmt {
             TagNumber::GeneralString => 27,
             TagNumber::BmpString => 30,
             TagNumber::Other { tag_num } => {
-                if matches!(tag_num, 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
+                if matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
                     | 22 | 23 | 24 | 26 | 27 | 30) {
                     return Err(PreSerializeError::custom("Invalid tag number"));
                 }
@@ -690,6 +741,7 @@ impl Prepare<Tag> for super::TagFmt {
 impl ByteLen<Tag> for super::TagFmt {
     fn length(&self, v: &Tag) -> usize {
         let num = match v.number {
+            TagNumber::EOC => 0,
             TagNumber::Boolean => 1,
             TagNumber::Integer => 2,
             TagNumber::BitString => 3,
@@ -733,6 +785,12 @@ impl ByteLen<Tag> for super::TagFmt {
 }
 
 impl super::TagFmt {
+    pub const EOC: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::EOC,
+    };
+
     pub const BOOLEAN: Tag = Tag {
         class: Class::Universal,
         constructed: false,
