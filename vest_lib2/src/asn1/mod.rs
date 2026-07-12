@@ -10,6 +10,8 @@ pub mod bmpstring;
 pub mod boolean;
 /// Shared semantic date/time values and calendar operations.
 pub mod datetime;
+/// ASN.1 notation-style aliases for universal formats with DER encoding.
+pub mod der;
 /// ASN.1 GeneralizedTime contents.
 pub mod generalizedtime;
 /// ASN.1 IA5String contents.
@@ -18,6 +20,8 @@ pub mod ia5string;
 pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
+/// ASN.1 component modifiers: IMPLICIT, EXPLICIT, OPTIONAL, and DEFAULT.
+pub mod modifiers;
 /// ASN.1 PrintableString contents.
 pub mod printablestring;
 /// ASN.1 tag octets.
@@ -32,15 +36,17 @@ pub mod utctime;
 pub mod utf8string;
 
 pub use datetime::{DateTime, TimePrecision, TimeZone};
+pub use der::*;
 pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
 pub use integer::IntVal;
+pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
 pub use tag::Tag;
 pub use utctime::UtcTimeValue;
 
 use crate::{
     combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Empty, Implicit, PrefixTagged, Tail,
-        TryMap, U8,
+        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Empty, PrefixTagged, Tail, TryMap,
+        U8,
     },
     core::proof::{Leaf, LeafNonMalleable},
 };
