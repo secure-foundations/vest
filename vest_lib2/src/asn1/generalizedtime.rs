@@ -644,8 +644,48 @@ pub open spec fn generalized_time_len(value: GeneralizedTimeSpec) -> nat {
     }
 }
 
-#[verifier::rlimit(100)]
-pub proof fn lemma_generalized_time_encode_roundtrip<const DER: bool>(value: GeneralizedTimeSpec)
+spec fn generalized_time_main_end(value: GeneralizedTimeSpec) -> usize {
+    if value.precision == TimePrecision::Hour {
+        10
+    } else if value.precision == TimePrecision::Minute {
+        12
+    } else {
+        14
+    }
+}
+
+spec fn generalized_time_zone_start(value: GeneralizedTimeSpec) -> usize {
+    (generalized_time_main_end(value) + generalized_time_fraction(value).len()) as usize
+}
+
+// Keep sequence-heavy reasoning in separate solver queries and export only decoded facts.
+#[verifier::rlimit(20)]
+proof fn lemma_generalized_time_encoded_prefix(value: GeneralizedTimeSpec)
+    requires
+        value.wf(),
+        generalized_time_len(value) <= usize::MAX,
+    ensures
+        generalized_time_prefix(value).len() == generalized_time_main_end(value),
+        generalized_fields_wf(generalized_time_bytes(value), generalized_time_main_end(value)),
+        decimal4(generalized_time_bytes(value), 0) == value.datetime.year,
+        decimal2(generalized_time_bytes(value), 4) == value.datetime.month,
+        decimal2(generalized_time_bytes(value), 6) == value.datetime.day,
+        decimal2(generalized_time_bytes(value), 8) == value.datetime.hour,
+        value.precision != TimePrecision::Hour ==> decimal2(generalized_time_bytes(value), 10)
+            == value.datetime.minute,
+        value.precision == TimePrecision::Second ==> decimal2(generalized_time_bytes(value), 12)
+            == value.datetime.second,
+{
+    lemma_decimal4_roundtrip(value.datetime.year);
+    lemma_decimal2_roundtrip(value.datetime.month);
+    lemma_decimal2_roundtrip(value.datetime.day);
+    lemma_decimal2_roundtrip(value.datetime.hour);
+    lemma_decimal2_roundtrip(value.datetime.minute);
+    lemma_decimal2_roundtrip(value.datetime.second);
+}
+
+#[verifier::rlimit(20)]
+proof fn lemma_generalized_time_encoded_fraction<const DER: bool>(value: GeneralizedTimeSpec)
     requires
         if DER {
             value.der_wf()
@@ -654,28 +694,25 @@ pub proof fn lemma_generalized_time_encode_roundtrip<const DER: bool>(value: Gen
         },
         generalized_time_len(value) <= usize::MAX,
     ensures
-        generalized_time_wf::<DER>(generalized_time_bytes(value)),
-        generalized_time_value(generalized_time_bytes(value)) == Some(value),
-        generalized_time_bytes(value).len() == generalized_time_len(value),
+        generalized_fraction_wf::<DER>(
+            generalized_time_bytes(value),
+            generalized_time_main_end(value),
+            generalized_time_zone_start(value),
+        ),
+        if generalized_time_main_end(value) == generalized_time_zone_start(value) {
+            value.fraction.len() == 0
+        } else {
+            generalized_time_bytes(value).subrange(
+                generalized_time_main_end(value) as int + 1,
+                generalized_time_zone_start(value) as int,
+            ) == value.fraction
+        },
 {
-    lemma_decimal4_roundtrip(value.datetime.year);
-    lemma_decimal2_roundtrip(value.datetime.month);
-    lemma_decimal2_roundtrip(value.datetime.day);
-    lemma_decimal2_roundtrip(value.datetime.hour);
-    lemma_decimal2_roundtrip(value.datetime.minute);
-    lemma_decimal2_roundtrip(value.datetime.second);
-
     let prefix = generalized_time_prefix(value);
     let fraction = generalized_time_fraction(value);
     let suffix = generalized_time_suffix(value);
     let bytes = prefix + fraction + suffix;
-    let main_end: usize = if value.precision == TimePrecision::Hour {
-        10
-    } else if value.precision == TimePrecision::Minute {
-        12
-    } else {
-        14
-    };
+    let main_end = generalized_time_main_end(value);
     let zone_start: usize = (main_end + fraction.len()) as usize;
 
     if value.fraction.len() == 0 {
@@ -694,6 +731,68 @@ pub proof fn lemma_generalized_time_encode_roundtrip<const DER: bool>(value: Gen
         }
         assert(generalized_fraction_wf::<DER>(bytes, main_end, zone_start));
     }
+}
+
+#[verifier::rlimit(20)]
+proof fn lemma_generalized_time_encoded_zone<const DER: bool>(value: GeneralizedTimeSpec)
+    requires
+        if DER {
+            value.der_wf()
+        } else {
+            value.wf()
+        },
+        generalized_time_len(value) <= usize::MAX,
+    ensures
+        generalized_zone_start(generalized_time_bytes(value)) == generalized_time_zone_start(value),
+        generalized_zone_wf::<DER>(
+            generalized_time_bytes(value),
+            generalized_time_zone_start(value),
+        ),
+        (generalized_time_zone_start(value) == generalized_time_bytes(value).len()) <==> value.zone
+            == TimeZone::Local,
+        value.zone == TimeZone::Utc ==> generalized_time_bytes(value)[generalized_time_zone_start(
+            value,
+        ) as int] == 0x5a,
+{
+}
+
+#[verifier::rlimit(20)]
+proof fn lemma_generalized_time_encoded_layout<const DER: bool>(value: GeneralizedTimeSpec)
+    requires
+        if DER {
+            value.der_wf()
+        } else {
+            value.wf()
+        },
+        generalized_time_len(value) <= usize::MAX,
+    ensures
+        generalized_time_bytes_wf::<DER>(generalized_time_bytes(value)),
+        generalized_main_end(generalized_time_bytes(value), generalized_time_zone_start(value))
+            == generalized_time_main_end(value),
+{
+    lemma_generalized_time_encoded_prefix(value);
+    lemma_generalized_time_encoded_fraction::<DER>(value);
+    lemma_generalized_time_encoded_zone::<DER>(value);
+}
+
+#[verifier::rlimit(20)]
+pub proof fn lemma_generalized_time_encode_roundtrip<const DER: bool>(value: GeneralizedTimeSpec)
+    requires
+        if DER {
+            value.der_wf()
+        } else {
+            value.wf()
+        },
+        generalized_time_len(value) <= usize::MAX,
+    ensures
+        generalized_time_wf::<DER>(generalized_time_bytes(value)),
+        generalized_time_value(generalized_time_bytes(value)) == Some(value),
+        generalized_time_bytes(value).len() == generalized_time_len(value),
+{
+    lemma_generalized_time_encoded_layout::<DER>(value);
+    lemma_generalized_time_encoded_prefix(value);
+    lemma_generalized_time_encoded_fraction::<DER>(value);
+    lemma_generalized_time_encoded_zone::<DER>(value);
 }
 
 #[verifier::rlimit(100)]
