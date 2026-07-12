@@ -8,6 +8,8 @@ pub mod bitstring;
 pub mod bmpstring;
 /// ASN.1 BOOLEAN contents octet.
 pub mod boolean;
+/// Shared semantic date/time values and calendar operations.
+pub mod datetime;
 /// ASN.1 GeneralizedTime contents.
 pub mod generalizedtime;
 /// ASN.1 IA5String contents.
@@ -29,7 +31,11 @@ pub mod utctime;
 /// ASN.1 UTF8String contents.
 pub mod utf8string;
 
+pub use datetime::{DateTime, TimePrecision, TimeZone};
+pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
+pub use integer::IntVal;
 pub use tag::Tag;
+pub use utctime::UtcTimeValue;
 
 use crate::{
     combinators::{
@@ -134,6 +140,39 @@ pub struct TagFmt;
 pub type DerBitString = BitStringFmt<true>;
 
 /// ASN.1 OCTET STRING contents format (primitive).
+///
+/// TODO: support indefinite (constructed) forms:
+///
+/// ### Example
+///
+/// 24 80 04 03 42 45 52 24 80 04 01 2D 04 05 52 55 4C 45 53 00 00 00 00
+/// │  │  │  │  └───────┘ │  │  │  │  │  │  │  └──────────────┘ │     │
+/// │  │  │  │  "BER"     │  │  │  │  │  │  └─ Len: 5 "RULES"   │     └─ Outer EOC
+/// │  │  │  └─ Len: 3    │  │  │  │  │  └─ Primitive           └─ Inner EOC
+/// │  │  └─ Primitive    │  │  │  │  └─ "-"
+/// │  └─ Indefinite      │  │  │  └─ Len: 1
+/// └─ Outer Outer        │  │  └─ Primitive
+///                       │  └─ Indefinite
+///                       └─ Inner Constructed
+///
+/// [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+///  │
+///  ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 3)
+///  │      └── Value: "BER" (Hex: 42 45 52)
+///  │
+///  ├── [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+///  │      │
+///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 1)
+///  │      │      └── Value: "-" (Hex: 2D)
+///  │      │
+///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 5)
+///  │      │      └── Value: "RULES" (Hex: 52 55 4C 45 53)
+///  │      │
+///  │      └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+///  │             └── Meaning: Closes the Inner Constructed String
+///  │
+///  └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+///         └── Meaning: Closes the Outer Constructed String
 pub type OctetString = Tail;
 
 /// Convenience value alias for ASN.1 OCTET STRING contents format.
@@ -147,7 +186,15 @@ pub const Null: Empty = Empty;
 
 /// ASN.1 UTCTime format.
 #[derive(Clone, Copy)]
-pub struct UtcTime;
+pub struct UtcTime<const DER: bool = true>;
+
+pub type BerUtcTime = UtcTime<false>;
+
+pub type DerUtcTime = UtcTime<true>;
+
+pub const BerUtcTime: BerUtcTime = UtcTime;
+
+pub const DerUtcTime: DerUtcTime = UtcTime;
 
 /// ASN.1 UTF8String format.
 #[derive(Clone, Copy)]
@@ -171,25 +218,15 @@ pub struct TeletexString;
 
 /// ASN.1 GeneralizedTime format.
 #[derive(Clone, Copy)]
-pub struct GeneralizedTime;
+pub struct GeneralizedTime<const DER: bool = true>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, StructuralEq)]
-pub struct DateTime {
-    pub year: u16,
-    pub month: u8,
-    pub day: u8,
-    pub hour: u8,
-    pub minutes: u8,
-    pub seconds: u8,
-}
+pub type BerGeneralizedTime = GeneralizedTime<false>;
 
-impl DeepView for DateTime {
-    type V = DateTime;
+pub type DerGeneralizedTime = GeneralizedTime<true>;
 
-    closed spec fn deep_view(&self) -> Self::V {
-        *self
-    }
-}
+pub const BerGeneralizedTime: BerGeneralizedTime = GeneralizedTime;
+
+pub const DerGeneralizedTime: DerGeneralizedTime = GeneralizedTime;
 
 impl LeafNonMalleable for DerBool {
     proof fn nonmal_leaf_inv(&self) {
