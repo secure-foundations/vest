@@ -13,9 +13,9 @@ use crate::{
     core::{proof::*, spec::*},
 };
 use vstd::arithmetic::power::*;
-use vstd::arithmetic::power2::{lemma_pow2, pow2};
+use vstd::arithmetic::power2::*;
 use vstd::assert_seqs_equal;
-use vstd::bits::lemma_u64_shl_is_mul;
+use vstd::bits::*;
 use vstd::prelude::*;
 
 verus! {

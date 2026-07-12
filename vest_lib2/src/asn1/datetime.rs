@@ -1,4 +1,4 @@
-use vstd::arithmetic::div_mod::lemma_fundamental_div_mod_converse;
+use vstd::arithmetic::div_mod::*;
 use vstd::calc;
 use vstd::prelude::*;
 
@@ -215,12 +215,8 @@ pub fn decimal_4(bytes: &[u8], pos: usize) -> u16
     returns
         decimal4(bytes@, pos),
 {
-    #[verusfmt::skip]
-    ((
-           (bytes[pos] - ASCII_0) as u16 * 1000u16)
-    + ((bytes[pos + 1] - ASCII_0) as u16 * 100u16)
-    + ((bytes[pos + 2] - ASCII_0) as u16 * 10u16)
-    +  (bytes[pos + 3] - ASCII_0) as u16) as u16
+    (((bytes[pos] - ASCII_0) as u16 * 1000u16) + ((bytes[pos + 1] - ASCII_0) as u16 * 100u16) + ((
+    bytes[pos + 2] - ASCII_0) as u16 * 10u16) + (bytes[pos + 3] - ASCII_0) as u16) as u16
 }
 
 #[verifier::allow_in_spec]
