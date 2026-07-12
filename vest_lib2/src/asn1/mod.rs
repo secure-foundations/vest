@@ -38,7 +38,7 @@ pub mod utf8string;
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
 pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
-pub use integer::IntVal;
+pub use integer::{IntVal, Integer16, Integer8};
 pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
 pub use tag::Tag;
 pub use utctime::UtcTimeValue;

@@ -8,7 +8,7 @@ use crate::primitives::base256::*;
 use crate::{
     combinators::{
         mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper},
-        Mapped, Refined, Tail,
+        I16Be, Mapped, Refined, Tail, I8,
     },
     core::{proof::*, spec::*},
 };
@@ -288,6 +288,27 @@ impl<'a> DeepView for IntVal<'a> {
     }
 }
 
+/// ASN.1 INTEGER contents specialized to the `i8` representation.
+///
+/// Every `i8` value has a canonical one-octet two's-complement encoding.
+#[derive(Clone, Copy)]
+pub struct Integer8;
+
+/// ASN.1 INTEGER contents specialized to the `i16` representation.
+///
+/// Values in the `i8` range use one octet; all other values use two
+/// big-endian octets. Redundant two-octet encodings are rejected.
+#[derive(Clone, Copy)]
+pub struct Integer16;
+
+#[verifier::allow_in_spec]
+pub fn fits_i8(v: i16) -> bool
+    returns
+        i8::MIN <= v <= i8::MAX,
+{
+    i8::MIN as i16 <= v && v <= i8::MAX as i16
+}
+
 mod derived_specs {
     use super::*;
     use super::super::Integer;
@@ -332,12 +353,118 @@ mod derived_specs {
         }
     }
 
-    impl ValueByteLen for Integer {
+    impl SpecParser for Integer8 {
+        type PVal = i8;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            if ibuf.len() == 1 {
+                I8.spec_parse(ibuf)
+            } else {
+                None
+            }
+        }
+    }
+
+    impl Consistency for Integer8 {
+        type Val = i8;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            true
+        }
+    }
+
+    impl SpecSerializerDps for Integer8 {
+        type SValue = i8;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
+            I8.spec_serialize(v)
+        }
+    }
+
+    impl SpecSerializer for Integer8 {
+        type SVal = i8;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            I8.spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for Integer8 {
+        type T = i8;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            I8.byte_len(v)
+        }
+    }
+
+    impl ValueByteLen for Integer8 {
         open spec fn value_byte_len(v: Self::T) -> nat {
-            integer_fmt().byte_len(v)
+            I8.byte_len(v)
         }
 
         proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        }
+    }
+
+    impl SpecParser for Integer16 {
+        type PVal = i16;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            if ibuf.len() == 1 {
+                let (_, v) = I8.spec_parse(ibuf)->0;
+                Some((1, v as i16))
+            } else if ibuf.len() == 2 {
+                match I16Be.spec_parse(ibuf) {
+                    Some((_, v)) if !fits_i8(v) => Some((2, v)),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        }
+    }
+
+    impl Consistency for Integer16 {
+        type Val = i16;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            true
+        }
+    }
+
+    impl SpecSerializerDps for Integer16 {
+        type SValue = i16;
+
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
+            if fits_i8(v) {
+                I8.spec_serialize(v as i8)
+            } else {
+                I16Be.spec_serialize(v)
+            }
+        }
+    }
+
+    impl SpecSerializer for Integer16 {
+        type SVal = i16;
+
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            if fits_i8(v) {
+                I8.spec_serialize(v as i8)
+            } else {
+                I16Be.spec_serialize(v)
+            }
+        }
+    }
+
+    impl SpecByteLen for Integer16 {
+        type T = i16;
+
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            if fits_i8(v) {
+                I8.byte_len(v as i8)
+            } else {
+                I16Be.byte_len(v)
+            }
         }
     }
 
@@ -400,6 +527,140 @@ mod derived_proofs {
         }
     }
 
+    impl SafeParser for Integer8 {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_safe(ibuf);
+            }
+        }
+    }
+
+    impl Productive for Integer8 {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            if s.len() == 1 {
+                I8.lemma_productive(s);
+            }
+        }
+    }
+
+    impl SoundParser for Integer8 {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_sound_consumption(ibuf);
+            }
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_sound_value(ibuf);
+            }
+        }
+    }
+
+    impl GoodSerializer for Integer8 {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            I8.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for Integer8 {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            I8.theorem_serialize_dps_parse_roundtrip(v, Seq::empty());
+        }
+    }
+
+    impl NonMalleable for Integer8 {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            if buf1.len() == 1 && buf2.len() == 1 {
+                I8.lemma_parse_non_malleable(buf1, buf2);
+            }
+        }
+    }
+
+    impl EquivSerializers for Integer8 {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            I8.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for Integer16 {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_safe(ibuf);
+            } else if ibuf.len() == 2 {
+                I16Be.lemma_parse_safe(ibuf);
+            }
+        }
+    }
+
+    impl Productive for Integer16 {
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            if s.len() == 1 {
+                I8.lemma_productive(s);
+            } else if s.len() == 2 {
+                I16Be.lemma_productive(s);
+            }
+        }
+    }
+
+    impl SoundParser for Integer16 {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_sound_consumption(ibuf);
+            } else if ibuf.len() == 2 {
+                I16Be.lemma_parse_sound_consumption(ibuf);
+            }
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_sound_value(ibuf);
+            } else if ibuf.len() == 2 {
+                I16Be.lemma_parse_sound_value(ibuf);
+            }
+        }
+    }
+
+    impl GoodSerializer for Integer16 {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            if fits_i8(v) {
+                I8.lemma_serialize_len(v as i8);
+            } else {
+                I16Be.lemma_serialize_len(v);
+            }
+        }
+    }
+
+    impl SPRoundTripDps for Integer16 {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            if fits_i8(v) {
+                I8.theorem_serialize_dps_parse_roundtrip(v as i8, Seq::empty());
+            } else {
+                I16Be.theorem_serialize_dps_parse_roundtrip(v, Seq::empty());
+            }
+        }
+    }
+
+    impl NonMalleable for Integer16 {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            if buf1.len() == 1 && buf2.len() == 1 {
+                I8.lemma_parse_non_malleable(buf1, buf2);
+            } else if buf1.len() == 2 && buf2.len() == 2 {
+                I16Be.lemma_parse_non_malleable(buf1, buf2);
+            }
+        }
+    }
+
+    impl EquivSerializers for Integer16 {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            if fits_i8(v) {
+                I8.lemma_serialize_equiv_on_empty(v as i8);
+            } else {
+                I16Be.lemma_serialize_equiv_on_empty(v);
+            }
+        }
+    }
+
 }
 
 impl<'i> Parser<&'i [u8]> for super::Integer {
@@ -424,6 +685,86 @@ impl<'i> Parser<&'i [u8]> for super::Integer {
             Ok((n, IntVal::Small { v: i64_from_be_bytes(bytes) }))
         } else {
             Ok((n, IntVal::Big { raw: BigInt::new(bytes) }))
+        }
+    }
+}
+
+impl<'i> Parser<&'i [u8]> for Integer8 {
+    type PT = i8;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        if ibuf.len() == 1 {
+            I8.parse(ibuf)
+        } else {
+            Err(ParseError::custom("Integer out of range for i8"))
+        }
+    }
+}
+
+impl<'i> Parser<&'i [u8]> for Integer16 {
+    type PT = i16;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        if ibuf.len() == 1 {
+            let (n, v) = I8.parse(ibuf)?;
+            Ok((n, v as i16))
+        } else if ibuf.len() == 2 {
+            let (n, v) = I16Be.parse(ibuf)?;
+            if fits_i8(v) {
+                Err(ParseError::non_canonical())
+            } else {
+                Ok((n, v))
+            }
+        } else {
+            Err(ParseError::custom("Integer out of range for i16"))
+        }
+    }
+}
+
+impl Serializer<i8> for Integer8 {
+    fn serialize(&self, v: &i8, obuf: &mut Vec<u8>) {
+        I8.serialize(v, obuf);
+    }
+}
+
+impl Prepare<i8> for Integer8 {
+    fn prepare(&self, v: &i8) -> Result<usize, PreSerializeError> {
+        I8.prepare(v)
+    }
+}
+
+impl ByteLen<i8> for Integer8 {
+    fn length(&self, v: &i8) -> usize {
+        I8.length(v)
+    }
+}
+
+impl Serializer<i16> for Integer16 {
+    fn serialize(&self, v: &i16, obuf: &mut Vec<u8>) {
+        if fits_i8(*v) {
+            I8.serialize(&(*v as i8), obuf);
+        } else {
+            I16Be.serialize(v, obuf);
+        }
+    }
+}
+
+impl Prepare<i16> for Integer16 {
+    fn prepare(&self, v: &i16) -> Result<usize, PreSerializeError> {
+        if fits_i8(*v) {
+            I8.prepare(&(*v as i8))
+        } else {
+            I16Be.prepare(v)
+        }
+    }
+}
+
+impl ByteLen<i16> for Integer16 {
+    fn length(&self, v: &i16) -> usize {
+        if fits_i8(*v) {
+            I8.length(&(*v as i8))
+        } else {
+            I16Be.length(v)
         }
     }
 }
@@ -637,3 +978,108 @@ pub fn i64_to_be_bytes_len(v: i64) -> (len: usize)
 }
 
 } // verus!
+#[cfg(test)]
+mod tests {
+    use super::{Integer16, Integer8};
+    use crate::core::exec::{Parser, Serializer};
+
+    #[test]
+    fn integer8_boundaries_and_noncanonical_lengths() {
+        for (bytes, expected) in [(&[0x80u8][..], -128i8), (&[0x7fu8][..], 127i8)] {
+            let (_, value) = Integer8.parse(&bytes).unwrap();
+            assert_eq!(value, expected);
+        }
+
+        let two_bytes = &[0x00u8, 0x7f][..];
+        assert!(Integer8.parse(&two_bytes).is_err());
+    }
+
+    #[test]
+    fn integer16_uses_minimal_one_or_two_octets() {
+        for (value, expected) in [
+            (-32768i16, &[0x80u8, 0x00][..]),
+            (-129i16, &[0xffu8, 0x7f][..]),
+            (-128i16, &[0x80u8][..]),
+            (127i16, &[0x7fu8][..]),
+            (128i16, &[0x00u8, 0x80][..]),
+            (32767i16, &[0x7fu8, 0xff][..]),
+        ] {
+            let mut encoded = Vec::new();
+            Integer16.serialize(&value, &mut encoded);
+            assert_eq!(encoded, expected);
+
+            let (_, decoded) = Integer16.parse(&expected).unwrap();
+            assert_eq!(decoded, value);
+        }
+
+        for bytes in [&[0x00u8, 0x7f][..], &[0xffu8, 0x80][..]] {
+            assert!(Integer16.parse(&bytes).is_err());
+        }
+    }
+
+    #[test]
+    fn test_integer8_equivalence_with_general_integer() {
+        use super::IntVal;
+        use crate::asn1::Integer;
+
+        for v in -128..=127 {
+            // Serialize using Integer8
+            let mut enc8 = Vec::new();
+            Integer8.serialize(&v, &mut enc8);
+
+            // Serialize using general Integer
+            let mut enc_gen = Vec::new();
+            let val = IntVal::Small { v: v as i64 };
+            Integer.serialize(&val, &mut enc_gen);
+
+            assert_eq!(enc8, enc_gen, "Mismatch serialization at {}", v);
+
+            // Parse using Integer8
+            let enc8_slice = enc8.as_slice();
+            let (_, dec8) = Integer8.parse(&enc8_slice).unwrap();
+            assert_eq!(dec8, v);
+
+            // Parse using general Integer
+            let (_, dec_gen) = Integer.parse(&enc8_slice).unwrap();
+            match dec_gen {
+                IntVal::Small { v: val_i64 } => {
+                    assert_eq!(val_i64, v as i64);
+                }
+                _ => panic!("Expected Small for {}", v),
+            }
+        }
+    }
+
+    #[test]
+    fn test_integer16_equivalence_with_general_integer() {
+        use super::IntVal;
+        use crate::asn1::Integer;
+
+        for v in -32768..=32767 {
+            // Serialize using Integer16
+            let mut enc16 = Vec::new();
+            Integer16.serialize(&v, &mut enc16);
+
+            // Serialize using general Integer
+            let mut enc_gen = Vec::new();
+            let val = IntVal::Small { v: v as i64 };
+            Integer.serialize(&val, &mut enc_gen);
+
+            assert_eq!(enc16, enc_gen, "Mismatch serialization at {}", v);
+
+            // Parse using Integer16
+            let enc16_slice = enc16.as_slice();
+            let (_, dec16) = Integer16.parse(&enc16_slice).unwrap();
+            assert_eq!(dec16, v);
+
+            // Parse using general Integer
+            let (_, dec_gen) = Integer.parse(&enc16_slice).unwrap();
+            match dec_gen {
+                IntVal::Small { v: val_i64 } => {
+                    assert_eq!(val_i64, v as i64);
+                }
+                _ => panic!("Expected Small for {}", v),
+            }
+        }
+    }
+}
