@@ -228,7 +228,7 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
 }
 
 impl<Content, T, const DER: bool> Serializer<T> for ASN1<Content, DER> where
-    T: DeepView,
+    T: DeepView + ?Sized,
     Content: SpecCombinator + Serializer<T> + ByteLen<T>,
  {
     #[verifier::prophetic]
@@ -250,7 +250,7 @@ impl<Content, T, const DER: bool> Serializer<T> for ASN1<Content, DER> where
 }
 
 impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
-    T: DeepView,
+    T: DeepView + ?Sized,
     Content: SpecCombinator + Prepare<T>,
  {
     open spec fn exec_inv(&self) -> bool {
@@ -271,7 +271,7 @@ impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
 }
 
 impl<Content, T, const DER: bool> ByteLen<T> for ASN1<Content, DER> where
-    T: DeepView,
+    T: DeepView + ?Sized,
     Content: SpecCombinator + ByteLen<T>,
  {
     open spec fn exec_inv(&self) -> bool {
