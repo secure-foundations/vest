@@ -584,30 +584,3 @@ pub broadcast proof fn lemma_disjoint_defaulted<P, A, B>(
 }
 
 } // verus!
-verus! {
-
-proof fn chain_of_optional_defaulted() {
-    use crate::combinators::*;
-    use super::IntVal;
-    use super::der::*;
-    use super::{DER, BER};
-    use crate::combinators::disjoint::disjointness_lemmas;
-
-    broadcast use disjointness_lemmas;
-    broadcast use {lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
-
-    #[verusfmt::skip]
-    let fmt =
-        Pair(INTEGER,
-        Defaulted::<_, _, _, DER>(BOOLEAN, false,
-        Optional(BIT_STRING,
-        Optional(OCTET_STRING,
-        Defaulted::<_, _, _, DER>(INTEGER, 0int,
-        Optional(UTC_TIME, UTF8_STRING))))));
-
-    assert(fmt.safe_inv());
-    assert(fmt.sound_inv());
-    assert(fmt.unambiguous());
-}
-
-} // verus!

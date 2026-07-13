@@ -40,7 +40,7 @@ pub use der::*;
 pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
 pub use integer::{IntVal, Integer16, Integer8};
 pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
-pub use tag::Tag;
+pub use tag::{Class, Tag};
 pub use utctime::UtcTimeValue;
 
 use crate::{
