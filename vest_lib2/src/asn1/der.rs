@@ -1,7 +1,7 @@
 //! Convenient notation-style aliases for universal formats with DER encoding.
 use super::{
     BitStringFmt, BmpString, Bool, Class, Explicit, GeneralizedTime, Ia5String, Implicit, Integer,
-    Integer16, Integer8, Null, OctetString, PrintableString, TagFmt, TeletexString, UtcTime,
+    Integer16, Integer8, Null, OctetString, PrintableString, SetOf, TagFmt, TeletexString, UtcTime,
     Utf8String, ASN1, DER,
 };
 use crate::core::{proof::*, spec::*};
@@ -36,6 +36,10 @@ pub type ASN1UtcTime<const DER: bool> = ASN1<UtcTime<DER>, DER>;
 pub type ASN1GeneralizedTime<const DER: bool> = ASN1<GeneralizedTime<DER>, DER>;
 
 pub type ASN1BmpString<const DER: bool> = ASN1<BmpString, DER>;
+
+pub type ASN1SetOf<C> = ASN1<SetOf<C>, DER>;
+
+pub type ASN1SequenceOf<C> = ASN1<crate::combinators::RepeatTillEnd<C>, DER>;
 
 pub const BOOLEAN: ASN1Bool<DER> = ASN1::<Bool<DER>, DER>(TagFmt::BOOLEAN, Bool::<DER>);
 
@@ -82,6 +86,32 @@ pub const GENERALIZED_TIME: ASN1GeneralizedTime<DER> = ASN1::<GeneralizedTime<DE
 );
 
 pub const BMP_STRING: ASN1BmpString<DER> = ASN1::<BmpString, DER>(TagFmt::BMP_STRING, BmpString);
+
+/// Construct a DER `SET OF` whose elements are complete DER formats.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub fn SET_OF<C>(inner: C) -> ASN1SetOf<C>
+    returns
+        ASN1::<SetOf<C>, DER>(TagFmt::SET, SetOf(inner)),
+{
+    ASN1::<SetOf<C>, DER>(TagFmt::SET, SetOf(inner))
+}
+
+/// Construct a DER `SEQUENCE OF` whose elements are complete DER formats.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub fn SEQUENCE_OF<C>(inner: C) -> ASN1SequenceOf<C>
+    returns
+        ASN1::<crate::combinators::RepeatTillEnd<C>, DER>(
+            TagFmt::SEQUENCE,
+            crate::combinators::RepeatTillEnd(inner),
+        ),
+{
+    ASN1::<crate::combinators::RepeatTillEnd<C>, DER>(
+        TagFmt::SEQUENCE,
+        crate::combinators::RepeatTillEnd(inner),
+    )
+}
 
 /// Apply an ASN.1 context-specific IMPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]

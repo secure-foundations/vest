@@ -24,6 +24,8 @@ pub mod length;
 pub mod modifiers;
 /// ASN.1 PrintableString contents.
 pub mod printablestring;
+/// ASN.1 DER SET OF contents.
+pub mod set_of;
 /// ASN.1 tag octets.
 pub mod tag;
 /// ASN.1 TeletexString contents.
@@ -40,6 +42,7 @@ pub use der::*;
 pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
 pub use integer::{IntVal, Integer16, Integer8};
 pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
+pub use set_of::{DerOrd, SetOf};
 pub use tag::{Class, Tag};
 pub use utctime::UtcTimeValue;
 
