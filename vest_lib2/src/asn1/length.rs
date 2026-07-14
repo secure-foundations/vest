@@ -531,10 +531,12 @@ impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<Output, usize> for 
         if *v <= SHORT_FORM_MAX as usize {
             U8.serialize_into(&(*v as u8), obuf);
         } else {
-            let bytes = usize_to_be_bytes_exec(*v);
-            let count = bytes.len();
+            let count = usize_to_be_bytes_len(*v);
+            let mut bytes = [0u8;size_of::<usize>()];
+            let (encoded, _) = bytes.split_at_mut(count);
+            usize_to_be_bytes_in_place(*v, encoded);
             U8.serialize_into(&(0b1000_0000 | (count as u8)), obuf);
-            Varied(count).serialize_into(&bytes, obuf);
+            Varied(count).serialize_into(&bytes[0..count], obuf);
         }
     }
 }

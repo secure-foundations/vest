@@ -18,7 +18,6 @@ use vstd::arithmetic::power2::*;
 use vstd::assert_seqs_equal;
 use vstd::bits::*;
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -775,8 +774,11 @@ impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, IntVal<'i>> for super::I
     fn serialize_into(&self, v: &IntVal<'i>, obuf: &mut Output) {
         match v {
             IntVal::Small { v } => {
-                let bytes = i64_to_be_bytes(*v);
-                Tail.serialize_into(&bytes, obuf);
+                let len = i64_to_be_bytes_len(*v);
+                let mut bytes = [0u8;size_of::<i64>() + 1];
+                let (encoded, _) = bytes.split_at_mut(len);
+                i64_to_be_bytes_in_place(*v, encoded);
+                Tail.serialize_into(&bytes[0..len], obuf);
             },
             IntVal::Big { raw } => {
                 let bytes = raw.as_slice();
@@ -927,16 +929,7 @@ pub fn i64_to_be_bytes(v: i64) -> (buf: Vec<u8>)
         let mut body = u64_to_be_bytes(m);
         // Invert the bytes in place.
         let ghost orig = body@;
-        let blen = body.len();
-        for i in 0..blen
-            invariant
-                blen == body.len(),
-                body@.len() == orig.len(),
-                forall|k: int| 0 <= k < i ==> body@[k] == #[trigger] invert_byte(orig[k]),
-                forall|k: int| i <= k < body@.len() ==> body@[k] == #[trigger] orig[k],
-        {
-            body[i] = !body[i];
-        }
+        invert_bytes_in_place(&mut body);
         if body[0] >= 0x80 {  // sign bit set
             body
         } else {  // sign bit clear
@@ -952,6 +945,7 @@ pub fn i64_to_be_bytes_len(v: i64) -> (len: usize)
         usize::BITS == 64,
     ensures
         len == int_to_be_bytes(v as int).len(),
+        len <= size_of::<i64>() + 1,
 {
     let magnitude = if v >= 0 {
         v as u64
@@ -976,6 +970,61 @@ pub fn i64_to_be_bytes_len(v: i64) -> (len: usize)
         body_len + 1
     } else {
         body_len
+    }
+}
+
+/// Inverts every byte of `obuf` in place (bitwise NOT).
+fn invert_bytes_in_place(obuf: &mut [u8])
+    ensures
+        final(obuf)@ == invert_bytes(old(obuf)@),
+{
+    let n = obuf.len();
+    for i in 0..n
+        invariant
+            n == obuf.len(),
+            forall|k: int| 0 <= k < i ==> #[trigger] obuf@[k] == invert_byte(old(obuf)@[k]),
+            forall|k: int| i <= k < n ==> #[trigger] obuf@[k] == old(obuf)@[k],
+    {
+        obuf[i] = !obuf[i];
+    }
+    assert(obuf@ =~= invert_bytes(old(obuf)@));
+}
+
+/// Writes the minimal big-endian two's-complement encoding of `v` into an exactly-sized slice.
+pub fn i64_to_be_bytes_in_place(v: i64, obuf: &mut [u8])
+    requires
+        usize::BITS == 64,
+        old(obuf)@.len() == int_to_be_bytes(v as int).len(),
+    ensures
+        final(obuf)@ == int_to_be_bytes(v as int),
+{
+    let magnitude = if v >= 0 {
+        v as u64
+    } else {
+        (-1 - v) as u64
+    };
+    let first = u64_to_be_bytes_first(magnitude);
+    proof {
+        if v < 0 {
+            lemma_invert_byte_props(first);
+        }
+    }
+    if first >= 0x80 {
+        let (sign, body) = obuf.split_at_mut(1);
+        if v >= 0 {
+            sign[0] = 0x00u8;
+        } else {
+            sign[0] = 0xFFu8;
+        }
+        usize_to_be_bytes_in_place(magnitude as usize, body);
+        if v < 0 {
+            invert_bytes_in_place(body);
+        }
+    } else {
+        usize_to_be_bytes_in_place(magnitude as usize, obuf);
+        if v < 0 {
+            invert_bytes_in_place(obuf);
+        }
     }
 }
 

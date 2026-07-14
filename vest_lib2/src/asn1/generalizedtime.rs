@@ -570,38 +570,46 @@ pub open spec fn generalized_time_bytes(value: GeneralizedTimeSpec) -> Seq<u8> {
     )
 }
 
-/// Verified executable implementation to serialize a `GeneralizedTimeValue` to bytes.
-pub fn generalized_time_to_bytes<'a>(value: &GeneralizedTimeValue<'a>) -> (bytes: Vec<u8>)
+/// Writes a `GeneralizedTimeValue` directly to an output buffer without allocating.
+pub fn generalized_time_to_bytes<'a, Output: OutputBuf + ?Sized>(
+    value: &GeneralizedTimeValue<'a>,
+    obuf: &mut Output,
+)
     requires
         value.deep_view().wf(),
+        old(obuf).fits(generalized_time_bytes(value.deep_view()).len()),
     ensures
-        bytes@ == generalized_time_bytes(value.deep_view()),
+        final(obuf)@ == old(obuf)@ + generalized_time_bytes(value.deep_view()),
+        forall|n|
+            old(obuf).fits(generalized_time_bytes(value.deep_view()).len() + n)
+                <==> final(obuf).fits(n),
+        old(obuf).same_destination(final(obuf)),
 {
+    broadcast use crate::core::exec::output::outbuf_lemmas;
+
     let year = decimal4_bytes(value.datetime.year);
     let month = decimal2_bytes(value.datetime.month);
     let day = decimal2_bytes(value.datetime.day);
     let hour = decimal2_bytes(value.datetime.hour);
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(&year);
-    bytes.extend_from_slice(&month);
-    bytes.extend_from_slice(&day);
-    bytes.extend_from_slice(&hour);
+    obuf.write_bytes(&year);
+    obuf.write_bytes(&month);
+    obuf.write_bytes(&day);
+    obuf.write_bytes(&hour);
     if value.precision != TimePrecision::Hour {
         let minute = decimal2_bytes(value.datetime.minute);
-        bytes.extend_from_slice(&minute);
+        obuf.write_bytes(&minute);
         if value.precision == TimePrecision::Second {
             let second = decimal2_bytes(value.datetime.second);
-            bytes.extend_from_slice(&second);
+            obuf.write_bytes(&second);
         }
     }
     if value.fraction.len() > 0 {
-        bytes.push(0x2e);
-        bytes.extend_from_slice(value.fraction);
+        obuf.write_byte(0x2e);
+        obuf.write_bytes(value.fraction);
     }
     if value.zone == TimeZone::Utc {
-        bytes.push(0x5a);
+        obuf.write_byte(0x5a);
     }
-    bytes
 }
 
 /// Executable view validation helper checking well-formedness of `GeneralizedTimeValue`.
@@ -956,8 +964,7 @@ impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
     GeneralizedTimeValue<'i>,
 > for super::GeneralizedTime<DER> {
     fn serialize_into(&self, value: &GeneralizedTimeValue<'i>, obuf: &mut Output) {
-        let bytes = generalized_time_to_bytes(value);
-        Tail.serialize_into(&bytes.as_slice(), obuf);
+        generalized_time_to_bytes(value, obuf);
     }
 }
 

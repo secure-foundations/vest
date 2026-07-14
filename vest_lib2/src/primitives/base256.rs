@@ -331,6 +331,51 @@ pub fn usize_to_be_bytes_exec(v: usize) -> (buf: Vec<u8>)
     }
 }
 
+/// Writes the minimal big-endian base-256 encoding of `v` into an exactly-sized slice.
+#[verifier::loop_isolation(false)]
+pub fn usize_to_be_bytes_in_place(v: usize, obuf: &mut [u8])
+    requires
+        old(obuf)@.len() == nat_to_be_bytes(v as nat).len(),
+    ensures
+        final(obuf)@ == nat_to_be_bytes(v as nat),
+{
+    let len = obuf.len();
+
+    let ghost target = nat_to_be_bytes(v as nat);
+    proof {
+        lemma_to_from_be_bytes_roundtrip(v as nat);  // nat_from_be_bytes(nat_to_be_bytes(v)) == v
+        assert(target.take(len as int) == target);
+    }
+    let mut pos = len;
+    let mut current = v;
+
+    // We write the bytes in Big-Endian order, starting from the last byte and moving backwards.
+    // The loop invariant maintains that `current` is the remaining value to encode (the higher bytes),
+    // and the suffix `obuf[pos..]` is the part of the output buffer that has already been filled with the correct bytes.
+    while pos > 0
+        invariant
+            len == obuf.len(),
+            pos <= len,
+            current as nat == nat_from_be_bytes(target.take(pos as int)),
+            obuf@.skip(pos as int) == target.skip(pos as int),
+        decreases pos,
+    {
+        let ghost old_buf = obuf@;
+        let ghost old_current = current;
+
+        pos -= 1;
+        let byte = (current & 0xff) as u8;
+        obuf[pos] = byte;
+        current = current >> 8;
+        proof {
+            lemma_usize_shr8_is_div256(old_current);
+            lemma_usize_low8_is_mod256(old_current);
+            assert(target.take(pos as int + 1).drop_last() == target.take(pos as int));
+            assert(obuf@.skip(pos as int) == seq![byte] + old_buf.skip(pos as int + 1));
+        }
+    }
+}
+
 pub fn u64_to_be_bytes(v: u64) -> (buf: Vec<u8>)
     requires
         usize::BITS == 64,
@@ -415,3 +460,20 @@ fn bytes_needed(n: usize) -> (need: usize)
 //  {
 // }
 } // verus!
+#[cfg(test)]
+mod tests {
+    use super::{usize_to_be_bytes_exec, usize_to_be_bytes_in_place, usize_to_be_bytes_len};
+
+    #[test]
+    fn usize_to_be_bytes_in_place_matches_vec_encoding() {
+        for value in [0, 1, 0xff, 0x100, 0xffff, 0x10000, usize::MAX] {
+            let expected = usize_to_be_bytes_exec(value);
+            let len = usize_to_be_bytes_len(value);
+            let mut actual = [0u8; size_of::<usize>()];
+
+            usize_to_be_bytes_in_place(value, &mut actual[..len]);
+
+            assert_eq!(&actual[..len], expected.as_slice());
+        }
+    }
+}

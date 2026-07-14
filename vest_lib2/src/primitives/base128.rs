@@ -515,6 +515,52 @@ pub fn uint_to_base128(v: UInt) -> (buf: Vec<u8>)
     }
 }
 
+/// Writes the minimal big-endian base-128 encoding of `v` into an exactly-sized slice.
+#[verifier::loop_isolation(false)]
+pub fn uint_to_base128_in_place(v: UInt, obuf: &mut [u8])
+    requires
+        old(obuf)@.len() == nat_to_base128(v as nat).len(),
+    ensures
+        final(obuf)@ == nat_to_base128(v as nat),
+{
+    let len = obuf.len();
+
+    let ghost target = nat_to_base128(v as nat);
+    proof {
+        lemma_to_from_base128_roundtrip(v as nat);
+        lemma_to_base128_props(v as nat);
+        assert(target.take(len as int) == target);
+    }
+    let mut pos = len;
+    let mut current = v;
+
+    // Write the base-128 digits from least significant to most significant, filling the
+    // big-endian output slice from right to left.
+    while pos > 0
+        invariant
+            len == obuf.len(),
+            pos <= len,
+            current as nat == nat_from_base128(target.take(pos as int)),
+            obuf@.skip(pos as int) == target.skip(pos as int),
+        decreases pos,
+    {
+        let ghost old_buf = obuf@;
+        let ghost old_current = current;
+
+        pos -= 1;
+        let byte = (current & PAYLOAD_MASK as UInt) as u8;
+        obuf[pos] = byte;
+        current = current >> 7;
+        proof {
+            lemma_uint_shr7_is_div128(old_current);
+            lemma_uint_low7_is_mod128(old_current);
+            assert(target[pos as int] < 128);
+            assert(target.take(pos as int + 1).drop_last() == target.take(pos as int));
+            assert(obuf@.skip(pos as int) == seq![byte] + old_buf.skip(pos as int + 1));
+        }
+    }
+}
+
 pub fn uint_to_base128_len(v: UInt) -> (len: usize)
     ensures
         len == nat_to_base128(v as nat).len(),
@@ -684,26 +730,32 @@ impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> f
     fn serialize_into(&self, v: &UInt, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
-        let bytes = uint_to_base128(*v);
-        let num_bytes = bytes.len();
+        let num_bytes = uint_to_base128_len(*v);
+        let mut bytes = [0u8;BASE128_MAX_BYTES + 1];
+        let (encoded, _) = bytes.split_at_mut(num_bytes);
+        uint_to_base128_in_place(*v, encoded);
+
         proof {
+            assert(bytes@.take(num_bytes as int) == nat_to_base128(*v as nat));
             lemma_base128_fmt_byte_len::<MINIMAL>(*v);
         }
-        let ghost cont_bytes = bytes@.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
+        let ghost cont_bytes = bytes@.take(num_bytes as int).drop_last().map_values(
+            |b: u8| b | CONTINUATION_MASK,
+        );
         proof {
             old(obuf).lemma_same_destination_reflexive();
         }
         for i in 0..num_bytes - 1
             invariant
-                num_bytes == bytes.len(),
                 cont_bytes.len() == num_bytes - 1,
                 obuf@ == old(obuf)@ + cont_bytes.take(i as int),
                 forall|n| old(obuf).fits(i as nat + n) <==> #[trigger] obuf.fits(n),
                 old(obuf).same_destination(obuf),
                 forall|j: int|
                     #![auto]
-                    0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
-                        | CONTINUATION_MASK,
+                    0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.take(
+                        num_bytes as int,
+                    ).drop_last()[j] | CONTINUATION_MASK,
         {
             broadcast use crate::core::exec::output::outbuf_lemmas;
 
@@ -776,6 +828,19 @@ mod tests {
             let prepared = fmt.prepare(&value);
             assert_eq!(prepared, Ok(expected.len()));
             assert_eq!(fmt.length(&value), expected.len());
+        }
+    }
+
+    #[test]
+    fn uint_to_base128_in_place_matches_vec_encoding() {
+        for value in [0, 1, 0x7f, 0x80, 0x3fff, 0x4000, u64::MAX] {
+            let expected = uint_to_base128(value);
+            let len = uint_to_base128_len(value);
+            let mut actual = [0u8; BASE128_MAX_BYTES + 1];
+
+            uint_to_base128_in_place(value, &mut actual[..len]);
+
+            assert_eq!(&actual[..len], expected.as_slice());
         }
     }
 

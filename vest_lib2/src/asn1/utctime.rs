@@ -300,37 +300,34 @@ pub open spec fn utc_time_bytes(value: UtcTimeValue) -> Seq<u8> {
     }
 }
 
-/// Verified executable implementation of `utc_time_bytes` serialization.
-pub fn utc_time_to_bytes(value: &UtcTimeValue) -> (bytes: Vec<u8>)
+/// Writes `utc_time_bytes` directly to an output buffer without allocating.
+pub fn utc_time_to_bytes<Output: OutputBuf + ?Sized>(value: &UtcTimeValue, obuf: &mut Output)
     requires
         value.wf(),
+        old(obuf).fits(utc_time_bytes(*value).len()),
     ensures
-        bytes@ == utc_time_bytes(*value),
+        final(obuf)@ == old(obuf)@ + utc_time_bytes(*value),
+        forall|n| old(obuf).fits(utc_time_bytes(*value).len() + n) <==> final(obuf).fits(n),
+        old(obuf).same_destination(final(obuf)),
 {
+    broadcast use crate::core::exec::output::outbuf_lemmas;
+
     let short_year = (value.datetime.year % 100) as u8;
     let year = decimal2_bytes(short_year);
     let month = decimal2_bytes(value.datetime.month);
     let day = decimal2_bytes(value.datetime.day);
     let hour = decimal2_bytes(value.datetime.hour);
     let minute = decimal2_bytes(value.datetime.minute);
-    let mut bytes = Vec::with_capacity(
-        if value.precision == TimePrecision::Second {
-            13
-        } else {
-            11
-        },
-    );
-    bytes.extend_from_slice(&year);
-    bytes.extend_from_slice(&month);
-    bytes.extend_from_slice(&day);
-    bytes.extend_from_slice(&hour);
-    bytes.extend_from_slice(&minute);
+    obuf.write_bytes(&year);
+    obuf.write_bytes(&month);
+    obuf.write_bytes(&day);
+    obuf.write_bytes(&hour);
+    obuf.write_bytes(&minute);
     if value.precision == TimePrecision::Second {
         let second = decimal2_bytes(value.datetime.second);
-        bytes.extend_from_slice(&second);
+        obuf.write_bytes(&second);
     }
-    bytes.push(ASCII_Z);
-    bytes
+    obuf.write_byte(ASCII_Z);
 }
 
 #[verifier::rlimit(100)]
@@ -507,8 +504,7 @@ impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<
             assert(DER ==> value.precision == TimePrecision::Second);
             lemma_utc_time_encode_wf::<DER>(*value);
         }
-        let bytes = utc_time_to_bytes(value);
-        Tail.serialize_into(&bytes.as_slice(), obuf);
+        utc_time_to_bytes(value, obuf);
     }
 }
 
