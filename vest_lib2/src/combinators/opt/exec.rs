@@ -41,6 +41,8 @@ impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, Option<T>> for super::
     }
 
     fn serialize_into(&self, v: &Option<T>, obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+
         match v {
             Some(vv) => self.0.serialize_into(vv, obuf),
             None => {},

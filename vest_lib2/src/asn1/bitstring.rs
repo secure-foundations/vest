@@ -221,6 +221,10 @@ impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
     BitString<'i, DER>,
 > for super::BitStringFmt<DER> {
     fn serialize_into(&self, v: &BitString<'i, DER>, obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_fits_mono;
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+        broadcast use OutputBuf::lemma_same_destination_transitive;
+
         U8.serialize_into(&v.unused, obuf);
         Tail.serialize_into(&v.bits, obuf);
     }

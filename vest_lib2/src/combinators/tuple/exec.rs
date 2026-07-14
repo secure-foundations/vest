@@ -7,7 +7,7 @@ use crate::core::{
         parser::{PResult, Parser},
         serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     },
-    spec::{SafeParser, SpecParser, SpecSerializer},
+    spec::{SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
 use OutputBuf;
@@ -58,6 +58,10 @@ impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for 
     }
 
     fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_fits_mono;
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+        broadcast use OutputBuf::lemma_same_destination_transitive;
+
         self.0.serialize_into(&v.0, obuf);
         self.1.serialize_into(&v.1, obuf);
     }
@@ -153,6 +157,10 @@ impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for 
     }
 
     fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_fits_mono;
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+        broadcast use OutputBuf::lemma_same_destination_transitive;
+
         let next = self.1.map(&v.0);
         self.0.serialize_into(&v.0, obuf);
         next.serialize_into(&v.1, obuf);

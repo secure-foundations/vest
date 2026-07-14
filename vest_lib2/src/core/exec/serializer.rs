@@ -29,13 +29,11 @@ pub trait Serializer<Output, T> where
         requires
             self.exec_inv(),
             self.consistent(v.deep_view()),
-            old(obuf).wf(),
-            fit(old(obuf).remaining(), self.byte_len(v.deep_view())),
+            old(obuf).fits(self.byte_len(v.deep_view())),
         ensures
-            final(obuf).wf(),
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
-            final(obuf).remaining() == consume(old(obuf).remaining(), self.byte_len(v.deep_view())),
-            final(obuf).final_target() == old(obuf).final_target(),
+            forall|n| old(obuf).fits(self.byte_len(v.deep_view()) + n) <==> final(obuf).fits(n),
+            old(obuf).same_destination(final(obuf)),
     ;
 }
 
@@ -55,6 +53,11 @@ pub trait SerializerExt<T> where
     {
         let mut output = OutputSlice::new(obuf);
         self.serialize_into(v, &mut output);
+        proof {
+            assert(output.fits(0));
+            assert(!output.fits(1));
+            assert(output.pos == output.obuf@.len());
+        }
     }
 
     /// Serializes by appending to a growable Vec, preserving the original contract.

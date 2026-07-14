@@ -64,6 +64,8 @@ impl<I: InputBuf> Parser<I> for super::Eof {
 
 impl<Output: OutputBuf + ?Sized> Serializer<Output, ()> for super::Eof {
     fn serialize_into(&self, _v: &(), _obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+
     }
 }
 

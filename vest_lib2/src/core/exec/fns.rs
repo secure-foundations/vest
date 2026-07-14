@@ -315,23 +315,19 @@ impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
     pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
         requires
             forall|v: &T, obuf: &mut Output|
-                (spec_fn.consistent(v.deep_view()) && obuf.wf() && fit(
-                    obuf.remaining(),
-                    spec_fn.byte_len(v.deep_view()),
-                )) ==> #[trigger] call_requires(exec_fn, (v, obuf)),
+                (spec_fn.consistent(v.deep_view()) && obuf.fits(spec_fn.byte_len(v.deep_view())))
+                    ==> #[trigger] call_requires(exec_fn, (v, obuf)),
             forall|v: &T, obuf: &mut Output|
                 (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
                     exec_fn,
                     (v, obuf),
                     (),
                 )) ==> {
-                    &&& final(obuf).wf()
                     &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
-                    &&& final(obuf).remaining() == consume(
-                        obuf.remaining(),
-                        spec_fn.byte_len(v.deep_view()),
-                    )
-                    &&& final(obuf).final_target() == obuf.final_target()
+                    &&& forall|n|
+                        obuf.fits(spec_fn.byte_len(v.deep_view()) + n)
+                            <==> #[trigger] final(obuf).fits(n)
+                    &&& obuf.same_destination(final(obuf))
                 },
         ensures
             serializer.exec_inv(),
@@ -410,23 +406,20 @@ impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Sp
     open spec fn exec_inv(&self) -> bool {
         let Ghost(spec_fn) = self.spec_fn;
         &&& forall|v: &T, obuf: &mut Output|
-            (spec_fn.consistent(v.deep_view()) && obuf.wf() && fit(
-                obuf.remaining(),
-                spec_fn.byte_len(v.deep_view()),
-            )) ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
+            (spec_fn.consistent(v.deep_view()) && obuf.fits(spec_fn.byte_len(v.deep_view())))
+                ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
         &&& forall|v: &T, obuf: &mut Output|
             (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
                 self.exec_fn,
                 (v, obuf),
                 (),
             )) ==> {
-                &&& final(obuf).wf()
                 &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
-                &&& final(obuf).remaining() == consume(
-                    obuf.remaining(),
-                    spec_fn.byte_len(v.deep_view()),
-                )
-                &&& final(obuf).final_target() == obuf.final_target()
+                &&& forall|n|
+                    obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> #[trigger] final(obuf).fits(
+                        n,
+                    )
+                &&& obuf.same_destination(final(obuf))
             }
     }
 

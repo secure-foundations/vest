@@ -61,37 +61,29 @@ pub trait SerializerRecBody<Output, T>: SpecRecBody where
     ) where Exec: Fn(&Self::EP, &T, &mut Output)
         requires
             self.spec_body(param.deep_view(), spec_rec).consistent(v.deep_view()),
-            old(obuf).wf(),
-            fit(
-                old(obuf).remaining(),
-                self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view()),
-            ),
+            old(obuf).fits(self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view())),
             forall|pp: &Self::EP, vv: &T, out: &mut Output|
                 {
                     &&& spec_rec(pp.deep_view()).0(vv.deep_view())
-                    &&& out.wf()
-                    &&& fit(out.remaining(), spec_rec(pp.deep_view()).1(vv.deep_view()))
+                    &&& out.fits(spec_rec(pp.deep_view()).1(vv.deep_view()))
                 } ==> call_requires(exec_rec, (pp, vv, out)),
             forall|pp: &Self::EP, vv: &T, out: &mut Output|
                 call_ensures(exec_rec, (pp, vv, out), ()) ==> {
-                    &&& final(out).wf()
                     &&& final(out)@ == out@ + spec_rec(pp.deep_view()).3(vv.deep_view())
-                    &&& final(out).remaining() == consume(
-                        out.remaining(),
-                        spec_rec(pp.deep_view()).1(vv.deep_view()),
-                    )
-                    &&& final(out).final_target() == out.final_target()
+                    &&& forall|n|
+                        out.fits(spec_rec(pp.deep_view()).1(vv.deep_view()) + n)
+                            <==> #[trigger] final(out).fits(n)
+                    &&& out.same_destination(final(out))
                 },
         ensures
-            final(obuf).wf(),
             final(obuf)@ == old(obuf)@ + self.spec_body(param.deep_view(), spec_rec).spec_serialize(
                 v.deep_view(),
             ),
-            final(obuf).remaining() == consume(
-                old(obuf).remaining(),
-                self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view()),
-            ),
-            final(obuf).final_target() == old(obuf).final_target(),
+            forall|n|
+                old(obuf).fits(
+                    self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view()) + n,
+                ) <==> #[trigger] final(obuf).fits(n),
+            old(obuf).same_destination(final(obuf)),
     ;
 }
 
@@ -184,47 +176,42 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         requires
             Self::consistent_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
-            old(obuf).wf(),
-            fit(
-                old(obuf).remaining(),
+            old(obuf).fits(
                 Self::byte_len_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
             ),
         ensures
-            final(obuf).wf(),
             final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
                 &self.0,
                 gas as nat,
                 param.deep_view(),
                 v.deep_view(),
             ),
-            final(obuf).remaining() == consume(
-                old(obuf).remaining(),
-                Self::byte_len_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
-            ),
-            final(obuf).final_target() == old(obuf).final_target(),
+            forall|n|
+                old(obuf).fits(
+                    Self::byte_len_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()) + n,
+                ) <==> #[trigger] final(obuf).fits(n),
+            old(obuf).same_destination(final(obuf)),
         decreases gas,
     {
         let ghost body = self.0;
         let exec_callback = |pp: &Param, vv: &T, oo: &mut Output| -> ()
             requires
                 Self::consistent_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
-                old(oo).wf(),
-                fit(
-                    old(oo).remaining(),
+                old(oo).fits(
                     Self::byte_len_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
                 ),
             ensures
-                final(oo).wf(),
                 final(oo)@ == old(oo)@ + Self::spec_serialize_callback(
                     &body,
                     gas as nat,
                     pp.deep_view(),
                 )(vv.deep_view()),
-                final(oo).remaining() == consume(
-                    old(oo).remaining(),
-                    Self::byte_len_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
-                ),
-                final(oo).final_target() == old(oo).final_target(),
+                forall|n|
+                    old(oo).fits(
+                        Self::byte_len_callback(&body, gas as nat, pp.deep_view())(vv.deep_view())
+                            + n,
+                    ) <==> #[trigger] final(oo).fits(n),
+                old(oo).same_destination(final(oo)),
             {
                 if gas > 0 {
                     self.serialize_gas((gas - 1) as usize, pp, vv, oo);

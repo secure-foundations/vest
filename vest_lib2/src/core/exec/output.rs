@@ -5,75 +5,82 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Updates a remaining-capacity value after writing `len` bytes.
-pub open spec fn consume(remaining: Option<nat>, len: nat) -> Option<nat> {
-    match remaining {
-        Some(n) => if len <= n {
-            Some((n - len) as nat)
-        } else {
-            arbitrary()
-        },
-        None => None,
-    }
-}
-
-/// Whether `len` bytes fit in a remaining-capacity value.
-pub open spec fn fit(remaining: Option<nat>, len: nat) -> bool {
-    remaining matches Some(n) ==> len <= n
-}
-
 /// An append-oriented output buffer.
 ///
-/// The view is the sequence already present in, or written through, the output. A `None`
-/// remaining capacity denotes an unbounded growable output; `Some(n)` denotes a bounded output
-/// with `n` bytes left.
+/// The view is the sequence already present in, or written through, the output. Capacity is
+/// abstract: bounded and unbounded outputs expose the same `fits` interface.
 pub trait OutputBuf: View<V = Seq<u8>> {
-    /// Representation invariant for the output implementation.
-    spec fn wf(&self) -> bool;
+    /// Whether the output is valid and can accept `len` additional bytes.
+    spec fn fits(&self, len: nat) -> bool;
 
-    /// Bytes that can still be written, or `None` for an unbounded output.
-    spec fn remaining(&self) -> Option<nat>;
+    /// Write capacity is monotone: accepting a larger write implies accepting every prefix.
+    broadcast proof fn lemma_fits_mono(&self, shorter: nat, longer: nat)
+        requires
+            shorter <= longer,
+            self.fits(longer),
+        ensures
+            #![all_triggers]
+            self.fits(shorter),
+    ;
 
-    /// The final fixed backing storage, when the output has one.
+    /// Whether two states write to the same final destination.
     ///
-    /// This prophecy is `None` for growable outputs and remains stable across writes. It lets a
-    /// generic serializer return ownership of a caller-provided slice with a precise final view.
+    /// This is vacuously true for outputs without borrowed backing storage. For a borrowed
+    /// output, it relates the prophetic final contents of the backing storage across states.
     #[verifier::prophetic]
-    spec fn final_target(&self) -> Option<Seq<u8>>;
+    spec fn same_destination(&self, other: &Self) -> bool;
+
+    /// Destination identity is reflexive.
+    broadcast proof fn lemma_same_destination_reflexive(&self)
+        ensures
+            #[trigger] self.same_destination(self),
+    ;
+
+    /// Destination identity composes across sequential writes.
+    broadcast proof fn lemma_same_destination_transitive(&self, middle: &Self, last: &Self)
+        requires
+            self.same_destination(middle),
+            middle.same_destination(last),
+        ensures
+            #![all_triggers]
+            self.same_destination(last),
+    ;
 
     /// Appends one byte to the logical output.
     fn write_byte(&mut self, byte: u8)
         requires
-            old(self).wf(),
-            fit(old(self).remaining(), 1),
+            old(self).fits(1),
         ensures
-            final(self).wf(),
             final(self)@ == old(self)@.push(byte),
-            final(self).remaining() == consume(old(self).remaining(), 1),
-            final(self).final_target() == old(self).final_target(),
+            forall|n| old(self).fits(1 + n) <==> #[trigger] final(self).fits(n),
+            old(self).same_destination(final(self)),
     ;
 
     /// Appends all bytes in `bytes` to the logical output.
     fn write_bytes(&mut self, bytes: &[u8])
         requires
-            old(self).wf(),
-            fit(old(self).remaining(), bytes@.len()),
+            old(self).fits(bytes@.len()),
         ensures
-            final(self).wf(),
             final(self)@ == old(self)@ + bytes@,
-            final(self).remaining() == consume(old(self).remaining(), bytes@.len()),
-            final(self).final_target() == old(self).final_target(),
+            forall|n| old(self).fits(bytes@.len() + n) <==> #[trigger] final(self).fits(n),
+            old(self).same_destination(final(self)),
     {
+        broadcast use OutputBuf::lemma_same_destination_reflexive;
+
         let ghost initial_view = self@;
-        let ghost initial_remaining = self.remaining();
         for i in 0..bytes.len()
             invariant
-                self.wf(),
                 self@ == initial_view + bytes@.take(i as int),
-                self.remaining() == consume(initial_remaining, i as nat),
-                fit(initial_remaining, bytes@.len()),
-                self.final_target() == old(self).final_target(),
+                old(self).fits(bytes@.len()),
+                forall|n| old(self).fits(i as nat + n) <==> #[trigger] self.fits(n),
+                old(self).same_destination(self),
         {
+            broadcast use OutputBuf::lemma_same_destination_transitive;
+
+            proof {
+                old(self).lemma_fits_mono(i as nat + 1, bytes@.len());
+                assert(self.fits(1));
+            }
             self.write_byte(bytes[i]);
         }
     }
@@ -81,8 +88,7 @@ pub trait OutputBuf: View<V = Seq<u8>> {
 
 /// A non-allocating append sink backed by a caller-provided slice.
 ///
-/// Its logical view is the prefix written so far. The backing slice is fully populated when
-/// `remaining()` is `Some(0)`.
+/// Its logical view is the prefix written so far.
 pub struct OutputSlice<'a> {
     #[doc(hidden)]
     pub obuf: &'a mut [u8],
@@ -99,35 +105,41 @@ impl View for OutputSlice<'_> {
 }
 
 impl<'a> OutputSlice<'a> {
+    /// The prophetic final contents of the caller-provided backing slice.
+    #[verifier::prophetic]
+    pub open spec fn final_destination(&self) -> Seq<u8> {
+        final(self.obuf)@
+    }
+
     /// Creates an empty logical output over `obuf` without allocating.
     pub fn new(obuf: &'a mut [u8]) -> (output: Self)
         ensures
-            output.wf(),
             output@ == Seq::empty(),
-            output.remaining() == Some(old(obuf)@.len()),
-            output.final_target() == Some(final(obuf)@),
+            output.fits(old(obuf)@.len()),
+            forall|len: nat| #[trigger] output.fits(len) == (len <= old(obuf)@.len()),
+            output.final_destination() == final(obuf)@,
     {
         Self { obuf, pos: 0 }
-    }
-
-    /// The complete current contents of the backing slice.
-    pub open spec fn backing_view(&self) -> Seq<u8> {
-        self.obuf@
     }
 }
 
 impl OutputBuf for OutputSlice<'_> {
-    open spec fn wf(&self) -> bool {
-        self.pos <= self.obuf@.len()
+    open spec fn fits(&self, len: nat) -> bool {
+        self.pos as nat + len <= self.obuf@.len()
     }
 
-    open spec fn remaining(&self) -> Option<nat> {
-        Some((self.obuf@.len() - self.pos as int) as nat)
+    proof fn lemma_fits_mono(&self, shorter: nat, longer: nat) {
     }
 
     #[verifier::prophetic]
-    open spec fn final_target(&self) -> Option<Seq<u8>> {
-        Some(final(self.obuf)@)
+    open spec fn same_destination(&self, other: &Self) -> bool {
+        self.final_destination() == other.final_destination()
+    }
+
+    proof fn lemma_same_destination_reflexive(&self) {
+    }
+
+    proof fn lemma_same_destination_transitive(&self, _middle: &Self, _last: &Self) {
     }
 
     fn write_byte(&mut self, byte: u8) {
@@ -138,17 +150,22 @@ impl OutputBuf for OutputSlice<'_> {
 }
 
 impl OutputBuf for Vec<u8> {
-    open spec fn wf(&self) -> bool {
+    open spec fn fits(&self, _len: nat) -> bool {
         true
     }
 
-    open spec fn remaining(&self) -> Option<nat> {
-        None
+    proof fn lemma_fits_mono(&self, _shorter: nat, _longer: nat) {
     }
 
     #[verifier::prophetic]
-    open spec fn final_target(&self) -> Option<Seq<u8>> {
-        None
+    open spec fn same_destination(&self, _other: &Self) -> bool {
+        true
+    }
+
+    proof fn lemma_same_destination_reflexive(&self) {
+    }
+
+    proof fn lemma_same_destination_transitive(&self, _middle: &Self, _last: &Self) {
     }
 
     fn write_byte(&mut self, byte: u8) {

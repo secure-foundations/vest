@@ -681,54 +681,42 @@ impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> f
     MINIMAL,
 > {
     fn serialize_into(&self, v: &UInt, obuf: &mut Output) {
+        broadcast use OutputBuf::lemma_same_destination_transitive;
+
         let bytes = uint_to_base128(*v);
-        let n = bytes.len();
+        let num_bytes = bytes.len();
         proof {
             lemma_base128_fmt_byte_len::<MINIMAL>(*v);
         }
-        let ghost initial_remaining = obuf.remaining();
         let ghost cont_bytes = bytes@.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
-        for i in 0..n - 1
+        proof {
+            old(obuf).lemma_same_destination_reflexive();
+        }
+        for i in 0..num_bytes - 1
             invariant
-                n == bytes.len(),
-                n == self.byte_len(*v),
-                cont_bytes.len() == n - 1,
-                initial_remaining == old(obuf).remaining(),
-                old(obuf).wf(),
-                fit(old(obuf).remaining(), n as nat),
-                obuf.wf(),
+                num_bytes == bytes.len(),
+                num_bytes == self.byte_len(*v),
+                cont_bytes.len() == num_bytes - 1,
+                old(obuf).fits(num_bytes as nat),
                 obuf@ == old(obuf)@ + cont_bytes.take(i as int),
-                obuf.remaining() == consume(old(obuf).remaining(), i as nat),
-                obuf.final_target() == old(obuf).final_target(),
+                forall|n| old(obuf).fits(i as nat + n) <==> #[trigger] obuf.fits(n),
+                old(obuf).same_destination(obuf),
                 forall|j: int|
                     #![auto]
                     0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
                         | CONTINUATION_MASK,
         {
+            broadcast use OutputBuf::lemma_fits_mono;
+            broadcast use OutputBuf::lemma_same_destination_transitive;
+
             let b = bytes[i];
-            proof {
-                match initial_remaining {
-                    None => {},
-                    Some(capacity) => {
-                        assert(n <= capacity);
-                        assert(i + 1 <= n);
-                    },
-                }
-                assert(fit(obuf.remaining(), 1));
-            }
+            assert(obuf.fits((num_bytes - i) as nat));
             obuf.write_byte((b | CONTINUATION_MASK) as u8);
         }
         proof {
-            match initial_remaining {
-                None => {},
-                Some(capacity) => {
-                    assert(n <= capacity);
-                    assert((n - 1) + 1 <= capacity);
-                },
-            }
-            assert(fit(obuf.remaining(), 1));
+            assert(obuf.fits(1));
         }
-        obuf.write_byte(bytes[n - 1]);
+        obuf.write_byte(bytes[num_bytes - 1]);
         proof {
             lemma_star_serialize_seq_u8(cont_bytes);
         }
