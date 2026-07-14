@@ -1,5 +1,6 @@
 use super::leb128::*;
 use crate::combinators::disjoint::disjointness_lemmas;
+use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
 use crate::{
     combinators::mapped::spec::*,
@@ -676,25 +677,58 @@ impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
     }
 }
 
-impl<const MINIMAL: bool> Serializer<UInt> for Base128Fmt<MINIMAL> {
-    fn serialize(&self, v: &UInt, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> for Base128Fmt<
+    MINIMAL,
+> {
+    fn serialize_into(&self, v: &UInt, obuf: &mut Output) {
         let bytes = uint_to_base128(*v);
         let n = bytes.len();
+        proof {
+            lemma_base128_fmt_byte_len::<MINIMAL>(*v);
+        }
+        let ghost initial_remaining = obuf.remaining();
         let ghost cont_bytes = bytes@.drop_last().map_values(|b: u8| b | CONTINUATION_MASK);
         for i in 0..n - 1
             invariant
                 n == bytes.len(),
+                n == self.byte_len(*v),
                 cont_bytes.len() == n - 1,
+                initial_remaining == old(obuf).remaining(),
+                old(obuf).wf(),
+                fit(old(obuf).remaining(), n as nat),
+                obuf.wf(),
                 obuf@ == old(obuf)@ + cont_bytes.take(i as int),
+                obuf.remaining() == consume(old(obuf).remaining(), i as nat),
+                obuf.final_target() == old(obuf).final_target(),
                 forall|j: int|
                     #![auto]
                     0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
                         | CONTINUATION_MASK,
         {
             let b = bytes[i];
-            obuf.push((b | CONTINUATION_MASK) as u8);
+            proof {
+                match initial_remaining {
+                    None => {},
+                    Some(capacity) => {
+                        assert(n <= capacity);
+                        assert(i + 1 <= n);
+                    },
+                }
+                assert(fit(obuf.remaining(), 1));
+            }
+            obuf.write_byte((b | CONTINUATION_MASK) as u8);
         }
-        obuf.push(bytes[n - 1]);
+        proof {
+            match initial_remaining {
+                None => {},
+                Some(capacity) => {
+                    assert(n <= capacity);
+                    assert((n - 1) + 1 <= capacity);
+                },
+            }
+            assert(fit(obuf.remaining(), 1));
+        }
+        obuf.write_byte(bytes[n - 1]);
         proof {
             lemma_star_serialize_seq_u8(cont_bytes);
         }
@@ -731,7 +765,7 @@ impl<const MINIMAL: bool> Prepare<UInt> for Base128Fmt<MINIMAL> {
 mod tests {
     use super::*;
     use crate::core::exec::serializer::PreSerializeErrorKind;
-    use crate::core::exec::{ByteLen, ParseErrorKind, Parser, Prepare, Serializer};
+    use crate::core::exec::{ByteLen, ParseErrorKind, Parser, Prepare, SerializerExt};
 
     #[test]
     fn base128_minimal_roundtrip_boundaries() {
@@ -747,8 +781,12 @@ mod tests {
 
         for &(value, expected) in cases {
             let mut out = Vec::new();
-            fmt.serialize(&value, &mut out);
+            fmt.serialize_with_vec(&value, &mut out);
             assert_eq!(out, expected);
+
+            let mut stack_out = [0u8; 2];
+            fmt.serialize(&value, &mut stack_out[..expected.len()]);
+            assert_eq!(&stack_out[..expected.len()], expected);
 
             let parsed = fmt.parse(&&out[..]);
             assert_eq!(parsed, Ok((expected.len(), value)));
@@ -788,7 +826,7 @@ mod tests {
         let too_large = 1u64 << 63;
 
         let mut out = Vec::new();
-        fmt.serialize(&max_supported, &mut out);
+        fmt.serialize_with_vec(&max_supported, &mut out);
         assert_eq!(out.len(), BASE128_MAX_BYTES);
         assert_eq!(fmt.prepare(&max_supported), Ok(BASE128_MAX_BYTES));
         assert_eq!(fmt.length(&max_supported), BASE128_MAX_BYTES);

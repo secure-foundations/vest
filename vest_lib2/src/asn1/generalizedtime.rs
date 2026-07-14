@@ -1,4 +1,5 @@
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
@@ -13,6 +14,7 @@ use crate::{
 };
 use vstd::assert_seqs_equal;
 use vstd::prelude::*;
+use OutputBuf;
 
 use super::datetime::*;
 
@@ -949,10 +951,13 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::GeneralizedTime<DER> {
     }
 }
 
-impl<'i, const DER: bool> Serializer<GeneralizedTimeValue<'i>> for super::GeneralizedTime<DER> {
-    fn serialize(&self, value: &GeneralizedTimeValue<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
+    Output,
+    GeneralizedTimeValue<'i>,
+> for super::GeneralizedTime<DER> {
+    fn serialize_into(&self, value: &GeneralizedTimeValue<'i>, obuf: &mut Output) {
         let bytes = generalized_time_to_bytes(value);
-        Tail.serialize(&bytes.as_slice(), obuf);
+        Tail.serialize_into(&bytes.as_slice(), obuf);
     }
 }
 

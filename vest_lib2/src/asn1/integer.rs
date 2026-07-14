@@ -1,4 +1,5 @@
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
@@ -17,6 +18,7 @@ use vstd::arithmetic::power2::*;
 use vstd::assert_seqs_equal;
 use vstd::bits::*;
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -721,9 +723,9 @@ impl<'i> Parser<&'i [u8]> for Integer16 {
     }
 }
 
-impl Serializer<i8> for Integer8 {
-    fn serialize(&self, v: &i8, obuf: &mut Vec<u8>) {
-        I8.serialize(v, obuf);
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i8> for Integer8 {
+    fn serialize_into(&self, v: &i8, obuf: &mut Output) {
+        I8.serialize_into(v, obuf);
     }
 }
 
@@ -739,12 +741,12 @@ impl ByteLen<i8> for Integer8 {
     }
 }
 
-impl Serializer<i16> for Integer16 {
-    fn serialize(&self, v: &i16, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for Integer16 {
+    fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         if fits_i8(*v) {
-            I8.serialize(&(*v as i8), obuf);
+            I8.serialize_into(&(*v as i8), obuf);
         } else {
-            I16Be.serialize(v, obuf);
+            I16Be.serialize_into(v, obuf);
         }
     }
 }
@@ -769,12 +771,12 @@ impl ByteLen<i16> for Integer16 {
     }
 }
 
-impl<'i> Serializer<IntVal<'i>> for super::Integer {
-    fn serialize(&self, v: &IntVal<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, IntVal<'i>> for super::Integer {
+    fn serialize_into(&self, v: &IntVal<'i>, obuf: &mut Output) {
         match v {
             IntVal::Small { v } => {
                 let bytes = i64_to_be_bytes(*v);
-                Tail.serialize(&bytes, obuf);
+                Tail.serialize_into(&bytes, obuf);
             },
             IntVal::Big { raw } => {
                 let bytes = raw.as_slice();
@@ -783,7 +785,7 @@ impl<'i> Serializer<IntVal<'i>> for super::Integer {
                     lemma_integer_fmt_sound_nonmal_inv();
                     lemma_integer_from_to_bytes(bytes.deep_view());
                 }
-                Tail.serialize(&bytes, obuf);
+                Tail.serialize_into(&bytes, obuf);
             },
         }
     }
@@ -981,7 +983,7 @@ pub fn i64_to_be_bytes_len(v: i64) -> (len: usize)
 #[cfg(test)]
 mod tests {
     use super::{Integer16, Integer8};
-    use crate::core::exec::{Parser, Serializer};
+    use crate::core::exec::{Parser, SerializerExt};
 
     #[test]
     fn integer8_boundaries_and_noncanonical_lengths() {
@@ -1005,7 +1007,7 @@ mod tests {
             (32767i16, &[0x7fu8, 0xff][..]),
         ] {
             let mut encoded = Vec::new();
-            Integer16.serialize(&value, &mut encoded);
+            Integer16.serialize_with_vec(&value, &mut encoded);
             assert_eq!(encoded, expected);
 
             let (_, decoded) = Integer16.parse(&expected).unwrap();
@@ -1025,12 +1027,12 @@ mod tests {
         for v in -128..=127 {
             // Serialize using Integer8
             let mut enc8 = Vec::new();
-            Integer8.serialize(&v, &mut enc8);
+            Integer8.serialize_with_vec(&v, &mut enc8);
 
             // Serialize using general Integer
             let mut enc_gen = Vec::new();
             let val = IntVal::Small { v: v as i64 };
-            Integer.serialize(&val, &mut enc_gen);
+            Integer.serialize_with_vec(&val, &mut enc_gen);
 
             assert_eq!(enc8, enc_gen, "Mismatch serialization at {}", v);
 
@@ -1058,12 +1060,12 @@ mod tests {
         for v in -32768..=32767 {
             // Serialize using Integer16
             let mut enc16 = Vec::new();
-            Integer16.serialize(&v, &mut enc16);
+            Integer16.serialize_with_vec(&v, &mut enc16);
 
             // Serialize using general Integer
             let mut enc_gen = Vec::new();
             let val = IntVal::Small { v: v as i64 };
-            Integer.serialize(&val, &mut enc_gen);
+            Integer.serialize_with_vec(&val, &mut enc_gen);
 
             assert_eq!(enc16, enc_gen, "Mismatch serialization at {}", v);
 

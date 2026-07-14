@@ -8,6 +8,7 @@ use crate::asn1::tag::{Class, TagNumber};
 use crate::asn1::{Tag, ASN1};
 use crate::combinators::mapped::spec::{FnSpecMapper, SpecMapper};
 use crate::combinators::{Mapped, Optional, Refined};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     input::{InputBuf, InputSlice},
     parser::{PResult, Parser},
@@ -16,6 +17,7 @@ use crate::core::exec::{
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -466,14 +468,12 @@ impl<I, Field, Rest, const DER: bool> Parser<I> for Defaulted<Field, Field::T, R
     }
 }
 
-impl<Field, Default, Rest, R, const DER: bool> Serializer<(Default, R)> for Defaulted<
-    Field,
-    Default,
-    Rest,
-    DER,
-> where
-    Field: SpecByteLen<T = Default> + Serializer<Default>,
-    Rest: SpecByteLen<T = R> + Serializer<R>,
+impl<Output: OutputBuf + ?Sized, Field, Default, Rest, R, const DER: bool> Serializer<
+    Output,
+    (Default, R),
+> for Defaulted<Field, Default, Rest, DER> where
+    Field: SpecByteLen<T = Default> + Serializer<Output, Default>,
+    Rest: SpecByteLen<T = R> + Serializer<Output, R>,
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
     R: DeepView<V = R>,
  {
@@ -484,11 +484,11 @@ impl<Field, Default, Rest, R, const DER: bool> Serializer<(Default, R)> for Defa
         &&& forall|v: Default| v.deep_view() == v
     }
 
-    fn serialize(&self, v: &(Default, R), obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &(Default, R), obuf: &mut Output) {
         if v.0 != self.1 {
-            self.0.serialize(&v.0, obuf);
+            self.0.serialize_into(&v.0, obuf);
         }
-        self.2.serialize(&v.1, obuf);
+        self.2.serialize_into(&v.1, obuf);
     }
 }
 

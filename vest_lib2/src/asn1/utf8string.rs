@@ -1,4 +1,5 @@
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
@@ -10,6 +11,7 @@ use crate::{
 };
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
+use OutputBuf;
 
 verus! {
 
@@ -171,10 +173,10 @@ impl<'i> Parser<&'i [u8]> for super::Utf8String {
     }
 }
 
-impl<'i> Serializer<&'i str> for super::Utf8String {
-    fn serialize(&self, v: &&'i str, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, &'i str> for super::Utf8String {
+    fn serialize_into(&self, v: &&'i str, obuf: &mut Output) {
         let bytes = v.as_bytes();
-        Tail.serialize(&bytes, obuf);
+        Tail.serialize_into(&bytes, obuf);
     }
 }
 

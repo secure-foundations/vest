@@ -1,4 +1,5 @@
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
@@ -8,6 +9,7 @@ use crate::{
     combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, U8},
     core::{proof::*, spec::*},
 };
+use OutputBuf;
 
 use vstd::prelude::*;
 
@@ -227,14 +229,14 @@ impl<const DER: bool> Parser<&[u8]> for super::Bool<DER> {
     }
 }
 
-impl Serializer<bool> for super::Bool<true> {
-    fn serialize(&self, v: &bool, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, bool> for super::Bool<true> {
+    fn serialize_into(&self, v: &bool, obuf: &mut Output) {
         let b = if *v {
             CANONICAL_TRUE_BYTE
         } else {
             FALSE_BYTE
         };
-        U8.serialize(&b, obuf);
+        U8.serialize_into(&b, obuf);
     }
 }
 

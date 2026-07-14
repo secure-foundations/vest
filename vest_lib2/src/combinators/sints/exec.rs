@@ -1,12 +1,14 @@
 use crate::combinators::sints::spec::*;
 use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -136,9 +138,9 @@ impl Parser<&[u8]> for super::I8 {
     }
 }
 
-impl Serializer<i8> for super::I8 {
-    fn serialize(&self, v: &i8, obuf: &mut Vec<u8>) {
-        obuf.push(*v as u8);
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i8> for super::I8 {
+    fn serialize_into(&self, v: &i8, obuf: &mut Output) {
+        obuf.write_byte(*v as u8);
     }
 }
 
@@ -172,10 +174,10 @@ impl Parser<&[u8]> for super::I16Le {
     }
 }
 
-impl Serializer<i16> for super::I16Le {
-    fn serialize(&self, v: &i16, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for super::I16Le {
+    fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         let bytes = i16_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -209,10 +211,10 @@ impl Parser<&[u8]> for super::I16Be {
     }
 }
 
-impl Serializer<i16> for super::I16Be {
-    fn serialize(&self, v: &i16, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for super::I16Be {
+    fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         let bytes = i16_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -246,10 +248,10 @@ impl Parser<&[u8]> for super::I32Le {
     }
 }
 
-impl Serializer<i32> for super::I32Le {
-    fn serialize(&self, v: &i32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i32> for super::I32Le {
+    fn serialize_into(&self, v: &i32, obuf: &mut Output) {
         let bytes = i32_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -283,10 +285,10 @@ impl Parser<&[u8]> for super::I32Be {
     }
 }
 
-impl Serializer<i32> for super::I32Be {
-    fn serialize(&self, v: &i32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i32> for super::I32Be {
+    fn serialize_into(&self, v: &i32, obuf: &mut Output) {
         let bytes = i32_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -329,10 +331,10 @@ impl Parser<&[u8]> for super::I64Le {
     }
 }
 
-impl Serializer<i64> for super::I64Le {
-    fn serialize(&self, v: &i64, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i64> for super::I64Le {
+    fn serialize_into(&self, v: &i64, obuf: &mut Output) {
         let bytes = i64_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -375,10 +377,10 @@ impl Parser<&[u8]> for super::I64Be {
     }
 }
 
-impl Serializer<i64> for super::I64Be {
-    fn serialize(&self, v: &i64, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, i64> for super::I64Be {
+    fn serialize_into(&self, v: &i64, obuf: &mut Output) {
         let bytes = i64_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 

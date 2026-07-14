@@ -1,5 +1,6 @@
 use crate::combinators::{Bind, Empty, Sum};
 use crate::core::exec::input::*;
+use crate::core::exec::output::*;
 use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::primitives::base128::*;
 use crate::{
@@ -11,6 +12,7 @@ use crate::{
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
+use OutputBuf;
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -627,8 +629,8 @@ impl Parser<&[u8]> for super::TagFmt {
     }
 }
 
-impl Serializer<Tag> for super::TagFmt {
-    fn serialize(&self, v: &Tag, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, Tag> for super::TagFmt {
+    fn serialize_into(&self, v: &Tag, obuf: &mut Output) {
         let num = match v.number {
             TagNumber::EOC => 0,
             TagNumber::Boolean => 1,
@@ -673,11 +675,11 @@ impl Serializer<Tag> for super::TagFmt {
         if num < TAG_LONG_FORM_SENTINEL as UInt {
             let low = num as u8;
             let b1 = class_bits | constructed_bit | (low & TAG_NUMBER_MASK);
-            U8.serialize(&b1, obuf);
+            U8.serialize_into(&b1, obuf);
         } else {
             let b1 = class_bits | constructed_bit | TAG_LONG_FORM_SENTINEL & TAG_NUMBER_MASK;
-            U8.serialize(&b1, obuf);
-            Base128Fmt::<true>.serialize(&num, obuf);
+            U8.serialize_into(&b1, obuf);
+            Base128Fmt::<true>.serialize_into(&num, obuf);
         }
     }
 }
@@ -1022,7 +1024,7 @@ fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
     let (n, v) = const_u16_fmt.parse(buf)?;
     if let Ok(len) = const_u16_fmt.prepare(&v) {
         let mut obuf = Vec::with_capacity(len);
-        const_u16_fmt.serialize(&v, &mut obuf);
+        const_u16_fmt.serialize_with_vec(&v, &mut obuf);
         proof {
             const_u16_fmt.theorem_parse_serialize_roundtrip(buf@);
             assert(obuf@ == buf@.take(n as int));
@@ -1038,7 +1040,7 @@ fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
     let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
     if let Ok(len) = asn_bool_tag_fmt.prepare(&tag) {
         let mut obuf = Vec::with_capacity(len);
-        asn_bool_tag_fmt.serialize(&tag, &mut obuf);
+        asn_bool_tag_fmt.serialize_with_vec(&tag, &mut obuf);
 
         proof {
             asn_bool_tag_fmt.theorem_parse_serialize_roundtrip(buf@);

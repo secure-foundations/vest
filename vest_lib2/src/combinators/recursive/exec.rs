@@ -1,9 +1,10 @@
 use super::{ParamRecSpecs, SafeParserRecBody, SpecRecBody};
+use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::{
     ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
 };
-use crate::core::exec::{input::InputBuf, ParseError};
+use crate::core::exec::{input::InputBuf, output::OutputBuf, ParseError};
 use crate::core::spec::{
     Consistency, GoodSerializer, SafeParser, SpecByteLen, SpecParser, SpecSerializer,
 };
@@ -41,7 +42,10 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
 }
 
 /// Executable serialization for one recursive unfolding.
-pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
+pub trait SerializerRecBody<Output, T>: SpecRecBody where
+    Output: OutputBuf + ?Sized,
+    T: DeepView<V = Self::T>,
+ {
     type EP: DeepView<V = Self::Param>;
 
     /// Execute one recursive unfolding, using `exec_rec` for all recursive positions in the body.
@@ -53,23 +57,41 @@ pub trait SerializerRecBody<T>: SpecRecBody where T: DeepView<V = Self::T> {
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &T,
-        obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&Self::EP, &T, &mut Vec<u8>)
+        obuf: &mut Output,
+    ) where Exec: Fn(&Self::EP, &T, &mut Output)
         requires
             self.spec_body(param.deep_view(), spec_rec).consistent(v.deep_view()),
-            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
-                spec_rec(pp.deep_view()).0(vv.deep_view()) ==> call_requires(
-                    exec_rec,
-                    (pp, vv, out),
-                ),
-            forall|pp: &Self::EP, vv: &T, out: &mut Vec<u8>|
-                call_ensures(exec_rec, (pp, vv, out), ()) ==> final(out)@ == out@ + spec_rec(
-                    pp.deep_view(),
-                ).3(vv.deep_view()),
+            old(obuf).wf(),
+            fit(
+                old(obuf).remaining(),
+                self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view()),
+            ),
+            forall|pp: &Self::EP, vv: &T, out: &mut Output|
+                {
+                    &&& spec_rec(pp.deep_view()).0(vv.deep_view())
+                    &&& out.wf()
+                    &&& fit(out.remaining(), spec_rec(pp.deep_view()).1(vv.deep_view()))
+                } ==> call_requires(exec_rec, (pp, vv, out)),
+            forall|pp: &Self::EP, vv: &T, out: &mut Output|
+                call_ensures(exec_rec, (pp, vv, out), ()) ==> {
+                    &&& final(out).wf()
+                    &&& final(out)@ == out@ + spec_rec(pp.deep_view()).3(vv.deep_view())
+                    &&& final(out).remaining() == consume(
+                        out.remaining(),
+                        spec_rec(pp.deep_view()).1(vv.deep_view()),
+                    )
+                    &&& final(out).final_target() == out.final_target()
+                },
         ensures
+            final(obuf).wf(),
             final(obuf)@ == old(obuf)@ + self.spec_body(param.deep_view(), spec_rec).spec_serialize(
                 v.deep_view(),
             ),
+            final(obuf).remaining() == consume(
+                old(obuf).remaining(),
+                self.spec_body(param.deep_view(), spec_rec).byte_len(v.deep_view()),
+            ),
+            final(obuf).final_target() == old(obuf).final_target(),
     ;
 }
 
@@ -154,32 +176,55 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         self.0.parse_body(param, Ghost(spec_callback), exec_callback, ibuf)
     }
 
-    fn serialize_gas<T>(&self, gas: usize, param: &Param, v: &T, obuf: &mut Vec<u8>) where
+    fn serialize_gas<Output, T>(&self, gas: usize, param: &Param, v: &T, obuf: &mut Output) where
+        Output: OutputBuf + ?Sized,
         T: DeepView<V = Body::T>,
         Param: DeepView<V = Body::Param>,
-        Body: SerializerRecBody<T, EP = Param>,
+        Body: SerializerRecBody<Output, T, EP = Param>,
 
         requires
             Self::consistent_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
+            old(obuf).wf(),
+            fit(
+                old(obuf).remaining(),
+                Self::byte_len_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
+            ),
         ensures
+            final(obuf).wf(),
             final(obuf)@ == old(obuf)@ + Self::spec_serialize_gas(
                 &self.0,
                 gas as nat,
                 param.deep_view(),
                 v.deep_view(),
             ),
+            final(obuf).remaining() == consume(
+                old(obuf).remaining(),
+                Self::byte_len_gas(&self.0, gas as nat, param.deep_view(), v.deep_view()),
+            ),
+            final(obuf).final_target() == old(obuf).final_target(),
         decreases gas,
     {
         let ghost body = self.0;
-        let exec_callback = |pp: &Param, vv: &T, oo: &mut Vec<u8>| -> ()
+        let exec_callback = |pp: &Param, vv: &T, oo: &mut Output| -> ()
             requires
                 Self::consistent_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
+                old(oo).wf(),
+                fit(
+                    old(oo).remaining(),
+                    Self::byte_len_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
+                ),
             ensures
+                final(oo).wf(),
                 final(oo)@ == old(oo)@ + Self::spec_serialize_callback(
                     &body,
                     gas as nat,
                     pp.deep_view(),
                 )(vv.deep_view()),
+                final(oo).remaining() == consume(
+                    old(oo).remaining(),
+                    Self::byte_len_callback(&body, gas as nat, pp.deep_view())(vv.deep_view()),
+                ),
+                final(oo).final_target() == old(oo).final_target(),
             {
                 if gas > 0 {
                     self.serialize_gas((gas - 1) as usize, pp, vv, oo);
@@ -244,12 +289,15 @@ impl<const LIMIT: usize, Body, Param, I> Parser<I> for super::FixWith<LIMIT, Bod
     }
 }
 
-impl<T, const LIMIT: usize, Body, Param> Serializer<T> for super::FixWith<LIMIT, Body, Param> where
+impl<Output: OutputBuf + ?Sized, T, const LIMIT: usize, Body, Param> Serializer<
+    Output,
+    T,
+> for super::FixWith<LIMIT, Body, Param> where
     T: DeepView<V = Body::T>,
     Param: DeepView<V = Body::Param>,
-    Body: SerializerRecBody<T, EP = Param>,
+    Body: SerializerRecBody<Output, T, EP = Param>,
  {
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
         self.serialize_gas(LIMIT, &self.1, v, obuf)
     }
 }

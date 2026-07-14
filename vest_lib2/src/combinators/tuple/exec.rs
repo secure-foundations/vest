@@ -1,5 +1,6 @@
 use crate::combinators::mapped::spec::SpecMap;
 use crate::core::exec::fns::MapRef;
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::InputBuf,
@@ -9,6 +10,7 @@ use crate::core::{
     spec::{SafeParser, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -45,21 +47,19 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Pair<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Serializer<TA>,
-    B: Serializer<TB>,
- {
+impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Pair<
+    A,
+    B,
+> where TA: DeepView, TB: DeepView, A: Serializer<Output, TA>, B: Serializer<Output, TB> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
-        self.0.serialize(&v.0, obuf);
-        self.1.serialize(&v.1, obuf);
+    fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
+        self.0.serialize_into(&v.0, obuf);
+        self.1.serialize_into(&v.1, obuf);
     }
 }
 
@@ -136,11 +136,14 @@ impl<I, A, B> Parser<I> for super::Bind<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Bind<A, B> where
+impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Bind<
+    A,
+    B,
+> where
     TA: DeepView,
     TB: DeepView,
-    A: Serializer<TA>,
-    B::O: Serializer<TB>,
+    A: Serializer<Output, TA>,
+    B::O: Serializer<Output, TB>,
     B: MapRef<TA, Input = TA::V>,
  {
     #[verifier::prophetic]
@@ -149,10 +152,10 @@ impl<A, B, TA, TB> Serializer<(TA, TB)> for super::Bind<A, B> where
         &&& forall|pb: B::O| #[trigger] pb.exec_inv()
     }
 
-    fn serialize(&self, v: &(TA, TB), obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
         let next = self.1.map(&v.0);
-        self.0.serialize(&v.0, obuf);
-        next.serialize(&v.1, obuf);
+        self.0.serialize_into(&v.0, obuf);
+        next.serialize_into(&v.1, obuf);
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
@@ -7,6 +8,7 @@ use crate::core::{
     spec::SpecParser,
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -26,14 +28,17 @@ impl<I, Inner> Parser<I> for super::Cond<Inner> where I: View<V = Seq<u8>>, Inne
     }
 }
 
-impl<Inner, T> Serializer<T> for super::Cond<Inner> where T: DeepView, Inner: Serializer<T> {
+impl<Output: OutputBuf + ?Sized, Inner, T> Serializer<Output, T> for super::Cond<Inner> where
+    T: DeepView,
+    Inner: Serializer<Output, T>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.1.serialize(v, obuf);
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        self.1.serialize_into(v, obuf);
     }
 }
 

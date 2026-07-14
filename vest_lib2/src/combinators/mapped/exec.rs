@@ -1,5 +1,6 @@
 use super::spec::{BiMap, SpecMap};
 use crate::core::exec::fns::Map;
+use crate::core::exec::output::*;
 use crate::core::spec::SoundParser;
 use crate::core::{
     exec::{
@@ -13,6 +14,7 @@ use crate::core::{
 };
 use core::marker::PhantomData;
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -69,10 +71,13 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 {
 }
 
-impl<Inner, M, MRev, T, InnerT> Serializer<T> for super::Mapped<Inner, BiMap<M, MRev>> where
+impl<Output: OutputBuf + ?Sized, Inner, M, MRev, T, InnerT> Serializer<Output, T> for super::Mapped<
+    Inner,
+    BiMap<M, MRev>,
+> where
     T: DeepView,
     InnerT: DeepView,
-    Inner: Serializer<InnerT>,
+    Inner: Serializer<Output, InnerT>,
     M: SpecMap<Input = Inner::SVal, Output = T::V>,
     MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::SVal>,
  {
@@ -81,14 +86,14 @@ impl<Inner, M, MRev, T, InnerT> Serializer<T> for super::Mapped<Inner, BiMap<M, 
         self.inner.exec_inv()
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
         let inner_v = self.mapper.1.map(v);
         proof {
             assert(self.spec_serialize(v.deep_view()) == self.inner.spec_serialize(
                 inner_v.deep_view(),
             ));
         }
-        self.inner.serialize(&inner_v, obuf);
+        self.inner.serialize_into(&inner_v, obuf);
     }
 }
 

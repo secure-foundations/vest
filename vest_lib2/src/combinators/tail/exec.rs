@@ -1,4 +1,5 @@
 use crate::combinators::{Eof, Opt, Optional, Pair, Repeat, Star};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     input::InputBuf,
     parser::{PResult, Parser},
@@ -9,6 +10,7 @@ use crate::core::proof::Productive;
 use crate::core::spec::SafeParser;
 use crate::core::spec::{Consistency, SpecByteLen};
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -25,9 +27,9 @@ impl<I: InputBuf> Parser<I> for super::Tail {
     }
 }
 
-impl Serializer<[u8]> for super::Tail {
-    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
+impl<Output: OutputBuf + ?Sized> Serializer<Output, [u8]> for super::Tail {
+    fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
+        obuf.write_bytes(v);
     }
 }
 
@@ -60,8 +62,8 @@ impl<I: InputBuf> Parser<I> for super::Eof {
     }
 }
 
-impl Serializer<()> for super::Eof {
-    fn serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, ()> for super::Eof {
+    fn serialize_into(&self, _v: &(), _obuf: &mut Output) {
     }
 }
 
@@ -152,8 +154,8 @@ impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> +
     }
 }
 
-impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
-    A: Serializer<T> + Copy,
+impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, &[T]> for super::RepeatTillEnd<A> where
+    A: Serializer<Output, T> + Copy,
     T: DeepView + Copy,
  {
     #[verifier::prophetic]
@@ -161,8 +163,8 @@ impl<A, T> Serializer<&[T]> for super::RepeatTillEnd<A> where
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &&[T], obuf: &mut Vec<u8>) {
-        Star(self.0).serialize(v, obuf);
+    fn serialize_into(&self, v: &&[T], obuf: &mut Output) {
+        Star(self.0).serialize_into(v, obuf);
     }
 }
 
@@ -186,17 +188,16 @@ impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy,
     }
 }
 
-impl<A, T> Serializer<Option<T>> for super::OptionalEnd<A> where
-    A: Serializer<T>,
-    T: DeepView + Copy,
- {
+impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, Option<T>> for super::OptionalEnd<
+    A,
+> where A: Serializer<Output, T>, T: DeepView + Copy {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
-        Opt(&self.0).serialize(v, obuf);
+    fn serialize_into(&self, v: &Option<T>, obuf: &mut Output) {
+        Opt(&self.0).serialize_into(v, obuf);
     }
 }
 

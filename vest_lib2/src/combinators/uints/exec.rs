@@ -2,6 +2,7 @@ use super::spec::*;
 use crate::combinators::bytes::spec::*;
 use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
@@ -9,6 +10,7 @@ use crate::core::exec::{
 };
 use crate::core::spec::{SpecParser, SpecSerializer};
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -168,9 +170,9 @@ impl Parser<&[u8]> for super::U8 {
     }
 }
 
-impl Serializer<u8> for super::U8 {
-    fn serialize(&self, v: &u8, obuf: &mut Vec<u8>) {
-        obuf.push(*v);
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u8> for super::U8 {
+    fn serialize_into(&self, v: &u8, obuf: &mut Output) {
+        obuf.write_byte(*v);
     }
 }
 
@@ -204,11 +206,11 @@ impl Parser<&[u8]> for super::U16Le {
     }
 }
 
-impl Serializer<u16> for super::U16Le {
-    fn serialize(&self, v: &u16, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u16> for super::U16Le {
+    fn serialize_into(&self, v: &u16, obuf: &mut Output) {
         let bytes = u16_to_le_bytes(*v);
 
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -242,10 +244,10 @@ impl Parser<&[u8]> for super::U16Be {
     }
 }
 
-impl Serializer<u16> for super::U16Be {
-    fn serialize(&self, v: &u16, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u16> for super::U16Be {
+    fn serialize_into(&self, v: &u16, obuf: &mut Output) {
         let bytes = u16_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -279,10 +281,10 @@ impl Parser<&[u8]> for super::U24Le {
     }
 }
 
-impl Serializer<u32> for super::U24Le {
-    fn serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u32> for super::U24Le {
+    fn serialize_into(&self, v: &u32, obuf: &mut Output) {
         let bytes = u24_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -320,10 +322,10 @@ impl Parser<&[u8]> for super::U24Be {
     }
 }
 
-impl Serializer<u32> for super::U24Be {
-    fn serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u32> for super::U24Be {
+    fn serialize_into(&self, v: &u32, obuf: &mut Output) {
         let bytes = u24_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -361,10 +363,10 @@ impl Parser<&[u8]> for super::U32Le {
     }
 }
 
-impl Serializer<u32> for super::U32Le {
-    fn serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u32> for super::U32Le {
+    fn serialize_into(&self, v: &u32, obuf: &mut Output) {
         let bytes = u32_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -398,10 +400,10 @@ impl Parser<&[u8]> for super::U32Be {
     }
 }
 
-impl Serializer<u32> for super::U32Be {
-    fn serialize(&self, v: &u32, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u32> for super::U32Be {
+    fn serialize_into(&self, v: &u32, obuf: &mut Output) {
         let bytes = u32_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -444,10 +446,10 @@ impl Parser<&[u8]> for super::U64Le {
     }
 }
 
-impl Serializer<u64> for super::U64Le {
-    fn serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u64> for super::U64Le {
+    fn serialize_into(&self, v: &u64, obuf: &mut Output) {
         let bytes = u64_to_le_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 
@@ -490,10 +492,10 @@ impl Parser<&[u8]> for super::U64Be {
     }
 }
 
-impl Serializer<u64> for super::U64Be {
-    fn serialize(&self, v: &u64, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, u64> for super::U64Be {
+    fn serialize_into(&self, v: &u64, obuf: &mut Output) {
         let bytes = u64_to_be_bytes(*v);
-        obuf.extend_from_slice(&bytes);
+        obuf.write_bytes(&bytes);
     }
 }
 

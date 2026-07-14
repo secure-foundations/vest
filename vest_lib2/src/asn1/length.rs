@@ -1,5 +1,6 @@
 use crate::combinators::{Bind, Empty, Sum, Void};
 use crate::core::exec::input::*;
+use crate::core::exec::output::*;
 use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::primitives::base256::*;
 use crate::Never;
@@ -14,6 +15,7 @@ use crate::{
 };
 use vstd::arithmetic::power::*;
 use vstd::prelude::*;
+use OutputBuf;
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -522,15 +524,15 @@ impl<const DER: bool> Parser<&[u8]> for super::Length<DER> {
     }
 }
 
-impl<const DER: bool> Serializer<usize> for super::Length<DER> {
-    fn serialize(&self, v: &usize, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<Output, usize> for super::Length<DER> {
+    fn serialize_into(&self, v: &usize, obuf: &mut Output) {
         if *v <= SHORT_FORM_MAX as usize {
-            U8.serialize(&(*v as u8), obuf);
+            U8.serialize_into(&(*v as u8), obuf);
         } else {
             let bytes = usize_to_be_bytes_exec(*v);
             let count = bytes.len();
-            U8.serialize(&(0b1000_0000 | (count as u8)), obuf);
-            Varied(count).serialize(&bytes, obuf);
+            U8.serialize_into(&(0b1000_0000 | (count as u8)), obuf);
+            Varied(count).serialize_into(&bytes, obuf);
         }
     }
 }

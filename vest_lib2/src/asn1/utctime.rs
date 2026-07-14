@@ -1,4 +1,5 @@
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
@@ -9,6 +10,7 @@ use crate::{
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 use super::datetime::*;
 
@@ -495,15 +497,18 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::UtcTime<DER> {
     }
 }
 
-impl<const DER: bool> Serializer<UtcTimeValue> for super::UtcTime<DER> {
-    fn serialize(&self, value: &UtcTimeValue, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<
+    Output,
+    UtcTimeValue,
+> for super::UtcTime<DER> {
+    fn serialize_into(&self, value: &UtcTimeValue, obuf: &mut Output) {
         proof {
             assert(value.wf());
             assert(DER ==> value.precision == TimePrecision::Second);
             lemma_utc_time_encode_wf::<DER>(*value);
         }
         let bytes = utc_time_to_bytes(value);
-        Tail.serialize(&bytes.as_slice(), obuf);
+        Tail.serialize_into(&bytes.as_slice(), obuf);
     }
 }
 

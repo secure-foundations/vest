@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::InputBuf,
@@ -7,6 +8,7 @@ use crate::core::{
     spec::{SafeParser, SpecParser},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -29,15 +31,18 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
     }
 }
 
-impl<A, T> Serializer<Option<T>> for super::Opt<A> where T: DeepView, A: Serializer<T> {
+impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, Option<T>> for super::Opt<A> where
+    T: DeepView,
+    A: Serializer<Output, T>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &Option<T>, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &Option<T>, obuf: &mut Output) {
         match v {
-            Some(vv) => self.0.serialize(vv, obuf),
+            Some(vv) => self.0.serialize_into(vv, obuf),
             None => {},
         }
     }
@@ -88,11 +93,14 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Serializer<(Option<TA>, TB)> for super::Optional<A, B> where
+impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
+    Output,
+    (Option<TA>, TB),
+> for super::Optional<A, B> where
     TA: DeepView,
     TB: DeepView,
-    A: Serializer<TA>,
-    B: Serializer<TB>,
+    A: Serializer<Output, TA>,
+    B: Serializer<Output, TB>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -100,8 +108,8 @@ impl<A, B, TA, TB> Serializer<(Option<TA>, TB)> for super::Optional<A, B> where
         &&& self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &(Option<TA>, TB), obuf: &mut Vec<u8>) {
-        crate::combinators::Pair(super::Opt(&self.0), &self.1).serialize(v, obuf);
+    fn serialize_into(&self, v: &(Option<TA>, TB), obuf: &mut Output) {
+        crate::combinators::Pair(super::Opt(&self.0), &self.1).serialize_into(v, obuf);
     }
 }
 

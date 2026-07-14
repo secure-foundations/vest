@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         parser::{PResult, Parser},
@@ -7,6 +8,7 @@ use crate::core::{
     spec::{Consistency, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -66,11 +68,14 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
+impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
+    Output,
+    super::Sum<TA, TB>,
+> for super::Choice<A, B> where
     TA: DeepView,
     TB: DeepView,
-    A: Serializer<TA>,
-    B: Serializer<TB>,
+    A: Serializer<Output, TA>,
+    B: Serializer<Output, TB>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -78,10 +83,10 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Choice<A, B> where
         &&& self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &super::Sum<TA, TB>, obuf: &mut Output) {
         match v {
-            super::Sum::Inl(va) => self.0.serialize(va, obuf),
-            super::Sum::Inr(vb) => self.1.serialize(vb, obuf),
+            super::Sum::Inl(va) => self.0.serialize_into(va, obuf),
+            super::Sum::Inr(vb) => self.1.serialize_into(vb, obuf),
         }
     }
 }
@@ -172,11 +177,14 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     }
 }
 
-impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
+impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
+    Output,
+    super::Sum<TA, TB>,
+> for super::Sum<A, B> where
     TA: DeepView,
     TB: DeepView,
-    A: Serializer<TA>,
-    B: Serializer<TB>,
+    A: Serializer<Output, TA>,
+    B: Serializer<Output, TB>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -186,10 +194,10 @@ impl<A, B, TA, TB> Serializer<super::Sum<TA, TB>> for super::Sum<A, B> where
         }
     }
 
-    fn serialize(&self, v: &super::Sum<TA, TB>, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &super::Sum<TA, TB>, obuf: &mut Output) {
         match (self, v) {
-            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.serialize(va, obuf),
-            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.serialize(vb, obuf),
+            (super::Sum::Inl(a), super::Sum::Inl(va)) => a.serialize_into(va, obuf),
+            (super::Sum::Inr(b), super::Sum::Inr(vb)) => b.serialize_into(vb, obuf),
             _ => (),
         }
     }

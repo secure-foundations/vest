@@ -235,7 +235,7 @@ impl<A> super::Star<A> where A: EquivSerializersGeneral {
                 (self.0.spec_serialize(v0) + rest_foldl) + obuf;
             }
 
-            // need to show: fold_left(vs, empty, f) == inner.serialize(v0) + rest_foldl
+            // need to show: fold_left(vs, empty, f) == inner.spec_serialize(v0) + rest_foldl
 
             calc! {
                 (==)

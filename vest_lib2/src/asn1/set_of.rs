@@ -9,11 +9,12 @@ use crate::combinators::{
     },
     Star,
 };
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer, SerializerExt},
         ParseError,
     },
     proof::*,
@@ -21,6 +22,7 @@ use crate::core::{
 };
 use vstd::calc;
 use vstd::{prelude::*, relations::*};
+use OutputBuf;
 
 verus! {
 
@@ -763,17 +765,17 @@ impl<'i, C> Parser<&'i [u8]> for SetOf<C> where
     }
 }
 
-impl<C, Elem> Serializer<[Elem]> for SetOf<C> where
+impl<Output: OutputBuf + ?Sized, C, Elem> Serializer<Output, [Elem]> for SetOf<C> where
     Elem: DeepView,
-    C: SpecCombinator<T = <Elem as DeepView>::V> + Serializer<Elem> + Copy,
+    C: SpecCombinator<T = <Elem as DeepView>::V> + Serializer<Output, Elem> + Copy,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &[Elem], obuf: &mut Vec<u8>) {
-        Star(self.0).serialize(v, obuf)
+    fn serialize_into(&self, v: &[Elem], obuf: &mut Output) {
+        Star(self.0).serialize_into(v, obuf)
     }
 }
 
@@ -866,9 +868,9 @@ impl DerOrd<i8> for super::ASN1<super::Integer8, true> {
     fn der_leq(&self, left: &i8, right: &i8) -> (leq: bool) {
         let mut left_encoding = Vec::new();
         let mut right_encoding = Vec::new();
-        self.serialize(left, &mut left_encoding);
+        self.serialize_with_vec(left, &mut left_encoding);
         assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize(right, &mut right_encoding);
+        self.serialize_with_vec(right, &mut right_encoding);
         assert(right_encoding@ == self.spec_serialize(right.deep_view()));
         let left_slice = left_encoding.as_slice();
         let right_slice = right_encoding.as_slice();
@@ -882,9 +884,9 @@ impl DerOrd<i16> for super::ASN1<super::Integer16, true> {
     fn der_leq(&self, left: &i16, right: &i16) -> (leq: bool) {
         let mut left_encoding = Vec::new();
         let mut right_encoding = Vec::new();
-        self.serialize(left, &mut left_encoding);
+        self.serialize_with_vec(left, &mut left_encoding);
         assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize(right, &mut right_encoding);
+        self.serialize_with_vec(right, &mut right_encoding);
         assert(right_encoding@ == self.spec_serialize(right.deep_view()));
         let left_slice = left_encoding.as_slice();
         let right_slice = right_encoding.as_slice();
@@ -898,19 +900,19 @@ impl DerOrd<i16> for super::ASN1<super::Integer16, true> {
 #[cfg(test)]
 mod tests {
     use crate::asn1::der::{INTEGER8, SET_OF};
-    use crate::core::exec::{Parser, Prepare, Serializer};
+    use crate::core::exec::{Parser, Prepare, SerializerExt};
 
     #[test]
     fn der_set_of_integer8_roundtrip_and_ordering() {
         let format = SET_OF(INTEGER8);
         let canonical = [0x31, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
-        let (consumed, values) = format.parse(&&canonical).unwrap();
+        let (consumed, values) = format.parse(&&canonical[..]).unwrap();
         assert_eq!(consumed, canonical.len());
         assert_eq!(values, vec![1, 2]);
 
         assert_eq!(format.prepare(&values), Ok(canonical.len()));
         let mut encoded = Vec::new();
-        format.serialize(&values, &mut encoded);
+        format.serialize_with_vec(&values, &mut encoded);
         assert_eq!(encoded, canonical);
 
         let unordered = [0x31, 0x06, 0x02, 0x01, 0x02, 0x02, 0x01, 0x01];

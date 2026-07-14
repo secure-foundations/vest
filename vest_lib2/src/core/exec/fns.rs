@@ -1,7 +1,8 @@
 //! Executable fn traits.
 use crate::combinators::mapped::spec::{SpecMap, SpecMapper};
+use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
-use crate::core::exec::serializer::Serializer;
+use crate::core::exec::{output::OutputBuf, serializer::Serializer};
 use crate::core::spec::*;
 use core::marker::PhantomData;
 use vstd::prelude::*;
@@ -294,42 +295,57 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
 /// Pairs an executable serializer closure with a ghost specification serializer.
 #[verifier::reject_recursive_types(T)]
 pub struct FnSerializer<
+    Output: OutputBuf + ?Sized,
     T: DeepView + ?Sized,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
-    Exec: Fn(&T, &mut Vec<u8>),
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
 > {
     pub exec_fn: Exec,
     pub spec_fn: Ghost<Spec>,
+    pub _output: PhantomData<Output>,
     pub _marker: PhantomData<T>,
 }
 
-impl<T, Spec, Exec> FnSerializer<T, Spec, Exec> where
+impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
     T: DeepView + ?Sized,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
-    Exec: Fn(&T, &mut Vec<u8>),
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
  {
     pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
         requires
-            forall|v: &T, obuf: &mut Vec<u8>|
-                spec_fn.consistent(v.deep_view()) ==> #[trigger] call_requires(exec_fn, (v, obuf)),
-            forall|v: &T, obuf: &mut Vec<u8>|
+            forall|v: &T, obuf: &mut Output|
+                (spec_fn.consistent(v.deep_view()) && obuf.wf() && fit(
+                    obuf.remaining(),
+                    spec_fn.byte_len(v.deep_view()),
+                )) ==> #[trigger] call_requires(exec_fn, (v, obuf)),
+            forall|v: &T, obuf: &mut Output|
                 (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
                     exec_fn,
                     (v, obuf),
                     (),
-                )) ==> final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view()),
+                )) ==> {
+                    &&& final(obuf).wf()
+                    &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+                    &&& final(obuf).remaining() == consume(
+                        obuf.remaining(),
+                        spec_fn.byte_len(v.deep_view()),
+                    )
+                    &&& final(obuf).final_target() == obuf.final_target()
+                },
         ensures
             serializer.exec_inv(),
             serializer.spec_fn == spec_fn,
     {
-        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _output: PhantomData, _marker: PhantomData }
     }
 }
 
-impl<T, Spec, Exec> SpecSerializer for FnSerializer<T, Spec, Exec> where
+impl<Output, T, Spec, Exec> SpecSerializer for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
     T: DeepView + ?Sized,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
-    Exec: Fn(&T, &mut Vec<u8>),
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
  {
     type SVal = T::V;
 
@@ -339,10 +355,42 @@ impl<T, Spec, Exec> SpecSerializer for FnSerializer<T, Spec, Exec> where
     }
 }
 
-impl<T, Spec, Exec> Consistency for FnSerializer<T, Spec, Exec> where
+impl<Output, T, Spec, Exec> SpecByteLen for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
     T: DeepView + ?Sized,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
-    Exec: Fn(&T, &mut Vec<u8>),
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    type T = T::V;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.byte_len(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> GoodSerializer for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
+    T: DeepView + ?Sized,
+    Spec: GoodSerializer<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.lemma_serialize_len(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> Consistency for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
  {
     type Val = T::V;
 
@@ -352,25 +400,37 @@ impl<T, Spec, Exec> Consistency for FnSerializer<T, Spec, Exec> where
     }
 }
 
-impl<T, Spec, Exec> Serializer<T> for FnSerializer<T, Spec, Exec> where
+impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf + ?Sized,
     T: DeepView + ?Sized,
-    Spec: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
-    Exec: Fn(&T, &mut Vec<u8>),
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         let Ghost(spec_fn) = self.spec_fn;
-        &&& forall|v: &T, obuf: &mut Vec<u8>|
-            spec_fn.consistent(v.deep_view()) ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
-        &&& forall|v: &T, obuf: &mut Vec<u8>|
+        &&& forall|v: &T, obuf: &mut Output|
+            (spec_fn.consistent(v.deep_view()) && obuf.wf() && fit(
+                obuf.remaining(),
+                spec_fn.byte_len(v.deep_view()),
+            )) ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
+        &&& forall|v: &T, obuf: &mut Output|
             (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
                 self.exec_fn,
                 (v, obuf),
                 (),
-            )) ==> final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+            )) ==> {
+                &&& final(obuf).wf()
+                &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+                &&& final(obuf).remaining() == consume(
+                    obuf.remaining(),
+                    spec_fn.byte_len(v.deep_view()),
+                )
+                &&& final(obuf).final_target() == obuf.final_target()
+            }
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
         (self.exec_fn)(v, obuf)
     }
 }

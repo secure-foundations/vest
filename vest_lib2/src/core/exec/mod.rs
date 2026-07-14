@@ -2,12 +2,16 @@
 pub mod error;
 pub mod fns;
 pub mod input;
+pub mod output;
 pub mod parser;
 pub mod serializer;
 
 pub use error::{ParseError, ParseErrorKind};
+pub use output::{OutputBuf, OutputSlice};
 pub use parser::{PResult, Parser};
-pub use serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer};
+pub use serializer::{
+    ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer, SerializerExt,
+};
 
 use vstd::prelude::*;
 #[cfg(verus_only)]

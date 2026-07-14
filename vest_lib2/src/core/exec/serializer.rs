@@ -1,5 +1,6 @@
 //! Executable serializer traits.
-use crate::core::spec::{Consistency, SpecByteLen, SpecSerializer};
+use crate::core::exec::output::*;
+use crate::core::spec::{Consistency, GoodSerializer, SpecByteLen, SpecSerializer};
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -10,8 +11,12 @@ use vstd::prelude::*;
 
 verus! {
 
-pub trait Serializer<T> where
-    Self: SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+/// An executable serializer targeting `Output`.
+///
+/// The output type is explicit, just as the input type is explicit in [`crate::core::exec::Parser`].
+pub trait Serializer<Output, T> where
+    Output: OutputBuf + ?Sized,
+    Self: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     T: DeepView + ?Sized,
  {
     #[verifier::prophetic]
@@ -19,13 +24,55 @@ pub trait Serializer<T> where
         true
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>)
+    /// Appends the encoding of `v` to the logical output.
+    fn serialize_into(&self, v: &T, obuf: &mut Output)
+        requires
+            self.exec_inv(),
+            self.consistent(v.deep_view()),
+            old(obuf).wf(),
+            fit(old(obuf).remaining(), self.byte_len(v.deep_view())),
+        ensures
+            final(obuf).wf(),
+            final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
+            final(obuf).remaining() == consume(old(obuf).remaining(), self.byte_len(v.deep_view())),
+            final(obuf).final_target() == old(obuf).final_target(),
+    ;
+}
+
+/// Convenience entry points for the two standard output destinations.
+pub trait SerializerExt<T> where
+    Self: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    T: DeepView + ?Sized,
+ {
+    /// Serializes into an exactly-sized caller-provided slice without allocating.
+    fn serialize<'a>(&self, v: &T, obuf: &'a mut [u8]) where Self: Serializer<OutputSlice<'a>, T>
+        requires
+            self.exec_inv(),
+            self.consistent(v.deep_view()),
+            obuf@.len() == self.byte_len(v.deep_view()),
+        ensures
+            final(obuf)@ == self.spec_serialize(v.deep_view()),
+    {
+        let mut output = OutputSlice::new(obuf);
+        self.serialize_into(v, &mut output);
+    }
+
+    /// Serializes by appending to a growable Vec, preserving the original contract.
+    fn serialize_with_vec(&self, v: &T, obuf: &mut Vec<u8>) where Self: Serializer<Vec<u8>, T>
         requires
             self.exec_inv(),
             self.consistent(v.deep_view()),
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
-    ;
+    {
+        self.serialize_into(v, obuf);
+    }
+}
+
+impl<T: DeepView + ?Sized, S> SerializerExt<T> for S where
+    S: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+ {
+
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -176,6 +223,16 @@ impl<S: SpecByteLen> SpecByteLen for &S {
     }
 }
 
+impl<S: GoodSerializer> GoodSerializer for &S {
+    open spec fn serialize_inv(&self) -> bool {
+        (*self).serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        (*self).lemma_serialize_len(v)
+    }
+}
+
 impl<S: Consistency> Consistency for &S {
     type Val = S::Val;
 
@@ -184,27 +241,21 @@ impl<S: Consistency> Consistency for &S {
     }
 }
 
-impl<T, S> Serializer<T> for &S where T: DeepView, S: Serializer<T> {
+impl<Output, T, S> Serializer<Output, T> for &S where
+    Output: OutputBuf + ?Sized,
+    T: DeepView + ?Sized,
+    S: Serializer<Output, T>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        (*self).serialize(v, obuf)
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        (*self).serialize_into(v, obuf)
     }
 }
 
-// pub trait Serializer: ExSerializer + Consistency<Val = Self::SVal> + SpecByteLen<T = Self::SVal> {
-//     fn serialize(&self, v: &Self::ST, obuf: &mut Vec<u8>)
-//         requires
-//             self.exec_inv(),
-//             self.consistent(v.deep_view()),
-//         ensures
-//             final(obuf).len() == old(obuf).len() + self.byte_len(v.deep_view()),
-//             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
-//     ;
-// }
 // pub trait ByteLen<Fmt> where
 //     Self: DeepView,
 //     Fmt: ValueByteLen<T = Self::V> + Consistency<Val = Self::V>,
@@ -455,16 +506,6 @@ impl<T, S> Serializer<T> for &S where T: DeepView, S: Serializer<T> {
 //     let x = (0u8, 0u16);
 //     let len = <_ as ByteLen<Pair<U8, U16Le>>>::length(&x);
 //     assert(len == 3);
-// }
-// /// For serializers, we prefer to use trait generics instead of associated types, since it allows for the same serializer
-// /// combinator to be used for multiple types (e.g., borrowed vs owned).
-// pub trait Serializer<T>: Consistency + SpecSerializer<SVal = Self::Val> where
-//     T: DeepView<V = Self::Val>,
-//  {
-//     open spec fn exec_inv(&self) -> bool {
-//         true
-//     }
-//     fn serialize(&self, v: &T, obuf: &mut Vec<u8>) -> (len: usize);
 // }
 } // verus!
 impl fmt::Display for ComplianceErrorKind {

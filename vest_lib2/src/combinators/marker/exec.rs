@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::core::exec::ComplianceErrorKind;
 use crate::core::exec::{
     parser::{PResult, Parser},
@@ -6,6 +7,7 @@ use crate::core::exec::{
 };
 use crate::Never;
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -30,8 +32,8 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
     }
 }
 
-impl Serializer<()> for super::Empty {
-    fn serialize(&self, _v: &(), _obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, ()> for super::Empty {
+    fn serialize_into(&self, _v: &(), _obuf: &mut Output) {
     }
 }
 
@@ -55,8 +57,8 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Void {
     }
 }
 
-impl Serializer<ExecNever> for super::Void {
-    fn serialize(&self, _v: &ExecNever, _obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized> Serializer<Output, ExecNever> for super::Void {
+    fn serialize_into(&self, _v: &ExecNever, _obuf: &mut Output) {
     }
 }
 

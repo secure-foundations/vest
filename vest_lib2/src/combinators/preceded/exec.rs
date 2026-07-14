@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::{
     combinators::Pair,
     core::{
@@ -11,6 +12,7 @@ use crate::{
     },
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -57,11 +59,14 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
     }
 }
 
-impl<A, AVal, B, T, const CHECK: bool> Serializer<T> for super::Preceded<A, AVal, B, CHECK> where
+impl<Output: OutputBuf + ?Sized, A, AVal, B, T, const CHECK: bool> Serializer<
+    Output,
+    T,
+> for super::Preceded<A, AVal, B, CHECK> where
     AVal: DeepView<V = AVal>,
     T: DeepView,
-    A: Serializer<AVal>,
-    B: Serializer<T>,
+    A: Serializer<Output, AVal>,
+    B: Serializer<Output, T>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -70,9 +75,9 @@ impl<A, AVal, B, T, const CHECK: bool> Serializer<T> for super::Preceded<A, AVal
         &&& forall|v: AVal| v.deep_view() == v
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.a.serialize(&self.a_val, obuf);
-        self.b.serialize(v, obuf);
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        self.a.serialize_into(&self.a_val, obuf);
+        self.b.serialize_into(v, obuf);
 
     }
 }

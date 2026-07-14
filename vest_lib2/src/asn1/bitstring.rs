@@ -1,3 +1,4 @@
+use crate::core::exec::output::*;
 use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::{
     combinators::{
@@ -7,6 +8,7 @@ use crate::{
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -214,10 +216,13 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::BitStringFmt<DER> {
     }
 }
 
-impl<'i, const DER: bool> Serializer<BitString<'i, DER>> for super::BitStringFmt<DER> {
-    fn serialize(&self, v: &BitString<'i, DER>, obuf: &mut Vec<u8>) {
-        U8.serialize(&v.unused, obuf);
-        Tail.serialize(&v.bits, obuf);
+impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
+    Output,
+    BitString<'i, DER>,
+> for super::BitStringFmt<DER> {
+    fn serialize_into(&self, v: &BitString<'i, DER>, obuf: &mut Output) {
+        U8.serialize_into(&v.unused, obuf);
+        Tail.serialize_into(&v.bits, obuf);
     }
 }
 

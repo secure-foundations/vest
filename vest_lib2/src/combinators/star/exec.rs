@@ -1,5 +1,6 @@
 use super::spec::*;
 use crate::combinators::length::AsLen;
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::InputBuf,
@@ -11,6 +12,7 @@ use crate::core::{
     spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -223,32 +225,66 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
     }
 }
 
-pub fn serialize_slice<Inner, T>(inner: &Inner, values: &[T], obuf: &mut Vec<u8>) where
+pub fn serialize_slice<Output, Inner, T>(inner: &Inner, values: &[T], obuf: &mut Output) where
+    Output: OutputBuf + ?Sized,
     T: DeepView,
-    Inner: Serializer<T>,
+    Inner: Serializer<Output, T>,
 
     requires
         inner.exec_inv(),
         (super::Star(*inner)).consistent(values.deep_view()),
+        old(obuf).wf(),
+        fit(old(obuf).remaining(), (super::Star(*inner)).byte_len(values.deep_view())),
     ensures
+        final(obuf).wf(),
         final(obuf)@ == old(obuf)@ + spec_serialize_seq(inner, values.deep_view()),
+        final(obuf).remaining() == consume(
+            old(obuf).remaining(),
+            (super::Star(*inner)).byte_len(values.deep_view()),
+        ),
+        final(obuf).final_target() == old(obuf).final_target(),
 {
-    let ghost old_obuf = obuf@;
+    reveal(<super::Star::<_> as SpecByteLen>::byte_len);
+    let ghost initial_remaining = obuf.remaining();
+    let ghost vs = values.deep_view();
+    let ghost star = super::Star(*inner);
+    let ghost mut consumed: nat = 0;
 
     for i in 0..values.len()
         invariant
             inner.exec_inv(),
-            (super::Star(*inner)).consistent(values.deep_view()),
-            obuf@ == old_obuf + spec_serialize_seq(inner, values.deep_view().take(i as int)),
+            values.deep_view() == vs,
+            star == super::Star(*inner),
+            star.consistent(vs),
+            initial_remaining == old(obuf).remaining(),
+            old(obuf).wf(),
+            fit(old(obuf).remaining(), star.byte_len(vs)),
+            obuf.wf(),
+            obuf@ == old(obuf)@ + spec_serialize_seq(inner, vs.take(i as int)),
+            obuf.remaining() == consume(old(obuf).remaining(), consumed),
+            obuf.final_target() == old(obuf).final_target(),
+            consumed + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
     {
+        let ghost elem_len = inner.byte_len(vs[i as int]);
         proof {
             reveal(<super::Star::<_> as Consistency>::consistent);
-            let vs = values.deep_view();
-            let i = i as int;
-            assert(vs.take(i + 1) == vs.take(i as int).push(vs[i]));
-            assert(vs.take(i).push(vs[i]).drop_last() == vs.take(i));
+            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
+            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
+            assert(vs.take(i + 1) == vs.take(i as int).push(vs[i as int]));
+            assert(vs.take(i as int).push(vs[i as int]).drop_last() == vs.take(i as int));
+            match initial_remaining {
+                None => {},
+                Some(n) => {
+                    assert(star.byte_len(vs) <= n);
+                    assert(consumed + elem_len <= n);
+                },
+            }
+            assert(fit(obuf.remaining(), elem_len));
         }
-        inner.serialize(&values[i], obuf);
+        inner.serialize_into(&values[i], obuf);
+        proof {
+            consumed = consumed + elem_len;
+        }
     }
 }
 
@@ -324,13 +360,16 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     Ok(len)
 }
 
-impl<Inner, T> Serializer<[T]> for super::Star<Inner> where T: DeepView, Inner: Serializer<T> {
+impl<Output: OutputBuf + ?Sized, Inner, T> Serializer<Output, [T]> for super::Star<Inner> where
+    T: DeepView,
+    Inner: Serializer<Output, T>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &[T], obuf: &mut Output) {
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, v, obuf);
     }
@@ -356,13 +395,13 @@ impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: D
     }
 }
 
-// impl<A, B, TA, TB> Serializer<(&[TA], TB)> for super::Repeat<A, B> where
+// impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (&[TA], TB)> for super::Repeat<A, B> where
 //     TA: DeepView,
 //     TB: DeepView,
-//     A: Serializer<TA> + Copy,
-//     B: Serializer<TB> + Copy,
+//     A: Serializer<Output, TA> + Copy,
+//     B: Serializer<Output, TB> + Copy,
 //  {
-//     fn ex_serialize(&self, v: &(&[TA], TB), obuf: &mut Vec<u8>) {
+//     fn ex_serialize(&self, v: &(&[TA], TB), obuf: &mut Output) {
 //         crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
 //     }
 // }
@@ -404,17 +443,16 @@ impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: D
 //         }
 //     }
 // }
-impl<Inner, N, T> Serializer<[T]> for super::RepeatN<Inner, N> where
-    T: DeepView,
-    Inner: Serializer<T>,
-    N: AsLen,
- {
+impl<Output: OutputBuf + ?Sized, Inner, N, T> Serializer<Output, [T]> for super::RepeatN<
+    Inner,
+    N,
+> where T: DeepView, Inner: Serializer<Output, T>, N: AsLen {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &[T], obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &[T], obuf: &mut Output) {
         serialize_slice(&self.1, v, obuf);
     }
 }
@@ -451,16 +489,16 @@ impl<Inner, N, T> Prepare<[T]> for super::RepeatN<Inner, N> where
     }
 }
 
-impl<Inner, T, const N: usize> Serializer<[T; N]> for super::Array<N, Inner> where
-    T: DeepView,
-    Inner: Serializer<T>,
- {
+impl<Output: OutputBuf + ?Sized, Inner, T, const N: usize> Serializer<
+    Output,
+    [T; N],
+> for super::Array<N, Inner> where T: DeepView, Inner: Serializer<Output, T> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
 
-    fn serialize(&self, v: &[T; N], obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &[T; N], obuf: &mut Output) {
         serialize_slice(&self.0, v, obuf);
     }
 }

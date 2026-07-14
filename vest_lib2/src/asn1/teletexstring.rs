@@ -1,5 +1,6 @@
 use super::utf8string::{is_valid_utf8, utf8_from_bytes_unchecked};
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
@@ -11,6 +12,7 @@ use crate::{
 };
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
+use OutputBuf;
 
 verus! {
 
@@ -214,13 +216,16 @@ impl<'i> Parser<&'i [u8]> for super::TeletexString {
     }
 }
 
-impl<'i> Serializer<TeletexString<'i>> for super::TeletexString {
-    fn serialize(&self, v: &TeletexString<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf + ?Sized, 'i> Serializer<
+    Output,
+    TeletexString<'i>,
+> for super::TeletexString {
+    fn serialize_into(&self, v: &TeletexString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
         }
         let bytes = v.inner.as_bytes();
-        Tail.serialize(&bytes, obuf);
+        Tail.serialize_into(&bytes, obuf);
     }
 }
 

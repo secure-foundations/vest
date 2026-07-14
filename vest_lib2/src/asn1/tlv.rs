@@ -2,17 +2,19 @@ use crate::asn1::{Length, Tag, TagFmt, ASN1};
 use crate::combinators::{
     bytes::ExactLen, length::AsLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, PrefixTagged,
 };
+use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::{InputBuf, InputSlice},
         parser::{PResult, Parser},
-        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer, SerializerExt},
         ParseError,
     },
     proof::*,
     spec::*,
 };
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -227,25 +229,25 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
     }
 }
 
-impl<Content, T, const DER: bool> Serializer<T> for ASN1<Content, DER> where
-    T: DeepView + ?Sized,
-    Content: SpecCombinator + Serializer<T> + ByteLen<T>,
- {
+impl<Output: OutputBuf + ?Sized, Content, T, const DER: bool> Serializer<Output, T> for ASN1<
+    Content,
+    DER,
+> where T: DeepView + ?Sized, Content: SpecCombinator + Serializer<Output, T> + ByteLen<T> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
-        &&& <_ as Serializer<T>>::exec_inv(&self.1)
+        &&& <_ as Serializer<Output, T>>::exec_inv(&self.1)
         &&& <_ as ByteLen<T>>::exec_inv(&self.1)
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
         let ghost vv = v.deep_view();
         assert(self.consistent(vv) == (self.1.byte_len(vv) as usize as nat == self.1.byte_len(vv)));
         assert(self.1.byte_len(vv) <= usize::MAX);
         let len = self.1.length(v);
 
-        Const(TagFmt, self.0).serialize(&self.0, obuf);
-        Length::<DER>.serialize(&len, obuf);
-        self.1.serialize(v, obuf);
+        Const(TagFmt, self.0).serialize_into(&self.0, obuf);
+        Length::<DER>.serialize_into(&len, obuf);
+        self.1.serialize_into(v, obuf);
     }
 }
 
@@ -301,7 +303,7 @@ fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
     let (_n, v) = asn_bool.parse(buf)?;
     if let Ok(len) = asn_bool.prepare(&v) {
         let mut obuf = Vec::with_capacity(len);
-        asn_bool.serialize(&v, &mut obuf);
+        asn_bool.serialize_with_vec(&v, &mut obuf);
 
         proof {
             asn_bool.theorem_parse_serialize_roundtrip(buf@);
@@ -319,7 +321,7 @@ mod tests {
     use crate::asn1::tag::{Class, TagNumber};
     use crate::asn1::{BitStringFmt, Bool, Tag, ASN1};
     use crate::asn1::{BER, DER};
-    use crate::core::exec::{ByteLen, Parser, Prepare, Serializer};
+    use crate::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
 
     #[test]
     fn test_asn1_bool_der_and_ber() {
@@ -350,7 +352,7 @@ mod tests {
 
         // Serialize and check DER roundtrip
         let mut out = Vec::new();
-        der_bool.serialize(&true, &mut out);
+        der_bool.serialize_with_vec(&true, &mut out);
         assert_eq!(out, input_true);
         assert_eq!(der_bool.prepare(&true), Ok(3));
         assert_eq!(der_bool.length(&true), 3);
@@ -382,7 +384,7 @@ mod tests {
         // Roundtrip serialization for DER BitString
         let valid_bs = BitString::new(4, &[0xA0]);
         let mut out = Vec::new();
-        der_bitstring.serialize(&valid_bs, &mut out);
+        der_bitstring.serialize_with_vec(&valid_bs, &mut out);
         assert_eq!(out, input_valid);
         assert_eq!(der_bitstring.prepare(&valid_bs), Ok(4));
         assert_eq!(der_bitstring.length(&valid_bs), 4);

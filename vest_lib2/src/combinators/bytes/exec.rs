@@ -1,5 +1,6 @@
 use crate::combinators::AsLen;
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::*;
 use crate::core::exec::{
     parser::{PResult, Parser},
     serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
@@ -8,6 +9,7 @@ use crate::core::exec::{
 use crate::core::spec::SpecByteLen;
 use crate::core::spec::SpecParser;
 use vstd::prelude::*;
+use OutputBuf;
 
 verus! {
 
@@ -23,15 +25,21 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
     }
 }
 
-impl<const N: usize> Serializer<[u8]> for super::Fixed<N> {
-    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
+impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8]> for super::Fixed<N> {
+    fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
+        obuf.write_bytes(v);
     }
 }
 
-// impl<const N: usize> Serializer<[u8; N]> for super::Fixed<N> {
-//     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Vec<u8>) {
-//         obuf.extend_from_slice(v);
+impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
+    fn serialize_into(&self, v: &[u8; N], obuf: &mut Output) {
+        obuf.write_bytes(v);
+    }
+}
+
+// impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
+//     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Output) {
+//         obuf.write_bytes(v);
 //     }
 // }
 impl<const N: usize> ByteLen<[u8]> for super::Fixed<N> {
@@ -63,9 +71,9 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     }
 }
 
-impl<Len: AsLen> Serializer<[u8]> for super::Varied<Len> {
-    fn serialize(&self, v: &[u8], obuf: &mut Vec<u8>) {
-        obuf.extend_from_slice(v);
+impl<Output: OutputBuf + ?Sized, Len: AsLen> Serializer<Output, [u8]> for super::Varied<Len> {
+    fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
+        obuf.write_bytes(v);
     }
 }
 
@@ -128,18 +136,17 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
     }
 }
 
-impl<Len, Inner, T> Serializer<T> for super::ExactLen<Inner, Len> where
-    Len: AsLen,
-    T: DeepView + ?Sized,
-    Inner: Serializer<T> + SpecByteLen<T = T::V>,
- {
+impl<Output: OutputBuf + ?Sized, Len, Inner, T> Serializer<Output, T> for super::ExactLen<
+    Inner,
+    Len,
+> where Len: AsLen, T: DeepView + ?Sized, Inner: Serializer<Output, T> + SpecByteLen<T = T::V> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
 
-    fn serialize(&self, v: &T, obuf: &mut Vec<u8>) {
-        self.1.serialize(v, obuf);
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        self.1.serialize_into(v, obuf);
     }
 }
 
