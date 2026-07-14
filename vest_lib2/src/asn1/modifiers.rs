@@ -485,9 +485,7 @@ impl<Output: OutputBuf + ?Sized, Field, Default, Rest, R, const DER: bool> Seria
     }
 
     fn serialize_into(&self, v: &(Default, R), obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         if v.0 != self.1 {
             self.0.serialize_into(&v.0, obuf);

@@ -87,7 +87,7 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
     ;
 }
 
-/// Value well-formedness in relation to a combinator's denotation (format).
+/// Value well-formedness according to a format's specification.
 ///
 /// ## Examples
 ///

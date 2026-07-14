@@ -5,12 +5,12 @@ use vstd::prelude::*;
 
 verus! {
 
-/// An append-oriented output buffer.
+/// An abstraction for append-oriented output buffer.
 ///
 /// The view is the sequence already present in, or written through, the output. Capacity is
 /// abstract: bounded and unbounded outputs expose the same `fits` interface.
 pub trait OutputBuf: View<V = Seq<u8>> {
-    /// Whether the output is valid and can accept `len` additional bytes.
+    /// Whether the output can accept `len` additional bytes.
     spec fn fits(&self, len: nat) -> bool;
 
     /// Write capacity is monotone: accepting a larger write implies accepting every prefix.
@@ -25,7 +25,7 @@ pub trait OutputBuf: View<V = Seq<u8>> {
 
     /// Whether two states write to the same final destination.
     ///
-    /// This is vacuously true for outputs without borrowed backing storage. For a borrowed
+    /// This is vacuously true for outputs without (re-)borrowed backing storage. For a borrowed
     /// output, it relates the prophetic final contents of the backing storage across states.
     #[verifier::prophetic]
     spec fn same_destination(&self, other: &Self) -> bool;
@@ -36,7 +36,7 @@ pub trait OutputBuf: View<V = Seq<u8>> {
             #[trigger] self.same_destination(self),
     ;
 
-    /// Destination identity composes across sequential writes.
+    /// Destination identity is transitive.
     broadcast proof fn lemma_same_destination_transitive(&self, middle: &Self, last: &Self)
         requires
             self.same_destination(middle),
@@ -88,11 +88,9 @@ pub trait OutputBuf: View<V = Seq<u8>> {
 
 /// A non-allocating append sink backed by a caller-provided slice.
 ///
-/// Its logical view is the prefix written so far.
+/// Its logical view is the prefix written so far (given by `pos`).
 pub struct OutputSlice<'a> {
-    #[doc(hidden)]
     pub obuf: &'a mut [u8],
-    #[doc(hidden)]
     pub pos: usize,
 }
 
@@ -175,6 +173,12 @@ impl OutputBuf for Vec<u8> {
     fn write_bytes(&mut self, bytes: &[u8]) {
         self.extend_from_slice(bytes);
     }
+}
+
+pub broadcast group outbuf_lemmas {
+    OutputBuf::lemma_fits_mono,
+    OutputBuf::lemma_same_destination_reflexive,
+    OutputBuf::lemma_same_destination_transitive,
 }
 
 } // verus!

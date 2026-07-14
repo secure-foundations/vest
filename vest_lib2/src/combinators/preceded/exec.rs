@@ -76,9 +76,7 @@ impl<Output: OutputBuf + ?Sized, A, AVal, B, T, const CHECK: bool> Serializer<
     }
 
     fn serialize_into(&self, v: &T, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         self.a.serialize_into(&self.a_val, obuf);
         self.b.serialize_into(v, obuf);

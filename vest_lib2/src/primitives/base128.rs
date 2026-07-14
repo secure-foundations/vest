@@ -680,8 +680,9 @@ impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
 impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> for Base128Fmt<
     MINIMAL,
 > {
+    #[verifier::loop_isolation(false)]
     fn serialize_into(&self, v: &UInt, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let bytes = uint_to_base128(*v);
         let num_bytes = bytes.len();
@@ -695,9 +696,7 @@ impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> f
         for i in 0..num_bytes - 1
             invariant
                 num_bytes == bytes.len(),
-                num_bytes == self.byte_len(*v),
                 cont_bytes.len() == num_bytes - 1,
-                old(obuf).fits(num_bytes as nat),
                 obuf@ == old(obuf)@ + cont_bytes.take(i as int),
                 forall|n| old(obuf).fits(i as nat + n) <==> #[trigger] obuf.fits(n),
                 old(obuf).same_destination(obuf),
@@ -706,15 +705,10 @@ impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> f
                     0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.drop_last()[j]
                         | CONTINUATION_MASK,
         {
-            broadcast use OutputBuf::lemma_fits_mono;
-            broadcast use OutputBuf::lemma_same_destination_transitive;
+            broadcast use crate::core::exec::output::outbuf_lemmas;
 
             let b = bytes[i];
-            assert(obuf.fits((num_bytes - i) as nat));
             obuf.write_byte((b | CONTINUATION_MASK) as u8);
-        }
-        proof {
-            assert(obuf.fits(1));
         }
         obuf.write_byte(bytes[num_bytes - 1]);
         proof {

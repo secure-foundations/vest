@@ -241,9 +241,7 @@ impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
 
 impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, u64> for VarInt<MINIMAL> {
     fn serialize_into(&self, v: &u64, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let ghost old_obuf = obuf@;
 

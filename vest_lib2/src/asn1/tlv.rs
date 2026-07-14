@@ -240,9 +240,7 @@ impl<Output: OutputBuf + ?Sized, Content, T, const DER: bool> Serializer<Output,
     }
 
     fn serialize_into(&self, v: &T, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let ghost vv = v.deep_view();
         assert(self.consistent(vv) == (self.1.byte_len(vv) as usize as nat == self.1.byte_len(vv)));
@@ -250,7 +248,6 @@ impl<Output: OutputBuf + ?Sized, Content, T, const DER: bool> Serializer<Output,
         let len = self.1.length(v);
 
         Const(TagFmt, self.0).serialize_into(&self.0, obuf);
-        assert(obuf.fits(Length::<DER>.byte_len(len) + self.1.byte_len(vv)));
         Length::<DER>.serialize_into(&len, obuf);
         self.1.serialize_into(v, obuf);
     }

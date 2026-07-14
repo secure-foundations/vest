@@ -58,9 +58,7 @@ impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for 
     }
 
     fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         self.0.serialize_into(&v.0, obuf);
         self.1.serialize_into(&v.1, obuf);
@@ -157,9 +155,7 @@ impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for 
     }
 
     fn serialize_into(&self, v: &(TA, TB), obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let next = self.1.map(&v.0);
         self.0.serialize_into(&v.0, obuf);

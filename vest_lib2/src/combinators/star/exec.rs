@@ -225,6 +225,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
     }
 }
 
+#[verifier::loop_isolation(false)]
 pub fn serialize_slice<Output, Inner, T>(inner: &Inner, values: &[T], obuf: &mut Output) where
     Output: OutputBuf + ?Sized,
     T: DeepView,
@@ -241,42 +242,35 @@ pub fn serialize_slice<Output, Inner, T>(inner: &Inner, values: &[T], obuf: &mut
                 <==> #[trigger] final(obuf).fits(n),
         old(obuf).same_destination(final(obuf)),
 {
-    broadcast use OutputBuf::lemma_same_destination_reflexive;
+    broadcast use crate::core::exec::output::outbuf_lemmas;
 
     reveal(<super::Star::<_> as SpecByteLen>::byte_len);
+    reveal(<super::Star::<_> as Consistency>::consistent);
+
     let ghost vs = values.deep_view();
     let ghost star = super::Star(*inner);
     let ghost mut consumed: nat = 0;
 
     for i in 0..values.len()
         invariant
-            inner.exec_inv(),
-            values.deep_view() == vs,
-            star == super::Star(*inner),
-            star.consistent(vs),
             consumed + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
             obuf@ == old(obuf)@ + spec_serialize_seq(inner, vs.take(i as int)),
-            old(obuf).fits(star.byte_len(vs)),
             forall|n| old(obuf).fits(consumed + n) <==> #[trigger] obuf.fits(n),
             old(obuf).same_destination(obuf),
     {
         proof {
-            broadcast use OutputBuf::lemma_fits_mono;
-            broadcast use OutputBuf::lemma_same_destination_transitive;
-
             let elem_len = inner.byte_len(vs[i as int]);
-            reveal(<super::Star::<_> as Consistency>::consistent);
             assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
             star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
             assert(vs.take(i + 1) == vs.take(i as int).push(vs[i as int]));
             assert(vs.take(i as int).push(vs[i as int]).drop_last() == vs.take(i as int));
-            assert(obuf.fits(star.byte_len(vs.skip(i as int))));
             consumed = consumed + elem_len;
         }
         inner.serialize_into(&values[i], obuf);
     }
 }
 
+#[verifier::loop_isolation(false)]
 pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
     Inner: ByteLen<T>,
     T: DeepView,
@@ -294,10 +288,6 @@ pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
     let mut len = 0usize;
     for i in 0..values.len()
         invariant
-            fmt.exec_inv(),
-            values.deep_view() == vs,
-            star == (super::Star(*fmt)),
-            star.byte_len(vs) <= usize::MAX,
             len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
     {
         proof {
@@ -310,6 +300,7 @@ pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
     len
 }
 
+#[verifier::loop_isolation(false)]
 pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     usize,
     PreSerializeError,
@@ -330,9 +321,6 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     let mut len = 0usize;
     for i in 0..values.len()
         invariant
-            fmt.exec_inv(),
-            values.deep_view() == vs,
-            star == (super::Star(*fmt)),
             forall|j: int| 0 <= j < i ==> fmt.consistent(#[trigger] vs[j]),
             len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
     {
@@ -359,8 +347,6 @@ impl<Output: OutputBuf + ?Sized, Inner, T> Serializer<Output, [T]> for super::St
     }
 
     fn serialize_into(&self, v: &[T], obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-
         reveal(<super::Star::<_> as SpecSerializer>::spec_serialize);
         serialize_slice(&self.0, v, obuf);
     }
@@ -444,7 +430,7 @@ impl<Output: OutputBuf + ?Sized, Inner, N, T> Serializer<Output, [T]> for super:
     }
 
     fn serialize_into(&self, v: &[T], obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         serialize_slice(&self.1, v, obuf);
     }
@@ -492,7 +478,7 @@ impl<Output: OutputBuf + ?Sized, Inner, T, const N: usize> Serializer<
     }
 
     fn serialize_into(&self, v: &[T; N], obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         serialize_slice(&self.0, v, obuf);
     }

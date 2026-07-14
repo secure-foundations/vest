@@ -631,9 +631,7 @@ impl Parser<&[u8]> for super::TagFmt {
 
 impl<Output: OutputBuf + ?Sized> Serializer<Output, Tag> for super::TagFmt {
     fn serialize_into(&self, v: &Tag, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let num = match v.number {
             TagNumber::EOC => 0,

@@ -526,9 +526,7 @@ impl<const DER: bool> Parser<&[u8]> for super::Length<DER> {
 
 impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<Output, usize> for super::Length<DER> {
     fn serialize_into(&self, v: &usize, obuf: &mut Output) {
-        broadcast use OutputBuf::lemma_fits_mono;
-        broadcast use OutputBuf::lemma_same_destination_reflexive;
-        broadcast use OutputBuf::lemma_same_destination_transitive;
+        broadcast use crate::core::exec::output::outbuf_lemmas;
 
         if *v <= SHORT_FORM_MAX as usize {
             U8.serialize_into(&(*v as u8), obuf);

@@ -12,8 +12,6 @@ use vstd::prelude::*;
 verus! {
 
 /// An executable serializer targeting `Output`.
-///
-/// The output type is explicit, just as the input type is explicit in [`crate::core::exec::Parser`].
 pub trait Serializer<Output, T> where
     Output: OutputBuf + ?Sized,
     Self: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
@@ -24,7 +22,22 @@ pub trait Serializer<Output, T> where
         true
     }
 
-    /// Appends the encoding of `v` to the logical output.
+    /// Serializes the value `v` into the output buffer `obuf` by (logically) appending the serialized bytes to the end of `obuf`.
+    /// This view has two main benefits:
+    /// 1. It matches the [specification](SpecSerializer) of the serializer closely, which simplifies the proofs;
+    /// 2. It is general enough to support both fixed-size (e.g., `&mut [u8]`) and growable (e.g., `Vec<u8>`) output buffers (see [`OutputBuf`]).
+    ///
+    /// ## Preconditions
+    ///
+    /// - The serializer's execution invariant holds (mainly used for [`super::fns::FnSerializer`], usually trivial for most combinators).
+    /// - The value `v` is [compliant](Consistency) with the format specification.
+    /// - The output buffer has enough space to hold the serialized value.
+    ///
+    /// ## Postconditions
+    ///
+    /// - The output buffer's contents are extended by the serialized value.
+    /// - The output buffer's remaining capacity is reduced by the serialized value's length.
+    /// - The output buffer's destination remains the same.
     fn serialize_into(&self, v: &T, obuf: &mut Output)
         requires
             self.exec_inv(),
@@ -60,7 +73,7 @@ pub trait SerializerExt<T> where
         }
     }
 
-    /// Serializes by appending to a growable Vec, preserving the original contract.
+    /// Serializes by appending to a growable Vec (though the Vec can be preallocated with [`Prepare`]/[`ByteLen`]).
     fn serialize_with_vec(&self, v: &T, obuf: &mut Vec<u8>) where Self: Serializer<Vec<u8>, T>
         requires
             self.exec_inv(),
