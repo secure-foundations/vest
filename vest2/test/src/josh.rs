@@ -9,6 +9,7 @@ use vest_lib2::core::exec::input::{
     InputSlice
 }
 ;
+use vest_lib2::core::exec::output::OutputBuf ;
 use vest_lib2::core::exec::parser::* ;
 use vest_lib2::core::exec::serializer::* ;
 use vest_lib2::core::exec::ParseError ;
@@ -1470,9 +1471,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TstTag> for TstTagFmt {
-        fn serialize(&self, v: &TstTag, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TstTag> for TstTagFmt {
+        fn serialize_into(&self, v: &TstTag, obuf: &mut Output) {
             reveal(<TstTagFmt as SpecSerializer>::spec_serialize);
+            reveal(<TstTagFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -1509,7 +1511,7 @@ mod exec_impls {
                 TstTag::C30 => 30,
                 TstTag::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1583,17 +1585,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Mydata<'i>> for MydataFmt {
-        fn serialize(&self, v: &Mydata<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Mydata<'i>> for MydataFmt {
+        fn serialize_into(&self, v: &Mydata<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<MydataFmt as SpecSerializer>::spec_serialize);
+            reveal(<MydataFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Mydata {
                 foo,
                 bar,
             } = v;
-            Fixed::< 2 >.serialize(foo, obuf);
-            Fixed::< 2 >.serialize(bar, obuf);
+            Fixed::< 2 >.serialize_into(* foo, obuf);
+            Fixed::< 2 >.serialize_into(* bar, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1643,20 +1647,22 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Tst<'i>> for TstFmt {
-        fn serialize(&self, v: &Tst<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Tst<'i>> for TstFmt {
+        fn serialize_into(&self, v: &Tst<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<TstFmt as SpecSerializer>::spec_serialize);
+            reveal(<TstFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Tst {
                 tag,
                 mydata,
             } = v;
-            TstTagFmt.serialize(tag, obuf);
+            TstTagFmt.serialize_into(tag, obuf);
             TstMydataFmt {
                 tag: *tag
             }
-            .serialize(mydata, obuf);
+            .serialize_into(mydata, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1755,10 +1761,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PairStress> for PairStressFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PairStress> for PairStressFmt {
         #[verifier::spinoff_prover]
-        fn serialize(&self, v: &PairStress, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &PairStress, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PairStressFmt as SpecSerializer>::spec_serialize);
+            reveal(<PairStressFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PairStress {
@@ -1781,24 +1789,24 @@ mod exec_impls {
                 f17,
                 f18,
             } = v;
-            U8.serialize(f1, obuf);
-            U16Le.serialize(f2, obuf);
-            U32Le.serialize(f3, obuf);
-            U8.serialize(f4, obuf);
-            U8.serialize(f5, obuf);
-            U8.serialize(f6, obuf);
-            U8.serialize(f7, obuf);
-            U8.serialize(f8, obuf);
-            U8.serialize(f9, obuf);
-            U8.serialize(f10, obuf);
-            U8.serialize(f11, obuf);
-            U8.serialize(f12, obuf);
-            U8.serialize(f13, obuf);
-            U8.serialize(f14, obuf);
-            U8.serialize(f15, obuf);
-            U8.serialize(f16, obuf);
-            U8.serialize(f17, obuf);
-            U8.serialize(f18, obuf);
+            U8.serialize_into(f1, obuf);
+            U16Le.serialize_into(f2, obuf);
+            U32Le.serialize_into(f3, obuf);
+            U8.serialize_into(f4, obuf);
+            U8.serialize_into(f5, obuf);
+            U8.serialize_into(f6, obuf);
+            U8.serialize_into(f7, obuf);
+            U8.serialize_into(f8, obuf);
+            U8.serialize_into(f9, obuf);
+            U8.serialize_into(f10, obuf);
+            U8.serialize_into(f11, obuf);
+            U8.serialize_into(f12, obuf);
+            U8.serialize_into(f13, obuf);
+            U8.serialize_into(f14, obuf);
+            U8.serialize_into(f15, obuf);
+            U8.serialize_into(f16, obuf);
+            U8.serialize_into(f17, obuf);
+            U8.serialize_into(f18, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2128,10 +2136,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TstMydata<'i>> for TstMydataFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TstMydata<'i>> for TstMydataFmt {
         #[verifier::spinoff_prover]
-        fn serialize(&self, v: &TstMydata<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &TstMydata<'i>, obuf: &mut Output) {
             reveal(<TstMydataFmt as SpecSerializer>::spec_serialize);
+            reveal(<TstMydataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2140,162 +2149,162 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (TstTag::C0, TstMydata::C0 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C1, TstMydata::C1 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C2, TstMydata::C2 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C3, TstMydata::C3 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C4, TstMydata::C4 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C5, TstMydata::C5 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C6, TstMydata::C6 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C7, TstMydata::C7 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C8, TstMydata::C8 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C9, TstMydata::C9 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C10, TstMydata::C10 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C11, TstMydata::C11 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C12, TstMydata::C12 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C13, TstMydata::C13 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C14, TstMydata::C14 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C15, TstMydata::C15 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C16, TstMydata::C16 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C17, TstMydata::C17 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C18, TstMydata::C18 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C19, TstMydata::C19 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C20, TstMydata::C20 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C21, TstMydata::C21 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C22, TstMydata::C22 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C23, TstMydata::C23 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C24, TstMydata::C24 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C25, TstMydata::C25 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C26, TstMydata::C26 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C27, TstMydata::C27 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C28, TstMydata::C28 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C29, TstMydata::C29 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (TstTag::C30, TstMydata::C30 (v)) => {
-                    (MydataFmt).serialize (v,
+                    (MydataFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, TstMydata::Default (v)) => {
-                    (Tail).serialize (v,
+                    (Tail).serialize_into (v,
                     obuf) ;
                 }
                 ,

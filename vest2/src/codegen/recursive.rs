@@ -1384,7 +1384,8 @@ impl<'a> Analysis<'a> {
             &current_member.param_defns,
             super::execs::CodegenMode::Serialize,
         );
-        quote! { (#fmt_expr).serialize(#value_expr, obuf) }
+        let value_expr = self.render_serialize_value_expr(value_expr, combinator);
+        quote! { (#fmt_expr).serialize_into(#value_expr, obuf) }
     }
 
     pub(crate) fn render_recursive_child_prepare_expr(
@@ -1507,8 +1508,8 @@ impl<'a> Analysis<'a> {
                 }
             }
 
-            impl<'i, const LIMIT: usize> Serializer<#exec_ty> for #fmt_ident<LIMIT> {
-                fn serialize(&self, v: &#exec_ty, obuf: &mut Vec<u8>) {
+            impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, #exec_ty> for #fmt_ident<LIMIT> {
+                fn serialize_into(&self, v: &#exec_ty, obuf: &mut Output) {
                     self.serialize_gas(LIMIT, v, obuf);
                 }
             }
@@ -1620,15 +1621,25 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::Serialize,
             &[quote! { v.deep_view() }],
         );
+        let byte_len = self.render_member_spec_helper_call(
+            member,
+            scc_info,
+            RecSpecHelperKind::ByteLen,
+            &[quote! { v.deep_view() }],
+        );
         let header = render_ts(quote! {
-            fn serialize_gas<'i>(&self, gas: usize, v: &#exec_ty, obuf: &mut Vec<u8>)
+            fn serialize_gas<Output: OutputBuf, 'i>(&self, gas: usize, v: &#exec_ty, obuf: &mut Output)
                 requires
                     #consistent,
+                    old(obuf).fits(#byte_len),
                 ensures
                     final(obuf)@ == old(obuf)@ + #serialize_spec,
+                    forall|n| old(obuf).fits(#byte_len + n) <==> final(obuf).fits(n),
+                    old(obuf).same_destination(final(obuf)),
                 decreases gas,
         });
         out.block(header, |w| {
+            w.line("broadcast use vest_lib2::core::exec::output::outbuf_lemmas;");
             self.emit_recursive_member_body(w, member, ctx, access, Op::Serialize);
         });
     }

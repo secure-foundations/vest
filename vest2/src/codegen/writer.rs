@@ -212,6 +212,7 @@ pub(crate) fn cleanup_verus_spacing(input: &str) -> String {
 
     for (from, to) in [
         ("== >", "==>"),
+        ("<= =>", "<==>"),
         ("&& &", "&&&"),
         (" . ", "."),
         (":: ", "::"),

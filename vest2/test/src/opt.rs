@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -1198,14 +1199,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Msg> for MsgFmt {
-        fn serialize(&self, v: &Msg, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Msg> for MsgFmt {
+        fn serialize_into(&self, v: &Msg, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MsgFmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Msg { a, b } = v;
-            Const(U8, 1).serialize(a, obuf);
-            Const(Fixed::<2>, [0x01, 0x02]).serialize(b, obuf);
+            U8.serialize_into(a, obuf);
+            Fixed::<2>.serialize_into(b, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1240,12 +1244,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Optmsg> for OptmsgFmt {
-        fn serialize(&self, v: &Optmsg, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Optmsg> for OptmsgFmt {
+        fn serialize_into(&self, v: &Optmsg, obuf: &mut Output) {
             reveal(<OptmsgFmt as SpecSerializer>::spec_serialize);
+            reveal(<OptmsgFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opt(MsgFmt).serialize(v, obuf);
+            Opt(MsgFmt).serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1278,13 +1283,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Const10<'i>> for Const10Fmt {
-        fn serialize(&self, v: &Const10<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Const10<'i>> for Const10Fmt {
+        fn serialize_into(&self, v: &Const10<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<Const10Fmt as SpecSerializer>::spec_serialize);
+            reveal(<Const10Fmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Const10 { reserved } = v;
-            Fixed::<10>.serialize(reserved, obuf);
+            Fixed::<10>.serialize_into(*reserved, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1318,15 +1326,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<A<'i>> for AFmt {
-        fn serialize(&self, v: &A<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, A<'i>> for AFmt {
+        fn serialize_into(&self, v: &A<'i>, obuf: &mut Output) {
             reveal(<AFmt as SpecSerializer>::spec_serialize);
+            reveal(<AFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            PrefixTagged(U8, 1, PrefixTagged(U8, 2, SuffixTagged(Const10Fmt, U8, 3))).serialize(
-                v,
-                obuf,
-            );
+            PrefixTagged(
+                U8,
+                1,
+                PrefixTagged(U8, 2, SuffixTagged(Const10Fmt, U8, 3)),
+            ).serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1361,14 +1371,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<B<'i>> for BFmt {
-        fn serialize(&self, v: &B<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, B<'i>> for BFmt {
+        fn serialize_into(&self, v: &B<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<BFmt as SpecSerializer>::spec_serialize);
+            reveal(<BFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let B { x, y } = v;
-            Fixed::<10>.serialize(x, obuf);
-            PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1)).serialize(y, obuf);
+            Fixed::<10>.serialize_into(*x, obuf);
+            PrefixTagged(U16Le, 65535, SuffixTagged(AFmt, U8, 1)).serialize_into(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1411,16 +1424,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TaggedMix<'i>> for TaggedMixFmt {
-        fn serialize(&self, v: &TaggedMix<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TaggedMix<'i>> for TaggedMixFmt {
+        fn serialize_into(&self, v: &TaggedMix<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TaggedMixFmt as SpecSerializer>::spec_serialize);
+            reveal(<TaggedMixFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let TaggedMix { x, y, z, w } = v;
-            Opt(PrefixTagged(U8, 10, Const10Fmt)).serialize(x, obuf);
-            Star(PrefixTagged(U8, 11, AFmt)).serialize(y, obuf);
-            Opt(PrefixTagged(U8, 12, BFmt)).serialize(z, obuf);
-            Star(PrefixTagged(U8, 13, MsgFmt)).serialize(w, obuf);
+            Opt(PrefixTagged(U8, 10, Const10Fmt)).serialize_into(x, obuf);
+            Star(PrefixTagged(U8, 11, AFmt)).serialize_into(y, obuf);
+            Opt(PrefixTagged(U8, 12, BFmt)).serialize_into(z, obuf);
+            Star(PrefixTagged(U8, 13, MsgFmt)).serialize_into(w, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -4764,16 +4765,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AOrB> for AOrBFmt {
-        fn serialize(&self, v: &AOrB, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AOrB> for AOrBFmt {
+        fn serialize_into(&self, v: &AOrB, obuf: &mut Output) {
             reveal(<AOrBFmt as SpecSerializer>::spec_serialize);
+            reveal(<AOrBFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 AOrB::A => 1,
                 AOrB::B => 2,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4810,16 +4812,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<COrD> for COrDFmt {
-        fn serialize(&self, v: &COrD, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, COrD> for COrDFmt {
+        fn serialize_into(&self, v: &COrD, obuf: &mut Output) {
             reveal(<COrDFmt as SpecSerializer>::spec_serialize);
+            reveal(<COrDFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 COrD::C => 1,
                 COrD::D => 2,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4862,14 +4865,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedInnerStruct<'i>> for NestedInnerStructFmt {
-        fn serialize(&self, v: &NestedInnerStruct<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerStruct<'i>> for NestedInnerStructFmt {
+        fn serialize_into(&self, v: &NestedInnerStruct<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<NestedInnerStructFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NestedInnerStruct { len, val } = v;
-            U32Le.serialize(len, obuf);
-            ExactLen(len, NestedInnerStructValFmt).serialize(val, obuf);
+            U32Le.serialize_into(len, obuf);
+            ExactLen(len, NestedInnerStructValFmt).serialize_into(val, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4916,9 +4922,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedInnerChoice> for NestedInnerChoiceFmt {
-        fn serialize(&self, v: &NestedInnerChoice, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerChoice> for NestedInnerChoiceFmt {
+        fn serialize_into(&self, v: &NestedInnerChoice, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<NestedInnerChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -4926,7 +4935,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerChoice { x } = v;
-            NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 }.serialize(
+            NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 }.serialize_into(
                 x,
                 obuf,
             );
@@ -4983,17 +4992,23 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureOuterAndLocal<'i>> for CaptureOuterAndLocalFmt {
-        fn serialize(&self, v: &CaptureOuterAndLocal<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureOuterAndLocal<'i>,
+    > for CaptureOuterAndLocalFmt {
+        fn serialize_into(&self, v: &CaptureOuterAndLocal<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureOuterAndLocalFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocal { frame_len, payload } = v;
-            U8.serialize(frame_len, obuf);
-            ExactLen(frame_len, CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len }).serialize(
-                payload,
-                obuf,
-            );
+            U8.serialize_into(frame_len, obuf);
+            ExactLen(
+                frame_len,
+                CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
+            ).serialize_into(payload, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5045,13 +5060,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureLocalInAnonStruct<'i>> for CaptureLocalInAnonStructFmt {
-        fn serialize(&self, v: &CaptureLocalInAnonStruct<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureLocalInAnonStruct<'i>,
+    > for CaptureLocalInAnonStructFmt {
+        fn serialize_into(&self, v: &CaptureLocalInAnonStruct<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureLocalInAnonStructFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStruct { wrapper } = v;
-            CaptureLocalInAnonStructWrapperFmt.serialize(wrapper, obuf);
+            CaptureLocalInAnonStructWrapperFmt.serialize_into(wrapper, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5097,9 +5118,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocal<'i>> for CaptureParamAndLocalFmt {
-        fn serialize(&self, v: &CaptureParamAndLocal<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocal<'i>,
+    > for CaptureParamAndLocalFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocal<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureParamAndLocalFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5107,10 +5134,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocal { x } = v;
-            CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 }.serialize(
-                x,
-                obuf,
-            );
+            CaptureParamAndLocalXFmt {
+                choice1: self.choice1,
+                choice2: self.choice2,
+            }.serialize_into(x, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5155,14 +5182,20 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedInnerStructVal<'i>> for NestedInnerStructValFmt {
-        fn serialize(&self, v: &NestedInnerStructVal<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        NestedInnerStructVal<'i>,
+    > for NestedInnerStructValFmt {
+        fn serialize_into(&self, v: &NestedInnerStructVal<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<NestedInnerStructValFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NestedInnerStructVal { x, y } = v;
-            U8.serialize(x, obuf);
-            Tail.serialize(y, obuf);
+            U8.serialize_into(x, obuf);
+            Tail.serialize_into(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5206,9 +5239,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedInnerChoiceXA> for NestedInnerChoiceXAFmt {
-        fn serialize(&self, v: &NestedInnerChoiceXA, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerChoiceXA> for NestedInnerChoiceXAFmt {
+        fn serialize_into(&self, v: &NestedInnerChoiceXA, obuf: &mut Output) {
             reveal(<NestedInnerChoiceXAFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedInnerChoiceXAFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5217,10 +5251,10 @@ mod exec_impls {
 
             match (self.choice2, v) {
                 (COrD::C, NestedInnerChoiceXA::C(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (COrD::D, NestedInnerChoiceXA::D(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -5274,9 +5308,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedInnerChoiceX> for NestedInnerChoiceXFmt {
-        fn serialize(&self, v: &NestedInnerChoiceX, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerChoiceX> for NestedInnerChoiceXFmt {
+        fn serialize_into(&self, v: &NestedInnerChoiceX, obuf: &mut Output) {
             reveal(<NestedInnerChoiceXFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedInnerChoiceXFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5285,10 +5320,10 @@ mod exec_impls {
 
             match (self.choice1, v) {
                 (AOrB::A, NestedInnerChoiceX::A(v)) => {
-                    (NestedInnerChoiceXAFmt { choice2: self.choice2 }).serialize(v, obuf);
+                    (NestedInnerChoiceXAFmt { choice2: self.choice2 }).serialize_into(v, obuf);
                 },
                 (AOrB::B, NestedInnerChoiceX::B(v)) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -5337,16 +5372,24 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
         CaptureOuterAndLocalPayloadBodyChoice1<'i>,
     > for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
-        fn serialize(&self, v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(
+            &self,
+            v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>,
+            obuf: &mut Output,
+        ) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
-            U8.serialize(count, obuf);
-            Varied(count).serialize(items, obuf);
+            U8.serialize_into(count, obuf);
+            Varied(count).serialize_into(*items, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5398,11 +5441,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
         CaptureOuterAndLocalPayloadBody<'i>,
     > for CaptureOuterAndLocalPayloadBodyFmt {
-        fn serialize(&self, v: &CaptureOuterAndLocalPayloadBody<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &CaptureOuterAndLocalPayloadBody<'i>, obuf: &mut Output) {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5411,10 +5456,10 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) => {
-                    (Varied((self.frame_len - 1))).serialize(v, obuf);
+                    (Varied((self.frame_len - 1))).serialize_into(*v, obuf);
                 },
                 (_, CaptureOuterAndLocalPayloadBody::Default(v)) => {
-                    (CaptureOuterAndLocalPayloadBodyChoice1Fmt).serialize(v, obuf);
+                    (CaptureOuterAndLocalPayloadBodyChoice1Fmt).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -5475,9 +5520,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureOuterAndLocalPayload<'i>> for CaptureOuterAndLocalPayloadFmt {
-        fn serialize(&self, v: &CaptureOuterAndLocalPayload<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureOuterAndLocalPayload<'i>,
+    > for CaptureOuterAndLocalPayloadFmt {
+        fn serialize_into(&self, v: &CaptureOuterAndLocalPayload<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5485,11 +5536,11 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayload { tag, body } = v;
-            U8.serialize(tag, obuf);
-            CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag }.serialize(
-                body,
-                obuf,
-            );
+            U8.serialize_into(tag, obuf);
+            CaptureOuterAndLocalPayloadBodyFmt {
+                frame_len: self.frame_len,
+                tag: *tag,
+            }.serialize_into(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5535,22 +5586,26 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
         CaptureLocalInAnonStructWrapperValueChoice0<'i>,
     > for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
-        fn serialize(
+        fn serialize_into(
             &self,
             v: &CaptureLocalInAnonStructWrapperValueChoice0<'i>,
-            obuf: &mut Vec<u8>,
+            obuf: &mut Output,
         ) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(
                 <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
             );
+            reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
-            U8.serialize(len, obuf);
-            Varied(len).serialize(bytes, obuf);
+            U8.serialize_into(len, obuf);
+            Varied(len).serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5602,11 +5657,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
         CaptureLocalInAnonStructWrapperValue<'i>,
     > for CaptureLocalInAnonStructWrapperValueFmt {
-        fn serialize(&self, v: &CaptureLocalInAnonStructWrapperValue<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &CaptureLocalInAnonStructWrapperValue<'i>, obuf: &mut Output) {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5615,10 +5672,10 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => {
-                    (CaptureLocalInAnonStructWrapperValueChoice0Fmt).serialize(v, obuf);
+                    (CaptureLocalInAnonStructWrapperValueChoice0Fmt).serialize_into(v, obuf);
                 },
                 (_, CaptureLocalInAnonStructWrapperValue::Default(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -5676,16 +5733,20 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
         CaptureLocalInAnonStructWrapper<'i>,
     > for CaptureLocalInAnonStructWrapperFmt {
-        fn serialize(&self, v: &CaptureLocalInAnonStructWrapper<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &CaptureLocalInAnonStructWrapper<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapper { tag, value } = v;
-            U8.serialize(tag, obuf);
-            CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }.serialize(value, obuf);
+            U8.serialize_into(tag, obuf);
+            CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }.serialize_into(value, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5735,9 +5796,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocalXAPayload<'i>> for CaptureParamAndLocalXAPayloadFmt {
-        fn serialize(&self, v: &CaptureParamAndLocalXAPayload<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocalXAPayload<'i>,
+    > for CaptureParamAndLocalXAPayloadFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocalXAPayload<'i>, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalXAPayloadFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5746,10 +5811,10 @@ mod exec_impls {
 
             match (self.choice2, v) {
                 (COrD::C, CaptureParamAndLocalXAPayload::C(v)) => {
-                    (Varied(self.len)).serialize(v, obuf);
+                    (Varied(self.len)).serialize_into(*v, obuf);
                 },
                 (COrD::D, CaptureParamAndLocalXAPayload::D(v)) => {
-                    (Varied(self.len)).serialize(v, obuf);
+                    (Varied(self.len)).serialize_into(*v, obuf);
                 },
                 _ => {},
             }
@@ -5805,9 +5870,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocalXA<'i>> for CaptureParamAndLocalXAFmt {
-        fn serialize(&self, v: &CaptureParamAndLocalXA<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocalXA<'i>,
+    > for CaptureParamAndLocalXAFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocalXA<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureParamAndLocalXAFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5815,8 +5886,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXA { len, payload } = v;
-            U8.serialize(len, obuf);
-            CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len }.serialize(
+            U8.serialize_into(len, obuf);
+            CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len }.serialize_into(
                 payload,
                 obuf,
             );
@@ -5870,9 +5941,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocalXBY> for CaptureParamAndLocalXBYFmt {
-        fn serialize(&self, v: &CaptureParamAndLocalXBY, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocalXBY,
+    > for CaptureParamAndLocalXBYFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocalXBY, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXBYFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalXBYFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -5881,10 +5956,10 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (0, CaptureParamAndLocalXBY::Variant1(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (_, CaptureParamAndLocalXBY::Default(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -5933,14 +6008,20 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocalXB> for CaptureParamAndLocalXBFmt {
-        fn serialize(&self, v: &CaptureParamAndLocalXB, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocalXB,
+    > for CaptureParamAndLocalXBFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocalXB, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CaptureParamAndLocalXBFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXB { tag, y } = v;
-            U8.serialize(tag, obuf);
-            CaptureParamAndLocalXBYFmt { tag: *tag }.serialize(y, obuf);
+            U8.serialize_into(tag, obuf);
+            CaptureParamAndLocalXBYFmt { tag: *tag }.serialize_into(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5993,9 +6074,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CaptureParamAndLocalX<'i>> for CaptureParamAndLocalXFmt {
-        fn serialize(&self, v: &CaptureParamAndLocalX<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        CaptureParamAndLocalX<'i>,
+    > for CaptureParamAndLocalXFmt {
+        fn serialize_into(&self, v: &CaptureParamAndLocalX<'i>, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXFmt as SpecSerializer>::spec_serialize);
+            reveal(<CaptureParamAndLocalXFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -6004,10 +6089,10 @@ mod exec_impls {
 
             match (self.choice1, v) {
                 (AOrB::A, CaptureParamAndLocalX::A(v)) => {
-                    (CaptureParamAndLocalXAFmt { choice2: self.choice2 }).serialize(v, obuf);
+                    (CaptureParamAndLocalXAFmt { choice2: self.choice2 }).serialize_into(v, obuf);
                 },
                 (AOrB::B, CaptureParamAndLocalX::B(v)) => {
-                    (CaptureParamAndLocalXBFmt).serialize(v, obuf);
+                    (CaptureParamAndLocalXBFmt).serialize_into(v, obuf);
                 },
                 _ => {},
             }

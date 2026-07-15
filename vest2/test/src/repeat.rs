@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -1037,14 +1038,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OpaqueU16<'i>> for OpaqueU16Fmt {
-        fn serialize(&self, v: &OpaqueU16<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OpaqueU16<'i>> for OpaqueU16Fmt {
+        fn serialize_into(&self, v: &OpaqueU16<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<OpaqueU16Fmt as SpecSerializer>::spec_serialize);
+            reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OpaqueU16 { l, data } = v;
-            U16Le.serialize(l, obuf);
-            Varied(l).serialize(data, obuf);
+            U16Le.serialize_into(l, obuf);
+            Varied(l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1081,12 +1085,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ResponderId<'i>> for ResponderIdFmt {
-        fn serialize(&self, v: &ResponderId<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ResponderId<'i>> for ResponderIdFmt {
+        fn serialize_into(&self, v: &ResponderId<'i>, obuf: &mut Output) {
             reveal(<ResponderIdFmt as SpecSerializer>::spec_serialize);
+            reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            OpaqueU16Fmt.serialize(v, obuf);
+            OpaqueU16Fmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1124,14 +1129,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ResponderIdList<'i>> for ResponderIdListFmt {
-        fn serialize(&self, v: &ResponderIdList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ResponderIdList<'i>> for ResponderIdListFmt {
+        fn serialize_into(&self, v: &ResponderIdList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ResponderIdListFmt as SpecSerializer>::spec_serialize);
+            reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ResponderIdList { l, list } = v;
-            U16Le.serialize(l, obuf);
-            ExactLen(l, Star(ResponderIdFmt)).serialize(list, obuf);
+            U16Le.serialize_into(l, obuf);
+            ExactLen(l, Star(ResponderIdFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1168,12 +1176,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<RepeatFix> for RepeatFixFmt {
-        fn serialize(&self, v: &RepeatFix, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, RepeatFix> for RepeatFixFmt {
+        fn serialize_into(&self, v: &RepeatFix, obuf: &mut Output) {
             reveal(<RepeatFixFmt as SpecSerializer>::spec_serialize);
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Array::<32, _>(U16Le).serialize(v, obuf);
+            Array::<32, _>(U16Le).serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1208,14 +1217,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<RepeatDyn<'i>> for RepeatDynFmt {
-        fn serialize(&self, v: &RepeatDyn<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, RepeatDyn<'i>> for RepeatDynFmt {
+        fn serialize_into(&self, v: &RepeatDyn<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<RepeatDynFmt as SpecSerializer>::spec_serialize);
+            reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let RepeatDyn { l, data } = v;
-            VarInt::<true>.serialize(l, obuf);
-            RepeatN(l, ResponderIdListFmt).serialize(data, obuf);
+            VarInt::<true>.serialize_into(l, obuf);
+            RepeatN(l, ResponderIdListFmt).serialize_into(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

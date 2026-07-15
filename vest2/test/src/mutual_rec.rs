@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -3717,16 +3718,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ExprKind> for ExprKindFmt {
-        fn serialize(&self, v: &ExprKind, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ExprKind> for ExprKindFmt {
+        fn serialize_into(&self, v: &ExprKind, obuf: &mut Output) {
             reveal(<ExprKindFmt as SpecSerializer>::spec_serialize);
+            reveal(<ExprKindFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 ExprKind::Num => 16,
                 ExprKind::Group => 17,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3763,16 +3765,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ListKind> for ListKindFmt {
-        fn serialize(&self, v: &ListKind, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ListKind> for ListKindFmt {
+        fn serialize_into(&self, v: &ListKind, obuf: &mut Output) {
             reveal(<ListKindFmt as SpecSerializer>::spec_serialize);
+            reveal(<ListKindFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 ListKind::Nil => 32,
                 ListKind::Cons => 33,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3798,8 +3801,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<Expr<'i>> for ExprFmt<LIMIT> {
-        fn serialize(&self, v: &Expr<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, Expr<'i>> for ExprFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &Expr<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -3818,8 +3823,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<List<'i>> for ListFmt<LIMIT> {
-        fn serialize(&self, v: &List<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, List<'i>> for ListFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &List<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -3838,8 +3845,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ExprV<'i>> for ExprVFmt<LIMIT> {
-        fn serialize(&self, v: &ExprV<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, ExprV<'i>> for ExprVFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &ExprV<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -3858,8 +3867,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ListVCons<'i>> for ListVConsFmt<LIMIT> {
-        fn serialize(&self, v: &ListVCons<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<
+        Output,
+        ListVCons<'i>,
+    > for ListVConsFmt<LIMIT> {
+        fn serialize_into(&self, v: &ListVCons<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -3878,8 +3890,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ListV<'i>> for ListVFmt<LIMIT> {
-        fn serialize(&self, v: &ListV<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, ListV<'i>> for ListVFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &ListV<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -3919,19 +3933,30 @@ mod exec_impls {
             Ok((total_n, final_v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &Expr<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(&self, gas: usize, v: &Expr<'i>, obuf: &mut Output)
             requires
                 expr_consistent_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                old(obuf).fits(
+                    expr_byte_len_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                ),
             ensures
                 final(obuf)@ == old(obuf)@ + expr_serialize_spec_gas::<LIMIT>(
                     &SCC1RecBody,
                     gas as nat,
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        expr_byte_len_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view())
+                            + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             let Expr { t, v } = v;
-            (ExprKindFmt).serialize(t, obuf);
+            (ExprKindFmt).serialize_into(t, obuf);
             (ExprVFmt::<LIMIT> { expr_kind: *t }).serialize_gas(gas - 1, v, obuf);
         }
 
@@ -3992,19 +4017,30 @@ mod exec_impls {
             Ok((total_n, final_v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &List<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(&self, gas: usize, v: &List<'i>, obuf: &mut Output)
             requires
                 list_consistent_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                old(obuf).fits(
+                    list_byte_len_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                ),
             ensures
                 final(obuf)@ == old(obuf)@ + list_serialize_spec_gas::<LIMIT>(
                     &SCC1RecBody,
                     gas as nat,
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        list_byte_len_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view())
+                            + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             let List { t, v } = v;
-            (ListKindFmt).serialize(t, obuf);
+            (ListKindFmt).serialize_into(t, obuf);
             (ListVFmt::<LIMIT> { list_kind: *t }).serialize_gas(gas - 1, v, obuf);
         }
 
@@ -4079,13 +4115,21 @@ mod exec_impls {
             Ok((n, v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ExprV<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(&self, gas: usize, v: &ExprV<'i>, obuf: &mut Output)
             requires
                 expr_v_consistent_spec_gas::<LIMIT>(
                     &SCC1RecBody,
                     gas as nat,
                     self.expr_kind_spec(),
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    expr_v_byte_len_spec_gas::<LIMIT>(
+                        &SCC1RecBody,
+                        gas as nat,
+                        self.expr_kind_spec(),
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + expr_v_serialize_spec_gas::<LIMIT>(
@@ -4094,11 +4138,23 @@ mod exec_impls {
                     self.expr_kind_spec(),
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        expr_v_byte_len_spec_gas::<LIMIT>(
+                            &SCC1RecBody,
+                            gas as nat,
+                            self.expr_kind_spec(),
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             match (self.expr_kind, v) {
                 (ExprKind::Num, ExprV::Num(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (ExprKind::Group, ExprV::Group(v)) => {
                     (ListFmt::<LIMIT> {  }).serialize_gas(gas - 1, v, obuf);
@@ -4179,17 +4235,36 @@ mod exec_impls {
             Ok((total_n, final_v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ListVCons<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(
+            &self,
+            gas: usize,
+            v: &ListVCons<'i>,
+            obuf: &mut Output,
+        )
             requires
                 list_v_cons_consistent_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                old(obuf).fits(
+                    list_v_cons_byte_len_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, v.deep_view()),
+                ),
             ensures
                 final(obuf)@ == old(obuf)@ + list_v_cons_serialize_spec_gas::<LIMIT>(
                     &SCC1RecBody,
                     gas as nat,
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        list_v_cons_byte_len_spec_gas::<LIMIT>(
+                            &SCC1RecBody,
+                            gas as nat,
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             let ListVCons { head, tail } = v;
             (ExprFmt::<LIMIT> {  }).serialize_gas(gas - 1, head, obuf);
             (ListFmt::<LIMIT> {  }).serialize_gas(gas - 1, tail, obuf);
@@ -4270,13 +4345,21 @@ mod exec_impls {
             Ok((n, v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ListV<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(&self, gas: usize, v: &ListV<'i>, obuf: &mut Output)
             requires
                 list_v_consistent_spec_gas::<LIMIT>(
                     &SCC1RecBody,
                     gas as nat,
                     self.list_kind_spec(),
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    list_v_byte_len_spec_gas::<LIMIT>(
+                        &SCC1RecBody,
+                        gas as nat,
+                        self.list_kind_spec(),
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + list_v_serialize_spec_gas::<LIMIT>(
@@ -4285,11 +4368,23 @@ mod exec_impls {
                     self.list_kind_spec(),
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        list_v_byte_len_spec_gas::<LIMIT>(
+                            &SCC1RecBody,
+                            gas as nat,
+                            self.list_kind_spec(),
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             match (self.list_kind, v) {
                 (ListKind::Nil, ListV::Nil(v)) => {
-                    (Fixed::<0>).serialize(v, obuf);
+                    (Fixed::<0>).serialize_into(*v, obuf);
                 },
                 (ListKind::Cons, ListV::Cons(v)) => {
                     (ListVConsFmt::<LIMIT> {  }).serialize_gas(gas - 1, v, obuf);
@@ -4345,8 +4440,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ChainA<'i>> for ChainAFmt<LIMIT> {
-        fn serialize(&self, v: &ChainA<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, ChainA<'i>> for ChainAFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &ChainA<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -4365,8 +4462,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ChainB<'i>> for ChainBFmt<LIMIT> {
-        fn serialize(&self, v: &ChainB<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, ChainB<'i>> for ChainBFmt<
+        LIMIT,
+    > {
+        fn serialize_into(&self, v: &ChainB<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -4385,8 +4484,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ChainAChoice1<'i>> for ChainAChoice1Fmt<LIMIT> {
-        fn serialize(&self, v: &ChainAChoice1<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<
+        Output,
+        ChainAChoice1<'i>,
+    > for ChainAChoice1Fmt<LIMIT> {
+        fn serialize_into(&self, v: &ChainAChoice1<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -4405,8 +4507,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i, const LIMIT: usize> Serializer<ChainBChoice1<'i>> for ChainBChoice1Fmt<LIMIT> {
-        fn serialize(&self, v: &ChainBChoice1<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<
+        Output,
+        ChainBChoice1<'i>,
+    > for ChainBChoice1Fmt<LIMIT> {
+        fn serialize_into(&self, v: &ChainBChoice1<'i>, obuf: &mut Output) {
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
@@ -4463,13 +4568,26 @@ mod exec_impls {
             Ok((n, v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ChainA<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(
+            &self,
+            gas: usize,
+            v: &ChainA<'i>,
+            obuf: &mut Output,
+        )
             requires
                 chain_a_consistent_spec_gas::<LIMIT>(
                     &SCC2RecBody,
                     gas as nat,
                     self.tag_spec(),
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    chain_a_byte_len_spec_gas::<LIMIT>(
+                        &SCC2RecBody,
+                        gas as nat,
+                        self.tag_spec(),
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + chain_a_serialize_spec_gas::<LIMIT>(
@@ -4478,11 +4596,23 @@ mod exec_impls {
                     self.tag_spec(),
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        chain_a_byte_len_spec_gas::<LIMIT>(
+                            &SCC2RecBody,
+                            gas as nat,
+                            self.tag_spec(),
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             match (self.tag, v) {
                 (0, ChainA::Variant1(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (_, ChainA::Default(v)) => {
                     (ChainAChoice1Fmt::<LIMIT> {  }).serialize_gas(gas - 1, v, obuf);
@@ -4582,13 +4712,26 @@ mod exec_impls {
             Ok((n, v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ChainB<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(
+            &self,
+            gas: usize,
+            v: &ChainB<'i>,
+            obuf: &mut Output,
+        )
             requires
                 chain_b_consistent_spec_gas::<LIMIT>(
                     &SCC2RecBody,
                     gas as nat,
                     self.tag_spec(),
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    chain_b_byte_len_spec_gas::<LIMIT>(
+                        &SCC2RecBody,
+                        gas as nat,
+                        self.tag_spec(),
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + chain_b_serialize_spec_gas::<LIMIT>(
@@ -4597,11 +4740,23 @@ mod exec_impls {
                     self.tag_spec(),
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        chain_b_byte_len_spec_gas::<LIMIT>(
+                            &SCC2RecBody,
+                            gas as nat,
+                            self.tag_spec(),
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             match (self.tag, v) {
                 (0, ChainB::Variant1(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (_, ChainB::Default(v)) => {
                     (ChainBChoice1Fmt::<LIMIT> {  }).serialize_gas(gas - 1, v, obuf);
@@ -4697,12 +4852,24 @@ mod exec_impls {
             Ok((total_n, final_v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ChainAChoice1<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(
+            &self,
+            gas: usize,
+            v: &ChainAChoice1<'i>,
+            obuf: &mut Output,
+        )
             requires
                 chain_a_choice1_consistent_spec_gas::<LIMIT>(
                     &SCC2RecBody,
                     gas as nat,
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    chain_a_choice1_byte_len_spec_gas::<LIMIT>(
+                        &SCC2RecBody,
+                        gas as nat,
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + chain_a_choice1_serialize_spec_gas::<LIMIT>(
@@ -4710,12 +4877,23 @@ mod exec_impls {
                     gas as nat,
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        chain_a_choice1_byte_len_spec_gas::<LIMIT>(
+                            &SCC2RecBody,
+                            gas as nat,
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             let ChainAChoice1 { len, payload, next_tag, tail } = v;
-            (U8).serialize(len, obuf);
-            (Varied(len)).serialize(payload, obuf);
-            (U8).serialize(next_tag, obuf);
+            (U8).serialize_into(len, obuf);
+            (Varied(len)).serialize_into(*payload, obuf);
+            (U8).serialize_into(next_tag, obuf);
             (ChainBFmt::<LIMIT> { tag: *next_tag }).serialize_gas(gas - 1, tail, obuf);
         }
 
@@ -4796,12 +4974,24 @@ mod exec_impls {
             Ok((total_n, final_v))
         }
 
-        fn serialize_gas<'i>(&self, gas: usize, v: &ChainBChoice1<'i>, obuf: &mut Vec<u8>)
+        fn serialize_gas<Output: OutputBuf, 'i>(
+            &self,
+            gas: usize,
+            v: &ChainBChoice1<'i>,
+            obuf: &mut Output,
+        )
             requires
                 chain_b_choice1_consistent_spec_gas::<LIMIT>(
                     &SCC2RecBody,
                     gas as nat,
                     v.deep_view(),
+                ),
+                old(obuf).fits(
+                    chain_b_choice1_byte_len_spec_gas::<LIMIT>(
+                        &SCC2RecBody,
+                        gas as nat,
+                        v.deep_view(),
+                    ),
                 ),
             ensures
                 final(obuf)@ == old(obuf)@ + chain_b_choice1_serialize_spec_gas::<LIMIT>(
@@ -4809,11 +4999,22 @@ mod exec_impls {
                     gas as nat,
                     v.deep_view(),
                 ),
+                forall|n|
+                    old(obuf).fits(
+                        chain_b_choice1_byte_len_spec_gas::<LIMIT>(
+                            &SCC2RecBody,
+                            gas as nat,
+                            v.deep_view(),
+                        ) + n,
+                    ) <==> final(obuf).fits(n),
+                old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             let ChainBChoice1 { payload, next_tag, tail } = v;
-            (U32Le).serialize(payload, obuf);
-            (U8).serialize(next_tag, obuf);
+            (U32Le).serialize_into(payload, obuf);
+            (U8).serialize_into(next_tag, obuf);
             (ChainAFmt::<LIMIT> { tag: *next_tag }).serialize_gas(gas - 1, tail, obuf);
         }
 

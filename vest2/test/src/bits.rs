@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -2353,14 +2354,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<VersionIhl> for VersionIhlFmt {
-        fn serialize(&self, v: &VersionIhl, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, VersionIhl> for VersionIhlFmt {
+        fn serialize_into(&self, v: &VersionIhl, obuf: &mut Output) {
             reveal(<VersionIhlFmt as SpecSerializer>::spec_serialize);
+            reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let VersionIhl { version, ihl } = *v;
             let packed = pack_version_ihl(version, ihl);
-            U8.serialize(&packed, obuf);
+            U8.serialize_into(&packed, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2394,14 +2396,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CrossByteSpan> for CrossByteSpanFmt {
-        fn serialize(&self, v: &CrossByteSpan, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CrossByteSpan> for CrossByteSpanFmt {
+        fn serialize_into(&self, v: &CrossByteSpan, obuf: &mut Output) {
             reveal(<CrossByteSpanFmt as SpecSerializer>::spec_serialize);
+            reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CrossByteSpan { prefix, span, suffix } = *v;
             let packed = pack_cross_byte_span(prefix, span, suffix);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2442,14 +2445,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PacketHeader> for PacketHeaderFmt {
-        fn serialize(&self, v: &PacketHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PacketHeader> for PacketHeaderFmt {
+        fn serialize_into(&self, v: &PacketHeader, obuf: &mut Output) {
             reveal(<PacketHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PacketHeader { kind, count, len } = *v;
             let packed = pack_packet_header(payload_kind_to_bits(kind), count, len);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2498,14 +2502,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoicePacket<'i>> for ChoicePacketFmt {
-        fn serialize(&self, v: &ChoicePacket<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ChoicePacket<'i>> for ChoicePacketFmt {
+        fn serialize_into(&self, v: &ChoicePacket<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ChoicePacketFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ChoicePacket { hdr, payload } = v;
-            PacketHeaderFmt.serialize(hdr, obuf);
-            ChoicePacketPayloadFmt { hdr: *hdr }.serialize(payload, obuf);
+            PacketHeaderFmt.serialize_into(hdr, obuf);
+            ChoicePacketPayloadFmt { hdr: *hdr }.serialize_into(payload, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2550,14 +2557,15 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClosedPacketHeader> for ClosedPacketHeaderFmt {
-        fn serialize(&self, v: &ClosedPacketHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClosedPacketHeader> for ClosedPacketHeaderFmt {
+        fn serialize_into(&self, v: &ClosedPacketHeader, obuf: &mut Output) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClosedPacketHeader { kind, count, len } = *v;
             let packed = pack_closed_packet_header(closed_payload_kind_to_bits(kind), count, len);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2607,14 +2615,20 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
-        fn serialize(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ClosedChoicePacket<'i>,
+    > for ClosedChoicePacketFmt {
+        fn serialize_into(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ClosedChoicePacketFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClosedChoicePacket { hdr, payload } = v;
-            ClosedPacketHeaderFmt.serialize(hdr, obuf);
-            ClosedChoicePacketPayloadFmt { hdr: *hdr }.serialize(payload, obuf);
+            ClosedPacketHeaderFmt.serialize_into(hdr, obuf);
+            ClosedChoicePacketPayloadFmt { hdr: *hdr }.serialize_into(payload, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2669,9 +2683,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoicePacketPayload<'i>> for ChoicePacketPayloadFmt {
-        fn serialize(&self, v: &ChoicePacketPayload<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ChoicePacketPayload<'i>,
+    > for ChoicePacketPayloadFmt {
+        fn serialize_into(&self, v: &ChoicePacketPayload<'i>, obuf: &mut Output) {
             reveal(<ChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2680,16 +2698,16 @@ mod exec_impls {
 
             match (self.hdr.kind, v) {
                 (PayloadKind::Raw, ChoicePacketPayload::Raw(v)) => {
-                    (Varied(self.hdr.len)).serialize(v, obuf);
+                    (Varied(self.hdr.len)).serialize_into(*v, obuf);
                 },
                 (PayloadKind::Words, ChoicePacketPayload::Words(v)) => {
-                    (RepeatN(self.hdr.count, U16Be)).serialize(v, obuf);
+                    (RepeatN(self.hdr.count, U16Be)).serialize_into(v, obuf);
                 },
                 (PayloadKind::Tiny, ChoicePacketPayload::Tiny(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (_, ChoicePacketPayload::Default(v)) => {
-                    (Varied(self.hdr.len)).serialize(v, obuf);
+                    (Varied(self.hdr.len)).serialize_into(*v, obuf);
                 },
                 _ => {},
             }
@@ -2752,9 +2770,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClosedChoicePacketPayload<'i>> for ClosedChoicePacketPayloadFmt {
-        fn serialize(&self, v: &ClosedChoicePacketPayload<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ClosedChoicePacketPayload<'i>,
+    > for ClosedChoicePacketPayloadFmt {
+        fn serialize_into(&self, v: &ClosedChoicePacketPayload<'i>, obuf: &mut Output) {
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2763,13 +2785,13 @@ mod exec_impls {
 
             match (self.hdr.kind, v) {
                 (ClosedPayloadKind::Raw, ClosedChoicePacketPayload::Raw(v)) => {
-                    (Varied(self.hdr.len)).serialize(v, obuf);
+                    (Varied(self.hdr.len)).serialize_into(*v, obuf);
                 },
                 (ClosedPayloadKind::Words, ClosedChoicePacketPayload::Words(v)) => {
-                    (RepeatN(self.hdr.count, U16Be)).serialize(v, obuf);
+                    (RepeatN(self.hdr.count, U16Be)).serialize_into(v, obuf);
                 },
                 (ClosedPayloadKind::Tiny, ClosedChoicePacketPayload::Tiny(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 _ => {},
             }

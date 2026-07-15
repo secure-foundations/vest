@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -3383,14 +3384,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Header> for HeaderFmt {
-        fn serialize(&self, v: &Header, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Header> for HeaderFmt {
+        fn serialize_into(&self, v: &Header, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<HeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Header { len, flags } = v;
-            U16Le.serialize(len, obuf);
-            U8.serialize(flags, obuf);
+            U16Le.serialize_into(len, obuf);
+            U8.serialize_into(flags, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3435,14 +3439,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PrimitiveSizes<'i>> for PrimitiveSizesFmt {
-        fn serialize(&self, v: &PrimitiveSizes<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PrimitiveSizes<'i>> for PrimitiveSizesFmt {
+        fn serialize_into(&self, v: &PrimitiveSizes<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<PrimitiveSizesFmt as SpecSerializer>::spec_serialize);
+            reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PrimitiveSizes { byte, word } = v;
-            Fixed::<1>.serialize(byte, obuf);
-            Fixed::<2>.serialize(word, obuf);
+            Fixed::<1>.serialize_into(*byte, obuf);
+            Fixed::<2>.serialize_into(*word, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3479,13 +3486,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NamedSize<'i>> for NamedSizeFmt {
-        fn serialize(&self, v: &NamedSize<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NamedSize<'i>> for NamedSizeFmt {
+        fn serialize_into(&self, v: &NamedSize<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<NamedSizeFmt as SpecSerializer>::spec_serialize);
+            reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NamedSize { bytes } = v;
-            Fixed::<3>.serialize(bytes, obuf);
+            Fixed::<3>.serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3515,12 +3525,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HeaderAlias> for HeaderAliasFmt {
-        fn serialize(&self, v: &HeaderAlias, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HeaderAlias> for HeaderAliasFmt {
+        fn serialize_into(&self, v: &HeaderAlias, obuf: &mut Output) {
             reveal(<HeaderAliasFmt as SpecSerializer>::spec_serialize);
+            reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            HeaderFmt.serialize(v, obuf);
+            HeaderFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3553,13 +3564,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AliasSize<'i>> for AliasSizeFmt {
-        fn serialize(&self, v: &AliasSize<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AliasSize<'i>> for AliasSizeFmt {
+        fn serialize_into(&self, v: &AliasSize<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<AliasSizeFmt as SpecSerializer>::spec_serialize);
+            reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let AliasSize { bytes } = v;
-            Fixed::<3>.serialize(bytes, obuf);
+            Fixed::<3>.serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3602,9 +3616,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<FixedChoice> for FixedChoiceFmt {
-        fn serialize(&self, v: &FixedChoice, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, FixedChoice> for FixedChoiceFmt {
+        fn serialize_into(&self, v: &FixedChoice, obuf: &mut Output) {
             reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3613,10 +3628,10 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (0, FixedChoice::Variant1(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (_, FixedChoice::Default(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -3660,13 +3675,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoiceFormatSize<'i>> for ChoiceFormatSizeFmt {
-        fn serialize(&self, v: &ChoiceFormatSize<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ChoiceFormatSize<'i>> for ChoiceFormatSizeFmt {
+        fn serialize_into(&self, v: &ChoiceFormatSize<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ChoiceFormatSizeFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ChoiceFormatSize { bytes } = v;
-            Fixed::<2>.serialize(bytes, obuf);
+            Fixed::<2>.serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3696,12 +3714,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoiceTag<'i>> for ChoiceTagFmt {
-        fn serialize(&self, v: &ChoiceTag<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ChoiceTag<'i>> for ChoiceTagFmt {
+        fn serialize_into(&self, v: &ChoiceTag<'i>, obuf: &mut Output) {
             reveal(<ChoiceTagFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoiceTagFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Fixed::<2>.serialize(v, obuf);
+            Fixed::<2>.serialize_into(*v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3739,14 +3758,20 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoiceArraysFolded<'i>> for ChoiceArraysFoldedFmt {
-        fn serialize(&self, v: &ChoiceArraysFolded<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ChoiceArraysFolded<'i>,
+    > for ChoiceArraysFoldedFmt {
+        fn serialize_into(&self, v: &ChoiceArraysFolded<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ChoiceArraysFoldedFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ChoiceArraysFolded { tag, body } = v;
-            ChoiceTagFmt.serialize(tag, obuf);
-            ChoiceArraysFoldedBodyFmt { tag: *tag }.serialize(body, obuf);
+            ChoiceTagFmt.serialize_into(tag, obuf);
+            ChoiceArraysFoldedBodyFmt { tag: *tag }.serialize_into(body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3786,13 +3811,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SizeArith<'i>> for SizeArithFmt {
-        fn serialize(&self, v: &SizeArith<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SizeArith<'i>> for SizeArithFmt {
+        fn serialize_into(&self, v: &SizeArith<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<SizeArithFmt as SpecSerializer>::spec_serialize);
+            reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SizeArith { bytes } = v;
-            Fixed::<4>.serialize(bytes, obuf);
+            Fixed::<4>.serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3832,9 +3860,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SimpleSub<'i>> for SimpleSubFmt {
-        fn serialize(&self, v: &SimpleSub<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SimpleSub<'i>> for SimpleSubFmt {
+        fn serialize_into(&self, v: &SimpleSub<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<SimpleSubFmt as SpecSerializer>::spec_serialize);
+            reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3842,7 +3873,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let SimpleSub { data } = v;
-            Varied(((self.len - 3) - 1)).serialize(data, obuf);
+            Varied(((self.len - 3) - 1)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3886,9 +3917,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MultiArith<'i>> for MultiArithFmt {
-        fn serialize(&self, v: &MultiArith<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MultiArith<'i>> for MultiArithFmt {
+        fn serialize_into(&self, v: &MultiArith<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MultiArithFmt as SpecSerializer>::spec_serialize);
+            reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3896,7 +3930,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let MultiArith { body } = v;
-            Varied(((self.total - self.hdr_len) - 8)).serialize(body, obuf);
+            Varied(((self.total - self.hdr_len) - 8)).serialize_into(*body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3940,9 +3974,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ParenExpr<'i>> for ParenExprFmt {
-        fn serialize(&self, v: &ParenExpr<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ParenExpr<'i>> for ParenExprFmt {
+        fn serialize_into(&self, v: &ParenExpr<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ParenExprFmt as SpecSerializer>::spec_serialize);
+            reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3950,7 +3987,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let ParenExpr { data } = v;
-            Varied(((self.a - self.b) + self.c)).serialize(data, obuf);
+            Varied(((self.a - self.b) + self.c)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3994,9 +4031,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MixedConst<'i>> for MixedConstFmt {
-        fn serialize(&self, v: &MixedConst<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MixedConst<'i>> for MixedConstFmt {
+        fn serialize_into(&self, v: &MixedConst<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MixedConstFmt as SpecSerializer>::spec_serialize);
+            reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -4004,7 +4044,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let MixedConst { data } = v;
-            Varied(((self.len - 4) + 2)).serialize(data, obuf);
+            Varied(((self.len - 4) + 2)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4048,9 +4088,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
-        fn serialize(&self, v: &PayloadWithHeader<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
+        fn serialize_into(&self, v: &PayloadWithHeader<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<PayloadWithHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -4058,7 +4101,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { data } = v;
-            Varied((self.hdr.len - 3)).serialize(data, obuf);
+            Varied((self.hdr.len - 3)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4109,9 +4152,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ChoiceArraysFoldedBody> for ChoiceArraysFoldedBodyFmt<'i> {
-        fn serialize(&self, v: &ChoiceArraysFoldedBody, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ChoiceArraysFoldedBody,
+    > for ChoiceArraysFoldedBodyFmt<'i> {
+        fn serialize_into(&self, v: &ChoiceArraysFoldedBody, obuf: &mut Output) {
             reveal(<ChoiceArraysFoldedBodyFmt as SpecSerializer>::spec_serialize);
+            reveal(<ChoiceArraysFoldedBodyFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -4120,13 +4167,13 @@ mod exec_impls {
 
             match (self.tag, v) {
                 (x, ChoiceArraysFoldedBody::Variant1(v)) if bytes_eq(x, &[0x00, 0x00]) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (x, ChoiceArraysFoldedBody::Variant2(v)) if bytes_eq(x, &[0x01, 0x01]) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (_, ChoiceArraysFoldedBody::Default(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }

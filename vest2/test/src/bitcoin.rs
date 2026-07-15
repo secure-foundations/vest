@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -3025,21 +3026,24 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Block<'i>> for BlockFmt {
-        fn serialize(&self, v: &Block<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Block<'i>> for BlockFmt {
+        fn serialize_into(&self, v: &Block<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<BlockFmt as SpecSerializer>::spec_serialize);
+            reveal(<BlockFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Block { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } =
                 v;
-            U32Le.serialize(version, obuf);
-            Fixed::<32>.serialize(prev_block, obuf);
-            Fixed::<32>.serialize(merkle_root, obuf);
-            U32Le.serialize(timestamp, obuf);
-            U32Le.serialize(bits, obuf);
-            U32Le.serialize(nonce, obuf);
-            VarInt::<true>.serialize(tx_count, obuf);
-            RepeatN(tx_count, TxFmt).serialize(txs, obuf);
+            U32Le.serialize_into(version, obuf);
+            Fixed::<32>.serialize_into(*prev_block, obuf);
+            Fixed::<32>.serialize_into(*merkle_root, obuf);
+            U32Le.serialize_into(timestamp, obuf);
+            U32Le.serialize_into(bits, obuf);
+            U32Le.serialize_into(nonce, obuf);
+            VarInt::<true>.serialize_into(tx_count, obuf);
+            RepeatN(tx_count, TxFmt).serialize_into(txs, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3095,15 +3099,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Tx<'i>> for TxFmt {
-        fn serialize(&self, v: &Tx<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Tx<'i>> for TxFmt {
+        fn serialize_into(&self, v: &Tx<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TxFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Tx { version, txin_count, rem } = v;
-            U32Le.serialize(version, obuf);
-            VarInt::<true>.serialize(txin_count, obuf);
-            TxRemFmt { txin_count: *txin_count }.serialize(rem, obuf);
+            U32Le.serialize_into(version, obuf);
+            VarInt::<true>.serialize_into(txin_count, obuf);
+            TxRemFmt { txin_count: *txin_count }.serialize_into(rem, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3163,19 +3170,22 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TxSegwit<'i>> for TxSegwitFmt {
-        fn serialize(&self, v: &TxSegwit<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxSegwit<'i>> for TxSegwitFmt {
+        fn serialize_into(&self, v: &TxSegwit<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
-            Const(U8, 1).serialize(flag, obuf);
-            VarInt::<true>.serialize(txin_count, obuf);
-            RepeatN(txin_count, TxinFmt).serialize(txins, obuf);
-            VarInt::<true>.serialize(txout_count, obuf);
-            RepeatN(txout_count, TxoutFmt).serialize(txouts, obuf);
-            RepeatN(txin_count, WitnessFmt).serialize(witness, obuf);
-            LockTimeFmt.serialize(lock_time, obuf);
+            U8.serialize_into(flag, obuf);
+            VarInt::<true>.serialize_into(txin_count, obuf);
+            RepeatN(txin_count, TxinFmt).serialize_into(txins, obuf);
+            VarInt::<true>.serialize_into(txout_count, obuf);
+            RepeatN(txout_count, TxoutFmt).serialize_into(txouts, obuf);
+            RepeatN(txin_count, WitnessFmt).serialize_into(witness, obuf);
+            LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3225,14 +3235,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Witness<'i>> for WitnessFmt {
-        fn serialize(&self, v: &Witness<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Witness<'i>> for WitnessFmt {
+        fn serialize_into(&self, v: &Witness<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Witness { count, data } = v;
-            VarInt::<true>.serialize(count, obuf);
-            RepeatN(count, WitnessComponentFmt).serialize(data, obuf);
+            VarInt::<true>.serialize_into(count, obuf);
+            RepeatN(count, WitnessComponentFmt).serialize_into(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3271,14 +3284,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<WitnessComponent<'i>> for WitnessComponentFmt {
-        fn serialize(&self, v: &WitnessComponent<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, WitnessComponent<'i>> for WitnessComponentFmt {
+        fn serialize_into(&self, v: &WitnessComponent<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let WitnessComponent { l, data } = v;
-            VarInt::<true>.serialize(l, obuf);
-            Varied(l).serialize(data, obuf);
+            VarInt::<true>.serialize_into(l, obuf);
+            Varied(l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3325,9 +3341,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TxNonsegwit<'i>> for TxNonsegwitFmt {
-        fn serialize(&self, v: &TxNonsegwit<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxNonsegwit<'i>> for TxNonsegwitFmt {
+        fn serialize_into(&self, v: &TxNonsegwit<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3335,10 +3354,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
-            RepeatN(self.txin_count, TxinFmt).serialize(txins, obuf);
-            VarInt::<true>.serialize(txout_count, obuf);
-            RepeatN(txout_count, TxoutFmt).serialize(txouts, obuf);
-            LockTimeFmt.serialize(lock_time, obuf);
+            RepeatN(self.txin_count, TxinFmt).serialize_into(txins, obuf);
+            VarInt::<true>.serialize_into(txout_count, obuf);
+            RepeatN(txout_count, TxoutFmt).serialize_into(txouts, obuf);
+            LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3385,17 +3404,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<LockTime> for LockTimeFmt {
-        fn serialize(&self, v: &LockTime, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, LockTime> for LockTimeFmt {
+        fn serialize_into(&self, v: &LockTime, obuf: &mut Output) {
             reveal(<LockTimeFmt as SpecSerializer>::spec_serialize);
+            reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             match v {
                 LockTime::BlockNo(v) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 LockTime::Timestamp(v) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
             }
 
@@ -3447,14 +3467,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Txout<'i>> for TxoutFmt {
-        fn serialize(&self, v: &Txout<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Txout<'i>> for TxoutFmt {
+        fn serialize_into(&self, v: &Txout<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Txout { value, script_pubkey } = v;
-            U64Le.serialize(value, obuf);
-            ScriptFmt.serialize(script_pubkey, obuf);
+            U64Le.serialize_into(value, obuf);
+            ScriptFmt.serialize_into(script_pubkey, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3493,14 +3516,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Script<'i>> for ScriptFmt {
-        fn serialize(&self, v: &Script<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Script<'i>> for ScriptFmt {
+        fn serialize_into(&self, v: &Script<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Script { l, data } = v;
-            VarInt::<true>.serialize(l, obuf);
-            Varied(l).serialize(data, obuf);
+            VarInt::<true>.serialize_into(l, obuf);
+            Varied(l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3541,15 +3567,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Txin<'i>> for TxinFmt {
-        fn serialize(&self, v: &Txin<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Txin<'i>> for TxinFmt {
+        fn serialize_into(&self, v: &Txin<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TxinFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxinFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Txin { previous_output, script_sig, sequence } = v;
-            OutpointFmt.serialize(previous_output, obuf);
-            ScriptSigFmt.serialize(script_sig, obuf);
-            U32Le.serialize(sequence, obuf);
+            OutpointFmt.serialize_into(previous_output, obuf);
+            ScriptSigFmt.serialize_into(script_sig, obuf);
+            U32Le.serialize_into(sequence, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3591,14 +3620,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Outpoint<'i>> for OutpointFmt {
-        fn serialize(&self, v: &Outpoint<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Outpoint<'i>> for OutpointFmt {
+        fn serialize_into(&self, v: &Outpoint<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<OutpointFmt as SpecSerializer>::spec_serialize);
+            reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Outpoint { hash, index } = v;
-            Fixed::<32>.serialize(hash, obuf);
-            U32Le.serialize(index, obuf);
+            Fixed::<32>.serialize_into(*hash, obuf);
+            U32Le.serialize_into(index, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3637,14 +3669,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ScriptSig<'i>> for ScriptSigFmt {
-        fn serialize(&self, v: &ScriptSig<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ScriptSig<'i>> for ScriptSigFmt {
+        fn serialize_into(&self, v: &ScriptSig<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
+            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ScriptSig { l, data } = v;
-            VarInt::<true>.serialize(l, obuf);
-            Varied(l).serialize(data, obuf);
+            VarInt::<true>.serialize_into(l, obuf);
+            Varied(l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3691,9 +3726,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TxRem<'i>> for TxRemFmt {
-        fn serialize(&self, v: &TxRem<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxRem<'i>> for TxRemFmt {
+        fn serialize_into(&self, v: &TxRem<'i>, obuf: &mut Output) {
             reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxRemFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -3702,10 +3738,10 @@ mod exec_impls {
 
             match (self.txin_count, v) {
                 (0, TxRem::Variant1(v)) => {
-                    (TxSegwitFmt).serialize(v, obuf);
+                    (TxSegwitFmt).serialize_into(v, obuf);
                 },
                 (_, TxRem::Default(v)) => {
-                    (TxNonsegwitFmt { txin_count: self.txin_count }).serialize(v, obuf);
+                    (TxNonsegwitFmt { txin_count: self.txin_count }).serialize_into(v, obuf);
                 },
                 _ => {},
             }

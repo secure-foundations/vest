@@ -24,7 +24,7 @@ impl<'a> Analysis<'a> {
         emit_serializer: impl Fn(&mut CodeWriter),
         emit_prepare: impl Fn(&mut CodeWriter),
         use_spinoff_prover: bool,
-        is_struct_parser: bool,
+        is_struct: bool,
     ) -> String {
         let info = self.info(name);
         let exec_ty = self.render_nominal_type(name, TypeMode::Exec);
@@ -49,7 +49,7 @@ impl<'a> Analysis<'a> {
                     w.line("#[verifier::spinoff_prover]");
                 }
                 w.block("fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>", |w| {
-                    if is_struct_parser {
+                    if is_struct {
                         w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
                         w.line("broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;");
                         w.blank_line();
@@ -68,19 +68,29 @@ impl<'a> Analysis<'a> {
         // --- Serializer impl ---
         {
             out.block(
-                format!("impl<'i> Serializer<{}> for {}", exec_ty_str, fmt_ident_str),
+                format!(
+                    "impl<Output: OutputBuf, 'i> Serializer<Output, {}> for {}",
+                    exec_ty_str, fmt_ident_str
+                ),
                 |w| {
                     if use_spinoff_prover {
                         w.line("#[verifier::spinoff_prover]");
                     }
                     w.block(
                         format!(
-                            "fn serialize(&self, v: &{}, obuf: &mut Vec<u8>)",
+                            "fn serialize_into(&self, v: &{}, obuf: &mut Output)",
                             exec_ty_str
                         ),
                         |w| {
+                            if is_struct {
+                                w.line("broadcast use vest_lib2::core::exec::output::outbuf_lemmas;");
+                            }
                             w.reveal_stmt(&format!(
                                 "<{} as SpecSerializer>::spec_serialize",
+                                reveal_fmt
+                            ));
+                            w.reveal_stmt(&format!(
+                                "<{} as SpecByteLen>::byte_len",
                                 reveal_fmt
                             ));
                             self.emit_param_invariant_opening(w, param_defns);
@@ -340,7 +350,7 @@ impl<'a> Analysis<'a> {
         w.call_chain_stmt(
             None,
             &repr_fmt_str,
-            "serialize",
+            "serialize_into",
             &["&packed", "obuf"],
             Some(";"),
         );
@@ -589,7 +599,7 @@ impl<'a> Analysis<'a> {
                 for field in &s.0 {
                     match field {
                         StructField::Const { label, combinator } => {
-                            let fmt_expr = self.render_exec_const_expr(
+                            let (fmt_expr, _) = self.render_exec_tag_expr(
                                 combinator,
                                 param_defns,
                                 CodegenMode::Serialize,
@@ -598,7 +608,7 @@ impl<'a> Analysis<'a> {
                             w.call_chain_stmt(
                                 None,
                                 &fmt_str,
-                                "serialize",
+                                "serialize_into",
                                 &[label, "obuf"].as_slice(),
                                 Some(";"),
                             );
@@ -623,11 +633,16 @@ impl<'a> Analysis<'a> {
                                     CodegenMode::Serialize,
                                 );
                                 let fmt_str = render_ts(quote! { #fmt_expr });
+                                let value_expr = self.render_serialize_value_expr(
+                                    quote! { #label_ident },
+                                    combinator,
+                                );
+                                let value_str = render_ts(value_expr);
                                 w.call_chain_stmt(
                                     None,
                                     &fmt_str,
-                                    "serialize",
-                                    &[label, "obuf"].as_slice(),
+                                    "serialize_into",
+                                    &[value_str.as_str(), "obuf"].as_slice(),
                                     Some(";"),
                                 );
                             }
@@ -988,7 +1003,11 @@ impl<'a> Analysis<'a> {
                                     param_defns,
                                     CodegenMode::Serialize,
                                 );
-                                quote! { (#fmt_expr).serialize(v, obuf) }
+                                let value_expr = self.render_serialize_value_expr(
+                                    quote! { v },
+                                    combinator,
+                                );
+                                quote! { (#fmt_expr).serialize_into(#value_expr, obuf) }
                             };
 
                             w.push_multiline(render_ts(quote! {
@@ -1266,7 +1285,11 @@ impl<'a> Analysis<'a> {
                                     param_defns,
                                     CodegenMode::Serialize,
                                 );
-                                quote! { (#fmt_expr).serialize(v, obuf) }
+                                let value_expr = self.render_serialize_value_expr(
+                                    quote! { v },
+                                    combinator,
+                                );
+                                quote! { (#fmt_expr).serialize_into(#value_expr, obuf) }
                             };
                             w.push_multiline(render_ts(quote! {
                                 #exec_ident::#variant_ident(v) => { #ser; },
@@ -1467,7 +1490,7 @@ impl<'a> Analysis<'a> {
         w.call_chain_stmt(
             None,
             &render_ts(prim_expr),
-            "serialize",
+            "serialize_into",
             &["&tag", "obuf"],
             Some(";"),
         );
@@ -1647,7 +1670,7 @@ impl<'a> Analysis<'a> {
                         w.call_chain_stmt(
                             None,
                             &render_ts(quote! { #target_args }),
-                            "serialize",
+                            "serialize_into",
                             &["v", "obuf"],
                             Some(";"),
                         );
@@ -1659,11 +1682,13 @@ impl<'a> Analysis<'a> {
                     param_defns,
                     CodegenMode::Serialize,
                 );
+                let value_expr = self.render_serialize_value_expr(quote! { v }, combinator);
+                let value_str = render_ts(value_expr);
                 w.call_chain_stmt(
                     None,
                     &render_ts(quote! { #fmt_expr }),
-                    "serialize",
-                    &["v", "obuf"],
+                    "serialize_into",
+                    &[value_str.as_str(), "obuf"],
                     Some(";"),
                 );
             }
@@ -1997,6 +2022,17 @@ impl<'a> Analysis<'a> {
                 let fmt_ident = format_ident!("{}", info.names.fmt);
                 quote! { #fmt_ident }
             }
+        }
+    }
+
+    pub(crate) fn render_serialize_value_expr(
+        &self,
+        value_expr: TokenStream,
+        combinator: &Combinator,
+    ) -> TokenStream {
+        match combinator {
+            Combinator::Bytes(_) => quote! { *#value_expr },
+            _ => value_expr,
         }
     }
 

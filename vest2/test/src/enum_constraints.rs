@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -953,9 +954,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MyEnum> for MyEnumFmt {
-        fn serialize(&self, v: &MyEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MyEnum> for MyEnumFmt {
+        fn serialize_into(&self, v: &MyEnum, obuf: &mut Output) {
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<MyEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -963,7 +965,7 @@ mod exec_impls {
                 MyEnum::B => 2,
                 MyEnum::C => 3,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1020,16 +1022,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EnumConstraints> for EnumConstraintsFmt {
-        fn serialize(&self, v: &EnumConstraints, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EnumConstraints> for EnumConstraintsFmt {
+        fn serialize_into(&self, v: &EnumConstraints, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
+            reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let EnumConstraints { foo, bar, baz, tag } = v;
-            MyEnumFmt.serialize(foo, obuf);
-            MyEnumFmt.serialize(bar, obuf);
-            MyEnumFmt.serialize(baz, obuf);
-            Const(MyEnumFmt, MyEnum::A).serialize(tag, obuf);
+            MyEnumFmt.serialize_into(foo, obuf);
+            MyEnumFmt.serialize_into(bar, obuf);
+            MyEnumFmt.serialize_into(baz, obuf);
+            MyEnumFmt.serialize_into(tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1096,9 +1101,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MyTypedEnum> for MyTypedEnumFmt {
-        fn serialize(&self, v: &MyTypedEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MyTypedEnum> for MyTypedEnumFmt {
+        fn serialize_into(&self, v: &MyTypedEnum, obuf: &mut Output) {
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -1106,7 +1112,7 @@ mod exec_impls {
                 MyTypedEnum::Y => 2,
                 MyTypedEnum::Z => 3,
             };
-            U16Le.serialize(&tag, obuf);
+            U16Le.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1163,16 +1169,22 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TypedEnumConstraints> for TypedEnumConstraintsFmt {
-        fn serialize(&self, v: &TypedEnumConstraints, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        TypedEnumConstraints,
+    > for TypedEnumConstraintsFmt {
+        fn serialize_into(&self, v: &TypedEnumConstraints, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
+            reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let TypedEnumConstraints { foo, bar, baz, tag } = v;
-            MyTypedEnumFmt.serialize(foo, obuf);
-            MyTypedEnumFmt.serialize(bar, obuf);
-            MyTypedEnumFmt.serialize(baz, obuf);
-            Const(MyTypedEnumFmt, MyTypedEnum::X).serialize(tag, obuf);
+            MyTypedEnumFmt.serialize_into(foo, obuf);
+            MyTypedEnumFmt.serialize_into(bar, obuf);
+            MyTypedEnumFmt.serialize_into(baz, obuf);
+            MyTypedEnumFmt.serialize_into(tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

@@ -290,6 +290,7 @@ pub(crate) fn prelude() -> String {
         use Sum::Inr as R;
         use vest_lib2::Never;
         use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+        use vest_lib2::core::exec::output::OutputBuf;
         use vest_lib2::core::exec::parser::*;
         use vest_lib2::core::exec::serializer::*;
         use vest_lib2::core::exec::ParseError;

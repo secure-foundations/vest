@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -1522,15 +1523,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MsgD> for MsgDFmt {
-        fn serialize(&self, v: &MsgD, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MsgD> for MsgDFmt {
+        fn serialize_into(&self, v: &MsgD, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MsgDFmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgDFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let MsgD { f1, f2, c } = v;
-            Const(Fixed::<4>, [0x01, 0x02, 0x03, 0x04]).serialize(f1, obuf);
-            Const(U16Be, 4660).serialize(f2, obuf);
-            Const(Fixed::<5>, [0x01, 0x01, 0x01, 0x01, 0x01]).serialize(c, obuf);
+            Fixed::<4>.serialize_into(f1, obuf);
+            U16Be.serialize_into(f2, obuf);
+            Fixed::<5>.serialize_into(c, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1570,13 +1574,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MsgB> for MsgBFmt {
-        fn serialize(&self, v: &MsgB, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MsgB> for MsgBFmt {
+        fn serialize_into(&self, v: &MsgB, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MsgBFmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgBFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let MsgB { f1 } = v;
-            MsgDFmt.serialize(f1, obuf);
+            MsgDFmt.serialize_into(f1, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1614,14 +1621,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MsgA<'i>> for MsgAFmt {
-        fn serialize(&self, v: &MsgA<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MsgA<'i>> for MsgAFmt {
+        fn serialize_into(&self, v: &MsgA<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MsgAFmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgAFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let MsgA { f1, f2 } = v;
-            MsgBFmt.serialize(f1, obuf);
-            Tail.serialize(f2, obuf);
+            MsgBFmt.serialize_into(f1, obuf);
+            Tail.serialize_into(f2, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1658,9 +1668,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ContentType> for ContentTypeFmt {
-        fn serialize(&self, v: &ContentType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ContentType> for ContentTypeFmt {
+        fn serialize_into(&self, v: &ContentType, obuf: &mut Output) {
             reveal(<ContentTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -1669,7 +1680,7 @@ mod exec_impls {
                 ContentType::C2 => 2,
                 ContentType::Unknown(x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1715,15 +1726,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MsgC<'i>> for MsgCFmt {
-        fn serialize(&self, v: &MsgC<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MsgC<'i>> for MsgCFmt {
+        fn serialize_into(&self, v: &MsgC<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<MsgCFmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgCFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let MsgC { f2, f3, f4 } = v;
-            ContentTypeFmt.serialize(f2, obuf);
-            U24Be.serialize(f3, obuf);
-            ExactLen(f3, MsgCF4Fmt { f2: *f2, f3: *f3 }).serialize(f4, obuf);
+            ContentTypeFmt.serialize_into(f2, obuf);
+            U24Be.serialize_into(f3, obuf);
+            ExactLen(f3, MsgCF4Fmt { f2: *f2, f3: *f3 }).serialize_into(f4, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1761,16 +1775,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Content0<'i>> for Content0Fmt {
-        fn serialize(&self, v: &Content0<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Content0<'i>> for Content0Fmt {
+        fn serialize_into(&self, v: &Content0<'i>, obuf: &mut Output) {
             reveal(<Content0Fmt as SpecSerializer>::spec_serialize);
+            reveal(<Content0Fmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
 
             let ghost old_obuf = obuf@;
 
-            Varied(self.num).serialize(v, obuf);
+            Varied(self.num).serialize_into(*v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1822,9 +1837,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MsgCF4<'i>> for MsgCF4Fmt {
-        fn serialize(&self, v: &MsgCF4<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MsgCF4<'i>> for MsgCF4Fmt {
+        fn serialize_into(&self, v: &MsgCF4<'i>, obuf: &mut Output) {
             reveal(<MsgCF4Fmt as SpecSerializer>::spec_serialize);
+            reveal(<MsgCF4Fmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -1833,16 +1849,16 @@ mod exec_impls {
 
             match (self.f2, v) {
                 (ContentType::C0, MsgCF4::C0(v)) => {
-                    (Content0Fmt { num: self.f3 }).serialize(v, obuf);
+                    (Content0Fmt { num: self.f3 }).serialize_into(v, obuf);
                 },
                 (ContentType::C1, MsgCF4::C1(v)) => {
-                    (U16Be).serialize(v, obuf);
+                    (U16Be).serialize_into(v, obuf);
                 },
                 (ContentType::C2, MsgCF4::C2(v)) => {
-                    (U32Be).serialize(v, obuf);
+                    (U32Be).serialize_into(v, obuf);
                 },
                 (_, MsgCF4::Default(v)) => {
-                    (Tail).serialize(v, obuf);
+                    (Tail).serialize_into(v, obuf);
                 },
                 _ => {},
             }

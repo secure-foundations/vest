@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -1567,15 +1568,18 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<GenericHeader> for GenericHeaderFmt {
-        fn serialize(&self, v: &GenericHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, GenericHeader> for GenericHeaderFmt {
+        fn serialize_into(&self, v: &GenericHeader, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<GenericHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let GenericHeader { next_type, reserved, payload_length } = v;
-            U8.serialize(next_type, obuf);
-            U8.serialize(reserved, obuf);
-            U32Le.serialize(payload_length, obuf);
+            U8.serialize_into(next_type, obuf);
+            U8.serialize_into(reserved, obuf);
+            U32Le.serialize_into(payload_length, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1623,14 +1627,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
-        fn serialize(&self, v: &PayloadWithHeader<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
+        fn serialize_into(&self, v: &PayloadWithHeader<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<PayloadWithHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { hdr, body } = v;
-            GenericHeaderFmt.serialize(hdr, obuf);
-            Varied((hdr.payload_length - 4)).serialize(body, obuf);
+            GenericHeaderFmt.serialize_into(hdr, obuf);
+            Varied((hdr.payload_length - 4)).serialize_into(*body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1669,14 +1676,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OuterHeader> for OuterHeaderFmt {
-        fn serialize(&self, v: &OuterHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OuterHeader> for OuterHeaderFmt {
+        fn serialize_into(&self, v: &OuterHeader, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<OuterHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OuterHeader { magic, inner } = v;
-            U32Le.serialize(magic, obuf);
-            GenericHeaderFmt.serialize(inner, obuf);
+            U32Le.serialize_into(magic, obuf);
+            GenericHeaderFmt.serialize_into(inner, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1715,14 +1725,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<DeepNested<'i>> for DeepNestedFmt {
-        fn serialize(&self, v: &DeepNested<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, DeepNested<'i>> for DeepNestedFmt {
+        fn serialize_into(&self, v: &DeepNested<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<DeepNestedFmt as SpecSerializer>::spec_serialize);
+            reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let DeepNested { outer, data } = v;
-            OuterHeaderFmt.serialize(outer, obuf);
-            Varied((outer.inner.payload_length - 8)).serialize(data, obuf);
+            OuterHeaderFmt.serialize_into(outer, obuf);
+            Varied((outer.inner.payload_length - 8)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1765,9 +1778,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NestedComplex<'i>> for NestedComplexFmt<'i> {
-        fn serialize(&self, v: &NestedComplex<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedComplex<'i>> for NestedComplexFmt<'i> {
+        fn serialize_into(&self, v: &NestedComplex<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<NestedComplexFmt as SpecSerializer>::spec_serialize);
+            reveal(<NestedComplexFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -1775,8 +1791,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedComplex { flag, data } = v;
-            Const(U32Le, 0).serialize(flag, obuf);
-            Varied((self.hdr_payload.hdr.payload_length - 8)).serialize(data, obuf);
+            U32Le.serialize_into(flag, obuf);
+            Varied((self.hdr_payload.hdr.payload_length - 8)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1823,9 +1839,12 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CombinedExample<'i>> for CombinedExampleFmt {
-        fn serialize(&self, v: &CombinedExample<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CombinedExample<'i>> for CombinedExampleFmt {
+        fn serialize_into(&self, v: &CombinedExample<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<CombinedExampleFmt as SpecSerializer>::spec_serialize);
+            reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -1833,8 +1852,8 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CombinedExample { header, body } = v;
-            GenericHeaderFmt.serialize(header, obuf);
-            Varied((self.total_len - header.payload_length)).serialize(body, obuf);
+            GenericHeaderFmt.serialize_into(header, obuf);
+            Varied((self.total_len - header.payload_length)).serialize_into(*body, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1892,16 +1911,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<FinalMsg<'i>> for FinalMsgFmt {
-        fn serialize(&self, v: &FinalMsg<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, FinalMsg<'i>> for FinalMsgFmt {
+        fn serialize_into(&self, v: &FinalMsg<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+
             reveal(<FinalMsgFmt as SpecSerializer>::spec_serialize);
+            reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let FinalMsg { total_len, body, hdr_payload, nested } = v;
-            U32Le.serialize(total_len, obuf);
-            CombinedExampleFmt { total_len: *total_len }.serialize(body, obuf);
-            PayloadWithHeaderFmt.serialize(hdr_payload, obuf);
-            NestedComplexFmt { hdr_payload: *hdr_payload }.serialize(nested, obuf);
+            U32Le.serialize_into(total_len, obuf);
+            CombinedExampleFmt { total_len: *total_len }.serialize_into(body, obuf);
+            PayloadWithHeaderFmt.serialize_into(hdr_payload, obuf);
+            NestedComplexFmt { hdr_payload: *hdr_payload }.serialize_into(nested, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

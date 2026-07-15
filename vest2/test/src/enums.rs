@@ -4,6 +4,7 @@ use vest_lib2::combinators::recursive::*;
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::bytes_eq;
 use vest_lib2::core::exec::input::{InputBuf, InputSlice};
+use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::*;
 use vest_lib2::core::exec::serializer::*;
 use vest_lib2::core::exec::ParseError;
@@ -2286,9 +2287,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AClosedEnum> for AClosedEnumFmt {
-        fn serialize(&self, v: &AClosedEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AClosedEnum> for AClosedEnumFmt {
+        fn serialize_into(&self, v: &AClosedEnum, obuf: &mut Output) {
             reveal(<AClosedEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2296,7 +2298,7 @@ mod exec_impls {
                 AClosedEnum::B => 1,
                 AClosedEnum::C => 2,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2346,9 +2348,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ARegularChoose> for ARegularChooseFmt {
-        fn serialize(&self, v: &ARegularChoose, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ARegularChoose> for ARegularChooseFmt {
+        fn serialize_into(&self, v: &ARegularChoose, obuf: &mut Output) {
             reveal(<ARegularChooseFmt as SpecSerializer>::spec_serialize);
+            reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2357,13 +2360,13 @@ mod exec_impls {
 
             match (self.e, v) {
                 (AClosedEnum::A, ARegularChoose::A(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (AClosedEnum::B, ARegularChoose::B(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (AClosedEnum::C, ARegularChoose::C(v)) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -2408,9 +2411,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AnOpenEnum> for AnOpenEnumFmt {
-        fn serialize(&self, v: &AnOpenEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AnOpenEnum> for AnOpenEnumFmt {
+        fn serialize_into(&self, v: &AnOpenEnum, obuf: &mut Output) {
             reveal(<AnOpenEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2419,7 +2423,7 @@ mod exec_impls {
                 AnOpenEnum::C => 2,
                 AnOpenEnum::Unknown(x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2474,9 +2478,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AChooseWithDefault<'i>> for AChooseWithDefaultFmt {
-        fn serialize(&self, v: &AChooseWithDefault<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        AChooseWithDefault<'i>,
+    > for AChooseWithDefaultFmt {
+        fn serialize_into(&self, v: &AChooseWithDefault<'i>, obuf: &mut Output) {
             reveal(<AChooseWithDefaultFmt as SpecSerializer>::spec_serialize);
+            reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2485,16 +2493,16 @@ mod exec_impls {
 
             match (self.e, v) {
                 (AnOpenEnum::A, AChooseWithDefault::A(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (AnOpenEnum::B, AChooseWithDefault::B(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (AnOpenEnum::C, AChooseWithDefault::C(v)) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 (_, AChooseWithDefault::Default(v)) => {
-                    (Tail).serialize(v, obuf);
+                    (Tail).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -2547,20 +2555,21 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ANonDependentChoose> for ANonDependentChooseFmt {
-        fn serialize(&self, v: &ANonDependentChoose, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ANonDependentChoose> for ANonDependentChooseFmt {
+        fn serialize_into(&self, v: &ANonDependentChoose, obuf: &mut Output) {
             reveal(<ANonDependentChooseFmt as SpecSerializer>::spec_serialize);
+            reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             match v {
                 ANonDependentChoose::Variant1(v) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 ANonDependentChoose::Variant2(v) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 ANonDependentChoose::Variant3(v) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
             }
 
@@ -2617,9 +2626,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ATypedClosedEnum> for ATypedClosedEnumFmt {
-        fn serialize(&self, v: &ATypedClosedEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ATypedClosedEnum> for ATypedClosedEnumFmt {
+        fn serialize_into(&self, v: &ATypedClosedEnum, obuf: &mut Output) {
             reveal(<ATypedClosedEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2627,7 +2637,7 @@ mod exec_impls {
                 ATypedClosedEnum::Y => 1,
                 ATypedClosedEnum::Z => 2,
             };
-            U16Le.serialize(&tag, obuf);
+            U16Le.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2677,9 +2687,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ATypedChoose> for ATypedChooseFmt {
-        fn serialize(&self, v: &ATypedChoose, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ATypedChoose> for ATypedChooseFmt {
+        fn serialize_into(&self, v: &ATypedChoose, obuf: &mut Output) {
             reveal(<ATypedChooseFmt as SpecSerializer>::spec_serialize);
+            reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2688,13 +2699,13 @@ mod exec_impls {
 
             match (self.e, v) {
                 (ATypedClosedEnum::X, ATypedChoose::X(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (ATypedClosedEnum::Y, ATypedChoose::Y(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (ATypedClosedEnum::Z, ATypedChoose::Z(v)) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -2739,9 +2750,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ATypedOpenEnum> for ATypedOpenEnumFmt {
-        fn serialize(&self, v: &ATypedOpenEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ATypedOpenEnum> for ATypedOpenEnumFmt {
+        fn serialize_into(&self, v: &ATypedOpenEnum, obuf: &mut Output) {
             reveal(<ATypedOpenEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2750,7 +2762,7 @@ mod exec_impls {
                 ATypedOpenEnum::R => 2,
                 ATypedOpenEnum::Unknown(x) => x,
             };
-            U32Le.serialize(&tag, obuf);
+            U32Le.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2805,9 +2817,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ATypedChooseWithDefault<'i>> for ATypedChooseWithDefaultFmt {
-        fn serialize(&self, v: &ATypedChooseWithDefault<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ATypedChooseWithDefault<'i>,
+    > for ATypedChooseWithDefaultFmt {
+        fn serialize_into(&self, v: &ATypedChooseWithDefault<'i>, obuf: &mut Output) {
             reveal(<ATypedChooseWithDefaultFmt as SpecSerializer>::spec_serialize);
+            reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -2816,16 +2832,16 @@ mod exec_impls {
 
             match (self.e, v) {
                 (ATypedOpenEnum::P, ATypedChooseWithDefault::P(v)) => {
-                    (U8).serialize(v, obuf);
+                    (U8).serialize_into(v, obuf);
                 },
                 (ATypedOpenEnum::Q, ATypedChooseWithDefault::Q(v)) => {
-                    (U16Le).serialize(v, obuf);
+                    (U16Le).serialize_into(v, obuf);
                 },
                 (ATypedOpenEnum::R, ATypedChooseWithDefault::R(v)) => {
-                    (U32Le).serialize(v, obuf);
+                    (U32Le).serialize_into(v, obuf);
                 },
                 (_, ATypedChooseWithDefault::Default(v)) => {
-                    (Tail).serialize(v, obuf);
+                    (Tail).serialize_into(v, obuf);
                 },
                 _ => {},
             }
@@ -2872,9 +2888,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AMixedTypedEnum> for AMixedTypedEnumFmt {
-        fn serialize(&self, v: &AMixedTypedEnum, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AMixedTypedEnum> for AMixedTypedEnumFmt {
+        fn serialize_into(&self, v: &AMixedTypedEnum, obuf: &mut Output) {
             reveal(<AMixedTypedEnumFmt as SpecSerializer>::spec_serialize);
+            reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2882,7 +2899,7 @@ mod exec_impls {
                 AMixedTypedEnum::N => 1,
                 AMixedTypedEnum::O => 2,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }

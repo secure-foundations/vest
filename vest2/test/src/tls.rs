@@ -9,6 +9,7 @@ use vest_lib2::core::exec::input::{
     InputSlice
 }
 ;
+use vest_lib2::core::exec::output::OutputBuf ;
 use vest_lib2::core::exec::parser::* ;
 use vest_lib2::core::exec::serializer::* ;
 use vest_lib2::core::exec::ParseError ;
@@ -25963,17 +25964,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque0Ff<'i>> for Opaque0FfFmt {
-        fn serialize(&self, v: &Opaque0Ff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque0Ff<'i>> for Opaque0FfFmt {
+        fn serialize_into(&self, v: &Opaque0Ff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque0FfFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque0FfFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque0Ff {
                 l,
                 data,
             } = v;
-            U8.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U8.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26023,17 +26026,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque1Ff<'i>> for Opaque1FfFmt {
-        fn serialize(&self, v: &Opaque1Ff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque1Ff<'i>> for Opaque1FfFmt {
+        fn serialize_into(&self, v: &Opaque1Ff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque1FfFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque1FfFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque1Ff {
                 l,
                 data,
             } = v;
-            U8.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U8.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26088,17 +26093,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque0Ffff<'i>> for Opaque0FfffFmt {
-        fn serialize(&self, v: &Opaque0Ffff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque0Ffff<'i>> for Opaque0FfffFmt {
+        fn serialize_into(&self, v: &Opaque0Ffff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque0FfffFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque0FfffFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque0Ffff {
                 l,
                 data,
             } = v;
-            U16Be.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U16Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26148,17 +26155,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque1Ffff<'i>> for Opaque1FfffFmt {
-        fn serialize(&self, v: &Opaque1Ffff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque1Ffff<'i>> for Opaque1FfffFmt {
+        fn serialize_into(&self, v: &Opaque1Ffff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque1FfffFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque1FfffFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque1Ffff {
                 l,
                 data,
             } = v;
-            U16Be.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U16Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26216,17 +26225,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque2Ffff<'i>> for Opaque2FfffFmt {
-        fn serialize(&self, v: &Opaque2Ffff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque2Ffff<'i>> for Opaque2FfffFmt {
+        fn serialize_into(&self, v: &Opaque2Ffff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque2FfffFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque2FfffFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque2Ffff {
                 l,
                 data,
             } = v;
-            U16Be.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U16Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26281,17 +26292,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque0Ffffff<'i>> for Opaque0FfffffFmt {
-        fn serialize(&self, v: &Opaque0Ffffff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque0Ffffff<'i>> for Opaque0FfffffFmt {
+        fn serialize_into(&self, v: &Opaque0Ffffff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque0FfffffFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque0FfffffFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque0Ffffff {
                 l,
                 data,
             } = v;
-            U24Be.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U24Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26341,17 +26354,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Opaque1Ffffff<'i>> for Opaque1FfffffFmt {
-        fn serialize(&self, v: &Opaque1Ffffff<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Opaque1Ffffff<'i>> for Opaque1FfffffFmt {
+        fn serialize_into(&self, v: &Opaque1Ffffff<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<Opaque1FfffffFmt as SpecSerializer>::spec_serialize);
+            reveal(<Opaque1FfffffFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Opaque1Ffffff {
                 l,
                 data,
             } = v;
-            U24Be.serialize(l, obuf);
-            Varied (l).serialize(data, obuf);
+            U24Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26403,9 +26418,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ProtocolVersion> for ProtocolVersionFmt {
-        fn serialize(&self, v: &ProtocolVersion, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ProtocolVersion> for ProtocolVersionFmt {
+        fn serialize_into(&self, v: &ProtocolVersion, obuf: &mut Output) {
             reveal(<ProtocolVersionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ProtocolVersionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -26416,7 +26432,7 @@ mod exec_impls {
                 ProtocolVersion::TLSv1_3 => 772,
                 ProtocolVersion::Unknown (x) => x,
             };
-            U16Be.serialize(&tag, obuf);
+            U16Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26482,9 +26498,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ExtensionType> for ExtensionTypeFmt {
-        fn serialize(&self, v: &ExtensionType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ExtensionType> for ExtensionTypeFmt {
+        fn serialize_into(&self, v: &ExtensionType, obuf: &mut Output) {
             reveal(<ExtensionTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<ExtensionTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -26516,7 +26533,7 @@ mod exec_impls {
                 ExtensionType::KeyShare => 51,
                 ExtensionType::Unknown (x) => x,
             };
-            U16Be.serialize(&tag, obuf);
+            U16Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26578,16 +26595,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NameType> for NameTypeFmt {
-        fn serialize(&self, v: &NameType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NameType> for NameTypeFmt {
+        fn serialize_into(&self, v: &NameType, obuf: &mut Output) {
             reveal(<NameTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<NameTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 NameType::HostName => 0,
                 NameType::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26620,12 +26638,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HostName<'i>> for HostNameFmt {
-        fn serialize(&self, v: &HostName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HostName<'i>> for HostNameFmt {
+        fn serialize_into(&self, v: &HostName<'i>, obuf: &mut Output) {
             reveal(<HostNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<HostNameFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26654,12 +26673,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<UnknownName<'i>> for UnknownNameFmt {
-        fn serialize(&self, v: &UnknownName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, UnknownName<'i>> for UnknownNameFmt {
+        fn serialize_into(&self, v: &UnknownName<'i>, obuf: &mut Output) {
             reveal(<UnknownNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<UnknownNameFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26702,20 +26722,22 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerName<'i>> for ServerNameFmt {
-        fn serialize(&self, v: &ServerName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerName<'i>> for ServerNameFmt {
+        fn serialize_into(&self, v: &ServerName<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerNameFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerName {
                 name_type,
                 name,
             } = v;
-            NameTypeFmt.serialize(name_type, obuf);
+            NameTypeFmt.serialize_into(name_type, obuf);
             ServerNameNameFmt {
                 name_type: * name_type
             }
-            .serialize(name, obuf);
+            .serialize_into(name, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26768,17 +26790,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerNameList<'i>> for ServerNameListFmt {
-        fn serialize(&self, v: &ServerNameList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerNameList<'i>> for ServerNameListFmt {
+        fn serialize_into(&self, v: &ServerNameList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerNameListFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerNameListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerNameList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (ServerNameFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (ServerNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26829,9 +26853,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<MaxFragmentLength> for MaxFragmentLengthFmt {
-        fn serialize(&self, v: &MaxFragmentLength, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, MaxFragmentLength> for MaxFragmentLengthFmt {
+        fn serialize_into(&self, v: &MaxFragmentLength, obuf: &mut Output) {
             reveal(<MaxFragmentLengthFmt as SpecSerializer>::spec_serialize);
+            reveal(<MaxFragmentLengthFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -26841,7 +26866,7 @@ mod exec_impls {
                 MaxFragmentLength::Pow2_12 => 4,
                 MaxFragmentLength::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26877,12 +26902,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ResponderId<'i>> for ResponderIdFmt {
-        fn serialize(&self, v: &ResponderId<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ResponderId<'i>> for ResponderIdFmt {
+        fn serialize_into(&self, v: &ResponderId<'i>, obuf: &mut Output) {
             reveal(<ResponderIdFmt as SpecSerializer>::spec_serialize);
+            reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26911,12 +26937,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OcspExtensions<'i>> for OcspExtensionsFmt {
-        fn serialize(&self, v: &OcspExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OcspExtensions<'i>> for OcspExtensionsFmt {
+        fn serialize_into(&self, v: &OcspExtensions<'i>, obuf: &mut Output) {
             reveal(<OcspExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<OcspExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque0FfffFmt.serialize(v, obuf);
+            Opaque0FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26956,17 +26983,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ResponderIdList<'i>> for ResponderIdListFmt {
-        fn serialize(&self, v: &ResponderIdList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ResponderIdList<'i>> for ResponderIdListFmt {
+        fn serialize_into(&self, v: &ResponderIdList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ResponderIdListFmt as SpecSerializer>::spec_serialize);
+            reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ResponderIdList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (ResponderIdFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (ResponderIdFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27013,17 +27042,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OscpStatusRequest<'i>> for OscpStatusRequestFmt {
-        fn serialize(&self, v: &OscpStatusRequest<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OscpStatusRequest<'i>> for OscpStatusRequestFmt {
+        fn serialize_into(&self, v: &OscpStatusRequest<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<OscpStatusRequestFmt as SpecSerializer>::spec_serialize);
+            reveal(<OscpStatusRequestFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OscpStatusRequest {
                 responder_id_list,
                 extensions,
             } = v;
-            ResponderIdListFmt.serialize(responder_id_list, obuf);
-            OcspExtensionsFmt.serialize(extensions, obuf);
+            ResponderIdListFmt.serialize_into(responder_id_list, obuf);
+            OcspExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27070,17 +27101,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateStatusRequest<'i>> for CertificateStatusRequestFmt {
-        fn serialize(&self, v: &CertificateStatusRequest<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateStatusRequest<'i>> for CertificateStatusRequestFmt {
+        fn serialize_into(&self, v: &CertificateStatusRequest<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateStatusRequestFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateStatusRequestFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateStatusRequest {
                 status_type,
                 request,
             } = v;
-            Const (U8, 1).serialize(status_type, obuf);
-            OscpStatusRequestFmt.serialize(request, obuf);
+            U8.serialize_into(status_type, obuf);
+            OscpStatusRequestFmt.serialize_into(request, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27116,12 +27149,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OcspResponse<'i>> for OcspResponseFmt {
-        fn serialize(&self, v: &OcspResponse<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OcspResponse<'i>> for OcspResponseFmt {
+        fn serialize_into(&self, v: &OcspResponse<'i>, obuf: &mut Output) {
             reveal(<OcspResponseFmt as SpecSerializer>::spec_serialize);
+            reveal(<OcspResponseFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffffFmt.serialize(v, obuf);
+            Opaque1FfffffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27161,17 +27195,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateStatus<'i>> for CertificateStatusFmt {
-        fn serialize(&self, v: &CertificateStatus<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateStatus<'i>> for CertificateStatusFmt {
+        fn serialize_into(&self, v: &CertificateStatus<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateStatusFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateStatusFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateStatus {
                 status_type,
                 response,
             } = v;
-            Const (U8, 1).serialize(status_type, obuf);
-            OcspResponseFmt.serialize(response, obuf);
+            U8.serialize_into(status_type, obuf);
+            OcspResponseFmt.serialize_into(response, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27242,9 +27278,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NamedGroup> for NamedGroupFmt {
-        fn serialize(&self, v: &NamedGroup, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NamedGroup> for NamedGroupFmt {
+        fn serialize_into(&self, v: &NamedGroup, obuf: &mut Output) {
             reveal(<NamedGroupFmt as SpecSerializer>::spec_serialize);
+            reveal(<NamedGroupFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -27282,7 +27319,7 @@ mod exec_impls {
                 NamedGroup::Ffdhe8192 => 260,
                 NamedGroup::Unknown (x) => x,
             };
-            U16Be.serialize(&tag, obuf);
+            U16Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27360,17 +27397,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NamedGroupList> for NamedGroupListFmt {
-        fn serialize(&self, v: &NamedGroupList, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NamedGroupList> for NamedGroupListFmt {
+        fn serialize_into(&self, v: &NamedGroupList, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<NamedGroupListFmt as SpecSerializer>::spec_serialize);
+            reveal(<NamedGroupListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NamedGroupList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (NamedGroupFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (NamedGroupFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27420,9 +27459,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EcPointFormat> for EcPointFormatFmt {
-        fn serialize(&self, v: &EcPointFormat, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EcPointFormat> for EcPointFormatFmt {
+        fn serialize_into(&self, v: &EcPointFormat, obuf: &mut Output) {
             reveal(<EcPointFormatFmt as SpecSerializer>::spec_serialize);
+            reveal(<EcPointFormatFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -27431,7 +27471,7 @@ mod exec_impls {
                 EcPointFormat::AnsiX962CompressedChar2 => 2,
                 EcPointFormat::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27480,17 +27520,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EcPointFormatList> for EcPointFormatListFmt {
-        fn serialize(&self, v: &EcPointFormatList, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EcPointFormatList> for EcPointFormatListFmt {
+        fn serialize_into(&self, v: &EcPointFormatList, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<EcPointFormatListFmt as SpecSerializer>::spec_serialize);
+            reveal(<EcPointFormatListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let EcPointFormatList {
                 l,
                 list,
             } = v;
-            U8.serialize(l, obuf);
-            ExactLen (l, Star (EcPointFormatFmt)).serialize(list, obuf);
+            U8.serialize_into(l, obuf);
+            ExactLen (l, Star (EcPointFormatFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27555,9 +27597,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SignatureScheme> for SignatureSchemeFmt {
-        fn serialize(&self, v: &SignatureScheme, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SignatureScheme> for SignatureSchemeFmt {
+        fn serialize_into(&self, v: &SignatureScheme, obuf: &mut Output) {
             reveal(<SignatureSchemeFmt as SpecSerializer>::spec_serialize);
+            reveal(<SignatureSchemeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -27581,7 +27624,7 @@ mod exec_impls {
                 SignatureScheme::RSA_PSS_PSS_SHA512 => 2059,
                 SignatureScheme::Unknown (x) => x,
             };
-            U16Be.serialize(&tag, obuf);
+            U16Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27645,17 +27688,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SignatureSchemeList> for SignatureSchemeListFmt {
-        fn serialize(&self, v: &SignatureSchemeList, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SignatureSchemeList> for SignatureSchemeListFmt {
+        fn serialize_into(&self, v: &SignatureSchemeList, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SignatureSchemeListFmt as SpecSerializer>::spec_serialize);
+            reveal(<SignatureSchemeListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SignatureSchemeList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (SignatureSchemeFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (SignatureSchemeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27699,12 +27744,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SrtpProtectionProfile<'i>> for SrtpProtectionProfileFmt {
-        fn serialize(&self, v: &SrtpProtectionProfile<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SrtpProtectionProfile<'i>> for SrtpProtectionProfileFmt {
+        fn serialize_into(&self, v: &SrtpProtectionProfile<'i>, obuf: &mut Output) {
             reveal(<SrtpProtectionProfileFmt as SpecSerializer>::spec_serialize);
+            reveal(<SrtpProtectionProfileFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Fixed::< 2 >.serialize(v, obuf);
+            Fixed::< 2 >.serialize_into(*v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27747,17 +27793,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SrtpProtectionProfiles<'i>> for SrtpProtectionProfilesFmt {
-        fn serialize(&self, v: &SrtpProtectionProfiles<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SrtpProtectionProfiles<'i>> for SrtpProtectionProfilesFmt {
+        fn serialize_into(&self, v: &SrtpProtectionProfiles<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SrtpProtectionProfilesFmt as SpecSerializer>::spec_serialize);
+            reveal(<SrtpProtectionProfilesFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SrtpProtectionProfiles {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (SrtpProtectionProfileFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (SrtpProtectionProfileFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27812,17 +27860,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<UseSrtpData<'i>> for UseSrtpDataFmt {
-        fn serialize(&self, v: &UseSrtpData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, UseSrtpData<'i>> for UseSrtpDataFmt {
+        fn serialize_into(&self, v: &UseSrtpData<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<UseSrtpDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<UseSrtpDataFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let UseSrtpData {
                 profiles,
                 srtp_mki,
             } = v;
-            SrtpProtectionProfilesFmt.serialize(profiles, obuf);
-            Opaque0FfFmt.serialize(srtp_mki, obuf);
+            SrtpProtectionProfilesFmt.serialize_into(profiles, obuf);
+            Opaque0FfFmt.serialize_into(srtp_mki, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27863,9 +27913,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HeartbeatMode> for HeartbeatModeFmt {
-        fn serialize(&self, v: &HeartbeatMode, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HeartbeatMode> for HeartbeatModeFmt {
+        fn serialize_into(&self, v: &HeartbeatMode, obuf: &mut Output) {
             reveal(<HeartbeatModeFmt as SpecSerializer>::spec_serialize);
+            reveal(<HeartbeatModeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -27873,7 +27924,7 @@ mod exec_impls {
                 HeartbeatMode::PeerNotAllowedToSend => 2,
                 HeartbeatMode::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27915,15 +27966,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HeartbeatExtension> for HeartbeatExtensionFmt {
-        fn serialize(&self, v: &HeartbeatExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HeartbeatExtension> for HeartbeatExtensionFmt {
+        fn serialize_into(&self, v: &HeartbeatExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<HeartbeatExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<HeartbeatExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let HeartbeatExtension {
                 mode,
             } = v;
-            HeartbeatModeFmt.serialize(mode, obuf);
+            HeartbeatModeFmt.serialize_into(mode, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27957,12 +28010,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ProtocolName<'i>> for ProtocolNameFmt {
-        fn serialize(&self, v: &ProtocolName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ProtocolName<'i>> for ProtocolNameFmt {
+        fn serialize_into(&self, v: &ProtocolName<'i>, obuf: &mut Output) {
             reveal(<ProtocolNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<ProtocolNameFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfFmt.serialize(v, obuf);
+            Opaque1FfFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28005,17 +28059,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ProtocolNameList<'i>> for ProtocolNameListFmt {
-        fn serialize(&self, v: &ProtocolNameList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ProtocolNameList<'i>> for ProtocolNameListFmt {
+        fn serialize_into(&self, v: &ProtocolNameList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ProtocolNameListFmt as SpecSerializer>::spec_serialize);
+            reveal(<ProtocolNameListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ProtocolNameList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (ProtocolNameFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (ProtocolNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28059,12 +28115,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SerializedSct<'i>> for SerializedSctFmt {
-        fn serialize(&self, v: &SerializedSct<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SerializedSct<'i>> for SerializedSctFmt {
+        fn serialize_into(&self, v: &SerializedSct<'i>, obuf: &mut Output) {
             reveal(<SerializedSctFmt as SpecSerializer>::spec_serialize);
+            reveal(<SerializedSctFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28107,17 +28164,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SignedCertificateTimestampList<'i>> for SignedCertificateTimestampListFmt {
-        fn serialize(&self, v: &SignedCertificateTimestampList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SignedCertificateTimestampList<'i>> for SignedCertificateTimestampListFmt {
+        fn serialize_into(&self, v: &SignedCertificateTimestampList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SignedCertificateTimestampListFmt as SpecSerializer>::spec_serialize);
+            reveal(<SignedCertificateTimestampListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SignedCertificateTimestampList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (SerializedSctFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (SerializedSctFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28166,9 +28225,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateType> for CertificateTypeFmt {
-        fn serialize(&self, v: &CertificateType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateType> for CertificateTypeFmt {
+        fn serialize_into(&self, v: &CertificateType, obuf: &mut Output) {
             reveal(<CertificateTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -28176,7 +28236,7 @@ mod exec_impls {
                 CertificateType::RawPublicKey => 2,
                 CertificateType::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28224,17 +28284,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientCertTypeClientExtension> for ClientCertTypeClientExtensionFmt {
-        fn serialize(&self, v: &ClientCertTypeClientExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientCertTypeClientExtension> for ClientCertTypeClientExtensionFmt {
+        fn serialize_into(&self, v: &ClientCertTypeClientExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ClientCertTypeClientExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientCertTypeClientExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClientCertTypeClientExtension {
                 l,
                 list,
             } = v;
-            U8.serialize(l, obuf);
-            ExactLen (l, Star (CertificateTypeFmt)).serialize(list, obuf);
+            U8.serialize_into(l, obuf);
+            ExactLen (l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28286,15 +28348,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientCertTypeServerExtension> for ClientCertTypeServerExtensionFmt {
-        fn serialize(&self, v: &ClientCertTypeServerExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientCertTypeServerExtension> for ClientCertTypeServerExtensionFmt {
+        fn serialize_into(&self, v: &ClientCertTypeServerExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ClientCertTypeServerExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientCertTypeServerExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClientCertTypeServerExtension {
                 client_certificate_type,
             } = v;
-            CertificateTypeFmt.serialize(client_certificate_type, obuf);
+            CertificateTypeFmt.serialize_into(client_certificate_type, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28342,17 +28406,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerCertTypeClientExtension> for ServerCertTypeClientExtensionFmt {
-        fn serialize(&self, v: &ServerCertTypeClientExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerCertTypeClientExtension> for ServerCertTypeClientExtensionFmt {
+        fn serialize_into(&self, v: &ServerCertTypeClientExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerCertTypeClientExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerCertTypeClientExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerCertTypeClientExtension {
                 l,
                 list,
             } = v;
-            U8.serialize(l, obuf);
-            ExactLen (l, Star (CertificateTypeFmt)).serialize(list, obuf);
+            U8.serialize_into(l, obuf);
+            ExactLen (l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28404,15 +28470,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerCertTypeServerExtension> for ServerCertTypeServerExtensionFmt {
-        fn serialize(&self, v: &ServerCertTypeServerExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerCertTypeServerExtension> for ServerCertTypeServerExtensionFmt {
+        fn serialize_into(&self, v: &ServerCertTypeServerExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerCertTypeServerExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerCertTypeServerExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerCertTypeServerExtension {
                 server_certificate_type,
             } = v;
-            CertificateTypeFmt.serialize(server_certificate_type, obuf);
+            CertificateTypeFmt.serialize_into(server_certificate_type, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28454,15 +28522,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ZeroByte> for ZeroByteFmt {
-        fn serialize(&self, v: &ZeroByte, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ZeroByte> for ZeroByteFmt {
+        fn serialize_into(&self, v: &ZeroByte, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ZeroByteFmt as SpecSerializer>::spec_serialize);
+            reveal(<ZeroByteFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ZeroByte {
                 zero,
             } = v;
-            Const (U8, 0).serialize(zero, obuf);
+            U8.serialize_into(zero, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28511,9 +28581,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PaddingExtension> for PaddingExtensionFmt {
-        fn serialize(&self, v: &PaddingExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PaddingExtension> for PaddingExtensionFmt {
+        fn serialize_into(&self, v: &PaddingExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PaddingExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<PaddingExtensionFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -28524,8 +28596,8 @@ mod exec_impls {
                 l,
                 padding,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (ZeroByteFmt)).serialize(padding, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (ZeroByteFmt)).serialize_into(padding, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28576,17 +28648,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskIdentity<'i>> for PskIdentityFmt {
-        fn serialize(&self, v: &PskIdentity<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskIdentity<'i>> for PskIdentityFmt {
+        fn serialize_into(&self, v: &PskIdentity<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PskIdentityFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskIdentityFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PskIdentity {
                 identity,
                 obfuscated_ticket_age,
             } = v;
-            Opaque1FfffFmt.serialize(identity, obuf);
-            U32Be.serialize(obfuscated_ticket_age, obuf);
+            Opaque1FfffFmt.serialize_into(identity, obuf);
+            U32Be.serialize_into(obfuscated_ticket_age, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28636,17 +28710,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskBinderEntry<'i>> for PskBinderEntryFmt {
-        fn serialize(&self, v: &PskBinderEntry<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskBinderEntry<'i>> for PskBinderEntryFmt {
+        fn serialize_into(&self, v: &PskBinderEntry<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PskBinderEntryFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskBinderEntryFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PskBinderEntry {
                 l,
                 entries,
             } = v;
-            U8.serialize(l, obuf);
-            Varied (l).serialize(entries, obuf);
+            U8.serialize_into(l, obuf);
+            Varied (l).serialize_into(* entries, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28704,17 +28780,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskIdentities<'i>> for PskIdentitiesFmt {
-        fn serialize(&self, v: &PskIdentities<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskIdentities<'i>> for PskIdentitiesFmt {
+        fn serialize_into(&self, v: &PskIdentities<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PskIdentitiesFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskIdentitiesFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PskIdentities {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (PskIdentityFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (PskIdentityFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28772,17 +28850,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskBinderEntries<'i>> for PskBinderEntriesFmt {
-        fn serialize(&self, v: &PskBinderEntries<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskBinderEntries<'i>> for PskBinderEntriesFmt {
+        fn serialize_into(&self, v: &PskBinderEntries<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PskBinderEntriesFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskBinderEntriesFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PskBinderEntries {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (PskBinderEntryFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (PskBinderEntryFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28837,17 +28917,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OfferedPsks<'i>> for OfferedPsksFmt {
-        fn serialize(&self, v: &OfferedPsks<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OfferedPsks<'i>> for OfferedPsksFmt {
+        fn serialize_into(&self, v: &OfferedPsks<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<OfferedPsksFmt as SpecSerializer>::spec_serialize);
+            reveal(<OfferedPsksFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OfferedPsks {
                 identities,
                 binders,
             } = v;
-            PskIdentitiesFmt.serialize(identities, obuf);
-            PskBinderEntriesFmt.serialize(binders, obuf);
+            PskIdentitiesFmt.serialize_into(identities, obuf);
+            PskBinderEntriesFmt.serialize_into(binders, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28891,15 +28973,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PreSharedKeyClientExtension<'i>> for PreSharedKeyClientExtensionFmt {
-        fn serialize(&self, v: &PreSharedKeyClientExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PreSharedKeyClientExtension<'i>> for PreSharedKeyClientExtensionFmt {
+        fn serialize_into(&self, v: &PreSharedKeyClientExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PreSharedKeyClientExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<PreSharedKeyClientExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PreSharedKeyClientExtension {
                 offers,
             } = v;
-            OfferedPsksFmt.serialize(offers, obuf);
+            OfferedPsksFmt.serialize_into(offers, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28941,15 +29025,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PreSharedKeyServerExtension> for PreSharedKeyServerExtensionFmt {
-        fn serialize(&self, v: &PreSharedKeyServerExtension, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PreSharedKeyServerExtension> for PreSharedKeyServerExtensionFmt {
+        fn serialize_into(&self, v: &PreSharedKeyServerExtension, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PreSharedKeyServerExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<PreSharedKeyServerExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PreSharedKeyServerExtension {
                 selected_identity,
             } = v;
-            U16Be.serialize(selected_identity, obuf);
+            U16Be.serialize_into(selected_identity, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28991,15 +29077,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EarlyDataIndicationNewSessionTicket> for EarlyDataIndicationNewSessionTicketFmt {
-        fn serialize(&self, v: &EarlyDataIndicationNewSessionTicket, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EarlyDataIndicationNewSessionTicket> for EarlyDataIndicationNewSessionTicketFmt {
+        fn serialize_into(&self, v: &EarlyDataIndicationNewSessionTicket, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<EarlyDataIndicationNewSessionTicketFmt as SpecSerializer>::spec_serialize);
+            reveal(<EarlyDataIndicationNewSessionTicketFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let EarlyDataIndicationNewSessionTicket {
                 max_early_data_size,
             } = v;
-            U32Be.serialize(max_early_data_size, obuf);
+            U32Be.serialize_into(max_early_data_size, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29047,17 +29135,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SupportedVersionsClient> for SupportedVersionsClientFmt {
-        fn serialize(&self, v: &SupportedVersionsClient, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SupportedVersionsClient> for SupportedVersionsClientFmt {
+        fn serialize_into(&self, v: &SupportedVersionsClient, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SupportedVersionsClientFmt as SpecSerializer>::spec_serialize);
+            reveal(<SupportedVersionsClientFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SupportedVersionsClient {
                 l,
                 list,
             } = v;
-            U8.serialize(l, obuf);
-            ExactLen (l, Star (ProtocolVersionFmt)).serialize(list, obuf);
+            U8.serialize_into(l, obuf);
+            ExactLen (l, Star (ProtocolVersionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29101,12 +29191,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SupportedVersionsServer> for SupportedVersionsServerFmt {
-        fn serialize(&self, v: &SupportedVersionsServer, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SupportedVersionsServer> for SupportedVersionsServerFmt {
+        fn serialize_into(&self, v: &SupportedVersionsServer, obuf: &mut Output) {
             reveal(<SupportedVersionsServerFmt as SpecSerializer>::spec_serialize);
+            reveal(<SupportedVersionsServerFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            ProtocolVersionFmt.serialize(v, obuf);
+            ProtocolVersionFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29135,12 +29226,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Cookie<'i>> for CookieFmt {
-        fn serialize(&self, v: &Cookie<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Cookie<'i>> for CookieFmt {
+        fn serialize_into(&self, v: &Cookie<'i>, obuf: &mut Output) {
             reveal(<CookieFmt as SpecSerializer>::spec_serialize);
+            reveal(<CookieFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29174,9 +29266,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskKeyExchangeMode> for PskKeyExchangeModeFmt {
-        fn serialize(&self, v: &PskKeyExchangeMode, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskKeyExchangeMode> for PskKeyExchangeModeFmt {
+        fn serialize_into(&self, v: &PskKeyExchangeMode, obuf: &mut Output) {
             reveal(<PskKeyExchangeModeFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskKeyExchangeModeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -29184,7 +29277,7 @@ mod exec_impls {
                 PskKeyExchangeMode::PSK_DHE_KE => 1,
                 PskKeyExchangeMode::Unknown (x) => x,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29232,17 +29325,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<PskKeyExchangeModes> for PskKeyExchangeModesFmt {
-        fn serialize(&self, v: &PskKeyExchangeModes, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, PskKeyExchangeModes> for PskKeyExchangeModesFmt {
+        fn serialize_into(&self, v: &PskKeyExchangeModes, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<PskKeyExchangeModesFmt as SpecSerializer>::spec_serialize);
+            reveal(<PskKeyExchangeModesFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let PskKeyExchangeModes {
                 l,
                 list,
             } = v;
-            U8.serialize(l, obuf);
-            ExactLen (l, Star (PskKeyExchangeModeFmt)).serialize(list, obuf);
+            U8.serialize_into(l, obuf);
+            ExactLen (l, Star (PskKeyExchangeModeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29286,12 +29381,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<DistinguishedName<'i>> for DistinguishedNameFmt {
-        fn serialize(&self, v: &DistinguishedName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, DistinguishedName<'i>> for DistinguishedNameFmt {
+        fn serialize_into(&self, v: &DistinguishedName<'i>, obuf: &mut Output) {
             reveal(<DistinguishedNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<DistinguishedNameFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque1FfffFmt.serialize(v, obuf);
+            Opaque1FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29334,17 +29430,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateAuthoritiesExtension<'i>> for CertificateAuthoritiesExtensionFmt {
-        fn serialize(&self, v: &CertificateAuthoritiesExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateAuthoritiesExtension<'i>> for CertificateAuthoritiesExtensionFmt {
+        fn serialize_into(&self, v: &CertificateAuthoritiesExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateAuthoritiesExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateAuthoritiesExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateAuthoritiesExtension {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (DistinguishedNameFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (DistinguishedNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29399,17 +29497,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OidFilter<'i>> for OidFilterFmt {
-        fn serialize(&self, v: &OidFilter<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OidFilter<'i>> for OidFilterFmt {
+        fn serialize_into(&self, v: &OidFilter<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<OidFilterFmt as SpecSerializer>::spec_serialize);
+            reveal(<OidFilterFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OidFilter {
                 certificate_extension_oid,
                 certificate_extension_values,
             } = v;
-            Opaque1FfFmt.serialize(certificate_extension_oid, obuf);
-            Opaque0FfffFmt.serialize(certificate_extension_values, obuf);
+            Opaque1FfFmt.serialize_into(certificate_extension_oid, obuf);
+            Opaque0FfffFmt.serialize_into(certificate_extension_values, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29456,17 +29556,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<OidFilterExtension<'i>> for OidFilterExtensionFmt {
-        fn serialize(&self, v: &OidFilterExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, OidFilterExtension<'i>> for OidFilterExtensionFmt {
+        fn serialize_into(&self, v: &OidFilterExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<OidFilterExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<OidFilterExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let OidFilterExtension {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (OidFilterFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (OidFilterFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29519,9 +29621,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<KeyShareEntry<'i>> for KeyShareEntryFmt {
-        fn serialize(&self, v: &KeyShareEntry<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, KeyShareEntry<'i>> for KeyShareEntryFmt {
+        fn serialize_into(&self, v: &KeyShareEntry<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<KeyShareEntryFmt as SpecSerializer>::spec_serialize);
+            reveal(<KeyShareEntryFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let KeyShareEntry {
@@ -29529,9 +29633,9 @@ mod exec_impls {
                 l,
                 key_exchange,
             } = v;
-            NamedGroupFmt.serialize(group, obuf);
-            U16Be.serialize(l, obuf);
-            Varied (l).serialize(key_exchange, obuf);
+            NamedGroupFmt.serialize_into(group, obuf);
+            U16Be.serialize_into(l, obuf);
+            Varied (l).serialize_into(* key_exchange, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29588,17 +29692,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<KeyShareClientHello<'i>> for KeyShareClientHelloFmt {
-        fn serialize(&self, v: &KeyShareClientHello<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, KeyShareClientHello<'i>> for KeyShareClientHelloFmt {
+        fn serialize_into(&self, v: &KeyShareClientHello<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<KeyShareClientHelloFmt as SpecSerializer>::spec_serialize);
+            reveal(<KeyShareClientHelloFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let KeyShareClientHello {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (KeyShareEntryFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (KeyShareEntryFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29634,12 +29740,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<UnknownExtension<'i>> for UnknownExtensionFmt {
-        fn serialize(&self, v: &UnknownExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, UnknownExtension<'i>> for UnknownExtensionFmt {
+        fn serialize_into(&self, v: &UnknownExtension<'i>, obuf: &mut Output) {
             reveal(<UnknownExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<UnknownExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Opaque0FfffFmt.serialize(v, obuf);
+            Opaque0FfffFmt.serialize_into(v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29668,12 +29775,13 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Empty<'i>> for EmptyFmt {
-        fn serialize(&self, v: &Empty<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Empty<'i>> for EmptyFmt {
+        fn serialize_into(&self, v: &Empty<'i>, obuf: &mut Output) {
             reveal(<EmptyFmt as SpecSerializer>::spec_serialize);
+            reveal(<EmptyFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
-            Fixed::< 0 >.serialize(v, obuf);
+            Fixed::< 0 >.serialize_into(*v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29720,9 +29828,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientHelloExtension<'i>> for ClientHelloExtensionFmt {
-        fn serialize(&self, v: &ClientHelloExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientHelloExtension<'i>> for ClientHelloExtensionFmt {
+        fn serialize_into(&self, v: &ClientHelloExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ClientHelloExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientHelloExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClientHelloExtension {
@@ -29730,14 +29840,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, ClientHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29797,9 +29907,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SeverHelloExtension<'i>> for SeverHelloExtensionFmt {
-        fn serialize(&self, v: &SeverHelloExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SeverHelloExtension<'i>> for SeverHelloExtensionFmt {
+        fn serialize_into(&self, v: &SeverHelloExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SeverHelloExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<SeverHelloExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SeverHelloExtension {
@@ -29807,14 +29919,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, SeverHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29874,9 +29986,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HelloRetryExtension<'i>> for HelloRetryExtensionFmt {
-        fn serialize(&self, v: &HelloRetryExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HelloRetryExtension<'i>> for HelloRetryExtensionFmt {
+        fn serialize_into(&self, v: &HelloRetryExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<HelloRetryExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<HelloRetryExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let HelloRetryExtension {
@@ -29884,14 +29998,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, HelloRetryExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29951,9 +30065,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EncryptedExtension<'i>> for EncryptedExtensionFmt {
-        fn serialize(&self, v: &EncryptedExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EncryptedExtension<'i>> for EncryptedExtensionFmt {
+        fn serialize_into(&self, v: &EncryptedExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<EncryptedExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<EncryptedExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let EncryptedExtension {
@@ -29961,14 +30077,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, EncryptedExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30028,9 +30144,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateRequestExtension<'i>> for CertificateRequestExtensionFmt {
-        fn serialize(&self, v: &CertificateRequestExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateRequestExtension<'i>> for CertificateRequestExtensionFmt {
+        fn serialize_into(&self, v: &CertificateRequestExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateRequestExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateRequestExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateRequestExtension {
@@ -30038,14 +30156,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, CertificateRequestExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30105,9 +30223,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateExtension<'i>> for CertificateExtensionFmt {
-        fn serialize(&self, v: &CertificateExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateExtension<'i>> for CertificateExtensionFmt {
+        fn serialize_into(&self, v: &CertificateExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateExtension {
@@ -30115,14 +30235,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, CertificateExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30182,9 +30302,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NewSessionTicketExtension<'i>> for NewSessionTicketExtensionFmt {
-        fn serialize(&self, v: &NewSessionTicketExtension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NewSessionTicketExtension<'i>> for NewSessionTicketExtensionFmt {
+        fn serialize_into(&self, v: &NewSessionTicketExtension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<NewSessionTicketExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<NewSessionTicketExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NewSessionTicketExtension {
@@ -30192,14 +30314,14 @@ mod exec_impls {
                 ext_len,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            U16Be.serialize(ext_len, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            U16Be.serialize_into(ext_len, obuf);
             ExactLen (ext_len, NewSessionTicketExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
             )
-            .serialize(extension_data, obuf);
+            .serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30252,17 +30374,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Extension<'i>> for ExtensionFmt {
-        fn serialize(&self, v: &Extension<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Extension<'i>> for ExtensionFmt {
+        fn serialize_into(&self, v: &Extension<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ExtensionFmt as SpecSerializer>::spec_serialize);
+            reveal(<ExtensionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Extension {
                 extension_type,
                 extension_data,
             } = v;
-            ExtensionTypeFmt.serialize(extension_type, obuf);
-            Opaque0FfffFmt.serialize(extension_data, obuf);
+            ExtensionTypeFmt.serialize_into(extension_type, obuf);
+            Opaque0FfffFmt.serialize_into(extension_data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30303,16 +30427,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AlertLevel> for AlertLevelFmt {
-        fn serialize(&self, v: &AlertLevel, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AlertLevel> for AlertLevelFmt {
+        fn serialize_into(&self, v: &AlertLevel, obuf: &mut Output) {
             reveal(<AlertLevelFmt as SpecSerializer>::spec_serialize);
+            reveal(<AlertLevelFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 AlertLevel::Warning => 1,
                 AlertLevel::Fatal => 2,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30376,9 +30501,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<AlertDescription> for AlertDescriptionFmt {
-        fn serialize(&self, v: &AlertDescription, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, AlertDescription> for AlertDescriptionFmt {
+        fn serialize_into(&self, v: &AlertDescription, obuf: &mut Output) {
             reveal(<AlertDescriptionFmt as SpecSerializer>::spec_serialize);
+            reveal(<AlertDescriptionFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -30410,7 +30536,7 @@ mod exec_impls {
                 AlertDescription::CertificateRequired => 116,
                 AlertDescription::NoApplicationProtocol => 120,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30480,17 +30606,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Alert> for AlertFmt {
-        fn serialize(&self, v: &Alert, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Alert> for AlertFmt {
+        fn serialize_into(&self, v: &Alert, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<AlertFmt as SpecSerializer>::spec_serialize);
+            reveal(<AlertFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Alert {
                 level,
                 description,
             } = v;
-            AlertLevelFmt.serialize(level, obuf);
-            AlertDescriptionFmt.serialize(description, obuf);
+            AlertLevelFmt.serialize_into(level, obuf);
+            AlertDescriptionFmt.serialize_into(description, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30534,9 +30662,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ContentType> for ContentTypeFmt {
-        fn serialize(&self, v: &ContentType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ContentType> for ContentTypeFmt {
+        fn serialize_into(&self, v: &ContentType, obuf: &mut Output) {
             reveal(<ContentTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -30546,7 +30675,7 @@ mod exec_impls {
                 ContentType::Handshake => 22,
                 ContentType::ApplicationData => 23,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30597,9 +30726,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TlsPlaintext<'i>> for TlsPlaintextFmt {
-        fn serialize(&self, v: &TlsPlaintext<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TlsPlaintext<'i>> for TlsPlaintextFmt {
+        fn serialize_into(&self, v: &TlsPlaintext<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<TlsPlaintextFmt as SpecSerializer>::spec_serialize);
+            reveal(<TlsPlaintextFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let TlsPlaintext {
@@ -30607,9 +30738,9 @@ mod exec_impls {
                 legacy_record_version,
                 fragment,
             } = v;
-            ContentTypeFmt.serialize(content_type, obuf);
-            ProtocolVersionFmt.serialize(legacy_record_version, obuf);
-            Opaque0FfffFmt.serialize(fragment, obuf);
+            ContentTypeFmt.serialize_into(content_type, obuf);
+            ProtocolVersionFmt.serialize_into(legacy_record_version, obuf);
+            Opaque0FfffFmt.serialize_into(fragment, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30661,9 +30792,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<TlsCiphertext<'i>> for TlsCiphertextFmt {
-        fn serialize(&self, v: &TlsCiphertext<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TlsCiphertext<'i>> for TlsCiphertextFmt {
+        fn serialize_into(&self, v: &TlsCiphertext<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<TlsCiphertextFmt as SpecSerializer>::spec_serialize);
+            reveal(<TlsCiphertextFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let TlsCiphertext {
@@ -30671,9 +30804,9 @@ mod exec_impls {
                 version,
                 encrypted_record,
             } = v;
-            ContentTypeFmt.serialize(opaque_type, obuf);
-            ProtocolVersionFmt.serialize(version, obuf);
-            Opaque0FfffFmt.serialize(encrypted_record, obuf);
+            ContentTypeFmt.serialize_into(opaque_type, obuf);
+            ProtocolVersionFmt.serialize_into(version, obuf);
+            Opaque0FfffFmt.serialize_into(encrypted_record, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30719,9 +30852,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CipherSuite> for CipherSuiteFmt {
-        fn serialize(&self, v: &CipherSuite, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CipherSuite> for CipherSuiteFmt {
+        fn serialize_into(&self, v: &CipherSuite, obuf: &mut Output) {
             reveal(<CipherSuiteFmt as SpecSerializer>::spec_serialize);
+            reveal(<CipherSuiteFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -30732,7 +30866,7 @@ mod exec_impls {
                 CipherSuite::TLS_AES_128_CCM_8_SHA256 => 4869,
                 CipherSuite::Unknown (x) => x,
             };
-            U16Be.serialize(&tag, obuf);
+            U16Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30792,9 +30926,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientHello<'i>> for ClientHelloFmt {
-        fn serialize(&self, v: &ClientHello<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientHello<'i>> for ClientHelloFmt {
+        fn serialize_into(&self, v: &ClientHello<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ClientHelloFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientHelloFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClientHello {
@@ -30805,12 +30941,12 @@ mod exec_impls {
                 legacy_compression_methods,
                 extensions,
             } = v;
-            Const (U16Be, 771).serialize(legacy_version, obuf);
-            Fixed::< 32 >.serialize(random, obuf);
-            SessionIdFmt.serialize(legacy_session_id, obuf);
-            CipherSuiteListFmt.serialize(cipher_suites, obuf);
-            Opaque1FfFmt.serialize(legacy_compression_methods, obuf);
-            ClientExtensionsFmt.serialize(extensions, obuf);
+            U16Be.serialize_into(legacy_version, obuf);
+            Fixed::< 32 >.serialize_into(* random, obuf);
+            SessionIdFmt.serialize_into(legacy_session_id, obuf);
+            CipherSuiteListFmt.serialize_into(cipher_suites, obuf);
+            Opaque1FfFmt.serialize_into(legacy_compression_methods, obuf);
+            ClientExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30871,9 +31007,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ShOrHrr<'i>> for ShOrHrrFmt {
-        fn serialize(&self, v: &ShOrHrr<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ShOrHrr<'i>> for ShOrHrrFmt {
+        fn serialize_into(&self, v: &ShOrHrr<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ShOrHrrFmt as SpecSerializer>::spec_serialize);
+            reveal(<ShOrHrrFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ShOrHrr {
@@ -30881,12 +31019,12 @@ mod exec_impls {
                 random,
                 payload,
             } = v;
-            Const (U16Be, 771).serialize(legacy_version, obuf);
-            Fixed::< 32 >.serialize(random, obuf);
+            U16Be.serialize_into(legacy_version, obuf);
+            Fixed::< 32 >.serialize_into(* random, obuf);
             ShOrHrrPayloadFmt {
                 random: * random
             }
-            .serialize(payload, obuf);
+            .serialize_into(payload, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -30944,9 +31082,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerHello<'i>> for ServerHelloFmt {
-        fn serialize(&self, v: &ServerHello<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerHello<'i>> for ServerHelloFmt {
+        fn serialize_into(&self, v: &ServerHello<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerHelloFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerHelloFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerHello {
@@ -30955,10 +31095,10 @@ mod exec_impls {
                 legacy_compression_method,
                 extensions,
             } = v;
-            SessionIdFmt.serialize(legacy_session_id_echo, obuf);
-            CipherSuiteFmt.serialize(cipher_suite, obuf);
-            Const (U8, 0).serialize(legacy_compression_method, obuf);
-            ServerExtensionsFmt.serialize(extensions, obuf);
+            SessionIdFmt.serialize_into(legacy_session_id_echo, obuf);
+            CipherSuiteFmt.serialize_into(cipher_suite, obuf);
+            U8.serialize_into(legacy_compression_method, obuf);
+            ServerExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31015,9 +31155,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HelloRetryRequest<'i>> for HelloRetryRequestFmt {
-        fn serialize(&self, v: &HelloRetryRequest<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HelloRetryRequest<'i>> for HelloRetryRequestFmt {
+        fn serialize_into(&self, v: &HelloRetryRequest<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<HelloRetryRequestFmt as SpecSerializer>::spec_serialize);
+            reveal(<HelloRetryRequestFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let HelloRetryRequest {
@@ -31026,10 +31168,10 @@ mod exec_impls {
                 legacy_compression_method,
                 extensions,
             } = v;
-            SessionIdFmt.serialize(legacy_session_id_echo, obuf);
-            CipherSuiteFmt.serialize(cipher_suite, obuf);
-            Const (U8, 0).serialize(legacy_compression_method, obuf);
-            HelloRetryExtensionsFmt.serialize(extensions, obuf);
+            SessionIdFmt.serialize_into(legacy_session_id_echo, obuf);
+            CipherSuiteFmt.serialize_into(cipher_suite, obuf);
+            U8.serialize_into(legacy_compression_method, obuf);
+            HelloRetryExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31083,17 +31225,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CipherSuiteList> for CipherSuiteListFmt {
-        fn serialize(&self, v: &CipherSuiteList, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CipherSuiteList> for CipherSuiteListFmt {
+        fn serialize_into(&self, v: &CipherSuiteList, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CipherSuiteListFmt as SpecSerializer>::spec_serialize);
+            reveal(<CipherSuiteListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CipherSuiteList {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (CipherSuiteFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (CipherSuiteFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31151,17 +31295,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SessionId<'i>> for SessionIdFmt {
-        fn serialize(&self, v: &SessionId<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SessionId<'i>> for SessionIdFmt {
+        fn serialize_into(&self, v: &SessionId<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<SessionIdFmt as SpecSerializer>::spec_serialize);
+            reveal(<SessionIdFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let SessionId {
                 l,
                 id,
             } = v;
-            U8.serialize(l, obuf);
-            Varied (l).serialize(id, obuf);
+            U8.serialize_into(l, obuf);
+            Varied (l).serialize_into(* id, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31219,17 +31365,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientExtensions<'i>> for ClientExtensionsFmt {
-        fn serialize(&self, v: &ClientExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientExtensions<'i>> for ClientExtensionsFmt {
+        fn serialize_into(&self, v: &ClientExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ClientExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ClientExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (ClientHelloExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (ClientHelloExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31287,17 +31435,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerExtensions<'i>> for ServerExtensionsFmt {
-        fn serialize(&self, v: &ServerExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerExtensions<'i>> for ServerExtensionsFmt {
+        fn serialize_into(&self, v: &ServerExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<ServerExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let ServerExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (SeverHelloExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (SeverHelloExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31355,17 +31505,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HelloRetryExtensions<'i>> for HelloRetryExtensionsFmt {
-        fn serialize(&self, v: &HelloRetryExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HelloRetryExtensions<'i>> for HelloRetryExtensionsFmt {
+        fn serialize_into(&self, v: &HelloRetryExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<HelloRetryExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<HelloRetryExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let HelloRetryExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (HelloRetryExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (HelloRetryExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31423,17 +31575,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateRequestExtensions<'i>> for CertificateRequestExtensionsFmt {
-        fn serialize(&self, v: &CertificateRequestExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateRequestExtensions<'i>> for CertificateRequestExtensionsFmt {
+        fn serialize_into(&self, v: &CertificateRequestExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateRequestExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateRequestExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateRequestExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (CertificateRequestExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (CertificateRequestExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31488,17 +31642,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EncryptedExtensions<'i>> for EncryptedExtensionsFmt {
-        fn serialize(&self, v: &EncryptedExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EncryptedExtensions<'i>> for EncryptedExtensionsFmt {
+        fn serialize_into(&self, v: &EncryptedExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<EncryptedExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<EncryptedExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let EncryptedExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (EncryptedExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (EncryptedExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31548,17 +31704,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NewSessionTicketExtensions<'i>> for NewSessionTicketExtensionsFmt {
-        fn serialize(&self, v: &NewSessionTicketExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NewSessionTicketExtensions<'i>> for NewSessionTicketExtensionsFmt {
+        fn serialize_into(&self, v: &NewSessionTicketExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<NewSessionTicketExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<NewSessionTicketExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NewSessionTicketExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (NewSessionTicketExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (NewSessionTicketExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31613,17 +31771,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateExtensions<'i>> for CertificateExtensionsFmt {
-        fn serialize(&self, v: &CertificateExtensions<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateExtensions<'i>> for CertificateExtensionsFmt {
+        fn serialize_into(&self, v: &CertificateExtensions<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateExtensionsFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateExtensionsFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateExtensions {
                 l,
                 list,
             } = v;
-            U16Be.serialize(l, obuf);
-            ExactLen (l, Star (CertificateExtensionFmt)).serialize(list, obuf);
+            U16Be.serialize_into(l, obuf);
+            ExactLen (l, Star (CertificateExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31670,17 +31830,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateRequest<'i>> for CertificateRequestFmt {
-        fn serialize(&self, v: &CertificateRequest<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateRequest<'i>> for CertificateRequestFmt {
+        fn serialize_into(&self, v: &CertificateRequest<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateRequestFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateRequestFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateRequest {
                 certificate_request_context,
                 extensions,
             } = v;
-            Opaque0FfFmt.serialize(certificate_request_context, obuf);
-            CertificateRequestExtensionsFmt.serialize(extensions, obuf);
+            Opaque0FfFmt.serialize_into(certificate_request_context, obuf);
+            CertificateRequestExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31734,9 +31896,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateEntry<'i>> for CertificateEntryFmt {
-        fn serialize(&self, v: &CertificateEntry<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateEntry<'i>> for CertificateEntryFmt {
+        fn serialize_into(&self, v: &CertificateEntry<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateEntryFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateEntryFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -31750,8 +31914,8 @@ mod exec_impls {
             CertificateEntryDataFmt {
                 cert_type: self.cert_type
             }
-            .serialize(data, obuf);
-            CertificateExtensionsFmt.serialize(extensions, obuf);
+            .serialize_into(data, obuf);
+            CertificateExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31805,17 +31969,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateEntryOpaque<'i>> for CertificateEntryOpaqueFmt {
-        fn serialize(&self, v: &CertificateEntryOpaque<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateEntryOpaque<'i>> for CertificateEntryOpaqueFmt {
+        fn serialize_into(&self, v: &CertificateEntryOpaque<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateEntryOpaqueFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateEntryOpaqueFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateEntryOpaque {
                 cert_data,
                 extensions,
             } = v;
-            Opaque1FfffffFmt.serialize(cert_data, obuf);
-            CertificateExtensionsFmt.serialize(extensions, obuf);
+            Opaque1FfffffFmt.serialize_into(cert_data, obuf);
+            CertificateExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31862,17 +32028,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateList<'i>> for CertificateListFmt {
-        fn serialize(&self, v: &CertificateList<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateList<'i>> for CertificateListFmt {
+        fn serialize_into(&self, v: &CertificateList<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateListFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateListFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateList {
                 l,
                 list,
             } = v;
-            U24Be.serialize(l, obuf);
-            ExactLen (l, Star (CertificateEntryOpaqueFmt)).serialize(list, obuf);
+            U24Be.serialize_into(l, obuf);
+            ExactLen (l, Star (CertificateEntryOpaqueFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31919,17 +32087,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Certificate<'i>> for CertificateFmt {
-        fn serialize(&self, v: &Certificate<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Certificate<'i>> for CertificateFmt {
+        fn serialize_into(&self, v: &Certificate<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Certificate {
                 certificate_request_context,
                 certificate_list,
             } = v;
-            Opaque0FfFmt.serialize(certificate_request_context, obuf);
-            CertificateListFmt.serialize(certificate_list, obuf);
+            Opaque0FfFmt.serialize_into(certificate_request_context, obuf);
+            CertificateListFmt.serialize_into(certificate_list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31976,17 +32146,19 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateVerify<'i>> for CertificateVerifyFmt {
-        fn serialize(&self, v: &CertificateVerify<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateVerify<'i>> for CertificateVerifyFmt {
+        fn serialize_into(&self, v: &CertificateVerify<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<CertificateVerifyFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateVerifyFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let CertificateVerify {
                 algorithm,
                 signature,
             } = v;
-            SignatureSchemeFmt.serialize(algorithm, obuf);
-            Opaque0FfffFmt.serialize(signature, obuf);
+            SignatureSchemeFmt.serialize_into(algorithm, obuf);
+            Opaque0FfffFmt.serialize_into(signature, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32031,9 +32203,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<DigestSize> for DigestSizeFmt {
-        fn serialize(&self, v: &DigestSize, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, DigestSize> for DigestSizeFmt {
+        fn serialize_into(&self, v: &DigestSize, obuf: &mut Output) {
             reveal(<DigestSizeFmt as SpecSerializer>::spec_serialize);
+            reveal(<DigestSizeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -32045,7 +32218,7 @@ mod exec_impls {
                 DigestSize::Max => 16777215,
                 DigestSize::Unknown (x) => x,
             };
-            U24Be.serialize(&tag, obuf);
+            U24Be.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32130,9 +32303,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Finished<'i>> for FinishedFmt {
-        fn serialize(&self, v: &Finished<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Finished<'i>> for FinishedFmt {
+        fn serialize_into(&self, v: &Finished<'i>, obuf: &mut Output) {
             reveal(<FinishedFmt as SpecSerializer>::spec_serialize);
+            reveal(<FinishedFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -32141,32 +32315,32 @@ mod exec_impls {
 
             match (self.size, v) {
                 (12, Finished::Variant1 (v)) => {
-                    (Fixed::< 12 >).serialize (v,
+                    (Fixed::< 12 >).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (20, Finished::Variant2 (v)) => {
-                    (Fixed::< 20 >).serialize (v,
+                    (Fixed::< 20 >).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (32, Finished::Variant3 (v)) => {
-                    (Fixed::< 32 >).serialize (v,
+                    (Fixed::< 32 >).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (48, Finished::Variant4 (v)) => {
-                    (Fixed::< 48 >).serialize (v,
+                    (Fixed::< 48 >).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (64, Finished::Variant5 (v)) => {
-                    (Fixed::< 64 >).serialize (v,
+                    (Fixed::< 64 >).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (_, Finished::Default (v)) => {
-                    (Varied (self.size)).serialize (v,
+                    (Varied (self.size)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -32216,16 +32390,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<FinishedOpaque<'i>> for FinishedOpaqueFmt {
-        fn serialize(&self, v: &FinishedOpaque<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, FinishedOpaque<'i>> for FinishedOpaqueFmt {
+        fn serialize_into(&self, v: &FinishedOpaque<'i>, obuf: &mut Output) {
             reveal(<FinishedOpaqueFmt as SpecSerializer>::spec_serialize);
+            reveal(<FinishedOpaqueFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
 
             let ghost old_obuf = obuf@;
 
-            Varied (self.digest_size).serialize(v, obuf);
+            Varied (self.digest_size).serialize_into(*v, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32278,9 +32453,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NewSessionTicket<'i>> for NewSessionTicketFmt {
-        fn serialize(&self, v: &NewSessionTicket<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NewSessionTicket<'i>> for NewSessionTicketFmt {
+        fn serialize_into(&self, v: &NewSessionTicket<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<NewSessionTicketFmt as SpecSerializer>::spec_serialize);
+            reveal(<NewSessionTicketFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let NewSessionTicket {
@@ -32290,11 +32467,11 @@ mod exec_impls {
                 ticket,
                 extensions,
             } = v;
-            U32Be.serialize(ticket_lifetime, obuf);
-            U32Be.serialize(ticket_age_add, obuf);
-            Opaque0FfFmt.serialize(ticket_nonce, obuf);
-            Opaque1FfffFmt.serialize(ticket, obuf);
-            NewSessionTicketExtensionsFmt.serialize(extensions, obuf);
+            U32Be.serialize_into(ticket_lifetime, obuf);
+            U32Be.serialize_into(ticket_age_add, obuf);
+            Opaque0FfFmt.serialize_into(ticket_nonce, obuf);
+            Opaque1FfffFmt.serialize_into(ticket, obuf);
+            NewSessionTicketExtensionsFmt.serialize_into(extensions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32341,16 +32518,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<KeyUpdateRequest> for KeyUpdateRequestFmt {
-        fn serialize(&self, v: &KeyUpdateRequest, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, KeyUpdateRequest> for KeyUpdateRequestFmt {
+        fn serialize_into(&self, v: &KeyUpdateRequest, obuf: &mut Output) {
             reveal(<KeyUpdateRequestFmt as SpecSerializer>::spec_serialize);
+            reveal(<KeyUpdateRequestFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
                 KeyUpdateRequest::UpdateNotRequested => 0,
                 KeyUpdateRequest::UpdateRequested => 1,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32392,15 +32570,17 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<KeyUpdate> for KeyUpdateFmt {
-        fn serialize(&self, v: &KeyUpdate, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, KeyUpdate> for KeyUpdateFmt {
+        fn serialize_into(&self, v: &KeyUpdate, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<KeyUpdateFmt as SpecSerializer>::spec_serialize);
+            reveal(<KeyUpdateFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let KeyUpdate {
                 request_update,
             } = v;
-            KeyUpdateRequestFmt.serialize(request_update, obuf);
+            KeyUpdateRequestFmt.serialize_into(request_update, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32447,9 +32627,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HandshakeType> for HandshakeTypeFmt {
-        fn serialize(&self, v: &HandshakeType, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HandshakeType> for HandshakeTypeFmt {
+        fn serialize_into(&self, v: &HandshakeType, obuf: &mut Output) {
             reveal(<HandshakeTypeFmt as SpecSerializer>::spec_serialize);
+            reveal(<HandshakeTypeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -32464,7 +32645,7 @@ mod exec_impls {
                 HandshakeType::Finished => 20,
                 HandshakeType::KeyUpdate => 24,
             };
-            U8.serialize(&tag, obuf);
+            U8.serialize_into(&tag, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32524,9 +32705,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<Handshake<'i>> for HandshakeFmt {
-        fn serialize(&self, v: &Handshake<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Handshake<'i>> for HandshakeFmt {
+        fn serialize_into(&self, v: &Handshake<'i>, obuf: &mut Output) {
+            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
             reveal(<HandshakeFmt as SpecSerializer>::spec_serialize);
+            reveal(<HandshakeFmt as SpecByteLen>::byte_len);
             let ghost old_obuf = obuf@;
 
             let Handshake {
@@ -32534,14 +32717,14 @@ mod exec_impls {
                 length,
                 msg,
             } = v;
-            HandshakeTypeFmt.serialize(msg_type, obuf);
-            U24Be.serialize(length, obuf);
+            HandshakeTypeFmt.serialize_into(msg_type, obuf);
+            U24Be.serialize_into(length, obuf);
             ExactLen (length, HandshakeMsgFmt {
                 length: *length,
                 msg_type: *msg_type
             }
             )
-            .serialize(msg, obuf);
+            .serialize_into(msg, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32604,9 +32787,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ServerNameName<'i>> for ServerNameNameFmt {
-        fn serialize(&self, v: &ServerNameName<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ServerNameName<'i>> for ServerNameNameFmt {
+        fn serialize_into(&self, v: &ServerNameName<'i>, obuf: &mut Output) {
             reveal(<ServerNameNameFmt as SpecSerializer>::spec_serialize);
+            reveal(<ServerNameNameFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -32615,12 +32799,12 @@ mod exec_impls {
 
             match (self.name_type, v) {
                 (NameType::HostName, ServerNameName::HostName (v)) => {
-                    (HostNameFmt).serialize (v,
+                    (HostNameFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, ServerNameName::Default (v)) => {
-                    (UnknownNameFmt).serialize (v,
+                    (UnknownNameFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
@@ -32826,10 +33010,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ClientHelloExtensionExtensionData<'i>> for ClientHelloExtensionExtensionDataFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClientHelloExtensionExtensionData<'i>> for ClientHelloExtensionExtensionDataFmt {
         #[verifier::spinoff_prover]
-        fn serialize(&self, v: &ClientHelloExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &ClientHelloExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<ClientHelloExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<ClientHelloExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -32838,102 +33023,102 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::ServerName, ClientHelloExtensionExtensionData::ServerName (v)) => {
-                    (ServerNameListFmt).serialize (v,
+                    (ServerNameListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignatureAlgorithms, ClientHelloExtensionExtensionData::SignatureAlgorithms (v)) => {
-                    (SignatureSchemeListFmt).serialize (v,
+                    (SignatureSchemeListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SupportedGroups, ClientHelloExtensionExtensionData::SupportedGroups (v)) => {
-                    (NamedGroupListFmt).serialize (v,
+                    (NamedGroupListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::StatusRequest, ClientHelloExtensionExtensionData::StatusRequest (v)) => {
-                    (CertificateStatusRequestFmt).serialize (v,
+                    (CertificateStatusRequestFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ApplicationLayerProtocolNegotiation, ClientHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => {
-                    (ProtocolNameListFmt).serialize (v,
+                    (ProtocolNameListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SupportedVersions, ClientHelloExtensionExtensionData::SupportedVersions (v)) => {
-                    (SupportedVersionsClientFmt).serialize (v,
+                    (SupportedVersionsClientFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::KeyShare, ClientHelloExtensionExtensionData::KeyShare (v)) => {
-                    (KeyShareClientHelloFmt).serialize (v,
+                    (KeyShareClientHelloFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::PskKeyExchangeModes, ClientHelloExtensionExtensionData::PskKeyExchangeModes (v)) => {
-                    (PskKeyExchangeModesFmt).serialize (v,
+                    (PskKeyExchangeModesFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::PreSharedKey, ClientHelloExtensionExtensionData::PreSharedKey (v)) => {
-                    (PreSharedKeyClientExtensionFmt).serialize (v,
+                    (PreSharedKeyClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::MaxFragmentLength, ClientHelloExtensionExtensionData::MaxFragmentLength (v)) => {
-                    (MaxFragmentLengthFmt).serialize (v,
+                    (MaxFragmentLengthFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Heartbeat, ClientHelloExtensionExtensionData::Heartbeat (v)) => {
-                    (HeartbeatModeFmt).serialize (v,
+                    (HeartbeatModeFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignedCertificateTimeStamp, ClientHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => {
-                    (SignedCertificateTimestampListFmt).serialize (v,
+                    (SignedCertificateTimestampListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ClientCertificateType, ClientHelloExtensionExtensionData::ClientCertificateType (v)) => {
-                    (ClientCertTypeClientExtensionFmt).serialize (v,
+                    (ClientCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ServerCertificateType, ClientHelloExtensionExtensionData::ServerCertificateType (v)) => {
-                    (ServerCertTypeClientExtensionFmt).serialize (v,
+                    (ServerCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Padding, ClientHelloExtensionExtensionData::Padding (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Cookie, ClientHelloExtensionExtensionData::Cookie (v)) => {
-                    (CookieFmt).serialize (v,
+                    (CookieFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::CertificateAuthorities, ClientHelloExtensionExtensionData::CertificateAuthorities (v)) => {
-                    (CertificateAuthoritiesExtensionFmt).serialize (v,
+                    (CertificateAuthoritiesExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::OidFilters, ClientHelloExtensionExtensionData::OidFilters (v)) => {
-                    (OidFilterExtensionFmt).serialize (v,
+                    (OidFilterExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignatureAlgorithmsCert, ClientHelloExtensionExtensionData::SignatureAlgorithmsCert (v)) => {
-                    (SignatureSchemeListFmt).serialize (v,
+                    (SignatureSchemeListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, ClientHelloExtensionExtensionData::Default (v)) => {
-                    (Tail).serialize (v,
+                    (Tail).serialize_into (v,
                     obuf) ;
                 }
                 ,
@@ -33165,10 +33350,11 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<SeverHelloExtensionExtensionData<'i>> for SeverHelloExtensionExtensionDataFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, SeverHelloExtensionExtensionData<'i>> for SeverHelloExtensionExtensionDataFmt {
         #[verifier::spinoff_prover]
-        fn serialize(&self, v: &SeverHelloExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+        fn serialize_into(&self, v: &SeverHelloExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<SeverHelloExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<SeverHelloExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33177,102 +33363,102 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::ServerName, SeverHelloExtensionExtensionData::ServerName (v)) => {
-                    (ServerNameListFmt).serialize (v,
+                    (ServerNameListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::MaxFragmentLength, SeverHelloExtensionExtensionData::MaxFragmentLength (v)) => {
-                    (MaxFragmentLengthFmt).serialize (v,
+                    (MaxFragmentLengthFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::StatusRequest, SeverHelloExtensionExtensionData::StatusRequest (v)) => {
-                    (CertificateStatusRequestFmt).serialize (v,
+                    (CertificateStatusRequestFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SupportedGroups, SeverHelloExtensionExtensionData::SupportedGroups (v)) => {
-                    (NamedGroupListFmt).serialize (v,
+                    (NamedGroupListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ECPointFormats, SeverHelloExtensionExtensionData::ECPointFormats (v)) => {
-                    (EcPointFormatListFmt).serialize (v,
+                    (EcPointFormatListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignatureAlgorithms, SeverHelloExtensionExtensionData::SignatureAlgorithms (v)) => {
-                    (SignatureSchemeListFmt).serialize (v,
+                    (SignatureSchemeListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::UseSRTP, SeverHelloExtensionExtensionData::UseSRTP (v)) => {
-                    (SrtpProtectionProfilesFmt).serialize (v,
+                    (SrtpProtectionProfilesFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Heartbeat, SeverHelloExtensionExtensionData::Heartbeat (v)) => {
-                    (HeartbeatModeFmt).serialize (v,
+                    (HeartbeatModeFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ApplicationLayerProtocolNegotiation, SeverHelloExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => {
-                    (ProtocolNameListFmt).serialize (v,
+                    (ProtocolNameListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignedCertificateTimeStamp, SeverHelloExtensionExtensionData::SignedCertificateTimeStamp (v)) => {
-                    (SignedCertificateTimestampListFmt).serialize (v,
+                    (SignedCertificateTimestampListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ClientCertificateType, SeverHelloExtensionExtensionData::ClientCertificateType (v)) => {
-                    (ClientCertTypeClientExtensionFmt).serialize (v,
+                    (ClientCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ServerCertificateType, SeverHelloExtensionExtensionData::ServerCertificateType (v)) => {
-                    (ServerCertTypeClientExtensionFmt).serialize (v,
+                    (ServerCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Padding, SeverHelloExtensionExtensionData::Padding (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::EncryptThenMac, SeverHelloExtensionExtensionData::EncryptThenMac (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ExtendedMasterSecret, SeverHelloExtensionExtensionData::ExtendedMasterSecret (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SessionTicket, SeverHelloExtensionExtensionData::SessionTicket (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::PreSharedKey, SeverHelloExtensionExtensionData::PreSharedKey (v)) => {
-                    (PreSharedKeyServerExtensionFmt).serialize (v,
+                    (PreSharedKeyServerExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SupportedVersions, SeverHelloExtensionExtensionData::SupportedVersions (v)) => {
-                    (SupportedVersionsServerFmt).serialize (v,
+                    (SupportedVersionsServerFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::KeyShare, SeverHelloExtensionExtensionData::KeyShare (v)) => {
-                    (KeyShareEntryFmt).serialize (v,
+                    (KeyShareEntryFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, SeverHelloExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -33376,9 +33562,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HelloRetryExtensionExtensionData<'i>> for HelloRetryExtensionExtensionDataFmt {
-        fn serialize(&self, v: &HelloRetryExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HelloRetryExtensionExtensionData<'i>> for HelloRetryExtensionExtensionDataFmt {
+        fn serialize_into(&self, v: &HelloRetryExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<HelloRetryExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<HelloRetryExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33387,22 +33574,22 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::SupportedVersions, HelloRetryExtensionExtensionData::SupportedVersions (v)) => {
-                    (SupportedVersionsServerFmt).serialize (v,
+                    (SupportedVersionsServerFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Cookie, HelloRetryExtensionExtensionData::Cookie (v)) => {
-                    (CookieFmt).serialize (v,
+                    (CookieFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::KeyShare, HelloRetryExtensionExtensionData::KeyShare (v)) => {
-                    (NamedGroupFmt).serialize (v,
+                    (NamedGroupFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, HelloRetryExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -33545,9 +33732,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<EncryptedExtensionExtensionData<'i>> for EncryptedExtensionExtensionDataFmt {
-        fn serialize(&self, v: &EncryptedExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, EncryptedExtensionExtensionData<'i>> for EncryptedExtensionExtensionDataFmt {
+        fn serialize_into(&self, v: &EncryptedExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<EncryptedExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<EncryptedExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33556,47 +33744,47 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::ServerName, EncryptedExtensionExtensionData::ServerName (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::MaxFragmentLength, EncryptedExtensionExtensionData::MaxFragmentLength (v)) => {
-                    (MaxFragmentLengthFmt).serialize (v,
+                    (MaxFragmentLengthFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SupportedGroups, EncryptedExtensionExtensionData::SupportedGroups (v)) => {
-                    (NamedGroupListFmt).serialize (v,
+                    (NamedGroupListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::Heartbeat, EncryptedExtensionExtensionData::Heartbeat (v)) => {
-                    (HeartbeatModeFmt).serialize (v,
+                    (HeartbeatModeFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ApplicationLayerProtocolNegotiation, EncryptedExtensionExtensionData::ApplicationLayerProtocolNegotiation (v)) => {
-                    (ProtocolNameListFmt).serialize (v,
+                    (ProtocolNameListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ClientCertificateType, EncryptedExtensionExtensionData::ClientCertificateType (v)) => {
-                    (ClientCertTypeClientExtensionFmt).serialize (v,
+                    (ClientCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::ServerCertificateType, EncryptedExtensionExtensionData::ServerCertificateType (v)) => {
-                    (ServerCertTypeClientExtensionFmt).serialize (v,
+                    (ServerCertTypeClientExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::EarlyData, EncryptedExtensionExtensionData::EarlyData (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, EncryptedExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -33723,9 +33911,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateRequestExtensionExtensionData<'i>> for CertificateRequestExtensionExtensionDataFmt {
-        fn serialize(&self, v: &CertificateRequestExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateRequestExtensionExtensionData<'i>> for CertificateRequestExtensionExtensionDataFmt {
+        fn serialize_into(&self, v: &CertificateRequestExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<CertificateRequestExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateRequestExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33734,37 +33923,37 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::SignatureAlgorithms, CertificateRequestExtensionExtensionData::SignatureAlgorithms (v)) => {
-                    (SignatureSchemeListFmt).serialize (v,
+                    (SignatureSchemeListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::CertificateAuthorities, CertificateRequestExtensionExtensionData::CertificateAuthorities (v)) => {
-                    (CertificateAuthoritiesExtensionFmt).serialize (v,
+                    (CertificateAuthoritiesExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignatureAlgorithmsCert, CertificateRequestExtensionExtensionData::SignatureAlgorithmsCert (v)) => {
-                    (SignatureSchemeListFmt).serialize (v,
+                    (SignatureSchemeListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::StatusRequest, CertificateRequestExtensionExtensionData::StatusRequest (v)) => {
-                    (CertificateStatusRequestFmt).serialize (v,
+                    (CertificateStatusRequestFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignedCertificateTimeStamp, CertificateRequestExtensionExtensionData::SignedCertificateTimeStamp (v)) => {
-                    (SignedCertificateTimestampListFmt).serialize (v,
+                    (SignedCertificateTimestampListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::OidFilters, CertificateRequestExtensionExtensionData::OidFilters (v)) => {
-                    (OidFilterExtensionFmt).serialize (v,
+                    (OidFilterExtensionFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, CertificateRequestExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -33859,9 +34048,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateExtensionExtensionData<'i>> for CertificateExtensionExtensionDataFmt {
-        fn serialize(&self, v: &CertificateExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateExtensionExtensionData<'i>> for CertificateExtensionExtensionDataFmt {
+        fn serialize_into(&self, v: &CertificateExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<CertificateExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33870,17 +34060,17 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::StatusRequest, CertificateExtensionExtensionData::StatusRequest (v)) => {
-                    (CertificateStatusFmt).serialize (v,
+                    (CertificateStatusFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (ExtensionType::SignedCertificateTimeStamp, CertificateExtensionExtensionData::SignedCertificateTimeStamp (v)) => {
-                    (SignedCertificateTimestampListFmt).serialize (v,
+                    (SignedCertificateTimestampListFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, CertificateExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -33967,9 +34157,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<NewSessionTicketExtensionExtensionData<'i>> for NewSessionTicketExtensionExtensionDataFmt {
-        fn serialize(&self, v: &NewSessionTicketExtensionExtensionData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NewSessionTicketExtensionExtensionData<'i>> for NewSessionTicketExtensionExtensionDataFmt {
+        fn serialize_into(&self, v: &NewSessionTicketExtensionExtensionData<'i>, obuf: &mut Output) {
             reveal(<NewSessionTicketExtensionExtensionDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<NewSessionTicketExtensionExtensionDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -33978,12 +34169,12 @@ mod exec_impls {
 
             match (self.extension_type, v) {
                 (ExtensionType::EarlyData, NewSessionTicketExtensionExtensionData::EarlyData (v)) => {
-                    (EarlyDataIndicationNewSessionTicketFmt).serialize (v,
+                    (EarlyDataIndicationNewSessionTicketFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, NewSessionTicketExtensionExtensionData::Default (v)) => {
-                    (Varied (self.ext_len)).serialize (v,
+                    (Varied (self.ext_len)).serialize_into (*v,
                     obuf) ;
                 }
                 ,
@@ -34071,9 +34262,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<ShOrHrrPayload<'i>> for ShOrHrrPayloadFmt<'i> {
-        fn serialize(&self, v: &ShOrHrrPayload<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ShOrHrrPayload<'i>> for ShOrHrrPayloadFmt<'i> {
+        fn serialize_into(&self, v: &ShOrHrrPayload<'i>, obuf: &mut Output) {
             reveal(<ShOrHrrPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<ShOrHrrPayloadFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -34082,12 +34274,12 @@ mod exec_impls {
 
             match (self.random, v) {
                 (x, ShOrHrrPayload::Variant1 (v)) if bytes_eq (x, &[0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91, 0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c]) => {
-                    (HelloRetryRequestFmt).serialize (v,
+                    (HelloRetryRequestFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, ShOrHrrPayload::Default (v)) => {
-                    (ServerHelloFmt).serialize (v,
+                    (ServerHelloFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
@@ -34158,9 +34350,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<CertificateEntryData<'i>> for CertificateEntryDataFmt {
-        fn serialize(&self, v: &CertificateEntryData<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CertificateEntryData<'i>> for CertificateEntryDataFmt {
+        fn serialize_into(&self, v: &CertificateEntryData<'i>, obuf: &mut Output) {
             reveal(<CertificateEntryDataFmt as SpecSerializer>::spec_serialize);
+            reveal(<CertificateEntryDataFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -34169,17 +34362,17 @@ mod exec_impls {
 
             match (self.cert_type, v) {
                 (CertificateType::X509, CertificateEntryData::X509 (v)) => {
-                    (Opaque1FfffffFmt).serialize (v,
+                    (Opaque1FfffffFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (CertificateType::RawPublicKey, CertificateEntryData::RawPublicKey (v)) => {
-                    (Opaque1FfffffFmt).serialize (v,
+                    (Opaque1FfffffFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (_, CertificateEntryData::Default (v)) => {
-                    (Opaque1FfffffFmt).serialize (v,
+                    (Opaque1FfffffFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
@@ -34310,9 +34503,10 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Serializer<HandshakeMsg<'i>> for HandshakeMsgFmt {
-        fn serialize(&self, v: &HandshakeMsg<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, HandshakeMsg<'i>> for HandshakeMsgFmt {
+        fn serialize_into(&self, v: &HandshakeMsg<'i>, obuf: &mut Output) {
             reveal(<HandshakeMsgFmt as SpecSerializer>::spec_serialize);
+            reveal(<HandshakeMsgFmt as SpecByteLen>::byte_len);
             proof {
                 use_type_invariant(self);
             }
@@ -34321,42 +34515,42 @@ mod exec_impls {
 
             match (self.msg_type, v) {
                 (HandshakeType::ClientHello, HandshakeMsg::ClientHello (v)) => {
-                    (ClientHelloFmt).serialize (v,
+                    (ClientHelloFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::ServerHello, HandshakeMsg::ServerHello (v)) => {
-                    (ShOrHrrFmt).serialize (v,
+                    (ShOrHrrFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::NewSessionTicket, HandshakeMsg::NewSessionTicket (v)) => {
-                    (NewSessionTicketFmt).serialize (v,
+                    (NewSessionTicketFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::EndOfEarlyData, HandshakeMsg::EndOfEarlyData (v)) => {
-                    (EmptyFmt).serialize (v,
+                    (EmptyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::EncryptedExtensions, HandshakeMsg::EncryptedExtensions (v)) => {
-                    (EncryptedExtensionsFmt).serialize (v,
+                    (EncryptedExtensionsFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::Certificate, HandshakeMsg::Certificate (v)) => {
-                    (CertificateFmt).serialize (v,
+                    (CertificateFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::CertificateRequest, HandshakeMsg::CertificateRequest (v)) => {
-                    (CertificateRequestFmt).serialize (v,
+                    (CertificateRequestFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::CertificateVerify, HandshakeMsg::CertificateVerify (v)) => {
-                    (CertificateVerifyFmt).serialize (v,
+                    (CertificateVerifyFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,
@@ -34364,12 +34558,12 @@ mod exec_impls {
                     (FinishedFmt {
                         size: self.length
                     }
-                    ).serialize (v,
+                    ).serialize_into (v,
                     obuf) ;
                 }
                 ,
                 (HandshakeType::KeyUpdate, HandshakeMsg::KeyUpdate (v)) => {
-                    (KeyUpdateFmt).serialize (v,
+                    (KeyUpdateFmt).serialize_into (v,
                     obuf) ;
                 }
                 ,

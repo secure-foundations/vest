@@ -24,19 +24,19 @@ pub mod tlv;
 mod bits_endianness_sanity {
     use super::{bits, bits_little};
     use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::Serializer;
+    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
 
     #[test]
     fn version_ihl_is_byte_endian_invariant() {
         let v = bits::VersionIhl { version: 4, ihl: 5 };
 
-        let mut be = Vec::new();
-        bits::VersionIhlFmt.serialize(&v, &mut be);
+        let mut be = vec![0; bits::VersionIhlFmt.prepare(&v).unwrap()];
+        bits::VersionIhlFmt.serialize(&v, be.as_mut_slice());
         assert_eq!(be, vec![0x45]);
 
-        let mut le = Vec::new();
-        bits_little::VersionIhlFmt
-            .serialize(&bits_little::VersionIhl { version: 4, ihl: 5 }, &mut le);
+        let le_v = bits_little::VersionIhl { version: 4, ihl: 5 };
+        let mut le = vec![0; bits_little::VersionIhlFmt.prepare(&le_v).unwrap()];
+        bits_little::VersionIhlFmt.serialize(&le_v, le.as_mut_slice());
         assert_eq!(le, vec![0x45]);
         assert_eq!(be, le);
 
@@ -60,12 +60,12 @@ mod bits_endianness_sanity {
             suffix: 3,
         };
 
-        let mut be = Vec::new();
-        bits::CrossByteSpanFmt.serialize(&be_v, &mut be);
+        let mut be = vec![0; bits::CrossByteSpanFmt.prepare(&be_v).unwrap()];
+        bits::CrossByteSpanFmt.serialize(&be_v, be.as_mut_slice());
         assert_eq!(be, vec![0xAA, 0xAB]);
 
-        let mut le = Vec::new();
-        bits_little::CrossByteSpanFmt.serialize(&le_v, &mut le);
+        let mut le = vec![0; bits_little::CrossByteSpanFmt.prepare(&le_v).unwrap()];
+        bits_little::CrossByteSpanFmt.serialize(&le_v, le.as_mut_slice());
         assert_eq!(le, vec![0xAB, 0xAA]);
         assert_ne!(be, le);
 
@@ -132,7 +132,7 @@ mod tls_error_sanity {
     use super::tls;
     use vest_lib2::combinators::Named;
     use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::{Prepare, Serializer};
+    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
 
     #[test]
     fn pre_shared_key_extension_parse_error_is_semantic_and_deeply_nested() {
@@ -204,8 +204,9 @@ mod tls_error_sanity {
             },
         };
 
-        let mut buf = Vec::new();
-        tls::HelloRetryRequestFmt.serialize(&v, &mut buf);
+        let len = tls::HelloRetryRequestFmt.prepare(&v).unwrap();
+        let mut buf = vec![0; len];
+        tls::HelloRetryRequestFmt.serialize(&v, buf.as_mut_slice());
         let (_, parsed) = tls::HelloRetryRequestFmt.parse(&&buf[..]).unwrap();
         assert_eq!(parsed, v);
         assert_eq!(tls::HelloRetryRequestFmt.prepare(&v).unwrap(), buf.len());
