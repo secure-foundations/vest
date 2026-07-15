@@ -2,7 +2,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 
 use vest_dev::combinators::recursive::FixWith;
 use vest_dev::core::exec::parser::Parser;
-use vest_dev::core::exec::serializer::{Prepare, Serializer};
+use vest_dev::core::exec::serializer::Prepare;
+use vest_dev::core::exec::SerializerExt;
 use vest_dev::formats::mutual_fix::{
     benchmark_byte_list_values, benchmark_expr_values, benchmark_list_values,
     handrolled_parse_byte_list_checked, handrolled_parse_expr_checked,
@@ -220,7 +221,7 @@ fn bench_expr_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = Vec::with_capacity(bytes.len());
+                let mut out = vec![0; fmt.prepare(value).expect("vest expr prepare failed")];
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
@@ -250,7 +251,7 @@ fn bench_list_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = Vec::with_capacity(bytes.len());
+                let mut out = vec![0; fmt.prepare(value).expect("vest list prepare failed")];
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
@@ -309,7 +310,7 @@ fn bench_byte_list_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = Vec::with_capacity(bytes.len());
+                let mut out = vec![0; fmt.prepare(value).expect("vest byte-list prepare failed")];
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }

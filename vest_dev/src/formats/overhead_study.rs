@@ -3,6 +3,7 @@ use crate::combinators::recursive::spec::{BundledSpecs, ParamRecSpecs, SpecRecBo
 use crate::combinators::recursive::{FixWith, StrictRecBody};
 use crate::combinators::*;
 use crate::core::exec::input::InputBuf;
+use crate::core::exec::output::OutputBuf;
 use crate::core::exec::parser::{PResult, Parser};
 use crate::core::exec::serializer::{ComplianceErrorKind, PreSerializeError, Prepare, Serializer};
 use crate::core::exec::ParseError;
@@ -187,7 +188,7 @@ impl<'i> ParserRecBody<&'i [u8]> for TreeNodeRecBody {
 
 // ── Serializer ────────────────────────────────────────────────────────────────
 
-impl<'a> SerializerRecBody<TreeNodeValueRef<'a>> for TreeNodeRecBody {
+impl<Output: OutputBuf, 'a> SerializerRecBody<Output, TreeNodeValueRef<'a>> for TreeNodeRecBody {
     type EP = WhichFmt;
 
     #[verifier::external_body]
@@ -197,18 +198,18 @@ impl<'a> SerializerRecBody<TreeNodeValueRef<'a>> for TreeNodeRecBody {
         Ghost(_spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &TreeNodeValueRef<'a>,
-        obuf: &mut Vec<u8>,
+        obuf: &mut Output,
     )
     where
-        Exec: Fn(&WhichFmt, &TreeNodeValueRef<'a>, &mut Vec<u8>),
+        Exec: Fn(&WhichFmt, &TreeNodeValueRef<'a>, &mut Output),
     {
         match v {
             TreeNodeValueRef::IsTree { tree: Tree::Leaf(b) } => {
-                U8.serialize(&0x10u8, obuf);
-                U8.serialize(b, obuf);
+                U8.serialize_into(&0x10u8, obuf);
+                U8.serialize_into(b, obuf);
             }
             TreeNodeValueRef::IsTree { tree: Tree::Branch(node) } => {
-                U8.serialize(&0x11u8, obuf);
+                U8.serialize_into(&0x11u8, obuf);
                 let child = TreeNodeValueRef::IsNode { node };
                 exec_rec(&WhichFmt::NODE, &child, obuf);
             }

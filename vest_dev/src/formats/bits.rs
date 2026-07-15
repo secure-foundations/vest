@@ -65,6 +65,7 @@ use crate::combinators::bits::Bits;
 use crate::combinators::mapped::spec::*;
 use crate::combinators::*;
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::OutputBuf;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::*;
 use crate::core::exec::ParseError;
@@ -1383,10 +1384,10 @@ mod derived_execs {
         }
     }
 
-    impl Serializer<VersionIhl> for VersionIhlFmt {
-        fn serialize(&self, v: &VersionIhl, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf> Serializer<Output, VersionIhl> for VersionIhlFmt {
+        fn serialize_into(&self, v: &VersionIhl, obuf: &mut Output) {
             let packed = pack_version_ihl(v.version, v.ihl);
-            U8.serialize(&packed, obuf);
+            U8.serialize_into(&packed, obuf);
         }
     }
 
@@ -1411,10 +1412,10 @@ mod derived_execs {
         }
     }
 
-    impl Serializer<CrossByteSpan> for CrossByteSpanFmt {
-        fn serialize(&self, v: &CrossByteSpan, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf> Serializer<Output, CrossByteSpan> for CrossByteSpanFmt {
+        fn serialize_into(&self, v: &CrossByteSpan, obuf: &mut Output) {
             let packed = pack_cross_byte_span(v.prefix, v.span, v.suffix);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
         }
     }
 
@@ -1442,10 +1443,10 @@ mod derived_execs {
         }
     }
 
-    impl Serializer<PacketHeader> for PacketHeaderFmt {
-        fn serialize(&self, v: &PacketHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf> Serializer<Output, PacketHeader> for PacketHeaderFmt {
+        fn serialize_into(&self, v: &PacketHeader, obuf: &mut Output) {
             let packed = pack_packet_header(payload_kind_to_bits(v.kind), v.count, v.len);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
         }
     }
 
@@ -1483,10 +1484,10 @@ mod derived_execs {
         }
     }
 
-    impl Serializer<ClosedPacketHeader> for ClosedPacketHeaderFmt {
-        fn serialize(&self, v: &ClosedPacketHeader, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf> Serializer<Output, ClosedPacketHeader> for ClosedPacketHeaderFmt {
+        fn serialize_into(&self, v: &ClosedPacketHeader, obuf: &mut Output) {
             let packed = pack_packet_header(closed_payload_kind_to_bits(v.kind), v.count, v.len);
-            U16Be.serialize(&packed, obuf);
+            U16Be.serialize_into(&packed, obuf);
         }
     }
 
@@ -1537,15 +1538,16 @@ mod derived_execs {
         }
     }
 
-    impl<'i> Serializer<ChoicePacket<'i>> for ChoicePacketFmt {
-        fn serialize(&self, v: &ChoicePacket<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ChoicePacket<'i>> for ChoicePacketFmt {
+        fn serialize_into(&self, v: &ChoicePacket<'i>, obuf: &mut Output) {
+            broadcast use crate::core::exec::output::outbuf_lemmas;
             let ChoicePacket { hdr, payload } = v;
-            PacketHeaderFmt.serialize(hdr, obuf);
+            PacketHeaderFmt.serialize_into(hdr, obuf);
             match payload {
-                ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
-                ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(words, obuf),
-                ChoicePayload::Tiny(x) => U8.serialize(x, obuf),
-                ChoicePayload::Default(bytes) => Varied(hdr.len).serialize(bytes, obuf),
+                ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize_into(bytes, obuf),
+                ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize_into(words, obuf),
+                ChoicePayload::Tiny(x) => U8.serialize_into(x, obuf),
+                ChoicePayload::Default(bytes) => Varied(hdr.len).serialize_into(bytes, obuf),
             }
         }
     }
@@ -1607,17 +1609,18 @@ mod derived_execs {
         }
     }
 
-    impl<'i> Serializer<ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
-        fn serialize(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Vec<u8>) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
+        fn serialize_into(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Output) {
+            broadcast use crate::core::exec::output::outbuf_lemmas;
             let ClosedChoicePacket { hdr, payload } = v;
-            ClosedPacketHeaderFmt.serialize(hdr, obuf);
+            ClosedPacketHeaderFmt.serialize_into(hdr, obuf);
             match payload {
-                ClosedChoicePayload::Raw(bytes) => Varied(hdr.len).serialize(bytes, obuf),
-                ClosedChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize(
+                ClosedChoicePayload::Raw(bytes) => Varied(hdr.len).serialize_into(bytes, obuf),
+                ClosedChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize_into(
                     words,
                     obuf,
                 ),
-                ClosedChoicePayload::Tiny(x) => U8.serialize(x, obuf),
+                ClosedChoicePayload::Tiny(x) => U8.serialize_into(x, obuf),
             }
         }
     }
@@ -1660,7 +1663,7 @@ fn exec_version_ihl_roundtrip() {
     let (n, parsed) = fmt.parse(&&input[..]).unwrap();
     assert_eq!(n, 1);
     assert_eq!(parsed, VersionIhl { version: 4, ihl: 5 });
-    let mut out = Vec::new();
+    let mut out = vec![0; fmt.prepare(&parsed).unwrap()];
     fmt.serialize(&parsed, &mut out);
     assert_eq!(out, input);
     assert_eq!(fmt.prepare(&parsed).unwrap(), input.len());
@@ -1673,7 +1676,7 @@ fn exec_cross_byte_span_roundtrip() {
         span: 511,
         suffix: 3,
     };
-    let mut out = Vec::new();
+    let mut out = vec![0; fmt.prepare(&value).unwrap()];
     fmt.serialize(&value, &mut out);
     let (n, parsed) = fmt.parse(&&out[..]).unwrap();
     assert_eq!(n, 2);
@@ -1691,7 +1694,7 @@ fn exec_choice_packet_roundtrip() {
         },
         payload: ChoicePayload::Raw(&[0x10u8, 0x20u8, 0x30u8]),
     };
-    let mut out = Vec::new();
+    let mut out = vec![0; fmt.prepare(&raw).unwrap()];
     fmt.serialize(&raw, &mut out);
     let (n, parsed) = fmt.parse(&&out[..]).unwrap();
     assert_eq!(n, out.len());
@@ -1709,7 +1712,7 @@ fn exec_closed_choice_packet_roundtrip() {
         },
         payload: ClosedChoicePayload::Words(vec![0x1234u16, 0x5678u16]),
     };
-    let mut out = Vec::new();
+    let mut out = vec![0; fmt.prepare(&raw).unwrap()];
     fmt.serialize(&raw, &mut out);
     let (n, parsed) = fmt.parse(&&out[..]).unwrap();
     assert_eq!(n, out.len());

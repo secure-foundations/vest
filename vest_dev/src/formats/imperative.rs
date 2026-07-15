@@ -3,6 +3,7 @@ use crate::combinators::refined::exec::*;
 use crate::combinators::*;
 use crate::core::exec::fns::{FnPred, MapRef, Pred};
 use crate::core::exec::input::{InputBuf, InputSlice};
+use crate::core::exec::output::OutputBuf;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::*;
 use crate::core::exec::ParseError;
@@ -271,21 +272,23 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
     }
 }
 
-impl<'i> Serializer<BtcTx<'i>> for TxSegwitFmt {
-    fn serialize(&self, v: &BtcTx<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf, 'i> Serializer<Output, BtcTx<'i>> for TxSegwitFmt {
+    fn serialize_into(&self, v: &BtcTx<'i>, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
+        reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
         reveal(<TxSegwitFmt as Consistency>::consistent);
 
         let ghost old_obuf = obuf@;
         let BtcTx { txin_cnt, txin, txout_cnt, txout, witness, locktime } = v;
-        U8.serialize(&1u8, obuf);
-        U8.serialize(txin_cnt, obuf);
-        Varied(*txin_cnt).serialize(txin, obuf);
-        U8.serialize(txout_cnt, obuf);
-        RepeatN(*txout_cnt, U16Le).serialize(txout, obuf);
-        RepeatN(*txin_cnt, U16Le).serialize(witness, obuf);
+        U8.serialize_into(&1u8, obuf);
+        U8.serialize_into(txin_cnt, obuf);
+        Varied(*txin_cnt).serialize_into(txin, obuf);
+        U8.serialize_into(txout_cnt, obuf);
+        RepeatN(*txout_cnt, U16Le).serialize_into(txout, obuf);
+        RepeatN(*txin_cnt, U16Le).serialize_into(witness, obuf);
 
-        U8.serialize(locktime, obuf);
+        U8.serialize_into(locktime, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -548,9 +551,11 @@ impl<'i> Parser<&'i [u8]> for MsgTyFmt {
     }
 }
 
-impl<'i> Serializer<MsgTy> for MsgTyFmt {
-    fn serialize(&self, v: &MsgTy, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf> Serializer<Output, MsgTy> for MsgTyFmt {
+    fn serialize_into(&self, v: &MsgTy, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
+        reveal(<MsgTyFmt as SpecByteLen>::byte_len);
         let ghost old_obuf = obuf@;
         let tag = match v {
             MsgTy::TYPE1 => 1u8,
@@ -558,7 +563,7 @@ impl<'i> Serializer<MsgTy> for MsgTyFmt {
             MsgTy::TYPE3 => 3u8,
             MsgTy::TYPE4 => 4u8,
         };
-        U8.serialize(&tag, obuf);
+        U8.serialize_into(&tag, obuf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -974,11 +979,14 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
     }
 }
 
-impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
-    fn serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf, 'i> Serializer<Output, TLVMsg<'i>> for TLVFmt {
+    fn serialize_into(&self, v: &TLVMsg<'i>, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         reveal(<TLVFmt as SpecSerializer>::spec_serialize);
+        reveal(<TLVFmt as SpecByteLen>::byte_len);
         reveal(<TLVFmt as Consistency>::consistent);
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
+        reveal(<MsgTyFmt as SpecByteLen>::byte_len);
         reveal(<MsgTyFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
@@ -990,7 +998,7 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
             TLVMsg::V3(_) => MsgTy::TYPE3,
             TLVMsg::V4(_) => MsgTy::TYPE4,
         };
-        MsgTyFmt.serialize(&tag, obuf);
+        MsgTyFmt.serialize_into(&tag, obuf);
         // Strategy 0:
         // call `TLVPayloadFmt { tag }.length()` to get the length of the payload, and serialize it before serializing the payload.
         // However, this means we have to strengthen the pre-condition of `serialize` to require
@@ -1009,13 +1017,13 @@ impl<'i> Serializer<TLVMsg<'i>> for TLVFmt {
 
         // Strategy 2: re-allocation
         let mut payload_buf = Vec::new();
-        TLVPayloadFmt { tag }.serialize(v, &mut payload_buf);
+        TLVPayloadFmt { tag }.serialize_into(v, &mut payload_buf);
         proof {
             TLVPayloadFmt { tag }.lemma_serialize_len(v.deep_view());
         }
         let payload_len = payload_buf.len() as u8;
-        U8.serialize(&payload_len, obuf);
-        obuf.extend_from_slice(&payload_buf);
+        U8.serialize_into(&payload_len, obuf);
+        obuf.write_bytes(&payload_buf);
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
     }
 }
@@ -1078,17 +1086,19 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
     }
 }
 
-impl<'i> Serializer<TLVMsg<'i>> for TLVPayloadFmt {
-    fn serialize(&self, v: &TLVMsg<'i>, obuf: &mut Vec<u8>) {
+impl<Output: OutputBuf, 'i> Serializer<Output, TLVMsg<'i>> for TLVPayloadFmt {
+    fn serialize_into(&self, v: &TLVMsg<'i>, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
+        reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
 
         let ghost old_obuf = obuf@;
         match (self.tag, v) {
-            (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.serialize(v, obuf),
-            (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.serialize(*v, obuf),
-            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.serialize(v, obuf),
-            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.serialize(v, obuf),
+            (MsgTy::TYPE1, TLVMsg::V1(v)) => U8.serialize_into(v, obuf),
+            (MsgTy::TYPE2, TLVMsg::V2(v)) => Fixed::<10>.serialize_into(*v, obuf),
+            (MsgTy::TYPE3, TLVMsg::V3(v)) => TxSegwitFmt.serialize_into(v, obuf),
+            (MsgTy::TYPE4, TLVMsg::V4(v)) => TxSegwitFmt.serialize_into(v, obuf),
             _ => {},
         }
         assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));

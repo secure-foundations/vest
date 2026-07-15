@@ -7,7 +7,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use vest_dev::combinators::recursive::FixWith;
 use vest_dev::core::exec::parser::Parser;
-use vest_dev::core::exec::serializer::{Prepare, Serializer};
+use vest_dev::core::exec::serializer::Prepare;
+use vest_dev::core::exec::SerializerExt;
 use vest_dev::formats::overhead_study::{
     benchmark_tree_values, handrolled_parse_tree, handrolled_prepare_tree,
     handrolled_serialize_tree, handrolled_tagged_parse_tree, handrolled_tagged_prepare_tree,
@@ -48,7 +49,7 @@ fn make_corpus() -> Corpus {
         handrolled_tagged_serialize_tree(value, &mut b_bytes).expect("B: serialize failed");
         assert_eq!(b_bytes, bytes, "B/A encoding mismatch");
 
-        let mut c_bytes = Vec::with_capacity(bytes.len());
+        let mut c_bytes = vec![0; prepared_c];
         fmt.serialize(&vr, &mut c_bytes);
         assert_eq!(c_bytes, bytes, "C/A encoding mismatch");
 
@@ -150,7 +151,7 @@ fn bench_serialize(c: &mut Criterion) {
                 let vr = TreeNodeValueRef::IsTree {
                     tree: black_box(value),
                 };
-                let mut out = Vec::with_capacity(bytes.len());
+                let mut out = vec![0; fmt.prepare(&vr).expect("C: prepare failed")];
                 fmt.serialize(&vr, &mut out);
                 black_box(out);
             }

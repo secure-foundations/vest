@@ -6,6 +6,7 @@ use crate::combinators::recursive::*;
 use crate::combinators::*;
 use crate::core::exec::fns;
 use crate::core::exec::input::InputBuf;
+use crate::core::exec::output::OutputBuf;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::*;
 use crate::core::exec::ParseError;
@@ -156,7 +157,7 @@ impl<'i> ParserRecBody<&'i [u8]> for NestedBracesBody {
     }
 }
 
-impl SerializerRecBody<NestedBracesT> for NestedBracesBody {
+impl<Output: OutputBuf> SerializerRecBody<Output, NestedBracesT> for NestedBracesBody {
     type EP = ();
 
     fn serialize_body<Exec>(
@@ -165,16 +166,17 @@ impl SerializerRecBody<NestedBracesT> for NestedBracesBody {
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &NestedBracesT,
-        obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&(), &NestedBracesT, &mut Vec<u8>) {
+        obuf: &mut Output,
+    ) where Exec: Fn(&(), &NestedBracesT, &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         match v {
             NestedBracesT::Eps => {
-                U8.serialize(&0x00u8, obuf);
+                U8.serialize_into(&0x00u8, obuf);
             },
             NestedBracesT::Brace(inner) => {
-                U8.serialize(&0x7Bu8, obuf);
+                U8.serialize_into(&0x7Bu8, obuf);
                 exec_rec(&(), inner, obuf);
-                U8.serialize(&0x7Du8, obuf);
+                U8.serialize_into(&0x7Du8, obuf);
             },
         }
     }
@@ -346,7 +348,7 @@ impl<'i> ParserRecBody<&'i [u8]> for TaggedChainBody {
     }
 }
 
-impl SerializerRecBody<TaggedChainT> for TaggedChainBody {
+impl<Output: OutputBuf> SerializerRecBody<Output, TaggedChainT> for TaggedChainBody {
     type EP = u8;
 
     fn serialize_body<Exec>(
@@ -355,15 +357,16 @@ impl SerializerRecBody<TaggedChainT> for TaggedChainBody {
         Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
         exec_rec: Exec,
         v: &TaggedChainT,
-        obuf: &mut Vec<u8>,
-    ) where Exec: Fn(&u8, &TaggedChainT, &mut Vec<u8>) {
+        obuf: &mut Output,
+    ) where Exec: Fn(&u8, &TaggedChainT, &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
         match v {
             TaggedChainT::End => {
-                U8.serialize(&0x00u8, obuf);
+                U8.serialize_into(&0x00u8, obuf);
             },
             TaggedChainT::Step(next_tag, tail) => {
-                U8.serialize(current_tag, obuf);
-                U8.serialize(next_tag, obuf);
+                U8.serialize_into(current_tag, obuf);
+                U8.serialize_into(next_tag, obuf);
                 exec_rec(next_tag, tail, obuf);
             },
         }
@@ -470,7 +473,7 @@ fn nested_braces_exec_parse() {
     assert!(matches!(prepared, Ok(len) if len == input.len()));
 
     let len = prepared.unwrap();
-    let mut serialized = Vec::with_capacity(len);
+    let mut serialized = vec![0; len];
     fmt.serialize(&parsed_ref, &mut serialized);
     println!(
         "serialized value: {:?}, output buf: {:X?}",
@@ -547,7 +550,7 @@ fn tagged_chain_exec_parse_serialize() {
     let prepared = fmt.prepare(&parsed_value);
     assert!(matches!(prepared, Ok(len) if len == input.len()));
     let len = prepared.unwrap();
-    let mut serialized = Vec::with_capacity(len);
+    let mut serialized = vec![0; len];
     fmt.serialize(&&parsed_value, &mut serialized);
     println!(
         "tagged-chain parsed value: {:?}, serialized buf: {:X?}",

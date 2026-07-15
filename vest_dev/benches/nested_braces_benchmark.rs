@@ -2,7 +2,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 
 use vest_dev::combinators::recursive::FixWith;
 use vest_dev::core::exec::parser::Parser;
-use vest_dev::core::exec::serializer::{Prepare, Serializer};
+use vest_dev::core::exec::serializer::Prepare;
+use vest_dev::core::exec::SerializerExt;
 use vest_dev::formats::fix::{
     benchmark_nested_braces_values, handrolled_parse_nested_braces_checked,
     handrolled_prepare_nested_braces_checked, handrolled_serialize_nested_braces_checked,
@@ -33,13 +34,13 @@ fn make_corpus() -> NestedBracesCorpus {
         assert_eq!(prepared_vest, bytes.len());
         assert_eq!(prepared_hand, bytes.len());
 
-        let mut vest_bytes = Vec::with_capacity(prepared_vest);
+        let mut vest_bytes = vec![0; prepared_vest];
         fmt.serialize(value, &mut vest_bytes);
         assert_eq!(vest_bytes, bytes);
 
         let (n_vest, parsed_vest) = fmt.parse(&&bytes[..]).expect("vest parse failed");
         assert_eq!(n_vest, bytes.len());
-        let mut vest_roundtrip = Vec::with_capacity(bytes.len());
+        let mut vest_roundtrip = vec![0; fmt.prepare(&parsed_vest).expect("vest prepare failed")];
         fmt.serialize(&parsed_vest, &mut vest_roundtrip);
         assert_eq!(vest_roundtrip, bytes);
 
@@ -100,7 +101,7 @@ fn bench_nested_braces_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = Vec::with_capacity(bytes.len());
+                let mut out = vec![0; fmt.prepare(value).expect("vest prepare failed")];
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
