@@ -25,19 +25,19 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8]> for super::Fixed<N> {
+impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8]> for super::Fixed<N> {
     fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
         obuf.write_bytes(v);
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
+impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
     fn serialize_into(&self, v: &[u8; N], obuf: &mut Output) {
         obuf.write_bytes(v);
     }
 }
 
-// impl<Output: OutputBuf + ?Sized, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
+// impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
 //     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Output) {
 //         obuf.write_bytes(v);
 //     }
@@ -71,7 +71,7 @@ impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Len: AsLen> Serializer<Output, [u8]> for super::Varied<Len> {
+impl<Output: OutputBuf, Len: AsLen> Serializer<Output, [u8]> for super::Varied<Len> {
     fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
         obuf.write_bytes(v);
     }
@@ -136,10 +136,11 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Len, Inner, T> Serializer<Output, T> for super::ExactLen<
-    Inner,
-    Len,
-> where Len: AsLen, T: DeepView + ?Sized, Inner: Serializer<Output, T> + SpecByteLen<T = T::V> {
+impl<Output: OutputBuf, Len, Inner, T> Serializer<Output, T> for super::ExactLen<Inner, Len> where
+    Len: AsLen,
+    T: DeepView + ?Sized,
+    Inner: Serializer<Output, T> + SpecByteLen<T = T::V>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()

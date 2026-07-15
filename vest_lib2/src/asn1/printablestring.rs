@@ -260,10 +260,7 @@ impl<'i> Parser<&'i [u8]> for super::PrintableString {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<
-    Output,
-    PrintableString<'i>,
-> for super::PrintableString {
+impl<Output: OutputBuf, 'i> Serializer<Output, PrintableString<'i>> for super::PrintableString {
     fn serialize_into(&self, v: &PrintableString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);

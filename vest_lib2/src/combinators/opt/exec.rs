@@ -31,7 +31,7 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, Option<T>> for super::Opt<A> where
+impl<Output: OutputBuf, A, T> Serializer<Output, Option<T>> for super::Opt<A> where
     T: DeepView,
     A: Serializer<Output, T>,
  {
@@ -95,15 +95,10 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
-    Output,
-    (Option<TA>, TB),
-> for super::Optional<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Serializer<Output, TA>,
-    B: Serializer<Output, TB>,
- {
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (Option<TA>, TB)> for super::Optional<
+    A,
+    B,
+> where TA: DeepView, TB: DeepView, A: Serializer<Output, TA>, B: Serializer<Output, TB> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

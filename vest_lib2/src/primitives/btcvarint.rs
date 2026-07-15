@@ -239,7 +239,7 @@ impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, u64> for VarInt<MINIMAL> {
+impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, u64> for VarInt<MINIMAL> {
     fn serialize_into(&self, v: &u64, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 

@@ -301,7 +301,7 @@ pub open spec fn utc_time_bytes(value: UtcTimeValue) -> Seq<u8> {
 }
 
 /// Writes `utc_time_bytes` directly to an output buffer without allocating.
-pub fn utc_time_to_bytes<Output: OutputBuf + ?Sized>(value: &UtcTimeValue, obuf: &mut Output)
+pub fn utc_time_to_bytes<Output: OutputBuf>(value: &UtcTimeValue, obuf: &mut Output)
     requires
         value.wf(),
         old(obuf).fits(utc_time_bytes(*value).len()),
@@ -494,10 +494,7 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::UtcTime<DER> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<
-    Output,
-    UtcTimeValue,
-> for super::UtcTime<DER> {
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, UtcTimeValue> for super::UtcTime<DER> {
     fn serialize_into(&self, value: &UtcTimeValue, obuf: &mut Output) {
         proof {
             assert(value.wf());

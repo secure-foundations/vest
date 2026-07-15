@@ -765,7 +765,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOf<C> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, C, Elem> Serializer<Output, [Elem]> for SetOf<C> where
+impl<Output: OutputBuf, C, Elem> Serializer<Output, [Elem]> for SetOf<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Serializer<Output, Elem> + Copy,
  {
@@ -797,9 +797,9 @@ impl<C, Elem> ByteLen<[Elem]> for SetOf<C> where
 /// This is a separate capability from [`Serializer`]: serializer invariants may be prophetic,
 /// whereas [`Prepare`] must be able to validate canonical order using a non-prophetic invariant.
 /// Implementations may compare values directly instead of allocating their encodings.
-pub trait DerOrd<T>: SpecSerializer<SVal = T::V> + Consistency<Val = T::V> where
-    T: DeepView + ?Sized,
- {
+pub trait DerOrd<T>: SpecSerializer<SVal = T::V> + SpecByteLen<T = T::V> + Consistency<
+    Val = T::V,
+> where T: DeepView + ?Sized {
     open spec fn der_ord_exec_inv(&self) -> bool {
         true
     }
@@ -809,6 +809,8 @@ pub trait DerOrd<T>: SpecSerializer<SVal = T::V> + Consistency<Val = T::V> where
             self.der_ord_exec_inv(),
             self.consistent(left.deep_view()),
             self.consistent(right.deep_view()),
+            self.byte_len(left.deep_view()) <= usize::MAX,
+            self.byte_len(right.deep_view()) <= usize::MAX,
         ensures
             leq == der_octets_leq(
                 self.spec_serialize(left.deep_view()),
@@ -843,6 +845,8 @@ impl<C, Elem> Prepare<[Elem]> for SetOf<C> where
             if i > 0 {
                 assert(self.0.consistent(values.deep_view()[i as int - 1]));
                 assert(self.0.consistent(values.deep_view()[i as int]));
+                let _ = self.0.prepare(&values[i - 1])?;
+                let _ = self.0.prepare(&values[i])?;
                 if !self.0.der_leq(&values[i - 1], &values[i]) {
                     return Err(
                         PreSerializeError::custom("SET OF elements are not in canonical DER order"),
@@ -866,11 +870,11 @@ impl<C, Elem> Prepare<[Elem]> for SetOf<C> where
 
 impl DerOrd<i8> for super::ASN1<super::Integer8, true> {
     fn der_leq(&self, left: &i8, right: &i8) -> (leq: bool) {
-        let mut left_encoding = Vec::new();
-        let mut right_encoding = Vec::new();
-        self.serialize_with_vec(left, &mut left_encoding);
+        let mut left_encoding = vec![0; self.length(left)];
+        let mut right_encoding = vec![0; self.length(right)];
+        self.serialize(left, &mut left_encoding);
         assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize_with_vec(right, &mut right_encoding);
+        self.serialize(right, &mut right_encoding);
         assert(right_encoding@ == self.spec_serialize(right.deep_view()));
         let left_slice = left_encoding.as_slice();
         let right_slice = right_encoding.as_slice();
@@ -882,11 +886,11 @@ impl DerOrd<i8> for super::ASN1<super::Integer8, true> {
 
 impl DerOrd<i16> for super::ASN1<super::Integer16, true> {
     fn der_leq(&self, left: &i16, right: &i16) -> (leq: bool) {
-        let mut left_encoding = Vec::new();
-        let mut right_encoding = Vec::new();
-        self.serialize_with_vec(left, &mut left_encoding);
+        let mut left_encoding = vec![0; self.length(left)];
+        let mut right_encoding = vec![0; self.length(right)];
+        self.serialize(left, &mut left_encoding);
         assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize_with_vec(right, &mut right_encoding);
+        self.serialize(right, &mut right_encoding);
         assert(right_encoding@ == self.spec_serialize(right.deep_view()));
         let left_slice = left_encoding.as_slice();
         let right_slice = right_encoding.as_slice();
@@ -911,8 +915,8 @@ mod tests {
         assert_eq!(values, vec![1, 2]);
 
         assert_eq!(format.prepare(&values), Ok(canonical.len()));
-        let mut encoded = Vec::new();
-        format.serialize_with_vec(&values, &mut encoded);
+        let mut encoded = vec![0; format.prepare(&values).unwrap()];
+        format.serialize(&values, &mut encoded);
         assert_eq!(encoded, canonical);
 
         let unordered = [0x31, 0x06, 0x02, 0x01, 0x02, 0x02, 0x01, 0x01];

@@ -722,7 +722,7 @@ impl<'i> Parser<&'i [u8]> for Integer16 {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i8> for Integer8 {
+impl<Output: OutputBuf> Serializer<Output, i8> for Integer8 {
     fn serialize_into(&self, v: &i8, obuf: &mut Output) {
         I8.serialize_into(v, obuf);
     }
@@ -740,7 +740,7 @@ impl ByteLen<i8> for Integer8 {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for Integer16 {
+impl<Output: OutputBuf> Serializer<Output, i16> for Integer16 {
     fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         if fits_i8(*v) {
             I8.serialize_into(&(*v as i8), obuf);
@@ -770,7 +770,7 @@ impl ByteLen<i16> for Integer16 {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, IntVal<'i>> for super::Integer {
+impl<Output: OutputBuf, 'i> Serializer<Output, IntVal<'i>> for super::Integer {
     fn serialize_into(&self, v: &IntVal<'i>, obuf: &mut Output) {
         match v {
             IntVal::Small { v } => {
@@ -1032,7 +1032,7 @@ pub fn i64_to_be_bytes_in_place(v: i64, obuf: &mut [u8])
 #[cfg(test)]
 mod tests {
     use super::{Integer16, Integer8};
-    use crate::core::exec::{Parser, SerializerExt};
+    use crate::core::exec::{Parser, Prepare, SerializerExt};
 
     #[test]
     fn integer8_boundaries_and_noncanonical_lengths() {
@@ -1055,8 +1055,8 @@ mod tests {
             (128i16, &[0x00u8, 0x80][..]),
             (32767i16, &[0x7fu8, 0xff][..]),
         ] {
-            let mut encoded = Vec::new();
-            Integer16.serialize_with_vec(&value, &mut encoded);
+            let mut encoded = vec![0; Integer16.prepare(&value).unwrap()];
+            Integer16.serialize(&value, &mut encoded);
             assert_eq!(encoded, expected);
 
             let (_, decoded) = Integer16.parse(&expected).unwrap();
@@ -1075,13 +1075,13 @@ mod tests {
 
         for v in -128..=127 {
             // Serialize using Integer8
-            let mut enc8 = Vec::new();
-            Integer8.serialize_with_vec(&v, &mut enc8);
+            let mut enc8 = vec![0; Integer8.prepare(&v).unwrap()];
+            Integer8.serialize(&v, &mut enc8);
 
             // Serialize using general Integer
-            let mut enc_gen = Vec::new();
             let val = IntVal::Small { v: v as i64 };
-            Integer.serialize_with_vec(&val, &mut enc_gen);
+            let mut enc_gen = vec![0; Integer.prepare(&val).unwrap()];
+            Integer.serialize(&val, &mut enc_gen);
 
             assert_eq!(enc8, enc_gen, "Mismatch serialization at {}", v);
 
@@ -1108,13 +1108,13 @@ mod tests {
 
         for v in -32768..=32767 {
             // Serialize using Integer16
-            let mut enc16 = Vec::new();
-            Integer16.serialize_with_vec(&v, &mut enc16);
+            let mut enc16 = vec![0; Integer16.prepare(&v).unwrap()];
+            Integer16.serialize(&v, &mut enc16);
 
             // Serialize using general Integer
-            let mut enc_gen = Vec::new();
             let val = IntVal::Small { v: v as i64 };
-            Integer.serialize_with_vec(&val, &mut enc_gen);
+            let mut enc_gen = vec![0; Integer.prepare(&val).unwrap()];
+            Integer.serialize(&val, &mut enc_gen);
 
             assert_eq!(enc16, enc_gen, "Mismatch serialization at {}", v);
 

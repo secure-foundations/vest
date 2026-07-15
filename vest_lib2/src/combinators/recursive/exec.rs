@@ -43,7 +43,7 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
 
 /// Executable serialization for one recursive unfolding.
 pub trait SerializerRecBody<Output, T>: SpecRecBody where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView<V = Self::T>,
  {
     type EP: DeepView<V = Self::Param>;
@@ -169,7 +169,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     }
 
     fn serialize_gas<Output, T>(&self, gas: usize, param: &Param, v: &T, obuf: &mut Output) where
-        Output: OutputBuf + ?Sized,
+        Output: OutputBuf,
         T: DeepView<V = Body::T>,
         Param: DeepView<V = Body::Param>,
         Body: SerializerRecBody<Output, T, EP = Param>,
@@ -276,7 +276,7 @@ impl<const LIMIT: usize, Body, Param, I> Parser<I> for super::FixWith<LIMIT, Bod
     }
 }
 
-impl<Output: OutputBuf + ?Sized, T, const LIMIT: usize, Body, Param> Serializer<
+impl<Output: OutputBuf, T, const LIMIT: usize, Body, Param> Serializer<
     Output,
     T,
 > for super::FixWith<LIMIT, Body, Param> where

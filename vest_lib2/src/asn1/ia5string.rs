@@ -223,7 +223,7 @@ impl<'i> Parser<&'i [u8]> for super::Ia5String {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, Ia5String<'i>> for super::Ia5String {
+impl<Output: OutputBuf, 'i> Serializer<Output, Ia5String<'i>> for super::Ia5String {
     fn serialize_into(&self, v: &Ia5String<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);

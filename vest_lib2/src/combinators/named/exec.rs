@@ -26,7 +26,7 @@ impl<I, Inner> Parser<I> for super::Named<Inner> where I: View<V = Seq<u8>>, Inn
     }
 }
 
-impl<Output: OutputBuf + ?Sized, T, Inner> Serializer<Output, T> for super::Named<Inner> where
+impl<Output: OutputBuf, T, Inner> Serializer<Output, T> for super::Named<Inner> where
     T: DeepView,
     Inner: Serializer<Output, T>,
  {

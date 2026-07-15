@@ -214,7 +214,7 @@ impl<'i> Parser<&'i [u8]> for super::BmpString {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, BmpString<'i>> for super::BmpString {
+impl<Output: OutputBuf, 'i> Serializer<Output, BmpString<'i>> for super::BmpString {
     fn serialize_into(&self, v: &BmpString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);

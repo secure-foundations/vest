@@ -59,10 +59,12 @@ impl<I, A, AVal, B> Parser<I> for super::Preceded<A, AVal, B, true> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, AVal, B, T, const CHECK: bool> Serializer<
-    Output,
-    T,
-> for super::Preceded<A, AVal, B, CHECK> where
+impl<Output: OutputBuf, A, AVal, B, T, const CHECK: bool> Serializer<Output, T> for super::Preceded<
+    A,
+    AVal,
+    B,
+    CHECK,
+> where
     AVal: DeepView<V = AVal>,
     T: DeepView,
     A: Serializer<Output, AVal>,

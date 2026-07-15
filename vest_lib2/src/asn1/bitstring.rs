@@ -216,7 +216,7 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::BitStringFmt<DER> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
+impl<Output: OutputBuf, 'i, const DER: bool> Serializer<
     Output,
     BitString<'i, DER>,
 > for super::BitStringFmt<DER> {

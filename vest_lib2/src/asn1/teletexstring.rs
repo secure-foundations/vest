@@ -216,10 +216,7 @@ impl<'i> Parser<&'i [u8]> for super::TeletexString {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<
-    Output,
-    TeletexString<'i>,
-> for super::TeletexString {
+impl<Output: OutputBuf, 'i> Serializer<Output, TeletexString<'i>> for super::TeletexString {
     fn serialize_into(&self, v: &TeletexString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);

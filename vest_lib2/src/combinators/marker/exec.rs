@@ -32,7 +32,7 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, ()> for super::Empty {
+impl<Output: OutputBuf> Serializer<Output, ()> for super::Empty {
     fn serialize_into(&self, _v: &(), _obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
@@ -59,7 +59,7 @@ impl<I: View<V = Seq<u8>>> Parser<I> for super::Void {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, ExecNever> for super::Void {
+impl<Output: OutputBuf> Serializer<Output, ExecNever> for super::Void {
     fn serialize_into(&self, _v: &ExecNever, _obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 

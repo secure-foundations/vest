@@ -571,7 +571,7 @@ pub open spec fn generalized_time_bytes(value: GeneralizedTimeSpec) -> Seq<u8> {
 }
 
 /// Writes a `GeneralizedTimeValue` directly to an output buffer without allocating.
-pub fn generalized_time_to_bytes<'a, Output: OutputBuf + ?Sized>(
+pub fn generalized_time_to_bytes<'a, Output: OutputBuf>(
     value: &GeneralizedTimeValue<'a>,
     obuf: &mut Output,
 )
@@ -959,7 +959,7 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::GeneralizedTime<DER> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i, const DER: bool> Serializer<
+impl<Output: OutputBuf, 'i, const DER: bool> Serializer<
     Output,
     GeneralizedTimeValue<'i>,
 > for super::GeneralizedTime<DER> {

@@ -59,7 +59,7 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, BVal, T, const CHECK: bool> Serializer<
+impl<Output: OutputBuf, A, B, BVal, T, const CHECK: bool> Serializer<
     Output,
     T,
 > for super::Terminated<A, B, BVal, CHECK> where

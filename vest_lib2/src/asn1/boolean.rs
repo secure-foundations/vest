@@ -229,7 +229,7 @@ impl<const DER: bool> Parser<&[u8]> for super::Bool<DER> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, bool> for super::Bool<true> {
+impl<Output: OutputBuf> Serializer<Output, bool> for super::Bool<true> {
     fn serialize_into(&self, v: &bool, obuf: &mut Output) {
         let b = if *v {
             CANONICAL_TRUE_BYTE

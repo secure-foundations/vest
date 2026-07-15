@@ -173,7 +173,7 @@ impl<'i> Parser<&'i [u8]> for super::Utf8String {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, 'i> Serializer<Output, &'i str> for super::Utf8String {
+impl<Output: OutputBuf, 'i> Serializer<Output, &'i str> for super::Utf8String {
     fn serialize_into(&self, v: &&'i str, obuf: &mut Output) {
         let bytes = v.as_bytes();
         Tail.serialize_into(&bytes, obuf);

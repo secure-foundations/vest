@@ -71,7 +71,7 @@ pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
 {
 }
 
-impl<Output: OutputBuf + ?Sized, Inner, M, MRev, T, InnerT> Serializer<Output, T> for super::Mapped<
+impl<Output: OutputBuf, Inner, M, MRev, T, InnerT> Serializer<Output, T> for super::Mapped<
     Inner,
     BiMap<M, MRev>,
 > where

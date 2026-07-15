@@ -227,7 +227,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 
 #[verifier::loop_isolation(false)]
 pub fn serialize_slice<Output, Inner, T>(inner: &Inner, values: &[T], obuf: &mut Output) where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView,
     Inner: Serializer<Output, T>,
 
@@ -337,7 +337,7 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     Ok(len)
 }
 
-impl<Output: OutputBuf + ?Sized, Inner, T> Serializer<Output, [T]> for super::Star<Inner> where
+impl<Output: OutputBuf, Inner, T> Serializer<Output, [T]> for super::Star<Inner> where
     T: DeepView,
     Inner: Serializer<Output, T>,
  {
@@ -372,7 +372,7 @@ impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: D
     }
 }
 
-// impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (&[TA], TB)> for super::Repeat<A, B> where
+// impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (&[TA], TB)> for super::Repeat<A, B> where
 //     TA: DeepView,
 //     TB: DeepView,
 //     A: Serializer<Output, TA> + Copy,
@@ -420,10 +420,11 @@ impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: D
 //         }
 //     }
 // }
-impl<Output: OutputBuf + ?Sized, Inner, N, T> Serializer<Output, [T]> for super::RepeatN<
-    Inner,
-    N,
-> where T: DeepView, Inner: Serializer<Output, T>, N: AsLen {
+impl<Output: OutputBuf, Inner, N, T> Serializer<Output, [T]> for super::RepeatN<Inner, N> where
+    T: DeepView,
+    Inner: Serializer<Output, T>,
+    N: AsLen,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
@@ -468,10 +469,10 @@ impl<Inner, N, T> Prepare<[T]> for super::RepeatN<Inner, N> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Inner, T, const N: usize> Serializer<
-    Output,
-    [T; N],
-> for super::Array<N, Inner> where T: DeepView, Inner: Serializer<Output, T> {
+impl<Output: OutputBuf, Inner, T, const N: usize> Serializer<Output, [T; N]> for super::Array<
+    N,
+    Inner,
+> where T: DeepView, Inner: Serializer<Output, T> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()

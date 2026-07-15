@@ -295,7 +295,7 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
 /// Pairs an executable serializer closure with a ghost specification serializer.
 #[verifier::reject_recursive_types(T)]
 pub struct FnSerializer<
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -307,7 +307,7 @@ pub struct FnSerializer<
 }
 
 impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -338,7 +338,7 @@ impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
 }
 
 impl<Output, T, Spec, Exec> SpecSerializer for FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -352,7 +352,7 @@ impl<Output, T, Spec, Exec> SpecSerializer for FnSerializer<Output, T, Spec, Exe
 }
 
 impl<Output, T, Spec, Exec> SpecByteLen for FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -366,7 +366,7 @@ impl<Output, T, Spec, Exec> SpecByteLen for FnSerializer<Output, T, Spec, Exec> 
 }
 
 impl<Output, T, Spec, Exec> GoodSerializer for FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: GoodSerializer<T = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -383,7 +383,7 @@ impl<Output, T, Spec, Exec> GoodSerializer for FnSerializer<Output, T, Spec, Exe
 }
 
 impl<Output, T, Spec, Exec> Consistency for FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),
@@ -397,7 +397,7 @@ impl<Output, T, Spec, Exec> Consistency for FnSerializer<Output, T, Spec, Exec> 
 }
 
 impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Spec, Exec> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T, &mut Output),

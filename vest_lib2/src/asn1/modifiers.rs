@@ -468,7 +468,7 @@ impl<I, Field, Rest, const DER: bool> Parser<I> for Defaulted<Field, Field::T, R
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Field, Default, Rest, R, const DER: bool> Serializer<
+impl<Output: OutputBuf, Field, Default, Rest, R, const DER: bool> Serializer<
     Output,
     (Default, R),
 > for Defaulted<Field, Default, Rest, DER> where

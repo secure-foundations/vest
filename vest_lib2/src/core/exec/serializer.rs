@@ -13,7 +13,7 @@ verus! {
 
 /// An executable serializer targeting `Output`.
 pub trait Serializer<Output, T> where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     Self: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
     T: DeepView + ?Sized,
  {
@@ -258,7 +258,7 @@ impl<S: Consistency> Consistency for &S {
 }
 
 impl<Output, T, S> Serializer<Output, T> for &S where
-    Output: OutputBuf + ?Sized,
+    Output: OutputBuf,
     T: DeepView + ?Sized,
     S: Serializer<Output, T>,
  {

@@ -229,7 +229,7 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Content, T, const DER: bool> Serializer<Output, T> for ASN1<
+impl<Output: OutputBuf, Content, T, const DER: bool> Serializer<Output, T> for ASN1<
     Content,
     DER,
 > where T: DeepView + ?Sized, Content: SpecCombinator + Serializer<Output, T> + ByteLen<T> {
@@ -304,8 +304,8 @@ fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
     let asn_bool = ASN1::<_, DER>(TagFmt::BOOLEAN, Bool::<DER>);
     let (_n, v) = asn_bool.parse(buf)?;
     if let Ok(len) = asn_bool.prepare(&v) {
-        let mut obuf = Vec::with_capacity(len);
-        asn_bool.serialize_with_vec(&v, &mut obuf);
+        let mut obuf = vec![0; len];
+        asn_bool.serialize(&v, &mut obuf);
 
         proof {
             asn_bool.theorem_parse_serialize_roundtrip(buf@);
@@ -353,8 +353,8 @@ mod tests {
         assert_eq!(val, true);
 
         // Serialize and check DER roundtrip
-        let mut out = Vec::new();
-        der_bool.serialize_with_vec(&true, &mut out);
+        let mut out = vec![0; der_bool.prepare(&true).unwrap()];
+        der_bool.serialize(&true, &mut out);
         assert_eq!(out, input_true);
         assert_eq!(der_bool.prepare(&true), Ok(3));
         assert_eq!(der_bool.length(&true), 3);
@@ -385,8 +385,8 @@ mod tests {
 
         // Roundtrip serialization for DER BitString
         let valid_bs = BitString::new(4, &[0xA0]);
-        let mut out = Vec::new();
-        der_bitstring.serialize_with_vec(&valid_bs, &mut out);
+        let mut out = vec![0; der_bitstring.prepare(&valid_bs).unwrap()];
+        der_bitstring.serialize(&valid_bs, &mut out);
         assert_eq!(out, input_valid);
         assert_eq!(der_bitstring.prepare(&valid_bs), Ok(4));
         assert_eq!(der_bitstring.length(&valid_bs), 4);

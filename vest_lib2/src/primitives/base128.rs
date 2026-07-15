@@ -723,9 +723,7 @@ impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const MINIMAL: bool> Serializer<Output, UInt> for Base128Fmt<
-    MINIMAL,
-> {
+impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, UInt> for Base128Fmt<MINIMAL> {
     #[verifier::loop_isolation(false)]
     fn serialize_into(&self, v: &UInt, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
@@ -814,8 +812,8 @@ mod tests {
         ];
 
         for &(value, expected) in cases {
-            let mut out = Vec::new();
-            fmt.serialize_with_vec(&value, &mut out);
+            let mut out = vec![0; fmt.prepare(&value).unwrap()];
+            fmt.serialize(&value, &mut out);
             assert_eq!(out, expected);
 
             let mut stack_out = [0u8; 2];
@@ -872,8 +870,8 @@ mod tests {
         let max_supported = (1u64 << 63) - 1;
         let too_large = 1u64 << 63;
 
-        let mut out = Vec::new();
-        fmt.serialize_with_vec(&max_supported, &mut out);
+        let mut out = vec![0; fmt.prepare(&max_supported).unwrap()];
+        fmt.serialize(&max_supported, &mut out);
         assert_eq!(out.len(), BASE128_MAX_BYTES);
         assert_eq!(fmt.prepare(&max_supported), Ok(BASE128_MAX_BYTES));
         assert_eq!(fmt.length(&max_supported), BASE128_MAX_BYTES);

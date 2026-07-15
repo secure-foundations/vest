@@ -50,10 +50,11 @@ pub broadcast proof fn lemma_refined_exec_inv<I, A, PredFn>(fmt: &super::Refined
 {
 }
 
-impl<Output: OutputBuf + ?Sized, A, PredFn, T> Serializer<Output, T> for super::Refined<
-    A,
-    PredFn,
-> where T: DeepView, A: Serializer<Output, T>, PredFn: SpecPred<T::V> {
+impl<Output: OutputBuf, A, PredFn, T> Serializer<Output, T> for super::Refined<A, PredFn> where
+    T: DeepView,
+    A: Serializer<Output, T>,
+    PredFn: SpecPred<T::V>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
@@ -118,7 +119,7 @@ impl<I, Inner, T> Parser<I> for super::Const<Inner, T> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Inner, T> Serializer<Output, T> for super::Const<Inner, T> where
+impl<Output: OutputBuf, Inner, T> Serializer<Output, T> for super::Const<Inner, T> where
     T: DeepView<V = T>,
     Inner: Serializer<Output, T>,
  {
@@ -269,7 +270,7 @@ impl<I, Tg, TagVal, Of> Parser<I> for super::PrefixTagged<Tg, TagVal, Of> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Tg, TagVal, Of, T> Serializer<Output, T> for super::PrefixTagged<
+impl<Output: OutputBuf, Tg, TagVal, Of, T> Serializer<Output, T> for super::PrefixTagged<
     Tg,
     TagVal,
     Of,
@@ -366,7 +367,7 @@ impl<I, Of, Tg, TagVal> Parser<I> for super::SuffixTagged<Of, Tg, TagVal> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, Of, Tg, TagVal, T> Serializer<Output, T> for super::SuffixTagged<
+impl<Output: OutputBuf, Of, Tg, TagVal, T> Serializer<Output, T> for super::SuffixTagged<
     Of,
     Tg,
     TagVal,

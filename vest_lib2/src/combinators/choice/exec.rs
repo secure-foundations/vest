@@ -68,15 +68,10 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
-    Output,
-    super::Sum<TA, TB>,
-> for super::Choice<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Serializer<Output, TA>,
-    B: Serializer<Output, TB>,
- {
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, super::Sum<TA, TB>> for super::Choice<
+    A,
+    B,
+> where TA: DeepView, TB: DeepView, A: Serializer<Output, TA>, B: Serializer<Output, TB> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -177,15 +172,10 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<
-    Output,
-    super::Sum<TA, TB>,
-> for super::Sum<A, B> where
-    TA: DeepView,
-    TB: DeepView,
-    A: Serializer<Output, TA>,
-    B: Serializer<Output, TB>,
- {
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, super::Sum<TA, TB>> for super::Sum<
+    A,
+    B,
+> where TA: DeepView, TB: DeepView, A: Serializer<Output, TA>, B: Serializer<Output, TB> {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         match self {

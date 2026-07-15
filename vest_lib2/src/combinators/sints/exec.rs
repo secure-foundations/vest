@@ -138,7 +138,7 @@ impl Parser<&[u8]> for super::I8 {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i8> for super::I8 {
+impl<Output: OutputBuf> Serializer<Output, i8> for super::I8 {
     fn serialize_into(&self, v: &i8, obuf: &mut Output) {
         obuf.write_byte(*v as u8);
     }
@@ -174,7 +174,7 @@ impl Parser<&[u8]> for super::I16Le {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for super::I16Le {
+impl<Output: OutputBuf> Serializer<Output, i16> for super::I16Le {
     fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         let bytes = i16_to_le_bytes(*v);
         obuf.write_bytes(&bytes);
@@ -211,7 +211,7 @@ impl Parser<&[u8]> for super::I16Be {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i16> for super::I16Be {
+impl<Output: OutputBuf> Serializer<Output, i16> for super::I16Be {
     fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         let bytes = i16_to_be_bytes(*v);
         obuf.write_bytes(&bytes);
@@ -248,7 +248,7 @@ impl Parser<&[u8]> for super::I32Le {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i32> for super::I32Le {
+impl<Output: OutputBuf> Serializer<Output, i32> for super::I32Le {
     fn serialize_into(&self, v: &i32, obuf: &mut Output) {
         let bytes = i32_to_le_bytes(*v);
         obuf.write_bytes(&bytes);
@@ -285,7 +285,7 @@ impl Parser<&[u8]> for super::I32Be {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i32> for super::I32Be {
+impl<Output: OutputBuf> Serializer<Output, i32> for super::I32Be {
     fn serialize_into(&self, v: &i32, obuf: &mut Output) {
         let bytes = i32_to_be_bytes(*v);
         obuf.write_bytes(&bytes);
@@ -331,7 +331,7 @@ impl Parser<&[u8]> for super::I64Le {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i64> for super::I64Le {
+impl<Output: OutputBuf> Serializer<Output, i64> for super::I64Le {
     fn serialize_into(&self, v: &i64, obuf: &mut Output) {
         let bytes = i64_to_le_bytes(*v);
         obuf.write_bytes(&bytes);
@@ -377,7 +377,7 @@ impl Parser<&[u8]> for super::I64Be {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, i64> for super::I64Be {
+impl<Output: OutputBuf> Serializer<Output, i64> for super::I64Be {
     fn serialize_into(&self, v: &i64, obuf: &mut Output) {
         let bytes = i64_to_be_bytes(*v);
         obuf.write_bytes(&bytes);

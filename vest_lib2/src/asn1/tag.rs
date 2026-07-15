@@ -629,7 +629,7 @@ impl Parser<&[u8]> for super::TagFmt {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, Tag> for super::TagFmt {
+impl<Output: OutputBuf> Serializer<Output, Tag> for super::TagFmt {
     fn serialize_into(&self, v: &Tag, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
@@ -1025,8 +1025,8 @@ fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
     let const_u16_fmt = Const(U16Be, 0x1234u16);
     let (n, v) = const_u16_fmt.parse(buf)?;
     if let Ok(len) = const_u16_fmt.prepare(&v) {
-        let mut obuf = Vec::with_capacity(len);
-        const_u16_fmt.serialize_with_vec(&v, &mut obuf);
+        let mut obuf = vec![0; len];
+        const_u16_fmt.serialize(&v, &mut obuf);
         proof {
             const_u16_fmt.theorem_parse_serialize_roundtrip(buf@);
             assert(obuf@ == buf@.take(n as int));
@@ -1041,8 +1041,8 @@ fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
     let asn_bool_tag_fmt = Const(super::TagFmt, super::TagFmt::BOOLEAN);
     let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
     if let Ok(len) = asn_bool_tag_fmt.prepare(&tag) {
-        let mut obuf = Vec::with_capacity(len);
-        asn_bool_tag_fmt.serialize_with_vec(&tag, &mut obuf);
+        let mut obuf = vec![0; len];
+        asn_bool_tag_fmt.serialize(&tag, &mut obuf);
 
         proof {
             asn_bool_tag_fmt.theorem_parse_serialize_roundtrip(buf@);

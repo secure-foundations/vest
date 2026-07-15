@@ -27,7 +27,7 @@ impl<I: InputBuf> Parser<I> for super::Tail {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, [u8]> for super::Tail {
+impl<Output: OutputBuf> Serializer<Output, [u8]> for super::Tail {
     fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
         obuf.write_bytes(v);
     }
@@ -62,7 +62,7 @@ impl<I: InputBuf> Parser<I> for super::Eof {
     }
 }
 
-impl<Output: OutputBuf + ?Sized> Serializer<Output, ()> for super::Eof {
+impl<Output: OutputBuf> Serializer<Output, ()> for super::Eof {
     fn serialize_into(&self, _v: &(), _obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
@@ -156,7 +156,7 @@ impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> +
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, &[T]> for super::RepeatTillEnd<A> where
+impl<Output: OutputBuf, A, T> Serializer<Output, &[T]> for super::RepeatTillEnd<A> where
     A: Serializer<Output, T> + Copy,
     T: DeepView + Copy,
  {
@@ -190,9 +190,10 @@ impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy,
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, T> Serializer<Output, Option<T>> for super::OptionalEnd<
-    A,
-> where A: Serializer<Output, T>, T: DeepView + Copy {
+impl<Output: OutputBuf, A, T> Serializer<Output, Option<T>> for super::OptionalEnd<A> where
+    A: Serializer<Output, T>,
+    T: DeepView + Copy,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()

@@ -524,7 +524,7 @@ impl<const DER: bool> Parser<&[u8]> for super::Length<DER> {
     }
 }
 
-impl<Output: OutputBuf + ?Sized, const DER: bool> Serializer<Output, usize> for super::Length<DER> {
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, usize> for super::Length<DER> {
     fn serialize_into(&self, v: &usize, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 

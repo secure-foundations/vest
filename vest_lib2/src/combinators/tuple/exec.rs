@@ -47,10 +47,12 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Pair<
-    A,
-    B,
-> where TA: DeepView, TB: DeepView, A: Serializer<Output, TA>, B: Serializer<Output, TB> {
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Pair<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<Output, TA>,
+    B: Serializer<Output, TB>,
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -138,10 +140,7 @@ impl<I, A, B> Parser<I> for super::Bind<A, B> where
     }
 }
 
-impl<Output: OutputBuf + ?Sized, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Bind<
-    A,
-    B,
-> where
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (TA, TB)> for super::Bind<A, B> where
     TA: DeepView,
     TB: DeepView,
     A: Serializer<Output, TA>,
