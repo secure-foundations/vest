@@ -221,7 +221,7 @@ fn bench_expr_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = vec![0; fmt.prepare(value).expect("vest expr prepare failed")];
+                let mut out = Vec::with_capacity(bytes.len());
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
@@ -251,7 +251,7 @@ fn bench_list_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = vec![0; fmt.prepare(value).expect("vest list prepare failed")];
+                let mut out = Vec::with_capacity(bytes.len());
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
@@ -310,7 +310,7 @@ fn bench_byte_list_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = vec![0; fmt.prepare(value).expect("vest byte-list prepare failed")];
+                let mut out = Vec::with_capacity(bytes.len());
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }

@@ -151,7 +151,7 @@ fn bench_serialize(c: &mut Criterion) {
                 let vr = TreeNodeValueRef::IsTree {
                     tree: black_box(value),
                 };
-                let mut out = vec![0; fmt.prepare(&vr).expect("C: prepare failed")];
+                let mut out = Vec::with_capacity(bytes.len());
                 fmt.serialize(&vr, &mut out);
                 black_box(out);
             }

@@ -12,7 +12,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use rustls::internal::msgs::message::MessagePayload;
 use vest_lib2::core::exec::parser::Parser;
-use vest_lib2::core::exec::serializer::Serializer;
+use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
 
 use vest2_generated::bitcoin::BlockFmt;
 use vest2_generated::tls::HandshakeFmt;
@@ -181,6 +181,10 @@ fn bench_serialize_bitcoin_bulk(c: &mut Criterion) {
         .iter()
         .map(|b| block_fmt.parse(&&b[..]).unwrap().1)
         .collect();
+    let vest_block_lens: Vec<_> = vest_blocks
+        .iter()
+        .map(|block| block_fmt.prepare(block).unwrap())
+        .collect();
 
     let rust_blocks: Vec<_> = test_blocks
         .iter()
@@ -195,8 +199,8 @@ fn bench_serialize_bitcoin_bulk(c: &mut Criterion) {
 
     group.bench_function("generated_serializer", |b| {
         b.iter(|| {
-            for block in &vest_blocks {
-                let mut buf = Vec::with_capacity(max_block_size);
+            for (block, len) in vest_blocks.iter().zip(&vest_block_lens) {
+                let mut buf = Vec::with_capacity(*len);
                 block_fmt.serialize(block, &mut buf);
                 black_box(buf);
             }
@@ -224,7 +228,6 @@ fn bench_serialize_tls_bulk(c: &mut Criterion) {
     let mut retained_vest_msgs = Vec::new();
     let mut retained_rustls_msgs = Vec::new();
     let mut retained_bytes = 0u64;
-    let mut max_msg_size = 0;
 
     let handshake_fmt = HandshakeFmt;
     for msg in &tls_messages {
@@ -235,13 +238,14 @@ fn bench_serialize_tls_bulk(c: &mut Criterion) {
             (generated_parsed, rustls_parsed)
         {
             retained_bytes += msg.len() as u64;
-            if msg.len() > max_msg_size {
-                max_msg_size = msg.len();
-            }
             retained_vest_msgs.push(g_val);
             retained_rustls_msgs.push(r_val);
         }
     }
+    let retained_vest_msg_lens: Vec<_> = retained_vest_msgs
+        .iter()
+        .map(|msg| handshake_fmt.prepare(msg).unwrap())
+        .collect();
 
     println!(
         "Retained {} / {} messages for serialization bench ({} bytes)",
@@ -255,8 +259,8 @@ fn bench_serialize_tls_bulk(c: &mut Criterion) {
 
     group.bench_function("generated_serializer", |b| {
         b.iter(|| {
-            for msg in &retained_vest_msgs {
-                let mut buf = Vec::with_capacity(max_msg_size);
+            for (msg, len) in retained_vest_msgs.iter().zip(&retained_vest_msg_lens) {
+                let mut buf = Vec::with_capacity(*len);
                 handshake_fmt.serialize(msg, &mut buf);
                 black_box(buf);
             }

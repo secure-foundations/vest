@@ -40,7 +40,7 @@ fn make_corpus() -> NestedBracesCorpus {
 
         let (n_vest, parsed_vest) = fmt.parse(&&bytes[..]).expect("vest parse failed");
         assert_eq!(n_vest, bytes.len());
-        let mut vest_roundtrip = vec![0; fmt.prepare(&parsed_vest).expect("vest prepare failed")];
+        let mut vest_roundtrip = Vec::with_capacity(bytes.len());
         fmt.serialize(&parsed_vest, &mut vest_roundtrip);
         assert_eq!(vest_roundtrip, bytes);
 
@@ -101,7 +101,7 @@ fn bench_nested_braces_serialize_bulk(c: &mut Criterion) {
     group.bench_function("vest_fixwith_bulk", |b| {
         b.iter(|| {
             for (value, bytes) in corpus.values.iter().zip(&corpus.encoded) {
-                let mut out = vec![0; fmt.prepare(value).expect("vest prepare failed")];
+                let mut out = Vec::with_capacity(bytes.len());
                 fmt.serialize(black_box(value), &mut out);
                 black_box(out);
             }
