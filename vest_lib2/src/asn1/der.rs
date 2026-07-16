@@ -1,8 +1,8 @@
 //! Convenient notation-style aliases for universal formats with DER encoding.
 use super::{
-    BitStringFmt, BmpString, Bool, Class, Explicit, GeneralizedTime, Ia5String, Implicit, Integer,
-    Integer16, Integer8, Null, OctetString, PrintableString, SetOf, TagFmt, TeletexString, UtcTime,
-    Utf8String, ASN1, DER,
+    Any, BitStringFmt, BmpString, Bool, Class, Enumerated, Explicit, GeneralizedTime, Ia5String,
+    Implicit, Integer, Integer16, Integer8, Null, ObjectIdentifier, OctetString, PrintableString,
+    Real, SetOf, TagFmt, TeletexString, UtcTime, Utf8String, ASN1, DER,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -11,11 +11,19 @@ verus! {
 
 pub type ASN1Bool<const DER: bool> = ASN1<Bool<DER>, DER>;
 
+pub type ASN1Any<const DER: bool> = Any<DER>;
+
 pub type ASN1Integer<const DER: bool> = ASN1<Integer, DER>;
 
 pub type ASN1Integer8<const DER: bool> = ASN1<Integer8, DER>;
 
 pub type ASN1Integer16<const DER: bool> = ASN1<Integer16, DER>;
+
+pub type ASN1Enumerated<const DER: bool> = ASN1<Enumerated, DER>;
+
+pub type ASN1ObjectIdentifier<const DER: bool> = ASN1<ObjectIdentifier, DER>;
+
+pub type ASN1Real<const DER: bool> = ASN1<Real, DER>;
 
 pub type ASN1BitString<const DER: bool> = ASN1<BitStringFmt<DER>, DER>;
 
@@ -43,11 +51,22 @@ pub type ASN1SequenceOf<C> = ASN1<crate::combinators::RepeatTillEnd<C>, DER>;
 
 pub const BOOLEAN: ASN1Bool<DER> = ASN1::<Bool<DER>, DER>(TagFmt::BOOLEAN, Bool::<DER>);
 
+pub const ANY: ASN1Any<DER> = Any::<DER>;
+
 pub const INTEGER: ASN1Integer<DER> = ASN1::<Integer, DER>(TagFmt::INTEGER, Integer);
 
 pub const INTEGER8: ASN1Integer8<DER> = ASN1::<Integer8, DER>(TagFmt::INTEGER, Integer8);
 
 pub const INTEGER16: ASN1Integer16<DER> = ASN1::<Integer16, DER>(TagFmt::INTEGER, Integer16);
+
+pub const ENUMERATED: ASN1Enumerated<DER> = ASN1::<Enumerated, DER>(TagFmt::ENUMERATED, Enumerated);
+
+pub const OBJECT_IDENTIFIER: ASN1ObjectIdentifier<DER> = ASN1::<ObjectIdentifier, DER>(
+    TagFmt::OBJECT_IDENTIFIER,
+    ObjectIdentifier,
+);
+
+pub const REAL: ASN1Real<DER> = ASN1::<Real, DER>(TagFmt::REAL, Real);
 
 pub const BIT_STRING: ASN1BitString<DER> = ASN1::<BitStringFmt<DER>, DER>(
     TagFmt::BIT_STRING,

@@ -2,6 +2,8 @@
 
 //! ASN.1 formats.
 
+/// ASN.1 ANY / open-type complete TLV format.
+pub mod any;
 /// ASN.1 BIT STRING contents octets.
 pub mod bitstring;
 /// ASN.1 BMPString contents.
@@ -12,6 +14,8 @@ pub mod boolean;
 pub mod datetime;
 /// ASN.1 notation-style aliases for universal formats with DER encoding.
 pub mod der;
+/// ASN.1 ENUMERATED contents octets.
+pub mod enumerated;
 /// ASN.1 GeneralizedTime contents.
 pub mod generalizedtime;
 /// ASN.1 IA5String contents.
@@ -22,8 +26,12 @@ pub mod integer;
 pub mod length;
 /// ASN.1 component modifiers: IMPLICIT, EXPLICIT, OPTIONAL, and DEFAULT.
 pub mod modifiers;
+/// ASN.1 OBJECT IDENTIFIER contents octets.
+pub mod oid;
 /// ASN.1 PrintableString contents.
 pub mod printablestring;
+/// ASN.1 REAL contents octets.
+pub mod real;
 /// ASN.1 DER SET OF contents.
 pub mod set_of;
 /// ASN.1 tag octets.
@@ -37,11 +45,14 @@ pub mod utctime;
 /// ASN.1 UTF8String contents.
 pub mod utf8string;
 
+pub use any::{AnySpec, AnyValue};
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
 pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
 pub use integer::{IntVal, Integer16, Integer8};
 pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
+pub use oid::{ObjectIdentifierSpec, ObjectIdentifierValue};
+pub use real::{RealSpec, RealValue};
 pub use set_of::{DerOrd, SetOf};
 pub use tag::{Class, Tag};
 pub use utctime::UtcTimeValue;
@@ -95,6 +106,21 @@ pub const BerBool: Bool<false> = Bool;
 /// Convenience value alias for the DER variant of ASN.1 BOOLEAN.
 pub const DerBool: Bool<true> = Bool;
 
+/// ASN.1 ANY/open-type format.
+///
+/// Unlike the content markers in this module, `Any` parses and serializes one complete
+/// tag-length-value encoding.
+#[derive(Clone, Copy)]
+pub struct Any<const DER: bool = true>;
+
+pub type BerAny = Any<false>;
+
+pub type DerAny = Any<true>;
+
+pub const BerAny: BerAny = Any;
+
+pub const DerAny: DerAny = Any;
+
 /// ASN.1 definite length format whose codomain is `nat`
 #[derive(Clone, Copy)]
 pub struct NatLength<const DER: bool = true>;
@@ -124,6 +150,18 @@ pub const DerLength: Length<true> = Length;
 /// ASN.1 INTEGER contents format.
 #[derive(Clone, Copy)]
 pub struct Integer;
+
+/// ASN.1 ENUMERATED contents format.
+#[derive(Clone, Copy)]
+pub struct Enumerated;
+
+/// ASN.1 OBJECT IDENTIFIER contents format.
+#[derive(Clone, Copy)]
+pub struct ObjectIdentifier;
+
+/// ASN.1 DER REAL contents format.
+#[derive(Clone, Copy)]
+pub struct Real;
 
 /// ASN.1 BIT STRING contents format.
 ///

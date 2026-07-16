@@ -444,6 +444,16 @@ proof fn lemma_tag_wf_implies_tag_fmt_consistent(tag: Tag)
     }
 }
 
+/// Exposes tag-format consistency to external combinator proofs without revealing
+/// the implementation of [`TagFmt`](super::TagFmt).
+pub broadcast proof fn lemma_tag_wf_implies_tag_consistent(tag: Tag)
+    requires
+        tag_number_wf(tag.number),
+    ensures
+        #[trigger] super::TagFmt.consistent(tag),
+{
+}
+
 mod derived_specs {
     use super::*;
     use super::super::TagFmt;
