@@ -3,6 +3,7 @@ use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 use super::Varied;
+use crate::combinators::Tail;
 
 verus! {
 
@@ -392,6 +393,25 @@ impl<A, Then> Consistency for super::AndThen<A, Then> where
         &&& exists|chunk: Seq<u8>|
             self.0.consistent(chunk) && self.0.byte_len(chunk) == self.1.byte_len(v)
     }
+}
+
+pub broadcast proof fn lemma_tail_and_then_consistent<Then>(then: Then, v: Then::Val) where
+    Then: Consistency + SpecByteLen<T = Then::Val>,
+
+    ensures
+        #[trigger] super::AndThen(Tail, then).consistent(v) == then.consistent(v),
+{
+    if then.consistent(v) {
+        let chunk = Seq::new(then.byte_len(v), |_i| 0u8);
+        assert(Tail.consistent(chunk));
+        assert(Tail.byte_len(chunk) == then.byte_len(v));
+        assert(super::AndThen(Tail, then).0.consistent(chunk));
+    } else {
+    }
+}
+
+pub broadcast group tail_and_then_lemmas {
+    lemma_tail_and_then_consistent,
 }
 
 impl<A, Then> SafeParser for super::AndThen<A, Then> where

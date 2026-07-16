@@ -1,4 +1,4 @@
-use crate::combinators::AsLen;
+use crate::combinators::{AsLen, Tail};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;
 use crate::core::exec::{
@@ -6,8 +6,7 @@ use crate::core::exec::{
     serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
     ParseError,
 };
-use crate::core::spec::SpecByteLen;
-use crate::core::spec::SpecParser;
+use crate::core::spec::{Consistency, SpecByteLen, SpecParser};
 use vstd::prelude::*;
 use OutputBuf;
 
@@ -31,6 +30,12 @@ impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8]> for super::Fixe
     }
 }
 
+impl<'i, Output: OutputBuf, const N: usize> Serializer<Output, &'i [u8]> for super::Fixed<N> {
+    fn serialize_into(&self, v: &&'i [u8], obuf: &mut Output) {
+        obuf.write_bytes(*v);
+    }
+}
+
 impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
     fn serialize_into(&self, v: &[u8; N], obuf: &mut Output) {
         obuf.write_bytes(v);
@@ -48,8 +53,24 @@ impl<const N: usize> ByteLen<[u8]> for super::Fixed<N> {
     }
 }
 
+impl<'i, const N: usize> ByteLen<&'i [u8]> for super::Fixed<N> {
+    fn length(&self, v: &&'i [u8]) -> (len: usize) {
+        v.len()
+    }
+}
+
 impl<const N: usize> Prepare<[u8]> for super::Fixed<N> {
     fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
+        if v.len() == N {
+            Ok(N)
+        } else {
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
+        }
+    }
+}
+
+impl<'i, const N: usize> Prepare<&'i [u8]> for super::Fixed<N> {
+    fn prepare(&self, v: &&'i [u8]) -> (checked: Result<usize, PreSerializeError>) {
         if v.len() == N {
             Ok(N)
         } else {
@@ -77,14 +98,36 @@ impl<Output: OutputBuf, Len: AsLen> Serializer<Output, [u8]> for super::Varied<L
     }
 }
 
+impl<'i, Output: OutputBuf, Len: AsLen> Serializer<Output, &'i [u8]> for super::Varied<Len> {
+    fn serialize_into(&self, v: &&'i [u8], obuf: &mut Output) {
+        obuf.write_bytes(*v);
+    }
+}
+
 impl<Len: AsLen> ByteLen<[u8]> for super::Varied<Len> {
     fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
     }
 }
 
+impl<'i, Len: AsLen> ByteLen<&'i [u8]> for super::Varied<Len> {
+    fn length(&self, v: &&'i [u8]) -> (len: usize) {
+        v.len()
+    }
+}
+
 impl<Len: AsLen> Prepare<[u8]> for super::Varied<Len> {
     fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
+        if v.len() == self.0.get() {
+            Ok(v.len())
+        } else {
+            Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
+        }
+    }
+}
+
+impl<'i, Len: AsLen> Prepare<&'i [u8]> for super::Varied<Len> {
+    fn prepare(&self, v: &&'i [u8]) -> (checked: Result<usize, PreSerializeError>) {
         if v.len() == self.0.get() {
             Ok(v.len())
         } else {
@@ -151,6 +194,20 @@ impl<Output: OutputBuf, Len, Inner, T> Serializer<Output, T> for super::ExactLen
     }
 }
 
+impl<Output: OutputBuf, Then, T> Serializer<Output, T> for super::AndThen<Tail, Then> where
+    T: DeepView + ?Sized,
+    Then: Serializer<Output, T>,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        self.1.serialize_into(v, obuf);
+    }
+}
+
 impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     Len: AsLen,
     InnerST: DeepView + ?Sized,
@@ -181,6 +238,24 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
         } else {
             Err(PreSerializeError::not_compliant(ComplianceErrorKind::LengthInconsistent))
         }
+    }
+}
+
+impl<Then, T> Prepare<T> for super::AndThen<Tail, Then> where
+    T: DeepView + ?Sized,
+    Then: Prepare<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.1.exec_inv()
+    }
+
+    fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>) {
+        let len = self.1.prepare(v)?;
+        proof {
+            let chunk = Seq::new(len as nat, |_i| 0u8);
+            assert(self.0.consistent(chunk));
+        }
+        Ok(len)
     }
 }
 

@@ -33,6 +33,12 @@ impl<Output: OutputBuf> Serializer<Output, [u8]> for super::Tail {
     }
 }
 
+impl<'i, Output: OutputBuf> Serializer<Output, &'i [u8]> for super::Tail {
+    fn serialize_into(&self, v: &&'i [u8], obuf: &mut Output) {
+        obuf.write_bytes(*v);
+    }
+}
+
 impl ByteLen<[u8]> for super::Tail {
     open spec fn exec_inv(&self) -> bool {
         true
@@ -43,8 +49,24 @@ impl ByteLen<[u8]> for super::Tail {
     }
 }
 
+impl<'i> ByteLen<&'i [u8]> for super::Tail {
+    open spec fn exec_inv(&self) -> bool {
+        true
+    }
+
+    fn length(&self, v: &&'i [u8]) -> (len: usize) {
+        v.len()
+    }
+}
+
 impl Prepare<[u8]> for super::Tail {
     fn prepare(&self, v: &[u8]) -> (checked: Result<usize, PreSerializeError>) {
+        Ok(v.len())
+    }
+}
+
+impl<'i> Prepare<&'i [u8]> for super::Tail {
+    fn prepare(&self, v: &&'i [u8]) -> (checked: Result<usize, PreSerializeError>) {
         Ok(v.len())
     }
 }
