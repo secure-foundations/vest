@@ -1,4 +1,4 @@
-use crate::asn1::BerBool;
+use crate::asn1::BerBoolFmt;
 use crate::combinators::choice::spec::*;
 use crate::combinators::disjoint::*;
 use crate::combinators::mapped::spec::{LosslessMapper, LossyMapper, SpecMapper};

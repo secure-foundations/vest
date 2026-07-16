@@ -140,7 +140,7 @@ pub open spec fn printablestring_fmt() -> PrintableStringFmt {
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for super::super::PrintableString {
+    impl SpecParser for super::super::PrintableStringFmt {
         type PVal = PrintableStringSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -148,7 +148,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for super::super::PrintableString {
+    impl Consistency for super::super::PrintableStringFmt {
         type Val = PrintableStringSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -156,7 +156,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for super::super::PrintableString {
+    impl SpecSerializerDps for super::super::PrintableStringFmt {
         type SValue = PrintableStringSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -164,7 +164,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for super::super::PrintableString {
+    impl SpecSerializer for super::super::PrintableStringFmt {
         type SVal = PrintableStringSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -172,7 +172,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for super::super::PrintableString {
+    impl SpecByteLen for super::super::PrintableStringFmt {
         type T = PrintableStringSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -185,13 +185,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for super::super::PrintableString {
+    impl SafeParser for super::super::PrintableStringFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             printablestring_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for super::super::PrintableString {
+    impl Productive for super::super::PrintableStringFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -200,7 +200,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::PrintableString {
+    impl SoundParser for super::super::PrintableStringFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -214,13 +214,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for super::super::PrintableString {
+    impl GoodSerializer for super::super::PrintableStringFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             printablestring_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for super::super::PrintableString {
+    impl SPRoundTripDps for super::super::PrintableStringFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             broadcast use vstd::utf8::encode_utf8_decode_utf8;
 
@@ -228,7 +228,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::PrintableString {
+    impl NonMalleable for super::super::PrintableStringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -236,7 +236,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for super::super::PrintableString {
+    impl EquivSerializers for super::super::PrintableStringFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             printablestring_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -244,7 +244,7 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::PrintableString {
+impl<'i> Parser<&'i [u8]> for super::PrintableStringFmt {
     type PT = PrintableString<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -260,7 +260,7 @@ impl<'i> Parser<&'i [u8]> for super::PrintableString {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, PrintableString<'i>> for super::PrintableString {
+impl<Output: OutputBuf, 'i> Serializer<Output, PrintableString<'i>> for super::PrintableStringFmt {
     fn serialize_into(&self, v: &PrintableString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
@@ -270,7 +270,7 @@ impl<Output: OutputBuf, 'i> Serializer<Output, PrintableString<'i>> for super::P
     }
 }
 
-impl<'i> Prepare<PrintableString<'i>> for super::PrintableString {
+impl<'i> Prepare<PrintableString<'i>> for super::PrintableStringFmt {
     fn prepare(&self, v: &PrintableString<'i>) -> Result<usize, PreSerializeError> {
         broadcast use vstd::utf8::encode_utf8_valid_utf8;
 
@@ -282,7 +282,7 @@ impl<'i> Prepare<PrintableString<'i>> for super::PrintableString {
     }
 }
 
-impl<'i> ByteLen<PrintableString<'i>> for super::PrintableString {
+impl<'i> ByteLen<PrintableString<'i>> for super::PrintableStringFmt {
     fn length(&self, v: &PrintableString<'i>) -> usize {
         proof {
             use_type_invariant(v);

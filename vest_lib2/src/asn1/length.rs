@@ -27,18 +27,18 @@ pub const LONG_FORM_MIN_COUNT: u8 = 1;
 
 pub const LONG_FORM_MAX_COUNT: u8 = 126;
 
-type LengthWire<const DER: bool, const BOUNDED: bool = false> = Bind<
+type LengthWireFmt<const DER: bool, const BOUNDED: bool = false> = Bind<
     U8,
     spec_fn(u8) -> Sum<Empty, Sum<Refined<Varied<u8>, PredFnSpec<Seq<u8>>>, Void>>,
 >;
 
 type NatLengthFmt<const DER: bool> = Mapped<
-    LengthWire<DER>,
+    LengthWireFmt<DER>,
     FnSpecMapper<(u8, Sum<(), Sum<Seq<u8>, Never>>), nat>,
 >;
 
 type LengthFmt<const DER: bool> = Mapped<
-    LengthWire<DER, true>,
+    LengthWireFmt<DER, true>,
     FnSpecMapper<(u8, Sum<(), Sum<Seq<u8>, Never>>), usize>,
 >;
 
@@ -50,7 +50,7 @@ type LengthFmt<const DER: bool> = Mapped<
 /// bit 7 as the most significant bit;
 /// c) the value 11111111 shall not be used.
 #[verusfmt::skip]
-pub(super) open(super) spec fn length_wire<const DER: bool, const BOUNDED: bool>() -> LengthWire<DER, BOUNDED > {
+pub(super) open(super) spec fn length_wire<const DER: bool, const BOUNDED: bool>() -> LengthWireFmt<DER, BOUNDED > {
     Bind(U8, |b1: u8| {
         match b1 {
             b if b <= SHORT_FORM_MAX => L(Empty),
@@ -254,9 +254,9 @@ proof fn lemma_length_fmt_usize_props<const DER: bool>(o: usize)
 
 mod derived_specs {
     use super::*;
-    use super::super::{NatLength, Length};
+    use super::super::{NatLengthFmt, LengthFmt};
 
-    impl<const DER: bool> SpecParser for NatLength<DER> {
+    impl<const DER: bool> SpecParser for NatLengthFmt<DER> {
         type PVal = nat;
 
         open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -264,7 +264,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> Consistency for NatLength<DER> {
+    impl<const DER: bool> Consistency for NatLengthFmt<DER> {
         type Val = nat;
 
         open(super) spec fn consistent(&self, v: Self::Val) -> bool {
@@ -272,7 +272,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for NatLength<DER> {
+    impl<const DER: bool> SpecSerializerDps for NatLengthFmt<DER> {
         type SValue = nat;
 
         open(super) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -280,7 +280,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializer for NatLength<DER> {
+    impl<const DER: bool> SpecSerializer for NatLengthFmt<DER> {
         type SVal = nat;
 
         open(super) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -288,7 +288,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecByteLen for NatLength<DER> {
+    impl<const DER: bool> SpecByteLen for NatLengthFmt<DER> {
         type T = nat;
 
         open(super) spec fn byte_len(&self, v: Self::T) -> nat {
@@ -296,7 +296,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecParser for Length<DER> {
+    impl<const DER: bool> SpecParser for LengthFmt<DER> {
         type PVal = usize;
 
         open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -304,7 +304,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> Consistency for Length<DER> {
+    impl<const DER: bool> Consistency for LengthFmt<DER> {
         type Val = usize;
 
         open(super) spec fn consistent(&self, v: Self::Val) -> bool {
@@ -312,7 +312,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for Length<DER> {
+    impl<const DER: bool> SpecSerializerDps for LengthFmt<DER> {
         type SValue = usize;
 
         open(super) spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -320,7 +320,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializer for Length<DER> {
+    impl<const DER: bool> SpecSerializer for LengthFmt<DER> {
         type SVal = usize;
 
         open(super) spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -328,7 +328,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecByteLen for Length<DER> {
+    impl<const DER: bool> SpecByteLen for LengthFmt<DER> {
         type T = usize;
 
         open(super) spec fn byte_len(&self, v: Self::T) -> nat {
@@ -340,21 +340,21 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
-    use super::super::{NatLength, Length};
+    use super::super::{NatLengthFmt, LengthFmt};
 
-    impl<const DER: bool> SafeParser for NatLength<DER> {
+    impl<const DER: bool> SafeParser for NatLengthFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             nat_length_fmt::<DER>().lemma_parse_safe(ibuf);
         }
     }
 
-    impl<const DER: bool> Productive for NatLength<DER> {
+    impl<const DER: bool> Productive for NatLengthFmt<DER> {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             nat_length_fmt::<DER>().lemma_productive(s);
         }
     }
 
-    impl SoundParser for NatLength<true> {
+    impl SoundParser for NatLengthFmt<true> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             lemma_length_fmt_sound_nonmal_inv();
             nat_length_fmt::<true>().lemma_parse_sound_consumption(ibuf);
@@ -366,7 +366,7 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> NonTailFmt for NatLength<DER> {
+    impl<const DER: bool> NonTailFmt for NatLengthFmt<DER> {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             nat_length_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
         }
@@ -376,57 +376,57 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for NatLength<DER> {
+    impl<const DER: bool> GoodSerializer for NatLengthFmt<DER> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             nat_length_fmt::<DER>().lemma_serialize_len(v);
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for NatLength<DER> {
+    impl<const DER: bool> SPRoundTripDps for NatLengthFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             lemma_length_fmt_unambiguous::<DER>();
             nat_length_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl<const DER: bool> NoLookAhead for NatLength<DER> {
+    impl<const DER: bool> NoLookAhead for NatLengthFmt<DER> {
         proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
             nat_length_fmt::<DER>().lemma_no_lookahead(i1, i2);
         }
     }
 
-    impl NonMalleable for NatLength<true> {
+    impl NonMalleable for NatLengthFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             lemma_length_fmt_sound_nonmal_inv();
             nat_length_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl<const DER: bool> EquivSerializersGeneral for NatLength<DER> {
+    impl<const DER: bool> EquivSerializersGeneral for NatLengthFmt<DER> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             nat_length_fmt::<DER>().lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl<const DER: bool> EquivSerializers for NatLength<DER> {
+    impl<const DER: bool> EquivSerializers for NatLengthFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             nat_length_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
         }
     }
 
-    impl<const DER: bool> SafeParser for Length<DER> {
+    impl<const DER: bool> SafeParser for LengthFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             length_fmt::<DER>().lemma_parse_safe(ibuf);
         }
     }
 
-    impl<const DER: bool> Productive for Length<DER> {
+    impl<const DER: bool> Productive for LengthFmt<DER> {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             length_fmt::<DER>().lemma_productive(s);
         }
     }
 
-    impl SoundParser for Length<true> {
+    impl SoundParser for LengthFmt<true> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             lemma_length_fmt_usize_sound_nonmal_inv();
             length_fmt::<true>().lemma_parse_sound_consumption(ibuf);
@@ -438,7 +438,7 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> NonTailFmt for Length<DER> {
+    impl<const DER: bool> NonTailFmt for LengthFmt<DER> {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             length_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
         }
@@ -448,39 +448,39 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for Length<DER> {
+    impl<const DER: bool> GoodSerializer for LengthFmt<DER> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             length_fmt::<DER>().lemma_serialize_len(v);
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for Length<DER> {
+    impl<const DER: bool> SPRoundTripDps for LengthFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             lemma_length_fmt_usize_unambiguous::<DER>();
             length_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl<const DER: bool> NoLookAhead for Length<DER> {
+    impl<const DER: bool> NoLookAhead for LengthFmt<DER> {
         proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
             length_fmt::<DER>().lemma_no_lookahead(i1, i2);
         }
     }
 
-    impl NonMalleable for Length<true> {
+    impl NonMalleable for LengthFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             lemma_length_fmt_usize_sound_nonmal_inv();
             length_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl<const DER: bool> EquivSerializersGeneral for Length<DER> {
+    impl<const DER: bool> EquivSerializersGeneral for LengthFmt<DER> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             length_fmt::<DER>().lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl<const DER: bool> EquivSerializers for Length<DER> {
+    impl<const DER: bool> EquivSerializers for LengthFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             length_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
         }
@@ -488,7 +488,7 @@ mod derived_proofs {
 
 }
 
-impl<const DER: bool> Parser<&[u8]> for super::Length<DER> {
+impl<const DER: bool> Parser<&[u8]> for super::LengthFmt<DER> {
     type PT = usize;
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<usize> {
@@ -524,7 +524,7 @@ impl<const DER: bool> Parser<&[u8]> for super::Length<DER> {
     }
 }
 
-impl<Output: OutputBuf, const DER: bool> Serializer<Output, usize> for super::Length<DER> {
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, usize> for super::LengthFmt<DER> {
     fn serialize_into(&self, v: &usize, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
@@ -541,7 +541,7 @@ impl<Output: OutputBuf, const DER: bool> Serializer<Output, usize> for super::Le
     }
 }
 
-impl<const DER: bool> Prepare<usize> for super::Length<DER> {
+impl<const DER: bool> Prepare<usize> for super::LengthFmt<DER> {
     fn prepare(&self, v: &usize) -> Result<usize, PreSerializeError> {
         proof {
             lemma_length_fmt_usize_props::<DER>(*v);
@@ -554,7 +554,7 @@ impl<const DER: bool> Prepare<usize> for super::Length<DER> {
     }
 }
 
-impl<const DER: bool> ByteLen<usize> for super::Length<DER> {
+impl<const DER: bool> ByteLen<usize> for super::LengthFmt<DER> {
     fn length(&self, v: &usize) -> usize {
         proof {
             lemma_length_fmt_usize_props::<DER>(*v);

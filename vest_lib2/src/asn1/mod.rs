@@ -45,17 +45,24 @@ pub mod utctime;
 /// ASN.1 UTF8String contents.
 pub mod utf8string;
 
-pub use any::{AnySpec, AnyValue};
+pub use any::{Any, AnySpec};
+pub use bitstring::{BitString, BitStringSpec};
+pub use bmpstring::{BmpString, BmpStringSpec};
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
-pub use generalizedtime::{GeneralizedTimeSpec, GeneralizedTimeValue};
-pub use integer::{IntVal, Integer16, Integer8};
-pub use modifiers::{ContextExplicit, ContextImplicit, Defaulted, Explicit, Implicit};
-pub use oid::{ObjectIdentifierSpec, ObjectIdentifierValue};
-pub use real::{RealSpec, RealValue};
-pub use set_of::{DerOrd, SetOf};
+pub use enumerated::Enumerated;
+pub use generalizedtime::{GeneralizedTime, GeneralizedTimeSpec};
+pub use ia5string::{Ia5String, Ia5StringSpec};
+pub use integer::{Integer, Integer16Fmt, Integer8Fmt};
+pub use modifiers::{ContextExplicit, ContextImplicit, DefaultedFmt, Explicit, Implicit};
+pub use oid::{ObjectIdentifier, ObjectIdentifierSpec};
+pub use printablestring::{PrintableString, PrintableStringSpec};
+pub use real::{Real, RealSpec};
+pub use set_of::{DerOrd, SetOfFmt};
 pub use tag::{Class, Tag};
-pub use utctime::UtcTimeValue;
+pub use teletexstring::{TeletexString, TeletexStringSpec};
+pub use utctime::UtcTime;
+pub use utf8string::Utf8String;
 
 use crate::{
     combinators::{
@@ -73,14 +80,14 @@ pub const DER: bool = true;
 pub const BER: bool = false;
 
 #[derive(Copy)]
-pub struct ASN1<Content, const DER: bool = true>(pub Tag, pub Content);
+pub struct ASN1Fmt<Content, const DER: bool = true>(pub Tag, pub Content);
 
-impl<Content: Clone, const DER: bool> Clone for ASN1<Content, DER> {
+impl<Content: Clone, const DER: bool> Clone for ASN1Fmt<Content, DER> {
     fn clone(&self) -> (cloned: Self)
         ensures
             call_ensures(Content::clone, (&self.1,), cloned.1),
     {
-        ASN1(self.0, self.1.clone())
+        ASN1Fmt(self.0, self.1.clone())
     }
 }
 
@@ -92,38 +99,38 @@ impl<Content: Clone, const DER: bool> Clone for ASN1<Content, DER> {
 /// When `DER = false`, this is the more permissive BER form:
 /// FALSE = `0x00`, TRUE = any non-zero byte.
 #[derive(Clone, Copy)]
-pub struct Bool<const DER: bool = true>;
+pub struct BoolFmt<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BOOLEAN.
-pub type BerBool = Bool<false>;
+pub type BerBoolFmt = BoolFmt<false>;
 
 /// Convenience type alias for the DER variant of ASN.1 BOOLEAN.
-pub type DerBool = Bool<true>;
+pub type DerBoolFmt = BoolFmt<true>;
 
 /// Convenience value alias for the BER variant of ASN.1 BOOLEAN.
-pub const BerBool: Bool<false> = Bool;
+pub const BerBoolFmt: BoolFmt<false> = BoolFmt;
 
 /// Convenience value alias for the DER variant of ASN.1 BOOLEAN.
-pub const DerBool: Bool<true> = Bool;
+pub const DerBoolFmt: BoolFmt<true> = BoolFmt;
 
 /// ASN.1 ANY/open-type format.
 ///
-/// Unlike the content markers in this module, `Any` parses and serializes one complete
+/// Unlike the content markers in this module, `AnyFmt` parses and serializes one complete
 /// tag-length-value encoding.
 #[derive(Clone, Copy)]
-pub struct Any<const DER: bool = true>;
+pub struct AnyFmt<const DER: bool = true>;
 
-pub type BerAny = Any<false>;
+pub type BerAnyFmt = AnyFmt<false>;
 
-pub type DerAny = Any<true>;
+pub type DerAnyFmt = AnyFmt<true>;
 
-pub const BerAny: BerAny = Any;
+pub const BerAnyFmt: BerAnyFmt = AnyFmt;
 
-pub const DerAny: DerAny = Any;
+pub const DerAnyFmt: DerAnyFmt = AnyFmt;
 
 /// ASN.1 definite length format whose codomain is `nat`
 #[derive(Clone, Copy)]
-pub struct NatLength<const DER: bool = true>;
+pub struct NatLengthFmt<const DER: bool = true>;
 
 /// ASN.1 definite length format.
 ///
@@ -133,35 +140,35 @@ pub struct NatLength<const DER: bool = true>;
 /// When `DER = false`, the parser/serializer is BER-permissive over short and long
 /// definite forms, without minimality constraints.
 #[derive(Clone, Copy)]
-pub struct Length<const DER: bool = true>;
+pub struct LengthFmt<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 definite length.
-pub type BerLength = Length<false>;
+pub type BerLengthFmt = LengthFmt<false>;
 
 /// Convenience type alias for the DER variant of ASN.1 definite length.
-pub type DerLength = Length<true>;
+pub type DerLengthFmt = LengthFmt<true>;
 
 /// Convenience value alias for the BER variant of ASN.1 definite length.
-pub const BerLength: Length<false> = Length;
+pub const BerLengthFmt: LengthFmt<false> = LengthFmt;
 
 /// Convenience value alias for the DER variant of ASN.1 definite length.
-pub const DerLength: Length<true> = Length;
+pub const DerLengthFmt: LengthFmt<true> = LengthFmt;
 
 /// ASN.1 INTEGER contents format.
 #[derive(Clone, Copy)]
-pub struct Integer;
+pub struct IntegerFmt;
 
 /// ASN.1 ENUMERATED contents format.
 #[derive(Clone, Copy)]
-pub struct Enumerated;
+pub struct EnumeratedFmt;
 
 /// ASN.1 OBJECT IDENTIFIER contents format.
 #[derive(Clone, Copy)]
-pub struct ObjectIdentifier;
+pub struct ObjectIdentifierFmt;
 
 /// ASN.1 DER REAL contents format.
 #[derive(Clone, Copy)]
-pub struct Real;
+pub struct RealFmt;
 
 /// ASN.1 BIT STRING contents format.
 ///
@@ -173,7 +180,7 @@ pub struct Real;
 pub struct BitStringFmt<const DER: bool = true>;
 
 /// Convenience type alias for the BER variant of ASN.1 BIT STRING.
-pub type BerBitString = BitStringFmt<false>;
+pub type BerBitStringFmt = BitStringFmt<false>;
 
 /// ASN.1 tag format combinator.
 ///
@@ -184,7 +191,7 @@ pub type BerBitString = BitStringFmt<false>;
 pub struct TagFmt;
 
 /// Convenience type alias for the DER variant of ASN.1 BIT STRING.
-pub type DerBitString = BitStringFmt<true>;
+pub type DerBitStringFmt = BitStringFmt<true>;
 
 /// ASN.1 OCTET STRING contents format (primitive).
 ///
@@ -220,76 +227,76 @@ pub type DerBitString = BitStringFmt<true>;
 ///  │
 ///  └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
 ///         └── Meaning: Closes the Outer Constructed String
-pub type OctetString = Tail;
+pub type OctetStringFmt = Tail;
 
 /// Convenience value alias for ASN.1 OCTET STRING contents format.
-pub const OctetString: Tail = Tail;
+pub const OctetStringFmt: Tail = Tail;
 
 /// ASN.1 NULL format.
-pub type Null = Empty;
+pub type NullFmt = Empty;
 
 /// Convenience value alias for ASN.1 NULL format.
-pub const Null: Empty = Empty;
+pub const NullFmt: Empty = Empty;
 
 /// ASN.1 UTCTime format.
 #[derive(Clone, Copy)]
-pub struct UtcTime<const DER: bool = true>;
+pub struct UtcTimeFmt<const DER: bool = true>;
 
-pub type BerUtcTime = UtcTime<false>;
+pub type BerUtcTimeFmt = UtcTimeFmt<false>;
 
-pub type DerUtcTime = UtcTime<true>;
+pub type DerUtcTimeFmt = UtcTimeFmt<true>;
 
-pub const BerUtcTime: BerUtcTime = UtcTime;
+pub const BerUtcTimeFmt: BerUtcTimeFmt = UtcTimeFmt;
 
-pub const DerUtcTime: DerUtcTime = UtcTime;
+pub const DerUtcTimeFmt: DerUtcTimeFmt = UtcTimeFmt;
 
 /// ASN.1 UTF8String format.
 #[derive(Clone, Copy)]
-pub struct Utf8String;
+pub struct Utf8StringFmt;
 
 /// ASN.1 PrintableString format.
 #[derive(Clone, Copy)]
-pub struct PrintableString;
+pub struct PrintableStringFmt;
 
 /// ASN.1 IA5String format.
 #[derive(Clone, Copy)]
-pub struct Ia5String;
+pub struct Ia5StringFmt;
 
 /// ASN.1 BMPString format.
 #[derive(Clone, Copy)]
-pub struct BmpString;
+pub struct BmpStringFmt;
 
 /// ASN.1 TeletexString format.
 #[derive(Clone, Copy)]
-pub struct TeletexString;
+pub struct TeletexStringFmt;
 
 /// ASN.1 GeneralizedTime format.
 #[derive(Clone, Copy)]
-pub struct GeneralizedTime<const DER: bool = true>;
+pub struct GeneralizedTimeFmt<const DER: bool = true>;
 
-pub type BerGeneralizedTime = GeneralizedTime<false>;
+pub type BerGeneralizedTimeFmt = GeneralizedTimeFmt<false>;
 
-pub type DerGeneralizedTime = GeneralizedTime<true>;
+pub type DerGeneralizedTimeFmt = GeneralizedTimeFmt<true>;
 
-pub const BerGeneralizedTime: BerGeneralizedTime = GeneralizedTime;
+pub const BerGeneralizedTimeFmt: BerGeneralizedTimeFmt = GeneralizedTimeFmt;
 
-pub const DerGeneralizedTime: DerGeneralizedTime = GeneralizedTime;
+pub const DerGeneralizedTimeFmt: DerGeneralizedTimeFmt = GeneralizedTimeFmt;
 
-impl LeafNonMalleable for DerBool {
+impl LeafNonMalleable for DerBoolFmt {
     proof fn nonmal_leaf_inv(&self) {
     }
 }
 
-impl Leaf for BerBool {
+impl Leaf for BerBoolFmt {
     proof fn leaf_inv(&self) {
     }
 }
 
-// impl LeafNonMalleable for DerLength {
+// impl LeafNonMalleable for DerLengthFmt {
 //     proof fn nonmal_leaf_inv(&self) {
 //     }
 // }
-// impl Leaf for BerLength {
+// impl Leaf for BerLengthFmt {
 //     proof fn leaf_inv(&self) {
 //     }
 // }

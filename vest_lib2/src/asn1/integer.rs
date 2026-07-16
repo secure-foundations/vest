@@ -21,9 +21,9 @@ use vstd::prelude::*;
 
 verus! {
 
-pub type IntegerFmt = Mapped<Refined<Tail, PredFnSpec<Seq<u8>>>, FnSpecMapper<Seq<u8>, int>>;
+pub type IntegerInnerFmt = Mapped<Refined<Tail, PredFnSpec<Seq<u8>>>, FnSpecMapper<Seq<u8>, int>>;
 
-pub open spec fn integer_fmt() -> IntegerFmt {
+pub open spec fn integer_fmt() -> IntegerInnerFmt {
     Mapped {
         inner: Refined(Tail, |bytes: Seq<u8>| integer_bytes_wf(bytes)),
         mapper: (|bytes: Seq<u8>| int_from_be_bytes(bytes), |o: int| int_to_be_bytes(o)),
@@ -273,18 +273,18 @@ impl<'a> BigInt<'a> {
 }
 
 #[derive(Copy, Clone)]
-pub enum IntVal<'a> {
+pub enum Integer<'a> {
     Small { v: i64 },
     Big { raw: BigInt<'a> },
 }
 
-impl<'a> DeepView for IntVal<'a> {
+impl<'a> DeepView for Integer<'a> {
     type V = int;
 
     closed spec fn deep_view(&self) -> Self::V {
         match *self {
-            IntVal::Small { v } => v as int,
-            IntVal::Big { raw } => int_from_be_bytes(raw.view()),
+            Integer::Small { v } => v as int,
+            Integer::Big { raw } => int_from_be_bytes(raw.view()),
         }
     }
 }
@@ -293,14 +293,14 @@ impl<'a> DeepView for IntVal<'a> {
 ///
 /// Every `i8` value has a canonical one-octet two's-complement encoding.
 #[derive(Clone, Copy)]
-pub struct Integer8;
+pub struct Integer8Fmt;
 
 /// ASN.1 INTEGER contents specialized to the `i16` representation.
 ///
 /// Values in the `i8` range use one octet; all other values use two
 /// big-endian octets. Redundant two-octet encodings are rejected.
 #[derive(Clone, Copy)]
-pub struct Integer16;
+pub struct Integer16Fmt;
 
 #[verifier::allow_in_spec]
 pub fn fits_i8(v: i16) -> bool
@@ -312,9 +312,9 @@ pub fn fits_i8(v: i16) -> bool
 
 mod derived_specs {
     use super::*;
-    use super::super::Integer;
+    use super::super::IntegerFmt;
 
-    impl SpecParser for Integer {
+    impl SpecParser for IntegerFmt {
         type PVal = int;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -322,7 +322,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for Integer {
+    impl Consistency for IntegerFmt {
         type Val = int;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -330,7 +330,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for Integer {
+    impl SpecSerializerDps for IntegerFmt {
         type SValue = int;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -338,7 +338,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for Integer {
+    impl SpecSerializer for IntegerFmt {
         type SVal = int;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -346,7 +346,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for Integer {
+    impl SpecByteLen for IntegerFmt {
         type T = int;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -354,7 +354,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for Integer8 {
+    impl SpecParser for Integer8Fmt {
         type PVal = i8;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -366,7 +366,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for Integer8 {
+    impl Consistency for Integer8Fmt {
         type Val = i8;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -374,7 +374,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for Integer8 {
+    impl SpecSerializerDps for Integer8Fmt {
         type SValue = i8;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
@@ -382,7 +382,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for Integer8 {
+    impl SpecSerializer for Integer8Fmt {
         type SVal = i8;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -390,7 +390,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for Integer8 {
+    impl SpecByteLen for Integer8Fmt {
         type T = i8;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -398,7 +398,7 @@ mod derived_specs {
         }
     }
 
-    impl ValueByteLen for Integer8 {
+    impl ValueByteLen for Integer8Fmt {
         open spec fn value_byte_len(v: Self::T) -> nat {
             I8.byte_len(v)
         }
@@ -407,7 +407,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for Integer16 {
+    impl SpecParser for Integer16Fmt {
         type PVal = i16;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -425,7 +425,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for Integer16 {
+    impl Consistency for Integer16Fmt {
         type Val = i16;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -433,7 +433,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for Integer16 {
+    impl SpecSerializerDps for Integer16Fmt {
         type SValue = i16;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
@@ -445,7 +445,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for Integer16 {
+    impl SpecSerializer for Integer16Fmt {
         type SVal = i16;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -457,7 +457,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for Integer16 {
+    impl SpecByteLen for Integer16Fmt {
         type T = i16;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -473,15 +473,15 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
-    use super::super::Integer;
+    use super::super::IntegerFmt;
 
-    impl SafeParser for Integer {
+    impl SafeParser for IntegerFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             integer_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for Integer {
+    impl Productive for IntegerFmt {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             if let Some((n, _)) = integer_fmt().spec_parse(s) {
                 assert(n > 0);
@@ -489,7 +489,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Integer {
+    impl SoundParser for IntegerFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             lemma_integer_fmt_sound_nonmal_inv();
             integer_fmt().lemma_parse_sound_consumption(ibuf);
@@ -501,13 +501,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for Integer {
+    impl GoodSerializer for IntegerFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             integer_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for Integer {
+    impl SPRoundTripDps for IntegerFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             lemma_integer_fmt_sound_nonmal_inv();
             lemma_integer_fmt_unambiguous();
@@ -515,20 +515,20 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for Integer {
+    impl NonMalleable for IntegerFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             lemma_integer_fmt_sound_nonmal_inv();
             integer_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializers for Integer {
+    impl EquivSerializers for IntegerFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             integer_fmt().lemma_serialize_equiv_on_empty(v);
         }
     }
 
-    impl SafeParser for Integer8 {
+    impl SafeParser for Integer8Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_safe(ibuf);
@@ -536,7 +536,7 @@ mod derived_proofs {
         }
     }
 
-    impl Productive for Integer8 {
+    impl Productive for Integer8Fmt {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             if s.len() == 1 {
                 I8.lemma_productive(s);
@@ -544,7 +544,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Integer8 {
+    impl SoundParser for Integer8Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_sound_consumption(ibuf);
@@ -558,19 +558,19 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for Integer8 {
+    impl GoodSerializer for Integer8Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             I8.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for Integer8 {
+    impl SPRoundTripDps for Integer8Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             I8.theorem_serialize_dps_parse_roundtrip(v, Seq::empty());
         }
     }
 
-    impl NonMalleable for Integer8 {
+    impl NonMalleable for Integer8Fmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             if buf1.len() == 1 && buf2.len() == 1 {
                 I8.lemma_parse_non_malleable(buf1, buf2);
@@ -578,13 +578,13 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for Integer8 {
+    impl EquivSerializers for Integer8Fmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             I8.lemma_serialize_equiv_on_empty(v);
         }
     }
 
-    impl SafeParser for Integer16 {
+    impl SafeParser for Integer16Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_safe(ibuf);
@@ -594,7 +594,7 @@ mod derived_proofs {
         }
     }
 
-    impl Productive for Integer16 {
+    impl Productive for Integer16Fmt {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             if s.len() == 1 {
                 I8.lemma_productive(s);
@@ -604,7 +604,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Integer16 {
+    impl SoundParser for Integer16Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_sound_consumption(ibuf);
@@ -622,7 +622,7 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for Integer16 {
+    impl GoodSerializer for Integer16Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             if fits_i8(v) {
                 I8.lemma_serialize_len(v as i8);
@@ -632,7 +632,7 @@ mod derived_proofs {
         }
     }
 
-    impl SPRoundTripDps for Integer16 {
+    impl SPRoundTripDps for Integer16Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             if fits_i8(v) {
                 I8.theorem_serialize_dps_parse_roundtrip(v as i8, Seq::empty());
@@ -642,7 +642,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for Integer16 {
+    impl NonMalleable for Integer16Fmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             if buf1.len() == 1 && buf2.len() == 1 {
                 I8.lemma_parse_non_malleable(buf1, buf2);
@@ -652,7 +652,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for Integer16 {
+    impl EquivSerializers for Integer16Fmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             if fits_i8(v) {
                 I8.lemma_serialize_equiv_on_empty(v as i8);
@@ -664,8 +664,8 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::Integer {
-    type PT = IntVal<'i>;
+impl<'i> Parser<&'i [u8]> for super::IntegerFmt {
+    type PT = Integer<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, bytes) = Tail.parse(ibuf)?;
@@ -683,14 +683,14 @@ impl<'i> Parser<&'i [u8]> for super::Integer {
             }
         }
         if bytes.len() <= 8 {
-            Ok((n, IntVal::Small { v: i64_from_be_bytes(bytes) }))
+            Ok((n, Integer::Small { v: i64_from_be_bytes(bytes) }))
         } else {
-            Ok((n, IntVal::Big { raw: BigInt::new(bytes) }))
+            Ok((n, Integer::Big { raw: BigInt::new(bytes) }))
         }
     }
 }
 
-impl<'i> Parser<&'i [u8]> for Integer8 {
+impl<'i> Parser<&'i [u8]> for Integer8Fmt {
     type PT = i8;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -702,7 +702,7 @@ impl<'i> Parser<&'i [u8]> for Integer8 {
     }
 }
 
-impl<'i> Parser<&'i [u8]> for Integer16 {
+impl<'i> Parser<&'i [u8]> for Integer16Fmt {
     type PT = i16;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -722,25 +722,25 @@ impl<'i> Parser<&'i [u8]> for Integer16 {
     }
 }
 
-impl<Output: OutputBuf> Serializer<Output, i8> for Integer8 {
+impl<Output: OutputBuf> Serializer<Output, i8> for Integer8Fmt {
     fn serialize_into(&self, v: &i8, obuf: &mut Output) {
         I8.serialize_into(v, obuf);
     }
 }
 
-impl Prepare<i8> for Integer8 {
+impl Prepare<i8> for Integer8Fmt {
     fn prepare(&self, v: &i8) -> Result<usize, PreSerializeError> {
         I8.prepare(v)
     }
 }
 
-impl ByteLen<i8> for Integer8 {
+impl ByteLen<i8> for Integer8Fmt {
     fn length(&self, v: &i8) -> usize {
         I8.length(v)
     }
 }
 
-impl<Output: OutputBuf> Serializer<Output, i16> for Integer16 {
+impl<Output: OutputBuf> Serializer<Output, i16> for Integer16Fmt {
     fn serialize_into(&self, v: &i16, obuf: &mut Output) {
         if fits_i8(*v) {
             I8.serialize_into(&(*v as i8), obuf);
@@ -750,7 +750,7 @@ impl<Output: OutputBuf> Serializer<Output, i16> for Integer16 {
     }
 }
 
-impl Prepare<i16> for Integer16 {
+impl Prepare<i16> for Integer16Fmt {
     fn prepare(&self, v: &i16) -> Result<usize, PreSerializeError> {
         if fits_i8(*v) {
             I8.prepare(&(*v as i8))
@@ -760,7 +760,7 @@ impl Prepare<i16> for Integer16 {
     }
 }
 
-impl ByteLen<i16> for Integer16 {
+impl ByteLen<i16> for Integer16Fmt {
     fn length(&self, v: &i16) -> usize {
         if fits_i8(*v) {
             I8.length(&(*v as i8))
@@ -770,17 +770,17 @@ impl ByteLen<i16> for Integer16 {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, IntVal<'i>> for super::Integer {
-    fn serialize_into(&self, v: &IntVal<'i>, obuf: &mut Output) {
+impl<Output: OutputBuf, 'i> Serializer<Output, Integer<'i>> for super::IntegerFmt {
+    fn serialize_into(&self, v: &Integer<'i>, obuf: &mut Output) {
         match v {
-            IntVal::Small { v } => {
+            Integer::Small { v } => {
                 let len = i64_to_be_bytes_len(*v);
                 let mut bytes = [0u8;size_of::<i64>() + 1];
                 let (encoded, _) = bytes.split_at_mut(len);
                 i64_to_be_bytes_in_place(*v, encoded);
                 Tail.serialize_into(&bytes[0..len], obuf);
             },
-            IntVal::Big { raw } => {
+            Integer::Big { raw } => {
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
@@ -793,17 +793,17 @@ impl<Output: OutputBuf, 'i> Serializer<Output, IntVal<'i>> for super::Integer {
     }
 }
 
-impl<'i> Prepare<IntVal<'i>> for super::Integer {
-    fn prepare(&self, v: &IntVal<'i>) -> Result<usize, PreSerializeError> {
+impl<'i> Prepare<Integer<'i>> for super::IntegerFmt {
+    fn prepare(&self, v: &Integer<'i>) -> Result<usize, PreSerializeError> {
         match v {
-            IntVal::Small { v } => {
+            Integer::Small { v } => {
                 let len = i64_to_be_bytes_len(*v);
                 proof {
                     lemma_integer_to_from_bytes(*v as int);
                 }
                 Ok(len)
             },
-            IntVal::Big { raw } => {
+            Integer::Big { raw } => {
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
@@ -816,11 +816,11 @@ impl<'i> Prepare<IntVal<'i>> for super::Integer {
     }
 }
 
-impl<'i> ByteLen<IntVal<'i>> for super::Integer {
-    fn length(&self, v: &IntVal<'i>) -> usize {
+impl<'i> ByteLen<Integer<'i>> for super::IntegerFmt {
+    fn length(&self, v: &Integer<'i>) -> usize {
         match v {
-            IntVal::Small { v } => { i64_to_be_bytes_len(*v) },
-            IntVal::Big { raw } => {
+            Integer::Small { v } => { i64_to_be_bytes_len(*v) },
+            Integer::Big { raw } => {
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
@@ -1031,18 +1031,18 @@ pub fn i64_to_be_bytes_in_place(v: i64, obuf: &mut [u8])
 } // verus!
 #[cfg(test)]
 mod tests {
-    use super::{Integer16, Integer8};
+    use super::{Integer16Fmt, Integer8Fmt};
     use crate::core::exec::{Parser, Prepare, SerializerExt};
 
     #[test]
     fn integer8_boundaries_and_noncanonical_lengths() {
         for (bytes, expected) in [(&[0x80u8][..], -128i8), (&[0x7fu8][..], 127i8)] {
-            let (_, value) = Integer8.parse(&bytes).unwrap();
+            let (_, value) = Integer8Fmt.parse(&bytes).unwrap();
             assert_eq!(value, expected);
         }
 
         let two_bytes = &[0x00u8, 0x7f][..];
-        assert!(Integer8.parse(&two_bytes).is_err());
+        assert!(Integer8Fmt.parse(&two_bytes).is_err());
     }
 
     #[test]
@@ -1055,45 +1055,45 @@ mod tests {
             (128i16, &[0x00u8, 0x80][..]),
             (32767i16, &[0x7fu8, 0xff][..]),
         ] {
-            let mut encoded = vec![0; Integer16.prepare(&value).unwrap()];
-            Integer16.serialize(&value, &mut encoded);
+            let mut encoded = vec![0; Integer16Fmt.prepare(&value).unwrap()];
+            Integer16Fmt.serialize(&value, &mut encoded);
             assert_eq!(encoded, expected);
 
-            let (_, decoded) = Integer16.parse(&expected).unwrap();
+            let (_, decoded) = Integer16Fmt.parse(&expected).unwrap();
             assert_eq!(decoded, value);
         }
 
         for bytes in [&[0x00u8, 0x7f][..], &[0xffu8, 0x80][..]] {
-            assert!(Integer16.parse(&bytes).is_err());
+            assert!(Integer16Fmt.parse(&bytes).is_err());
         }
     }
 
     #[test]
     fn test_integer8_equivalence_with_general_integer() {
-        use super::IntVal;
-        use crate::asn1::Integer;
+        use super::Integer;
+        use crate::asn1::IntegerFmt;
 
         for v in -128..=127 {
-            // Serialize using Integer8
-            let mut enc8 = vec![0; Integer8.prepare(&v).unwrap()];
-            Integer8.serialize(&v, &mut enc8);
+            // Serialize using Integer8Fmt
+            let mut enc8 = vec![0; Integer8Fmt.prepare(&v).unwrap()];
+            Integer8Fmt.serialize(&v, &mut enc8);
 
             // Serialize using general Integer
-            let val = IntVal::Small { v: v as i64 };
-            let mut enc_gen = vec![0; Integer.prepare(&val).unwrap()];
-            Integer.serialize(&val, &mut enc_gen);
+            let val = Integer::Small { v: v as i64 };
+            let mut enc_gen = vec![0; IntegerFmt.prepare(&val).unwrap()];
+            IntegerFmt.serialize(&val, &mut enc_gen);
 
             assert_eq!(enc8, enc_gen, "Mismatch serialization at {}", v);
 
-            // Parse using Integer8
+            // Parse using Integer8Fmt
             let enc8_slice = enc8.as_slice();
-            let (_, dec8) = Integer8.parse(&enc8_slice).unwrap();
+            let (_, dec8) = Integer8Fmt.parse(&enc8_slice).unwrap();
             assert_eq!(dec8, v);
 
             // Parse using general Integer
-            let (_, dec_gen) = Integer.parse(&enc8_slice).unwrap();
+            let (_, dec_gen) = IntegerFmt.parse(&enc8_slice).unwrap();
             match dec_gen {
-                IntVal::Small { v: val_i64 } => {
+                Integer::Small { v: val_i64 } => {
                     assert_eq!(val_i64, v as i64);
                 }
                 _ => panic!("Expected Small for {}", v),
@@ -1103,30 +1103,30 @@ mod tests {
 
     #[test]
     fn test_integer16_equivalence_with_general_integer() {
-        use super::IntVal;
-        use crate::asn1::Integer;
+        use super::Integer;
+        use crate::asn1::IntegerFmt;
 
         for v in -32768..=32767 {
-            // Serialize using Integer16
-            let mut enc16 = vec![0; Integer16.prepare(&v).unwrap()];
-            Integer16.serialize(&v, &mut enc16);
+            // Serialize using Integer16Fmt
+            let mut enc16 = vec![0; Integer16Fmt.prepare(&v).unwrap()];
+            Integer16Fmt.serialize(&v, &mut enc16);
 
             // Serialize using general Integer
-            let val = IntVal::Small { v: v as i64 };
-            let mut enc_gen = vec![0; Integer.prepare(&val).unwrap()];
-            Integer.serialize(&val, &mut enc_gen);
+            let val = Integer::Small { v: v as i64 };
+            let mut enc_gen = vec![0; IntegerFmt.prepare(&val).unwrap()];
+            IntegerFmt.serialize(&val, &mut enc_gen);
 
             assert_eq!(enc16, enc_gen, "Mismatch serialization at {}", v);
 
-            // Parse using Integer16
+            // Parse using Integer16Fmt
             let enc16_slice = enc16.as_slice();
-            let (_, dec16) = Integer16.parse(&enc16_slice).unwrap();
+            let (_, dec16) = Integer16Fmt.parse(&enc16_slice).unwrap();
             assert_eq!(dec16, v);
 
             // Parse using general Integer
-            let (_, dec_gen) = Integer.parse(&enc16_slice).unwrap();
+            let (_, dec_gen) = IntegerFmt.parse(&enc16_slice).unwrap();
             match dec_gen {
-                IntVal::Small { v: val_i64 } => {
+                Integer::Small { v: val_i64 } => {
                     assert_eq!(val_i64, v as i64);
                 }
                 _ => panic!("Expected Small for {}", v),

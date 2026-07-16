@@ -1,4 +1,4 @@
-use crate::asn1::{Length, Tag, TagFmt, ASN1};
+use crate::asn1::{ASN1Fmt, LengthFmt, Tag, TagFmt};
 use crate::combinators::{
     bytes::ExactLen, length::AsLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, PrefixTagged,
 };
@@ -18,17 +18,21 @@ use OutputBuf;
 
 verus! {
 
-pub type ASN1Fmt__<Content, const DER: bool> = Mapped<
-    PrefixTagged<TagFmt, Tag, Bind<Length<DER>, spec_fn(usize) -> ExactLen<Content, usize>>>,
+pub type ASN1InnerFmt<Content, const DER: bool> = Mapped<
+    PrefixTagged<TagFmt, Tag, Bind<LengthFmt<DER>, spec_fn(usize) -> ExactLen<Content, usize>>>,
     FnSpecMapper<(usize, <Content as SpecByteLen>::T), <Content as SpecByteLen>::T>,
 >;
 
 pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
     tag: Tag,
     content: Content,
-) -> ASN1Fmt__<Content, DER> {
+) -> ASN1InnerFmt<Content, DER> {
     Mapped {
-        inner: PrefixTagged(TagFmt, tag, Bind(Length::<DER>, |len: usize| ExactLen(len, content))),
+        inner: PrefixTagged(
+            TagFmt,
+            tag,
+            Bind(LengthFmt::<DER>, |len: usize| ExactLen(len, content)),
+        ),
         mapper: (|i: (usize, Content::T)| i.1, |o: Content::T| (content.byte_len(o) as usize, o)),
     }
 }
@@ -36,7 +40,7 @@ pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
 mod derived_specs {
     use super::*;
 
-    impl<Content: SpecCombinator, const DER: bool> SpecParser for ASN1<Content, DER> {
+    impl<Content: SpecCombinator, const DER: bool> SpecParser for ASN1Fmt<Content, DER> {
         type PVal = Content::PVal;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -44,7 +48,7 @@ mod derived_specs {
         }
     }
 
-    impl<Content: SpecCombinator, const DER: bool> Consistency for ASN1<Content, DER> {
+    impl<Content: SpecCombinator, const DER: bool> Consistency for ASN1Fmt<Content, DER> {
         type Val = Content::PVal;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -52,7 +56,7 @@ mod derived_specs {
         }
     }
 
-    impl<Content: SpecCombinator, const DER: bool> SpecSerializerDps for ASN1<Content, DER> {
+    impl<Content: SpecCombinator, const DER: bool> SpecSerializerDps for ASN1Fmt<Content, DER> {
         type SValue = Content::PVal;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -60,7 +64,7 @@ mod derived_specs {
         }
     }
 
-    impl<Content: SpecCombinator, const DER: bool> SpecSerializer for ASN1<Content, DER> {
+    impl<Content: SpecCombinator, const DER: bool> SpecSerializer for ASN1Fmt<Content, DER> {
         type SVal = Content::PVal;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -68,7 +72,7 @@ mod derived_specs {
         }
     }
 
-    impl<Content: SpecCombinator, const DER: bool> SpecByteLen for ASN1<Content, DER> {
+    impl<Content: SpecCombinator, const DER: bool> SpecByteLen for ASN1Fmt<Content, DER> {
         type T = Content::PVal;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -81,19 +85,25 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<Content: SpecCombinator + SafeParser, const DER: bool> SafeParser for ASN1<Content, DER> {
+    impl<Content: SpecCombinator + SafeParser, const DER: bool> SafeParser for ASN1Fmt<
+        Content,
+        DER,
+    > {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             asn1_fmt::<Content, DER>(self.0, self.1).lemma_parse_safe(ibuf);
         }
     }
 
-    impl<Content: SpecCombinator + Productive, const DER: bool> Productive for ASN1<Content, DER> {
+    impl<Content: SpecCombinator + Productive, const DER: bool> Productive for ASN1Fmt<
+        Content,
+        DER,
+    > {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             asn1_fmt::<Content, DER>(self.0, self.1).lemma_productive(s);
         }
     }
 
-    impl<Content: SpecCombinator + SoundParser> SoundParser for ASN1<Content, true> {
+    impl<Content: SpecCombinator + SoundParser> SoundParser for ASN1Fmt<Content, true> {
         open spec fn sound_inv(&self) -> bool {
             &&& self.1.sound_inv()
             &&& TagFmt.consistent(self.0)
@@ -111,7 +121,7 @@ mod derived_proofs {
     impl<
         Content: SpecCombinator + GoodSerializer + EquivSerializers,
         const DER: bool,
-    > NonTailFmt for ASN1<Content, DER> {
+    > NonTailFmt for ASN1Fmt<Content, DER> {
         open spec fn serialize_dps_inv(&self) -> bool {
             &&& self.1.serialize_inv()
             &&& self.1.equiv_inv()
@@ -126,7 +136,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Content: SpecCombinator + GoodSerializer, const DER: bool> GoodSerializer for ASN1<
+    impl<Content: SpecCombinator + GoodSerializer, const DER: bool> GoodSerializer for ASN1Fmt<
         Content,
         DER,
     > {
@@ -142,7 +152,7 @@ mod derived_proofs {
     impl<
         Content: SpecCombinator + EquivSerializers + GoodSerializer + SPRoundTrip,
         const DER: bool,
-    > SPRoundTripDps for ASN1<Content, DER> {
+    > SPRoundTripDps for ASN1Fmt<Content, DER> {
         open spec fn unambiguous(&self) -> bool {
             &&& self.1.serialize_inv()
             &&& self.1.equiv_inv()
@@ -154,13 +164,16 @@ mod derived_proofs {
         }
     }
 
-    impl<Content: SpecCombinator + SafeParser, const DER: bool> NoLookAhead for ASN1<Content, DER> {
+    impl<Content: SpecCombinator + SafeParser, const DER: bool> NoLookAhead for ASN1Fmt<
+        Content,
+        DER,
+    > {
         proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
             asn1_fmt::<Content, DER>(self.0, self.1).lemma_no_lookahead(i1, i2);
         }
     }
 
-    impl<Content: SpecCombinator + SoundParser + NonMalleable> NonMalleable for ASN1<
+    impl<Content: SpecCombinator + SoundParser + NonMalleable> NonMalleable for ASN1Fmt<
         Content,
         true,
     > {
@@ -179,7 +192,7 @@ mod derived_proofs {
     impl<
         Content: SpecCombinator + EquivSerializers,
         const DER: bool,
-    > EquivSerializersGeneral for ASN1<Content, DER> {
+    > EquivSerializersGeneral for ASN1Fmt<Content, DER> {
         open spec fn equiv_general_inv(&self) -> bool {
             self.1.equiv_inv()
         }
@@ -189,7 +202,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Content: SpecCombinator + EquivSerializers, const DER: bool> EquivSerializers for ASN1<
+    impl<Content: SpecCombinator + EquivSerializers, const DER: bool> EquivSerializers for ASN1Fmt<
         Content,
         DER,
     > {
@@ -204,7 +217,7 @@ mod derived_proofs {
 
 }
 
-impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
+impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1Fmt<Content, DER> where
     Content: SpecCombinator + Parser<&'i [u8]>,
  {
     type PT = Content::PT;
@@ -222,14 +235,14 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1<Content, DER> where
 
         let (n1, _tag_val) = Const(TagFmt, self.0).parse(ibuf)?;
         let rest = ibuf.skip(n1);
-        let (n2, len) = Length::<DER>.parse(&rest)?;
+        let (n2, len) = LengthFmt::<DER>.parse(&rest)?;
         let rest = rest.skip(n2);
         let (n3, val) = ExactLen(len, &self.1).parse(&rest)?;
         Ok((n1 + n2 + n3, val))
     }
 }
 
-impl<Output: OutputBuf, Content, T, const DER: bool> Serializer<Output, T> for ASN1<
+impl<Output: OutputBuf, Content, T, const DER: bool> Serializer<Output, T> for ASN1Fmt<
     Content,
     DER,
 > where T: DeepView + ?Sized, Content: SpecCombinator + Serializer<Output, T> + ByteLen<T> {
@@ -248,12 +261,12 @@ impl<Output: OutputBuf, Content, T, const DER: bool> Serializer<Output, T> for A
         let len = self.1.length(v);
 
         Const(TagFmt, self.0).serialize_into(&self.0, obuf);
-        Length::<DER>.serialize_into(&len, obuf);
+        LengthFmt::<DER>.serialize_into(&len, obuf);
         self.1.serialize_into(v, obuf);
     }
 }
 
-impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
+impl<Content, T, const DER: bool> Prepare<T> for ASN1Fmt<Content, DER> where
     T: DeepView + ?Sized,
     Content: SpecCombinator + Prepare<T>,
  {
@@ -266,7 +279,7 @@ impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
 
         let n1 = Const(TagFmt, self.0).prepare(&self.0)?;
         let n3 = self.1.prepare(v)?;
-        let n2 = Length::<DER>.prepare(&n3)?;
+        let n2 = LengthFmt::<DER>.prepare(&n3)?;
         let _total_len = n1.checked_add(n2).ok_or(
             PreSerializeError::length_too_large(),
         )?.checked_add(n3).ok_or(PreSerializeError::length_too_large())?;
@@ -274,7 +287,7 @@ impl<Content, T, const DER: bool> Prepare<T> for ASN1<Content, DER> where
     }
 }
 
-impl<Content, T, const DER: bool> ByteLen<T> for ASN1<Content, DER> where
+impl<Content, T, const DER: bool> ByteLen<T> for ASN1Fmt<Content, DER> where
     T: DeepView + ?Sized,
     Content: SpecCombinator + ByteLen<T>,
  {
@@ -285,7 +298,7 @@ impl<Content, T, const DER: bool> ByteLen<T> for ASN1<Content, DER> where
     fn length(&self, v: &T) -> usize {
         let n1 = Const(TagFmt, self.0).length(&self.0);
         let n3 = self.1.length(v);
-        let n2 = Length::<DER>.length(&n3);
+        let n2 = LengthFmt::<DER>.length(&n3);
         n1 + n2 + n3
     }
 }
@@ -298,10 +311,10 @@ some test functions
 verus! {
 
 fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
-    use super::Bool;
+    use super::BoolFmt;
     use super::{BER, DER};
 
-    let asn_bool = ASN1::<_, DER>(TagFmt::BOOLEAN, Bool::<DER>);
+    let asn_bool = ASN1Fmt::<_, DER>(TagFmt::BOOLEAN, BoolFmt::<DER>);
     let (_n, v) = asn_bool.parse(buf)?;
     if let Ok(len) = asn_bool.prepare(&v) {
         let mut obuf = vec![0; len];
@@ -321,14 +334,14 @@ mod tests {
     use super::*;
     use crate::asn1::bitstring::BitString;
     use crate::asn1::tag::{Class, TagNumber};
-    use crate::asn1::{BitStringFmt, Bool, Tag, ASN1};
+    use crate::asn1::{ASN1Fmt, BitStringFmt, BoolFmt, Tag};
     use crate::asn1::{BER, DER};
     use crate::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
 
     #[test]
     fn test_asn1_bool_der_and_ber() {
-        // DER Bool (canonical: TRUE must be 0xFF)
-        let der_bool = ASN1::<_, DER>(TagFmt::BOOLEAN, Bool::<DER>);
+        // DER BoolFmt (canonical: TRUE must be 0xFF)
+        let der_bool = ASN1Fmt::<_, DER>(TagFmt::BOOLEAN, BoolFmt::<DER>);
 
         // Parse valid true
         let input_true = [0x01, 0x01, 0xFF];
@@ -346,8 +359,8 @@ mod tests {
         let input_noncanonical = [0x01, 0x01, 0x01];
         assert!(der_bool.parse(&&input_noncanonical[..]).is_err());
 
-        // BER Bool (permits any non-zero byte for true)
-        let ber_bool = ASN1::<_, BER>(TagFmt::BOOLEAN, Bool::<BER>);
+        // BER BoolFmt (permits any non-zero byte for true)
+        let ber_bool = ASN1Fmt::<_, BER>(TagFmt::BOOLEAN, BoolFmt::<BER>);
         let (n, val) = ber_bool.parse(&&input_noncanonical[..]).unwrap();
         assert_eq!(n, 3);
         assert_eq!(val, true);
@@ -363,7 +376,7 @@ mod tests {
     #[test]
     fn test_asn1_bitstring_der_and_ber() {
         // DER BitString (requires trailing unused bits to be zero)
-        let der_bitstring = ASN1::<_, DER>(TagFmt::BIT_STRING, BitStringFmt::<DER>);
+        let der_bitstring = ASN1Fmt::<_, DER>(TagFmt::BIT_STRING, BitStringFmt::<DER>);
 
         // Valid BIT STRING: 4 unused bits, last byte 0xA0 (0b1010_0000)
         let input_valid = [0x03, 0x02, 0x04, 0xA0];
@@ -377,7 +390,7 @@ mod tests {
         assert!(der_bitstring.parse(&&input_invalid[..]).is_err());
 
         // Under BER, non-zero trailing bits are permitted
-        let ber_bitstring = ASN1::<_, BER>(TagFmt::BIT_STRING, BitStringFmt::<BER>);
+        let ber_bitstring = ASN1Fmt::<_, BER>(TagFmt::BIT_STRING, BitStringFmt::<BER>);
         let (n, bs) = ber_bitstring.parse(&&input_invalid[..]).unwrap();
         assert_eq!(n, 4);
         assert_eq!(bs.unused(), 4);

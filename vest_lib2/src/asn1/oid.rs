@@ -15,14 +15,14 @@ use crate::core::{proof::*, spec::*};
 use crate::primitives::base128::{Base128Fmt, UInt};
 use vstd::prelude::*;
 
-use super::ObjectIdentifier;
+use super::ObjectIdentifierFmt;
 
 verus! {
 
-pub type ObjectIdentifierInner = Pair<Base128Fmt<true>, RepeatTillEnd<Base128Fmt<true>>>;
+pub type ObjectIdentifierInnerFmt = Pair<Base128Fmt<true>, RepeatTillEnd<Base128Fmt<true>>>;
 
 #[verifier::allow_in_spec]
-pub fn object_identifier_inner() -> (inner: ObjectIdentifierInner)
+pub fn object_identifier_inner() -> (inner: ObjectIdentifierInnerFmt)
     returns
         Pair(Base128Fmt::<true>, RepeatTillEnd(Base128Fmt::<true>)),
 {
@@ -97,9 +97,8 @@ pub proof fn lemma_oid_arcs_roundtrip(v: ObjectIdentifierSpec)
 
 mod derived_specs {
     use super::*;
-    use super::super::ObjectIdentifier;
 
-    impl SpecParser for ObjectIdentifier {
+    impl SpecParser for ObjectIdentifierFmt {
         type PVal = ObjectIdentifierSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -110,7 +109,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for ObjectIdentifier {
+    impl Consistency for ObjectIdentifierFmt {
         type Val = ObjectIdentifierSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -118,7 +117,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for ObjectIdentifier {
+    impl SpecSerializerDps for ObjectIdentifierFmt {
         type SValue = ObjectIdentifierSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -126,7 +125,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for ObjectIdentifier {
+    impl SpecSerializer for ObjectIdentifierFmt {
         type SVal = ObjectIdentifierSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -134,7 +133,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for ObjectIdentifier {
+    impl SpecByteLen for ObjectIdentifierFmt {
         type T = ObjectIdentifierSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -146,21 +145,20 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
-    use super::super::ObjectIdentifier;
 
-    impl SafeParser for ObjectIdentifier {
+    impl SafeParser for ObjectIdentifierFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             object_identifier_inner().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for ObjectIdentifier {
+    impl Productive for ObjectIdentifierFmt {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
             object_identifier_inner().lemma_productive(ibuf);
         }
     }
 
-    impl SoundParser for ObjectIdentifier {
+    impl SoundParser for ObjectIdentifierFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             let inner = object_identifier_inner();
             inner.lemma_parse_sound_consumption(ibuf);
@@ -179,13 +177,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for ObjectIdentifier {
+    impl GoodSerializer for ObjectIdentifierFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             object_identifier_inner().lemma_serialize_len(oid_to_subidentifiers(v));
         }
     }
 
-    impl SPRoundTripDps for ObjectIdentifier {
+    impl SPRoundTripDps for ObjectIdentifierFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             let inner = object_identifier_inner();
             lemma_oid_arcs_roundtrip(v);
@@ -193,7 +191,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for ObjectIdentifier {
+    impl NonMalleable for ObjectIdentifierFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             let inner = object_identifier_inner();
             if let Some((_, (first1, rest1))) = inner.spec_parse(buf1) {
@@ -206,7 +204,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for ObjectIdentifier {
+    impl EquivSerializers for ObjectIdentifierFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             object_identifier_inner().lemma_serialize_equiv_on_empty(oid_to_subidentifiers(v));
         }
@@ -218,13 +216,13 @@ mod derived_proofs {
 ///
 /// Keeping the first two arcs separate avoids a second allocation when parsing: the
 /// remaining subidentifiers are already produced as one `Vec` by `RepeatTillEnd`.
-pub struct ObjectIdentifierValue {
+pub struct ObjectIdentifier {
     first: UInt,
     second: UInt,
     rest: Vec<UInt>,
 }
 
-impl DeepView for ObjectIdentifierValue {
+impl DeepView for ObjectIdentifier {
     type V = ObjectIdentifierSpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -232,7 +230,7 @@ impl DeepView for ObjectIdentifierValue {
     }
 }
 
-impl ObjectIdentifierValue {
+impl ObjectIdentifier {
     pub fn new(first: UInt, second: UInt, rest: Vec<UInt>) -> Self {
         Self { first, second, rest }
     }
@@ -265,8 +263,8 @@ fn oid_first_subidentifier_exec(first: UInt, second: UInt) -> (combined: UInt)
     }
 }
 
-impl Parser<&[u8]> for ObjectIdentifier {
-    type PT = ObjectIdentifierValue;
+impl Parser<&[u8]> for ObjectIdentifierFmt {
+    type PT = ObjectIdentifier;
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         let (n, (first_subidentifier, rest)) = object_identifier_inner().parse(ibuf)?;
@@ -280,12 +278,12 @@ impl Parser<&[u8]> for ObjectIdentifier {
         proof {
             lemma_oid_from_subidentifiers_wf(first_subidentifier, rest.deep_view());
         }
-        Ok((n, ObjectIdentifierValue { first, second, rest }))
+        Ok((n, ObjectIdentifier { first, second, rest }))
     }
 }
 
-impl<Output: OutputBuf> Serializer<Output, ObjectIdentifierValue> for ObjectIdentifier {
-    fn serialize_into(&self, v: &ObjectIdentifierValue, obuf: &mut Output) {
+impl<Output: OutputBuf> Serializer<Output, ObjectIdentifier> for ObjectIdentifierFmt {
+    fn serialize_into(&self, v: &ObjectIdentifier, obuf: &mut Output) {
         let ghost vv = v.deep_view();
         let combined = oid_first_subidentifier_exec(v.first, v.second);
         let rest = v.rest.as_slice();
@@ -294,8 +292,8 @@ impl<Output: OutputBuf> Serializer<Output, ObjectIdentifierValue> for ObjectIden
     }
 }
 
-impl Prepare<ObjectIdentifierValue> for ObjectIdentifier {
-    fn prepare(&self, v: &ObjectIdentifierValue) -> Result<usize, PreSerializeError> {
+impl Prepare<ObjectIdentifier> for ObjectIdentifierFmt {
+    fn prepare(&self, v: &ObjectIdentifier) -> Result<usize, PreSerializeError> {
         if v.first > 2 {
             return Err(PreSerializeError::custom("OBJECT IDENTIFIER first arc exceeds 2"));
         }
@@ -317,8 +315,8 @@ impl Prepare<ObjectIdentifierValue> for ObjectIdentifier {
     }
 }
 
-impl ByteLen<ObjectIdentifierValue> for ObjectIdentifier {
-    fn length(&self, v: &ObjectIdentifierValue) -> usize {
+impl ByteLen<ObjectIdentifier> for ObjectIdentifierFmt {
+    fn length(&self, v: &ObjectIdentifier) -> usize {
         let combined = oid_first_subidentifier_exec(v.first, v.second);
         let rest = v.rest.as_slice();
         let pair = (combined, rest);

@@ -55,7 +55,7 @@ pub open spec fn utf8string_fmt() -> Utf8StringFmt {
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for super::super::Utf8String {
+    impl SpecParser for super::super::Utf8StringFmt {
         type PVal = Seq<char>;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -63,7 +63,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for super::super::Utf8String {
+    impl Consistency for super::super::Utf8StringFmt {
         type Val = Seq<char>;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -71,7 +71,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for super::super::Utf8String {
+    impl SpecSerializerDps for super::super::Utf8StringFmt {
         type SValue = Seq<char>;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -79,7 +79,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for super::super::Utf8String {
+    impl SpecSerializer for super::super::Utf8StringFmt {
         type SVal = Seq<char>;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -87,7 +87,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for super::super::Utf8String {
+    impl SpecByteLen for super::super::Utf8StringFmt {
         type T = Seq<char>;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -100,13 +100,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for super::super::Utf8String {
+    impl SafeParser for super::super::Utf8StringFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             utf8string_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for super::super::Utf8String {
+    impl Productive for super::super::Utf8StringFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -115,7 +115,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::Utf8String {
+    impl SoundParser for super::super::Utf8StringFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -129,13 +129,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for super::super::Utf8String {
+    impl GoodSerializer for super::super::Utf8StringFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             utf8string_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for super::super::Utf8String {
+    impl SPRoundTripDps for super::super::Utf8StringFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             broadcast use vstd::utf8::encode_utf8_decode_utf8;
 
@@ -143,7 +143,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::Utf8String {
+    impl NonMalleable for super::super::Utf8StringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -151,7 +151,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for super::super::Utf8String {
+    impl EquivSerializers for super::super::Utf8StringFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             utf8string_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -159,7 +159,7 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::Utf8String {
+impl<'i> Parser<&'i [u8]> for super::Utf8StringFmt {
     type PT = &'i str;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -173,14 +173,14 @@ impl<'i> Parser<&'i [u8]> for super::Utf8String {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, &'i str> for super::Utf8String {
+impl<Output: OutputBuf, 'i> Serializer<Output, &'i str> for super::Utf8StringFmt {
     fn serialize_into(&self, v: &&'i str, obuf: &mut Output) {
         let bytes = v.as_bytes();
         Tail.serialize_into(&bytes, obuf);
     }
 }
 
-impl<'i> Prepare<&'i str> for super::Utf8String {
+impl<'i> Prepare<&'i str> for super::Utf8StringFmt {
     fn prepare(&self, v: &&'i str) -> Result<usize, PreSerializeError> {
         broadcast use vstd::utf8::encode_utf8_valid_utf8;
 
@@ -189,7 +189,7 @@ impl<'i> Prepare<&'i str> for super::Utf8String {
     }
 }
 
-impl<'i> ByteLen<&'i str> for super::Utf8String {
+impl<'i> ByteLen<&'i str> for super::Utf8StringFmt {
     fn length(&self, v: &&'i str) -> usize {
         let bytes = v.as_bytes();
         Tail.length(&bytes)

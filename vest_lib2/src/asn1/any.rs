@@ -15,17 +15,17 @@ use crate::core::exec::{
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
-use super::{Any, Length, Tag, TagFmt};
+use super::{AnyFmt, LengthFmt, Tag, TagFmt};
 
 verus! {
 
-pub type AnyWire<const DER: bool> = Pair<
+pub type AnyWireFmt<const DER: bool> = Pair<
     TagFmt,
-    Bind<Length<DER>, spec_fn(usize) -> ExactLen<Tail, usize>>,
+    Bind<LengthFmt<DER>, spec_fn(usize) -> ExactLen<Tail, usize>>,
 >;
 
-pub type AnyFmt<const DER: bool> = Refined<
-    Mapped<AnyWire<DER>, FnSpecMapper<(Tag, (usize, Seq<u8>)), AnySpec>>,
+pub type AnyInnerFmt<const DER: bool> = Refined<
+    Mapped<AnyWireFmt<DER>, FnSpecMapper<(Tag, (usize, Seq<u8>)), AnySpec>>,
     PredFnSpec<AnySpec>,
 >;
 
@@ -36,10 +36,10 @@ pub struct AnySpec {
     pub content: Seq<u8>,
 }
 
-pub open spec fn any_fmt<const DER: bool>() -> AnyFmt<DER> {
+pub open spec fn any_fmt<const DER: bool>() -> AnyInnerFmt<DER> {
     Refined(
         Mapped {
-            inner: Pair(TagFmt, Bind(Length::<DER>, |len: usize| ExactLen(len, Tail))),
+            inner: Pair(TagFmt, Bind(LengthFmt::<DER>, |len: usize| ExactLen(len, Tail))),
             mapper: (
                 |v: (Tag, (usize, Seq<u8>))| AnySpec { tag: v.0, content: v.1.1 },
                 |v: AnySpec| (v.tag, (v.content.len() as usize, v.content)),
@@ -76,7 +76,7 @@ proof fn lemma_any_mapped_unambiguous<const DER: bool>()
 mod derived_specs {
     use super::*;
 
-    impl<const DER: bool> SpecParser for Any<DER> {
+    impl<const DER: bool> SpecParser for AnyFmt<DER> {
         type PVal = AnySpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -84,7 +84,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> Consistency for Any<DER> {
+    impl<const DER: bool> Consistency for AnyFmt<DER> {
         type Val = AnySpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -92,7 +92,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for Any<DER> {
+    impl<const DER: bool> SpecSerializerDps for AnyFmt<DER> {
         type SValue = AnySpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -100,7 +100,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializer for Any<DER> {
+    impl<const DER: bool> SpecSerializer for AnyFmt<DER> {
         type SVal = AnySpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -108,7 +108,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecByteLen for Any<DER> {
+    impl<const DER: bool> SpecByteLen for AnyFmt<DER> {
         type T = AnySpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -121,19 +121,19 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<const DER: bool> SafeParser for Any<DER> {
+    impl<const DER: bool> SafeParser for AnyFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             any_fmt::<DER>().lemma_parse_safe(ibuf);
         }
     }
 
-    impl<const DER: bool> Productive for Any<DER> {
+    impl<const DER: bool> Productive for AnyFmt<DER> {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
             any_fmt::<DER>().lemma_productive(ibuf);
         }
     }
 
-    impl SoundParser for Any<true> {
+    impl SoundParser for AnyFmt<true> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             lemma_any_mapped_sound_nonmal_inv();
             any_fmt::<true>().lemma_parse_sound_consumption(ibuf);
@@ -145,7 +145,7 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> NonTailFmt for Any<DER> {
+    impl<const DER: bool> NonTailFmt for AnyFmt<DER> {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             any_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
         }
@@ -155,33 +155,33 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for Any<DER> {
+    impl<const DER: bool> GoodSerializer for AnyFmt<DER> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             any_fmt::<DER>().lemma_serialize_len(v);
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for Any<DER> {
+    impl<const DER: bool> SPRoundTripDps for AnyFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             lemma_any_mapped_unambiguous::<DER>();
             any_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for Any<true> {
+    impl NonMalleable for AnyFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             lemma_any_mapped_sound_nonmal_inv();
             any_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl<const DER: bool> EquivSerializersGeneral for Any<DER> {
+    impl<const DER: bool> EquivSerializersGeneral for AnyFmt<DER> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             any_fmt::<DER>().lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl<const DER: bool> EquivSerializers for Any<DER> {
+    impl<const DER: bool> EquivSerializers for AnyFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             any_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
         }
@@ -190,12 +190,12 @@ mod derived_proofs {
 }
 
 /// Borrowed executable open-type value.
-pub struct AnyValue<'a> {
+pub struct Any<'a> {
     tag: Tag,
     content: &'a [u8],
 }
 
-impl<'a> DeepView for AnyValue<'a> {
+impl<'a> DeepView for Any<'a> {
     type V = AnySpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -203,7 +203,7 @@ impl<'a> DeepView for AnyValue<'a> {
     }
 }
 
-impl<'a> AnyValue<'a> {
+impl<'a> Any<'a> {
     pub fn new(tag: Tag, content: &'a [u8]) -> Self {
         Self { tag, content }
     }
@@ -217,8 +217,8 @@ impl<'a> AnyValue<'a> {
     }
 }
 
-impl<'a, const DER: bool> Parser<&'a [u8]> for Any<DER> {
-    type PT = AnyValue<'a>;
+impl<'a, const DER: bool> Parser<&'a [u8]> for AnyFmt<DER> {
+    type PT = Any<'a>;
 
     fn parse(&self, ibuf: &&'a [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
@@ -230,43 +230,43 @@ impl<'a, const DER: bool> Parser<&'a [u8]> for Any<DER> {
             return Err(ParseError::invalid_tag());
         }
         let rest = ibuf.skip(n1);
-        let (n2, len) = Length::<DER>.parse(&rest)?;
+        let (n2, len) = LengthFmt::<DER>.parse(&rest)?;
         let rest = rest.skip(n2);
         let (n3, content) = ExactLen(len, Tail).parse(&rest)?;
-        Ok((n1 + n2 + n3, AnyValue { tag, content }))
+        Ok((n1 + n2 + n3, Any { tag, content }))
     }
 }
 
-impl<'a, Output: OutputBuf, const DER: bool> Serializer<Output, AnyValue<'a>> for Any<DER> {
-    fn serialize_into(&self, v: &AnyValue<'a>, obuf: &mut Output) {
+impl<'a, Output: OutputBuf, const DER: bool> Serializer<Output, Any<'a>> for AnyFmt<DER> {
+    fn serialize_into(&self, v: &Any<'a>, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
         let len = v.content.len();
         TagFmt.serialize_into(&v.tag, obuf);
-        Length::<DER>.serialize_into(&len, obuf);
+        LengthFmt::<DER>.serialize_into(&len, obuf);
         Tail.serialize_into(&v.content, obuf);
     }
 }
 
-impl<'a, const DER: bool> Prepare<AnyValue<'a>> for Any<DER> {
-    fn prepare(&self, v: &AnyValue<'a>) -> Result<usize, PreSerializeError> {
+impl<'a, const DER: bool> Prepare<Any<'a>> for AnyFmt<DER> {
+    fn prepare(&self, v: &Any<'a>) -> Result<usize, PreSerializeError> {
         if v.tag == TagFmt::EOC {
             return Err(PreSerializeError::custom("EOC is not an open-type value"));
         }
         let n1 = TagFmt.prepare(&v.tag)?;
         let content_len = Tail.prepare(&v.content)?;
-        let n2 = Length::<DER>.prepare(&content_len)?;
+        let n2 = LengthFmt::<DER>.prepare(&content_len)?;
         let header = n1.checked_add(n2).ok_or(PreSerializeError::length_too_large())?;
         let total = header.checked_add(content_len).ok_or(PreSerializeError::length_too_large())?;
         Ok(total)
     }
 }
 
-impl<'a, const DER: bool> ByteLen<AnyValue<'a>> for Any<DER> {
-    fn length(&self, v: &AnyValue<'a>) -> usize {
+impl<'a, const DER: bool> ByteLen<Any<'a>> for AnyFmt<DER> {
+    fn length(&self, v: &Any<'a>) -> usize {
         let n1 = TagFmt.length(&v.tag);
         let content_len = Tail.length(&v.content);
-        let n2 = Length::<DER>.length(&content_len);
+        let n2 = LengthFmt::<DER>.length(&content_len);
         n1 + n2 + content_len
     }
 }

@@ -15,13 +15,13 @@ use crate::core::exec::{
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
-use super::Real;
+use super::RealFmt;
 
 verus! {
 
 pub type RealSpec = Seq<u8>;
 
-pub type RealFmt = Refined<Tail, PredFnSpec<Seq<u8>>>;
+pub type RealInnerFmt = Refined<Tail, PredFnSpec<Seq<u8>>>;
 
 pub const REAL_PLUS_INFINITY: u8 = 0x40;
 
@@ -181,7 +181,7 @@ pub proof fn lemma_der_real_bytes_cases(bytes: Seq<u8>)
     }
 }
 
-pub open spec fn real_fmt() -> RealFmt {
+pub open spec fn real_fmt() -> RealInnerFmt {
     Refined(Tail, |bytes: Seq<u8>| der_real_bytes_wf(bytes))
 }
 
@@ -427,7 +427,7 @@ pub fn der_real_bytes_wf_exec(bytes: &[u8]) -> (ok: bool)
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for Real {
+    impl SpecParser for RealFmt {
         type PVal = RealSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -435,7 +435,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for Real {
+    impl Consistency for RealFmt {
         type Val = RealSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -443,7 +443,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for Real {
+    impl SpecSerializerDps for RealFmt {
         type SValue = RealSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -451,7 +451,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for Real {
+    impl SpecSerializer for RealFmt {
         type SVal = RealSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -459,7 +459,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for Real {
+    impl SpecByteLen for RealFmt {
         type T = RealSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -472,13 +472,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for Real {
+    impl SafeParser for RealFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             real_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for Real {
+    impl Productive for RealFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -487,7 +487,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Real {
+    impl SoundParser for RealFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             real_fmt().lemma_parse_sound_consumption(ibuf);
         }
@@ -497,25 +497,25 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for Real {
+    impl GoodSerializer for RealFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             real_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for Real {
+    impl SPRoundTripDps for RealFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             real_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for Real {
+    impl NonMalleable for RealFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             real_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializers for Real {
+    impl EquivSerializers for RealFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             real_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -524,11 +524,11 @@ mod derived_proofs {
 }
 
 /// Borrowed, exact DER REAL contents.
-pub struct RealValue<'a> {
+pub struct Real<'a> {
     contents: &'a [u8],
 }
 
-impl<'a> DeepView for RealValue<'a> {
+impl<'a> DeepView for Real<'a> {
     type V = RealSpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -536,7 +536,7 @@ impl<'a> DeepView for RealValue<'a> {
     }
 }
 
-impl<'a> RealValue<'a> {
+impl<'a> Real<'a> {
     #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         der_real_bytes_wf(self.deep_view())
@@ -572,8 +572,8 @@ impl<'a> RealValue<'a> {
     }
 }
 
-impl<'a> Parser<&'a [u8]> for Real {
-    type PT = RealValue<'a>;
+impl<'a> Parser<&'a [u8]> for RealFmt {
+    type PT = Real<'a>;
 
     fn parse(&self, ibuf: &&'a [u8]) -> PResult<Self::PT> {
         let (n, contents) = Tail.parse(ibuf)?;
@@ -581,7 +581,7 @@ impl<'a> Parser<&'a [u8]> for Real {
             contents.deep_view_eq_view();
         }
         if der_real_bytes_wf_exec(contents) {
-            let value = RealValue::new_verified(contents);
+            let value = Real::new_verified(contents);
             Ok((n, value))
         } else {
             Err(ParseError::non_canonical())
@@ -589,8 +589,8 @@ impl<'a> Parser<&'a [u8]> for Real {
     }
 }
 
-impl<'a, Output: OutputBuf> Serializer<Output, RealValue<'a>> for Real {
-    fn serialize_into(&self, v: &RealValue<'a>, obuf: &mut Output) {
+impl<'a, Output: OutputBuf> Serializer<Output, Real<'a>> for RealFmt {
+    fn serialize_into(&self, v: &Real<'a>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
         }
@@ -598,8 +598,8 @@ impl<'a, Output: OutputBuf> Serializer<Output, RealValue<'a>> for Real {
     }
 }
 
-impl<'a> Prepare<RealValue<'a>> for Real {
-    fn prepare(&self, v: &RealValue<'a>) -> Result<usize, PreSerializeError> {
+impl<'a> Prepare<Real<'a>> for RealFmt {
+    fn prepare(&self, v: &Real<'a>) -> Result<usize, PreSerializeError> {
         proof {
             use_type_invariant(v);
         }
@@ -607,8 +607,8 @@ impl<'a> Prepare<RealValue<'a>> for Real {
     }
 }
 
-impl<'a> ByteLen<RealValue<'a>> for Real {
-    fn length(&self, v: &RealValue<'a>) -> usize {
+impl<'a> ByteLen<Real<'a>> for RealFmt {
+    fn length(&self, v: &Real<'a>) -> usize {
         Tail.length(&v.contents)
     }
 }

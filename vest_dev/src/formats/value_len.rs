@@ -1,4 +1,4 @@
-use crate::asn1::BerBool;
+use crate::asn1::BerBoolFmt;
 use crate::combinators::{
     Bind, Choice, Eof, Pair, PrefixTagged, Repeat, RepeatTillEnd, Star, Sum, U16Le, Varied, U8,
 };
@@ -8,19 +8,19 @@ use PrefixTagged as Tagged;
 
 verus! {
 
-type DemoFmt1 = Pair<BerBool, Choice<Tagged<U8, u8, U16Le>, RepeatTillEnd<U16Le>>>;
+type DemoFmt1 = Pair<BerBoolFmt, Choice<Tagged<U8, u8, U16Le>, RepeatTillEnd<U16Le>>>;
 
 type DemoFmt2 = Pair<
-    BerBool,
+    BerBoolFmt,
     Choice<Tagged<U8, u8, U16Le>, RepeatTillEnd<Bind<U16Le, spec_fn(u16) -> Varied<u16>>>>,
 >;
 
 
 
 proof fn test_value_byte_len_demo() {
-    let fmt: DemoFmt1 = Pair(BerBool, Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(U16Le)));
+    let fmt: DemoFmt1 = Pair(BerBoolFmt, Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(U16Le)));
     let fmt2: DemoFmt2 = Pair(
-        BerBool,
+        BerBoolFmt,
         Choice(Tagged(U8, 0xA5u8, U16Le), RepeatTillEnd(Bind(U16Le, |x| Varied(x)))),
     );
 

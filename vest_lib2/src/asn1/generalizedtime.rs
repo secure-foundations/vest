@@ -32,14 +32,14 @@ pub struct GeneralizedTimeSpec {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct GeneralizedTimeValue<'a> {
+pub struct GeneralizedTime<'a> {
     pub datetime: DateTime,
     pub precision: TimePrecision,
     pub fraction: &'a [u8],
     pub zone: TimeZone,
 }
 
-impl<'a> DeepView for GeneralizedTimeValue<'a> {
+impl<'a> DeepView for GeneralizedTime<'a> {
     type V = GeneralizedTimeSpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -78,7 +78,7 @@ impl GeneralizedTimeSpec {
     }
 }
 
-impl<'a> GeneralizedTimeValue<'a> {
+impl<'a> GeneralizedTime<'a> {
     pub fn new(
         datetime: DateTime,
         precision: TimePrecision,
@@ -95,7 +95,7 @@ impl<'a> GeneralizedTimeValue<'a> {
                 zone,
             }),
     {
-        GeneralizedTimeValue { datetime, precision, fraction, zone }
+        GeneralizedTime { datetime, precision, fraction, zone }
     }
 }
 
@@ -439,9 +439,9 @@ pub open spec fn generalized_time_value(bytes: Seq<u8>) -> Option<GeneralizedTim
 }
 
 /// Verified executable implementation of `generalized_time_value`.
-/// Decodes the byte sequence into a `GeneralizedTimeValue`.
+/// Decodes the byte sequence into a `GeneralizedTime`.
 #[verifier::rlimit(20)]
-pub fn generalized_timevalue<'a>(bytes: &'a [u8]) -> (res: Option<GeneralizedTimeValue<'a>>)
+pub fn generalized_timevalue<'a>(bytes: &'a [u8]) -> (res: Option<GeneralizedTime<'a>>)
     requires
         generalized_time_bytes_wf::<false>(bytes@),
     ensures
@@ -479,7 +479,7 @@ pub fn generalized_timevalue<'a>(bytes: &'a [u8]) -> (res: Option<GeneralizedTim
     };
     if zone_start == bytes.len() || bytes[zone_start] == 0x5a {
         Some(
-            GeneralizedTimeValue {
+            GeneralizedTime {
                 datetime: local,
                 precision,
                 fraction,
@@ -503,7 +503,7 @@ pub fn generalized_timevalue<'a>(bytes: &'a [u8]) -> (res: Option<GeneralizedTim
             offset_minute,
         ) {
             Some(datetime) => Some(
-                GeneralizedTimeValue { datetime, precision, fraction, zone: TimeZone::Utc },
+                GeneralizedTime { datetime, precision, fraction, zone: TimeZone::Utc },
             ),
             None => None,
         }
@@ -570,9 +570,9 @@ pub open spec fn generalized_time_bytes(value: GeneralizedTimeSpec) -> Seq<u8> {
     )
 }
 
-/// Writes a `GeneralizedTimeValue` directly to an output buffer without allocating.
+/// Writes a `GeneralizedTime` directly to an output buffer without allocating.
 pub fn generalized_time_to_bytes<'a, Output: OutputBuf>(
-    value: &GeneralizedTimeValue<'a>,
+    value: &GeneralizedTime<'a>,
     obuf: &mut Output,
 )
     requires
@@ -612,9 +612,9 @@ pub fn generalized_time_to_bytes<'a, Output: OutputBuf>(
     }
 }
 
-/// Executable view validation helper checking well-formedness of `GeneralizedTimeValue`.
+/// Executable view validation helper checking well-formedness of `GeneralizedTime`.
 #[verifier::allow_in_spec]
-pub fn generalized_value_wf<'a, const DER: bool>(value: &GeneralizedTimeValue<'a>) -> bool
+pub fn generalized_value_wf<'a, const DER: bool>(value: &GeneralizedTime<'a>) -> bool
     returns
         if DER {
             value.deep_view().der_wf()
@@ -823,7 +823,7 @@ pub proof fn lemma_der_generalized_time_canonical(bytes: Seq<u8>)
 mod derived_specs {
     use super::*;
 
-    impl<const DER: bool> SpecParser for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SpecParser for super::super::GeneralizedTimeFmt<DER> {
         type PVal = GeneralizedTimeSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -835,7 +835,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> Consistency for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> Consistency for super::super::GeneralizedTimeFmt<DER> {
         type Val = GeneralizedTimeSpec;
 
         open spec fn consistent(&self, value: Self::Val) -> bool {
@@ -847,7 +847,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SpecSerializerDps for super::super::GeneralizedTimeFmt<DER> {
         type SValue = GeneralizedTimeSpec;
 
         open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -855,7 +855,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializer for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SpecSerializer for super::super::GeneralizedTimeFmt<DER> {
         type SVal = GeneralizedTimeSpec;
 
         open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
@@ -863,7 +863,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecByteLen for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SpecByteLen for super::super::GeneralizedTimeFmt<DER> {
         type T = GeneralizedTimeSpec;
 
         open spec fn byte_len(&self, value: Self::T) -> nat {
@@ -876,12 +876,12 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<const DER: bool> SafeParser for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SafeParser for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         }
     }
 
-    impl<const DER: bool> Productive for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> Productive for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
             if let Some((n, _)) = self.spec_parse(ibuf) {
                 assert(n == ibuf.len());
@@ -890,23 +890,23 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> GoodSerializer for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_serialize_len(&self, value: Self::SVal) {
         }
     }
 
-    impl<const DER: bool> EquivSerializers for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> EquivSerializers for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for super::super::GeneralizedTime<DER> {
+    impl<const DER: bool> SPRoundTripDps for super::super::GeneralizedTimeFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
             lemma_generalized_time_encode_roundtrip::<DER>(value);
         }
     }
 
-    impl SoundParser for super::super::GeneralizedTime<true> {
+    impl SoundParser for super::super::GeneralizedTimeFmt<true> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             if let Some((n, value)) = self.spec_parse(ibuf) {
                 lemma_der_generalized_time_canonical(ibuf);
@@ -923,7 +923,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::GeneralizedTime<true> {
+    impl NonMalleable for super::super::GeneralizedTimeFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             if let (Some((n1, value1)), Some((n2, value2))) = (
                 self.spec_parse(buf1),
@@ -943,8 +943,8 @@ mod derived_proofs {
 
 }
 
-impl<'i, const DER: bool> Parser<&'i [u8]> for super::GeneralizedTime<DER> {
-    type PT = GeneralizedTimeValue<'i>;
+impl<'i, const DER: bool> Parser<&'i [u8]> for super::GeneralizedTimeFmt<DER> {
+    type PT = GeneralizedTime<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, bytes) = Tail.parse(ibuf)?;
@@ -961,15 +961,15 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::GeneralizedTime<DER> {
 
 impl<Output: OutputBuf, 'i, const DER: bool> Serializer<
     Output,
-    GeneralizedTimeValue<'i>,
-> for super::GeneralizedTime<DER> {
-    fn serialize_into(&self, value: &GeneralizedTimeValue<'i>, obuf: &mut Output) {
+    GeneralizedTime<'i>,
+> for super::GeneralizedTimeFmt<DER> {
+    fn serialize_into(&self, value: &GeneralizedTime<'i>, obuf: &mut Output) {
         generalized_time_to_bytes(value, obuf);
     }
 }
 
-impl<'i, const DER: bool> Prepare<GeneralizedTimeValue<'i>> for super::GeneralizedTime<DER> {
-    fn prepare(&self, value: &GeneralizedTimeValue<'i>) -> Result<usize, PreSerializeError> {
+impl<'i, const DER: bool> Prepare<GeneralizedTime<'i>> for super::GeneralizedTimeFmt<DER> {
+    fn prepare(&self, value: &GeneralizedTime<'i>) -> Result<usize, PreSerializeError> {
         if !generalized_value_wf::<DER>(value) {
             return Err(PreSerializeError::custom("Invalid GeneralizedTime value"));
         }
@@ -998,8 +998,8 @@ impl<'i, const DER: bool> Prepare<GeneralizedTimeValue<'i>> for super::Generaliz
     }
 }
 
-impl<'i, const DER: bool> ByteLen<GeneralizedTimeValue<'i>> for super::GeneralizedTime<DER> {
-    fn length(&self, value: &GeneralizedTimeValue<'i>) -> usize {
+impl<'i, const DER: bool> ByteLen<GeneralizedTime<'i>> for super::GeneralizedTimeFmt<DER> {
+    fn length(&self, value: &GeneralizedTime<'i>) -> usize {
         10 + if value.precision == TimePrecision::Hour {
             0
         } else {

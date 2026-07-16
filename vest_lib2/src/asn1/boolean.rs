@@ -66,9 +66,9 @@ pub open spec fn bool_fmt<const DER: bool>() -> BoolFmt<DER> {
 
 mod derived_specs {
     use super::*;
-    use super::super::Bool;
+    use super::super::BoolFmt;
 
-    impl<const DER: bool> SpecParser for Bool<DER> {
+    impl<const DER: bool> SpecParser for BoolFmt<DER> {
         type PVal = bool;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -76,7 +76,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> Consistency for Bool<DER> {
+    impl<const DER: bool> Consistency for BoolFmt<DER> {
         type Val = bool;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -84,7 +84,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for Bool<DER> {
+    impl<const DER: bool> SpecSerializerDps for BoolFmt<DER> {
         type SValue = bool;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -92,7 +92,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecSerializer for Bool<DER> {
+    impl<const DER: bool> SpecSerializer for BoolFmt<DER> {
         type SVal = bool;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -100,7 +100,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> SpecByteLen for Bool<DER> {
+    impl<const DER: bool> SpecByteLen for BoolFmt<DER> {
         type T = bool;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -108,7 +108,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> MinMaxByteLen for Bool<DER> {
+    impl<const DER: bool> MinMaxByteLen for BoolFmt<DER> {
         open spec fn min(&self) -> nat {
             BOOL_BYTE_LEN as nat
         }
@@ -121,7 +121,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> StaticByteLen for Bool<DER> {
+    impl<const DER: bool> StaticByteLen for BoolFmt<DER> {
         open spec fn static_byte_len() -> nat {
             BOOL_BYTE_LEN as nat
         }
@@ -131,7 +131,7 @@ mod derived_specs {
         }
     }
 
-    impl<const DER: bool> ValueByteLen for Bool<DER> {
+    impl<const DER: bool> ValueByteLen for BoolFmt<DER> {
         open spec fn value_byte_len(_v: Self::T) -> nat {
             BOOL_BYTE_LEN as nat
         }
@@ -145,21 +145,21 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
-    use super::super::Bool;
+    use super::super::BoolFmt;
 
-    impl<const DER: bool> SafeParser for Bool<DER> {
+    impl<const DER: bool> SafeParser for BoolFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             bool_fmt::<DER>().lemma_parse_safe(ibuf);
         }
     }
 
-    impl<const DER: bool> Productive for Bool<DER> {
+    impl<const DER: bool> Productive for BoolFmt<DER> {
         proof fn lemma_productive(&self, s: Seq<u8>) {
             bool_fmt::<DER>().lemma_productive(s);
         }
     }
 
-    impl<const DER: bool> SoundParser for Bool<DER> {
+    impl<const DER: bool> SoundParser for BoolFmt<DER> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         }
 
@@ -167,7 +167,7 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> NonTailFmt for Bool<DER> {
+    impl<const DER: bool> NonTailFmt for BoolFmt<DER> {
         proof fn lemma_serialize_dps_prepend(&self, v: bool, obuf: Seq<u8>) {
             bool_fmt::<DER>().lemma_serialize_dps_prepend(v, obuf);
         }
@@ -177,38 +177,38 @@ mod derived_proofs {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for Bool<DER> {
+    impl<const DER: bool> GoodSerializer for BoolFmt<DER> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             bool_fmt::<DER>().lemma_serialize_len(v);
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for Bool<DER> {
+    impl<const DER: bool> SPRoundTripDps for BoolFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             assert(non_zero(CANONICAL_TRUE_BYTE));
             bool_fmt::<DER>().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl<const DER: bool> NoLookAhead for Bool<DER> {
+    impl<const DER: bool> NoLookAhead for BoolFmt<DER> {
         proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
             bool_fmt::<DER>().lemma_no_lookahead(i1, i2);
         }
     }
 
-    impl NonMalleable for Bool<true> {
+    impl NonMalleable for BoolFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             bool_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl<const DER: bool> EquivSerializersGeneral for Bool<DER> {
+    impl<const DER: bool> EquivSerializersGeneral for BoolFmt<DER> {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             bool_fmt::<DER>().lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl<const DER: bool> EquivSerializers for Bool<DER> {
+    impl<const DER: bool> EquivSerializers for BoolFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             bool_fmt::<DER>().lemma_serialize_equiv_on_empty(v);
         }
@@ -216,7 +216,7 @@ mod derived_proofs {
 
 }
 
-impl<const DER: bool> Parser<&[u8]> for super::Bool<DER> {
+impl<const DER: bool> Parser<&[u8]> for super::BoolFmt<DER> {
     type PT = bool;
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<bool> {
@@ -229,7 +229,7 @@ impl<const DER: bool> Parser<&[u8]> for super::Bool<DER> {
     }
 }
 
-impl<Output: OutputBuf> Serializer<Output, bool> for super::Bool<true> {
+impl<Output: OutputBuf> Serializer<Output, bool> for super::BoolFmt<true> {
     fn serialize_into(&self, v: &bool, obuf: &mut Output) {
         let b = if *v {
             CANONICAL_TRUE_BYTE
@@ -240,13 +240,13 @@ impl<Output: OutputBuf> Serializer<Output, bool> for super::Bool<true> {
     }
 }
 
-impl Prepare<bool> for super::Bool<true> {
+impl Prepare<bool> for super::BoolFmt<true> {
     fn prepare(&self, _v: &bool) -> Result<usize, PreSerializeError> {
         Ok(BOOL_BYTE_LEN)
     }
 }
 
-impl ByteLen<bool> for super::Bool<true> {
+impl ByteLen<bool> for super::BoolFmt<true> {
     fn length(&self, _v: &bool) -> usize {
         BOOL_BYTE_LEN
     }

@@ -1,11 +1,11 @@
 //! ASN.1 component modifiers.
 //!
-//! IMPLICIT and EXPLICIT tagging reduce directly to [`ASN1`]. OPTIONAL uses
+//! IMPLICIT and EXPLICIT tagging reduce directly to [`ASN1Fmt`]. OPTIONAL uses
 //! [`Optional`](crate::combinators::Optional). DEFAULT is a derived
 //! `Mapped<Refined<Optional<...>, ...>, ...>` format: BER accepts an explicitly
 //! encoded default while DER rejects it, and both serializers omit defaults.
 use crate::asn1::tag::{Class, TagNumber};
-use crate::asn1::{Tag, ASN1};
+use crate::asn1::{ASN1Fmt, Tag};
 use crate::combinators::mapped::spec::{FnSpecMapper, SpecMapper};
 use crate::combinators::{Mapped, Optional, Refined};
 use crate::core::exec::output::*;
@@ -24,9 +24,12 @@ verus! {
 /// Apply an ASN.1 IMPLICIT tag. The base type's primitive/constructed form is preserved.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn Implicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1<C, DER>) -> ASN1<C, DER>
+pub fn Implicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
+    C,
+    DER,
+>
     returns
-        ASN1::<_, DER>(
+        ASN1Fmt::<_, DER>(
             Tag {
                 class,
                 constructed: inner.0.constructed,
@@ -35,29 +38,29 @@ pub fn Implicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1<C, DE
             inner.1,
         ),
 {
-    ASN1(Tag { class, constructed: inner.0.constructed, number: number.into() }, inner.1)
+    ASN1Fmt(Tag { class, constructed: inner.0.constructed, number: number.into() }, inner.1)
 }
 
 /// Apply an ASN.1 EXPLICIT tag. The outer tag is always constructed.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn Explicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1<C, DER>) -> ASN1<
-    ASN1<C, DER>,
+pub fn Explicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
+    ASN1Fmt<C, DER>,
     DER,
 >
     returns
-        ASN1::<ASN1<_, DER>, DER>(
+        ASN1Fmt::<ASN1Fmt<_, DER>, DER>(
             Tag { class, constructed: true, number: super::tag::uint_to_tag_num(number) },
             inner,
         ),
 {
-    ASN1(Tag { class, constructed: true, number: number.into() }, inner)
+    ASN1Fmt(Tag { class, constructed: true, number: number.into() }, inner)
 }
 
 /// Apply an ASN.1 context-specific IMPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextImplicit<C, const DER: bool>(number: u64, inner: ASN1<C, DER>) -> ASN1<C, DER>
+pub fn ContextImplicit<C, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
     returns
         Implicit(Class::ContextSpecific, number, inner),
 {
@@ -67,8 +70,8 @@ pub fn ContextImplicit<C, const DER: bool>(number: u64, inner: ASN1<C, DER>) -> 
 /// Apply an ASN.1 context-specific EXPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextExplicit<C, const DER: bool>(number: u64, inner: ASN1<C, DER>) -> ASN1<
-    ASN1<C, DER>,
+pub fn ContextExplicit<C, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
+    ASN1Fmt<C, DER>,
     DER,
 >
     returns
@@ -83,13 +86,13 @@ pub fn ContextExplicit<C, const DER: bool>(number: u64, inner: ASN1<C, DER>) -> 
 /// is replaced by `default`. On serialization, a value equal to `default` is
 /// omitted. DER additionally rejects an explicitly encoded default value.
 #[derive(Copy)]
-pub struct Defaulted<Field, Default, Rest, const DER: bool = true>(
+pub struct DefaultedFmt<Field, Default, Rest, const DER: bool = true>(
     pub Field,
     pub Default,
     pub Rest,
 );
 
-impl<Field: Clone, Default: Clone, Rest: Clone, const DER: bool> Clone for Defaulted<
+impl<Field: Clone, Default: Clone, Rest: Clone, const DER: bool> Clone for DefaultedFmt<
     Field,
     Default,
     Rest,
@@ -101,11 +104,11 @@ impl<Field: Clone, Default: Clone, Rest: Clone, const DER: bool> Clone for Defau
             call_ensures(Default::clone, (&self.1,), cloned.1),
             call_ensures(Rest::clone, (&self.2,), cloned.2),
     {
-        Defaulted(self.0.clone(), self.1.clone(), self.2.clone())
+        DefaultedFmt(self.0.clone(), self.1.clone(), self.2.clone())
     }
 }
 
-pub type DefaultedFmt<Field, Rest, T, U, const DER: bool> = Mapped<
+pub type DefaultedInnerFmt<Field, Rest, T, U, const DER: bool> = Mapped<
     Refined<Optional<Field, Rest>, PredFnSpec<(Option<T>, U)>>,
     FnSpecMapper<(Option<T>, U), (T, U)>,
 >;
@@ -114,7 +117,7 @@ pub open spec fn defaulted_fmt<Field: SpecByteLen, Rest: SpecByteLen, const DER:
     field: Field,
     default: Field::T,
     rest: Rest,
-) -> DefaultedFmt<Field, Rest, Field::T, Rest::T, DER> {
+) -> DefaultedInnerFmt<Field, Rest, Field::T, Rest::T, DER> {
     Mapped {
         inner: Refined(
             Optional(field, rest),
@@ -146,7 +149,7 @@ pub open spec fn defaulted_fmt<Field: SpecByteLen, Rest: SpecByteLen, const DER:
 mod derived_specs {
     use super::*;
 
-    impl<Field, Rest, const DER: bool> SpecParser for Defaulted<
+    impl<Field, Rest, const DER: bool> SpecParser for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -162,7 +165,7 @@ mod derived_specs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> Consistency for Defaulted<
+    impl<Field, Rest, const DER: bool> Consistency for DefaultedFmt<
         Field,
         Field::Val,
         Rest,
@@ -178,7 +181,7 @@ mod derived_specs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> SpecSerializerDps for Defaulted<
+    impl<Field, Rest, const DER: bool> SpecSerializerDps for DefaultedFmt<
         Field,
         Field::SValue,
         Rest,
@@ -194,7 +197,7 @@ mod derived_specs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> SpecSerializer for Defaulted<
+    impl<Field, Rest, const DER: bool> SpecSerializer for DefaultedFmt<
         Field,
         Field::SVal,
         Rest,
@@ -210,10 +213,12 @@ mod derived_specs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> SpecByteLen for Defaulted<Field, Field::T, Rest, DER> where
-        Field: SpecByteLen,
-        Rest: SpecByteLen,
-     {
+    impl<Field, Rest, const DER: bool> SpecByteLen for DefaultedFmt<
+        Field,
+        Field::T,
+        Rest,
+        DER,
+    > where Field: SpecByteLen, Rest: SpecByteLen {
         type T = (Field::T, Rest::T);
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -226,7 +231,7 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<Field, Rest, const DER: bool> SafeParser for Defaulted<
+    impl<Field, Rest, const DER: bool> SafeParser for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -244,7 +249,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> Productive for Defaulted<
+    impl<Field, Rest, const DER: bool> Productive for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -262,7 +267,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> SoundParser for Defaulted<
+    impl<Field, Rest, const DER: bool> SoundParser for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -283,7 +288,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> NonTailFmt for Defaulted<
+    impl<Field, Rest, const DER: bool> NonTailFmt for DefaultedFmt<
         Field,
         Field::SValue,
         Rest,
@@ -308,7 +313,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> GoodSerializer for Defaulted<
+    impl<Field, Rest, const DER: bool> GoodSerializer for DefaultedFmt<
         Field,
         Field::SVal,
         Rest,
@@ -323,7 +328,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> SPRoundTripDps for Defaulted<
+    impl<Field, Rest, const DER: bool> SPRoundTripDps for DefaultedFmt<
         Field,
         Field::T,
         Rest,
@@ -342,7 +347,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> NoLookAhead for Defaulted<
+    impl<Field, Rest, const DER: bool> NoLookAhead for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -360,7 +365,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> NonMalleable for Defaulted<
+    impl<Field, Rest, const DER: bool> NonMalleable for DefaultedFmt<
         Field,
         Field::PVal,
         Rest,
@@ -378,7 +383,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> EquivSerializersGeneral for Defaulted<
+    impl<Field, Rest, const DER: bool> EquivSerializersGeneral for DefaultedFmt<
         Field,
         Field::SVal,
         Rest,
@@ -399,7 +404,7 @@ mod derived_proofs {
         }
     }
 
-    impl<Field, Rest, const DER: bool> EquivSerializers for Defaulted<
+    impl<Field, Rest, const DER: bool> EquivSerializers for DefaultedFmt<
         Field,
         Field::SVal,
         Rest,
@@ -424,11 +429,11 @@ mod derived_proofs {
 }
 
 /*
- * TODO: Due to technical reasons, `Defaulted` now only support `Structural` (in the Verus sense) types. To support non-Structural types,
- * `Defaulted` needs to take both the `exec` default value and the `spec` default value, which is the `DeepView` of the `exec` default value.
+ * TODO: Due to technical reasons, `DefaultedFmt` now only support `Structural` (in the Verus sense) types. To support non-Structural types,
+ * `DefaultedFmt` needs to take both the `exec` default value and the `spec` default value, which is the `DeepView` of the `exec` default value.
  */
 
-impl<I, Field, Rest, const DER: bool> Parser<I> for Defaulted<Field, Field::T, Rest, DER> where
+impl<I, Field, Rest, const DER: bool> Parser<I> for DefaultedFmt<Field, Field::T, Rest, DER> where
     I: InputBuf,
     Field: Parser<I, PT = Field::T> + SafeParser<PVal = Field::T> + SpecByteLen,
     Rest: Parser<I> + SafeParser<PVal = Rest::T> + SpecByteLen,
@@ -471,7 +476,7 @@ impl<I, Field, Rest, const DER: bool> Parser<I> for Defaulted<Field, Field::T, R
 impl<Output: OutputBuf, Field, Default, Rest, R, const DER: bool> Serializer<
     Output,
     (Default, R),
-> for Defaulted<Field, Default, Rest, DER> where
+> for DefaultedFmt<Field, Default, Rest, DER> where
     Field: SpecByteLen<T = Default> + Serializer<Output, Default>,
     Rest: SpecByteLen<T = R> + Serializer<Output, R>,
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
@@ -494,7 +499,7 @@ impl<Output: OutputBuf, Field, Default, Rest, R, const DER: bool> Serializer<
     }
 }
 
-impl<Field, Default, Rest, R, const DER: bool> Prepare<(Default, R)> for Defaulted<
+impl<Field, Default, Rest, R, const DER: bool> Prepare<(Default, R)> for DefaultedFmt<
     Field,
     Default,
     Rest,
@@ -523,7 +528,7 @@ impl<Field, Default, Rest, R, const DER: bool> Prepare<(Default, R)> for Default
     }
 }
 
-impl<Field, Default, Rest, R, const DER: bool> ByteLen<(Default, R)> for Defaulted<
+impl<Field, Default, Rest, R, const DER: bool> ByteLen<(Default, R)> for DefaultedFmt<
     Field,
     Default,
     Rest,
@@ -556,7 +561,7 @@ pub broadcast proof fn lemma_disjoint_asn1_tags<
     A: SpecCombinator,
     B: SpecCombinator,
     const DER: bool,
->(a: ASN1<A, DER>, b: ASN1<B, DER>)
+>(a: ASN1Fmt<A, DER>, b: ASN1Fmt<B, DER>)
     requires
         a.0 != b.0,
     ensures
@@ -565,10 +570,10 @@ pub broadcast proof fn lemma_disjoint_asn1_tags<
     reveal(disjoint_domains);
 }
 
-/// A [`Defaulted<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
+/// A [`DefaultedFmt<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
 pub broadcast proof fn lemma_disjoint_defaulted<P, A, B>(
     p: P,
-    defaulted: Defaulted<A, A::PVal, B, true>,
+    defaulted: DefaultedFmt<A, A::PVal, B, true>,
 ) where
     P: SpecParser,
     A: SpecByteLen + SpecParser<PVal = A::T>,

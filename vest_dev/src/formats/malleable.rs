@@ -1,4 +1,4 @@
-use crate::asn1::{BerBool, DerBool};
+use crate::asn1::{BerBoolFmt, DerBoolFmt};
 use crate::combinators::bytes::spec::*;
 use crate::combinators::refined::Const;
 use crate::combinators::tuple::Pair;
@@ -158,29 +158,29 @@ proof fn test_double_terminated_tag_deterministic(v: u8)
     requires_deterministic(outer, v, obuf);  // Should pass: both Tags have AdmitsUniqueVal
 }
 
-// BerBool: Malleable Boolean Combinator Tests
+// BerBoolFmt: Malleable Boolean Combinator Tests
 proof fn test_berbool_sp_roundtrip(v: bool, obuf: Seq<u8>) {
-    let combinator = BerBool;
-    requires_sp_roundtrip(combinator, v, obuf);  // Should pass: BerBool implements SPRoundTrip
+    let combinator = BerBoolFmt;
+    requires_sp_roundtrip(combinator, v, obuf);  // Should pass: BerBoolFmt implements SPRoundTrip
 }
 
 proof fn test_berbool_fails_ps_roundtrip(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let parser = BerBool;
-    // requires_ps_roundtrip(parser, ibuf); // Would fail: BerBool does not implement PSRoundTrip
+    let parser = BerBoolFmt;
+    // requires_ps_roundtrip(parser, ibuf); // Would fail: BerBoolFmt does not implement PSRoundTrip
 }
 
 proof fn test_berbool_fails_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = BerBool;
-    // requires_non_malleable(parser, buf1, buf2); // Would fail: BerBool does not implement NonMalleable
+    let parser = BerBoolFmt;
+    // requires_non_malleable(parser, buf1, buf2); // Would fail: BerBoolFmt does not implement NonMalleable
 }
 
 proof fn test_derbool_ps_roundtrip(ibuf: Seq<u8>, obuf: Seq<u8>) {
-    let parser = DerBool;
+    let parser = DerBoolFmt;
     requires_ps_roundtrip(parser, ibuf);
 }
 
 proof fn test_derbool_non_malleable(buf1: Seq<u8>, buf2: Seq<u8>) {
-    let parser = DerBool;
+    let parser = DerBoolFmt;
     requires_non_malleable(parser, buf1, buf2);
 }
 
@@ -195,9 +195,9 @@ proof fn unambiguous_pair<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps>(pai
 }
 
 proof fn test_large_format_with_berbools() {
-    // Format: [Header 0xAA] [(BerBool, BerBool, Fixed::<2>)] [Footer 0xFF]
+    // Format: [Header 0xAA] [(BerBoolFmt, BerBoolFmt, Fixed::<2>)] [Footer 0xFF]
     let header = 0xAAu8;
-    let format_inner = Pair(Pair(BerBool, BerBool), Fixed::<2>);
+    let format_inner = Pair(Pair(BerBoolFmt, BerBoolFmt), Fixed::<2>);
     let format = Terminated::<_, _, _, false> {
         a: Preceded::<_, _, _, false> { a: Const(U8, header), b: format_inner, a_val: header },
         b: Const(U8, 0xFFu8),
@@ -220,7 +220,7 @@ proof fn test_large_format_with_berbools() {
     assert(format.b.consistent(0xFFu8));
     assert(format.consistent(v)) by {}
     requires_sp_roundtrip(format, v, obuf);
-    // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBool is malleable
+    // requires_non_malleable(format, header_val, footer_val); // Should fail: BerBoolFmt is malleable
 
     // But multiple different buffers parse to the same value
     // [0xAA] [0x01] [0x00] [0x11, 0x22] [0xFF] - true encoded as 0x01

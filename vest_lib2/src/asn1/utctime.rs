@@ -29,20 +29,20 @@ pub const ASCII_Z: u8 = 0x5a;
 /// UTCTime consists of a calendar date (YYMMDD), time to a precision of minutes or seconds,
 /// and an optional local time differential from UTC.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, StructuralEq)]
-pub struct UtcTimeValue {
+pub struct UtcTime {
     pub datetime: DateTime,
     pub precision: TimePrecision,
 }
 
-impl DeepView for UtcTimeValue {
-    type V = UtcTimeValue;
+impl DeepView for UtcTime {
+    type V = UtcTime;
 
     closed spec fn deep_view(&self) -> Self::V {
         *self
     }
 }
 
-impl UtcTimeValue {
+impl UtcTime {
     /// Validates semantic well-formedness of the UTCTime value.
     /// Under X.680 clause 47.3, year is limited to the range 1950 to 2049.
     pub open spec fn wf(&self) -> bool {
@@ -170,9 +170,9 @@ pub fn utc_time_bytes_valid<const DER: bool>(bytes: &[u8]) -> bool
     }
 }
 
-/// Spec function parsing the UTCTime bytes into a structured `UtcTimeValue`.
+/// Spec function parsing the UTCTime bytes into a structured `UtcTime`.
 /// Properly normalizes the timezone offset (UTC = local - offset) if present.
-pub open spec fn utc_time_value(bytes: Seq<u8>) -> Option<UtcTimeValue> {
+pub open spec fn utc_time_value(bytes: Seq<u8>) -> Option<UtcTime> {
     let has_seconds = bytes.len() == 13 || bytes.len() == 17;
     let local = DateTime {
         year: utc_year(decimal2(bytes, 0)),
@@ -192,7 +192,7 @@ pub open spec fn utc_time_value(bytes: Seq<u8>) -> Option<UtcTimeValue> {
         TimePrecision::Minute
     };
     if bytes.len() == 11 || bytes.len() == 13 {
-        Some(UtcTimeValue { datetime: local, precision })
+        Some(UtcTime { datetime: local, precision })
     } else {
         let pos: usize = if has_seconds {
             12
@@ -205,14 +205,14 @@ pub open spec fn utc_time_value(bytes: Seq<u8>) -> Option<UtcTimeValue> {
             decimal2(bytes, (pos as int + 1) as usize),
             decimal2(bytes, (pos as int + 3) as usize),
         ) {
-            Some(datetime) => Some(UtcTimeValue { datetime, precision }),
+            Some(datetime) => Some(UtcTime { datetime, precision }),
             None => None,
         }
     }
 }
 
 /// Verified executable implementation of `utc_time_value`.
-pub fn utctime_value(bytes: &[u8]) -> Option<UtcTimeValue>
+pub fn utctime_value(bytes: &[u8]) -> Option<UtcTime>
     requires
         utc_time_lexical_wf::<false>(bytes@),
     returns
@@ -237,7 +237,7 @@ pub fn utctime_value(bytes: &[u8]) -> Option<UtcTimeValue>
         TimePrecision::Minute
     };
     if bytes.len() == 11 || bytes.len() == 13 {
-        Some(UtcTimeValue { datetime: local, precision })
+        Some(UtcTime { datetime: local, precision })
     } else {
         let pos = if has_seconds {
             12
@@ -250,7 +250,7 @@ pub fn utctime_value(bytes: &[u8]) -> Option<UtcTimeValue>
             decimal_2(bytes, pos + 1),
             decimal_2(bytes, pos + 3),
         ) {
-            Some(datetime) => Some(UtcTimeValue { datetime, precision }),
+            Some(datetime) => Some(UtcTime { datetime, precision }),
             None => None,
         }
     }
@@ -284,9 +284,9 @@ pub fn utc_time_valid<const DER: bool>(bytes: &[u8]) -> bool
     }
 }
 
-/// Spec function mapping `UtcTimeValue` to serialized UTCTime bytes (YYMMDDhhmmssZ or YYMMDDhhmmZ).
+/// Spec function mapping `UtcTime` to serialized UTCTime bytes (YYMMDDhhmmssZ or YYMMDDhhmmZ).
 #[verusfmt::skip]
-pub open spec fn utc_time_bytes(value: UtcTimeValue) -> Seq<u8> {
+pub open spec fn utc_time_bytes(value: UtcTime) -> Seq<u8> {
     let year = (value.datetime.year as int % 100) as u8;
       decimal2_bytes(year)@
     + decimal2_bytes(value.datetime.month)@
@@ -301,7 +301,7 @@ pub open spec fn utc_time_bytes(value: UtcTimeValue) -> Seq<u8> {
 }
 
 /// Writes `utc_time_bytes` directly to an output buffer without allocating.
-pub fn utc_time_to_bytes<Output: OutputBuf>(value: &UtcTimeValue, obuf: &mut Output)
+pub fn utc_time_to_bytes<Output: OutputBuf>(value: &UtcTime, obuf: &mut Output)
     requires
         value.wf(),
         old(obuf).fits(utc_time_bytes(*value).len()),
@@ -331,7 +331,7 @@ pub fn utc_time_to_bytes<Output: OutputBuf>(value: &UtcTimeValue, obuf: &mut Out
 }
 
 #[verifier::rlimit(100)]
-pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTimeValue)
+pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTime)
     requires
         value.wf(),
         DER ==> value.precision == TimePrecision::Second,
@@ -354,18 +354,15 @@ pub proof fn lemma_der_utc_time_canonical(bytes: Seq<u8>)
 
 }
 
-type UtcTimeFmt<const DER: bool> = Mapped<
+type UtcTimeInnerFmt<const DER: bool> = Mapped<
     Refined<Tail, PredFnSpec<Seq<u8>>>,
-    FnSpecMapper<Seq<u8>, UtcTimeValue>,
+    FnSpecMapper<Seq<u8>, UtcTime>,
 >;
 
-pub open spec fn utc_time_fmt<const DER: bool>() -> UtcTimeFmt<DER> {
+pub open spec fn utc_time_fmt<const DER: bool>() -> UtcTimeInnerFmt<DER> {
     Mapped {
         inner: Refined(Tail, |bytes: Seq<u8>| utc_time_bytes_wf::<DER>(bytes)),
-        mapper: (
-            |bytes: Seq<u8>| utc_time_value(bytes)->0,
-            |value: UtcTimeValue| utc_time_bytes(value),
-        ),
+        mapper: (|bytes: Seq<u8>| utc_time_value(bytes)->0, |value: UtcTime| utc_time_bytes(value)),
     }
 }
 
@@ -385,40 +382,40 @@ proof fn lemma_der_utc_time_fmt_sound_nonmal()
 mod derived_specs {
     use super::*;
 
-    impl<const DER: bool> SpecParser for super::super::UtcTime<DER> {
-        type PVal = UtcTimeValue;
+    impl<const DER: bool> SpecParser for super::super::UtcTimeFmt<DER> {
+        type PVal = UtcTime;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             utc_time_fmt::<DER>().spec_parse(ibuf)
         }
     }
 
-    impl<const DER: bool> Consistency for super::super::UtcTime<DER> {
-        type Val = UtcTimeValue;
+    impl<const DER: bool> Consistency for super::super::UtcTimeFmt<DER> {
+        type Val = UtcTime;
 
         open spec fn consistent(&self, value: Self::Val) -> bool {
             value.wf() && (DER ==> value.precision == TimePrecision::Second)
         }
     }
 
-    impl<const DER: bool> SpecSerializerDps for super::super::UtcTime<DER> {
-        type SValue = UtcTimeValue;
+    impl<const DER: bool> SpecSerializerDps for super::super::UtcTimeFmt<DER> {
+        type SValue = UtcTime;
 
         open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             utc_time_bytes(value)
         }
     }
 
-    impl<const DER: bool> SpecSerializer for super::super::UtcTime<DER> {
-        type SVal = UtcTimeValue;
+    impl<const DER: bool> SpecSerializer for super::super::UtcTimeFmt<DER> {
+        type SVal = UtcTime;
 
         open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
             utc_time_bytes(value)
         }
     }
 
-    impl<const DER: bool> SpecByteLen for super::super::UtcTime<DER> {
-        type T = UtcTimeValue;
+    impl<const DER: bool> SpecByteLen for super::super::UtcTimeFmt<DER> {
+        type T = UtcTime;
 
         open spec fn byte_len(&self, value: Self::T) -> nat {
             utc_time_bytes(value).len()
@@ -430,34 +427,34 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<const DER: bool> SafeParser for super::super::UtcTime<DER> {
+    impl<const DER: bool> SafeParser for super::super::UtcTimeFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             utc_time_fmt::<DER>().lemma_parse_safe(ibuf);
         }
     }
 
-    impl<const DER: bool> Productive for super::super::UtcTime<DER> {
+    impl<const DER: bool> Productive for super::super::UtcTimeFmt<DER> {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
         }
     }
 
-    impl<const DER: bool> GoodSerializer for super::super::UtcTime<DER> {
+    impl<const DER: bool> GoodSerializer for super::super::UtcTimeFmt<DER> {
         proof fn lemma_serialize_len(&self, value: Self::SVal) {
         }
     }
 
-    impl<const DER: bool> EquivSerializers for super::super::UtcTime<DER> {
+    impl<const DER: bool> EquivSerializers for super::super::UtcTimeFmt<DER> {
         proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
         }
     }
 
-    impl<const DER: bool> SPRoundTripDps for super::super::UtcTime<DER> {
+    impl<const DER: bool> SPRoundTripDps for super::super::UtcTimeFmt<DER> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
             lemma_utc_time_encode_wf::<DER>(value);
         }
     }
 
-    impl SoundParser for super::super::UtcTime<true> {
+    impl SoundParser for super::super::UtcTimeFmt<true> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             lemma_der_utc_time_fmt_sound_nonmal();
             utc_time_fmt::<true>().lemma_parse_sound_consumption(ibuf);
@@ -469,7 +466,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::UtcTime<true> {
+    impl NonMalleable for super::super::UtcTimeFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             lemma_der_utc_time_fmt_sound_nonmal();
             utc_time_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
@@ -478,8 +475,8 @@ mod derived_proofs {
 
 }
 
-impl<'i, const DER: bool> Parser<&'i [u8]> for super::UtcTime<DER> {
-    type PT = UtcTimeValue;
+impl<'i, const DER: bool> Parser<&'i [u8]> for super::UtcTimeFmt<DER> {
+    type PT = UtcTime;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, bytes) = Tail.parse(ibuf)?;
@@ -494,8 +491,8 @@ impl<'i, const DER: bool> Parser<&'i [u8]> for super::UtcTime<DER> {
     }
 }
 
-impl<Output: OutputBuf, const DER: bool> Serializer<Output, UtcTimeValue> for super::UtcTime<DER> {
-    fn serialize_into(&self, value: &UtcTimeValue, obuf: &mut Output) {
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, UtcTime> for super::UtcTimeFmt<DER> {
+    fn serialize_into(&self, value: &UtcTime, obuf: &mut Output) {
         proof {
             assert(value.wf());
             assert(DER ==> value.precision == TimePrecision::Second);
@@ -505,8 +502,8 @@ impl<Output: OutputBuf, const DER: bool> Serializer<Output, UtcTimeValue> for su
     }
 }
 
-impl<const DER: bool> Prepare<UtcTimeValue> for super::UtcTime<DER> {
-    fn prepare(&self, value: &UtcTimeValue) -> Result<usize, PreSerializeError> {
+impl<const DER: bool> Prepare<UtcTime> for super::UtcTimeFmt<DER> {
+    fn prepare(&self, value: &UtcTime) -> Result<usize, PreSerializeError> {
         if !datetime_wf(value.datetime) || value.datetime.year < 1950 || value.datetime.year > 2049
             || (value.precision != TimePrecision::Minute && value.precision
             != TimePrecision::Second) || (value.precision == TimePrecision::Minute
@@ -528,8 +525,8 @@ impl<const DER: bool> Prepare<UtcTimeValue> for super::UtcTime<DER> {
     }
 }
 
-impl<const DER: bool> ByteLen<UtcTimeValue> for super::UtcTime<DER> {
-    fn length(&self, value: &UtcTimeValue) -> usize {
+impl<const DER: bool> ByteLen<UtcTime> for super::UtcTimeFmt<DER> {
+    fn length(&self, value: &UtcTime) -> usize {
         if value.precision == TimePrecision::Second {
             13
         } else {

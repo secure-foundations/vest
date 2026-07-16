@@ -96,7 +96,7 @@ pub open spec fn teletexstring_fmt() -> TeletexStringFmt {
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for super::super::TeletexString {
+    impl SpecParser for super::super::TeletexStringFmt {
         type PVal = TeletexStringSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -104,7 +104,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for super::super::TeletexString {
+    impl Consistency for super::super::TeletexStringFmt {
         type Val = TeletexStringSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -112,7 +112,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for super::super::TeletexString {
+    impl SpecSerializerDps for super::super::TeletexStringFmt {
         type SValue = TeletexStringSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -120,7 +120,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for super::super::TeletexString {
+    impl SpecSerializer for super::super::TeletexStringFmt {
         type SVal = TeletexStringSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -128,7 +128,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for super::super::TeletexString {
+    impl SpecByteLen for super::super::TeletexStringFmt {
         type T = TeletexStringSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -141,13 +141,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for super::super::TeletexString {
+    impl SafeParser for super::super::TeletexStringFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             teletexstring_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for super::super::TeletexString {
+    impl Productive for super::super::TeletexStringFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -156,7 +156,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::TeletexString {
+    impl SoundParser for super::super::TeletexStringFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -170,13 +170,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for super::super::TeletexString {
+    impl GoodSerializer for super::super::TeletexStringFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             teletexstring_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for super::super::TeletexString {
+    impl SPRoundTripDps for super::super::TeletexStringFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             broadcast use vstd::utf8::encode_utf8_decode_utf8;
 
@@ -184,7 +184,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::TeletexString {
+    impl NonMalleable for super::super::TeletexStringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -192,7 +192,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for super::super::TeletexString {
+    impl EquivSerializers for super::super::TeletexStringFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             teletexstring_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -200,7 +200,7 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::TeletexString {
+impl<'i> Parser<&'i [u8]> for super::TeletexStringFmt {
     type PT = TeletexString<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -216,7 +216,7 @@ impl<'i> Parser<&'i [u8]> for super::TeletexString {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, TeletexString<'i>> for super::TeletexString {
+impl<Output: OutputBuf, 'i> Serializer<Output, TeletexString<'i>> for super::TeletexStringFmt {
     fn serialize_into(&self, v: &TeletexString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
@@ -226,7 +226,7 @@ impl<Output: OutputBuf, 'i> Serializer<Output, TeletexString<'i>> for super::Tel
     }
 }
 
-impl<'i> Prepare<TeletexString<'i>> for super::TeletexString {
+impl<'i> Prepare<TeletexString<'i>> for super::TeletexStringFmt {
     fn prepare(&self, v: &TeletexString<'i>) -> Result<usize, PreSerializeError> {
         broadcast use vstd::utf8::encode_utf8_valid_utf8;
 
@@ -238,7 +238,7 @@ impl<'i> Prepare<TeletexString<'i>> for super::TeletexString {
     }
 }
 
-impl<'i> ByteLen<TeletexString<'i>> for super::TeletexString {
+impl<'i> ByteLen<TeletexString<'i>> for super::TeletexStringFmt {
     fn length(&self, v: &TeletexString<'i>) -> usize {
         proof {
             use_type_invariant(v);

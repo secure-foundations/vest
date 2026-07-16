@@ -1,4 +1,4 @@
-use crate::asn1::{BerBool, DerBool};
+use crate::asn1::{BerBoolFmt, DerBoolFmt};
 use crate::combinators::mapped::spec::FnSpecMapper;
 use crate::combinators::{
     Array, Cond, Const, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded,
@@ -25,7 +25,7 @@ type DispatchFmt = Dispatch<u8, U16Le, 2>;
 
 type ArrayFmt = Array<3, U8>;
 
-type BoolFmt = crate::asn1::Bool<true>;
+type BoolFmt = crate::asn1::BoolFmt<true>;
 
 type NestedPairFmt = Mapped<
     Pair<Pair<U8, U16Le>, U32Be>,
@@ -36,9 +36,9 @@ type TaggedDispatchFmt = Tagged<U8, u8, Dispatch<u8, Pair<U8, U16Le>, 2>>;
 
 type ArrayOfTaggedFmt = Array<5, Tagged<U8, u8, U16Le>>;
 
-type Permute3Fmt = Permute3<U8, DerBool, U32Le>;
+type Permute3Fmt = Permute3<U8, DerBoolFmt, U32Le>;
 
-type Permute4Fmt = Permute4<U8, U16Le, U32Be, BerBool>;
+type Permute4Fmt = Permute4<U8, U16Le, U32Be, BerBoolFmt>;
 
 type ZeroWrappedFmt = Preceded<Empty, (), Terminated<U32Be, Eof, ()>>;
 
@@ -55,8 +55,8 @@ proof fn test_static_byte_len_trait_surface() {
     requires_static(Tagged(U8, 0xa1u8, U16Le));
     requires_static(Dispatch(0x01u8, [(0x01u8, U16Le), (0x02u8, U16Le)]));
     requires_static(Array::<3, _>(U8));
-    requires_static(DerBool);
-    requires_static(BerBool);
+    requires_static(DerBoolFmt);
+    requires_static(BerBoolFmt);
     requires_static(Pair(Pair(U8, U16Le), U32Be));
     requires_static(
         Tagged(
@@ -66,8 +66,8 @@ proof fn test_static_byte_len_trait_surface() {
         ),
     );
     requires_static(Array::<2, _>(Tagged(U8, 0xa0u8, U16Le)));
-    requires_static(Permute3(U8, DerBool, U32Le));
-    requires_static(Permute4(U8, U16Le, U32Be, BerBool));
+    requires_static(Permute3(U8, DerBoolFmt, U32Le));
+    requires_static(Permute4(U8, U16Le, U32Be, BerBoolFmt));
     requires_static(
         Preceded::<_, _, _, false> {
             a: Empty,

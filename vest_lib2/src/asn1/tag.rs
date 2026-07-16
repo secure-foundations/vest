@@ -246,12 +246,12 @@ pub open spec fn first_byte_from_parts(class: Class, constructed: bool, low_bits
     class_bits(class) | constructed_bit(constructed) | (low_bits & TAG_NUMBER_MASK)
 }
 
-type TagWire = Bind<U8, spec_fn(u8) -> Sum<Empty, Refined<Base128Fmt<true>, PredFnSpec<UInt>>>>;
+type TagWireFmt = Bind<U8, spec_fn(u8) -> Sum<Empty, Refined<Base128Fmt<true>, PredFnSpec<UInt>>>>;
 
-type TagFmt__ = Mapped<TagWire, FnSpecMapper<(u8, Sum<(), UInt>), Tag>>;
+type TagInnerFmt = Mapped<TagWireFmt, FnSpecMapper<(u8, Sum<(), UInt>), Tag>>;
 
 #[verusfmt::skip]
-pub(crate) open(crate) spec fn tag_wire() -> TagWire {
+pub(crate) open(crate) spec fn tag_wire() -> TagWireFmt {
     Bind(U8, |b1: u8| {
         if b1 & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL {
             R(Refined(Base128Fmt::<true>, |n: UInt| n >= TAG_LONG_FORM_SENTINEL as UInt))
@@ -261,7 +261,7 @@ pub(crate) open(crate) spec fn tag_wire() -> TagWire {
     })
 }
 
-pub(crate) open(crate) spec fn tag_fmt() -> TagFmt__ {
+pub(crate) open(crate) spec fn tag_fmt() -> TagInnerFmt {
     Mapped {
         inner: tag_wire(),
         mapper: (

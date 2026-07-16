@@ -1,7 +1,7 @@
 //! ASN.1 ENUMERATED contents.
 //!
 //! X.690 §8.4 specifies that ENUMERATED contents are encoded exactly like the
-//! corresponding INTEGER value. This module therefore delegates to [`super::Integer`]
+//! corresponding INTEGER value. This module therefore delegates to [`super::IntegerFmt`]
 //! at every layer while retaining a distinct format marker for the ENUMERATED tag.
 use crate::core::exec::output::OutputBuf;
 use crate::core::exec::{
@@ -11,51 +11,54 @@ use crate::core::exec::{
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
-use super::{Enumerated, IntVal, Integer};
+use super::{EnumeratedFmt, Integer, IntegerFmt};
 
 verus! {
 
+/// Executable ENUMERATED values use the same exact integer representation as INTEGER.
+pub type Enumerated<'a> = Integer<'a>;
+
 mod derived_specs {
     use super::*;
-    use super::super::{Enumerated, Integer};
+    use super::super::{EnumeratedFmt, IntegerFmt};
 
-    impl SpecParser for Enumerated {
+    impl SpecParser for EnumeratedFmt {
         type PVal = int;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Integer.spec_parse(ibuf)
+            IntegerFmt.spec_parse(ibuf)
         }
     }
 
-    impl Consistency for Enumerated {
+    impl Consistency for EnumeratedFmt {
         type Val = int;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Integer.consistent(v)
+            IntegerFmt.consistent(v)
         }
     }
 
-    impl SpecSerializerDps for Enumerated {
+    impl SpecSerializerDps for EnumeratedFmt {
         type SValue = int;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Integer.spec_serialize_dps(v, obuf)
+            IntegerFmt.spec_serialize_dps(v, obuf)
         }
     }
 
-    impl SpecSerializer for Enumerated {
+    impl SpecSerializer for EnumeratedFmt {
         type SVal = int;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Integer.spec_serialize(v)
+            IntegerFmt.spec_serialize(v)
         }
     }
 
-    impl SpecByteLen for Enumerated {
+    impl SpecByteLen for EnumeratedFmt {
         type T = int;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Integer.byte_len(v)
+            IntegerFmt.byte_len(v)
         }
     }
 
@@ -63,79 +66,79 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
-    use super::super::{Enumerated, Integer};
+    use super::super::{EnumeratedFmt, IntegerFmt};
 
-    impl SafeParser for Enumerated {
+    impl SafeParser for EnumeratedFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            Integer.lemma_parse_safe(ibuf);
+            IntegerFmt.lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for Enumerated {
+    impl Productive for EnumeratedFmt {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
-            Integer.lemma_productive(ibuf);
+            IntegerFmt.lemma_productive(ibuf);
         }
     }
 
-    impl SoundParser for Enumerated {
+    impl SoundParser for EnumeratedFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            Integer.lemma_parse_sound_consumption(ibuf);
+            IntegerFmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            Integer.lemma_parse_sound_value(ibuf);
+            IntegerFmt.lemma_parse_sound_value(ibuf);
         }
     }
 
-    impl GoodSerializer for Enumerated {
+    impl GoodSerializer for EnumeratedFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            Integer.lemma_serialize_len(v);
+            IntegerFmt.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for Enumerated {
+    impl SPRoundTripDps for EnumeratedFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            Integer.theorem_serialize_dps_parse_roundtrip(v, obuf);
+            IntegerFmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for Enumerated {
+    impl NonMalleable for EnumeratedFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            Integer.lemma_parse_non_malleable(buf1, buf2);
+            IntegerFmt.lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializers for Enumerated {
+    impl EquivSerializers for EnumeratedFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            Integer.lemma_serialize_equiv_on_empty(v);
+            IntegerFmt.lemma_serialize_equiv_on_empty(v);
         }
     }
 
 }
 
-impl<'i> Parser<&'i [u8]> for Enumerated {
-    type PT = IntVal<'i>;
+impl<'i> Parser<&'i [u8]> for EnumeratedFmt {
+    type PT = Enumerated<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        Integer.parse(ibuf)
+        IntegerFmt.parse(ibuf)
     }
 }
 
-impl<'i, Output: OutputBuf> Serializer<Output, IntVal<'i>> for Enumerated {
-    fn serialize_into(&self, v: &IntVal<'i>, obuf: &mut Output) {
-        Integer.serialize_into(v, obuf);
+impl<'i, Output: OutputBuf> Serializer<Output, Enumerated<'i>> for EnumeratedFmt {
+    fn serialize_into(&self, v: &Enumerated<'i>, obuf: &mut Output) {
+        IntegerFmt.serialize_into(v, obuf);
     }
 }
 
-impl<'i> Prepare<IntVal<'i>> for Enumerated {
-    fn prepare(&self, v: &IntVal<'i>) -> Result<usize, PreSerializeError> {
-        Integer.prepare(v)
+impl<'i> Prepare<Enumerated<'i>> for EnumeratedFmt {
+    fn prepare(&self, v: &Enumerated<'i>) -> Result<usize, PreSerializeError> {
+        IntegerFmt.prepare(v)
     }
 }
 
-impl<'i> ByteLen<IntVal<'i>> for Enumerated {
-    fn length(&self, v: &IntVal<'i>) -> usize {
-        Integer.length(v)
+impl<'i> ByteLen<Enumerated<'i>> for EnumeratedFmt {
+    fn length(&self, v: &Enumerated<'i>) -> usize {
+        IntegerFmt.length(v)
     }
 }
 
@@ -151,8 +154,8 @@ mod tests {
         let input = [0x0a, 0x01, 0x02];
         let (_, value) = ENUMERATED.parse(&&input[..]).unwrap();
         match value {
-            IntVal::Small { v } => assert_eq!(v, 2),
-            IntVal::Big { .. } => panic!("small ENUMERATED value parsed as a big integer"),
+            Integer::Small { v } => assert_eq!(v, 2),
+            Integer::Big { .. } => panic!("small ENUMERATED value parsed as a big integer"),
         }
 
         let mut output = vec![0; ENUMERATED.prepare(&value).unwrap()];

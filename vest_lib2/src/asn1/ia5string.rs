@@ -103,7 +103,7 @@ pub open spec fn ia5string_fmt() -> Ia5StringFmt {
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for super::super::Ia5String {
+    impl SpecParser for super::super::Ia5StringFmt {
         type PVal = Ia5StringSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -111,7 +111,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for super::super::Ia5String {
+    impl Consistency for super::super::Ia5StringFmt {
         type Val = Ia5StringSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -119,7 +119,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for super::super::Ia5String {
+    impl SpecSerializerDps for super::super::Ia5StringFmt {
         type SValue = Ia5StringSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -127,7 +127,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for super::super::Ia5String {
+    impl SpecSerializer for super::super::Ia5StringFmt {
         type SVal = Ia5StringSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -135,7 +135,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for super::super::Ia5String {
+    impl SpecByteLen for super::super::Ia5StringFmt {
         type T = Ia5StringSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -148,13 +148,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for super::super::Ia5String {
+    impl SafeParser for super::super::Ia5StringFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             ia5string_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for super::super::Ia5String {
+    impl Productive for super::super::Ia5StringFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -163,7 +163,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::Ia5String {
+    impl SoundParser for super::super::Ia5StringFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -177,13 +177,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for super::super::Ia5String {
+    impl GoodSerializer for super::super::Ia5StringFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             ia5string_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for super::super::Ia5String {
+    impl SPRoundTripDps for super::super::Ia5StringFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             broadcast use vstd::utf8::encode_utf8_decode_utf8;
 
@@ -191,7 +191,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::Ia5String {
+    impl NonMalleable for super::super::Ia5StringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -199,7 +199,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for super::super::Ia5String {
+    impl EquivSerializers for super::super::Ia5StringFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             ia5string_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -207,7 +207,7 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::Ia5String {
+impl<'i> Parser<&'i [u8]> for super::Ia5StringFmt {
     type PT = Ia5String<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -223,7 +223,7 @@ impl<'i> Parser<&'i [u8]> for super::Ia5String {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, Ia5String<'i>> for super::Ia5String {
+impl<Output: OutputBuf, 'i> Serializer<Output, Ia5String<'i>> for super::Ia5StringFmt {
     fn serialize_into(&self, v: &Ia5String<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
@@ -233,7 +233,7 @@ impl<Output: OutputBuf, 'i> Serializer<Output, Ia5String<'i>> for super::Ia5Stri
     }
 }
 
-impl<'i> Prepare<Ia5String<'i>> for super::Ia5String {
+impl<'i> Prepare<Ia5String<'i>> for super::Ia5StringFmt {
     fn prepare(&self, v: &Ia5String<'i>) -> Result<usize, PreSerializeError> {
         broadcast use vstd::utf8::encode_utf8_valid_utf8;
 
@@ -245,7 +245,7 @@ impl<'i> Prepare<Ia5String<'i>> for super::Ia5String {
     }
 }
 
-impl<'i> ByteLen<Ia5String<'i>> for super::Ia5String {
+impl<'i> ByteLen<Ia5String<'i>> for super::Ia5StringFmt {
     fn length(&self, v: &Ia5String<'i>) -> usize {
         proof {
             use_type_invariant(v);

@@ -1,6 +1,6 @@
 //! ASN.1 DER `SET OF` contents.
 //!
-//! The enclosing universal tag and DER length are supplied by [`super::ASN1`]. Elements are
+//! The enclosing universal tag and DER length are supplied by [`super::ASN1Fmt`]. Elements are
 //! ordered by their complete encodings, as required by X.690 section 11.6.
 use crate::combinators::{
     star::{
@@ -31,14 +31,14 @@ verus! {
 /// `C` must encode a complete DER element, including its tag and length. The parsed value is a
 /// `Vec<C::PT>` in canonical DER order. Duplicate encodings are permitted.
 #[derive(Copy)]
-pub struct SetOf<C>(pub C);
+pub struct SetOfFmt<C>(pub C);
 
-impl<C: Clone> Clone for SetOf<C> {
+impl<C: Clone> Clone for SetOfFmt<C> {
     fn clone(&self) -> (cloned: Self)
         ensures
             call_ensures(C::clone, (&self.0,), cloned.0),
     {
-        SetOf(self.0.clone())
+        SetOfFmt(self.0.clone())
     }
 }
 
@@ -278,7 +278,7 @@ pub proof fn lemma_der_encodings_sorted_push(encodings: Seq<Seq<u8>>, current: S
     }
 }
 
-impl<C: SpecParser> SetOf<C> {
+impl<C: SpecParser> SetOfFmt<C> {
     /// Parses all remaining elements while maintaining a canonically sorted encoding prefix.
     pub open spec fn parse_ordered(&self, ibuf: Seq<u8>, previous: Seq<Seq<u8>>) -> Option<
         Seq<C::PVal>,
@@ -305,7 +305,7 @@ impl<C: SpecParser> SetOf<C> {
     }
 }
 
-impl<C: SoundParser> SetOf<C> {
+impl<C: SoundParser> SetOfFmt<C> {
     proof fn lemma_parse_ordered_byte_len(&self, ibuf: Seq<u8>, previous: Seq<Seq<u8>>)
         requires
             self.0.sound_inv(),
@@ -339,7 +339,7 @@ impl<C: SoundParser> SetOf<C> {
     }
 }
 
-impl<C: SoundParser + PSRoundTrip> SetOf<C> {
+impl<C: SoundParser + PSRoundTrip> SetOfFmt<C> {
     proof fn lemma_parse_ordered_consistent(&self, ibuf: Seq<u8>, previous: Seq<Seq<u8>>)
         requires
             self.0.sound_inv(),
@@ -385,7 +385,7 @@ impl<C: SoundParser + PSRoundTrip> SetOf<C> {
     }
 }
 
-impl<C: NonMalleable> SetOf<C> {
+impl<C: NonMalleable> SetOfFmt<C> {
     proof fn lemma_parse_ordered_non_malleable(
         &self,
         buf1: Seq<u8>,
@@ -439,7 +439,7 @@ impl<C: NonMalleable> SetOf<C> {
     }
 }
 
-impl<C> SetOf<C> where
+impl<C> SetOfFmt<C> where
     C: SPRoundTripDps + NonTailFmt + EquivSerializersGeneral + Productive,
     C: SpecSerializer<SVal = C::T>,
  {
@@ -501,7 +501,7 @@ impl<C> SetOf<C> where
 mod derived_specs {
     use super::*;
 
-    impl<C: SpecParser> SpecParser for SetOf<C> {
+    impl<C: SpecParser> SpecParser for SetOfFmt<C> {
         type PVal = Seq<C::PVal>;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -512,7 +512,7 @@ mod derived_specs {
         }
     }
 
-    impl<C> Consistency for SetOf<C> where C: Consistency + SpecSerializer<SVal = C::Val> {
+    impl<C> Consistency for SetOfFmt<C> where C: Consistency + SpecSerializer<SVal = C::Val> {
         type Val = Seq<C::Val>;
 
         open spec fn consistent(&self, values: Self::Val) -> bool {
@@ -521,7 +521,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecSerializerDps> SpecSerializerDps for SetOf<C> {
+    impl<C: SpecSerializerDps> SpecSerializerDps for SetOfFmt<C> {
         type SValue = Seq<C::SValue>;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
@@ -529,7 +529,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecSerializer> SpecSerializer for SetOf<C> {
+    impl<C: SpecSerializer> SpecSerializer for SetOfFmt<C> {
         type SVal = Seq<C::SVal>;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -537,7 +537,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecByteLen> SpecByteLen for SetOf<C> {
+    impl<C: SpecByteLen> SpecByteLen for SetOfFmt<C> {
         type T = Seq<C::T>;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -550,46 +550,46 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<C: SafeParser> SafeParser for SetOf<C> {
+    impl<C: SafeParser> SafeParser for SetOfFmt<C> {
         open spec fn safe_inv(&self) -> bool {
             self.0.safe_inv()
         }
 
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<SetOf<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
         }
     }
 
-    impl<C: SoundParser + PSRoundTrip> SoundParser for SetOf<C> {
+    impl<C: SoundParser + PSRoundTrip> SoundParser for SetOfFmt<C> {
         open spec fn sound_inv(&self) -> bool {
             self.0.sound_inv() && self.0.ps_roundtrip_inv()
         }
 
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<SetOf<_> as SpecParser>::spec_parse);
-            reveal(<SetOf<_> as SpecByteLen>::byte_len);
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as SpecByteLen>::byte_len);
             self.lemma_parse_ordered_byte_len(ibuf, Seq::empty());
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<SetOf<_> as SpecParser>::spec_parse);
-            reveal(<SetOf<_> as Consistency>::consistent);
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as Consistency>::consistent);
             self.lemma_parse_ordered_consistent(ibuf, Seq::empty());
         }
     }
 
-    impl<C: NonMalleable> NonMalleable for SetOf<C> {
+    impl<C: NonMalleable> NonMalleable for SetOfFmt<C> {
         open spec fn nonmal_inv(&self) -> bool {
             self.0.nonmal_inv() && self.0.safe_inv()
         }
 
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<SetOf<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
             self.lemma_parse_ordered_non_malleable(buf1, Seq::empty(), buf2, Seq::empty());
         }
     }
 
-    impl<C: SafeParser> Productive for SetOf<C> {
+    impl<C: SafeParser> Productive for SetOfFmt<C> {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -598,34 +598,34 @@ mod derived_proofs {
         }
     }
 
-    impl<C: GoodSerializer> GoodSerializer for SetOf<C> {
+    impl<C: GoodSerializer> GoodSerializer for SetOfFmt<C> {
         open spec fn serialize_inv(&self) -> bool {
             self.0.serialize_inv()
         }
 
         proof fn lemma_serialize_len(&self, values: Self::SVal) {
-            reveal(<SetOf<_> as SpecSerializer>::spec_serialize);
-            reveal(<SetOf<_> as SpecByteLen>::byte_len);
+            reveal(<SetOfFmt<_> as SpecSerializer>::spec_serialize);
+            reveal(<SetOfFmt<_> as SpecByteLen>::byte_len);
             reveal(<Star<_> as SpecSerializer>::spec_serialize);
             reveal(<Star<_> as SpecByteLen>::byte_len);
             Star(self.0).lemma_serialize_len(values);
         }
     }
 
-    impl<C: EquivSerializersGeneral> EquivSerializers for SetOf<C> {
+    impl<C: EquivSerializersGeneral> EquivSerializers for SetOfFmt<C> {
         open spec fn equiv_inv(&self) -> bool {
             self.0.equiv_general_inv()
         }
 
         proof fn lemma_serialize_equiv_on_empty(&self, values: Self::SVal) {
-            reveal(<SetOf<_> as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<SetOf<_> as SpecSerializer>::spec_serialize);
+            reveal(<SetOfFmt<_> as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SetOfFmt<_> as SpecSerializer>::spec_serialize);
             reveal(<Star<_> as SpecSerializer>::spec_serialize);
             Star(self.0).lemma_serialize_equiv_on_empty(values);
         }
     }
 
-    impl<C> SPRoundTripDps for SetOf<C> where
+    impl<C> SPRoundTripDps for SetOfFmt<C> where
         C: SPRoundTripDps + NonTailFmt + EquivSerializersGeneral + Productive,
         C: SpecSerializer<SVal = C::T>,
      {
@@ -638,10 +638,10 @@ mod derived_proofs {
         }
 
         proof fn theorem_serialize_dps_parse_roundtrip(&self, values: Self::T, _obuf: Seq<u8>) {
-            reveal(<SetOf<_> as Consistency>::consistent);
-            reveal(<SetOf<_> as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<SetOf<_> as SpecParser>::spec_parse);
-            reveal(<SetOf<_> as SpecByteLen>::byte_len);
+            reveal(<SetOfFmt<_> as Consistency>::consistent);
+            reveal(<SetOfFmt<_> as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as SpecByteLen>::byte_len);
 
             let star = Star(self.0);
             self.lemma_serialize_parse_ordered(values, Seq::empty());
@@ -696,7 +696,7 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
     true
 }
 
-impl<'i, C> Parser<&'i [u8]> for SetOf<C> where
+impl<'i, C> Parser<&'i [u8]> for SetOfFmt<C> where
     C: Parser<&'i [u8]> + SafeParser + Productive + Copy,
  {
     type PT = Vec<C::PT>;
@@ -708,7 +708,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOf<C> where
     }
 
     fn parse(&self, ibuf: &&'i [u8]) -> (r: PResult<Self::PT>) {
-        reveal(<SetOf<_> as SpecParser>::spec_parse);
+        reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
         broadcast use vstd::seq::group_seq_axioms;
 
         let _len = ibuf.len();
@@ -765,7 +765,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOf<C> where
     }
 }
 
-impl<Output: OutputBuf, C, Elem> Serializer<Output, [Elem]> for SetOf<C> where
+impl<Output: OutputBuf, C, Elem> Serializer<Output, [Elem]> for SetOfFmt<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Serializer<Output, Elem> + Copy,
  {
@@ -779,7 +779,7 @@ impl<Output: OutputBuf, C, Elem> Serializer<Output, [Elem]> for SetOf<C> where
     }
 }
 
-impl<C, Elem> ByteLen<[Elem]> for SetOf<C> where
+impl<C, Elem> ByteLen<[Elem]> for SetOfFmt<C> where
     C: SpecByteLen<T = <Elem as DeepView>::V> + ByteLen<Elem> + Copy,
     Elem: DeepView,
  {
@@ -819,7 +819,7 @@ pub trait DerOrd<T>: SpecSerializer<SVal = T::V> + SpecByteLen<T = T::V> + Consi
     ;
 }
 
-impl<C, Elem> Prepare<[Elem]> for SetOf<C> where
+impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Prepare<Elem> + DerOrd<Elem> + Copy,
  {
@@ -868,7 +868,7 @@ impl<C, Elem> Prepare<[Elem]> for SetOf<C> where
     }
 }
 
-impl DerOrd<i8> for super::ASN1<super::Integer8, true> {
+impl DerOrd<i8> for super::ASN1Fmt<super::Integer8Fmt, true> {
     fn der_leq(&self, left: &i8, right: &i8) -> (leq: bool) {
         let mut left_encoding = vec![0; self.length(left)];
         let mut right_encoding = vec![0; self.length(right)];
@@ -884,7 +884,7 @@ impl DerOrd<i8> for super::ASN1<super::Integer8, true> {
     }
 }
 
-impl DerOrd<i16> for super::ASN1<super::Integer16, true> {
+impl DerOrd<i16> for super::ASN1Fmt<super::Integer16Fmt, true> {
     fn der_leq(&self, left: &i16, right: &i16) -> (leq: bool) {
         let mut left_encoding = vec![0; self.length(left)];
         let mut right_encoding = vec![0; self.length(right)];

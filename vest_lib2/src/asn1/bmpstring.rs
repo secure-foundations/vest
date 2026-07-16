@@ -94,7 +94,7 @@ pub open spec fn bmpstring_fmt() -> BmpStringFmt {
 mod derived_specs {
     use super::*;
 
-    impl SpecParser for super::super::BmpString {
+    impl SpecParser for super::super::BmpStringFmt {
         type PVal = BmpStringSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -102,7 +102,7 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for super::super::BmpString {
+    impl Consistency for super::super::BmpStringFmt {
         type Val = BmpStringSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
@@ -110,7 +110,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializerDps for super::super::BmpString {
+    impl SpecSerializerDps for super::super::BmpStringFmt {
         type SValue = BmpStringSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -118,7 +118,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for super::super::BmpString {
+    impl SpecSerializer for super::super::BmpStringFmt {
         type SVal = BmpStringSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -126,7 +126,7 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for super::super::BmpString {
+    impl SpecByteLen for super::super::BmpStringFmt {
         type T = BmpStringSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -139,13 +139,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl SafeParser for super::super::BmpString {
+    impl SafeParser for super::super::BmpStringFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             bmpstring_fmt().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for super::super::BmpString {
+    impl Productive for super::super::BmpStringFmt {
         open spec fn productive_inv(&self) -> bool {
             false
         }
@@ -154,7 +154,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::BmpString {
+    impl SoundParser for super::super::BmpStringFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -168,13 +168,13 @@ mod derived_proofs {
         }
     }
 
-    impl GoodSerializer for super::super::BmpString {
+    impl GoodSerializer for super::super::BmpStringFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             bmpstring_fmt().lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for super::super::BmpString {
+    impl SPRoundTripDps for super::super::BmpStringFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             broadcast use vstd::utf8::encode_utf8_decode_utf8;
 
@@ -182,7 +182,7 @@ mod derived_proofs {
         }
     }
 
-    impl NonMalleable for super::super::BmpString {
+    impl NonMalleable for super::super::BmpStringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
@@ -190,7 +190,7 @@ mod derived_proofs {
         }
     }
 
-    impl EquivSerializers for super::super::BmpString {
+    impl EquivSerializers for super::super::BmpStringFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             bmpstring_fmt().lemma_serialize_equiv_on_empty(v);
         }
@@ -198,7 +198,7 @@ mod derived_proofs {
 
 }
 
-impl<'i> Parser<&'i [u8]> for super::BmpString {
+impl<'i> Parser<&'i [u8]> for super::BmpStringFmt {
     type PT = BmpString<'i>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -214,7 +214,7 @@ impl<'i> Parser<&'i [u8]> for super::BmpString {
     }
 }
 
-impl<Output: OutputBuf, 'i> Serializer<Output, BmpString<'i>> for super::BmpString {
+impl<Output: OutputBuf, 'i> Serializer<Output, BmpString<'i>> for super::BmpStringFmt {
     fn serialize_into(&self, v: &BmpString<'i>, obuf: &mut Output) {
         proof {
             use_type_invariant(v);
@@ -224,7 +224,7 @@ impl<Output: OutputBuf, 'i> Serializer<Output, BmpString<'i>> for super::BmpStri
     }
 }
 
-impl<'i> Prepare<BmpString<'i>> for super::BmpString {
+impl<'i> Prepare<BmpString<'i>> for super::BmpStringFmt {
     fn prepare(&self, v: &BmpString<'i>) -> Result<usize, PreSerializeError> {
         broadcast use vstd::utf8::encode_utf8_valid_utf8;
 
@@ -236,7 +236,7 @@ impl<'i> Prepare<BmpString<'i>> for super::BmpString {
     }
 }
 
-impl<'i> ByteLen<BmpString<'i>> for super::BmpString {
+impl<'i> ByteLen<BmpString<'i>> for super::BmpStringFmt {
     fn length(&self, v: &BmpString<'i>) -> usize {
         proof {
             use_type_invariant(v);
