@@ -1317,6 +1317,80 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    /// Whether the specification rendered for `name` contains a literal
+    /// `AndThen<Tail, _>` whose consistency proof needs the broadcast bridge.
+    pub(crate) fn prepare_needs_tail_and_then_lemma(&self, name: &str) -> bool {
+        self.def_by_name(name)
+            .is_some_and(|def| self.definition_contains_tail_and_then(def))
+    }
+
+    fn definition_contains_tail_and_then(&self, def: &Definition) -> bool {
+        match def {
+            Definition::StructDef { combinator, .. } => {
+                combinator.0.iter().any(|field| match field {
+                    StructField::Const { .. } => false,
+                    StructField::Dependent { combinator, .. }
+                    | StructField::Ordinary { combinator, .. } => {
+                        self.struct_field_contains_tail_and_then(combinator)
+                    }
+                })
+            }
+            Definition::ChoiceDef { combinator, .. } => self
+                .choice_branches(combinator)
+                .into_iter()
+                .any(|branch| self.combinator_contains_tail_and_then(branch)),
+            Definition::CombinatorDef { combinator, .. } => {
+                self.combinator_contains_tail_and_then(combinator)
+            }
+            Definition::EnumDef { .. }
+            | Definition::BitsDef { .. }
+            | Definition::ConstCombinatorDef { .. }
+            | Definition::Endianess(_)
+            | Definition::RecursiveScc(_) => false,
+        }
+    }
+
+    fn struct_field_contains_tail_and_then(&self, combinator: &Combinator) -> bool {
+        if !matches!(combinator, Combinator::AndThen(_, _)) {
+            match self.ctx.resolve_alias(combinator) {
+                Combinator::Option(OptionCombinator(inner))
+                | Combinator::Vec(VecCombinator::Vec(inner)) => {
+                    return self.combinator_contains_tail_and_then(inner);
+                }
+                _ => {}
+            }
+        }
+        self.combinator_contains_tail_and_then(combinator)
+    }
+
+    fn combinator_contains_tail_and_then(&self, combinator: &Combinator) -> bool {
+        match combinator {
+            Combinator::AndThen(lhs, rhs) => {
+                if matches!(self.ctx.resolve_alias(lhs), Combinator::Bytes(_)) {
+                    // This is rendered as ExactLen, so the outer AndThen disappears.
+                    return self.combinator_contains_tail_and_then(rhs);
+                }
+                matches!(lhs.as_ref(), Combinator::Tail(_))
+                    || self.combinator_contains_tail_and_then(lhs)
+                    || self.combinator_contains_tail_and_then(rhs)
+            }
+            Combinator::Wrap(WrapCombinator { combinator, .. })
+            | Combinator::Array(ArrayCombinator { combinator, .. })
+            | Combinator::Option(OptionCombinator(combinator))
+            | Combinator::Vec(VecCombinator::Vec(combinator)) => {
+                self.combinator_contains_tail_and_then(combinator)
+            }
+            // Invocation specs stay behind their named format boundary.
+            Combinator::Invocation(_)
+            | Combinator::ConstraintInt(_)
+            | Combinator::ConstraintEnum(_)
+            | Combinator::Bytes(_)
+            | Combinator::Tail(_)
+            | Combinator::Empty
+            | Combinator::Void(_) => false,
+        }
+    }
+
     fn definition_non_tail(&self, def: &Definition) -> bool {
         match def {
             Definition::StructDef { combinator, .. } => self.struct_non_tail_at(combinator, true),

@@ -27,6 +27,7 @@ impl<'a> Analysis<'a> {
         is_struct: bool,
     ) -> String {
         let info = self.info(name);
+        let needs_tail_and_then_lemma = self.prepare_needs_tail_and_then_lemma(name);
         let exec_ty = self.render_nominal_type(name, TypeMode::Exec);
         let param_lt = self.wrapper_generics(param_defns);
         let fmt_has_lt = param_lt.to_string().contains("'i");
@@ -83,16 +84,15 @@ impl<'a> Analysis<'a> {
                         ),
                         |w| {
                             if is_struct {
-                                w.line("broadcast use vest_lib2::core::exec::output::outbuf_lemmas;");
+                                w.line(
+                                    "broadcast use vest_lib2::core::exec::output::outbuf_lemmas;",
+                                );
                             }
                             w.reveal_stmt(&format!(
                                 "<{} as SpecSerializer>::spec_serialize",
                                 reveal_fmt
                             ));
-                            w.reveal_stmt(&format!(
-                                "<{} as SpecByteLen>::byte_len",
-                                reveal_fmt
-                            ));
+                            w.reveal_stmt(&format!("<{} as SpecByteLen>::byte_len", reveal_fmt));
                             self.emit_param_invariant_opening(w, param_defns);
                             w.line("let ghost old_obuf = obuf@;");
                             w.blank_line();
@@ -122,6 +122,9 @@ impl<'a> Analysis<'a> {
                             exec_ty_str
                         ),
                         |w| {
+                            if needs_tail_and_then_lemma {
+                                w.line("broadcast use vest_lib2::combinators::bytes::spec::tail_and_then_lemmas;");
+                            }
                             w.reveal_stmt(&format!("<{} as SpecByteLen>::byte_len", reveal_fmt));
                             self.emit_param_invariant_opening(w, param_defns);
                             emit_prepare(w);
@@ -157,6 +160,24 @@ impl<'a> Analysis<'a> {
         } else {
             let ts: TokenStream = path.parse().unwrap();
             ts
+        }
+    }
+
+    fn resolve_dep_for_mode(
+        &self,
+        name: &str,
+        param_defns: &[ParamDefn],
+        mode: CodegenMode,
+    ) -> TokenStream {
+        let resolved = self.resolve_dep(name, param_defns);
+        let base = name.split('.').next().unwrap();
+        let is_param = param_defns.iter().any(|p| match p {
+            ParamDefn::Dependent { name: p_name, .. } => p_name == base,
+        });
+        if mode == CodegenMode::Serialize && !is_param && !name.contains('.') {
+            quote! { *#resolved }
+        } else {
+            resolved
         }
     }
 }
@@ -1003,10 +1024,8 @@ impl<'a> Analysis<'a> {
                                     param_defns,
                                     CodegenMode::Serialize,
                                 );
-                                let value_expr = self.render_serialize_value_expr(
-                                    quote! { v },
-                                    combinator,
-                                );
+                                let value_expr =
+                                    self.render_serialize_value_expr(quote! { v }, combinator);
                                 quote! { (#fmt_expr).serialize_into(#value_expr, obuf) }
                             };
 
@@ -1285,10 +1304,8 @@ impl<'a> Analysis<'a> {
                                     param_defns,
                                     CodegenMode::Serialize,
                                 );
-                                let value_expr = self.render_serialize_value_expr(
-                                    quote! { v },
-                                    combinator,
-                                );
+                                let value_expr =
+                                    self.render_serialize_value_expr(quote! { v }, combinator);
                                 quote! { (#fmt_expr).serialize_into(#value_expr, obuf) }
                             };
                             w.push_multiline(render_ts(quote! {
@@ -1833,7 +1850,7 @@ impl<'a> Analysis<'a> {
                     None => {
                         let len_expr = self.render_length_expr_with(
                             len,
-                            &|name| self.resolve_dep(name, param_defns),
+                            &|name| self.resolve_dep_for_mode(name, param_defns, mode),
                             None,
                         );
                         quote! { RepeatN(#len_expr, #inner_expr) }
@@ -1848,7 +1865,7 @@ impl<'a> Analysis<'a> {
                 None => {
                     let len_expr = self.render_length_expr_with(
                         &bytes.len,
-                        &|name| self.resolve_dep(name, param_defns),
+                        &|name| self.resolve_dep_for_mode(name, param_defns, mode),
                         None,
                     );
                     quote! { Varied(#len_expr) }
@@ -1878,7 +1895,7 @@ impl<'a> Analysis<'a> {
             Combinator::Bytes(bytes) => {
                 let len_expr = self.render_length_expr_with(
                     &bytes.len,
-                    &|name| self.resolve_dep(name, param_defns),
+                    &|name| self.resolve_dep_for_mode(name, param_defns, mode),
                     None,
                 );
                 let inner_expr = self.render_exec_combinator_expr_impl(

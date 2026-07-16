@@ -15,10 +15,92 @@ pub mod length_expr;
 pub mod matches;
 pub mod mutual_rec;
 pub mod nested_access;
+pub mod nested_bytes;
 pub mod opt;
 pub mod repeat;
 pub mod tls;
 pub mod tlv;
+
+#[cfg(test)]
+mod serializer_composition_regressions {
+    use super::nested_bytes::{
+        Anything, NestedDynamicBytes, NestedDynamicBytesFmt, NestedFixedBytes, NestedFixedBytesFmt,
+        TailVec, TailVecFmt,
+    };
+    use vest_lib2::core::exec::parser::Parser;
+    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+
+    #[test]
+    fn nested_dynamic_bytes_roundtrip_in_place() {
+        let first = [0x10, 0x11, 0x12];
+        let second = [0x20, 0x21, 0x22];
+        let value = NestedDynamicBytes {
+            num: 2,
+            num_inner: 3,
+            xs: vec![first.as_slice(), second.as_slice()],
+        };
+
+        let len = NestedDynamicBytesFmt.prepare(&value).unwrap();
+        let mut buf = vec![0; len];
+        NestedDynamicBytesFmt.serialize(&value, buf.as_mut_slice());
+        let (consumed, parsed) = NestedDynamicBytesFmt.parse(&&buf[..]).unwrap();
+
+        assert_eq!(consumed, buf.len());
+        assert_eq!(parsed, value);
+    }
+
+    #[test]
+    fn nested_fixed_bytes_roundtrip_in_place() {
+        let first = [0x31; 10];
+        let second = [0x42; 10];
+        let value = NestedFixedBytes {
+            num: 2,
+            xs: vec![first.as_slice(), second.as_slice()],
+        };
+
+        let len = NestedFixedBytesFmt.prepare(&value).unwrap();
+        let mut buf = vec![0; len];
+        NestedFixedBytesFmt.serialize(&value, buf.as_mut_slice());
+        let (consumed, parsed) = NestedFixedBytesFmt.parse(&&buf[..]).unwrap();
+
+        assert_eq!(consumed, buf.len());
+        assert_eq!(parsed, value);
+    }
+
+    #[test]
+    fn nested_byte_lengths_are_checked_during_prepare() {
+        let chunk = [0xaa, 0xbb, 0xcc];
+        let wrong_outer_count = NestedDynamicBytes {
+            num: 2,
+            num_inner: 3,
+            xs: vec![chunk.as_slice()],
+        };
+        assert!(NestedDynamicBytesFmt.prepare(&wrong_outer_count).is_err());
+
+        let short_chunk = [0xaa, 0xbb];
+        let wrong_inner_count = NestedDynamicBytes {
+            num: 1,
+            num_inner: 3,
+            xs: vec![short_chunk.as_slice()],
+        };
+        assert!(NestedDynamicBytesFmt.prepare(&wrong_inner_count).is_err());
+    }
+
+    #[test]
+    fn tail_then_vec_roundtrip_in_place() {
+        let value = TailVec {
+            xs: vec![Anything { x: 1 }, Anything { x: 2 }, Anything { x: 3 }],
+        };
+
+        let len = TailVecFmt.prepare(&value).unwrap();
+        let mut buf = vec![0; len];
+        TailVecFmt.serialize(&value, buf.as_mut_slice());
+        let (consumed, parsed) = TailVecFmt.parse(&&buf[..]).unwrap();
+
+        assert_eq!(consumed, buf.len());
+        assert_eq!(parsed, value);
+    }
+}
 
 #[cfg(test)]
 mod bits_endianness_sanity {
