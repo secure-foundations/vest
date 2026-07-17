@@ -166,13 +166,10 @@ Values DEFINITIONS ::= BEGIN
     Color ::= ENUMERATED { red(0), green(1) }
     Count ::= INTEGER
     Enabled ::= BOOLEAN
-    Identifier ::= OBJECT IDENTIFIER
 
     selected Color ::= green
     answer Count ::= 42
     enabled Enabled ::= TRUE
-    base OBJECT IDENTIFIER ::= { 1 2 840 113549 }
-    child Identifier ::= { base 1 }
 END
 "#,
     )
@@ -180,9 +177,9 @@ END
     assert!(generated.contains("pub enum Color"));
     assert!(generated.contains("pub const SELECTED: Color = Color::Green;"));
     assert!(generated.contains("pub const ANSWER: Count<'static>"));
+    assert!(generated.contains("Integer::Small { v: 42i64 }"));
     assert!(generated.contains("pub const ENABLED: Enabled = true;"));
-    assert!(generated.contains("pub const CHILD: Identifier<'static>"));
-    assert!(generated.contains("0x86u8, 0x48u8, 0x86u8, 0xf7u8, 0x0du8, 0x01u8"));
+    assert!(generated.find("pub const SELECTED").unwrap() < generated.find("} // verus!").unwrap());
 }
 
 #[test]
@@ -191,16 +188,28 @@ fn vendored_frontend_retains_forward_typed_value_assignments() {
         r#"
 Values DEFINITIONS ::= BEGIN
     selected Color ::= green
-    child Identifier ::= { base 1 }
     Color ::= ENUMERATED { red(0), green(1) }
-    Identifier ::= OBJECT IDENTIFIER
-    base OBJECT IDENTIFIER ::= { 1 2 840 113549 }
 END
 "#,
     )
     .unwrap();
     assert!(generated.contains("pub const SELECTED: Color = Color::Green;"));
-    assert!(generated.contains("pub const CHILD: Identifier<'static>"));
+}
+
+#[test]
+fn rejects_object_identifier_value_assignments_for_now() {
+    let error = compile(
+        r#"
+Values DEFINITIONS ::= BEGIN
+    Identifier ::= OBJECT IDENTIFIER
+    base Identifier ::= { 1 2 840 113549 }
+END
+"#,
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains(
+        "OBJECT IDENTIFIER value assignments are not supported yet"
+    ));
 }
 
 #[test]
@@ -225,7 +234,7 @@ END
     assert!(generated.contains("pub type IdentifierFmt = ASN1ObjectIdentifierFmt<DER>;"));
     assert!(generated.contains("pub type MeasurementFmt = ASN1RealFmt<DER>;"));
     assert!(generated.contains("pub type OpenValueFmt = ASN1AnyFmt<DER>;"));
-    assert!(generated.contains("pub struct ContainerNested<'a>"));
+    assert!(generated.contains("pub struct ContainerNested"));
     assert!(generated.contains("pub enum ContainerSelected<'a>"));
 }
 

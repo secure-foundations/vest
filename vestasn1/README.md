@@ -19,7 +19,7 @@ The backend supports BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER,
 REAL, ANY, BIT/OCTET STRING, NULL, the Vest-supported character/time strings,
 SEQUENCE, SEQUENCE OF, CHOICE, OPTIONAL components, BOOLEAN/ENUMERATED DEFAULT
 components, local type references, and explicit/implicit tags. Parsed byte
-strings, integers, OIDs, REAL values, open types, and applicable strings borrow
+strings, integers, REAL values, open types, and applicable strings borrow
 from the input. Serialization of nominal structures reverse-maps to field
 references, avoiding clones and temporary heap allocations.
 
@@ -30,10 +30,10 @@ verification. Fixed, bounded, and one-sided string and `SEQUENCE OF SIZE`
 constraints are emitted with the backend's verified `Size` predicate. INTEGER
 single-value and range constraints use the verified `IntegerRange` predicate.
 
-Boolean, integer, ENUMERATED, and OBJECT IDENTIFIER value assignments are
-emitted as typed Rust constants. The vendored Synta parser retains assignments
-through local type aliases directly in its AST; OID references are resolved and
-encoded canonically at generation time.
+Boolean, integer, and ENUMERATED value assignments are emitted as typed Rust
+constants inside the generated `verus!` block. OBJECT IDENTIFIER value
+assignments are retained by the vendored Synta frontend but rejected by codegen
+until the backend has a suitable Verus const representation.
 
 `SET` and `SET OF` are currently rejected. Generic `SET OF` generation remains
 disabled until the backend has an allocation-free DER ordering strategy.
@@ -52,6 +52,6 @@ DER-ordering reason above.
 
 The checked-in fixture under `test/` exercises nominal values, inline helpers,
 allocation-free slice serialization, tagging, OPTIONAL, DEFAULT, CHOICE,
-SEQUENCE OF, ENUMERATED, OID constants and borrowing, REAL, ANY, and a SIZE
+SEQUENCE OF, ENUMERATED, OID parsing and round trips, REAL, ANY, and a SIZE
 refinement. Run `make test` or `make verify` there to regenerate it before
 testing or verification.

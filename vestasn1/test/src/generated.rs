@@ -146,7 +146,7 @@ impl DeepView for Color {
 #[cfg(not(verus_keep_ghost))]
 unsafe impl Structural for Color {}
 
-pub type Identifier<'a> = vest_lib2::asn1::ObjectIdentifier<'a>;
+pub type Identifier = vest_lib2::asn1::ObjectIdentifier;
 pub type IdentifierSpec = vest_lib2::asn1::ObjectIdentifierSpec;
 
 pub type Measurement<'a> = vest_lib2::asn1::Real<'a>;
@@ -158,7 +158,7 @@ pub type OpenValueSpec = vest_lib2::asn1::AnySpec;
 /// Value type for ASN.1 `Metadata`.
 pub struct Metadata<'a> {
     pub color: Color,
-    pub identifier: Identifier<'a>,
+    pub identifier: Identifier,
     pub measurement: Measurement<'a>,
     pub open: OpenValue<'a>,
 }
@@ -203,9 +203,9 @@ impl<'a> DeepView for InlineRecordNested<'a> {
 }
 
 /// Value type for ASN.1 `InlineRecord-selected`.
-pub enum InlineRecordSelected<'a> {
+pub enum InlineRecordSelected {
     Flag(bool),
-    Identifier(vest_lib2::asn1::ObjectIdentifier<'a>),
+    Identifier(vest_lib2::asn1::ObjectIdentifier),
 }
 
 #[verifier::ext_equal]
@@ -214,7 +214,7 @@ pub enum InlineRecordSelectedSpec {
     Identifier(vest_lib2::asn1::ObjectIdentifierSpec),
 }
 
-impl<'a> DeepView for InlineRecordSelected<'a> {
+impl DeepView for InlineRecordSelected {
     type V = InlineRecordSelectedSpec;
     open spec fn deep_view(&self) -> Self::V {
         match self {
@@ -227,7 +227,7 @@ impl<'a> DeepView for InlineRecordSelected<'a> {
 /// Value type for ASN.1 `InlineRecord`.
 pub struct InlineRecord<'a> {
     pub nested: InlineRecordNested<'a>,
-    pub selected: InlineRecordSelected<'a>,
+    pub selected: InlineRecordSelected,
 }
 
 #[verifier::ext_equal]
@@ -556,9 +556,9 @@ impl SpecMap for MetadataReverse {
     }
 }
 
-impl<'a> Map<(Color, (Identifier<'a>, (Measurement<'a>, (OpenValue<'a>, ()))))> for MetadataForward {
+impl<'a> Map<(Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))> for MetadataForward {
     type O = Metadata<'a>;
-    fn map(&self, input: (Color, (Identifier<'a>, (Measurement<'a>, (OpenValue<'a>, ()))))) -> (value: Self::O) {
+    fn map(&self, input: (Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))) -> (value: Self::O) {
         let (color, (identifier, (measurement, (open, _end)))) = input;
         Metadata {
             color,
@@ -570,7 +570,7 @@ impl<'a> Map<(Color, (Identifier<'a>, (Measurement<'a>, (OpenValue<'a>, ()))))> 
 }
 
 impl<'a, 'x> Map<&'x Metadata<'a>> for MetadataReverse {
-    type O = (Color, (&'x Identifier<'a>, (&'x Measurement<'a>, (&'x OpenValue<'a>, ()))));
+    type O = (Color, (&'x Identifier, (&'x Measurement<'a>, (&'x OpenValue<'a>, ()))));
     fn map(&self, value: &'x Metadata<'a>) -> (output: Self::O) {
         (value.color, (&value.identifier, (&value.measurement, (&value.open, ()))))
     }
@@ -644,9 +644,9 @@ impl SpecMap for InlineRecordSelectedReverse {
     }
 }
 
-impl<'a> Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier<'a>>> for InlineRecordSelectedForward {
-    type O = InlineRecordSelected<'a>;
-    fn map(&self, input: Sum<bool, vest_lib2::asn1::ObjectIdentifier<'a>>) -> (value: Self::O) {
+impl Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier>> for InlineRecordSelectedForward {
+    type O = InlineRecordSelected;
+    fn map(&self, input: Sum<bool, vest_lib2::asn1::ObjectIdentifier>) -> (value: Self::O) {
         match input {
             Sum::Inl(value) => InlineRecordSelected::Flag(value),
             Sum::Inr(value) => InlineRecordSelected::Identifier(value),
@@ -654,9 +654,9 @@ impl<'a> Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier<'a>>> for InlineRecordS
     }
 }
 
-impl<'a, 'x> Map<&'x InlineRecordSelected<'a>> for InlineRecordSelectedReverse {
-    type O = Sum<&'x bool, &'x vest_lib2::asn1::ObjectIdentifier<'a>>;
-    fn map(&self, value: &'x InlineRecordSelected<'a>) -> (output: Self::O) {
+impl<'x> Map<&'x InlineRecordSelected> for InlineRecordSelectedReverse {
+    type O = Sum<&'x bool, &'x vest_lib2::asn1::ObjectIdentifier>;
+    fn map(&self, value: &'x InlineRecordSelected) -> (output: Self::O) {
         match value {
             InlineRecordSelected::Flag(value) => Sum::Inl(value),
             InlineRecordSelected::Identifier(value) => Sum::Inr(value),
@@ -689,9 +689,9 @@ impl SpecMap for InlineRecordReverse {
     }
 }
 
-impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected<'a>, ()))> for InlineRecordForward {
+impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected, ()))> for InlineRecordForward {
     type O = InlineRecord<'a>;
-    fn map(&self, input: (InlineRecordNested<'a>, (InlineRecordSelected<'a>, ()))) -> (value: Self::O) {
+    fn map(&self, input: (InlineRecordNested<'a>, (InlineRecordSelected, ()))) -> (value: Self::O) {
         let (nested, (selected, _end)) = input;
         InlineRecord {
             nested,
@@ -701,7 +701,7 @@ impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected<'a>, ()))> for Inlin
 }
 
 impl<'a, 'x> Map<&'x InlineRecord<'a>> for InlineRecordReverse {
-    type O = (&'x InlineRecordNested<'a>, (&'x InlineRecordSelected<'a>, ()));
+    type O = (&'x InlineRecordNested<'a>, (&'x InlineRecordSelected, ()));
     fn map(&self, value: &'x InlineRecord<'a>) -> (output: Self::O) {
         (&value.nested, (&value.selected, ()))
     }
@@ -1139,7 +1139,6 @@ proof fn vestasn1_generated_formats_are_valid() {
     assert(SELECTION_FMT().safe_inv());
     assert(SELECTION_FMT().sound_inv());
     lemma_disjoint_asn1_tags(((SELECTION_FMT().inner).0).0, ((SELECTION_FMT().inner).1).0);
-    vest_lib2::combinators::disjoint::lemma_disjoint_refs((SELECTION_FMT().inner).0, (SELECTION_FMT().inner).1);
     assert((SELECTION_FMT().inner).unambiguous());
     assert(SELECTION_FMT().unambiguous());
     assert(CHOICE_ENVELOPE_FMT().safe_inv());
@@ -1162,7 +1161,6 @@ proof fn vestasn1_generated_formats_are_valid() {
     assert(METADATA_FMT().safe_inv());
     assert(METADATA_FMT().sound_inv());
     lemma_disjoint_asn1_tags((METADATA_FMT().1.inner).0, (((METADATA_FMT().1.inner).2).0).0);
-    vest_lib2::combinators::disjoint::lemma_disjoint_ref_right((METADATA_FMT().1.inner).0, ((METADATA_FMT().1.inner).2).0);
     assert(disjoint_domains((METADATA_FMT().1.inner).0, (METADATA_FMT().1.inner).2));
     assert((METADATA_FMT().1.inner).unambiguous());
     assert(METADATA_FMT().unambiguous());
@@ -1173,7 +1171,6 @@ proof fn vestasn1_generated_formats_are_valid() {
     assert(INLINE_RECORD_SELECTED_FMT().safe_inv());
     assert(INLINE_RECORD_SELECTED_FMT().sound_inv());
     lemma_disjoint_asn1_tags(((INLINE_RECORD_SELECTED_FMT().inner).0).0, ((INLINE_RECORD_SELECTED_FMT().inner).1).0);
-    vest_lib2::combinators::disjoint::lemma_disjoint_refs((INLINE_RECORD_SELECTED_FMT().inner).0, (INLINE_RECORD_SELECTED_FMT().inner).1);
     assert((INLINE_RECORD_SELECTED_FMT().inner).unambiguous());
     assert(INLINE_RECORD_SELECTED_FMT().unambiguous());
     assert(INLINE_RECORD_FMT().safe_inv());
@@ -1182,10 +1179,8 @@ proof fn vestasn1_generated_formats_are_valid() {
     assert(INLINE_RECORD_FMT().unambiguous());
 }
 
-} // verus!
-
-pub const BASE_OID: vest_lib2::asn1::ObjectIdentifier<'static> = vest_lib2::asn1::ObjectIdentifier::from_static_der_contents_unchecked(&[0x2au8, 0x86u8, 0x48u8, 0x86u8, 0xf7u8, 0x0du8]);
-pub const CHILD_OID: Identifier<'static> = vest_lib2::asn1::ObjectIdentifier::from_static_der_contents_unchecked(&[0x2au8, 0x86u8, 0x48u8, 0x86u8, 0xf7u8, 0x0du8, 0x01u8]);
 pub const FEATURE_ENABLED: Flag = true;
-pub const ANSWER: Count<'static> = vest_lib2::asn1::Integer::from_i64(42i64);
+pub const ANSWER: Count<'static> = vest_lib2::asn1::Integer::Small { v: 42i64 };
 pub const DEFAULT_COLOR: Color = Color::Green;
+
+} // verus!

@@ -123,22 +123,15 @@ mod tests {
         assert!(FEATURE_ENABLED);
         assert_eq!(ANSWER.as_i64(), Some(42));
         assert_eq!(DEFAULT_COLOR, Color::Green);
-        assert_eq!(
-            BASE_OID.as_bytes(),
-            &[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d]
-        );
-        assert_eq!(
-            CHILD_OID.as_bytes(),
-            &[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01]
-        );
     }
 
     #[test]
-    fn object_identifier_parsing_borrows_canonical_content_bytes() {
+    fn object_identifier_parses_owned_arcs_and_round_trips() {
         let encoded = [0x06, 0x03, 0x88, 0x37, 0x03];
         let (_, identifier) = IDENTIFIER_FMT().parse(&encoded.as_slice()).unwrap();
-        assert_eq!(identifier.as_bytes(), &[0x88, 0x37, 0x03]);
-        assert_eq!(identifier.as_bytes().as_ptr(), encoded[2..].as_ptr());
+        assert_eq!(identifier.first(), 2);
+        assert_eq!(identifier.second(), 999);
+        assert_eq!(identifier.rest(), &[3]);
 
         let mut output = vec![0; IDENTIFIER_FMT().prepare(&identifier).unwrap()];
         IDENTIFIER_FMT().serialize(&identifier, output.as_mut_slice());
