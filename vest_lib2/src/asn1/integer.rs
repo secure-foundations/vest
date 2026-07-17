@@ -13,6 +13,7 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
+use vstd::arithmetic::mul::*;
 use vstd::arithmetic::power::*;
 use vstd::arithmetic::power2::*;
 use vstd::assert_seqs_equal;
@@ -245,6 +246,57 @@ pub struct BigInt<'a> {
     raw: &'a [u8],
 }
 
+proof fn lemma_large_nonnegative_integer(bytes: Seq<u8>)
+    requires
+        bytes.len() > 8,
+        !sign_bit_set(bytes[0]),
+        bytes[0] == 0 ==> sign_bit_set(bytes[1]),
+    ensures
+        nat_from_be_bytes(bytes) > i64::MAX as int,
+{
+    broadcast use lemma_pow_increases;
+
+    reveal_with_fuel(pow, 9);
+    if bytes[0] != 0 {
+        lemma_from_be_bytes_lower_bound(bytes);
+        lemma_pow_increases(256, 8, (bytes.len() - 1) as nat);
+    } else {
+        let rest = bytes.drop_first();
+        let tail = rest.drop_first();
+        assert(bytes == seq![bytes[0]] + rest);
+        assert(rest == seq![rest[0]] + tail);
+        lemma_from_be_bytes_prepend(rest, 0);
+        lemma_from_be_bytes_prepend(tail, rest[0]);
+        lemma_pow_increases(256, 7, tail.len());
+        let first_int: int = rest[0] as int;
+        let power: int = pow(256, tail.len());
+        lemma_mul_inequality(128, first_int, power);
+    }
+}
+
+proof fn lemma_large_integer_outside_i64(bytes: Seq<u8>)
+    requires
+        bytes.len() > 8,
+        integer_bytes_wf(bytes),
+    ensures
+        sign_bit_set(bytes[0]) ==> int_from_be_bytes(bytes) < i64::MIN as int,
+        !sign_bit_set(bytes[0]) ==> int_from_be_bytes(bytes) > i64::MAX as int,
+{
+    if sign_bit_set(bytes[0]) {
+        let inverted = invert_bytes(bytes);
+        lemma_invert_byte_props(bytes[0]);
+        if inverted[0] == 0 {
+            let first = bytes[0];
+            lemma_invert_byte_props(first);
+            lemma_invert_byte_props(bytes[1]);
+        }
+        lemma_large_nonnegative_integer(inverted);
+        lemma_from_be_bytes_invert(bytes);
+    } else {
+        lemma_large_nonnegative_integer(bytes);
+    }
+}
+
 impl<'a> BigInt<'a> {
     pub closed spec fn view(&self) -> Seq<u8> {
         self.raw.deep_view()
@@ -252,12 +304,13 @@ impl<'a> BigInt<'a> {
 
     #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
-        integer_bytes_wf(self.view())
+        integer_bytes_wf(self.view()) && self.view().len() > 8
     }
 
     fn new(raw: &'a [u8]) -> (res: Self)
         requires
             integer_bytes_wf(raw.deep_view()),
+            raw.len() > 8,
         ensures
             res.view() == raw.deep_view(),
     {
@@ -269,6 +322,22 @@ impl<'a> BigInt<'a> {
             res.deep_view() == self.view(),
     {
         self.raw
+    }
+
+    /// Returns the sign of an arbitrary-size integer.
+    ///
+    /// `BigInt` values are canonical encodings longer than eight octets, so
+    /// their values are strictly outside the signed 64-bit range.
+    pub fn is_negative(&self) -> (negative: bool)
+        ensures
+            negative ==> int_from_be_bytes(self.view()) < i64::MIN as int,
+            !negative ==> int_from_be_bytes(self.view()) > i64::MAX as int,
+    {
+        proof {
+            use_type_invariant(self);
+            lemma_large_integer_outside_i64(self.view());
+        }
+        self.raw[0] >= 0x80
     }
 }
 
@@ -285,6 +354,43 @@ impl<'a> DeepView for Integer<'a> {
         match *self {
             Integer::Small { v } => v as int,
             Integer::Big { raw } => int_from_be_bytes(raw.view()),
+        }
+    }
+}
+
+impl<'a> Integer<'a> {
+    /// Constructs the exact ASN.1 INTEGER value represented by an `i64`.
+    pub const fn from_i64(v: i64) -> Self {
+        Integer::Small { v }
+    }
+
+    /// Returns the value as an `i64` when it is represented by the small variant.
+    pub fn as_i64(&self) -> (value: Option<i64>)
+        ensures
+            value matches Some(v) ==> self.deep_view() == v as int,
+    {
+        match *self {
+            Integer::Small { v } => Some(v),
+            Integer::Big { .. } => None,
+        }
+    }
+
+    /// Tests an inclusive interval whose endpoints are representable as `i64`.
+    pub fn in_i64_range<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64>(
+        &self,
+    ) -> (ok: bool)
+        ensures
+            ok == ({
+                &&& HAS_MIN ==> MIN as int <= self.deep_view()
+                &&& HAS_MAX ==> self.deep_view() <= MAX as int
+            }),
+    {
+        match *self {
+            Integer::Small { v } => { (!HAS_MIN || MIN <= v) && (!HAS_MAX || v <= MAX) },
+            Integer::Big { raw } => {
+                let negative = raw.is_negative();
+                (!HAS_MIN || !negative) && (!HAS_MAX || negative)
+            },
         }
     }
 }

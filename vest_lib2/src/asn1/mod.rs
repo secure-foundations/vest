@@ -10,6 +10,8 @@ pub mod bitstring;
 pub mod bmpstring;
 /// ASN.1 BOOLEAN contents octet.
 pub mod boolean;
+/// Reusable ASN.1 subtype-constraint predicates.
+pub mod constraints;
 /// Shared semantic date/time values and calendar operations.
 pub mod datetime;
 /// ASN.1 notation-style aliases for universal formats with DER encoding.
@@ -48,6 +50,7 @@ pub mod utf8string;
 pub use any::{Any, AnySpec};
 pub use bitstring::{BitString, BitStringSpec};
 pub use bmpstring::{BmpString, BmpStringSpec};
+pub use constraints::{ConstraintAnd, ConstraintNot, ConstraintOr, IntegerRange, Size};
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
 pub use enumerated::Enumerated;
