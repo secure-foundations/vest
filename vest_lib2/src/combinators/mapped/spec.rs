@@ -331,7 +331,18 @@ impl<I, O> SpecMap for spec_fn(I) -> O {
     }
 }
 
+#[derive(Copy)]
 pub struct BiMap<M, MRev>(pub M, pub MRev);
+
+impl<M: Clone, MRev: Clone> Clone for BiMap<M, MRev> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(M::clone, (&self.0,), cloned.0),
+            call_ensures(MRev::clone, (&self.1,), cloned.1),
+    {
+        BiMap(self.0.clone(), self.1.clone())
+    }
+}
 
 pub type BiMapper<In, Out> = BiMap<spec_fn(In) -> Out, spec_fn(Out) -> In>;
 

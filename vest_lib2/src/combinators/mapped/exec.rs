@@ -7,7 +7,7 @@ use crate::core::{
         fns::Pred,
         input::InputSlice,
         parser::{PResult, Parser},
-        serializer::Serializer,
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     spec::{SpecParser, SpecSerializer},
@@ -94,6 +94,40 @@ impl<Output: OutputBuf, Inner, M, MRev, T, InnerT> Serializer<Output, T> for sup
             ));
         }
         self.inner.serialize_into(&inner_v, obuf);
+    }
+}
+
+impl<Inner, M, MRev, T, InnerT> Prepare<T> for super::Mapped<Inner, BiMap<M, MRev>> where
+    T: DeepView,
+    InnerT: DeepView,
+    Inner: Prepare<InnerT>,
+    M: SpecMap<Input = Inner::T, Output = T::V>,
+    MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
+    fn prepare(&self, v: &T) -> Result<usize, PreSerializeError> {
+        let inner_v = self.mapper.1.map(v);
+        self.inner.prepare(&inner_v)
+    }
+}
+
+impl<Inner, M, MRev, T, InnerT> ByteLen<T> for super::Mapped<Inner, BiMap<M, MRev>> where
+    T: DeepView,
+    InnerT: DeepView,
+    Inner: ByteLen<InnerT>,
+    M: SpecMap<Input = Inner::T, Output = T::V>,
+    MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.inner.exec_inv()
+    }
+
+    fn length(&self, v: &T) -> usize {
+        let inner_v = self.mapper.1.map(v);
+        self.inner.length(&inner_v)
     }
 }
 
