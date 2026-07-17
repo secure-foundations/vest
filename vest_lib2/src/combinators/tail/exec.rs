@@ -180,7 +180,7 @@ impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> +
 
 impl<Output: OutputBuf, A, T> Serializer<Output, &[T]> for super::RepeatTillEnd<A> where
     A: Serializer<Output, T> + Copy,
-    T: DeepView + Copy,
+    T: DeepView,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -212,9 +212,55 @@ impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy,
     }
 }
 
+impl<Output: OutputBuf, A, T> Serializer<Output, Vec<T>> for super::RepeatTillEnd<A> where
+    A: Serializer<Output, T> + Copy,
+    T: DeepView,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn serialize_into(&self, v: &Vec<T>, obuf: &mut Output) {
+        let values = v.as_slice();
+        proof {
+            assert(values.deep_view() == v.deep_view());
+        }
+        Star(self.0).serialize_into(&values, obuf);
+    }
+}
+
+impl<A, T> ByteLen<Vec<T>> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn length(&self, v: &Vec<T>) -> (len: usize) {
+        let values = v.as_slice();
+        proof {
+            assert(values.deep_view() == v.deep_view());
+        }
+        Star(self.0).length(&values)
+    }
+}
+
+impl<A, T> Prepare<Vec<T>> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn prepare(&self, v: &Vec<T>) -> Result<usize, PreSerializeError> {
+        let values = v.as_slice();
+        proof {
+            assert(values.deep_view() == v.deep_view());
+        }
+        Star(self.0).prepare(&values)
+    }
+}
+
 impl<Output: OutputBuf, A, T> Serializer<Output, Option<T>> for super::OptionalEnd<A> where
     A: Serializer<Output, T>,
-    T: DeepView + Copy,
+    T: DeepView,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
