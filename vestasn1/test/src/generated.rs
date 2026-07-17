@@ -713,7 +713,9 @@ pub type FlagFmt = ASN1BoolFmt<DER>;
 #[allow(non_snake_case)]
 pub const fn FLAG_FMT() -> FlagFmt
     returns
-        (BOOLEAN),
+        (
+            BOOLEAN
+        ),
 {
     BOOLEAN
 }
@@ -724,7 +726,9 @@ pub type CountFmt = ASN1IntegerFmt<DER>;
 #[allow(non_snake_case)]
 pub const fn COUNT_FMT() -> CountFmt
     returns
-        (INTEGER),
+        (
+            INTEGER
+        ),
 {
     INTEGER
 }
@@ -735,9 +739,17 @@ pub type PayloadFmt = ASN1Fmt<Refined<OctetStringFmt, Size<true, 2, true, 4>>, D
 #[allow(non_snake_case)]
 pub const fn PAYLOAD_FMT() -> PayloadFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::OCTET_STRING, Refined(OctetStringFmt, Size::<true, 2, true, 4>))),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::OCTET_STRING,
+                Refined(OctetStringFmt, Size::<true, 2, true, 4>),
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::OCTET_STRING, Refined(OctetStringFmt, Size::<true, 2, true, 4>))
+    ASN1Fmt::<_, DER>(
+        TagFmt::OCTET_STRING,
+        Refined(OctetStringFmt, Size::<true, 2, true, 4>),
+    )
 }
 
 /// DER format for ASN.1 `Header`.
@@ -746,9 +758,29 @@ pub type HeaderFmt = ASN1Fmt<Mapped<Pair<Ref<FlagFmt>, Pair<Ref<CountFmt>, Eof>>
 #[allow(non_snake_case)]
 pub const fn HEADER_FMT() -> HeaderFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(FLAG_FMT()), REQUIRED(Ref(COUNT_FMT()), Eof)), mapper: BiMap(HeaderForward, HeaderReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        REQUIRED(Ref(FLAG_FMT()),
+                        REQUIRED(Ref(COUNT_FMT()),
+                        Eof)),
+                    mapper: BiMap(HeaderForward, HeaderReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(FLAG_FMT()), REQUIRED(Ref(COUNT_FMT()), Eof)), mapper: BiMap(HeaderForward, HeaderReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                REQUIRED(Ref(FLAG_FMT()),
+                REQUIRED(Ref(COUNT_FMT()),
+                Eof)),
+            mapper: BiMap(HeaderForward, HeaderReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `Envelope`.
@@ -757,9 +789,29 @@ pub type EnvelopeFmt = ASN1Fmt<Mapped<Pair<Ref<HeaderFmt>, Optional<Ref<PayloadF
 #[allow(non_snake_case)]
 pub const fn ENVELOPE_FMT() -> EnvelopeFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(HEADER_FMT()), OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())), Eof)), mapper: BiMap(EnvelopeForward, EnvelopeReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        REQUIRED(Ref(HEADER_FMT()),
+                        OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())),
+                        Eof)),
+                    mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(HEADER_FMT()), OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())), Eof)), mapper: BiMap(EnvelopeForward, EnvelopeReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                REQUIRED(Ref(HEADER_FMT()),
+                OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())),
+                Eof)),
+            mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `Envelopes`.
@@ -768,7 +820,9 @@ pub type EnvelopesFmt = ASN1Fmt<RepeatTillEnd<EnvelopeFmt>, DER>;
 #[allow(non_snake_case)]
 pub const fn ENVELOPES_FMT() -> EnvelopesFmt
     returns
-        (SEQUENCE_OF(ENVELOPE_FMT())),
+        (
+            SEQUENCE_OF(ENVELOPE_FMT())
+        ),
 {
     SEQUENCE_OF(ENVELOPE_FMT())
 }
@@ -779,9 +833,29 @@ pub type FeaturesFmt = ASN1Fmt<Mapped<DefaultedFmt<FlagFmt, bool, DefaultedFmt<A
 #[allow(non_snake_case)]
 pub const fn FEATURES_FMT() -> FeaturesFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true, DEFAULT(IMPLICIT(1u64, BOOLEAN), false, Eof)), mapper: BiMap(FeaturesForward, FeaturesReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true,
+                        DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+                        Eof)),
+                    mapper: BiMap(FeaturesForward, FeaturesReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true, DEFAULT(IMPLICIT(1u64, BOOLEAN), false, Eof)), mapper: BiMap(FeaturesForward, FeaturesReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true,
+                DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+                Eof)),
+            mapper: BiMap(FeaturesForward, FeaturesReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `Selection`.
@@ -790,9 +864,25 @@ pub type SelectionFmt = Mapped<Choice<Ref<FlagFmt>, Ref<ASN1Fmt<PayloadFmt, DER>
 #[allow(non_snake_case)]
 pub const fn SELECTION_FMT() -> SelectionFmt
     returns
-        (Mapped { inner: CHOICE(Ref(IMPLICIT(1u64, FLAG_FMT())), Ref(EXPLICIT(2u64, PAYLOAD_FMT()))), mapper: BiMap(SelectionForward, SelectionReverse) }),
+        (
+            Mapped {
+                inner:
+                    CHOICE(
+                        Ref(IMPLICIT(1u64, FLAG_FMT())),
+                        Ref(EXPLICIT(2u64, PAYLOAD_FMT())),
+                    ),
+                mapper: BiMap(SelectionForward, SelectionReverse),
+            }
+        ),
 {
-    Mapped { inner: CHOICE(Ref(IMPLICIT(1u64, FLAG_FMT())), Ref(EXPLICIT(2u64, PAYLOAD_FMT()))), mapper: BiMap(SelectionForward, SelectionReverse) }
+    Mapped {
+        inner:
+            CHOICE(
+                Ref(IMPLICIT(1u64, FLAG_FMT())),
+                Ref(EXPLICIT(2u64, PAYLOAD_FMT())),
+            ),
+        mapper: BiMap(SelectionForward, SelectionReverse),
+    }
 }
 
 /// DER format for ASN.1 `ChoiceEnvelope`.
@@ -801,9 +891,27 @@ pub type ChoiceEnvelopeFmt = ASN1Fmt<Mapped<Optional<Ref<ASN1Fmt<SelectionFmt, D
 #[allow(non_snake_case)]
 pub const fn CHOICE_ENVELOPE_FMT() -> ChoiceEnvelopeFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())), Eof), mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())),
+                        Eof),
+                    mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())), Eof), mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())),
+                Eof),
+            mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `Color`.
@@ -812,9 +920,23 @@ pub type ColorFmt = ASN1Fmt<Mapped<Refined<Integer16Fmt, ColorPredicate>, BiMap<
 #[allow(non_snake_case)]
 pub const fn COLOR_FMT() -> ColorFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::ENUMERATED, Mapped { inner: Refined(Integer16Fmt, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::ENUMERATED,
+                Mapped {
+                    inner: Refined(Integer16Fmt, ColorPredicate),
+                    mapper: BiMap(ColorForward, ColorReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::ENUMERATED, Mapped { inner: Refined(Integer16Fmt, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::ENUMERATED,
+        Mapped {
+            inner: Refined(Integer16Fmt, ColorPredicate),
+            mapper: BiMap(ColorForward, ColorReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `Identifier`.
@@ -823,7 +945,9 @@ pub type IdentifierFmt = ASN1ObjectIdentifierFmt<DER>;
 #[allow(non_snake_case)]
 pub const fn IDENTIFIER_FMT() -> IdentifierFmt
     returns
-        (OBJECT_IDENTIFIER),
+        (
+            OBJECT_IDENTIFIER
+        ),
 {
     OBJECT_IDENTIFIER
 }
@@ -834,7 +958,9 @@ pub type MeasurementFmt = ASN1RealFmt<DER>;
 #[allow(non_snake_case)]
 pub const fn MEASUREMENT_FMT() -> MeasurementFmt
     returns
-        (REAL),
+        (
+            REAL
+        ),
 {
     REAL
 }
@@ -845,7 +971,9 @@ pub type OpenValueFmt = ASN1AnyFmt<DER>;
 #[allow(non_snake_case)]
 pub const fn OPEN_VALUE_FMT() -> OpenValueFmt
     returns
-        (ANY),
+        (
+            ANY
+        ),
 {
     ANY
 }
@@ -856,9 +984,33 @@ pub type MetadataFmt = ASN1Fmt<Mapped<DefaultedFmt<ColorFmt, Color, Pair<Ref<Ide
 #[allow(non_snake_case)]
 pub const fn METADATA_FMT() -> MetadataFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green, REQUIRED(Ref(IDENTIFIER_FMT()), REQUIRED(Ref(MEASUREMENT_FMT()), REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())), Eof)))), mapper: BiMap(MetadataForward, MetadataReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,
+                        REQUIRED(Ref(IDENTIFIER_FMT()),
+                        REQUIRED(Ref(MEASUREMENT_FMT()),
+                        REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),
+                        Eof)))),
+                    mapper: BiMap(MetadataForward, MetadataReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green, REQUIRED(Ref(IDENTIFIER_FMT()), REQUIRED(Ref(MEASUREMENT_FMT()), REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())), Eof)))), mapper: BiMap(MetadataForward, MetadataReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,
+                REQUIRED(Ref(IDENTIFIER_FMT()),
+                REQUIRED(Ref(MEASUREMENT_FMT()),
+                REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),
+                Eof)))),
+            mapper: BiMap(MetadataForward, MetadataReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `InlineRecord-nested`.
@@ -867,9 +1019,27 @@ pub type InlineRecordNestedFmt = ASN1Fmt<Mapped<Pair<Ref<ASN1OctetStringFmt<DER>
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_NESTED_FMT() -> InlineRecordNestedFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(OCTET_STRING), Eof), mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        REQUIRED(Ref(OCTET_STRING),
+                        Eof),
+                    mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(OCTET_STRING), Eof), mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                REQUIRED(Ref(OCTET_STRING),
+                Eof),
+            mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+        },
+    )
 }
 
 /// DER format for ASN.1 `InlineRecord-selected`.
@@ -878,9 +1048,25 @@ pub type InlineRecordSelectedFmt = Mapped<Choice<Ref<ASN1BoolFmt<DER>>, Ref<ASN1
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
     returns
-        (Mapped { inner: CHOICE(Ref(IMPLICIT(2u64, BOOLEAN)), Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER))), mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse) }),
+        (
+            Mapped {
+                inner:
+                    CHOICE(
+                        Ref(IMPLICIT(2u64, BOOLEAN)),
+                        Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER)),
+                    ),
+                mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
+            }
+        ),
 {
-    Mapped { inner: CHOICE(Ref(IMPLICIT(2u64, BOOLEAN)), Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER))), mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse) }
+    Mapped {
+        inner:
+            CHOICE(
+                Ref(IMPLICIT(2u64, BOOLEAN)),
+                Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER)),
+            ),
+        mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
+    }
 }
 
 /// DER format for ASN.1 `InlineRecord`.
@@ -889,9 +1075,29 @@ pub type InlineRecordFmt = ASN1Fmt<Mapped<Pair<Ref<InlineRecordNestedFmt>, Pair<
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_FMT() -> InlineRecordFmt
     returns
-        (ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()), REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()), Eof)), mapper: BiMap(InlineRecordForward, InlineRecordReverse) })),
+        (
+            ASN1Fmt::<_, DER>(
+                TagFmt::SEQUENCE,
+                Mapped {
+                    inner:
+                        REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()),
+                        REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()),
+                        Eof)),
+                    mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+                },
+            )
+        ),
 {
-    ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Mapped { inner: REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()), REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()), Eof)), mapper: BiMap(InlineRecordForward, InlineRecordReverse) })
+    ASN1Fmt::<_, DER>(
+        TagFmt::SEQUENCE,
+        Mapped {
+            inner:
+                REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()),
+                REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()),
+                Eof)),
+            mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+        },
+    )
 }
 
 proof fn vestasn1_generated_formats_are_valid() {

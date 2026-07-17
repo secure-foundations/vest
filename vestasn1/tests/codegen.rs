@@ -99,9 +99,13 @@ END
     .unwrap();
     assert!(generated.contains("pub struct Flags"));
     assert!(generated.contains("DefaultedFmt<EnabledFmt, bool,"));
-    assert!(generated.contains("DEFAULT(IMPLICIT("));
-    assert!(generated.contains(", true, DEFAULT("));
-    assert!(generated.contains(", false, Eof)"));
+    let left_aligned = generated.lines().map(str::trim_start).collect::<Vec<_>>().join("\n");
+    assert!(left_aligned.contains("inner:\nDEFAULT("));
+    assert!(generated.contains("IMPLICIT(0u64, ENABLED_FMT())"));
+    assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
+    assert!(left_aligned.contains("Eof))"));
+    assert!(generated.contains("pub const fn FLAGS_FMT()"));
+    assert!(generated.contains("{\n    ASN1Fmt::<_, DER>("));
 }
 
 #[test]
@@ -288,6 +292,19 @@ fn emits_explicit_notation_for_untagged_choice_and_any() {
     assert!(generated.contains("EXPLICIT(3u64, SELECTION_FMT())"));
     assert!(generated.contains("EXPLICIT(1u64, OPEN_VALUE_FMT())"));
     assert!(!generated.contains("Tag { class: Class::ContextSpecific"));
+}
+
+#[test]
+fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
+    let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
+    let left_aligned = generated.lines().map(str::trim_start).collect::<Vec<_>>().join("\n");
+    assert!(left_aligned.contains(concat!(
+        "DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,\n",
+        "REQUIRED(Ref(IDENTIFIER_FMT()),\n",
+        "REQUIRED(Ref(MEASUREMENT_FMT()),\n",
+        "REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),\n",
+        "Eof))))",
+    )));
 }
 
 #[test]

@@ -1453,10 +1453,12 @@ impl<'a> Generator<'a> {
         writeln!(output, "pub type {} = {};", names.format, rendered.ty).unwrap();
         writeln!(output, "#[verifier::allow_in_spec]").unwrap();
         writeln!(output, "#[allow(non_snake_case)]").unwrap();
+        let returns_expr = pretty_format_expr(&rendered.expr, 12);
+        let body_expr = pretty_format_expr(&rendered.expr, 4);
         writeln!(
             output,
-            "pub const fn {}() -> {}\n    returns\n        ({}),\n{{\n    {}\n}}\n",
-            names.format_const, names.format, rendered.expr, rendered.expr
+            "pub const fn {}() -> {}\n    returns\n        (\n{}\n        ),\n{{\n{}\n}}\n",
+            names.format_const, names.format, returns_expr, body_expr
         )
         .unwrap();
         Ok(())
@@ -2721,6 +2723,216 @@ fn render_retag_helper(tag: &TagInfo, explicit: bool, inner: &str) -> String {
         }
     };
     format!("{helper}({}u64, {inner})", tag.number)
+}
+
+fn pretty_format_expr(expr: &str, indent: usize) -> String {
+    let expr = expr.trim();
+    if is_sequence_chain(expr) {
+        return pretty_format_sequence_chain(expr, indent, "");
+    }
+    let Some((head, opener, inner)) = split_root_group(expr) else {
+        return format!("{}{expr}", " ".repeat(indent));
+    };
+
+    if opener == '{' {
+        let fields = split_top_level(inner);
+        let mut output = format!("{}{} {{", " ".repeat(indent), head.trim_end());
+        for field in fields {
+            let Some((name, value)) = split_struct_field(field) else {
+                output.push('\n');
+                output.push_str(&pretty_format_expr(field, indent + 4));
+                output.push(',');
+                continue;
+            };
+            let pretty_value = pretty_format_expr(value, indent + 4);
+            output.push('\n');
+            if pretty_value.contains('\n') {
+                output.push_str(&format!("{}{}:\n", " ".repeat(indent + 4), name.trim()));
+                output.push_str(&pretty_format_expr(value, indent + 8));
+            } else {
+                output.push_str(&format!(
+                    "{}{}: {}",
+                    " ".repeat(indent + 4),
+                    name.trim(),
+                    pretty_value.trim_start()
+                ));
+            }
+            output.push(',');
+        }
+        output.push('\n');
+        output.push_str(&format!("{}}}", " ".repeat(indent)));
+        return output;
+    }
+
+    let args = split_top_level(inner);
+    let pretty_args = args
+        .iter()
+        .map(|arg| pretty_format_expr(arg, indent + 4))
+        .collect::<Vec<_>>();
+    let force_multiline = matches!(
+        head.trim(),
+        "REQUIRED"
+            | "OPTIONAL"
+            | "DEFAULT"
+            | "CHOICE"
+            | "ASN1Fmt::<_, DER>"
+    );
+    let multiline = force_multiline
+        || pretty_args.iter().any(|arg| arg.contains('\n'))
+        || expr.len() + indent > 92;
+    if !multiline {
+        return format!(
+            "{}{}({})",
+            " ".repeat(indent),
+            head.trim(),
+            pretty_args
+                .iter()
+                .map(|arg| arg.trim())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+
+    let mut output = format!("{}{}(", " ".repeat(indent), head.trim());
+    for arg in pretty_args {
+        output.push('\n');
+        output.push_str(&arg);
+        output.push(',');
+    }
+    output.push('\n');
+    output.push_str(&format!("{})", " ".repeat(indent)));
+    output
+}
+
+fn is_sequence_chain(expr: &str) -> bool {
+    if expr.trim() == "Eof" {
+        return true;
+    }
+    split_root_group(expr).is_some_and(|(head, opener, _)| {
+        opener == '(' && matches!(head.trim(), "REQUIRED" | "OPTIONAL" | "DEFAULT")
+    })
+}
+
+fn pretty_format_sequence_chain(expr: &str, indent: usize, closing: &str) -> String {
+    let expr = expr.trim();
+    if expr == "Eof" {
+        return format!("{}Eof{closing}", " ".repeat(indent));
+    }
+    let Some((head, '(', inner)) = split_root_group(expr) else {
+        return format!("{}{}{closing}", " ".repeat(indent), expr);
+    };
+    let args = split_top_level(inner);
+    let continuation_index = match head.trim() {
+        "REQUIRED" | "OPTIONAL" if args.len() == 2 => 1,
+        "DEFAULT" if args.len() == 3 => 2,
+        _ => return format!("{}{}{closing}", " ".repeat(indent), expr),
+    };
+    let current_args = args[..continuation_index].join(", ");
+    let continuation = args[continuation_index];
+    format!(
+        "{}{}({},\n{}",
+        " ".repeat(indent),
+        head.trim(),
+        current_args,
+        pretty_format_sequence_chain(continuation, indent, &format!("){closing}"))
+    )
+}
+
+fn split_root_group(expr: &str) -> Option<(&str, char, &str)> {
+    let bytes = expr.as_bytes();
+    let mut stack = Vec::<u8>::new();
+    for (index, byte) in bytes.iter().copied().enumerate() {
+        match byte {
+            b'<' | b'[' => stack.push(byte),
+            b'>' => {
+                if stack.last() == Some(&b'<') {
+                    stack.pop();
+                }
+            }
+            b']' => {
+                if stack.last() == Some(&b'[') {
+                    stack.pop();
+                }
+            }
+            b'(' | b'{' if stack.is_empty() => {
+                let close = if byte == b'(' { b')' } else { b'}' };
+                let end = matching_delimiter(bytes, index, byte, close)?;
+                if end + 1 == bytes.len() {
+                    return Some((&expr[..index], byte as char, &expr[index + 1..end]));
+                }
+                return None;
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn matching_delimiter(bytes: &[u8], start: usize, open: u8, close: u8) -> Option<usize> {
+    let mut depth = 0usize;
+    for (index, byte) in bytes.iter().copied().enumerate().skip(start) {
+        if byte == open {
+            depth += 1;
+        } else if byte == close {
+            depth -= 1;
+            if depth == 0 {
+                return Some(index);
+            }
+        }
+    }
+    None
+}
+
+fn split_top_level(input: &str) -> Vec<&str> {
+    let bytes = input.as_bytes();
+    let mut stack = Vec::<u8>::new();
+    let mut start = 0usize;
+    let mut parts = Vec::new();
+    for (index, byte) in bytes.iter().copied().enumerate() {
+        match byte {
+            b'(' | b'{' | b'[' | b'<' => stack.push(byte),
+            b')' => {
+                if stack.last() == Some(&b'(') { stack.pop(); }
+            }
+            b'}' => {
+                if stack.last() == Some(&b'{') { stack.pop(); }
+            }
+            b']' => {
+                if stack.last() == Some(&b'[') { stack.pop(); }
+            }
+            b'>' => {
+                if stack.last() == Some(&b'<') { stack.pop(); }
+            }
+            b',' if stack.is_empty() => {
+                parts.push(input[start..index].trim());
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+    if start < input.len() || parts.is_empty() {
+        parts.push(input[start..].trim());
+    }
+    parts.into_iter().filter(|part| !part.is_empty()).collect()
+}
+
+fn split_struct_field(field: &str) -> Option<(&str, &str)> {
+    let bytes = field.as_bytes();
+    let mut stack = Vec::<u8>::new();
+    for (index, byte) in bytes.iter().copied().enumerate() {
+        match byte {
+            b'(' | b'{' | b'[' | b'<' => stack.push(byte),
+            b')' | b'}' | b']' | b'>' => { stack.pop(); }
+            b':' if stack.is_empty()
+                && bytes.get(index.wrapping_sub(1)) != Some(&b':')
+                && bytes.get(index + 1) != Some(&b':') =>
+            {
+                return Some((&field[..index], &field[index + 1..]));
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn collect_type_refs<'a>(ty: &'a Type, output: &mut Vec<&'a str>) {
