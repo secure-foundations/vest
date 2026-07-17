@@ -298,6 +298,45 @@ pub broadcast proof fn lemma_disjoint_repeat_till_end<P: Productive, A: SpecPars
     }
 }
 
+/// Borrowing adaptation does not change a parser's accepted byte domain.
+pub broadcast proof fn lemma_disjoint_ref_left<Inner: SpecParser, Other: SpecParser>(
+    borrowed: Ref<Inner>,
+    other: Other,
+)
+    requires
+        disjoint_domains(borrowed.0, other),
+    ensures
+        #[trigger] disjoint_domains(borrowed, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// Borrowing adaptation does not change a parser's accepted byte domain.
+pub broadcast proof fn lemma_disjoint_ref_right<Other: SpecParser, Inner: SpecParser>(
+    other: Other,
+    borrowed: Ref<Inner>,
+)
+    requires
+        disjoint_domains(other, borrowed.0),
+    ensures
+        #[trigger] disjoint_domains(other, borrowed),
+{
+    reveal(disjoint_domains);
+}
+
+/// Two borrowing adapters are disjoint whenever their underlying parsers are.
+pub broadcast proof fn lemma_disjoint_refs<Left: SpecParser, Right: SpecParser>(
+    left: Ref<Left>,
+    right: Ref<Right>,
+)
+    requires
+        disjoint_domains(left.0, right.0),
+    ensures
+        #[trigger] disjoint_domains(left, right),
+{
+    reveal(disjoint_domains);
+}
+
 pub broadcast group disjointness_lemmas {
     lemma_disjoint_choice,
     lemma_disjoint_alt,
@@ -316,6 +355,9 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_eof,
     lemma_disjoint_option_end,
     lemma_disjoint_repeat_till_end,
+    lemma_disjoint_ref_left,
+    lemma_disjoint_ref_right,
+    lemma_disjoint_refs,
 }
 
 #[cfg(verus_only)]
