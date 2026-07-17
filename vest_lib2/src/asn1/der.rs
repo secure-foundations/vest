@@ -128,7 +128,7 @@ pub const BMP_STRING: ASN1BmpStringFmt<DER> = ASN1Fmt::<BmpStringFmt, DER>(
 /// Construct a DER `SET OF` whose elements are complete DER formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn SET_OF<C>(inner: C) -> ASN1SetOfFmt<C>
+pub const fn SET_OF<C: Copy>(inner: C) -> ASN1SetOfFmt<C>
     returns
         ASN1Fmt::<SetOfFmt<C>, DER>(TagFmt::SET, SetOfFmt(inner)),
 {
@@ -138,7 +138,7 @@ pub fn SET_OF<C>(inner: C) -> ASN1SetOfFmt<C>
 /// Construct a DER `SEQUENCE OF` whose elements are complete DER formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn SEQUENCE_OF<C>(inner: C) -> ASN1SequenceOfFmt<C>
+pub const fn SEQUENCE_OF<C: Copy>(inner: C) -> ASN1SequenceOfFmt<C>
     returns
         ASN1Fmt::<crate::combinators::RepeatTillEnd<C>, DER>(
             TagFmt::SEQUENCE,
@@ -154,7 +154,7 @@ pub fn SEQUENCE_OF<C>(inner: C) -> ASN1SequenceOfFmt<C>
 /// Apply an ASN.1 context-specific IMPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn IMPLICIT<C>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
+pub const fn IMPLICIT<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
     returns
         Implicit(Class::ContextSpecific, number, inner),
 {
@@ -164,22 +164,61 @@ pub fn IMPLICIT<C>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
 /// Apply an ASN.1 context-specific EXPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn EXPLICIT<C>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<ASN1Fmt<C, DER>, DER>
+pub const fn EXPLICIT<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
     returns
-        Explicit(Class::ContextSpecific, number, inner),
+        Explicit::<C, DER>(Class::ContextSpecific, number, inner),
 {
-    Explicit(Class::ContextSpecific, number, inner)
+    Explicit::<C, DER>(Class::ContextSpecific, number, inner)
+}
+
+/// Apply an ASN.1 application-class IMPLICIT tag to a DER-encoded format.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn IMPLICIT_APPLICATION<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
+    returns
+        Implicit(Class::Application, number, inner),
+{
+    Implicit(Class::Application, number, inner)
+}
+
+/// Apply an ASN.1 application-class EXPLICIT tag to a DER-encoded format.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn EXPLICIT_APPLICATION<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+    returns
+        Explicit::<C, DER>(Class::Application, number, inner),
+{
+    Explicit::<C, DER>(Class::Application, number, inner)
+}
+
+/// Apply an ASN.1 private-class IMPLICIT tag to a DER-encoded format.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn IMPLICIT_PRIVATE<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
+    returns
+        Implicit(Class::Private, number, inner),
+{
+    Implicit(Class::Private, number, inner)
+}
+
+/// Apply an ASN.1 private-class EXPLICIT tag to a DER-encoded format.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn EXPLICIT_PRIVATE<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+    returns
+        Explicit::<C, DER>(Class::Private, number, inner),
+{
+    Explicit::<C, DER>(Class::Private, number, inner)
 }
 
 /// The `DEFAULT` modifier for DER-encoded formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn DEFAULT<Field, Rest>(field: Field, default: Field::T, cont: Rest) -> super::DefaultedFmt<
-    Field,
-    Field::T,
-    Rest,
-    DER,
-> where Field: SpecByteLen
+pub const fn DEFAULT<Field, Rest>(
+    field: Field,
+    default: Field::T,
+    cont: Rest,
+) -> super::DefaultedFmt<Field, Field::T, Rest, DER> where Field: SpecByteLen
     returns
         super::DefaultedFmt::<Field, Field::T, Rest, DER>(field, default, cont),
 {
@@ -189,7 +228,10 @@ pub fn DEFAULT<Field, Rest>(field: Field, default: Field::T, cont: Rest) -> supe
 /// The `OPTIONAL` modifier for DER-encoded formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn OPTIONAL<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Optional<Field, Rest>
+pub const fn OPTIONAL<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Optional<
+    Field,
+    Rest,
+>
     returns
         crate::combinators::Optional::<Field, Rest>(field, cont),
 {
@@ -199,7 +241,10 @@ pub fn OPTIONAL<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Op
 /// An alias for `Pair`, which makes naming more coherent with `DEFAULT` and `OPTIONAL`.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn REQUIRED<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Pair<Field, Rest>
+pub const fn REQUIRED<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Pair<
+    Field,
+    Rest,
+>
     returns
         crate::combinators::Pair::<Field, Rest>(field, cont),
 {
@@ -209,7 +254,7 @@ pub fn REQUIRED<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Pa
 /// An alias for `Choice`, which makes naming more coherent with the rest of ASN.1 combinators.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn CHOICE<A, B>(a: A, b: B) -> crate::combinators::Choice<A, B>
+pub const fn CHOICE<A, B>(a: A, b: B) -> crate::combinators::Choice<A, B>
     returns
         crate::combinators::Choice::<A, B>(a, b),
 {
@@ -219,16 +264,123 @@ pub fn CHOICE<A, B>(a: A, b: B) -> crate::combinators::Choice<A, B>
 } // verus!
 verus! {
 
+use crate::combinators::*;
+use super::modifiers::DefaultedFmt;
+
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+const fn MY_FMT() -> Pair<
+    ASN1Fmt<IntegerFmt, DER>,
+    DefaultedFmt<
+        ASN1Fmt<BoolFmt<DER>, DER>,
+        bool,
+        Pair<
+            ASN1Fmt<BitStringFmt<DER>, DER>,
+            Optional<
+                ASN1Fmt<OctetStringFmt, DER>,
+                DefaultedFmt<
+                    ASN1Fmt<Integer8Fmt, DER>,
+                    i8,
+                    Optional<ASN1Fmt<UtcTimeFmt<DER>, DER>, ASN1Fmt<Utf8StringFmt, DER>>,
+                >,
+            >,
+        >,
+    >,
+>
+    returns
+        REQUIRED(
+            INTEGER,
+            DEFAULT(
+                BOOLEAN,
+                false,
+                REQUIRED(
+                    BIT_STRING,
+                    OPTIONAL(OCTET_STRING, DEFAULT(INTEGER8, 0, OPTIONAL(UTC_TIME, UTF8_STRING))),
+                ),
+            ),
+        ),
+{
+    REQUIRED(
+        INTEGER,
+        DEFAULT(
+            BOOLEAN,
+            false,
+            REQUIRED(
+                BIT_STRING,
+                OPTIONAL(OCTET_STRING, DEFAULT(INTEGER8, 0, OPTIONAL(UTC_TIME, UTF8_STRING))),
+            ),
+        ),
+    )
+}
+
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+const fn MY_FMT2() -> Pair<
+    ASN1Fmt<IntegerFmt, DER>,
+    DefaultedFmt<
+        ASN1Fmt<ASN1Fmt<Integer16Fmt, DER>, DER>,
+        i16,
+        Optional<
+            ASN1Fmt<Integer16Fmt, DER>,
+            Optional<
+                ASN1Fmt<Integer16Fmt, DER>,
+                DefaultedFmt<
+                    ASN1Fmt<ASN1Fmt<Integer16Fmt, DER>, DER>,
+                    i16,
+                    Optional<ASN1Fmt<UtcTimeFmt<DER>, DER>, ASN1Fmt<Utf8StringFmt, DER>>,
+                >,
+            >,
+        >,
+    >,
+>
+    returns
+        REQUIRED(
+            INTEGER,
+            DEFAULT(
+                EXPLICIT(0, INTEGER16),
+                10,
+                OPTIONAL(
+                    IMPLICIT(1, INTEGER16),
+                    OPTIONAL(
+                        IMPLICIT(2, INTEGER16),
+                        DEFAULT(EXPLICIT(3, INTEGER16), 0, OPTIONAL(UTC_TIME, UTF8_STRING)),
+                    ),
+                ),
+            ),
+        ),
+{
+    REQUIRED(
+        INTEGER,
+        DEFAULT(
+            EXPLICIT(0, INTEGER16),
+            10,
+            OPTIONAL(
+                IMPLICIT(1, INTEGER16),
+                OPTIONAL(
+                    IMPLICIT(2, INTEGER16),
+                    DEFAULT(EXPLICIT(3, INTEGER16), 0, OPTIONAL(UTC_TIME, UTF8_STRING)),
+                ),
+            ),
+        ),
+    )
+}
+
 proof fn chain_of_optional_defaulted() {
-    use crate::combinators::*;
-    use super::IntegerFmt;
-    use super::{DER, BER};
-    use super::modifiers::DefaultedFmt;
     use crate::combinators::disjoint::disjointness_lemmas;
     use super::modifiers::{lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
 
     broadcast use disjointness_lemmas;
     broadcast use {lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
+
+    assert(MY_FMT().safe_inv());
+    assert(MY_FMT().sound_inv());
+    assert(MY_FMT().unambiguous());
+    assert(MY_FMT().nonmal_inv());
+
+    assert(MY_FMT2().safe_inv());
+    assert(MY_FMT2().sound_inv());
+    assert(MY_FMT2().unambiguous());
+    assert(MY_FMT2().nonmal_inv());
 
     #[verusfmt::skip]
     let fmt =

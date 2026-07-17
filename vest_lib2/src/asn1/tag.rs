@@ -146,45 +146,36 @@ pub open spec fn tag_number_wf(num: TagNumber) -> bool {
     }
 }
 
-impl From<u64> for TagNumber {
-    fn from(num: u64) -> Self {
-        match num {
-            0 => TagNumber::EOC,
-            1 => TagNumber::Boolean,
-            2 => TagNumber::Integer,
-            3 => TagNumber::BitString,
-            4 => TagNumber::OctetString,
-            5 => TagNumber::Null,
-            6 => TagNumber::ObjectIdentifier,
-            9 => TagNumber::Real,
-            10 => TagNumber::Enumerated,
-            12 => TagNumber::Utf8String,
-            13 => TagNumber::RelativeOid,
-            16 => TagNumber::Sequence,
-            17 => TagNumber::Set,
-            18 => TagNumber::NumericString,
-            19 => TagNumber::PrintableString,
-            20 => TagNumber::TeletexString,
-            21 => TagNumber::VideotexString,
-            22 => TagNumber::Ia5String,
-            23 => TagNumber::UtcTime,
-            24 => TagNumber::GeneralizedTime,
-            26 => TagNumber::VisibleString,
-            27 => TagNumber::GeneralString,
-            30 => TagNumber::BmpString,
-            other => TagNumber::Other { tag_num: other as UInt },
-        }
-    }
-}
-
-#[cfg(verus_only)]
-impl FromSpecImpl<u64> for TagNumber {
-    open spec fn obeys_from_spec() -> bool {
-        true
-    }
-
-    open spec fn from_spec(v: u64) -> TagNumber {
-        uint_to_tag_num(v as UInt)
+#[verifier::allow_in_spec]
+pub const fn tag_num_from_uint(num: u64) -> TagNumber
+    returns
+        uint_to_tag_num(num as UInt),
+{
+    match num {
+        0 => TagNumber::EOC,
+        1 => TagNumber::Boolean,
+        2 => TagNumber::Integer,
+        3 => TagNumber::BitString,
+        4 => TagNumber::OctetString,
+        5 => TagNumber::Null,
+        6 => TagNumber::ObjectIdentifier,
+        9 => TagNumber::Real,
+        10 => TagNumber::Enumerated,
+        12 => TagNumber::Utf8String,
+        13 => TagNumber::RelativeOid,
+        16 => TagNumber::Sequence,
+        17 => TagNumber::Set,
+        18 => TagNumber::NumericString,
+        19 => TagNumber::PrintableString,
+        20 => TagNumber::TeletexString,
+        21 => TagNumber::VideotexString,
+        22 => TagNumber::Ia5String,
+        23 => TagNumber::UtcTime,
+        24 => TagNumber::GeneralizedTime,
+        26 => TagNumber::VisibleString,
+        27 => TagNumber::GeneralString,
+        30 => TagNumber::BmpString,
+        other => TagNumber::Other { tag_num: other as UInt },
     }
 }
 

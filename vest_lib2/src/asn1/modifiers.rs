@@ -24,43 +24,54 @@ verus! {
 /// Apply an ASN.1 IMPLICIT tag. The base type's primitive/constructed form is preserved.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn Implicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
-    C,
-    DER,
->
+pub const fn Implicit<C: Copy, const DER: bool>(
+    class: Class,
+    number: u64,
+    inner: ASN1Fmt<C, DER>,
+) -> ASN1Fmt<C, DER>
     returns
         ASN1Fmt::<_, DER>(
             Tag {
                 class,
                 constructed: inner.0.constructed,
-                number: super::tag::uint_to_tag_num(number),
+                number: super::tag::tag_num_from_uint(number),
             },
             inner.1,
         ),
 {
-    ASN1Fmt(Tag { class, constructed: inner.0.constructed, number: number.into() }, inner.1)
+    ASN1Fmt(
+        Tag {
+            class,
+            constructed: inner.0.constructed,
+            number: super::tag::tag_num_from_uint(number),
+        },
+        inner.1,
+    )
 }
 
 /// Apply an ASN.1 EXPLICIT tag. The outer tag is always constructed.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn Explicit<C, const DER: bool>(class: Class, number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
-    ASN1Fmt<C, DER>,
+pub const fn Explicit<C: Copy, const DER: bool>(class: Class, number: u64, inner: C) -> ASN1Fmt<
+    C,
     DER,
 >
     returns
-        ASN1Fmt::<ASN1Fmt<_, DER>, DER>(
-            Tag { class, constructed: true, number: super::tag::uint_to_tag_num(number) },
+        ASN1Fmt::<C, DER>(
+            Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) },
             inner,
         ),
 {
-    ASN1Fmt(Tag { class, constructed: true, number: number.into() }, inner)
+    ASN1Fmt(Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) }, inner)
 }
 
 /// Apply an ASN.1 context-specific IMPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextImplicit<C, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
+pub fn ContextImplicit<C: Copy, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
+    C,
+    DER,
+>
     returns
         Implicit(Class::ContextSpecific, number, inner),
 {
@@ -70,14 +81,11 @@ pub fn ContextImplicit<C, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) 
 /// Apply an ASN.1 context-specific EXPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextExplicit<C, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
-    ASN1Fmt<C, DER>,
-    DER,
->
+pub fn ContextExplicit<C: Copy, const DER: bool>(number: u64, inner: C) -> ASN1Fmt<C, DER>
     returns
-        Explicit(Class::ContextSpecific, number, inner),
+        Explicit::<C, DER>(Class::ContextSpecific, number, inner),
 {
-    Explicit(Class::ContextSpecific, number, inner)
+    Explicit::<C, DER>(Class::ContextSpecific, number, inner)
 }
 
 /// ASN.1 DEFAULT component with continuation.
