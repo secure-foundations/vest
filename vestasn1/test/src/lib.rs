@@ -1,0 +1,174 @@
+#![allow(dead_code)]
+
+pub mod generated;
+
+use vest_lib2::core::exec::parser::{PResult, Parser};
+use vstd::prelude::*;
+
+verus! {
+
+pub fn parse_envelope<'a>(input: &'a [u8]) -> PResult<
+    <generated::EnvelopeFmt as Parser<&'a [u8]>>::PT,
+> {
+    generated::ENVELOPE_FMT().parse(&input)
+}
+
+pub fn parse_selection<'a>(input: &'a [u8]) -> PResult<
+    <generated::SelectionFmt as Parser<&'a [u8]>>::PT,
+> {
+    generated::SELECTION_FMT().parse(&input)
+}
+
+} // verus!
+
+#[cfg(test)]
+mod tests {
+    use super::generated::*;
+    use vest_lib2::asn1::TagFmt;
+    use vest_lib2::core::exec::parser::Parser;
+    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+
+    #[test]
+    fn primitive_round_trip_uses_generated_format() {
+        let encoded = [0x01, 0x01, 0xff];
+        let input = encoded.as_slice();
+        let (consumed, value) = FLAG_FMT().parse(&input).unwrap();
+        assert_eq!(consumed, encoded.len());
+        assert!(value);
+
+        let len = FLAG_FMT().prepare(&value).unwrap();
+        let mut output = vec![0; len];
+        FLAG_FMT().serialize(&value, output.as_mut_slice());
+        assert_eq!(output, encoded);
+    }
+
+    #[test]
+    fn octet_string_size_constraint_checks_parse_and_prepare() {
+        let encoded = [0x04, 0x01, 0xaa];
+        let input = encoded.as_slice();
+        assert!(PAYLOAD_FMT().parse(&input).is_err());
+
+        let short = &[0xaa][..];
+        assert!(PAYLOAD_FMT().prepare(&short).is_err());
+    }
+
+    #[test]
+    fn parses_generated_sequence_and_optional_tag() {
+        let encoded = [
+            0x30, 0x0c, // Envelope SEQUENCE
+            0x30, 0x06, 0x01, 0x01, 0xff, 0x02, 0x01, 0x05, // Header
+            0x80, 0x02, 0xaa, 0xbb, // [0] IMPLICIT OCTET STRING
+        ];
+        let input = encoded.as_slice();
+        let (consumed, envelope) = ENVELOPE_FMT().parse(&input).unwrap();
+        assert_eq!(consumed, encoded.len());
+        assert!(envelope.header.flag);
+        assert_eq!(envelope.payload, Some(&[0xaa, 0xbb][..]));
+    }
+
+    #[test]
+    fn parses_generated_choice() {
+        let encoded = [0x81, 0x01, 0xff];
+        let input = encoded.as_slice();
+        let (_, selection) = SELECTION_FMT().parse(&input).unwrap();
+        assert!(matches!(selection, Selection::Flag(true)));
+    }
+
+    #[test]
+    fn boolean_defaults_are_inserted_and_omitted_canonically() {
+        let encoded = [0x30, 0x00];
+        let input = encoded.as_slice();
+        let (_, features) = FEATURES_FMT().parse(&input).unwrap();
+        assert!(features.enabled);
+        assert!(!features.visible);
+
+        let value = Features {
+            enabled: true,
+            visible: false,
+        };
+        let len = FEATURES_FMT().prepare(&value).unwrap();
+        let mut output = vec![0; len];
+        FEATURES_FMT().serialize(&value, output.as_mut_slice());
+        assert_eq!(output, encoded);
+    }
+
+    #[test]
+    fn implicit_tag_on_choice_is_encoded_explicitly() {
+        let encoded = [
+            0x30, 0x05, // ChoiceEnvelope SEQUENCE
+            0xa3, 0x03, // [3] promoted to EXPLICIT
+            0x81, 0x01, 0xff, // Selection.flag
+        ];
+        let input = encoded.as_slice();
+        let (_, envelope) = CHOICE_ENVELOPE_FMT().parse(&input).unwrap();
+        assert!(matches!(envelope.selection, Some(Selection::Flag(true))));
+    }
+
+    #[test]
+    fn enumerated_is_closed_and_round_trips_nominally() {
+        let encoded = [0x0a, 0x01, 0x01];
+        let (_, color) = COLOR_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(color, Color::Green);
+
+        let mut output = vec![0; COLOR_FMT().prepare(&color).unwrap()];
+        COLOR_FMT().serialize(&color, output.as_mut_slice());
+        assert_eq!(output, encoded);
+
+        let unknown = [0x0a, 0x01, 0x05];
+        assert!(COLOR_FMT().parse(&unknown.as_slice()).is_err());
+    }
+
+    #[test]
+    fn generated_scalar_constants_keep_their_declared_types() {
+        assert!(FEATURE_ENABLED);
+        assert_eq!(ANSWER.as_i64(), Some(42));
+        assert_eq!(DEFAULT_COLOR, Color::Green);
+        assert_eq!(
+            BASE_OID.as_bytes(),
+            &[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d]
+        );
+        assert_eq!(
+            CHILD_OID.as_bytes(),
+            &[0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01]
+        );
+    }
+
+    #[test]
+    fn object_identifier_parsing_borrows_canonical_content_bytes() {
+        let encoded = [0x06, 0x03, 0x88, 0x37, 0x03];
+        let (_, identifier) = IDENTIFIER_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(identifier.as_bytes(), &[0x88, 0x37, 0x03]);
+        assert_eq!(identifier.as_bytes().as_ptr(), encoded[2..].as_ptr());
+
+        let mut output = vec![0; IDENTIFIER_FMT().prepare(&identifier).unwrap()];
+        IDENTIFIER_FMT().serialize(&identifier, output.as_mut_slice());
+        assert_eq!(output, encoded);
+    }
+
+    #[test]
+    fn real_and_any_backends_are_emitted() {
+        let real_zero = [0x09, 0x00];
+        let (_, real) = MEASUREMENT_FMT().parse(&real_zero.as_slice()).unwrap();
+        assert!(real.contents().is_empty());
+
+        let any_boolean = [0x01, 0x01, 0xff];
+        let (_, value) = OPEN_VALUE_FMT().parse(&any_boolean.as_slice()).unwrap();
+        assert_eq!(value.tag(), TagFmt::BOOLEAN);
+        assert_eq!(value.content(), &[0xff]);
+    }
+
+    #[test]
+    fn inline_composites_receive_nominal_helper_types() {
+        let encoded = [
+            0x30, 0x08, // InlineRecord
+            0x30, 0x03, 0x04, 0x01, 0xaa, // nested SEQUENCE
+            0x82, 0x01, 0xff, // selected.flag
+        ];
+        let (_, record) = INLINE_RECORD_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(record.nested.payload, &[0xaa]);
+        assert!(matches!(
+            record.selected,
+            InlineRecordSelected::Flag(true)
+        ));
+    }
+}

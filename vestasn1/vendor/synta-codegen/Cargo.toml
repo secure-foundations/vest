@@ -1,0 +1,21 @@
+[package]
+name = "synta-codegen"
+version = "0.3.0"
+edition = "2021"
+authors = ["Synta Contributors"]
+description = "ASN.1 schema parser and Rust code generator for the synta library"
+license = "MIT OR Apache-2.0"
+repository = "https://codeberg.org/abbra/synta"
+keywords = ["asn1", "codegen", "parser", "compiler"]
+categories = ["parser-implementations", "development-tools::build-utils"]
+
+[lib]
+name = "synta_codegen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "synta-codegen"
+path = "src/main.rs"
+
+[dependencies]
+# No external dependencies for now - pure Rust implementation

@@ -1,0 +1,13 @@
+[package]
+name = "vestasn1"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Generate verified Vest parsers and serializers from ASN.1 schemas"
+repository = "https://github.com/secure-foundations/vest"
+
+[dependencies]
+synta-codegen = { path = "vendor/synta-codegen" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", "cfg(verus_keep_ghost)"] }

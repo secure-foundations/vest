@@ -1,0 +1,64 @@
+Fixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
+    Flag ::= BOOLEAN
+    Count ::= INTEGER
+    Payload ::= OCTET STRING (SIZE (2..4))
+
+    Header ::= SEQUENCE {
+        flag Flag,
+        count Count
+    }
+
+    Envelope ::= SEQUENCE {
+        header Header,
+        payload [0] IMPLICIT Payload OPTIONAL
+    }
+
+    Envelopes ::= SEQUENCE OF Envelope
+
+    Features ::= SEQUENCE {
+        enabled [0] IMPLICIT Flag DEFAULT TRUE,
+        visible [1] IMPLICIT BOOLEAN DEFAULT FALSE
+    }
+
+    Selection ::= CHOICE {
+        flag [1] IMPLICIT Flag,
+        payload [2] EXPLICIT Payload
+    }
+
+    ChoiceEnvelope ::= SEQUENCE {
+        selection [3] IMPLICIT Selection OPTIONAL
+    }
+
+    Color ::= ENUMERATED {
+        red(0),
+        green(1),
+        blue(2)
+    }
+
+    Identifier ::= OBJECT IDENTIFIER
+    Measurement ::= REAL
+    OpenValue ::= ANY
+
+    Metadata ::= SEQUENCE {
+        color [0] IMPLICIT Color DEFAULT green,
+        identifier Identifier,
+        measurement Measurement,
+        open [1] EXPLICIT OpenValue
+    }
+
+    InlineRecord ::= SEQUENCE {
+        nested SEQUENCE {
+            payload OCTET STRING
+        },
+        selected CHOICE {
+            flag [2] IMPLICIT BOOLEAN,
+            identifier [3] IMPLICIT OBJECT IDENTIFIER
+        }
+    }
+
+    baseOid OBJECT IDENTIFIER ::= { 1 2 840 113549 }
+    childOid Identifier ::= { baseOid 1 }
+    featureEnabled Flag ::= TRUE
+    answer Count ::= 42
+    defaultColor Color ::= green
+END
