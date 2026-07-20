@@ -9,7 +9,7 @@ use crate::{
         implicit::*,
         length::AsLen,
         mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper},
-        Alt, Implicit, Mapped, Refined, TryMap, Varied, U8,
+        Alt, Choice, Const, Implicit, Mapped, Refined, TryMap, Varied, U8,
     },
     core::{proof::*, spec::*},
 };
@@ -41,6 +41,29 @@ type LengthFmt<const DER: bool> = Mapped<
     LengthWireFmt<DER, true>,
     FnSpecMapper<(u8, Sum<(), Sum<Seq<u8>, Never>>), usize>,
 >;
+
+type BerLengthFmt__ = Mapped<
+    Choice<Const<U8, u8>, super::LengthFmt<false>>,
+    FnSpecMapper<Sum<u8, usize>, super::BerLength>,
+>;
+
+pub open spec fn ber_length_fmt() -> BerLengthFmt__ {
+    Mapped {
+        inner: Choice(Const(U8, 0x80u8), super::LengthFmt::<false>),
+        mapper: (
+            |v: Sum<u8, usize>|
+                match v {
+                    L(_) => super::BerLength::Indefinite,
+                    R(n) => super::BerLength::Definite(n),
+                },
+            |v: super::BerLength|
+                match v {
+                    super::BerLength::Indefinite => L(0x80u8),
+                    super::BerLength::Definite(n) => R(n),
+                },
+        ),
+    }
+}
 
 /// 8.1.3.5 In the long form, the length octets shall consist of an initial octet and **one or more** subsequent octets. The initial
 /// octet shall be encoded as follows:
@@ -563,6 +586,143 @@ impl<const DER: bool> ByteLen<usize> for super::LengthFmt<DER> {
             1
         } else {
             1 + usize_to_be_bytes_len(*v)
+        }
+    }
+}
+
+impl SpecParser for super::BerLengthFmt {
+    type PVal = super::BerLength;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        ber_length_fmt().spec_parse(ibuf)
+    }
+}
+
+impl Consistency for super::BerLengthFmt {
+    type Val = super::BerLength;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        ber_length_fmt().consistent(v)
+    }
+}
+
+impl SpecSerializerDps for super::BerLengthFmt {
+    type SValue = super::BerLength;
+
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        ber_length_fmt().spec_serialize_dps(v, obuf)
+    }
+}
+
+impl SpecSerializer for super::BerLengthFmt {
+    type SVal = super::BerLength;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        ber_length_fmt().spec_serialize(v)
+    }
+}
+
+impl SpecByteLen for super::BerLengthFmt {
+    type T = super::BerLength;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        ber_length_fmt().byte_len(v)
+    }
+}
+
+impl SafeParser for super::BerLengthFmt {
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        ber_length_fmt().lemma_parse_safe(ibuf)
+    }
+}
+
+impl Productive for super::BerLengthFmt {
+    proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        ber_length_fmt().lemma_productive(ibuf)
+    }
+}
+
+impl NonTailFmt for super::BerLengthFmt {
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+        ber_length_fmt().lemma_serialize_dps_prepend(v, obuf)
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+        ber_length_fmt().lemma_serialize_dps_len(v, obuf)
+    }
+}
+
+impl GoodSerializer for super::BerLengthFmt {
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        ber_length_fmt().lemma_serialize_len(v)
+    }
+}
+
+impl SPRoundTripDps for super::BerLengthFmt {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        reveal(disjoint_domains);
+        assert(disjoint_domains(Const(U8, 0x80u8), super::LengthFmt::<false>));
+        ber_length_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf)
+    }
+}
+
+impl NoLookAhead for super::BerLengthFmt {
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        reveal(disjoint_domains);
+        assert(disjoint_domains(Const(U8, 0x80u8), super::LengthFmt::<false>));
+        ber_length_fmt().lemma_no_lookahead(i1, i2)
+    }
+}
+
+impl EquivSerializersGeneral for super::BerLengthFmt {
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        ber_length_fmt().lemma_serialize_equiv(v, obuf)
+    }
+}
+
+impl EquivSerializers for super::BerLengthFmt {
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        ber_length_fmt().lemma_serialize_equiv_on_empty(v)
+    }
+}
+
+impl Parser<&[u8]> for super::BerLengthFmt {
+    type PT = super::BerLength;
+
+    fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
+        let (n, first) = U8.parse(ibuf)?;
+        if first == 0x80u8 {
+            Ok((n, super::BerLength::Indefinite))
+        } else {
+            let (n, len) = super::LengthFmt::<false>.parse(ibuf)?;
+            Ok((n, super::BerLength::Definite(len)))
+        }
+    }
+}
+
+impl<Output: OutputBuf> Serializer<Output, super::BerLength> for super::BerLengthFmt {
+    fn serialize_into(&self, v: &super::BerLength, obuf: &mut Output) {
+        match v {
+            super::BerLength::Indefinite => U8.serialize_into(&0x80u8, obuf),
+            super::BerLength::Definite(n) => super::LengthFmt::<false>.serialize_into(n, obuf),
+        }
+    }
+}
+
+impl Prepare<super::BerLength> for super::BerLengthFmt {
+    fn prepare(&self, v: &super::BerLength) -> Result<usize, PreSerializeError> {
+        match v {
+            super::BerLength::Indefinite => Ok(1),
+            super::BerLength::Definite(n) => super::LengthFmt::<false>.prepare(n),
+        }
+    }
+}
+
+impl ByteLen<super::BerLength> for super::BerLengthFmt {
+    fn length(&self, v: &super::BerLength) -> usize {
+        match v {
+            super::BerLength::Indefinite => 1,
+            super::BerLength::Definite(n) => super::LengthFmt::<false>.length(n),
         }
     }
 }

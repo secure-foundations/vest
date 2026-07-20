@@ -145,17 +145,24 @@ pub struct NatLengthFmt<const DER: bool = true>;
 #[derive(Clone, Copy)]
 pub struct LengthFmt<const DER: bool = true>;
 
-/// Convenience type alias for the BER variant of ASN.1 definite length.
-pub type BerLengthFmt = LengthFmt<false>;
+/// BER length, including the indefinite form (`0x80`).
+#[derive(StructuralEq, Copy, Clone, PartialEq, Eq, Debug)]
+pub enum BerLength {
+    Definite(usize),
+    Indefinite,
+}
 
-/// Convenience type alias for the DER variant of ASN.1 definite length.
-pub type DerLengthFmt = LengthFmt<true>;
+impl DeepView for BerLength {
+    type V = Self;
 
-/// Convenience value alias for the BER variant of ASN.1 definite length.
-pub const BerLengthFmt: LengthFmt<false> = LengthFmt;
+    open spec fn deep_view(&self) -> Self::V {
+        *self
+    }
+}
 
-/// Convenience value alias for the DER variant of ASN.1 definite length.
-pub const DerLengthFmt: LengthFmt<true> = LengthFmt;
+/// BER length determinant accepting both definite and indefinite encodings.
+#[derive(Clone, Copy)]
+pub struct BerLengthFmt;
 
 /// ASN.1 INTEGER contents format.
 #[derive(Clone, Copy)]
