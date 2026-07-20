@@ -372,54 +372,68 @@ impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: D
     }
 }
 
-// impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (&[TA], TB)> for super::Repeat<A, B> where
-//     TA: DeepView,
-//     TB: DeepView,
-//     A: Serializer<Output, TA> + Copy,
-//     B: Serializer<Output, TB> + Copy,
-//  {
-//     fn ex_serialize(&self, v: &(&[TA], TB), obuf: &mut Output) {
-//         crate::combinators::Pair(super::Star(self.0), self.1).ex_serialize(v, obuf);
-//     }
-// }
-// impl<A, B, AST, BST> Compliance<(&[AST], BST)> for super::Repeat<A, B> where
-//     A: Compliance<AST> + Copy,
-//     B: Compliance<BST> + Copy,
-//     AST: DeepView,
-//     BST: DeepView,
-//  {
-//     fn check_compliance(&self, v: &(&[AST], BST)) -> (yes: bool) {
-//         Star(self.0).check_compliance(v.0) && self.1.check_compliance(&v.1)
-//     }
-// }
-// impl<A, B, AST, BST> ByteLen<(&[AST], BST)> for super::Repeat<A, B> where
-//     A: ByteLen<AST> + Copy,
-//     B: ByteLen<BST> + Copy,
-//     AST: DeepView,
-//     BST: DeepView,
-//  {
-//     fn length(&self, v: &(&[AST], BST)) -> (len: usize) {
-//         let la = Star(self.0).length(v.0);
-//         let lb = self.1.length(&v.1);
-//         la + lb
-//     }
-// }
-// impl<A, B, AST, BST> Prepare<(&[AST], BST)> for super::Repeat<A, B> where
-//     A: Prepare<AST> + Copy,
-//     B: Prepare<BST> + Copy,
-//     AST: DeepView,
-//     BST: DeepView,
-//  {
-//     fn prepare(&self, v: &(&[AST], BST)) -> (checked: Result<usize, PreSerializeError>) {
-//         let la = Star(self.0).prepare(v.0)?;
-//         let lb = self.1.prepare(&v.1)?;
-//         if let Some(total) = la.checked_add(lb) {
-//             Ok(total)
-//         } else {
-//             Err(PreSerializeError::LengthTooLarge)
-//         }
-//     }
-// }
+impl<Output: OutputBuf, A, B, TA, TB> Serializer<Output, (&[TA], TB)> for super::Repeat<A, B> where
+    TA: DeepView,
+    TB: DeepView,
+    A: Serializer<Output, TA> + Copy,
+    B: Serializer<Output, TB>,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn serialize_into(&self, v: &(&[TA], TB), obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+        reveal(<super::Star<_> as SpecSerializer>::spec_serialize);
+
+        super::Star(self.0).serialize_into(v.0, obuf);
+        assert(obuf.fits(self.1.byte_len(v.deep_view().1)));
+        self.1.serialize_into(&v.1, obuf);
+    }
+}
+
+impl<A, B, TA, TB> ByteLen<(&[TA], TB)> for super::Repeat<A, B> where
+    A: ByteLen<TA> + Copy,
+    B: ByteLen<TB>,
+    TA: DeepView,
+    TB: DeepView,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn length(&self, v: &(&[TA], TB)) -> (len: usize) {
+        let la = super::Star(self.0).length(v.0);
+        let lb = self.1.length(&v.1);
+        la + lb
+    }
+}
+
+impl<A, B, TA, TB> Prepare<(&[TA], TB)> for super::Repeat<A, B> where
+    A: Prepare<TA> + Copy,
+    B: Prepare<TB>,
+    TA: DeepView,
+    TB: DeepView,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.0.exec_inv()
+        &&& self.1.exec_inv()
+    }
+
+    fn prepare(&self, v: &(&[TA], TB)) -> (checked: Result<usize, PreSerializeError>) {
+        let la = super::Star(self.0).prepare(v.0)?;
+        let lb = self.1.prepare(&v.1)?;
+        match la.checked_add(lb) {
+            Some(total) => Ok(total),
+            None => Err(PreSerializeError::length_too_large()),
+        }
+    }
+}
+
 impl<Output: OutputBuf, Inner, N, T> Serializer<Output, [T]> for super::RepeatN<Inner, N> where
     T: DeepView,
     Inner: Serializer<Output, T>,
