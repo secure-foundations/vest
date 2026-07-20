@@ -174,11 +174,7 @@ impl<Inner: EquivSerializers> EquivSerializers for Ref<Inner> {
     }
 }
 
-impl<I, Inner> Parser<I> for Ref<Inner>
-where
-    I: View<V = Seq<u8>>,
-    Inner: Parser<I>,
-{
+impl<I, Inner> Parser<I> for Ref<Inner> where I: View<V = Seq<u8>>, Inner: Parser<I> {
     type PT = Inner::PT;
 
     open spec fn exec_inv(&self) -> bool {
@@ -190,12 +186,11 @@ where
     }
 }
 
-impl<Output, Inner, T> Serializer<Output, &T> for Ref<Inner>
-where
+impl<Output, Inner, T> Serializer<Output, &T> for Ref<Inner> where
     Output: OutputBuf,
     T: DeepView + ?Sized,
     Inner: Serializer<Output, T>,
-{
+ {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
@@ -206,11 +201,7 @@ where
     }
 }
 
-impl<Inner, T> Prepare<&T> for Ref<Inner>
-where
-    T: DeepView + ?Sized,
-    Inner: Prepare<T>,
-{
+impl<Inner, T> Prepare<&T> for Ref<Inner> where T: DeepView + ?Sized, Inner: Prepare<T> {
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -220,11 +211,7 @@ where
     }
 }
 
-impl<Inner, T> ByteLen<&T> for Ref<Inner>
-where
-    T: DeepView + ?Sized,
-    Inner: ByteLen<T>,
-{
+impl<Inner, T> ByteLen<&T> for Ref<Inner> where T: DeepView + ?Sized, Inner: ByteLen<T> {
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
