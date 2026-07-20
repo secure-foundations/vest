@@ -51,6 +51,16 @@ impl<Spec, Exec> SafeParser for (Spec, Exec) where Spec: SafeParser {
     }
 }
 
+impl<Spec, Exec> Productive for (Spec, Exec) where Spec: Productive {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, input: Seq<u8>) {
+        self.0.lemma_productive(input);
+    }
+}
+
 impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
     I: View<V = Seq<u8>>,
     T: DeepView<V = Spec::PVal>,

@@ -271,6 +271,7 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<SValue = Self::SV
 /// A "strict" combinator that satisfies all the core correctness and security properties proven by the library's combinators.
 pub trait StrictCombinator:
     SafeParser +
+    Productive +
     SoundParser +
     NonMalleable +
     GoodSerializer +
@@ -283,6 +284,7 @@ pub trait StrictCombinator:
 impl<Body> StrictCombinator for Body where
     Body:
         SafeParser +
+        Productive +
         SoundParser +
         NonMalleable +
         GoodSerializer +

@@ -3,6 +3,7 @@ use crate::combinators::mapped::spec::{SpecMap, SpecMapper};
 use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
 use crate::core::exec::{output::OutputBuf, serializer::Serializer};
+use crate::core::proof::Productive;
 use crate::core::spec::*;
 use core::marker::PhantomData;
 use vstd::prelude::*;
@@ -221,18 +222,21 @@ pub struct FnParser<
 impl<I, O, Spec, Exec> FnParser<I, O, Spec, Exec> where
     I: View<V = Seq<u8>>,
     O: DeepView,
-    Spec: SafeParser<PVal = O::V>,
+    Spec: Productive<PVal = O::V>,
     Exec: Fn(&I) -> PResult<O>,
  {
+    /// Constructs a safe, productive parser callback with a ghost specification.
     pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (parser: Self)
         requires
             spec_fn.safe_inv(),
+            spec_fn.productive_inv(),
             forall|i: &I| #[trigger] call_requires(exec_fn, (i,)),
             forall|i: &I, r: PResult<O>| #[trigger]
                 call_ensures(exec_fn, (i,), r) ==> parse_matches_spec(r, spec_fn.spec_parse(i@)),
         ensures
             parser.exec_inv(),
             parser.safe_inv(),
+            parser.productive_inv(),
             parser.spec_fn == spec_fn,
     {
         Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
@@ -267,6 +271,23 @@ impl<I, O, Spec, Exec> SafeParser for FnParser<I, O, Spec, Exec> where
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         let Ghost(spec_fn) = self.spec_fn;
         spec_fn.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<I, O, Spec, Exec> Productive for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: Productive<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, input: Seq<u8>) {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.lemma_productive(input);
     }
 }
 
@@ -325,8 +346,8 @@ impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
                 )) ==> {
                     &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
                     &&& forall|n|
-                        obuf.fits(spec_fn.byte_len(v.deep_view()) + n)
-                            <==> #[trigger] final(obuf).fits(n)
+                        #[trigger] obuf.fits(spec_fn.byte_len(v.deep_view()) + n)
+                            <==> final(obuf).fits(n)
                     &&& obuf.same_destination(final(obuf))
                 },
         ensures
@@ -416,7 +437,7 @@ impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Sp
             )) ==> {
                 &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
                 &&& forall|n|
-                    obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> #[trigger] final(obuf).fits(
+                    #[trigger] obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(
                         n,
                     )
                 &&& obuf.same_destination(final(obuf))

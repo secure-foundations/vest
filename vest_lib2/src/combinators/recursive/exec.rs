@@ -1,10 +1,11 @@
-use super::{ParamRecSpecs, SafeParserRecBody, SpecRecBody};
+use super::{ParamRecSpecs, ProductiveRecBody, SafeParserRecBody, SpecRecBody};
 use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
 use crate::core::exec::serializer::{
     ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer,
 };
 use crate::core::exec::{input::InputBuf, output::OutputBuf, ParseError};
+use crate::core::proof::Productive;
 use crate::core::spec::{
     Consistency, GoodSerializer, SafeParser, SpecByteLen, SpecParser, SpecSerializer,
 };
@@ -30,6 +31,7 @@ pub trait ParserRecBody<I: InputBuf>: SpecRecBody {
     ) -> (r: PResult<Self::O>) where Exec: Fn(&Self::EP, &I) -> PResult<Self::O>
         requires
             forall|p: Self::Param| #[trigger] spec_rec(p).safe_inv(),
+            forall|p: Self::Param| #[trigger] spec_rec(p).productive_inv(),
             forall|pp: &Self::EP, i: &I| call_requires(exec_rec, (pp, i)),
             forall|pp: &Self::EP, i: &I, rr: PResult<Self::O>|
                 call_ensures(exec_rec, (pp, i), rr) ==> parse_matches_spec(
@@ -125,8 +127,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     fn parse_gas<I>(&self, gas: usize, param: &Param, ibuf: &I) -> (r: PResult<Body::O>) where
         I: InputBuf,
         Param: DeepView<V = Body::Param>,
-        Body: ParserRecBody<I, EP = Param> + SafeParserRecBody,
-        Body::Body: SafeParser,
+        Body: ParserRecBody<I, EP = Param> + ProductiveRecBody,
+        Body::Body: Productive,
 
         ensures
             parse_matches_spec(
@@ -162,6 +164,17 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
             }
             assert forall|p: Body::Param| #[trigger] spec_callback(p).safe_inv() by {
                 assert(spec_callback(p).safe_inv());
+            }
+            assert forall|p: Body::Param| #[trigger] spec_callback(p).productive_inv() by {
+                assert forall|input: Seq<u8>| #[trigger]
+                    spec_callback(p).2(input) matches Some((n, _v)) ==> n > 0 by {
+                    if let Some((n, v)) = spec_callback(p).2(input) {
+                        if gas > 0 {
+                            self.productive_by_induction((gas - 1) as nat, p, input, n, v);
+                        }
+                    }
+                }
+                assert(spec_callback(p).productive_inv());
             }
         }
 
@@ -266,8 +279,8 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 impl<const LIMIT: usize, Body, Param, I> Parser<I> for super::FixWith<LIMIT, Body, Param> where
     I: InputBuf,
     Param: DeepView<V = Body::Param>,
-    Body: ParserRecBody<I, EP = Param> + SafeParserRecBody,
-    Body::Body: SafeParser,
+    Body: ParserRecBody<I, EP = Param> + ProductiveRecBody,
+    Body::Body: Productive,
  {
     type PT = Body::O;
 

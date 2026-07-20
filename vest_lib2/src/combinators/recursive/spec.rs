@@ -790,6 +790,27 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
     Body::Body: Productive,
     Param: DeepView<V = Body::Param>,
  {
+    /// Establishes productivity for one bundled recursive callback.
+    pub proof fn lemma_specs_callback_productive_inv(&self, gas: nat, param: Body::Param)
+        ensures
+            Self::specs_callback(&self.0, gas)(param).productive_inv(),
+        decreases gas,
+    {
+        let callback = Self::specs_callback(&self.0, gas);
+
+        assert forall|input: Seq<u8>| #[trigger]
+            callback(param).2(input) matches Some((n, _v)) ==> n > 0 by {
+            if let Some((n, v)) = callback(param).2(input) {
+                self.productive_by_induction((gas - 1) as nat, param, input, n, v);
+                assert(Self::spec_parse_gas(&self.0, (gas - 1) as nat, param, input) == Some(
+                    (n, v),
+                ));
+            }
+        }
+
+        assert(callback(param).productive_inv());
+    }
+
     /// Inductive proof that `spec_parse_gas` satisfies [`productive_parser`].
     pub(crate) proof fn productive_by_induction(
         &self,

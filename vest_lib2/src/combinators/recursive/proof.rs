@@ -217,6 +217,9 @@ pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
             (forall|p: Self::Param| #![trigger rec(p)] rec(p).safe_inv())
             ==> self.spec_body(param, rec).safe_inv(),
 
+            (forall|p: Self::Param| #![trigger rec(p)] rec(p).productive_inv())
+            ==> self.spec_body(param, rec).productive_inv(),
+
             (forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv())
             ==> self.spec_body(param, rec).sound_inv(),
 
@@ -248,6 +251,17 @@ impl<Body: StrictRecBody> SafeParserRecBody for Body where Body::Body: StrictCom
     ) {
         self.lemma_body_all_inv_preservation(param, rec);
         assert(self.spec_body(param, rec).safe_inv());
+    }
+}
+
+impl<Body: StrictRecBody> ProductiveRecBody for Body where Body::Body: StrictCombinator {
+    proof fn lemma_body_productive_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        self.lemma_body_all_inv_preservation(param, rec);
+        assert(self.spec_body(param, rec).productive_inv());
     }
 }
 
