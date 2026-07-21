@@ -1011,7 +1011,8 @@ pub broadcast proof fn lemma_const_tag_fmt_exec_inv(fmt: Const<super::TagFmt, Ta
         <_ as Parser<&[u8]>>::exec_inv(&fmt),
         <_ as Prepare<Tag>>::exec_inv(&fmt),
 {
-    crate::combinators::refined::exec::lemma_const_exec_inv(&fmt);
+    crate::core::exec::bridge_lemmas::lemma_const_parser_exec_inv::<&[u8], _, _>(&fmt);
+    crate::core::exec::bridge_lemmas::lemma_const_prepare_exec_inv::<_, _>(&fmt);
 }
 
 } // verus!

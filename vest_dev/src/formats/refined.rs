@@ -59,7 +59,7 @@ fn test_refined_pred_exec(ibuf: &[u8]) {
     );
 
     proof {
-        lemma_refined_exec_inv::<&[u8], _, _>(&fmt2);
+        crate::core::exec::bridge_lemmas::lemma_refined_parser_exec_inv::<&[u8], _, _>(&fmt2);
     }
 
     let _ = fmt.parse(&ibuf);

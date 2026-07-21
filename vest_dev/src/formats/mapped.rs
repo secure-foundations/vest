@@ -228,7 +228,7 @@ fn test_map_exec(ibuf: &[u8]) {
     };
 
     proof {
-        lemma_map_exec_inv::<&[u8], _, _, _>(&fmt);
+        crate::core::exec::bridge_lemmas::lemma_mapped_parser_exec_inv::<&[u8], _, _, _>(&fmt);
     }
     let _ = fmt.parse(&ibuf);
 
