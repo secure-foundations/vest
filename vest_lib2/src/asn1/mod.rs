@@ -4,6 +4,8 @@
 
 /// ASN.1 ANY / open-type complete TLV format.
 pub mod any;
+/// BER indefinite-length and constructed-value combinators.
+pub mod ber;
 /// ASN.1 BIT STRING contents octets.
 pub mod bitstring;
 /// ASN.1 BMPString contents.
@@ -48,6 +50,7 @@ pub mod utctime;
 pub mod utf8string;
 
 pub use any::{Any, AnySpec};
+pub use ber::{BerOctetStringFmt, EocFmt, EOC};
 pub use bitstring::{BitString, BitStringSpec};
 pub use bmpstring::{BmpString, BmpStringSpec};
 pub use constraints::{ConstraintAnd, ConstraintNot, ConstraintOr, IntegerRange, Size};
