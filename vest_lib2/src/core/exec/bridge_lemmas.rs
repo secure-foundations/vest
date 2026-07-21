@@ -117,8 +117,10 @@ pub broadcast proof fn lemma_mapped_serializer_exec_inv<Output, Inner, M, MRev, 
     MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
 
     ensures
-        #[trigger] Serializer::<Output, InnerT>::exec_inv(&fmt.inner) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        #[trigger] Serializer::<Output, InnerT>::exec_inv(&fmt.inner) ==> #[trigger] Serializer::<
+            Output,
+            T,
+        >::exec_inv(fmt),
 {
 }
 
@@ -132,8 +134,9 @@ pub broadcast proof fn lemma_mapped_prepare_exec_inv<Inner, M, MRev, T, InnerT>(
     MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
 
     ensures
-        #[trigger] Prepare::<InnerT>::exec_inv(&fmt.inner) ==> #[trigger]
-            Prepare::<T>::exec_inv(fmt),
+        #[trigger] Prepare::<InnerT>::exec_inv(&fmt.inner) ==> #[trigger] Prepare::<T>::exec_inv(
+            fmt,
+        ),
 {
 }
 
@@ -184,14 +187,13 @@ pub broadcast proof fn lemma_const_parser_exec_inv<I, Inner, T>(fmt: &Const<Inne
 {
 }
 
-pub broadcast proof fn lemma_const_serializer_exec_inv<Output, Inner, T>(fmt: &Const<Inner, T>) where
-    Output: OutputBuf,
-    Inner: Serializer<Output, T>,
-    T: DeepView<V = T>,
-
+pub broadcast proof fn lemma_const_serializer_exec_inv<Output, Inner, T>(
+    fmt: &Const<Inner, T>,
+) where Output: OutputBuf, Inner: Serializer<Output, T>, T: DeepView<V = T>
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<Output, T>::exec_inv(
+            fmt,
+        ),
 {
 }
 
@@ -420,8 +422,10 @@ pub broadcast proof fn lemma_opt_serializer_exec_inv<Output, A, T>(fmt: &Opt<A>)
     T: DeepView,
 
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, Option<T>>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<
+            Output,
+            Option<T>,
+        >::exec_inv(fmt),
 {
 }
 
@@ -537,21 +541,16 @@ pub broadcast proof fn lemma_preceded_checked_parser_exec_inv<I, A, B, AVal>(
     AVal: DeepView<V = AVal> + PartialEq + Structural,
 
     ensures
-        (Parser::<I>::exec_inv(&fmt.a) && SafeParser::safe_inv(&fmt.a)
-            && Parser::<I>::exec_inv(&fmt.b) && SafeParser::safe_inv(&fmt.b)
-            && (forall|v: AVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Parser::<I>::exec_inv(fmt),
+        (Parser::<I>::exec_inv(&fmt.a) && SafeParser::safe_inv(&fmt.a) && Parser::<I>::exec_inv(
+            &fmt.b,
+        ) && SafeParser::safe_inv(&fmt.b) && (forall|v: AVal| #[trigger] v.deep_view() == v))
+            ==> #[trigger] Parser::<I>::exec_inv(fmt),
 {
 }
 
-pub broadcast proof fn lemma_preceded_serializer_exec_inv<
-    Output,
-    A,
-    B,
-    AVal,
-    T,
-    const CHECK: bool,
->(fmt: &Preceded<A, AVal, B, CHECK>) where
+pub broadcast proof fn lemma_preceded_serializer_exec_inv<Output, A, B, AVal, T, const CHECK: bool>(
+    fmt: &Preceded<A, AVal, B, CHECK>,
+) where
     Output: OutputBuf,
     A: Serializer<Output, AVal>,
     B: Serializer<Output, T>,
@@ -559,25 +558,21 @@ pub broadcast proof fn lemma_preceded_serializer_exec_inv<
     T: DeepView,
 
     ensures
-        (Serializer::<Output, AVal>::exec_inv(&fmt.a)
-            && Serializer::<Output, T>::exec_inv(&fmt.b)
-            && (forall|v: AVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        (Serializer::<Output, AVal>::exec_inv(&fmt.a) && Serializer::<Output, T>::exec_inv(&fmt.b)
+            && (forall|v: AVal| #[trigger] v.deep_view() == v)) ==> #[trigger] Serializer::<
+            Output,
+            T,
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_preceded_prepare_exec_inv<A, B, AVal, T, const CHECK: bool>(
     fmt: &Preceded<A, AVal, B, CHECK>,
-) where
-    A: Prepare<AVal>,
-    B: Prepare<T>,
-    AVal: DeepView<V = AVal>,
-    T: DeepView,
-
+) where A: Prepare<AVal>, B: Prepare<T>, AVal: DeepView<V = AVal>, T: DeepView
     ensures
-        (Prepare::<AVal>::exec_inv(&fmt.a) && Prepare::<T>::exec_inv(&fmt.b)
-            && (forall|v: AVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Prepare::<T>::exec_inv(fmt),
+        (Prepare::<AVal>::exec_inv(&fmt.a) && Prepare::<T>::exec_inv(&fmt.b) && (forall|v: AVal|
+         #[trigger]
+            v.deep_view() == v)) ==> #[trigger] Prepare::<T>::exec_inv(fmt),
 {
 }
 
@@ -608,10 +603,10 @@ pub broadcast proof fn lemma_terminated_checked_parser_exec_inv<I, A, B, BVal>(
     BVal: DeepView<V = BVal> + PartialEq + Structural,
 
     ensures
-        (Parser::<I>::exec_inv(&fmt.a) && SafeParser::safe_inv(&fmt.a)
-            && Parser::<I>::exec_inv(&fmt.b) && SafeParser::safe_inv(&fmt.b)
-            && (forall|v: BVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Parser::<I>::exec_inv(fmt),
+        (Parser::<I>::exec_inv(&fmt.a) && SafeParser::safe_inv(&fmt.a) && Parser::<I>::exec_inv(
+            &fmt.b,
+        ) && SafeParser::safe_inv(&fmt.b) && (forall|v: BVal| #[trigger] v.deep_view() == v))
+            ==> #[trigger] Parser::<I>::exec_inv(fmt),
 {
 }
 
@@ -630,25 +625,21 @@ pub broadcast proof fn lemma_terminated_serializer_exec_inv<
     T: DeepView,
 
     ensures
-        (Serializer::<Output, T>::exec_inv(&fmt.a)
-            && Serializer::<Output, BVal>::exec_inv(&fmt.b)
-            && (forall|v: BVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        (Serializer::<Output, T>::exec_inv(&fmt.a) && Serializer::<Output, BVal>::exec_inv(&fmt.b)
+            && (forall|v: BVal| #[trigger] v.deep_view() == v)) ==> #[trigger] Serializer::<
+            Output,
+            T,
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_terminated_prepare_exec_inv<A, B, BVal, T, const CHECK: bool>(
     fmt: &Terminated<A, B, BVal, CHECK>,
-) where
-    A: Prepare<T>,
-    B: Prepare<BVal>,
-    BVal: DeepView<V = BVal>,
-    T: DeepView,
-
+) where A: Prepare<T>, B: Prepare<BVal>, BVal: DeepView<V = BVal>, T: DeepView
     ensures
-        (Prepare::<T>::exec_inv(&fmt.a) && Prepare::<BVal>::exec_inv(&fmt.b)
-            && (forall|v: BVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Prepare::<T>::exec_inv(fmt),
+        (Prepare::<T>::exec_inv(&fmt.a) && Prepare::<BVal>::exec_inv(&fmt.b) && (forall|v: BVal|
+         #[trigger]
+            v.deep_view() == v)) ==> #[trigger] Prepare::<T>::exec_inv(fmt),
 {
 }
 
@@ -664,10 +655,10 @@ pub broadcast proof fn lemma_prefix_tagged_parser_exec_inv<I, Tg, TagVal, Of>(
     Of: Parser<I> + SafeParser,
 
     ensures
-        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0)
-            && Parser::<I>::exec_inv(&fmt.2) && SafeParser::safe_inv(&fmt.2)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Parser::<I>::exec_inv(fmt),
+        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) && Parser::<I>::exec_inv(
+            &fmt.2,
+        ) && SafeParser::safe_inv(&fmt.2) && (forall|v: TagVal| #[trigger] v.deep_view() == v))
+            ==> #[trigger] Parser::<I>::exec_inv(fmt),
 {
 }
 
@@ -681,10 +672,11 @@ pub broadcast proof fn lemma_prefix_tagged_serializer_exec_inv<Output, Tg, TagVa
     T: DeepView,
 
     ensures
-        (Serializer::<Output, TagVal>::exec_inv(&fmt.0)
-            && Serializer::<Output, T>::exec_inv(&fmt.2)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        (Serializer::<Output, TagVal>::exec_inv(&fmt.0) && Serializer::<Output, T>::exec_inv(&fmt.2)
+            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger] Serializer::<
+            Output,
+            T,
+        >::exec_inv(fmt),
 {
 }
 
@@ -697,9 +689,9 @@ pub broadcast proof fn lemma_prefix_tagged_prepare_exec_inv<Tg, TagVal, Of, T>(
     T: DeepView,
 
     ensures
-        (Prepare::<TagVal>::exec_inv(&fmt.0) && Prepare::<T>::exec_inv(&fmt.2)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Prepare::<T>::exec_inv(fmt),
+        (Prepare::<TagVal>::exec_inv(&fmt.0) && Prepare::<T>::exec_inv(&fmt.2) && (forall|v: TagVal|
+         #[trigger]
+            v.deep_view() == v)) ==> #[trigger] Prepare::<T>::exec_inv(fmt),
 {
 }
 
@@ -712,10 +704,10 @@ pub broadcast proof fn lemma_suffix_tagged_parser_exec_inv<I, Of, Tg, TagVal>(
     Of: Parser<I> + SafeParser,
 
     ensures
-        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0)
-            && Parser::<I>::exec_inv(&fmt.1) && SafeParser::safe_inv(&fmt.1)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Parser::<I>::exec_inv(fmt),
+        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) && Parser::<I>::exec_inv(
+            &fmt.1,
+        ) && SafeParser::safe_inv(&fmt.1) && (forall|v: TagVal| #[trigger] v.deep_view() == v))
+            ==> #[trigger] Parser::<I>::exec_inv(fmt),
 {
 }
 
@@ -729,10 +721,11 @@ pub broadcast proof fn lemma_suffix_tagged_serializer_exec_inv<Output, Of, Tg, T
     T: DeepView,
 
     ensures
-        (Serializer::<Output, T>::exec_inv(&fmt.0)
-            && Serializer::<Output, TagVal>::exec_inv(&fmt.1)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Serializer::<Output, T>::exec_inv(fmt),
+        (Serializer::<Output, T>::exec_inv(&fmt.0) && Serializer::<Output, TagVal>::exec_inv(&fmt.1)
+            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger] Serializer::<
+            Output,
+            T,
+        >::exec_inv(fmt),
 {
 }
 
@@ -745,9 +738,9 @@ pub broadcast proof fn lemma_suffix_tagged_prepare_exec_inv<Of, Tg, TagVal, T>(
     T: DeepView,
 
     ensures
-        (Prepare::<T>::exec_inv(&fmt.0) && Prepare::<TagVal>::exec_inv(&fmt.1)
-            && (forall|v: TagVal| #[trigger] v.deep_view() == v)) ==> #[trigger]
-            Prepare::<T>::exec_inv(fmt),
+        (Prepare::<T>::exec_inv(&fmt.0) && Prepare::<TagVal>::exec_inv(&fmt.1) && (forall|v: TagVal|
+         #[trigger]
+            v.deep_view() == v)) ==> #[trigger] Prepare::<T>::exec_inv(fmt),
 {
 }
 
@@ -801,12 +794,14 @@ pub broadcast proof fn lemma_bind_parser_exec_inv<I, A, B>(fmt: &Bind<A, B>) whe
     B::O: Parser<I> + SafeParser,
 
     ensures
-        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) &&
-         (forall|pb: B::O| #[trigger] pb.exec_inv() && pb.safe_inv())) ==>
-        (#[trigger] Parser::<I>::exec_inv(fmt) && SafeParser::safe_inv(fmt)),
+        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) && (forall|pb: B::O|
+         #[trigger]
+            pb.exec_inv() && pb.safe_inv())) ==> (#[trigger] Parser::<I>::exec_inv(fmt)
+            && SafeParser::safe_inv(fmt)),
 {
-    if Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) &&
-       (forall|pb: B::O| #[trigger] pb.exec_inv() && pb.safe_inv()) {
+    if Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0) && (forall|pb: B::O|
+     #[trigger]
+        pb.exec_inv() && pb.safe_inv()) {
         assert(Parser::<I>::exec_inv(fmt));
         assert forall|key: A::PVal| #[trigger] fmt.1.spec_map(key).safe_inv() by {
             let pb = fmt.1.spec_map(key);
@@ -854,8 +849,7 @@ pub broadcast proof fn lemma_ref_parser_exec_inv<I, P>(parser: &P) where
     P: Parser<I>,
 
     ensures
-        <P as Parser<I>>::exec_inv(parser) ==> #[trigger]
-            <&P as Parser<I>>::exec_inv(&parser),
+        <P as Parser<I>>::exec_inv(parser) ==> #[trigger] <&P as Parser<I>>::exec_inv(&parser),
 {
 }
 
@@ -865,8 +859,10 @@ pub broadcast proof fn lemma_ref_serializer_exec_inv<Output, S, T>(serializer: &
     T: DeepView + ?Sized,
 
     ensures
-        <S as Serializer<Output, T>>::exec_inv(serializer) ==> #[trigger]
-            <&S as Serializer<Output, T>>::exec_inv(&serializer),
+        <S as Serializer<Output, T>>::exec_inv(serializer) ==> #[trigger] <&S as Serializer<
+            Output,
+            T,
+        >>::exec_inv(&serializer),
 {
 }
 
@@ -875,8 +871,9 @@ pub broadcast proof fn lemma_ref_prepare_exec_inv<S, T>(serializer: &S) where
     T: DeepView + ?Sized,
 
     ensures
-        <S as Prepare<T>>::exec_inv(serializer) ==> #[trigger]
-            <&S as Prepare<T>>::exec_inv(&serializer),
+        <S as Prepare<T>>::exec_inv(serializer) ==> #[trigger] <&S as Prepare<T>>::exec_inv(
+            &serializer,
+        ),
 {
 }
 
@@ -964,8 +961,10 @@ pub broadcast proof fn lemma_star_serializer_exec_inv<Output, Inner, T>(fmt: &St
     T: DeepView,
 
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, [T]>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<
+            Output,
+            [T],
+        >::exec_inv(fmt),
 {
 }
 
@@ -988,9 +987,8 @@ pub broadcast proof fn lemma_repeat_serializer_exec_inv<Output, A, B, TA, TB>(
     TB: DeepView,
 
     ensures
-        (Serializer::<Output, TA>::exec_inv(&fmt.0)
-            && Serializer::<Output, TB>::exec_inv(&fmt.1)) ==> #[trigger]
-            Serializer::<Output, (&[TA], TB)>::exec_inv(fmt),
+        (Serializer::<Output, TA>::exec_inv(&fmt.0) && Serializer::<Output, TB>::exec_inv(&fmt.1))
+            ==> #[trigger] Serializer::<Output, (&[TA], TB)>::exec_inv(fmt),
 {
 }
 
@@ -1001,30 +999,25 @@ pub broadcast proof fn lemma_repeat_prepare_exec_inv<A, B, TA, TB>(fmt: &Repeat<
     TB: DeepView,
 
     ensures
-        (Prepare::<TA>::exec_inv(&fmt.0) && Prepare::<TB>::exec_inv(&fmt.1)) ==> #[trigger]
-            Prepare::<(&[TA], TB)>::exec_inv(fmt),
+        (Prepare::<TA>::exec_inv(&fmt.0) && Prepare::<TB>::exec_inv(&fmt.1))
+            ==> #[trigger] Prepare::<(&[TA], TB)>::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_repeat_till_end_slice_serializer_exec_inv<Output, A, T>(
     fmt: &RepeatTillEnd<A>,
-) where
-    Output: OutputBuf,
-    A: Serializer<Output, T> + Copy,
-    T: DeepView,
-
+) where Output: OutputBuf, A: Serializer<Output, T> + Copy, T: DeepView
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, &[T]>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<
+            Output,
+            &[T],
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_repeat_till_end_slice_prepare_exec_inv<A, T>(
     fmt: &RepeatTillEnd<A>,
-) where
-    A: Prepare<T> + Copy,
-    T: DeepView,
-
+) where A: Prepare<T> + Copy, T: DeepView
     ensures
         Prepare::<T>::exec_inv(&fmt.0) ==> #[trigger] Prepare::<&[T]>::exec_inv(fmt),
 {
@@ -1032,23 +1025,18 @@ pub broadcast proof fn lemma_repeat_till_end_slice_prepare_exec_inv<A, T>(
 
 pub broadcast proof fn lemma_repeat_till_end_vec_serializer_exec_inv<Output, A, T>(
     fmt: &RepeatTillEnd<A>,
-) where
-    Output: OutputBuf,
-    A: Serializer<Output, T> + Copy,
-    T: DeepView,
-
+) where Output: OutputBuf, A: Serializer<Output, T> + Copy, T: DeepView
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, Vec<T>>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<
+            Output,
+            Vec<T>,
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_repeat_till_end_vec_prepare_exec_inv<A, T>(
     fmt: &RepeatTillEnd<A>,
-) where
-    A: Prepare<T> + Copy,
-    T: DeepView,
-
+) where A: Prepare<T> + Copy, T: DeepView
     ensures
         Prepare::<T>::exec_inv(&fmt.0) ==> #[trigger] Prepare::<Vec<T>>::exec_inv(fmt),
 {
@@ -1071,21 +1059,16 @@ pub broadcast proof fn lemma_repeat_n_parser_exec_inv<I, Inner, N>(fmt: &RepeatN
 
 pub broadcast proof fn lemma_repeat_n_serializer_exec_inv<Output, Inner, N, T>(
     fmt: &RepeatN<Inner, N>,
-) where
-    Output: OutputBuf,
-    Inner: Serializer<Output, T>,
-    N: AsLen,
-    T: DeepView,
-
+) where Output: OutputBuf, Inner: Serializer<Output, T>, N: AsLen, T: DeepView
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.1) ==> #[trigger]
-            Serializer::<Output, [T]>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.1) ==> #[trigger] Serializer::<
+            Output,
+            [T],
+        >::exec_inv(fmt),
 {
 }
 
-pub broadcast proof fn lemma_repeat_n_prepare_exec_inv<Inner, N, T>(
-    fmt: &RepeatN<Inner, N>,
-) where
+pub broadcast proof fn lemma_repeat_n_prepare_exec_inv<Inner, N, T>(fmt: &RepeatN<Inner, N>) where
     Inner: Prepare<T>,
     N: AsLen,
     T: DeepView,
@@ -1100,35 +1083,28 @@ pub broadcast proof fn lemma_repeat_n_prepare_exec_inv<Inner, N, T>(
 // ----------------------------------------------------
 pub broadcast proof fn lemma_array_parser_exec_inv<I, Inner, const N: usize>(
     fmt: &Array<N, Inner>,
-) where
-    I: InputBuf,
-    Inner: Parser<I> + SafeParser,
-
+) where I: InputBuf, Inner: Parser<I> + SafeParser
     ensures
-        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0)) ==> #[trigger]
-            Parser::<I>::exec_inv(fmt),
+        (Parser::<I>::exec_inv(&fmt.0) && SafeParser::safe_inv(&fmt.0)) ==> #[trigger] Parser::<
+            I,
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_array_serializer_exec_inv<Output, Inner, T, const N: usize>(
     fmt: &Array<N, Inner>,
-) where
-    Output: OutputBuf,
-    Inner: Serializer<Output, T>,
-    T: DeepView,
-
+) where Output: OutputBuf, Inner: Serializer<Output, T>, T: DeepView
     ensures
-        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger]
-            Serializer::<Output, [T; N]>::exec_inv(fmt),
+        Serializer::<Output, T>::exec_inv(&fmt.0) ==> #[trigger] Serializer::<
+            Output,
+            [T; N],
+        >::exec_inv(fmt),
 {
 }
 
 pub broadcast proof fn lemma_array_prepare_exec_inv<Inner, T, const N: usize>(
     fmt: &Array<N, Inner>,
-) where
-    Inner: Prepare<T>,
-    T: DeepView,
-
+) where Inner: Prepare<T>, T: DeepView
     ensures
         Prepare::<T>::exec_inv(&fmt.0) ==> #[trigger] Prepare::<[T; N]>::exec_inv(fmt),
 {
