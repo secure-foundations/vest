@@ -81,10 +81,10 @@
 //! |---|---|
 //! | [`FixWith<LIMIT, Body, Param>`] | Bounded fixpoint for recursive formats; use `Param = ()` for context-free recursion |
 pub mod bits;
-pub mod reference;
 pub mod bytes;
 pub mod choice;
 pub mod cond;
+pub mod congruence;
 pub mod disjoint;
 pub mod implicit;
 pub mod length;
@@ -105,7 +105,6 @@ pub mod tuple;
 pub mod uints;
 
 pub use bits::Bits;
-pub use reference::Ref;
 pub use bytes::{AndThen, ExactLen, Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
