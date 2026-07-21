@@ -257,6 +257,15 @@ impl<I, O, Spec, Exec> SpecParser for FnParser<I, O, Spec, Exec> where
     }
 }
 
+pub proof fn lemma_ref_fn_parser_spec_parse<I, O, Spec, Exec>(
+    parser: &FnParser<I, O, Spec, Exec>,
+    ibuf: Seq<u8>,
+) where I: View<V = Seq<u8>>, O: DeepView, Spec: SpecParser<PVal = O::V>, Exec: Fn(&I) -> PResult<O>
+    ensures
+        (&parser).spec_parse(ibuf) == parser.spec_fn@.spec_parse(ibuf),
+{
+}
+
 impl<I, O, Spec, Exec> SafeParser for FnParser<I, O, Spec, Exec> where
     I: View<V = Seq<u8>>,
     O: DeepView,
@@ -345,9 +354,8 @@ impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
                     (),
                 )) ==> {
                     &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
-                    &&& forall|n|
-                        #[trigger] obuf.fits(spec_fn.byte_len(v.deep_view()) + n)
-                            <==> final(obuf).fits(n)
+                    &&& forall|n| #[trigger]
+                        obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(n)
                     &&& obuf.same_destination(final(obuf))
                 },
         ensures
@@ -436,10 +444,8 @@ impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Sp
                 (),
             )) ==> {
                 &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
-                &&& forall|n|
-                    #[trigger] obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(
-                        n,
-                    )
+                &&& forall|n| #[trigger]
+                    obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(n)
                 &&& obuf.same_destination(final(obuf))
             }
     }

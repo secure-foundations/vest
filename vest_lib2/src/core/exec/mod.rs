@@ -1,4 +1,5 @@
 //! Executable parsing and serialization.
+pub mod bridge_lemmas;
 pub mod error;
 pub mod fns;
 pub mod input;

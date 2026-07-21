@@ -56,21 +56,6 @@ impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     }
 }
 
-pub broadcast proof fn lemma_map_exec_inv<I, Inner, M, MRev>(
-    fmt: &super::Mapped<Inner, BiMap<M, MRev>>,
-) where
-    I: View<V = Seq<u8>>,
-    Inner: Parser<I>,
-    M: Map<Inner::PT, Input = Inner::PVal>,
-    MRev: SpecMap<Input = M::Output, Output = M::Input>,
-
-    requires
-        fmt.inner.exec_inv(),
-    ensures
-        #[trigger] fmt.exec_inv(),
-{
-}
-
 impl<Output: OutputBuf, Inner, M, MRev, T, InnerT> Serializer<Output, T> for super::Mapped<
     Inner,
     BiMap<M, MRev>,

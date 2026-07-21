@@ -121,6 +121,16 @@ impl<I, P> Parser<I> for &P where I: View<V = Seq<u8>>, P: Parser<I> {
     }
 }
 
+pub proof fn lemma_ref_safe_productive_inv<P>(parser: &P) where P: Productive
+    requires
+        parser.safe_inv(),
+        parser.productive_inv(),
+    ensures
+        <&P as SafeParser>::safe_inv(&parser),
+        <&P as Productive>::productive_inv(&parser),
+{
+}
+
 // pub trait Parser: SpecParser {
 //     type Ty<'i>: DeepView<V = Self::PVal>;
 //     fn parse<'i, I: InputBuf>(&self, ibuf: &'i I) -> (r: Result<(usize, Self::Ty<'i>), ParseError>)
