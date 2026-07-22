@@ -11,6 +11,8 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::vec;
 use vstd::prelude::*;
 use OutputBuf;
 use Sum::Inl as L;
@@ -32,6 +34,9 @@ pub const TAG_NUMBER_MASK: u8 = 0b0001_1111u8;
 
 /// Sentinel value in bits 4–0 signalling the long (high-tag) form.
 pub const TAG_LONG_FORM_SENTINEL: u8 = 0b0001_1111u8;
+
+/// One identifier octet plus the maximum ten base-128 octets needed by a `u64` tag number.
+pub(crate) const TAG_FMT_MAX_BYTE_LEN: usize = 11;
 
 #[derive(StructuralEq, Clone, Copy, PartialEq, Eq, Debug)]
 #[verifier::ext_equal]
@@ -443,6 +448,15 @@ pub broadcast proof fn lemma_tag_wf_implies_tag_consistent(tag: Tag)
     ensures
         #[trigger] super::TagFmt.consistent(tag),
 {
+}
+
+pub(crate) proof fn lemma_tag_fmt_byte_len_bound(tag: Tag)
+    ensures
+        super::TagFmt.byte_len(tag) <= TAG_FMT_MAX_BYTE_LEN,
+{
+    let num = tag_num_to_uint(tag.number);
+    lemma_to_base128_len_bounds();
+    lemma_base128_fmt_byte_len::<true>(num);
 }
 
 mod derived_specs {
@@ -1022,6 +1036,7 @@ some test functions
 */
 verus! {
 
+#[cfg(feature = "alloc")]
 fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
     use crate::combinators::U16Be;
     let const_u16_fmt = Const(U16Be, 0x1234u16);
@@ -1037,6 +1052,7 @@ fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
     Err(ParseError::custom("Test function, not meant to succeed"))
 }
 
+#[cfg(feature = "alloc")]
 fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
     broadcast use lemma_const_tag_fmt_exec_inv;
 

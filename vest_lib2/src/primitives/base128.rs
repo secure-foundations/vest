@@ -7,6 +7,8 @@ use crate::{
     combinators::*,
     core::{exec::*, proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
 use input::InputBuf;
 use vstd::arithmetic::power::*;
 use vstd::calc;
@@ -497,6 +499,7 @@ pub fn uint_from_base128(bytes: &[u8]) -> (result: UInt)
     acc
 }
 
+#[cfg(feature = "alloc")]
 pub fn uint_to_base128(v: UInt) -> (buf: Vec<u8>)
     ensures
         buf@ == nat_to_base128(v as nat),
@@ -793,7 +796,7 @@ impl<const MINIMAL: bool> Prepare<UInt> for Base128Fmt<MINIMAL> {
 }
 
 } // verus!
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use super::*;
     use crate::core::exec::serializer::PreSerializeErrorKind;

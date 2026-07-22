@@ -13,6 +13,8 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::arithmetic::mul::*;
 use vstd::arithmetic::power::*;
 use vstd::arithmetic::power2::*;
@@ -414,6 +416,18 @@ pub fn fits_i8(v: i16) -> bool
         i8::MIN <= v <= i8::MAX,
 {
     i8::MIN as i16 <= v && v <= i8::MAX as i16
+}
+
+pub(crate) proof fn lemma_integer8_fmt_byte_len(value: i8)
+    ensures
+        Integer8Fmt.byte_len(value) == 1,
+{
+}
+
+pub(crate) proof fn lemma_integer16_fmt_byte_len_bound(value: i16)
+    ensures
+        Integer16Fmt.byte_len(value) <= 2,
+{
 }
 
 mod derived_specs {
@@ -1016,6 +1030,7 @@ pub fn i64_from_be_bytes(bytes: &[u8]) -> (r: i64)
 
 /// Executable big-endian two's-complement encoding from `i64`.
 /// TODO: Optimize this function?
+#[cfg(feature = "alloc")]
 pub fn i64_to_be_bytes(v: i64) -> (buf: Vec<u8>)
     requires
         usize::BITS == 64,

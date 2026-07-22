@@ -1,3 +1,5 @@
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
 use vstd::arithmetic::{div_mod::*, power::*, power2::*};
 use vstd::bits::*;
 use vstd::{calc, prelude::*};
@@ -313,6 +315,7 @@ pub fn u64_from_be_bytes(bytes: &[u8]) -> (r: u64)
 /// Verified against [`nat_to_be_bytes`].
 ///
 /// TODO: Optimize this function?
+#[cfg(feature = "alloc")]
 pub fn usize_to_be_bytes_exec(v: usize) -> (buf: Vec<u8>)
     ensures
         buf@ == nat_to_be_bytes(v as nat),
@@ -376,6 +379,7 @@ pub fn usize_to_be_bytes_in_place(v: usize, obuf: &mut [u8])
     }
 }
 
+#[cfg(feature = "alloc")]
 pub fn u64_to_be_bytes(v: u64) -> (buf: Vec<u8>)
     requires
         usize::BITS == 64,
@@ -460,7 +464,7 @@ fn bytes_needed(n: usize) -> (need: usize)
 //  {
 // }
 } // verus!
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use super::{usize_to_be_bytes_exec, usize_to_be_bytes_in_place, usize_to_be_bytes_len};
 

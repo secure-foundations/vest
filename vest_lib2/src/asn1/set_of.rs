@@ -20,6 +20,8 @@ use crate::core::{
     proof::*,
     spec::*,
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::calc;
 use vstd::{prelude::*, relations::*};
 use OutputBuf;
@@ -696,6 +698,7 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
     true
 }
 
+#[cfg(feature = "alloc")]
 impl<'i, C> Parser<&'i [u8]> for SetOfFmt<C> where
     C: Parser<&'i [u8]> + SafeParser + Productive + Copy,
  {
@@ -868,40 +871,59 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
     }
 }
 
+// Maximum tag, one short-form length octet, and at most two INTEGER content octets.
+const SMALL_INTEGER_TLV_MAX_LEN: usize = super::tag::TAG_FMT_MAX_BYTE_LEN + 3;
+
 impl DerOrd<i8> for super::ASN1Fmt<super::Integer8Fmt, true> {
     fn der_leq(&self, left: &i8, right: &i8) -> (leq: bool) {
-        let mut left_encoding = vec![0; self.length(left)];
-        let mut right_encoding = vec![0; self.length(right)];
-        self.serialize(left, &mut left_encoding);
-        assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize(right, &mut right_encoding);
-        assert(right_encoding@ == self.spec_serialize(right.deep_view()));
-        let left_slice = left_encoding.as_slice();
-        let right_slice = right_encoding.as_slice();
-        assert(left_slice.deep_view() == left_encoding@);
-        assert(right_slice.deep_view() == right_encoding@);
+        broadcast use super::length::lemma_length_fmt_short_byte_len;
+        broadcast use super::integer::lemma_integer8_fmt_byte_len;
+        broadcast use super::tag::lemma_tag_fmt_byte_len_bound;
+
+        let left_len = self.length(left);
+        let right_len = self.length(right);
+        assert(left_len <= SMALL_INTEGER_TLV_MAX_LEN);
+        assert(right_len <= SMALL_INTEGER_TLV_MAX_LEN);
+
+        let mut left_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
+        let mut right_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
+        let (left_slice, _) = left_encoding.split_at_mut(left_len);
+        let (right_slice, _) = right_encoding.split_at_mut(right_len);
+        self.serialize(left, left_slice);
+        self.serialize(right, right_slice);
+
+        assert(left_slice.deep_view() == self.spec_serialize(left.deep_view()));
+        assert(right_slice.deep_view() == self.spec_serialize(right.deep_view()));
         der_leq(left_slice, right_slice)
     }
 }
 
 impl DerOrd<i16> for super::ASN1Fmt<super::Integer16Fmt, true> {
     fn der_leq(&self, left: &i16, right: &i16) -> (leq: bool) {
-        let mut left_encoding = vec![0; self.length(left)];
-        let mut right_encoding = vec![0; self.length(right)];
-        self.serialize(left, &mut left_encoding);
-        assert(left_encoding@ == self.spec_serialize(left.deep_view()));
-        self.serialize(right, &mut right_encoding);
-        assert(right_encoding@ == self.spec_serialize(right.deep_view()));
-        let left_slice = left_encoding.as_slice();
-        let right_slice = right_encoding.as_slice();
-        assert(left_slice.deep_view() == left_encoding@);
-        assert(right_slice.deep_view() == right_encoding@);
+        broadcast use super::length::lemma_length_fmt_short_byte_len;
+        broadcast use super::integer::lemma_integer16_fmt_byte_len_bound;
+        broadcast use super::tag::lemma_tag_fmt_byte_len_bound;
+
+        let left_len = self.length(left);
+        let right_len = self.length(right);
+        assert(left_len <= SMALL_INTEGER_TLV_MAX_LEN);
+        assert(right_len <= SMALL_INTEGER_TLV_MAX_LEN);
+
+        let mut left_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
+        let mut right_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
+        let (left_slice, _) = left_encoding.split_at_mut(left_len);
+        let (right_slice, _) = right_encoding.split_at_mut(right_len);
+        self.serialize(left, left_slice);
+        self.serialize(right, right_slice);
+
+        assert(left_slice.deep_view() == self.spec_serialize(left.deep_view()));
+        assert(right_slice.deep_view() == self.spec_serialize(right.deep_view()));
         der_leq(left_slice, right_slice)
     }
 }
 
 } // verus!
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use crate::asn1::der::{INTEGER8, SET_OF};
     use crate::core::exec::{Parser, Prepare, SerializerExt};

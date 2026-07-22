@@ -147,6 +147,7 @@ impl OutputBuf for OutputSlice<'_> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl OutputBuf for Vec<u8> {
     open spec fn fits(&self, _len: nat) -> bool {
         true

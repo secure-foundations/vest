@@ -128,12 +128,37 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             vest/target
+            vest_lib2/target
             vest-dsl/target
             vest-examples/target
           key: ${{ runner.os }}-${{ matrix.verus-release }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.verus-release }}-cargo-
             ${{ runner.os }}-cargo-
+
+      - name: vest_lib2 - cargo check (core only)
+        working-directory: ./vest_lib2
+        run: cargo check --no-default-features --all-targets
+
+      - name: vest_lib2 - cargo check (alloc only)
+        working-directory: ./vest_lib2
+        run: cargo check --no-default-features --features alloc --all-targets
+
+      - name: vest_lib2 - cargo test (std)
+        working-directory: ./vest_lib2
+        run: cargo test
+
+      - name: vest_lib2 - cargo verus verify (core only)
+        working-directory: ./vest_lib2
+        run: cargo verus verify --no-default-features -- --expand-errors
+
+      - name: vest_lib2 - cargo verus verify (alloc only)
+        working-directory: ./vest_lib2
+        run: cargo verus verify --no-default-features --features alloc -- --expand-errors
+
+      - name: vest_lib2 - cargo verus verify (std)
+        working-directory: ./vest_lib2
+        run: cargo verus verify -- --expand-errors
 
       - name: vest - cargo verus build
         working-directory: ./vest

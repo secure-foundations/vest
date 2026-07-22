@@ -74,6 +74,7 @@ pub trait SerializerExt<T> where
     }
 
     /// Serializes by appending to a growable Vec (though the Vec can be preallocated with [`Prepare`]/[`ByteLen`]).
+    #[cfg(feature = "alloc")]
     fn serialize_with_vec(&self, v: &T, obuf: &mut Vec<u8>) where Self: Serializer<Vec<u8>, T>
         requires
             self.exec_inv(),

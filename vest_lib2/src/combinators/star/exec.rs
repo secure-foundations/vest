@@ -11,11 +11,14 @@ use crate::core::{
     proof::Productive,
     spec::{Consistency, SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 use OutputBuf;
 
 verus! {
 
+#[cfg(feature = "alloc")]
 impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser<I> + Productive {
     type PT = Vec<Inner::PT>;
 
@@ -69,6 +72,7 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<I, A, B> Parser<I> for super::Repeat<A, B> where
     I: InputBuf,
     A: Parser<I> + SafeParser + Productive + Copy,
@@ -89,6 +93,7 @@ impl<I, A, B> Parser<I> for super::Repeat<A, B> where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
     I: InputBuf,
     Inner: Parser<I> + SafeParser,

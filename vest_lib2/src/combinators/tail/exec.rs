@@ -9,6 +9,8 @@ use crate::core::exec::{
 use crate::core::proof::Productive;
 use crate::core::spec::SafeParser;
 use crate::core::spec::{Consistency, SpecByteLen};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 use OutputBuf;
 
@@ -146,6 +148,7 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<I, A> Parser<I> for super::RepeatTillEnd<A> where
     I: InputBuf,
     A: Parser<I> + SafeParser + Productive + Copy,
@@ -212,6 +215,7 @@ impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy,
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<Output: OutputBuf, A, T> Serializer<Output, Vec<T>> for super::RepeatTillEnd<A> where
     A: Serializer<Output, T> + Copy,
     T: DeepView,
@@ -230,6 +234,7 @@ impl<Output: OutputBuf, A, T> Serializer<Output, Vec<T>> for super::RepeatTillEn
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<A, T> ByteLen<Vec<T>> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
@@ -244,6 +249,7 @@ impl<A, T> ByteLen<Vec<T>> for super::RepeatTillEnd<A> where A: ByteLen<T> + Cop
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<A, T> Prepare<Vec<T>> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()

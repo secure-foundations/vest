@@ -18,6 +18,8 @@ use crate::core::spec::{
     BytesCombinator, Consistency, SafeParser, SpecByteLen, SpecParser, SpecPred, SpecSerializer,
     SpecSerializerDps,
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 
 verus! {
@@ -203,6 +205,7 @@ pub proof fn lemma_const_prepare_exec_inv<Inner, T>(fmt: &Const<Inner, T>) where
 // ----------------------------------------------------
 // Repeat
 // ----------------------------------------------------
+#[cfg(feature = "alloc")]
 pub proof fn lemma_repeat_parser_exec_inv<I, A, B>(fmt: &Repeat<A, B>) where
     I: InputBuf,
     A: Parser<I> + SafeParser + Productive + Copy,
@@ -217,6 +220,7 @@ pub proof fn lemma_repeat_parser_exec_inv<I, A, B>(fmt: &Repeat<A, B>) where
 // ----------------------------------------------------
 // RepeatTillEnd
 // ----------------------------------------------------
+#[cfg(feature = "alloc")]
 pub proof fn lemma_repeat_till_end_parser_exec_inv<I, A>(fmt: &RepeatTillEnd<A>) where
     I: InputBuf,
     A: Parser<I> + SafeParser + Productive + Copy,
@@ -852,6 +856,7 @@ pub proof fn lemma_named_prepare_exec_inv<Inner, T>(fmt: &Named<Inner>) where
 // ----------------------------------------------------
 // Star
 // ----------------------------------------------------
+#[cfg(feature = "alloc")]
 pub proof fn lemma_star_parser_exec_inv<I, Inner>(fmt: &Star<Inner>) where
     I: InputBuf,
     Inner: Parser<I> + SafeParser + Productive + Copy,
@@ -921,6 +926,7 @@ pub proof fn lemma_repeat_till_end_slice_prepare_exec_inv<A, T>(fmt: &RepeatTill
 {
 }
 
+#[cfg(feature = "alloc")]
 pub proof fn lemma_repeat_till_end_vec_serializer_exec_inv<Output, A, T>(
     fmt: &RepeatTillEnd<A>,
 ) where Output: OutputBuf, A: Serializer<Output, T> + Copy, T: DeepView
@@ -929,6 +935,7 @@ pub proof fn lemma_repeat_till_end_vec_serializer_exec_inv<Output, A, T>(
 {
 }
 
+#[cfg(feature = "alloc")]
 pub proof fn lemma_repeat_till_end_vec_prepare_exec_inv<A, T>(fmt: &RepeatTillEnd<A>) where
     A: Prepare<T> + Copy,
     T: DeepView,
@@ -941,6 +948,7 @@ pub proof fn lemma_repeat_till_end_vec_prepare_exec_inv<A, T>(fmt: &RepeatTillEn
 // ----------------------------------------------------
 // RepeatN
 // ----------------------------------------------------
+#[cfg(feature = "alloc")]
 pub proof fn lemma_repeat_n_parser_exec_inv<I, Inner, N>(fmt: &RepeatN<Inner, N>) where
     I: InputBuf,
     Inner: Parser<I> + SafeParser,

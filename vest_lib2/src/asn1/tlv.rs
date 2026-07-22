@@ -13,6 +13,8 @@ use crate::core::{
     proof::*,
     spec::*,
 };
+#[cfg(feature = "alloc")]
+use alloc::vec;
 use vstd::prelude::*;
 use OutputBuf;
 
@@ -35,6 +37,20 @@ pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
         ),
         mapper: (|i: (usize, Content::T)| i.1, |o: Content::T| (content.byte_len(o) as usize, o)),
     }
+}
+
+pub(crate) proof fn lemma_asn1_fmt_byte_len_decomposition<Content: SpecCombinator, const DER: bool>(
+    fmt: ASN1Fmt<Content, DER>,
+    value: Content::T,
+)
+    requires
+        fmt.1.byte_len(value) <= usize::MAX,
+    ensures
+        fmt.byte_len(value) == TagFmt.byte_len(fmt.0) + LengthFmt::<DER>.byte_len(
+            fmt.1.byte_len(value) as usize,
+        ) + fmt.1.byte_len(value),
+{
+    reveal(asn1_fmt);
 }
 
 mod derived_specs {
@@ -310,6 +326,7 @@ some test functions
 */
 verus! {
 
+#[cfg(feature = "alloc")]
 fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
     use super::BoolFmt;
     use super::{BER, DER};

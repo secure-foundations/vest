@@ -5,6 +5,8 @@ use super::{
 };
 use crate::core::exec::fns::Pred;
 use crate::core::spec::SpecPred;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
 
@@ -93,6 +95,7 @@ impl<
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<
     T: DeepView,
     const HAS_MIN: bool,

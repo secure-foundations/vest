@@ -13,6 +13,8 @@ use crate::core::exec::{
 };
 use crate::core::{proof::*, spec::*};
 use crate::primitives::base128::{Base128Fmt, UInt};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 
 use super::ObjectIdentifierFmt;
@@ -216,12 +218,14 @@ mod derived_proofs {
 ///
 /// Keeping the first two arcs separate avoids a second allocation when parsing: the
 /// remaining subidentifiers are already produced as one `Vec` by `RepeatTillEnd`.
+#[cfg(feature = "alloc")]
 pub struct ObjectIdentifier {
     first: UInt,
     second: UInt,
     rest: Vec<UInt>,
 }
 
+#[cfg(feature = "alloc")]
 impl DeepView for ObjectIdentifier {
     type V = ObjectIdentifierSpec;
 
@@ -230,6 +234,7 @@ impl DeepView for ObjectIdentifier {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl ObjectIdentifier {
     pub fn new(first: UInt, second: UInt, rest: Vec<UInt>) -> Self {
         Self { first, second, rest }
@@ -263,6 +268,7 @@ fn oid_first_subidentifier_exec(first: UInt, second: UInt) -> (combined: UInt)
     }
 }
 
+#[cfg(feature = "alloc")]
 impl Parser<&[u8]> for ObjectIdentifierFmt {
     type PT = ObjectIdentifier;
 
@@ -282,6 +288,7 @@ impl Parser<&[u8]> for ObjectIdentifierFmt {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<Output: OutputBuf> Serializer<Output, ObjectIdentifier> for ObjectIdentifierFmt {
     fn serialize_into(&self, v: &ObjectIdentifier, obuf: &mut Output) {
         let ghost vv = v.deep_view();
@@ -292,6 +299,7 @@ impl<Output: OutputBuf> Serializer<Output, ObjectIdentifier> for ObjectIdentifie
     }
 }
 
+#[cfg(feature = "alloc")]
 impl Prepare<ObjectIdentifier> for ObjectIdentifierFmt {
     fn prepare(&self, v: &ObjectIdentifier) -> Result<usize, PreSerializeError> {
         if v.first > 2 {
@@ -315,6 +323,7 @@ impl Prepare<ObjectIdentifier> for ObjectIdentifierFmt {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl ByteLen<ObjectIdentifier> for ObjectIdentifierFmt {
     fn length(&self, v: &ObjectIdentifier) -> usize {
         let combined = oid_first_subidentifier_exec(v.first, v.second);
@@ -325,7 +334,7 @@ impl ByteLen<ObjectIdentifier> for ObjectIdentifierFmt {
 }
 
 } // verus!
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use super::*;
     use crate::asn1::der::OBJECT_IDENTIFIER;

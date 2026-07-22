@@ -61,7 +61,9 @@ pub use generalizedtime::{GeneralizedTime, GeneralizedTimeSpec};
 pub use ia5string::{Ia5String, Ia5StringSpec};
 pub use integer::{Integer, Integer16Fmt, Integer8Fmt};
 pub use modifiers::{ContextExplicit, ContextImplicit, DefaultedFmt, Explicit, Implicit};
-pub use oid::{ObjectIdentifier, ObjectIdentifierSpec};
+#[cfg(feature = "alloc")]
+pub use oid::ObjectIdentifier;
+pub use oid::ObjectIdentifierSpec;
 pub use printablestring::{PrintableString, PrintableStringSpec};
 pub use real::{Real, RealSpec};
 pub use set_of::{DerOrd, SetOfFmt};

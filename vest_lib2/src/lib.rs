@@ -44,7 +44,7 @@
 //! ```
 //!
 //! See the [`combinators`] module for the full catalog of available combinators.
-// #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
 #![allow(dead_code)]
@@ -53,6 +53,12 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+
+// Unit tests run on a host with `std` even when checking the library's core-only feature set.
+// Import its macros so allocation-free APIs can still be exercised by ordinary test fixtures.
+#[cfg(all(test, not(feature = "std")))]
+#[macro_use]
+extern crate std;
 
 /// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
 pub type Never = combinators::marker::exec::ExecNever;

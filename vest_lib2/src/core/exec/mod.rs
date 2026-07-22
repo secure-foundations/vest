@@ -20,7 +20,7 @@ use vstd::std_specs::cmp::PartialEqIs;
 
 verus! {
 
-pub assume_specification<T: std::cmp::PartialEq<U>, U>[ <[T] as PartialEq<[U]>>::eq ](
+pub assume_specification<T: core::cmp::PartialEq<U>, U>[ <[T] as PartialEq<[U]>>::eq ](
     x: &[T],
     y: &[U],
 ) -> (res: bool)
