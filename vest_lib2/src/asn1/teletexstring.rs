@@ -10,6 +10,8 @@ use crate::{
     combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, Tail},
     core::{proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::string::String;
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
 use OutputBuf;
@@ -20,12 +22,27 @@ pub struct TeletexString<'a> {
     inner: &'a str,
 }
 
+/// Owned TeletexString value used when BER segments must be flattened.
+#[cfg(feature = "alloc")]
+pub struct TeletexStringOwned {
+    inner: String,
+}
+
 #[verifier::ext_equal]
 pub struct TeletexStringSpec {
     pub inner: Seq<char>,
 }
 
 impl<'a> DeepView for TeletexString<'a> {
+    type V = TeletexStringSpec;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        TeletexStringSpec { inner: self.inner.deep_view() }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl DeepView for TeletexStringOwned {
     type V = TeletexStringSpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -53,6 +70,30 @@ impl<'a> TeletexString<'a> {
             res.deep_view() == self.deep_view().inner,
     {
         self.inner
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl TeletexStringOwned {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        self.deep_view().wf()
+    }
+
+    pub fn new(inner: String) -> (res: Self)
+        requires
+            is_valid_teletex_string_spec(vstd::utf8::encode_utf8(inner.deep_view())),
+        ensures
+            res.deep_view() == (TeletexStringSpec { inner: inner.deep_view() }),
+    {
+        Self { inner }
+    }
+
+    pub fn inner(&self) -> (res: &str)
+        ensures
+            res.deep_view() == self.deep_view().inner,
+    {
+        self.inner.as_str()
     }
 }
 
@@ -244,6 +285,41 @@ impl<'i> ByteLen<TeletexString<'i>> for super::TeletexStringFmt {
             use_type_invariant(v);
         }
         let bytes = v.inner.as_bytes();
+        Tail.length(&bytes)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf> Serializer<Output, TeletexStringOwned> for super::TeletexStringFmt {
+    fn serialize_into(&self, v: &TeletexStringOwned, obuf: &mut Output) {
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_str().as_bytes();
+        Tail.serialize_into(&bytes, obuf);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Prepare<TeletexStringOwned> for super::TeletexStringFmt {
+    fn prepare(&self, v: &TeletexStringOwned) -> Result<usize, PreSerializeError> {
+        broadcast use vstd::utf8::encode_utf8_valid_utf8;
+
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_str().as_bytes();
+        Tail.prepare(&bytes)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl ByteLen<TeletexStringOwned> for super::TeletexStringFmt {
+    fn length(&self, v: &TeletexStringOwned) -> usize {
+        proof {
+            use_type_invariant(v);
+        }
+        let bytes = v.inner.as_str().as_bytes();
         Tail.length(&bytes)
     }
 }
