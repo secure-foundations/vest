@@ -51,8 +51,8 @@ pub mod utf8string;
 
 pub use any::{Any, AnySpec};
 pub use ber::{
-    BerBmpStringFmt, BerIa5StringFmt, BerOctetStringFmt, BerPrintableStringFmt,
-    BerCharStringFmt, BerUtf8StringFmt, EocFmt, EOC,
+    BerBmpStringFmt, BerCharStringFmt, BerIa5StringFmt, BerOctetStringFmt, BerPrintableStringFmt,
+    BerSequenceOfFmt, BerUtf8StringFmt, EocFmt, EOC,
 };
 pub use bitstring::{BitString, BitStringSpec};
 #[cfg(feature = "alloc")]
