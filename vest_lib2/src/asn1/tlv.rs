@@ -39,20 +39,6 @@ pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
     }
 }
 
-pub(crate) proof fn lemma_asn1_fmt_byte_len_decomposition<Content: SpecCombinator, const DER: bool>(
-    fmt: ASN1Fmt<Content, DER>,
-    value: Content::T,
-)
-    requires
-        fmt.1.byte_len(value) <= usize::MAX,
-    ensures
-        fmt.byte_len(value) == TagFmt.byte_len(fmt.0) + LengthFmt::<DER>.byte_len(
-            fmt.1.byte_len(value) as usize,
-        ) + fmt.1.byte_len(value),
-{
-    reveal(asn1_fmt);
-}
-
 mod derived_specs {
     use super::*;
 

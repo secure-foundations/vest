@@ -9,6 +9,8 @@ use crate::{
     combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, Tail},
     core::{proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec::Vec};
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
 use OutputBuf;
@@ -16,6 +18,11 @@ use OutputBuf;
 verus! {
 
 pub type Utf8String<'a> = &'a str;
+
+/// Owned UTF8String value used by formats, such as constructed BER strings, whose
+/// contents cannot borrow one contiguous range of the input.
+#[cfg(feature = "alloc")]
+pub type Utf8StringOwned = String;
 
 #[verifier::external_body]
 pub fn is_valid_utf8(bytes: &[u8]) -> (res: bool)
@@ -39,6 +46,16 @@ pub fn utf8_from_bytes_unchecked<'a>(bytes: &'a [u8]) -> (res: &'a str)
     // SAFETY: Verus ensures that the bytes are valid UTF-8 :p
     unsafe { str::from_utf8_unchecked(bytes) }
 }
+
+/// Specification for converting an owned UTF-8 byte buffer into a `String` without copying or
+/// reallocating it.
+#[cfg(feature = "alloc")]
+pub assume_specification[ String::from_utf8_unchecked ](bytes: Vec<u8>) -> (res: String)
+    requires
+        vstd::utf8::valid_utf8(bytes.deep_view()),
+    ensures
+        res.deep_view() == vstd::utf8::decode_utf8(bytes.deep_view()),
+;
 
 type Utf8StringFmt = Mapped<Refined<Tail, PredFnSpec<Seq<u8>>>, FnSpecMapper<Seq<u8>, Seq<char>>>;
 
@@ -192,6 +209,32 @@ impl<'i> Prepare<&'i str> for super::Utf8StringFmt {
 impl<'i> ByteLen<&'i str> for super::Utf8StringFmt {
     fn length(&self, v: &&'i str) -> usize {
         let bytes = v.as_bytes();
+        Tail.length(&bytes)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf> Serializer<Output, Utf8StringOwned> for super::Utf8StringFmt {
+    fn serialize_into(&self, v: &Utf8StringOwned, obuf: &mut Output) {
+        let bytes = v.as_str().as_bytes();
+        Tail.serialize_into(&bytes, obuf);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Prepare<Utf8StringOwned> for super::Utf8StringFmt {
+    fn prepare(&self, v: &Utf8StringOwned) -> Result<usize, PreSerializeError> {
+        broadcast use vstd::utf8::encode_utf8_valid_utf8;
+
+        let bytes = v.as_str().as_bytes();
+        Tail.prepare(&bytes)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl ByteLen<Utf8StringOwned> for super::Utf8StringFmt {
+    fn length(&self, v: &Utf8StringOwned) -> usize {
+        let bytes = v.as_str().as_bytes();
         Tail.length(&bytes)
     }
 }

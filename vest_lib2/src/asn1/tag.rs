@@ -450,9 +450,9 @@ pub broadcast proof fn lemma_tag_wf_implies_tag_consistent(tag: Tag)
 {
 }
 
-pub(crate) proof fn lemma_tag_fmt_byte_len_bound(tag: Tag)
+pub(crate) broadcast proof fn lemma_tag_fmt_byte_len_bound(tag: Tag)
     ensures
-        super::TagFmt.byte_len(tag) <= TAG_FMT_MAX_BYTE_LEN,
+        #[trigger] super::TagFmt.byte_len(tag) <= TAG_FMT_MAX_BYTE_LEN,
 {
     let num = tag_num_to_uint(tag.number);
     lemma_to_base128_len_bounds();

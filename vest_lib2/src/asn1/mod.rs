@@ -50,20 +50,29 @@ pub mod utctime;
 pub mod utf8string;
 
 pub use any::{Any, AnySpec};
-pub use ber::{BerOctetStringFmt, EocFmt, EOC};
+pub use ber::{
+    BerBmpStringFmt, BerIa5StringFmt, BerOctetStringFmt, BerPrintableStringFmt,
+    BerRestrictedStringFmt, BerUtf8StringFmt, EocFmt, EOC,
+};
 pub use bitstring::{BitString, BitStringSpec};
-pub use bmpstring::{BmpString, BmpStringSpec};
+#[cfg(feature = "alloc")]
+pub use bmpstring::BmpString;
+pub use bmpstring::BmpStringSpec;
 pub use constraints::{ConstraintAnd, ConstraintNot, ConstraintOr, IntegerRange, Size};
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
 pub use enumerated::Enumerated;
 pub use generalizedtime::{GeneralizedTime, GeneralizedTimeSpec};
+#[cfg(feature = "alloc")]
+pub use ia5string::Ia5StringOwned;
 pub use ia5string::{Ia5String, Ia5StringSpec};
 pub use integer::{Integer, Integer16Fmt, Integer8Fmt};
 pub use modifiers::{ContextExplicit, ContextImplicit, DefaultedFmt, Explicit, Implicit};
 #[cfg(feature = "alloc")]
 pub use oid::ObjectIdentifier;
 pub use oid::ObjectIdentifierSpec;
+#[cfg(feature = "alloc")]
+pub use printablestring::PrintableStringOwned;
 pub use printablestring::{PrintableString, PrintableStringSpec};
 pub use real::{Real, RealSpec};
 pub use set_of::{DerOrd, SetOfFmt};
@@ -71,6 +80,8 @@ pub use tag::{Class, Tag};
 pub use teletexstring::{TeletexString, TeletexStringSpec};
 pub use utctime::UtcTime;
 pub use utf8string::Utf8String;
+#[cfg(feature = "alloc")]
+pub use utf8string::Utf8StringOwned;
 
 use crate::{
     combinators::{

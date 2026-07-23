@@ -1,7 +1,9 @@
 //! Reusable executable and specification predicates for ASN.1 subtype constraints.
+#[cfg(feature = "alloc")]
+use super::{BmpString, Ia5StringOwned, PrintableStringOwned, Utf8StringOwned};
 use super::{
-    BmpString, BmpStringSpec, Ia5String, Ia5StringSpec, Integer, PrintableString,
-    PrintableStringSpec, TeletexString, TeletexStringSpec,
+    BmpStringSpec, Ia5String, Ia5StringSpec, Integer, PrintableString, PrintableStringSpec,
+    TeletexString, TeletexStringSpec,
 };
 use crate::core::exec::fns::Pred;
 use crate::core::spec::SpecPred;
@@ -116,6 +118,15 @@ impl<'a, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: 
     }
 }
 
+#[cfg(feature = "alloc")]
+impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
+    Utf8StringOwned,
+> for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &Utf8StringOwned) -> (ok: bool) {
+        size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.as_str().unicode_len())
+    }
+}
+
 impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> SpecPred<
     PrintableStringSpec,
 > for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
@@ -132,6 +143,15 @@ impl<'a, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: 
     }
 }
 
+#[cfg(feature = "alloc")]
+impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
+    PrintableStringOwned,
+> for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &PrintableStringOwned) -> (ok: bool) {
+        size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
+    }
+}
+
 impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> SpecPred<
     Ia5StringSpec,
 > for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
@@ -144,6 +164,15 @@ impl<'a, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: 
     Ia5String<'a>,
 > for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
     fn test(&self, value: &Ia5String<'a>) -> (ok: bool) {
+        size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
+    Ia5StringOwned,
+> for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &Ia5StringOwned) -> (ok: bool) {
         size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
     }
 }
@@ -172,10 +201,11 @@ impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usiz
     }
 }
 
-impl<'a, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
-    BmpString<'a>,
+#[cfg(feature = "alloc")]
+impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
+    BmpString,
 > for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
-    fn test(&self, value: &BmpString<'a>) -> (ok: bool) {
+    fn test(&self, value: &BmpString) -> (ok: bool) {
         size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
     }
 }

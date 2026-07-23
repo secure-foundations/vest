@@ -418,15 +418,15 @@ pub fn fits_i8(v: i16) -> bool
     i8::MIN as i16 <= v && v <= i8::MAX as i16
 }
 
-pub(crate) proof fn lemma_integer8_fmt_byte_len(value: i8)
+pub(crate) broadcast proof fn lemma_integer8_fmt_byte_len(value: i8)
     ensures
-        Integer8Fmt.byte_len(value) == 1,
+        #[trigger] Integer8Fmt.byte_len(value) == 1,
 {
 }
 
-pub(crate) proof fn lemma_integer16_fmt_byte_len_bound(value: i16)
+pub(crate) broadcast proof fn lemma_integer16_fmt_byte_len_bound(value: i16)
     ensures
-        Integer16Fmt.byte_len(value) <= 2,
+        #[trigger] Integer16Fmt.byte_len(value) <= 2,
 {
 }
 
