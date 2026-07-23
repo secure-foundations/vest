@@ -1,8 +1,11 @@
 //! BER OCTET STRING framing.
 use crate::asn1::{
-    ASN1Fmt, BerLength, BerLengthFmt, BoolFmt, Class, EnumeratedFmt, IntegerFmt, NullFmt,
-    ObjectIdentifierFmt, OctetStringFmt, RealFmt, Tag, TagFmt, BER,
+    ASN1Fmt, BerLength, BerLengthFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, Ia5StringFmt,
+    IntegerFmt, NullFmt, ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt, RealFmt, Tag,
+    TagFmt, Utf8StringFmt, BER,
 };
+#[cfg(feature = "alloc")]
+use crate::asn1::{BmpString, Ia5StringOwned, PrintableStringOwned, Utf8StringOwned};
 use crate::combinators::{
     bytes::ExactLen,
     mapped::spec::FnSpecMapper,
@@ -10,7 +13,7 @@ use crate::combinators::{
         BundledSpecs, EquivSerializersGeneralRecBody, GoodSerializerRecBody, ParamRecSpecs,
         ParserRecBody, ProductiveRecBody, SafeParserRecBody, SpecRecBody,
     },
-    Bind, Const, FixWith, Mapped, Pair, Repeat, RepeatTillEnd, Sum, Void, U8,
+    Bind, Const, FixWith, Mapped, Pair, Refined, Repeat, RepeatTillEnd, Sum, Void, U8,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -21,8 +24,11 @@ use crate::core::exec::{
 use crate::core::{proof::*, spec::*};
 use crate::Never;
 #[cfg(feature = "alloc")]
+use alloc::string::String;
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use vstd::prelude::*;
+#[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
 use super::LengthFmt;
@@ -82,9 +88,9 @@ type BerOctetStringBodyFmt<Rec> = Mapped<
 
 /// One full TLV unfolding of a BER OCTET STRING.
 ///
-/// `tag` supplies the identity accepted at this level. Recursive segments deliberately invoke
-/// the callback with the universal OCTET STRING identity, so IMPLICIT tagging affects only the
-/// outermost TLV.
+/// X.690, 8.23.3 specifies a restricted character string as
+/// `[UNIVERSAL x] IMPLICIT OCTET STRING`. Thus `tag` applies only to the outermost TLV; constructed
+/// fragments recursively use universal OCTET STRING tag 4, as required by X.690, 8.7.3.2.
 pub open spec fn ber_octet_string_rec_body(
     tag: Tag,
     rec: ParamRecSpecs<Tag, Seq<u8>>,
@@ -321,6 +327,7 @@ impl<const LIMIT: usize> ByteLen<[u8]> for BerOctetStringFmt<LIMIT> {
     }
 }
 
+#[cfg(feature = "alloc")]
 fn flatten_octet_segments(segments: Vec<Vec<u8>>) -> (flat: Vec<u8>)
     ensures
         flat@ == segments.deep_view().flatten(),
@@ -361,6 +368,7 @@ spec fn flattened_result_eoc(r: Option<(int, (Seq<Seq<u8>>, (u8, u8)))>) -> Opti
 }
 
 #[inline(always)]
+#[cfg(feature = "alloc")]
 fn parse_segments_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>>) where
     I: InputBuf,
     P: Parser<I, PT = Vec<Vec<u8>>, PVal = Seq<Seq<u8>>>,
@@ -377,6 +385,7 @@ fn parse_segments_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>>) w
 }
 
 #[inline(always)]
+#[cfg(feature = "alloc")]
 fn parse_segments_eoc_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>>) where
     I: InputBuf,
     P: Parser<I, PT = (Vec<Vec<u8>>, (u8, u8)), PVal = (Seq<Seq<u8>>, (u8, u8))>,
@@ -392,6 +401,7 @@ fn parse_segments_eoc_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>
     Ok((n, flat))
 }
 
+#[cfg(feature = "alloc")]
 impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
     type EP = Tag;
 
@@ -474,11 +484,411 @@ impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerOctetStringFmt<LIMIT> {
     type PT = Vec<u8>;
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).parse(ibuf)
+    }
+}
+
+type BerRestrictedStringFmt__<C, const LIMIT: usize> = Mapped<
+    Refined<BerOctetStringFmt<LIMIT>, PredFnSpec<Seq<u8>>>,
+    FnSpecMapper<Seq<u8>, <C as SpecByteLen>::T>,
+>;
+
+/// reject invalid flattened contents, then map the validated octets to the string value.
+pub open spec fn ber_char_string_fmt<C: SpecCombinator, const LIMIT: usize>(
+    tag: Tag,
+    content: C,
+) -> BerRestrictedStringFmt__<C, LIMIT> {
+    Mapped {
+        inner: Refined(
+            BerOctetStringFmt::<LIMIT>(tag),
+            |bytes: Seq<u8>| content.spec_parse(bytes) is Some,
+        ),
+        mapper: (
+            |bytes: Seq<u8>| (content.spec_parse(bytes)->0).1,
+            |value: C::T| content.spec_serialize(value),
+        ),
+    }
+}
+
+/// BER restricted character string represented as an IMPLICITly tagged BER OCTET STRING.
+///
+/// Parsing accepts primitive, definite constructed, indefinite constructed, and nested forms.
+/// Only the outermost tag is configurable; recursive components retain the universal OCTET STRING
+/// tag. Serialization is normalized to primitive definite form.
+#[verifier::allow(autoderive_clone_without_spec)]
+#[derive(Clone, Copy)]
+pub struct BerCharStringFmt<C, const LIMIT: usize>(pub Tag, pub C);
+
+mod restricted_string_specs {
+    use super::*;
+
+    impl<C: SpecCombinator, const LIMIT: usize> SpecParser for BerCharStringFmt<C, LIMIT> {
+        type PVal = C::T;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).spec_parse(ibuf)
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> Consistency for BerCharStringFmt<C, LIMIT> {
+        type Val = C::T;
+
+        open spec fn consistent(&self, value: Self::Val) -> bool {
+            &&& self.1.consistent(value)
+            &&& ber_char_string_fmt::<C, LIMIT>(self.0, self.1).consistent(value)
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> SpecSerializerDps for BerCharStringFmt<C, LIMIT> {
+        type SValue = C::T;
+
+        open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).spec_serialize_dps(value, obuf)
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> SpecSerializer for BerCharStringFmt<C, LIMIT> {
+        type SVal = C::T;
+
+        open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).spec_serialize(value)
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> SpecByteLen for BerCharStringFmt<C, LIMIT> {
+        type T = C::T;
+
+        open spec fn byte_len(&self, value: Self::T) -> nat {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).byte_len(value)
+        }
+    }
+
+}
+
+mod restricted_string_proofs {
+    use super::*;
+
+    impl<C: SpecCombinator, const LIMIT: usize> SafeParser for BerCharStringFmt<C, LIMIT> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> Productive for BerCharStringFmt<C, LIMIT> {
+        proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_productive(ibuf);
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> GoodSerializer for BerCharStringFmt<C, LIMIT> {
+        proof fn lemma_serialize_len(&self, value: Self::SVal) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_serialize_len(value);
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> NonTailFmt for BerCharStringFmt<C, LIMIT> {
+        proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_serialize_dps_prepend(
+                value,
+                obuf,
+            );
+        }
+
+        proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_serialize_dps_len(value, obuf);
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> EquivSerializersGeneral for BerCharStringFmt<
+        C,
+        LIMIT,
+    > {
+        proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_serialize_equiv(value, obuf);
+        }
+    }
+
+    impl<C: SpecCombinator, const LIMIT: usize> EquivSerializers for BerCharStringFmt<C, LIMIT> {
+        proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
+            ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_serialize_equiv_on_empty(value);
+        }
+    }
+
+    impl<C: SpecCombinator + SPRoundTrip, const LIMIT: usize> SPRoundTripDps for BerCharStringFmt<
+        C,
+        LIMIT,
+    > {
+        open spec fn unambiguous(&self) -> bool {
+            self.1.sp_roundtrip_inv()
+        }
+
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
+            let bytes = self.1.spec_serialize(value);
+            self.1.theorem_serialize_parse_roundtrip(value);
+            BerOctetStringFmt::<LIMIT>(self.0).theorem_serialize_dps_parse_roundtrip(bytes, obuf);
+        }
+    }
+
+}
+
+impl<C: Copy, const LIMIT: usize> BerCharStringFmt<C, LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn with_implicit_tag(content: C, class: Class, number: u64) -> Self
+        returns
+            Self(
+                Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) },
+                content,
+            ),
+    {
+        Self(
+            Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) },
+            content,
+        )
+    }
+}
+
+pub type BerUtf8StringFmt<const LIMIT: usize> = BerCharStringFmt<Utf8StringFmt, LIMIT>;
+
+pub type BerPrintableStringFmt<const LIMIT: usize> = BerCharStringFmt<PrintableStringFmt, LIMIT>;
+
+pub type BerIa5StringFmt<const LIMIT: usize> = BerCharStringFmt<Ia5StringFmt, LIMIT>;
+
+pub type BerBmpStringFmt<const LIMIT: usize> = BerCharStringFmt<BmpStringFmt, LIMIT>;
+
+impl<const LIMIT: usize> BerUtf8StringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::UTF8_STRING, Utf8StringFmt),
+    {
+        Self(TagFmt::UTF8_STRING, Utf8StringFmt)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self::with_implicit_tag(Utf8StringFmt, class, number),
+    {
+        Self::with_implicit_tag(Utf8StringFmt, class, number)
+    }
+}
+
+impl<const LIMIT: usize> BerPrintableStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::PRINTABLE_STRING, PrintableStringFmt),
+    {
+        Self(TagFmt::PRINTABLE_STRING, PrintableStringFmt)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self::with_implicit_tag(PrintableStringFmt, class, number),
+    {
+        Self::with_implicit_tag(PrintableStringFmt, class, number)
+    }
+}
+
+impl<const LIMIT: usize> BerIa5StringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::IA5_STRING, Ia5StringFmt),
+    {
+        Self(TagFmt::IA5_STRING, Ia5StringFmt)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self::with_implicit_tag(Ia5StringFmt, class, number),
+    {
+        Self::with_implicit_tag(Ia5StringFmt, class, number)
+    }
+}
+
+impl<const LIMIT: usize> BerBmpStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::BMP_STRING, BmpStringFmt),
+    {
+        Self(TagFmt::BMP_STRING, BmpStringFmt)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self::with_implicit_tag(BmpStringFmt, class, number),
+    {
+        Self::with_implicit_tag(BmpStringFmt, class, number)
+    }
+}
+
+/// Executable bridge from owned BER contents octets to owned values.
+#[cfg(feature = "alloc")]
+pub trait BerDecoderOwned: SpecCombinator {
+    type Owned: DeepView<V = Self::T>;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> (r: Result<Self::Owned, ParseError>)
+        ensures
+            ({
+                let expected = match self.spec_parse(bytes.deep_view()) {
+                    Some((_, value)) => Some(value),
+                    None => None,
+                };
+                &&& r is Ok <==> expected is Some
+                &&& r is Err <==> expected is None
+                &&& r matches Ok(value) ==> expected == Some(value.deep_view())
+            }),
+    ;
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for Utf8StringFmt {
+    type Owned = Utf8StringOwned;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        let input = bytes.as_slice();
+        if super::utf8string::is_valid_utf8(input) {
+            // SAFETY: the branch condition establishes that `bytes` is valid UTF-8.
+            let inner = unsafe { String::from_utf8_unchecked(bytes) };
+            Ok(inner)
+        } else {
+            Err(ParseError::custom("Invalid UTF-8"))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for PrintableStringFmt {
+    type Owned = PrintableStringOwned;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+        let input = bytes.as_slice();
+        if !super::printablestring::is_valid_printable_string(input) {
+            Err(ParseError::custom("Invalid PrintableString"))
+        } else if !super::utf8string::is_valid_utf8(input) {
+            Err(ParseError::custom("Invalid UTF-8"))
+        } else {
+            // SAFETY: the preceding check establishes that `bytes` is valid UTF-8.
+            let inner = unsafe { String::from_utf8_unchecked(bytes) };
+            Ok(PrintableStringOwned::new(inner))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for Ia5StringFmt {
+    type Owned = Ia5StringOwned;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+        let input = bytes.as_slice();
+        if !super::ia5string::is_valid_ia5_string(input) {
+            Err(ParseError::custom("Invalid IA5String"))
+        } else if !super::utf8string::is_valid_utf8(input) {
+            Err(ParseError::custom("Invalid UTF-8"))
+        } else {
+            // SAFETY: the preceding check establishes that `bytes` is valid UTF-8.
+            let inner = unsafe { String::from_utf8_unchecked(bytes) };
+            Ok(Ia5StringOwned::new(inner))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for BmpStringFmt {
+    type Owned = BmpString;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        assert(bytes@ == bytes.deep_view());
+        let (_, parsed) = BmpStringFmt.parse(&bytes.as_slice())?;
+        Ok(parsed)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'i, C, const LIMIT: usize> Parser<&'i [u8]> for BerCharStringFmt<C, LIMIT> where
+    C: BerDecoderOwned,
+ {
+    type PT = C::Owned;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        let (n, bytes) = BerOctetStringFmt::<LIMIT>(self.0).parse(ibuf)?;
+        let value = self.1.decode_owned(bytes)?;
+        Ok((n, value))
+    }
+}
+
+impl<Output, C, T, const LIMIT: usize> Serializer<Output, T> for BerCharStringFmt<C, LIMIT> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    C: SpecCombinator + Copy + GoodSerializer + Serializer<Output, T> + ByteLen<T>,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& <C as Serializer<Output, T>>::exec_inv(&self.1)
+        &&& <C as ByteLen<T>>::exec_inv(&self.1)
+        &&& self.1.serialize_inv()
+    }
+
+    fn serialize_into(&self, value: &T, obuf: &mut Output) {
+        proof {
+            self.1.lemma_serialize_len(value.deep_view());
+        }
+        let normalized = ASN1Fmt::<C, BER>(primitive_tag(self.0), self.1);
+        normalized.serialize_into(value, obuf);
+    }
+}
+
+impl<C, T, const LIMIT: usize> Prepare<T> for BerCharStringFmt<C, LIMIT> where
+    T: DeepView + ?Sized,
+    C: SpecCombinator + Copy + GoodSerializer + SPRoundTrip + Prepare<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        &&& <C as Prepare<T>>::exec_inv(&self.1)
+        &&& self.1.serialize_inv()
+        &&& self.1.sp_roundtrip_inv()
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        let normalized = ASN1Fmt::<C, BER>(primitive_tag(self.0), self.1);
+        let result = normalized.prepare(value);
+        proof {
+            if let Ok(_len) = result {
+                self.1.lemma_serialize_len(value.deep_view());
+                self.1.theorem_serialize_parse_roundtrip(value.deep_view());
+            }
+        }
+        result
+    }
+}
+
+impl<C, T, const LIMIT: usize> ByteLen<T> for BerCharStringFmt<C, LIMIT> where
+    T: DeepView + ?Sized,
+    C: SpecCombinator + Copy + GoodSerializer + ByteLen<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <C as ByteLen<T>>::exec_inv(&self.1) && self.1.serialize_inv()
+    }
+
+    fn length(&self, value: &T) -> usize {
+        proof {
+            self.1.lemma_serialize_len(value.deep_view());
+        }
+        let normalized = ASN1Fmt::<C, BER>(primitive_tag(self.0), self.1);
+        normalized.length(value)
     }
 }
 
@@ -498,9 +908,10 @@ pub const REAL: ASN1Fmt<RealFmt, BER> = ASN1Fmt(TagFmt::REAL, RealFmt);
 pub const NULL: ASN1Fmt<NullFmt, BER> = ASN1Fmt(TagFmt::NULL, NullFmt);
 
 } // verus!
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use super::*;
+    use crate::asn1::BmpString;
     use crate::core::exec::{ParseErrorKind, Parser, Prepare, SerializerExt};
 
     type Octets = BerOctetStringFmt<8>;
@@ -599,5 +1010,97 @@ mod tests {
         let mut output = vec![0; implicit.prepare(value.as_slice()).unwrap()];
         implicit.serialize(value.as_slice(), output.as_mut_slice());
         assert_eq!(output, [0x80, 0x03, b'a', b'b', b'c']);
+    }
+
+    #[test]
+    fn ber_utf8_string_validates_after_flattening_segments() {
+        type Format = BerUtf8StringFmt<8>;
+
+        // U+20AC is split in the middle of its three-octet UTF-8 encoding. Validating each
+        // primitive segment separately would reject this standards-permitted encoding.
+        let split_scalar = [
+            0x2c, 0x80, 0x04, 0x01, 0xe2, 0x04, 0x02, 0x82, 0xac, 0x00, 0x00,
+        ];
+        let (n, value) = Format::universal().parse(&&split_scalar[..]).unwrap();
+        assert_eq!(n, split_scalar.len());
+        assert_eq!(value.as_str(), "€");
+
+        let primitive = [0x0c, 0x03, 0xe2, 0x82, 0xac];
+        assert_eq!(
+            Format::universal()
+                .parse(&&primitive[..])
+                .unwrap()
+                .1
+                .as_str(),
+            "€"
+        );
+
+        let nested = [
+            0x2c, 0x80, // constructed UTF8String
+            0x24, 0x80, // nested universal constructed OCTET STRING
+            0x04, 0x01, 0xe2, 0x04, 0x02, 0x82, 0xac, 0x00, 0x00, // nested EOC
+            0x00, 0x00, // outer EOC
+        ];
+        assert_eq!(
+            Format::universal().parse(&&nested[..]).unwrap().1.as_str(),
+            "€"
+        );
+
+        let format = Format::universal();
+        let mut output = vec![0; format.prepare(&value).unwrap()];
+        format.serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0x0c, 0x03, 0xe2, 0x82, 0xac]);
+    }
+
+    #[test]
+    fn ber_restricted_strings_support_implicit_outer_tags() {
+        type Format = BerUtf8StringFmt<8>;
+        let format = Format::implicit(Class::ContextSpecific, 0);
+        let input = [
+            0xa0, 0x80, 0x04, 0x01, 0xe2, 0x04, 0x02, 0x82, 0xac, 0x00, 0x00,
+        ];
+        let (_, value) = format.parse(&&input[..]).unwrap();
+        assert_eq!(value.as_str(), "€");
+
+        let mut output = vec![0; format.prepare(&value).unwrap()];
+        format.serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0x80, 0x03, 0xe2, 0x82, 0xac]);
+    }
+
+    #[test]
+    fn ber_printable_and_ia5_validate_flattened_contents() {
+        let printable = [
+            0x33, 0x80, 0x04, 0x02, b'A', b'B', 0x04, 0x02, b'1', b'?', 0x00, 0x00,
+        ];
+        let (_, value) = BerPrintableStringFmt::<8>::universal()
+            .parse(&&printable[..])
+            .unwrap();
+        assert_eq!(value.inner(), "AB1?");
+
+        let invalid_ia5 = [0x36, 0x80, 0x04, 0x01, 0x80, 0x00, 0x00];
+        assert!(BerIa5StringFmt::<8>::universal()
+            .parse(&&invalid_ia5[..])
+            .is_err());
+    }
+
+    #[test]
+    fn ber_bmp_string_allows_code_units_to_cross_segments() {
+        type Format = BerBmpStringFmt<8>;
+
+        // BMPString "A" is 00 41. The code unit is deliberately split between children.
+        let split_code_unit = [0x3e, 0x80, 0x04, 0x01, 0x00, 0x04, 0x01, 0x41, 0x00, 0x00];
+        let (_, value) = Format::universal().parse(&&split_code_unit[..]).unwrap();
+        assert_eq!(value.inner(), "A");
+
+        let malformed = [0x1e, 0x01, 0x00];
+        assert!(Format::universal().parse(&&malformed[..]).is_err());
+        let surrogate = [0x1e, 0x02, 0xd8, 0x00];
+        assert!(Format::universal().parse(&&surrogate[..]).is_err());
+
+        let value = BmpString::new(String::from("A"));
+        let format = Format::universal();
+        let mut output = vec![0; format.prepare(&value).unwrap()];
+        format.serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0x1e, 0x02, 0x00, 0x41]);
     }
 }
