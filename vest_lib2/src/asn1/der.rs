@@ -1,144 +1,141 @@
-//! Convenient notation-style aliases for universal formats with DER encoding.
+//! DER universal formats and notation-style aliases.
+use super::modifiers::{defaulted, explicit_tag};
+pub use super::modifiers::{
+    implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION,
+    IMPLICIT_PRIVATE, OPTIONAL, REQUIRED,
+};
 use super::{
-    ASN1Fmt, AnyFmt, BitStringFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, Explicit,
-    GeneralizedTimeFmt, Ia5StringFmt, Implicit, Integer16Fmt, Integer8Fmt, IntegerFmt, NullFmt,
-    ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt, RealFmt, SetOfFmt, TagFmt,
-    TeletexStringFmt, UtcTimeFmt, Utf8StringFmt, DER,
+    ASN1Fmt, AnyFmt, BitStringFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, GeneralizedTimeFmt,
+    Ia5StringFmt, Integer16Fmt, Integer8Fmt, IntegerFmt, NullFmt, ObjectIdentifierFmt,
+    OctetStringFmt, PrintableStringFmt, RealFmt, SetOfFmt, TagFmt, TeletexStringFmt, UtcTimeFmt,
+    Utf8StringFmt, DER,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
 verus! {
 
-pub type ASN1BoolFmt<const DER: bool> = ASN1Fmt<BoolFmt<DER>, DER>;
+/// Uniform notation aliases used by schema generators.
+pub type BoolTlvFmt = ASN1Fmt<BoolFmt<DER>, DER>;
 
-pub type ASN1AnyFmt<const DER: bool> = AnyFmt<DER>;
+pub type AnyTlvFmt = AnyFmt<DER>;
 
-pub type ASN1IntegerFmt<const DER: bool> = ASN1Fmt<IntegerFmt, DER>;
+pub type IntegerTlvFmt = ASN1Fmt<IntegerFmt, DER>;
 
-pub type ASN1Integer8Fmt<const DER: bool> = ASN1Fmt<Integer8Fmt, DER>;
+pub type Integer8TlvFmt = ASN1Fmt<Integer8Fmt, DER>;
 
-pub type ASN1Integer16Fmt<const DER: bool> = ASN1Fmt<Integer16Fmt, DER>;
+pub type Integer16TlvFmt = ASN1Fmt<Integer16Fmt, DER>;
 
-pub type ASN1EnumeratedFmt<const DER: bool> = ASN1Fmt<EnumeratedFmt, DER>;
+pub type EnumeratedTlvFmt = ASN1Fmt<EnumeratedFmt, DER>;
 
-pub type ASN1ObjectIdentifierFmt<const DER: bool> = ASN1Fmt<ObjectIdentifierFmt, DER>;
+pub type ObjectIdentifierTlvFmt = ASN1Fmt<ObjectIdentifierFmt, DER>;
 
-pub type ASN1RealFmt<const DER: bool> = ASN1Fmt<RealFmt, DER>;
+pub type RealTlvFmt = ASN1Fmt<RealFmt, DER>;
 
-pub type ASN1BitStringFmt<const DER: bool> = ASN1Fmt<BitStringFmt<DER>, DER>;
+pub type BitStringTlvFmt = ASN1Fmt<BitStringFmt<DER>, DER>;
 
-pub type ASN1OctetStringFmt<const DER: bool> = ASN1Fmt<OctetStringFmt, DER>;
+pub type OctetStringTlvFmt = ASN1Fmt<OctetStringFmt, DER>;
 
-pub type ASN1NullFmt<const DER: bool> = ASN1Fmt<NullFmt, DER>;
+pub type NullTlvFmt = ASN1Fmt<NullFmt, DER>;
 
-pub type ASN1Utf8StringFmt<const DER: bool> = ASN1Fmt<Utf8StringFmt, DER>;
+pub type Utf8StringTlvFmt = ASN1Fmt<Utf8StringFmt, DER>;
 
-pub type ASN1PrintableStringFmt<const DER: bool> = ASN1Fmt<PrintableStringFmt, DER>;
+pub type PrintableStringTlvFmt = ASN1Fmt<PrintableStringFmt, DER>;
 
-pub type ASN1TeletexStringFmt<const DER: bool> = ASN1Fmt<TeletexStringFmt, DER>;
+pub type TeletexStringTlvFmt = ASN1Fmt<TeletexStringFmt, DER>;
 
-pub type ASN1Ia5StringFmt<const DER: bool> = ASN1Fmt<Ia5StringFmt, DER>;
+pub type Ia5StringTlvFmt = ASN1Fmt<Ia5StringFmt, DER>;
 
-pub type ASN1UtcTimeFmt<const DER: bool> = ASN1Fmt<UtcTimeFmt<DER>, DER>;
+pub type UtcTimeTlvFmt = ASN1Fmt<UtcTimeFmt<DER>, DER>;
 
-pub type ASN1GeneralizedTimeFmt<const DER: bool> = ASN1Fmt<GeneralizedTimeFmt<DER>, DER>;
+pub type GeneralizedTimeTlvFmt = ASN1Fmt<GeneralizedTimeFmt<DER>, DER>;
 
-pub type ASN1BmpStringFmt<const DER: bool> = ASN1Fmt<BmpStringFmt, DER>;
+pub type BmpStringTlvFmt = ASN1Fmt<BmpStringFmt, DER>;
 
-pub type ASN1SetOfFmt<C> = ASN1Fmt<SetOfFmt<C>, DER>;
+pub type SequenceFmt<C> = ASN1Fmt<C, DER>;
 
-pub type ASN1SequenceOfFmt<C> = ASN1Fmt<crate::combinators::RepeatTillEnd<C>, DER>;
+pub type SequenceOfFmt<C> = ASN1Fmt<crate::combinators::RepeatTillEnd<C>, DER>;
 
-pub const BOOLEAN: ASN1BoolFmt<DER> = ASN1Fmt::<BoolFmt<DER>, DER>(TagFmt::BOOLEAN, BoolFmt::<DER>);
+pub type SetOfTlvFmt<C> = ASN1Fmt<SetOfFmt<C>, DER>;
 
-pub const ANY: ASN1AnyFmt<DER> = AnyFmt::<DER>;
+pub type ExplicitFmt<C> = ASN1Fmt<C, DER>;
 
-pub const INTEGER: ASN1IntegerFmt<DER> = ASN1Fmt::<IntegerFmt, DER>(TagFmt::INTEGER, IntegerFmt);
+pub type DefaultFmt<Field, Default, Rest> = super::DefaultedFmt<Field, Default, Rest, DER>;
 
-pub const INTEGER8: ASN1Integer8Fmt<DER> = ASN1Fmt::<Integer8Fmt, DER>(
-    TagFmt::INTEGER,
-    Integer8Fmt,
-);
+pub type Eof = crate::combinators::Eof;
 
-pub const INTEGER16: ASN1Integer16Fmt<DER> = ASN1Fmt::<Integer16Fmt, DER>(
-    TagFmt::INTEGER,
-    Integer16Fmt,
-);
+#[allow(non_upper_case_globals)]
+pub const Eof: Eof = crate::combinators::Eof;
 
-pub const ENUMERATED: ASN1EnumeratedFmt<DER> = ASN1Fmt::<EnumeratedFmt, DER>(
-    TagFmt::ENUMERATED,
-    EnumeratedFmt,
-);
+pub const BOOLEAN: BoolTlvFmt = ASN1Fmt(TagFmt::BOOLEAN, BoolFmt::<DER>);
 
-pub const OBJECT_IDENTIFIER: ASN1ObjectIdentifierFmt<DER> = ASN1Fmt::<ObjectIdentifierFmt, DER>(
+pub const ANY: AnyTlvFmt = AnyFmt::<DER>;
+
+pub const INTEGER: IntegerTlvFmt = ASN1Fmt(TagFmt::INTEGER, IntegerFmt);
+
+pub const INTEGER8: Integer8TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer8Fmt);
+
+pub const INTEGER16: Integer16TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer16Fmt);
+
+pub const ENUMERATED: EnumeratedTlvFmt = ASN1Fmt(TagFmt::ENUMERATED, EnumeratedFmt);
+
+pub const OBJECT_IDENTIFIER: ObjectIdentifierTlvFmt = ASN1Fmt(
     TagFmt::OBJECT_IDENTIFIER,
     ObjectIdentifierFmt,
 );
 
-pub const REAL: ASN1RealFmt<DER> = ASN1Fmt::<RealFmt, DER>(TagFmt::REAL, RealFmt);
+pub const REAL: RealTlvFmt = ASN1Fmt(TagFmt::REAL, RealFmt);
 
-pub const BIT_STRING: ASN1BitStringFmt<DER> = ASN1Fmt::<BitStringFmt<DER>, DER>(
-    TagFmt::BIT_STRING,
-    BitStringFmt::<DER>,
-);
+pub const BIT_STRING: BitStringTlvFmt = ASN1Fmt(TagFmt::BIT_STRING, BitStringFmt::<DER>);
 
-pub const OCTET_STRING: ASN1OctetStringFmt<DER> = ASN1Fmt::<OctetStringFmt, DER>(
-    TagFmt::OCTET_STRING,
-    OctetStringFmt,
-);
+pub const OCTET_STRING: OctetStringTlvFmt = ASN1Fmt(TagFmt::OCTET_STRING, OctetStringFmt);
 
-pub const NULL: ASN1NullFmt<DER> = ASN1Fmt::<NullFmt, DER>(TagFmt::NULL, NullFmt);
+pub const NULL: NullTlvFmt = ASN1Fmt(TagFmt::NULL, NullFmt);
 
-pub const UTF8_STRING: ASN1Utf8StringFmt<DER> = ASN1Fmt::<Utf8StringFmt, DER>(
-    TagFmt::UTF8_STRING,
-    Utf8StringFmt,
-);
+pub const UTF8_STRING: Utf8StringTlvFmt = ASN1Fmt(TagFmt::UTF8_STRING, Utf8StringFmt);
 
-pub const PRINTABLE_STRING: ASN1PrintableStringFmt<DER> = ASN1Fmt::<PrintableStringFmt, DER>(
+pub const PRINTABLE_STRING: PrintableStringTlvFmt = ASN1Fmt(
     TagFmt::PRINTABLE_STRING,
     PrintableStringFmt,
 );
 
-pub const TELETEX_STRING: ASN1TeletexStringFmt<DER> = ASN1Fmt::<TeletexStringFmt, DER>(
-    TagFmt::TELETEX_STRING,
-    TeletexStringFmt,
-);
+pub const TELETEX_STRING: TeletexStringTlvFmt = ASN1Fmt(TagFmt::TELETEX_STRING, TeletexStringFmt);
 
-pub const IA5_STRING: ASN1Ia5StringFmt<DER> = ASN1Fmt::<Ia5StringFmt, DER>(
-    TagFmt::IA5_STRING,
-    Ia5StringFmt,
-);
+pub const IA5_STRING: Ia5StringTlvFmt = ASN1Fmt(TagFmt::IA5_STRING, Ia5StringFmt);
 
-pub const UTC_TIME: ASN1UtcTimeFmt<DER> = ASN1Fmt::<UtcTimeFmt<DER>, DER>(
-    TagFmt::UTC_TIME,
-    UtcTimeFmt::<DER>,
-);
+pub const UTC_TIME: UtcTimeTlvFmt = ASN1Fmt(TagFmt::UTC_TIME, UtcTimeFmt::<DER>);
 
-pub const GENERALIZED_TIME: ASN1GeneralizedTimeFmt<DER> = ASN1Fmt::<GeneralizedTimeFmt<DER>, DER>(
+pub const GENERALIZED_TIME: GeneralizedTimeTlvFmt = ASN1Fmt(
     TagFmt::GENERALIZED_TIME,
     GeneralizedTimeFmt::<DER>,
 );
 
-pub const BMP_STRING: ASN1BmpStringFmt<DER> = ASN1Fmt::<BmpStringFmt, DER>(
-    TagFmt::BMP_STRING,
-    BmpStringFmt,
-);
+pub const BMP_STRING: BmpStringTlvFmt = ASN1Fmt(TagFmt::BMP_STRING, BmpStringFmt);
 
 /// Construct a DER `SET OF` whose elements are complete DER formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn SET_OF<C: Copy>(inner: C) -> ASN1SetOfFmt<C>
+pub const fn SET_OF<C: Copy>(inner: C) -> SetOfTlvFmt<C>
     returns
         ASN1Fmt::<SetOfFmt<C>, DER>(TagFmt::SET, SetOfFmt(inner)),
 {
     ASN1Fmt::<SetOfFmt<C>, DER>(TagFmt::SET, SetOfFmt(inner))
 }
 
+/// Construct a DER `SEQUENCE` format.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn SEQUENCE<C: Copy>(inner: C) -> SequenceFmt<C>
+    returns
+        ASN1Fmt::<C, DER>(TagFmt::SEQUENCE, inner),
+{
+    ASN1Fmt::<C, DER>(TagFmt::SEQUENCE, inner)
+}
+
 /// Construct a DER `SEQUENCE OF` whose elements are complete DER formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn SEQUENCE_OF<C: Copy>(inner: C) -> ASN1SequenceOfFmt<C>
+pub const fn SEQUENCE_OF<C: Copy>(inner: C) -> SequenceOfFmt<C>
     returns
         ASN1Fmt::<crate::combinators::RepeatTillEnd<C>, DER>(
             TagFmt::SEQUENCE,
@@ -151,138 +148,77 @@ pub const fn SEQUENCE_OF<C: Copy>(inner: C) -> ASN1SequenceOfFmt<C>
     )
 }
 
-/// Apply an ASN.1 context-specific IMPLICIT tag to a DER-encoded format.
+/// Apply an ASN.1 EXPLICIT tag with an arbitrary tag class.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn IMPLICIT<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
+pub const fn Explicit<C: Copy>(class: Class, number: u64, inner: C) -> ExplicitFmt<C>
     returns
-        Implicit(Class::ContextSpecific, number, inner),
+        ASN1Fmt::<C, DER>(explicit_tag(class, number), inner),
 {
-    Implicit(Class::ContextSpecific, number, inner)
+    ASN1Fmt(explicit_tag(class, number), inner)
 }
 
 /// Apply an ASN.1 context-specific EXPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn EXPLICIT<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+pub const fn EXPLICIT<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
     returns
-        Explicit::<C, DER>(Class::ContextSpecific, number, inner),
+        Explicit(Class::ContextSpecific, number, inner),
 {
-    Explicit::<C, DER>(Class::ContextSpecific, number, inner)
-}
-
-/// Apply an ASN.1 application-class IMPLICIT tag to a DER-encoded format.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn IMPLICIT_APPLICATION<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
-    returns
-        Implicit(Class::Application, number, inner),
-{
-    Implicit(Class::Application, number, inner)
+    Explicit(Class::ContextSpecific, number, inner)
 }
 
 /// Apply an ASN.1 application-class EXPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn EXPLICIT_APPLICATION<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+pub const fn EXPLICIT_APPLICATION<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
     returns
-        Explicit::<C, DER>(Class::Application, number, inner),
+        Explicit(Class::Application, number, inner),
 {
-    Explicit::<C, DER>(Class::Application, number, inner)
-}
-
-/// Apply an ASN.1 private-class IMPLICIT tag to a DER-encoded format.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn IMPLICIT_PRIVATE<C: Copy>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<C, DER>
-    returns
-        Implicit(Class::Private, number, inner),
-{
-    Implicit(Class::Private, number, inner)
+    Explicit(Class::Application, number, inner)
 }
 
 /// Apply an ASN.1 private-class EXPLICIT tag to a DER-encoded format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn EXPLICIT_PRIVATE<C: Copy>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+pub const fn EXPLICIT_PRIVATE<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
     returns
-        Explicit::<C, DER>(Class::Private, number, inner),
+        Explicit(Class::Private, number, inner),
 {
-    Explicit::<C, DER>(Class::Private, number, inner)
+    Explicit(Class::Private, number, inner)
 }
 
 /// The `DEFAULT` modifier for DER-encoded formats.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn DEFAULT<Field, Rest>(
-    field: Field,
-    default: Field::T,
-    cont: Rest,
-) -> super::DefaultedFmt<Field, Field::T, Rest, DER> where Field: SpecByteLen
-    returns
-        super::DefaultedFmt::<Field, Field::T, Rest, DER>(field, default, cont),
-{
-    super::DefaultedFmt::<Field, Field::T, Rest, DER>(field, default, cont)
-}
-
-/// The `OPTIONAL` modifier for DER-encoded formats.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn OPTIONAL<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Optional<
+pub const fn DEFAULT<Field, Rest>(field: Field, default: Field::T, cont: Rest) -> DefaultFmt<
     Field,
+    Field::T,
     Rest,
->
+> where Field: SpecByteLen
     returns
-        crate::combinators::Optional::<Field, Rest>(field, cont),
+        defaulted::<Field, Rest, DER>(field, default, cont),
 {
-    crate::combinators::Optional::<Field, Rest>(field, cont)
-}
-
-/// An alias for `Pair`, which makes naming more coherent with `DEFAULT` and `OPTIONAL`.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn REQUIRED<Field, Rest>(field: Field, cont: Rest) -> crate::combinators::Pair<
-    Field,
-    Rest,
->
-    returns
-        crate::combinators::Pair::<Field, Rest>(field, cont),
-{
-    crate::combinators::Pair::<Field, Rest>(field, cont)
-}
-
-/// An alias for `Choice`, which makes naming more coherent with the rest of ASN.1 combinators.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn CHOICE<A, B>(a: A, b: B) -> crate::combinators::Choice<A, B>
-    returns
-        crate::combinators::Choice::<A, B>(a, b),
-{
-    crate::combinators::Choice::<A, B>(a, b)
+    defaulted::<Field, Rest, DER>(field, default, cont)
 }
 
 } // verus!
 verus! {
 
-use crate::combinators::*;
-use super::modifiers::DefaultedFmt;
+use crate::combinators::{Choice, Optional, Pair};
 
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 const fn MY_FMT() -> Pair<
-    ASN1Fmt<IntegerFmt, DER>,
-    DefaultedFmt<
-        ASN1Fmt<BoolFmt<DER>, DER>,
+    IntegerTlvFmt,
+    DefaultFmt<
+        BoolTlvFmt,
         bool,
         Pair<
-            ASN1Fmt<BitStringFmt<DER>, DER>,
+            BitStringTlvFmt,
             Optional<
-                ASN1Fmt<OctetStringFmt, DER>,
-                DefaultedFmt<
-                    ASN1Fmt<Integer8Fmt, DER>,
-                    i8,
-                    Optional<ASN1Fmt<UtcTimeFmt<DER>, DER>, ASN1Fmt<Utf8StringFmt, DER>>,
-                >,
+                OctetStringTlvFmt,
+                DefaultFmt<Integer8TlvFmt, i8, Optional<UtcTimeTlvFmt, Utf8StringTlvFmt>>,
             >,
         >,
     >,
@@ -316,18 +252,18 @@ const fn MY_FMT() -> Pair<
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 const fn MY_FMT2() -> Pair<
-    ASN1Fmt<IntegerFmt, DER>,
-    DefaultedFmt<
-        ASN1Fmt<ASN1Fmt<Integer16Fmt, DER>, DER>,
+    IntegerTlvFmt,
+    DefaultFmt<
+        ExplicitFmt<Integer16TlvFmt>,
         i16,
         Optional<
-            ASN1Fmt<Integer16Fmt, DER>,
+            ImplicitFmt<Integer16TlvFmt>,
             Optional<
-                ASN1Fmt<Integer16Fmt, DER>,
-                DefaultedFmt<
-                    ASN1Fmt<ASN1Fmt<Integer16Fmt, DER>, DER>,
+                ImplicitFmt<Integer16TlvFmt>,
+                DefaultFmt<
+                    ExplicitFmt<Integer16TlvFmt>,
                     i16,
-                    Optional<ASN1Fmt<UtcTimeFmt<DER>, DER>, ASN1Fmt<Utf8StringFmt, DER>>,
+                    Optional<UtcTimeTlvFmt, Utf8StringTlvFmt>,
                 >,
             >,
         >,
@@ -367,10 +303,10 @@ const fn MY_FMT2() -> Pair<
 
 proof fn chain_of_optional_defaulted() {
     use crate::combinators::disjoint::disjointness_lemmas;
-    use super::modifiers::{lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
+    use super::disjoint::asn1_disjointness_lemmas;
 
     broadcast use disjointness_lemmas;
-    broadcast use {lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
+    broadcast use asn1_disjointness_lemmas;
 
     assert(MY_FMT().safe_inv());
     assert(MY_FMT().sound_inv());

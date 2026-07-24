@@ -18,6 +18,8 @@ pub mod constraints;
 pub mod datetime;
 /// ASN.1 notation-style aliases for universal formats with DER encoding.
 pub mod der;
+/// Disjointness proofs for complete ASN.1 formats.
+pub mod disjoint;
 /// ASN.1 ENUMERATED contents octets.
 pub mod enumerated;
 /// ASN.1 GeneralizedTime contents.
@@ -28,7 +30,7 @@ pub mod ia5string;
 pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
-/// ASN.1 component modifiers: IMPLICIT, EXPLICIT, OPTIONAL, and DEFAULT.
+/// Shared ASN.1 tagging and component modifiers.
 pub mod modifiers;
 /// ASN.1 OBJECT IDENTIFIER contents octets.
 pub mod oid;
@@ -52,8 +54,10 @@ pub mod utf8string;
 pub use any::{Any, AnySpec};
 pub use ber::{
     BerBmpStringFmt, BerCharStringFmt, BerIa5StringFmt, BerOctetStringFmt, BerPrintableStringFmt,
-    BerSequenceOfFmt, BerUtf8StringFmt, EocFmt, EOC,
+    BerSequenceFmt, BerSequenceOfFmt, BerTeletexStringFmt, BerUtf8StringFmt, EocFmt, EOC,
 };
+#[cfg(feature = "alloc")]
+pub use bitstring::BitStringOwned;
 pub use bitstring::{BitString, BitStringSpec};
 #[cfg(feature = "alloc")]
 pub use bmpstring::BmpString;
@@ -67,7 +71,7 @@ pub use generalizedtime::{GeneralizedTime, GeneralizedTimeSpec};
 pub use ia5string::Ia5StringOwned;
 pub use ia5string::{Ia5String, Ia5StringSpec};
 pub use integer::{Integer, Integer16Fmt, Integer8Fmt};
-pub use modifiers::{ContextExplicit, ContextImplicit, DefaultedFmt, Explicit, Implicit};
+pub use modifiers::{DefaultedFmt, ImplicitlyTaggedFmt, Retaggable};
 #[cfg(feature = "alloc")]
 pub use oid::ObjectIdentifier;
 pub use oid::ObjectIdentifierSpec;
@@ -77,6 +81,8 @@ pub use printablestring::{PrintableString, PrintableStringSpec};
 pub use real::{Real, RealSpec};
 pub use set_of::{DerOrd, SetOfFmt};
 pub use tag::{Class, Tag};
+#[cfg(feature = "alloc")]
+pub use teletexstring::TeletexStringOwned;
 pub use teletexstring::{TeletexString, TeletexStringSpec};
 pub use utctime::UtcTime;
 pub use utf8string::Utf8String;

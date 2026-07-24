@@ -1,11 +1,13 @@
-//! BER OCTET STRING framing.
+//! BER constructed-value formats and notation-style aliases.
 use crate::asn1::{
-    ASN1Fmt, BerLength, BerLengthFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, Ia5StringFmt,
-    IntegerFmt, NullFmt, ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt, RealFmt, Tag,
-    TagFmt, Utf8StringFmt, BER,
+    ASN1Fmt, BerLength, BerLengthFmt, BitStringFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt,
+    Ia5StringFmt, IntegerFmt, NullFmt, ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt,
+    RealFmt, Tag, TagFmt, TeletexStringFmt, Utf8StringFmt, BER,
 };
 #[cfg(feature = "alloc")]
-use crate::asn1::{BmpString, Ia5StringOwned, PrintableStringOwned, Utf8StringOwned};
+use crate::asn1::{
+    BmpString, Ia5StringOwned, PrintableStringOwned, TeletexStringOwned, Utf8StringOwned,
+};
 use crate::combinators::{
     bytes::ExactLen,
     mapped::spec::FnSpecMapper,
@@ -13,8 +15,8 @@ use crate::combinators::{
         BundledSpecs, EquivSerializersGeneralRecBody, GoodSerializerRecBody, ParamRecSpecs,
         ParserRecBody, ProductiveRecBody, SafeParserRecBody, SpecRecBody,
     },
-    Bind, Const, FixWith, Mapped, Pair, PrefixTagged, Refined, Repeat, RepeatTillEnd, Sum, Void,
-    U8,
+    Bind, Const, Empty, FixWith, Mapped, Pair, PrefixTagged, Refined, Repeat, RepeatTillEnd, Sum,
+    Void, U8,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -32,7 +34,12 @@ use vstd::prelude::*;
 #[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
-use super::LengthFmt;
+use super::modifiers::{defaulted, explicit_tag};
+pub use super::modifiers::{
+    implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION,
+    IMPLICIT_PRIVATE, OPTIONAL, REQUIRED,
+};
+use super::{AnyFmt, GeneralizedTimeFmt, Integer16Fmt, Integer8Fmt, LengthFmt, UtcTimeFmt};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -875,7 +882,7 @@ mod derived_specs {
     impl<const LIMIT: usize> SpecParser for BerOctetStringFmt<LIMIT> {
         type PVal = Seq<u8>;
 
-        open(super) spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).spec_parse(ibuf)
         }
     }
@@ -992,6 +999,29 @@ impl<const LIMIT: usize> ByteLen<[u8]> for BerOctetStringFmt<LIMIT> {
         let tag = Tag { class: self.0.class, constructed: false, number: self.0.number };
         let normalized = ASN1Fmt::<OctetStringFmt, BER>(tag, OctetStringFmt);
         normalized.length(value)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const LIMIT: usize, Output: OutputBuf> Serializer<Output, Vec<u8>> for BerOctetStringFmt<
+    LIMIT,
+> {
+    fn serialize_into(&self, value: &Vec<u8>, obuf: &mut Output) {
+        self.serialize_into(value.as_slice(), obuf)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const LIMIT: usize> Prepare<Vec<u8>> for BerOctetStringFmt<LIMIT> {
+    fn prepare(&self, value: &Vec<u8>) -> Result<usize, PreSerializeError> {
+        self.prepare(value.as_slice())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const LIMIT: usize> ByteLen<Vec<u8>> for BerOctetStringFmt<LIMIT> {
+    fn length(&self, value: &Vec<u8>) -> usize {
+        self.length(value.as_slice())
     }
 }
 
@@ -1326,6 +1356,8 @@ pub type BerPrintableStringFmt<const LIMIT: usize> = BerCharStringFmt<PrintableS
 
 pub type BerIa5StringFmt<const LIMIT: usize> = BerCharStringFmt<Ia5StringFmt, LIMIT>;
 
+pub type BerTeletexStringFmt<const LIMIT: usize> = BerCharStringFmt<TeletexStringFmt, LIMIT>;
+
 pub type BerBmpStringFmt<const LIMIT: usize> = BerCharStringFmt<BmpStringFmt, LIMIT>;
 
 impl<const LIMIT: usize> BerUtf8StringFmt<LIMIT> {
@@ -1379,6 +1411,24 @@ impl<const LIMIT: usize> BerIa5StringFmt<LIMIT> {
             Self::with_implicit_tag(Ia5StringFmt, class, number),
     {
         Self::with_implicit_tag(Ia5StringFmt, class, number)
+    }
+}
+
+impl<const LIMIT: usize> BerTeletexStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::TELETEX_STRING, TeletexStringFmt),
+    {
+        Self(TagFmt::TELETEX_STRING, TeletexStringFmt)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self::with_implicit_tag(TeletexStringFmt, class, number),
+    {
+        Self::with_implicit_tag(TeletexStringFmt, class, number)
     }
 }
 
@@ -1476,6 +1526,26 @@ impl BerDecoderOwned for Ia5StringFmt {
 }
 
 #[cfg(feature = "alloc")]
+impl BerDecoderOwned for TeletexStringFmt {
+    type Owned = TeletexStringOwned;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+        let input = bytes.as_slice();
+        if !super::teletexstring::is_valid_teletex_string(input) {
+            Err(ParseError::custom("Invalid TeletexString"))
+        } else if !super::utf8string::is_valid_utf8(input) {
+            Err(ParseError::custom("Invalid UTF-8"))
+        } else {
+            // SAFETY: the preceding check establishes that `bytes` is valid UTF-8.
+            let inner = unsafe { String::from_utf8_unchecked(bytes) };
+            Ok(TeletexStringOwned::new(inner))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
 impl BerDecoderOwned for BmpStringFmt {
     type Owned = BmpString;
 
@@ -1560,29 +1630,182 @@ impl<C, T, const LIMIT: usize> ByteLen<T> for BerCharStringFmt<C, LIMIT> where
     }
 }
 
-pub const BOOLEAN: ASN1Fmt<BoolFmt<BER>, BER> = ASN1Fmt(TagFmt::BOOLEAN, BoolFmt::<BER>);
+/// Control the maximum recursion depth for BER OCTET STRING and restricted character string parsing.
+pub const MAX_RECURSION_DEPTH: usize = 30;
 
-pub const INTEGER: ASN1Fmt<IntegerFmt, BER> = ASN1Fmt(TagFmt::INTEGER, IntegerFmt);
+/// Uniform notation aliases used by schema generators.
+pub type BoolTlvFmt = ASN1Fmt<BoolFmt<BER>, BER>;
 
-pub const ENUMERATED: ASN1Fmt<EnumeratedFmt, BER> = ASN1Fmt(TagFmt::ENUMERATED, EnumeratedFmt);
+pub type AnyTlvFmt = AnyFmt<BER>;
 
-pub const OBJECT_IDENTIFIER: ASN1Fmt<ObjectIdentifierFmt, BER> = ASN1Fmt(
+pub type IntegerTlvFmt = ASN1Fmt<IntegerFmt, BER>;
+
+pub type Integer8TlvFmt = ASN1Fmt<Integer8Fmt, BER>;
+
+pub type Integer16TlvFmt = ASN1Fmt<Integer16Fmt, BER>;
+
+pub type EnumeratedTlvFmt = ASN1Fmt<EnumeratedFmt, BER>;
+
+pub type ObjectIdentifierTlvFmt = ASN1Fmt<ObjectIdentifierFmt, BER>;
+
+pub type RealTlvFmt = ASN1Fmt<RealFmt, BER>;
+
+pub type BitStringTlvFmt = ASN1Fmt<BitStringFmt<BER>, BER>;
+
+pub type OctetStringTlvFmt = BerOctetStringFmt<MAX_RECURSION_DEPTH>;
+
+pub type NullTlvFmt = ASN1Fmt<NullFmt, BER>;
+
+pub type Utf8StringTlvFmt = BerUtf8StringFmt<MAX_RECURSION_DEPTH>;
+
+pub type PrintableStringTlvFmt = BerPrintableStringFmt<MAX_RECURSION_DEPTH>;
+
+pub type TeletexStringTlvFmt = BerTeletexStringFmt<MAX_RECURSION_DEPTH>;
+
+pub type Ia5StringTlvFmt = BerIa5StringFmt<MAX_RECURSION_DEPTH>;
+
+pub type UtcTimeTlvFmt = ASN1Fmt<UtcTimeFmt<BER>, BER>;
+
+pub type GeneralizedTimeTlvFmt = ASN1Fmt<GeneralizedTimeFmt<BER>, BER>;
+
+pub type BmpStringTlvFmt = BerBmpStringFmt<MAX_RECURSION_DEPTH>;
+
+pub type SequenceFmt<C> = BerSequenceFmt<C>;
+
+pub type SequenceOfFmt<C> = BerSequenceOfFmt<C>;
+
+pub type SetOfTlvFmt<C> = BerSequenceOfFmt<C>;
+
+pub type ExplicitFmt<C> = BerSequenceFmt<C>;
+
+pub type DefaultFmt<Field, Default, Rest> = super::DefaultedFmt<Field, Default, Rest, BER>;
+
+pub const BOOLEAN: BoolTlvFmt = ASN1Fmt(TagFmt::BOOLEAN, BoolFmt::<BER>);
+
+pub const ANY: AnyTlvFmt = AnyFmt::<BER>;
+
+pub const INTEGER: IntegerTlvFmt = ASN1Fmt(TagFmt::INTEGER, IntegerFmt);
+
+pub const INTEGER8: Integer8TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer8Fmt);
+
+pub const INTEGER16: Integer16TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer16Fmt);
+
+pub const ENUMERATED: EnumeratedTlvFmt = ASN1Fmt(TagFmt::ENUMERATED, EnumeratedFmt);
+
+pub const OBJECT_IDENTIFIER: ObjectIdentifierTlvFmt = ASN1Fmt(
     TagFmt::OBJECT_IDENTIFIER,
     ObjectIdentifierFmt,
 );
 
-pub const REAL: ASN1Fmt<RealFmt, BER> = ASN1Fmt(TagFmt::REAL, RealFmt);
+pub const REAL: RealTlvFmt = ASN1Fmt(TagFmt::REAL, RealFmt);
 
-pub const NULL: ASN1Fmt<NullFmt, BER> = ASN1Fmt(TagFmt::NULL, NullFmt);
+pub const BIT_STRING: BitStringTlvFmt = ASN1Fmt(TagFmt::BIT_STRING, BitStringFmt::<BER>);
+
+pub const NULL: NullTlvFmt = ASN1Fmt(TagFmt::NULL, NullFmt);
+
+pub const UTC_TIME: UtcTimeTlvFmt = ASN1Fmt(TagFmt::UTC_TIME, UtcTimeFmt::<BER>);
+
+pub const GENERALIZED_TIME: GeneralizedTimeTlvFmt = ASN1Fmt(
+    TagFmt::GENERALIZED_TIME,
+    GeneralizedTimeFmt::<BER>,
+);
+
+pub const OCTET_STRING: OctetStringTlvFmt = BerOctetStringFmt(TagFmt::OCTET_STRING);
+
+pub const UTF8_STRING: Utf8StringTlvFmt = BerCharStringFmt(TagFmt::UTF8_STRING, Utf8StringFmt);
+
+pub const PRINTABLE_STRING: PrintableStringTlvFmt = BerCharStringFmt(
+    TagFmt::PRINTABLE_STRING,
+    PrintableStringFmt,
+);
+
+pub const IA5_STRING: Ia5StringTlvFmt = BerCharStringFmt(TagFmt::IA5_STRING, Ia5StringFmt);
+
+pub const TELETEX_STRING: TeletexStringTlvFmt = BerCharStringFmt(
+    TagFmt::TELETEX_STRING,
+    TeletexStringFmt,
+);
+
+pub const BMP_STRING: BmpStringTlvFmt = BerCharStringFmt(TagFmt::BMP_STRING, BmpStringFmt);
+
+/// Construct a BER `SEQUENCE`.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn SEQUENCE<C: Copy>(content: C) -> SequenceFmt<C>
+    returns
+        BerSequenceFmt(TagFmt::SEQUENCE, content),
+{
+    BerSequenceFmt::universal(content)
+}
 
 /// Construct a BER `SEQUENCE OF`.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn SEQUENCE_OF<C: Copy>(content: C) -> BerSequenceOfFmt<C>
+pub const fn SEQUENCE_OF<C: Copy>(content: C) -> SequenceOfFmt<C>
     returns
         BerSequenceOfFmt(TagFmt::SEQUENCE, content),
 {
     BerSequenceOfFmt::universal(content)
+}
+
+/// Construct a BER `SET OF`.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn SET_OF<C: Copy>(content: C) -> SetOfTlvFmt<C>
+    returns
+        BerSequenceOfFmt(TagFmt::SET, content),
+{
+    BerSequenceOfFmt(TagFmt::SET, content)
+}
+
+/// Apply an ASN.1 EXPLICIT tag with an arbitrary tag class.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn Explicit<C: Copy>(class: Class, number: u64, inner: C) -> ExplicitFmt<C>
+    returns
+        BerSequenceFmt(explicit_tag(class, number), inner),
+{
+    BerSequenceFmt(explicit_tag(class, number), inner)
+}
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn EXPLICIT<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
+    returns
+        Explicit(Class::ContextSpecific, number, inner),
+{
+    Explicit(Class::ContextSpecific, number, inner)
+}
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn EXPLICIT_APPLICATION<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
+    returns
+        Explicit(Class::Application, number, inner),
+{
+    Explicit(Class::Application, number, inner)
+}
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn EXPLICIT_PRIVATE<C: Copy>(number: u64, inner: C) -> ExplicitFmt<C>
+    returns
+        Explicit(Class::Private, number, inner),
+{
+    Explicit(Class::Private, number, inner)
+}
+
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn DEFAULT<Field, Rest>(field: Field, default: Field::T, cont: Rest) -> DefaultFmt<
+    Field,
+    Field::T,
+    Rest,
+> where Field: SpecByteLen
+    returns
+        defaulted::<Field, Rest, BER>(field, default, cont),
+{
+    defaulted::<Field, Rest, BER>(field, default, cont)
 }
 
 } // verus!
