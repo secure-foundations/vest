@@ -7,6 +7,8 @@ use crate::{
     },
     core::{proof::*, spec::*},
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 use OutputBuf;
 
@@ -23,6 +25,13 @@ pub struct BitString<'a, const DER: bool = true> {
     bits: &'a [u8],
 }
 
+/// Owned BIT STRING value used when BER segments must be flattened.
+#[cfg(feature = "alloc")]
+pub struct BitStringOwned {
+    unused: u8,
+    bits: Vec<u8>,
+}
+
 #[verifier::ext_equal]
 pub struct BitStringSpec {
     pub unused: u8,
@@ -30,6 +39,15 @@ pub struct BitStringSpec {
 }
 
 impl<'a, const DER: bool> DeepView for BitString<'a, DER> {
+    type V = BitStringSpec;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        BitStringSpec { unused: self.unused, bits: self.bits.deep_view() }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl DeepView for BitStringOwned {
     type V = BitStringSpec;
 
     closed spec fn deep_view(&self) -> Self::V {
@@ -60,6 +78,32 @@ impl<'a, const DER: bool> BitString<'a, DER> {
 
     pub fn bits(&self) -> &'a [u8] {
         self.bits
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BitStringOwned {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        self.deep_view().wf::<false>()
+    }
+
+    pub fn new(unused: u8, bits: Vec<u8>) -> (value: Self)
+        requires
+            unused <= 7,
+            bits.len() == 0 ==> unused == 0,
+        ensures
+            value.deep_view() == (BitStringSpec { unused, bits: bits.deep_view() }),
+    {
+        Self { unused, bits }
+    }
+
+    pub fn unused(&self) -> u8 {
+        self.unused
+    }
+
+    pub fn bits(&self) -> &[u8] {
+        self.bits.as_slice()
     }
 }
 
@@ -245,6 +289,38 @@ impl<'i, const DER: bool> ByteLen<BitString<'i, DER>> for super::BitStringFmt<DE
         let n1 = U8.length(&v.unused);
         let n2 = Tail.length(&v.bits);
         n1 + n2
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf> Serializer<Output, BitStringOwned> for super::BitStringFmt<false> {
+    fn serialize_into(&self, v: &BitStringOwned, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+        proof {
+            use_type_invariant(v);
+        }
+        U8.serialize_into(&v.unused, obuf);
+        Tail.serialize_into(&v.bits.as_slice(), obuf);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Prepare<BitStringOwned> for super::BitStringFmt<false> {
+    fn prepare(&self, v: &BitStringOwned) -> Result<usize, PreSerializeError> {
+        proof {
+            use_type_invariant(v);
+        }
+        let n1 = U8.prepare(&v.unused)?;
+        let n2 = Tail.prepare(&v.bits.as_slice())?;
+        n1.checked_add(n2).ok_or(PreSerializeError::length_too_large())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl ByteLen<BitStringOwned> for super::BitStringFmt<false> {
+    fn length(&self, v: &BitStringOwned) -> usize {
+        U8.length(&v.unused) + Tail.length(&v.bits.as_slice())
     }
 }
 
