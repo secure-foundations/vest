@@ -1,6 +1,6 @@
 //! Broadcast lemmas establishing [`disjoint_domains`](crate::core::spec::disjoint_domains)
 //! for common combinator compositions.
-use super::mapped::spec::SpecMapper;
+use super::mapped::spec::{BiMap, SpecMap, SpecMapper};
 use super::*;
 use crate::core::proof::*;
 use crate::core::spec::SpecPred;
@@ -49,6 +49,34 @@ pub broadcast proof fn lemma_disjoint_refined<
         forall|v: Inner::PVal| r1.1.apply(v) ==> !r2.1.apply(v),
     ensures
         #[trigger] disjoint_domains(r1, r2),
+{
+    reveal(disjoint_domains);
+}
+
+/// Refining the left parser can only narrow its accepted byte domain.
+pub broadcast proof fn lemma_disjoint_refined_left<
+    Inner: SpecParser,
+    Pred: SpecPred<Inner::PVal>,
+    Other: SpecParser,
+>(refined: Refined<Inner, Pred>, other: Other)
+    requires
+        disjoint_domains(refined.0, other),
+    ensures
+        #[trigger] disjoint_domains(refined, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// Refining the right parser can only narrow its accepted byte domain.
+pub broadcast proof fn lemma_disjoint_refined_right<
+    Other: SpecParser,
+    Inner: SpecParser,
+    Pred: SpecPred<Inner::PVal>,
+>(other: Other, refined: Refined<Inner, Pred>)
+    requires
+        disjoint_domains(other, refined.0),
+    ensures
+        #[trigger] disjoint_domains(other, refined),
 {
     reveal(disjoint_domains);
 }
@@ -152,6 +180,50 @@ pub broadcast proof fn lemma_disjoint_mapped<
         disjoint_domains(p, m.inner),
     ensures
         #[trigger] disjoint_domains(p, m),
+{
+    reveal(disjoint_domains);
+}
+
+/// A [`Mapped`] parser is disjoint from another parser if its inner parser is.
+pub broadcast proof fn lemma_disjoint_mapped_left<
+    Inner: SpecParser,
+    M: SpecMapper<In = Inner::PVal>,
+    P: SpecParser,
+>(mapped: Mapped<Inner, M>, other: P)
+    requires
+        disjoint_domains(mapped.inner, other),
+    ensures
+        #[trigger] disjoint_domains(mapped, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// A bidirectionally [`Mapped`] parser is disjoint from another parser if its inner parser is.
+pub broadcast proof fn lemma_disjoint_bimap<
+    P: SpecParser,
+    Inner: SpecParser,
+    M: SpecMap<Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+>(other: P, mapped: Mapped<Inner, BiMap<M, MRev>>)
+    requires
+        disjoint_domains(other, mapped.inner),
+    ensures
+        #[trigger] disjoint_domains(other, mapped),
+{
+    reveal(disjoint_domains);
+}
+
+/// A bidirectionally [`Mapped`] parser is disjoint from another parser if its inner parser is.
+pub broadcast proof fn lemma_disjoint_bimap_left<
+    Inner: SpecParser,
+    M: SpecMap<Input = Inner::PVal>,
+    MRev: SpecMap<Input = M::Output, Output = M::Input>,
+    P: SpecParser,
+>(mapped: Mapped<Inner, BiMap<M, MRev>>, other: P)
+    requires
+        disjoint_domains(mapped.inner, other),
+    ensures
+        #[trigger] disjoint_domains(mapped, other),
 {
     reveal(disjoint_domains);
 }
@@ -343,6 +415,8 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_const,
     lemma_disjoint_prefix_tagged,
     lemma_disjoint_refined,
+    lemma_disjoint_refined_left,
+    lemma_disjoint_refined_right,
     lemma_disjoint_const_refined,
     lemma_disjoint_cond,
     lemma_disjoint_tuple,
@@ -350,6 +424,9 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_preceded,
     lemma_disjoint_terminated,
     lemma_disjoint_mapped,
+    lemma_disjoint_mapped_left,
+    lemma_disjoint_bimap,
+    lemma_disjoint_bimap_left,
     lemma_disjoint_optional,
     lemma_disjoint_repeat,
     lemma_disjoint_eof,
