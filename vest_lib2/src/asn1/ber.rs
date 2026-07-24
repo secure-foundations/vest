@@ -44,6 +44,311 @@ pub type EocFmt = Pair<Const<U8, u8>, Const<U8, u8>>;
 /// Exact BER end-of-contents marker (`00 00`).
 pub const EOC: EocFmt = Pair(Const(U8, 0u8), Const(U8, 0u8));
 
+/// End marker for a schema-defined BER constructed value.
+pub type BerEndFmt = Empty;
+
+/// Generated SEQUENCE field chains can end in `Eof` for both DER and BER by importing the
+/// encoding-rule module's notation.
+pub type Eof = BerEndFmt;
+
+#[allow(non_upper_case_globals)]
+pub const Eof: Eof = Empty;
+
+type BerSequenceWireType<T> = (BerLength, Sum<T, (T, (u8, u8))>);
+
+type BerSequenceFmt__<C> = Mapped<
+    PrefixTagged<
+        TagFmt,
+        Tag,
+        Bind<BerLengthFmt, spec_fn(BerLength) -> Sum<ExactLen<C, usize>, Pair<C, EocFmt>>>,
+    >,
+    FnSpecMapper<BerSequenceWireType<<C as SpecByteLen>::T>, <C as SpecByteLen>::T>,
+>;
+
+/// BER `SEQUENCE` accepting definite and indefinite outer length forms.
+///
+/// The schema-specific `content` format parses the sequence components. Definite contents are
+/// bounded by [`ExactLen`], while indefinite contents are followed by [`EOC`]. Serialization is
+/// normalized to the definite form.
+pub open spec fn ber_sequence_fmt<C: SpecCombinator>(tag: Tag, content: C) -> BerSequenceFmt__<C> {
+    #[verusfmt::skip]
+    Mapped {
+        inner: PrefixTagged(TagFmt, tag, Bind(BerLengthFmt, |len: BerLength|
+                match len {
+                    BerLength::Definite(len) => L(ExactLen(len, content)),
+                    BerLength::Indefinite => R(Pair(content, EOC)),
+                },
+            ),
+        ),
+        mapper: (
+            |parsed: BerSequenceWireType<C::T>|
+                match parsed.1 {
+                    L(value) => value,
+                    R((value, _eoc)) => value,
+                },
+            |value: C::T|
+                {
+                    let len = content.byte_len(value) as usize;
+                    (BerLength::Definite(len), L(value))
+                },
+        ),
+    }
+}
+
+/// The definite-length BER encoding selected by [`BerSequenceFmt`]'s serializer.
+pub open spec fn ber_sequence_normalized_fmt<C>(tag: Tag, content: C) -> ASN1Fmt<C, BER> {
+    ASN1Fmt(tag, content)
+}
+
+/// BER `SEQUENCE` codec with a configurable outer tag.
+///
+/// Parsing accepts either a definite-length schema body or the same body followed by [`EOC`]
+/// under indefinite-length framing. Serialization always emits definite-length BER.
+#[derive(Copy)]
+pub struct BerSequenceFmt<C>(pub Tag, pub C);
+
+impl<C: Clone> Clone for BerSequenceFmt<C> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            cloned.0 == self.0,
+            call_ensures(C::clone, (&self.1,), cloned.1),
+    {
+        BerSequenceFmt(self.0, self.1.clone())
+    }
+}
+
+impl<C: Copy> BerSequenceFmt<C> {
+    /// Ordinary universal `SEQUENCE`.
+    #[verifier::allow_in_spec]
+    pub const fn universal(content: C) -> Self
+        returns
+            Self(TagFmt::SEQUENCE, content),
+    {
+        Self(TagFmt::SEQUENCE, content)
+    }
+
+    /// An IMPLICIT-tagged `SEQUENCE`.
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64, content: C) -> Self
+        returns
+            Self(
+                Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) },
+                content,
+            ),
+    {
+        Self(
+            Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) },
+            content,
+        )
+    }
+}
+
+mod sequence_specs {
+    use super::*;
+
+    impl<C: SpecCombinator> SpecParser for BerSequenceFmt<C> {
+        type PVal = C::T;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            ber_sequence_fmt(self.0, self.1).spec_parse(ibuf)
+        }
+    }
+
+    impl<C: SpecCombinator> Consistency for BerSequenceFmt<C> {
+        type Val = C::T;
+
+        open spec fn consistent(&self, value: Self::Val) -> bool {
+            ber_sequence_fmt(self.0, self.1).consistent(value)
+        }
+    }
+
+    impl<C: SpecCombinator> SpecSerializerDps for BerSequenceFmt<C> {
+        type SValue = C::T;
+
+        open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            ber_sequence_fmt(self.0, self.1).spec_serialize_dps(value, obuf)
+        }
+    }
+
+    impl<C: SpecCombinator> SpecSerializer for BerSequenceFmt<C> {
+        type SVal = C::T;
+
+        open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+            ber_sequence_fmt(self.0, self.1).spec_serialize(value)
+        }
+    }
+
+    impl<C: SpecCombinator> SpecByteLen for BerSequenceFmt<C> {
+        type T = C::T;
+
+        open spec fn byte_len(&self, value: Self::T) -> nat {
+            ber_sequence_fmt(self.0, self.1).byte_len(value)
+        }
+    }
+
+}
+
+mod sequence_proofs {
+    use super::*;
+
+    impl<C: SpecCombinator + SafeParser> SafeParser for BerSequenceFmt<C> {
+        open spec fn safe_inv(&self) -> bool {
+            self.1.safe_inv()
+        }
+
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            ber_sequence_fmt(self.0, self.1).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<C: SpecCombinator + SafeParser + Productive> Productive for BerSequenceFmt<C> {
+        open spec fn productive_inv(&self) -> bool {
+            &&& self.1.safe_inv()
+            &&& self.1.productive_inv()
+        }
+
+        proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+            ber_sequence_fmt(self.0, self.1).lemma_productive(ibuf);
+        }
+    }
+
+    impl<C: SpecCombinator + GoodSerializer> GoodSerializer for BerSequenceFmt<C> {
+        open spec fn serialize_inv(&self) -> bool {
+            self.1.serialize_inv()
+        }
+
+        proof fn lemma_serialize_len(&self, value: Self::SVal) {
+            ber_sequence_fmt(self.0, self.1).lemma_serialize_len(value);
+        }
+    }
+
+    impl<C: SpecCombinator + GoodSerializer + EquivSerializers> NonTailFmt for BerSequenceFmt<C> {
+        open spec fn serialize_dps_inv(&self) -> bool {
+            &&& self.1.serialize_inv()
+            &&& self.1.equiv_inv()
+        }
+
+        proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
+            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_dps_prepend(value, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
+            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_dps_len(value, obuf);
+        }
+    }
+
+    impl<C: SpecCombinator + EquivSerializers> EquivSerializersGeneral for BerSequenceFmt<C> {
+        open spec fn equiv_general_inv(&self) -> bool {
+            self.1.equiv_inv()
+        }
+
+        proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
+            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_equiv(value, obuf);
+        }
+    }
+
+    impl<C: SpecCombinator + EquivSerializers> EquivSerializers for BerSequenceFmt<C> {
+        open spec fn equiv_inv(&self) -> bool {
+            self.1.equiv_inv()
+        }
+
+        proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
+            self.lemma_serialize_equiv(value, Seq::empty());
+        }
+    }
+
+    impl<C> SPRoundTripDps for BerSequenceFmt<C> where
+        C: SpecCombinator + GoodSerializer + EquivSerializers + NonTailFmt + SPRoundTripDps,
+     {
+        open spec fn unambiguous(&self) -> bool {
+            &&& self.1.sp_roundtrip_inv()
+            &&& self.1.serialize_dps_inv()
+        }
+
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
+            ber_sequence_fmt(self.0, self.1).theorem_serialize_dps_parse_roundtrip(value, obuf);
+        }
+    }
+
+}
+
+impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
+    C: SpecCombinator + Parser<&'i [u8]> + SafeParser + Copy,
+ {
+    type PT = C::PT;
+
+    open spec fn exec_inv(&self) -> bool {
+        &&& self.1.exec_inv()
+        &&& self.1.safe_inv()
+    }
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use super::tag::lemma_const_tag_fmt_exec_inv;
+
+        let _ = ibuf.len();
+        let (tag_len, _tag) = Const(TagFmt, self.0).parse(ibuf)?;
+        let after_tag = ibuf.skip(tag_len);
+        let (length_len, length) = BerLengthFmt.parse(&after_tag)?;
+        let content = after_tag.skip(length_len);
+
+        let (content_len, value) = match length {
+            BerLength::Definite(len) => ExactLen(len, self.1).parse(&content)?,
+            BerLength::Indefinite => {
+                let (n, (value, _eoc)) = Pair(self.1, EOC).parse(&content)?;
+                (n, value)
+            },
+        };
+        let total = tag_len + length_len + content_len;
+        assert(self.spec_parse(ibuf@) == Some((total as int, value.deep_view())));
+        Ok((total, value))
+    }
+}
+
+impl<Output: OutputBuf, C, T> Serializer<Output, T> for BerSequenceFmt<C> where
+    T: DeepView + ?Sized,
+    C: SpecCombinator + Serializer<Output, T> + ByteLen<T> + Copy,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        &&& <C as Serializer<Output, T>>::exec_inv(&self.1)
+        &&& <C as ByteLen<T>>::exec_inv(&self.1)
+    }
+
+    fn serialize_into(&self, value: &T, obuf: &mut Output) {
+        let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
+        normalized.serialize_into(value, obuf);
+    }
+}
+
+impl<C, T> Prepare<T> for BerSequenceFmt<C> where
+    T: DeepView + ?Sized,
+    C: SpecCombinator + Prepare<T> + Copy,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <C as Prepare<T>>::exec_inv(&self.1)
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
+        normalized.prepare(value)
+    }
+}
+
+impl<C, T> ByteLen<T> for BerSequenceFmt<C> where
+    T: DeepView + ?Sized,
+    C: SpecCombinator + ByteLen<T> + Copy,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <C as ByteLen<T>>::exec_inv(&self.1)
+    }
+
+    fn length(&self, value: &T) -> usize {
+        let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
+        normalized.length(value)
+    }
+}
+
 type BerSequenceOfWireType<T> = (BerLength, Sum<Seq<T>, (Seq<T>, (u8, u8))>);
 
 type BerSequenceOfInnerFmt<C> = Mapped<
@@ -1295,6 +1600,52 @@ mod tests {
 
     fn integer_sequence() -> BerSequenceOfFmt<ASN1Fmt<Integer8Fmt, BER>> {
         SEQUENCE_OF(ASN1Fmt(TagFmt::INTEGER, Integer8Fmt))
+    }
+
+    fn integer_fields_sequence(
+    ) -> BerSequenceFmt<Pair<ASN1Fmt<Integer8Fmt, BER>, ASN1Fmt<Integer8Fmt, BER>>> {
+        let integer = ASN1Fmt::<_, BER>(TagFmt::INTEGER, Integer8Fmt);
+        SEQUENCE(Pair(integer, integer))
+    }
+
+    #[test]
+    fn ber_sequence_parses_definite_and_indefinite_schema_bodies() {
+        let format = integer_fields_sequence();
+        let definite = [0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
+        let indefinite = [0x30, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x00];
+
+        assert_eq!(
+            format.parse(&&definite[..]).unwrap(),
+            (definite.len(), (1i8, 2i8)),
+        );
+        assert_eq!(
+            format.parse(&&indefinite[..]).unwrap(),
+            (indefinite.len(), (1i8, 2i8)),
+        );
+
+        let missing_eoc = [0x30, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
+        assert!(format.parse(&&missing_eoc[..]).is_err());
+
+        let extra_component = [
+            0x30, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02, 0x02, 0x01, 0x03, 0x00, 0x00,
+        ];
+        assert!(format.parse(&&extra_component[..]).is_err());
+    }
+
+    #[test]
+    fn ber_sequence_supports_implicit_tags_and_definite_normalization() {
+        let content = integer_fields_sequence().1;
+        let format = BerSequenceFmt::implicit(Class::ContextSpecific, 0, content);
+        let indefinite = [0xa0, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x00];
+        let (_, value) = format.parse(&&indefinite[..]).unwrap();
+        assert_eq!(value, (1i8, 2i8));
+
+        let mut output = vec![0; format.prepare(&value).unwrap()];
+        format.serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0xa0, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02]);
+
+        let universal = [0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
+        assert!(format.parse(&&universal[..]).is_err());
     }
 
     #[test]
