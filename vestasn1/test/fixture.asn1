@@ -1,6 +1,8 @@
 Fixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
     Flag ::= BOOLEAN
     Count ::= INTEGER
+    TaggedCount ::= [4] IMPLICIT Count
+    RetaggedCount ::= [5] IMPLICIT TaggedCount
     Payload ::= OCTET STRING (SIZE (2..4))
 
     Header ::= SEQUENCE {
@@ -38,6 +40,11 @@ Fixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
     Identifier ::= OBJECT IDENTIFIER
     Measurement ::= REAL
     OpenValue ::= ANY
+    BmpName ::= BMPString (SIZE (1..4))
+
+    BmpContainer ::= SEQUENCE {
+        name BmpName
+    }
 
     Metadata ::= SEQUENCE {
         color [0] IMPLICIT Color DEFAULT green,

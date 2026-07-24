@@ -151,6 +151,18 @@ mod tests {
     }
 
     #[test]
+    fn bmp_string_codegen_uses_owned_values_and_ucs2_octets() {
+        let encoded = [0x30, 0x04, 0x1e, 0x02, 0x00, 0x41];
+        let (_, value) = BMP_CONTAINER_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(value.name.inner(), "A");
+        assert_eq!(BMP_NAME_FMT().prepare(&value.name).unwrap(), 4);
+
+        let mut output = vec![0; BMP_NAME_FMT().prepare(&value.name).unwrap()];
+        BMP_NAME_FMT().serialize(&value.name, output.as_mut_slice());
+        assert_eq!(output, encoded[2..]);
+    }
+
+    #[test]
     fn inline_composites_receive_nominal_helper_types() {
         let encoded = [
             0x30, 0x08, // InlineRecord

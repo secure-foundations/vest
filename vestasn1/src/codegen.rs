@@ -195,9 +195,9 @@ impl<'a> Generator<'a> {
             | Type::PrintableString(_)
             | Type::IA5String(_)
             | Type::TeletexString(_)
-            | Type::BmpString(_)
             | Type::GeneralizedTime
             | Type::Any => true,
+            Type::BmpString(_) => false,
             Type::Sequence(fields) | Type::Set(fields) => {
                 let mut borrows = false;
                 for field in fields {
@@ -617,6 +617,7 @@ impl<'a> Generator<'a> {
         writeln!(output, "// Generated formats parse and serialize DER.").unwrap();
         writeln!(output).unwrap();
         writeln!(output, "use vest_lib2::asn1::*;").unwrap();
+        writeln!(output, "use vest_lib2::asn1::der::Eof;").unwrap();
         writeln!(
             output,
             "use vest_lib2::combinators::mapped::spec::{{BiMap, SpecMap}};"
@@ -640,7 +641,7 @@ impl<'a> Generator<'a> {
 
         writeln!(output, "proof fn vestasn1_generated_formats_are_valid() {{").unwrap();
         writeln!(output, "    use vest_lib2::core::proof::*;").unwrap();
-        writeln!(output, "    use vest_lib2::asn1::modifiers::{{lemma_disjoint_asn1_tags, lemma_disjoint_defaulted}};").unwrap();
+        writeln!(output, "    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;").unwrap();
         writeln!(
             output,
             "    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;"
@@ -659,7 +660,7 @@ impl<'a> Generator<'a> {
         .unwrap();
         writeln!(
             output,
-            "    broadcast use {{lemma_disjoint_asn1_tags, lemma_disjoint_defaulted}};"
+            "    broadcast use asn1_disjointness_lemmas;"
         )
         .unwrap();
         for definition in &self.definitions {
@@ -688,23 +689,10 @@ impl<'a> Generator<'a> {
     fn render_choice_validity_proof(
         &self,
         definition: &Definition,
-        variants: &[ChoiceVariant],
+        _variants: &[ChoiceVariant],
         output: &mut String,
     ) -> Result<(), CodegenError> {
         let format = format!("{}()", self.names[&definition.name].format_const);
-        let branches = (0..variants.len())
-            .map(|index| choice_branch_access(&format!("{format}.inner"), index, variants.len()))
-            .collect::<Vec<_>>();
-        for left in 0..branches.len() {
-            for right in left + 1..branches.len() {
-                writeln!(
-                    output,
-                    "    lemma_disjoint_asn1_tags(({}).0, ({}).0);",
-                    branches[left], branches[right]
-                )
-                .unwrap();
-            }
-        }
         writeln!(output, "    assert(({format}.inner).unambiguous());").unwrap();
         Ok(())
     }
@@ -719,48 +707,7 @@ impl<'a> Generator<'a> {
             return Ok(());
         }
         let format = format!("{}()", self.names[&definition.name].format_const);
-        let root = format!("{format}.1.inner");
-        let accesses = sequence_field_accesses(&root, fields);
-
-        for (index, field) in fields.iter().enumerate() {
-            if !(field.optional || field.default.is_some()) {
-                continue;
-            }
-            let Some(rest) = &accesses[index].1 else {
-                continue;
-            };
-            let current_path = &accesses[index].0;
-            let current_is_ref = field.default.is_none();
-
-            for target in index + 1..fields.len() {
-                let target_field = &fields[target];
-                let target_path = &accesses[target].0;
-                let target_is_ref = target_field.default.is_none();
-                let current_inner = if current_is_ref {
-                    format!("({current_path}).0")
-                } else {
-                    current_path.clone()
-                };
-                let target_inner = if target_is_ref {
-                    format!("({target_path}).0")
-                } else {
-                    target_path.clone()
-                };
-                writeln!(
-                    output,
-                    "    lemma_disjoint_asn1_tags({current_inner}, {target_inner});"
-                )
-                .unwrap();
-                if !(target_field.optional || target_field.default.is_some()) {
-                    break;
-                }
-            }
-            writeln!(
-                output,
-                "    assert(disjoint_domains({current_path}, {rest}));"
-            )
-            .unwrap();
-        }
+        let root = format!("{format}.inner.1");
         writeln!(output, "    assert(({root}).unambiguous());").unwrap();
         Ok(())
     }
@@ -1385,48 +1332,30 @@ impl<'a> Generator<'a> {
         let rendered = match &definition.ty {
             Type::Sequence(fields) => {
                 let raw = self.render_sequence_fields(fields, &definition.name)?;
-                let mapped = Rendered {
-                    ty: format!(
-                        "Mapped<{}, BiMap<{}, {}>>",
-                        raw.ty, names.forward, names.reverse
-                    ),
-                    expr: format!(
-                        "Mapped {{ inner: {}, mapper: BiMap({}, {}) }}",
-                        raw.expr, names.forward, names.reverse
-                    ),
-                    shape: TagShape::Untagged,
-                };
-                Rendered {
-                    ty: format!("ASN1Fmt<{}, DER>", mapped.ty),
-                    expr: format!("ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, {})", mapped.expr),
+                let sequence = Rendered {
+                    ty: format!("SequenceFmt<{}>", raw.ty),
+                    expr: format!("SEQUENCE({})", raw.expr),
                     shape: TagShape::Tlv { constructed: true },
-                }
+                };
+                map_with_bimap(sequence, &names.forward, &names.reverse)
             }
             Type::Choice(variants) => {
                 let raw = self.render_choice_raw(variants)?;
-                Rendered {
-                    ty: format!(
-                        "Mapped<{}, BiMap<{}, {}>>",
-                        raw.ty, names.forward, names.reverse
-                    ),
-                    expr: format!(
-                        "Mapped {{ inner: {}, mapper: BiMap({}, {}) }}",
-                        raw.expr, names.forward, names.reverse
-                    ),
-                    shape: TagShape::Untagged,
-                }
+                map_with_bimap(raw, &names.forward, &names.reverse)
             }
-            Type::Enumerated(_) => Rendered {
-                ty: format!(
-                    "ASN1Fmt<Mapped<Refined<Integer16Fmt, {}>, BiMap<{}, {}>>, DER>",
-                    names.predicate, names.forward, names.reverse
-                ),
-                expr: format!(
-                    "ASN1Fmt::<_, DER>(TagFmt::ENUMERATED, Mapped {{ inner: Refined(Integer16Fmt, {}), mapper: BiMap({}, {}) }})",
-                    names.predicate, names.forward, names.reverse
-                ),
-                shape: TagShape::Tlv { constructed: false },
-            },
+            Type::Enumerated(_) => {
+                let wire = Rendered {
+                    ty: "ASN1Fmt<Integer16Fmt, DER>".to_string(),
+                    expr: "ASN1Fmt::<_, DER>(TagFmt::ENUMERATED, Integer16Fmt)".to_string(),
+                    shape: TagShape::Tlv { constructed: false },
+                };
+                let refined = refine(
+                    wire,
+                    names.predicate.clone(),
+                    names.predicate.clone(),
+                );
+                map_with_bimap(refined, &names.forward, &names.reverse)
+            }
             ty => self.render_type(ty)?,
         };
         writeln!(output, "/// DER format for ASN.1 `{}`.", definition.name).unwrap();
@@ -1448,26 +1377,17 @@ impl<'a> Generator<'a> {
         Ok(match ty {
             Type::SequenceOf(inner, constraint) => {
                 let inner = self.render_type(inner)?;
+                let sequence_of = Rendered {
+                    ty: format!("SequenceOfFmt<{}>", inner.ty),
+                    expr: format!("SEQUENCE_OF({})", inner.expr),
+                    shape: TagShape::Tlv { constructed: true },
+                };
                 if let Some(constraint) = constraint {
                     let bounds = legacy_size_bounds(constraint, "SEQUENCE OF")?;
                     let (predicate_type, predicate_expr) = render_size_predicate(bounds);
-                    Rendered {
-                        ty: format!(
-                            "ASN1Fmt<Refined<RepeatTillEnd<{}>, {}>, DER>",
-                            inner.ty, predicate_type
-                        ),
-                        expr: format!(
-                            "ASN1Fmt::<_, DER>(TagFmt::SEQUENCE, Refined(RepeatTillEnd({}), {}))",
-                            inner.expr, predicate_expr
-                        ),
-                        shape: TagShape::Tlv { constructed: true },
-                    }
+                    refine(sequence_of, predicate_type, predicate_expr)
                 } else {
-                    Rendered {
-                        ty: format!("ASN1Fmt<RepeatTillEnd<{}>, DER>", inner.ty),
-                        expr: format!("SEQUENCE_OF({})", inner.expr),
-                        shape: TagShape::Tlv { constructed: true },
-                    }
+                    sequence_of
                 }
             }
             Type::TypeRef(name) => {
@@ -1478,41 +1398,41 @@ impl<'a> Generator<'a> {
                     shape: self.tag_shape(ty, &mut BTreeSet::new())?,
                 }
             }
-            Type::Integer(_, _) => primitive("ASN1IntegerFmt<DER>", "INTEGER", false),
-            Type::Boolean => primitive("ASN1BoolFmt<DER>", "BOOLEAN", false),
+            Type::Integer(_, _) => primitive("IntegerTlvFmt", "INTEGER", false),
+            Type::Boolean => primitive("BoolTlvFmt", "BOOLEAN", false),
             Type::OctetString(constraint) => match constraint {
                 Some(constraint) => {
                     render_sized_octet_string(legacy_size_bounds(constraint, "OCTET STRING")?)
                 }
-                None => primitive("ASN1OctetStringFmt<DER>", "OCTET_STRING", false),
+                None => primitive("OctetStringTlvFmt", "OCTET_STRING", false),
             },
-            Type::BitString(_) => primitive("ASN1BitStringFmt<DER>", "BIT_STRING", false),
+            Type::BitString(_) => primitive("BitStringTlvFmt", "BIT_STRING", false),
             Type::ObjectIdentifier => {
-                primitive("ASN1ObjectIdentifierFmt<DER>", "OBJECT_IDENTIFIER", false)
+                primitive("ObjectIdentifierTlvFmt", "OBJECT_IDENTIFIER", false)
             }
-            Type::Real => primitive("ASN1RealFmt<DER>", "REAL", false),
-            Type::Null => primitive("ASN1NullFmt<DER>", "NULL", false),
+            Type::Real => primitive("RealTlvFmt", "REAL", false),
+            Type::Null => primitive("NullTlvFmt", "NULL", false),
             Type::Utf8String(constraint) => render_optionally_sized_string(
-                "Utf8StringFmt", "Utf8StringFmt", "TagFmt::UTF8_STRING", "ASN1Utf8StringFmt<DER>", "UTF8_STRING", constraint.as_ref(),
+                "Utf8StringTlvFmt", "UTF8_STRING", constraint.as_ref(),
             )?,
             Type::PrintableString(constraint) => render_optionally_sized_string(
-                "PrintableStringFmt", "PrintableStringFmt", "TagFmt::PRINTABLE_STRING", "ASN1PrintableStringFmt<DER>", "PRINTABLE_STRING", constraint.as_ref(),
+                "PrintableStringTlvFmt", "PRINTABLE_STRING", constraint.as_ref(),
             )?,
             Type::IA5String(constraint) => render_optionally_sized_string(
-                "Ia5StringFmt", "Ia5StringFmt", "TagFmt::IA5_STRING", "ASN1Ia5StringFmt<DER>", "IA5_STRING", constraint.as_ref(),
+                "Ia5StringTlvFmt", "IA5_STRING", constraint.as_ref(),
             )?,
             Type::TeletexString(constraint) => render_optionally_sized_string(
-                "TeletexStringFmt", "TeletexStringFmt", "TagFmt::TELETEX_STRING", "ASN1TeletexStringFmt<DER>", "TELETEX_STRING", constraint.as_ref(),
+                "TeletexStringTlvFmt", "TELETEX_STRING", constraint.as_ref(),
             )?,
             Type::BmpString(constraint) => render_optionally_sized_string(
-                "BmpStringFmt", "BmpStringFmt", "TagFmt::BMP_STRING", "ASN1BmpStringFmt<DER>", "BMP_STRING", constraint.as_ref(),
+                "BmpStringTlvFmt", "BMP_STRING", constraint.as_ref(),
             )?,
-            Type::UtcTime => primitive("ASN1UtcTimeFmt<DER>", "UTC_TIME", false),
+            Type::UtcTime => primitive("UtcTimeTlvFmt", "UTC_TIME", false),
             Type::GeneralizedTime => {
-                primitive("ASN1GeneralizedTimeFmt<DER>", "GENERALIZED_TIME", false)
+                primitive("GeneralizedTimeTlvFmt", "GENERALIZED_TIME", false)
             }
             Type::Any => Rendered {
-                ty: "ASN1AnyFmt<DER>".to_string(),
+                ty: "AnyTlvFmt".to_string(),
                 expr: "ANY".to_string(),
                 shape: TagShape::Untagged,
             },
@@ -1522,11 +1442,11 @@ impl<'a> Generator<'a> {
                 constraint,
             } => match base_type.as_ref() {
                 Type::OctetString(None) => render_sized_octet_string(string_size_bounds(constraint, "OCTET STRING")?),
-                Type::Utf8String(None) => render_sized_content("Utf8StringFmt", "Utf8StringFmt", "TagFmt::UTF8_STRING", string_size_bounds(constraint, "UTF8String")?),
-                Type::PrintableString(None) => render_sized_content("PrintableStringFmt", "PrintableStringFmt", "TagFmt::PRINTABLE_STRING", string_size_bounds(constraint, "PrintableString")?),
-                Type::IA5String(None) => render_sized_content("Ia5StringFmt", "Ia5StringFmt", "TagFmt::IA5_STRING", string_size_bounds(constraint, "IA5String")?),
-                Type::TeletexString(None) => render_sized_content("TeletexStringFmt", "TeletexStringFmt", "TagFmt::TELETEX_STRING", string_size_bounds(constraint, "TeletexString")?),
-                Type::BmpString(None) => render_sized_content("BmpStringFmt", "BmpStringFmt", "TagFmt::BMP_STRING", string_size_bounds(constraint, "BMPString")?),
+                Type::Utf8String(None) => render_sized_format("Utf8StringTlvFmt", "UTF8_STRING", string_size_bounds(constraint, "UTF8String")?),
+                Type::PrintableString(None) => render_sized_format("PrintableStringTlvFmt", "PRINTABLE_STRING", string_size_bounds(constraint, "PrintableString")?),
+                Type::IA5String(None) => render_sized_format("Ia5StringTlvFmt", "IA5_STRING", string_size_bounds(constraint, "IA5String")?),
+                Type::TeletexString(None) => render_sized_format("TeletexStringTlvFmt", "TELETEX_STRING", string_size_bounds(constraint, "TeletexString")?),
+                Type::BmpString(None) => render_sized_format("BmpStringTlvFmt", "BMP_STRING", string_size_bounds(constraint, "BMPString")?),
                 Type::Integer(None, _) => {
                     render_constrained_integer(integer_value_bounds(constraint, "INTEGER")?)
                 }
@@ -1564,13 +1484,13 @@ impl<'a> Generator<'a> {
         };
 
         for field in fields.iter().rev() {
-            let field_rendered = self.render_type(&field.ty)?;
             result = if let Some(default) = &field.default {
+                let field_rendered = self.render_type(&field.ty)?;
                 let default =
                     self.render_default(&field.ty, default, &format!("{path}.{}", field.name))?;
                 Rendered {
                     ty: format!(
-                        "DefaultedFmt<{}, {}, {}, DER>",
+                        "DefaultFmt<{}, {}, {}>",
                         field_rendered.ty, default.ty, result.ty
                     ),
                     expr: format!(
@@ -1580,7 +1500,7 @@ impl<'a> Generator<'a> {
                     shape: TagShape::Untagged,
                 }
             } else {
-                let field_rendered = wrap_ref(field_rendered);
+                let field_rendered = self.render_type_by_ref(&field.ty)?;
                 let (ty_constructor, expr_constructor) = if field.optional {
                     ("Optional", "OPTIONAL")
                 } else {
@@ -1602,7 +1522,7 @@ impl<'a> Generator<'a> {
     fn render_choice_raw(&self, variants: &[ChoiceVariant]) -> Result<Rendered, CodegenError> {
         let rendered = variants
             .iter()
-            .map(|variant| self.render_type(&variant.ty).map(wrap_ref))
+            .map(|variant| self.render_type_by_ref(&variant.ty))
             .collect::<Result<Vec<_>, _>>()?;
         let mut result = rendered
             .last()
@@ -1621,27 +1541,41 @@ impl<'a> Generator<'a> {
 
     fn render_tagged(&self, tag: &TagInfo, inner_ty: &Type) -> Result<Rendered, CodegenError> {
         let inner = self.render_type(inner_ty)?;
+        Ok(self.apply_tag(tag, inner))
+    }
+
+    fn render_type_by_ref(&self, ty: &Type) -> Result<Rendered, CodegenError> {
+        match ty {
+            Type::Tagged { tag, inner } => {
+                let inner = self.render_type_by_ref(inner)?;
+                Ok(self.apply_tag(tag, inner))
+            }
+            _ => self.render_type(ty).map(wrap_ref),
+        }
+    }
+
+    fn apply_tag(&self, tag: &TagInfo, inner: Rendered) -> Rendered {
         match (tag.tagging.clone(), inner.shape) {
-            (Tagging::Explicit, TagShape::Untagged) => Ok(Rendered {
-                ty: format!("ASN1Fmt<{}, DER>", inner.ty),
+            (Tagging::Explicit, TagShape::Untagged) => Rendered {
+                ty: format!("ExplicitFmt<{}>", inner.ty),
                 expr: render_retag_helper(tag, true, &inner.expr),
                 shape: TagShape::Tlv { constructed: true },
-            }),
-            (Tagging::Explicit, TagShape::Tlv { .. }) => Ok(Rendered {
-                ty: format!("ASN1Fmt<{}, DER>", inner.ty),
+            },
+            (Tagging::Explicit, TagShape::Tlv { .. }) => Rendered {
+                ty: format!("ExplicitFmt<{}>", inner.ty),
                 expr: render_retag_helper(tag, true, &inner.expr),
                 shape: TagShape::Tlv { constructed: true },
-            }),
-            (Tagging::Implicit, TagShape::Untagged) => Ok(Rendered {
-                ty: format!("ASN1Fmt<{}, DER>", inner.ty),
+            },
+            (Tagging::Implicit, TagShape::Untagged) => Rendered {
+                ty: format!("ExplicitFmt<{}>", inner.ty),
                 expr: render_retag_helper(tag, true, &inner.expr),
                 shape: TagShape::Tlv { constructed: true },
-            }),
-            (Tagging::Implicit, TagShape::Tlv { constructed }) => Ok(Rendered {
-                ty: inner.ty,
+            },
+            (Tagging::Implicit, TagShape::Tlv { constructed }) => Rendered {
+                ty: format!("ImplicitFmt<{}>", inner.ty),
                 expr: render_retag_helper(tag, false, &inner.expr),
                 shape: TagShape::Tlv { constructed },
-            }),
+            },
         }
     }
 
@@ -1772,7 +1706,7 @@ impl<'a> Generator<'a> {
             Type::TeletexString(_) => {
                 format!("vest_lib2::asn1::TeletexString<{lifetime}>")
             }
-            Type::BmpString(_) => format!("vest_lib2::asn1::BmpString<{lifetime}>"),
+            Type::BmpString(_) => "vest_lib2::asn1::BmpString".to_string(),
             Type::UtcTime => "vest_lib2::asn1::UtcTime".to_string(),
             Type::GeneralizedTime => {
                 format!("vest_lib2::asn1::GeneralizedTime<{lifetime}>")
@@ -2107,41 +2041,55 @@ fn wrap_ref(rendered: Rendered) -> Rendered {
     }
 }
 
+fn refine(rendered: Rendered, predicate_type: String, predicate_expr: String) -> Rendered {
+    Rendered {
+        ty: format!("Refined<{}, {predicate_type}>", rendered.ty),
+        expr: format!("Refined({}, {predicate_expr})", rendered.expr),
+        shape: rendered.shape,
+    }
+}
+
+fn map_with_bimap(rendered: Rendered, forward: &str, reverse: &str) -> Rendered {
+    Rendered {
+        ty: format!("Mapped<{}, BiMap<{forward}, {reverse}>>", rendered.ty),
+        expr: format!(
+            "Mapped {{ inner: {}, mapper: BiMap({forward}, {reverse}) }}",
+            rendered.expr
+        ),
+        shape: rendered.shape,
+    }
+}
+
 fn render_sized_octet_string(bounds: LengthBounds) -> Rendered {
-    render_sized_content("OctetStringFmt", "OctetStringFmt", "TagFmt::OCTET_STRING", bounds)
+    render_sized_format("OctetStringTlvFmt", "OCTET_STRING", bounds)
 }
 
 fn render_optionally_sized_string(
-    content_type: &str,
-    content_expr: &str,
-    tag_expr: &str,
     unconstrained_type: &str,
     unconstrained_expr: &str,
     constraint: Option<&SizeConstraint>,
 ) -> Result<Rendered, CodegenError> {
     match constraint {
-        Some(constraint) => Ok(render_sized_content(
-            content_type,
-            content_expr,
-            tag_expr,
+        Some(constraint) => Ok(render_sized_format(
+            unconstrained_type,
+            unconstrained_expr,
             legacy_size_bounds(constraint, unconstrained_expr)?,
         )),
         None => Ok(primitive(unconstrained_type, unconstrained_expr, false)),
     }
 }
 
-fn render_sized_content(
-    content_type: &str,
-    content_expr: &str,
-    tag_expr: &str,
+fn render_sized_format(
+    unconstrained_type: &str,
+    unconstrained_expr: &str,
     bounds: LengthBounds,
 ) -> Rendered {
     let (predicate_type, predicate_expr) = render_size_predicate(bounds);
-    Rendered {
-        ty: format!("ASN1Fmt<Refined<{content_type}, {predicate_type}>, DER>"),
-        expr: format!("ASN1Fmt::<_, DER>({tag_expr}, Refined({content_expr}, {predicate_expr}))"),
-        shape: TagShape::Tlv { constructed: false },
-    }
+    refine(
+        primitive(unconstrained_type, unconstrained_expr, false),
+        predicate_type,
+        predicate_expr,
+    )
 }
 
 fn render_size_predicate(bounds: LengthBounds) -> (String, String) {
@@ -2161,11 +2109,11 @@ fn render_constrained_integer(bounds: IntegerBounds) -> Rendered {
     let max = bounds.max.unwrap_or(0);
     let predicate_type = format!("IntegerRange<{has_min}, {min}, {has_max}, {max}>");
     let predicate_expr = format!("IntegerRange::<{has_min}, {min}, {has_max}, {max}>");
-    Rendered {
-        ty: format!("ASN1Fmt<Refined<IntegerFmt, {predicate_type}>, DER>"),
-        expr: format!("ASN1Fmt::<_, DER>(TagFmt::INTEGER, Refined(IntegerFmt, {predicate_expr}))"),
-        shape: TagShape::Tlv { constructed: false },
-    }
+    refine(
+        primitive("IntegerTlvFmt", "INTEGER", false),
+        predicate_type,
+        predicate_expr,
+    )
 }
 
 fn lifetime_declaration(has_lifetime: bool) -> &'static str {
@@ -2242,31 +2190,6 @@ fn sum_expression(index: usize, len: usize, value: &str) -> String {
     } else {
         format!("Sum::Inr({})", sum_expression(index - 1, len - 1, value))
     }
-}
-
-fn choice_branch_access(root: &str, index: usize, len: usize) -> String {
-    if len == 1 {
-        root.to_string()
-    } else if index == 0 {
-        format!("({root}).0")
-    } else {
-        choice_branch_access(&format!("({root}).1"), index - 1, len - 1)
-    }
-}
-
-fn sequence_field_accesses(root: &str, fields: &[SequenceField]) -> Vec<(String, Option<String>)> {
-    let mut accesses = Vec::with_capacity(fields.len());
-    let mut node = root.to_string();
-    for field in fields {
-        let rest = if field.default.is_some() {
-            format!("({node}).2")
-        } else {
-            format!("({node}).1")
-        };
-        accesses.push((format!("({node}).0"), Some(rest.clone())));
-        node = rest;
-    }
-    accesses
 }
 
 fn render_enum_number_match(

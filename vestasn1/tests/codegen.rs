@@ -22,12 +22,15 @@ END
 fn generates_vest_der_formats() {
     let generated = compile(BASIC_SCHEMA).unwrap();
     assert!(generated.contains("pub struct Message<'a>"));
-    assert!(generated.contains("pub type MessageFmt = ASN1Fmt<Mapped<Pair<"));
+    assert!(generated.contains("pub type MessageFmt = Mapped<SequenceFmt<Pair<"));
     assert!(generated.contains("Optional<Ref<PayloadFmt>, Eof>"));
     assert!(generated.contains("pub const fn MESSAGES_FMT() -> MessagesFmt"));
-    assert!(generated.contains("RepeatTillEnd<MessageFmt>"));
-    assert!(generated.contains("Choice<Ref<FlagFmt>, Ref<ASN1Fmt<PayloadFmt, DER>>>"));
-    assert!(generated.contains("IMPLICIT(0u64"));
+    assert!(generated.contains("pub type MessagesFmt = SequenceOfFmt<MessageFmt>;"));
+    assert!(generated.contains(
+        "Choice<ImplicitFmt<Ref<FlagFmt>>, ExplicitFmt<Ref<PayloadFmt>>>"
+    ));
+    assert!(generated.contains("IMPLICIT(0u64, Ref(FLAG_FMT()))"));
+    assert!(!generated.contains("assert(disjoint_domains"));
 }
 
 #[test]
@@ -36,8 +39,9 @@ fn generates_verified_octet_string_size_constraint() {
         compile("Example DEFINITIONS ::= BEGIN Payload ::= OCTET STRING (SIZE (1..32)) END")
             .unwrap();
     assert!(generated.contains(
-        "ASN1Fmt<Refined<OctetStringFmt, Size<true, 1, true, 32>>, DER>"
+        "Refined<OctetStringTlvFmt, Size<true, 1, true, 32>>"
     ));
+    assert!(generated.contains("Refined(OCTET_STRING, Size::<true, 1, true, 32>)"));
 }
 
 #[test]
@@ -45,8 +49,9 @@ fn generates_verified_integer_range_constraint() {
     let generated =
         compile("Example DEFINITIONS ::= BEGIN Version ::= INTEGER (0..2) END").unwrap();
     assert!(generated.contains(
-        "ASN1Fmt<Refined<IntegerFmt, IntegerRange<true, 0, true, 2>>, DER>"
+        "Refined<IntegerTlvFmt, IntegerRange<true, 0, true, 2>>"
     ));
+    assert!(generated.contains("Refined(INTEGER, IntegerRange::<true, 0, true, 2>)"));
 }
 
 #[test]
@@ -56,8 +61,26 @@ fn generates_verified_string_size_constraint() {
     )
     .unwrap();
     assert!(generated.contains(
-        "ASN1Fmt<Refined<Utf8StringFmt, Size<true, 1, true, 32>>, DER>"
+        "Refined<Utf8StringTlvFmt, Size<true, 1, true, 32>>"
     ));
+    assert!(generated.contains("Refined(UTF8_STRING, Size::<true, 1, true, 32>)"));
+}
+
+#[test]
+fn bmp_string_values_are_owned_and_do_not_force_lifetimes() {
+    let generated = compile(
+        r#"
+BmpValues DEFINITIONS ::= BEGIN
+    Name ::= BMPString
+    Container ::= SEQUENCE { name Name }
+END
+"#,
+    )
+    .unwrap();
+
+    assert!(generated.contains("pub type Name = vest_lib2::asn1::BmpString;"));
+    assert!(generated.contains("pub struct Container {"));
+    assert!(!generated.contains("pub struct Container<'a>"));
 }
 
 #[test]
@@ -98,14 +121,14 @@ END
     )
     .unwrap();
     assert!(generated.contains("pub struct Flags"));
-    assert!(generated.contains("DefaultedFmt<EnabledFmt, bool,"));
+    assert!(generated.contains("DefaultFmt<ImplicitFmt<EnabledFmt>, bool,"));
     let left_aligned = generated.lines().map(str::trim_start).collect::<Vec<_>>().join("\n");
-    assert!(left_aligned.contains("inner:\nDEFAULT("));
+    assert!(left_aligned.contains("inner:\nSEQUENCE(\nDEFAULT("));
     assert!(generated.contains("IMPLICIT(0u64, ENABLED_FMT())"));
     assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
     assert!(left_aligned.contains("Eof))"));
     assert!(generated.contains("pub const fn FLAGS_FMT()"));
-    assert!(generated.contains("{\n    ASN1Fmt::<_, DER>("));
+    assert!(generated.contains("{\n    Mapped {"));
 }
 
 #[test]
@@ -130,8 +153,8 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("Optional<Ref<ASN1Fmt<ValueFmt, DER>>, Eof>"));
-    assert!(generated.contains("EXPLICIT(0u64, VALUE_FMT())"));
+    assert!(generated.contains("Optional<ExplicitFmt<Ref<ValueFmt>>, Eof>"));
+    assert!(generated.contains("EXPLICIT(0u64, Ref(VALUE_FMT()))"));
 }
 
 #[test]
@@ -147,14 +170,30 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("IMPLICIT_APPLICATION(3u64, INTEGER)"));
-    assert!(generated.contains("EXPLICIT_PRIVATE(7u64, BOOLEAN)"));
+    assert!(generated.contains("IMPLICIT_APPLICATION(3u64, Ref(INTEGER))"));
+    assert!(generated.contains("EXPLICIT_PRIVATE(7u64, Ref(BOOLEAN))"));
+}
+
+#[test]
+fn composes_implicit_tagging_through_tagged_aliases() {
+    let generated = compile(
+        r#"
+TaggedAliases DEFINITIONS ::= BEGIN
+    Base ::= [0] IMPLICIT INTEGER
+    Retagged ::= [1] IMPLICIT Base
+END
+"#,
+    )
+    .unwrap();
+    assert!(generated.contains("pub type BaseFmt = ImplicitFmt<IntegerTlvFmt>;"));
+    assert!(generated.contains("pub type RetaggedFmt = ImplicitFmt<BaseFmt>;"));
+    assert!(generated.contains("IMPLICIT(1u64, BASE_FMT())"));
 }
 
 #[test]
 fn format_value_names_do_not_collide_with_vest_der_symbols() {
     let generated = compile("Names DEFINITIONS ::= BEGIN DER ::= BOOLEAN END").unwrap();
-    assert!(generated.contains("pub type DerFmt = ASN1BoolFmt<DER>;"));
+    assert!(generated.contains("pub type DerFmt = BoolTlvFmt;"));
     assert!(generated.contains("pub const fn DER_FMT() -> DerFmt"));
 }
 
@@ -231,9 +270,9 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("pub type IdentifierFmt = ASN1ObjectIdentifierFmt<DER>;"));
-    assert!(generated.contains("pub type MeasurementFmt = ASN1RealFmt<DER>;"));
-    assert!(generated.contains("pub type OpenValueFmt = ASN1AnyFmt<DER>;"));
+    assert!(generated.contains("pub type IdentifierFmt = ObjectIdentifierTlvFmt;"));
+    assert!(generated.contains("pub type MeasurementFmt = RealTlvFmt;"));
+    assert!(generated.contains("pub type OpenValueFmt = AnyTlvFmt;"));
     assert!(generated.contains("pub struct ContainerNested"));
     assert!(generated.contains("pub enum ContainerSelected<'a>"));
 }
@@ -280,7 +319,10 @@ fn preserves_and_generates_collection_size_constraints() {
         compile("Sized DEFINITIONS ::= BEGIN Values ::= SEQUENCE SIZE (1..MAX) OF BOOLEAN END")
             .unwrap();
     assert!(generated.contains(
-        "ASN1Fmt<Refined<RepeatTillEnd<ASN1BoolFmt<DER>>, Size<true, 1, false, 0>>, DER>"
+        "Refined<SequenceOfFmt<BoolTlvFmt>, Size<true, 1, false, 0>>"
+    ));
+    assert!(generated.contains(
+        "Refined(SEQUENCE_OF(BOOLEAN), Size::<true, 1, false, 0>)"
     ));
 }
 
@@ -298,8 +340,8 @@ fn vendored_frontend_rejects_unrepresented_with_components() {
 #[test]
 fn emits_explicit_notation_for_untagged_choice_and_any() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
-    assert!(generated.contains("EXPLICIT(3u64, SELECTION_FMT())"));
-    assert!(generated.contains("EXPLICIT(1u64, OPEN_VALUE_FMT())"));
+    assert!(generated.contains("EXPLICIT(3u64, Ref(SELECTION_FMT()))"));
+    assert!(generated.contains("EXPLICIT(1u64, Ref(OPEN_VALUE_FMT()))"));
     assert!(!generated.contains("Tag { class: Class::ContextSpecific"));
 }
 
@@ -311,7 +353,7 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
         "DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,\n",
         "REQUIRED(Ref(IDENTIFIER_FMT()),\n",
         "REQUIRED(Ref(MEASUREMENT_FMT()),\n",
-        "REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),\n",
+        "REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE_FMT())),\n",
         "Eof))))",
     )));
 }

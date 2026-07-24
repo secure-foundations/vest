@@ -2,6 +2,7 @@
 // Generated formats parse and serialize DER.
 
 use vest_lib2::asn1::*;
+use vest_lib2::asn1::der::Eof;
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
 use vest_lib2::core::exec::fns::{Map, Pred};
@@ -15,6 +16,12 @@ pub type FlagSpec = bool;
 
 pub type Count<'a> = vest_lib2::asn1::Integer<'a>;
 pub type CountSpec = int;
+
+pub type TaggedCount<'a> = Count<'a>;
+pub type TaggedCountSpec = CountSpec;
+
+pub type RetaggedCount<'a> = TaggedCount<'a>;
+pub type RetaggedCountSpec = TaggedCountSpec;
 
 pub type Payload<'a> = &'a [u8];
 pub type PayloadSpec = Seq<u8>;
@@ -154,6 +161,28 @@ pub type MeasurementSpec = vest_lib2::asn1::RealSpec;
 
 pub type OpenValue<'a> = vest_lib2::asn1::Any<'a>;
 pub type OpenValueSpec = vest_lib2::asn1::AnySpec;
+
+pub type BmpName = vest_lib2::asn1::BmpString;
+pub type BmpNameSpec = vest_lib2::asn1::BmpStringSpec;
+
+/// Value type for ASN.1 `BmpContainer`.
+pub struct BmpContainer {
+    pub name: BmpName,
+}
+
+#[verifier::ext_equal]
+pub struct BmpContainerSpec {
+    pub name: BmpNameSpec,
+}
+
+impl DeepView for BmpContainer {
+    type V = BmpContainerSpec;
+    open spec fn deep_view(&self) -> Self::V {
+        BmpContainerSpec {
+            name: self.name.deep_view(),
+        }
+    }
+}
 
 /// Value type for ASN.1 `Metadata`.
 pub struct Metadata<'a> {
@@ -530,6 +559,47 @@ impl<'a> Map<&'a Color> for ColorReverse {
 }
 
 #[derive(Clone, Copy)]
+pub struct BmpContainerForward;
+#[derive(Clone, Copy)]
+pub struct BmpContainerReverse;
+
+impl SpecMap for BmpContainerForward {
+    type Input = (BmpNameSpec, ());
+    type Output = BmpContainerSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        let (name, _end) = input;
+        BmpContainerSpec {
+            name,
+        }
+    }
+}
+
+impl SpecMap for BmpContainerReverse {
+    type Input = BmpContainerSpec;
+    type Output = (BmpNameSpec, ());
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        (value.name, ())
+    }
+}
+
+impl Map<(BmpName, ())> for BmpContainerForward {
+    type O = BmpContainer;
+    fn map(&self, input: (BmpName, ())) -> (value: Self::O) {
+        let (name, _end) = input;
+        BmpContainer {
+            name,
+        }
+    }
+}
+
+impl<'x> Map<&'x BmpContainer> for BmpContainerReverse {
+    type O = (&'x BmpName, ());
+    fn map(&self, value: &'x BmpContainer) -> (output: Self::O) {
+        (&value.name, ())
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct MetadataForward;
 #[derive(Clone, Copy)]
 pub struct MetadataReverse;
@@ -708,7 +778,7 @@ impl<'a, 'x> Map<&'x InlineRecord<'a>> for InlineRecordReverse {
 }
 
 /// DER format for ASN.1 `Flag`.
-pub type FlagFmt = ASN1BoolFmt<DER>;
+pub type FlagFmt = BoolTlvFmt;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn FLAG_FMT() -> FlagFmt
@@ -721,7 +791,7 @@ pub const fn FLAG_FMT() -> FlagFmt
 }
 
 /// DER format for ASN.1 `Count`.
-pub type CountFmt = ASN1IntegerFmt<DER>;
+pub type CountFmt = IntegerTlvFmt;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn COUNT_FMT() -> CountFmt
@@ -733,89 +803,105 @@ pub const fn COUNT_FMT() -> CountFmt
     INTEGER
 }
 
+/// DER format for ASN.1 `TaggedCount`.
+pub type TaggedCountFmt = ImplicitFmt<CountFmt>;
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+pub const fn TAGGED_COUNT_FMT() -> TaggedCountFmt
+    returns
+        (
+            IMPLICIT(4u64, COUNT_FMT())
+        ),
+{
+    IMPLICIT(4u64, COUNT_FMT())
+}
+
+/// DER format for ASN.1 `RetaggedCount`.
+pub type RetaggedCountFmt = ImplicitFmt<TaggedCountFmt>;
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+pub const fn RETAGGED_COUNT_FMT() -> RetaggedCountFmt
+    returns
+        (
+            IMPLICIT(5u64, TAGGED_COUNT_FMT())
+        ),
+{
+    IMPLICIT(5u64, TAGGED_COUNT_FMT())
+}
+
 /// DER format for ASN.1 `Payload`.
-pub type PayloadFmt = ASN1Fmt<Refined<OctetStringFmt, Size<true, 2, true, 4>>, DER>;
+pub type PayloadFmt = Refined<OctetStringTlvFmt, Size<true, 2, true, 4>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn PAYLOAD_FMT() -> PayloadFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::OCTET_STRING,
-                Refined(OctetStringFmt, Size::<true, 2, true, 4>),
-            )
+            Refined(OCTET_STRING, Size::<true, 2, true, 4>)
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::OCTET_STRING,
-        Refined(OctetStringFmt, Size::<true, 2, true, 4>),
-    )
+    Refined(OCTET_STRING, Size::<true, 2, true, 4>)
 }
 
 /// DER format for ASN.1 `Header`.
-pub type HeaderFmt = ASN1Fmt<Mapped<Pair<Ref<FlagFmt>, Pair<Ref<CountFmt>, Eof>>, BiMap<HeaderForward, HeaderReverse>>, DER>;
+pub type HeaderFmt = Mapped<SequenceFmt<Pair<Ref<FlagFmt>, Pair<Ref<CountFmt>, Eof>>>, BiMap<HeaderForward, HeaderReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn HEADER_FMT() -> HeaderFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         REQUIRED(Ref(FLAG_FMT()),
                         REQUIRED(Ref(COUNT_FMT()),
                         Eof)),
-                    mapper: BiMap(HeaderForward, HeaderReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(HeaderForward, HeaderReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 REQUIRED(Ref(FLAG_FMT()),
                 REQUIRED(Ref(COUNT_FMT()),
                 Eof)),
-            mapper: BiMap(HeaderForward, HeaderReverse),
-        },
-    )
+            ),
+        mapper: BiMap(HeaderForward, HeaderReverse),
+    }
 }
 
 /// DER format for ASN.1 `Envelope`.
-pub type EnvelopeFmt = ASN1Fmt<Mapped<Pair<Ref<HeaderFmt>, Optional<Ref<PayloadFmt>, Eof>>, BiMap<EnvelopeForward, EnvelopeReverse>>, DER>;
+pub type EnvelopeFmt = Mapped<SequenceFmt<Pair<Ref<HeaderFmt>, Optional<ImplicitFmt<Ref<PayloadFmt>>, Eof>>>, BiMap<EnvelopeForward, EnvelopeReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn ENVELOPE_FMT() -> EnvelopeFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         REQUIRED(Ref(HEADER_FMT()),
-                        OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())),
+                        OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD_FMT())),
                         Eof)),
-                    mapper: BiMap(EnvelopeForward, EnvelopeReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 REQUIRED(Ref(HEADER_FMT()),
-                OPTIONAL(Ref(IMPLICIT(0u64, PAYLOAD_FMT())),
+                OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD_FMT())),
                 Eof)),
-            mapper: BiMap(EnvelopeForward, EnvelopeReverse),
-        },
-    )
+            ),
+        mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+    }
 }
 
 /// DER format for ASN.1 `Envelopes`.
-pub type EnvelopesFmt = ASN1Fmt<RepeatTillEnd<EnvelopeFmt>, DER>;
+pub type EnvelopesFmt = SequenceOfFmt<EnvelopeFmt>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn ENVELOPES_FMT() -> EnvelopesFmt
@@ -828,38 +914,36 @@ pub const fn ENVELOPES_FMT() -> EnvelopesFmt
 }
 
 /// DER format for ASN.1 `Features`.
-pub type FeaturesFmt = ASN1Fmt<Mapped<DefaultedFmt<FlagFmt, bool, DefaultedFmt<ASN1BoolFmt<DER>, bool, Eof, DER>, DER>, BiMap<FeaturesForward, FeaturesReverse>>, DER>;
+pub type FeaturesFmt = Mapped<SequenceFmt<DefaultFmt<ImplicitFmt<FlagFmt>, bool, DefaultFmt<ImplicitFmt<BoolTlvFmt>, bool, Eof>>>, BiMap<FeaturesForward, FeaturesReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn FEATURES_FMT() -> FeaturesFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true,
                         DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
                         Eof)),
-                    mapper: BiMap(FeaturesForward, FeaturesReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(FeaturesForward, FeaturesReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 DEFAULT(IMPLICIT(0u64, FLAG_FMT()), true,
                 DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
                 Eof)),
-            mapper: BiMap(FeaturesForward, FeaturesReverse),
-        },
-    )
+            ),
+        mapper: BiMap(FeaturesForward, FeaturesReverse),
+    }
 }
 
 /// DER format for ASN.1 `Selection`.
-pub type SelectionFmt = Mapped<Choice<Ref<FlagFmt>, Ref<ASN1Fmt<PayloadFmt, DER>>>, BiMap<SelectionForward, SelectionReverse>>;
+pub type SelectionFmt = Mapped<Choice<ImplicitFmt<Ref<FlagFmt>>, ExplicitFmt<Ref<PayloadFmt>>>, BiMap<SelectionForward, SelectionReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn SELECTION_FMT() -> SelectionFmt
@@ -868,8 +952,8 @@ pub const fn SELECTION_FMT() -> SelectionFmt
             Mapped {
                 inner:
                     CHOICE(
-                        Ref(IMPLICIT(1u64, FLAG_FMT())),
-                        Ref(EXPLICIT(2u64, PAYLOAD_FMT())),
+                        IMPLICIT(1u64, Ref(FLAG_FMT())),
+                        EXPLICIT(2u64, Ref(PAYLOAD_FMT())),
                     ),
                 mapper: BiMap(SelectionForward, SelectionReverse),
             }
@@ -878,69 +962,75 @@ pub const fn SELECTION_FMT() -> SelectionFmt
     Mapped {
         inner:
             CHOICE(
-                Ref(IMPLICIT(1u64, FLAG_FMT())),
-                Ref(EXPLICIT(2u64, PAYLOAD_FMT())),
+                IMPLICIT(1u64, Ref(FLAG_FMT())),
+                EXPLICIT(2u64, Ref(PAYLOAD_FMT())),
             ),
         mapper: BiMap(SelectionForward, SelectionReverse),
     }
 }
 
 /// DER format for ASN.1 `ChoiceEnvelope`.
-pub type ChoiceEnvelopeFmt = ASN1Fmt<Mapped<Optional<Ref<ASN1Fmt<SelectionFmt, DER>>, Eof>, BiMap<ChoiceEnvelopeForward, ChoiceEnvelopeReverse>>, DER>;
+pub type ChoiceEnvelopeFmt = Mapped<SequenceFmt<Optional<ExplicitFmt<Ref<SelectionFmt>>, Eof>>, BiMap<ChoiceEnvelopeForward, ChoiceEnvelopeReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn CHOICE_ENVELOPE_FMT() -> ChoiceEnvelopeFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
-                        OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())),
+            Mapped {
+                inner:
+                    SEQUENCE(
+                        OPTIONAL(EXPLICIT(3u64, Ref(SELECTION_FMT())),
                         Eof),
-                    mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
-                OPTIONAL(Ref(EXPLICIT(3u64, SELECTION_FMT())),
+    Mapped {
+        inner:
+            SEQUENCE(
+                OPTIONAL(EXPLICIT(3u64, Ref(SELECTION_FMT())),
                 Eof),
-            mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
-        },
-    )
+            ),
+        mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+    }
 }
 
 /// DER format for ASN.1 `Color`.
-pub type ColorFmt = ASN1Fmt<Mapped<Refined<Integer16Fmt, ColorPredicate>, BiMap<ColorForward, ColorReverse>>, DER>;
+pub type ColorFmt = Mapped<Refined<ASN1Fmt<Integer16Fmt, DER>, ColorPredicate>, BiMap<ColorForward, ColorReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn COLOR_FMT() -> ColorFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::ENUMERATED,
-                Mapped {
-                    inner: Refined(Integer16Fmt, ColorPredicate),
-                    mapper: BiMap(ColorForward, ColorReverse),
-                },
-            )
+            Mapped {
+                inner:
+                    Refined(
+                        ASN1Fmt::<_, DER>(
+                            TagFmt::ENUMERATED,
+                            Integer16Fmt,
+                        ),
+                        ColorPredicate,
+                    ),
+                mapper: BiMap(ColorForward, ColorReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::ENUMERATED,
-        Mapped {
-            inner: Refined(Integer16Fmt, ColorPredicate),
-            mapper: BiMap(ColorForward, ColorReverse),
-        },
-    )
+    Mapped {
+        inner:
+            Refined(
+                ASN1Fmt::<_, DER>(
+                    TagFmt::ENUMERATED,
+                    Integer16Fmt,
+                ),
+                ColorPredicate,
+            ),
+        mapper: BiMap(ColorForward, ColorReverse),
+    }
 }
 
 /// DER format for ASN.1 `Identifier`.
-pub type IdentifierFmt = ASN1ObjectIdentifierFmt<DER>;
+pub type IdentifierFmt = ObjectIdentifierTlvFmt;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn IDENTIFIER_FMT() -> IdentifierFmt
@@ -953,7 +1043,7 @@ pub const fn IDENTIFIER_FMT() -> IdentifierFmt
 }
 
 /// DER format for ASN.1 `Measurement`.
-pub type MeasurementFmt = ASN1RealFmt<DER>;
+pub type MeasurementFmt = RealTlvFmt;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn MEASUREMENT_FMT() -> MeasurementFmt
@@ -966,7 +1056,7 @@ pub const fn MEASUREMENT_FMT() -> MeasurementFmt
 }
 
 /// DER format for ASN.1 `OpenValue`.
-pub type OpenValueFmt = ASN1AnyFmt<DER>;
+pub type OpenValueFmt = AnyTlvFmt;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn OPEN_VALUE_FMT() -> OpenValueFmt
@@ -978,72 +1068,108 @@ pub const fn OPEN_VALUE_FMT() -> OpenValueFmt
     ANY
 }
 
+/// DER format for ASN.1 `BmpName`.
+pub type BmpNameFmt = Refined<BmpStringTlvFmt, Size<true, 1, true, 4>>;
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+pub const fn BMP_NAME_FMT() -> BmpNameFmt
+    returns
+        (
+            Refined(BMP_STRING, Size::<true, 1, true, 4>)
+        ),
+{
+    Refined(BMP_STRING, Size::<true, 1, true, 4>)
+}
+
+/// DER format for ASN.1 `BmpContainer`.
+pub type BmpContainerFmt = Mapped<SequenceFmt<Pair<Ref<BmpNameFmt>, Eof>>, BiMap<BmpContainerForward, BmpContainerReverse>>;
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+pub const fn BMP_CONTAINER_FMT() -> BmpContainerFmt
+    returns
+        (
+            Mapped {
+                inner:
+                    SEQUENCE(
+                        REQUIRED(Ref(BMP_NAME_FMT()),
+                        Eof),
+                    ),
+                mapper: BiMap(BmpContainerForward, BmpContainerReverse),
+            }
+        ),
+{
+    Mapped {
+        inner:
+            SEQUENCE(
+                REQUIRED(Ref(BMP_NAME_FMT()),
+                Eof),
+            ),
+        mapper: BiMap(BmpContainerForward, BmpContainerReverse),
+    }
+}
+
 /// DER format for ASN.1 `Metadata`.
-pub type MetadataFmt = ASN1Fmt<Mapped<DefaultedFmt<ColorFmt, Color, Pair<Ref<IdentifierFmt>, Pair<Ref<MeasurementFmt>, Pair<Ref<ASN1Fmt<OpenValueFmt, DER>>, Eof>>>, DER>, BiMap<MetadataForward, MetadataReverse>>, DER>;
+pub type MetadataFmt = Mapped<SequenceFmt<DefaultFmt<ImplicitFmt<ColorFmt>, Color, Pair<Ref<IdentifierFmt>, Pair<Ref<MeasurementFmt>, Pair<ExplicitFmt<Ref<OpenValueFmt>>, Eof>>>>>, BiMap<MetadataForward, MetadataReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn METADATA_FMT() -> MetadataFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,
                         REQUIRED(Ref(IDENTIFIER_FMT()),
                         REQUIRED(Ref(MEASUREMENT_FMT()),
-                        REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),
+                        REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE_FMT())),
                         Eof)))),
-                    mapper: BiMap(MetadataForward, MetadataReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(MetadataForward, MetadataReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,
                 REQUIRED(Ref(IDENTIFIER_FMT()),
                 REQUIRED(Ref(MEASUREMENT_FMT()),
-                REQUIRED(Ref(EXPLICIT(1u64, OPEN_VALUE_FMT())),
+                REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE_FMT())),
                 Eof)))),
-            mapper: BiMap(MetadataForward, MetadataReverse),
-        },
-    )
+            ),
+        mapper: BiMap(MetadataForward, MetadataReverse),
+    }
 }
 
 /// DER format for ASN.1 `InlineRecord-nested`.
-pub type InlineRecordNestedFmt = ASN1Fmt<Mapped<Pair<Ref<ASN1OctetStringFmt<DER>>, Eof>, BiMap<InlineRecordNestedForward, InlineRecordNestedReverse>>, DER>;
+pub type InlineRecordNestedFmt = Mapped<SequenceFmt<Pair<Ref<OctetStringTlvFmt>, Eof>>, BiMap<InlineRecordNestedForward, InlineRecordNestedReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_NESTED_FMT() -> InlineRecordNestedFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         REQUIRED(Ref(OCTET_STRING),
                         Eof),
-                    mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 REQUIRED(Ref(OCTET_STRING),
                 Eof),
-            mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
-        },
-    )
+            ),
+        mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+    }
 }
 
 /// DER format for ASN.1 `InlineRecord-selected`.
-pub type InlineRecordSelectedFmt = Mapped<Choice<Ref<ASN1BoolFmt<DER>>, Ref<ASN1ObjectIdentifierFmt<DER>>>, BiMap<InlineRecordSelectedForward, InlineRecordSelectedReverse>>;
+pub type InlineRecordSelectedFmt = Mapped<Choice<ImplicitFmt<Ref<BoolTlvFmt>>, ImplicitFmt<Ref<ObjectIdentifierTlvFmt>>>, BiMap<InlineRecordSelectedForward, InlineRecordSelectedReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
@@ -1052,8 +1178,8 @@ pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
             Mapped {
                 inner:
                     CHOICE(
-                        Ref(IMPLICIT(2u64, BOOLEAN)),
-                        Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER)),
+                        IMPLICIT(2u64, Ref(BOOLEAN)),
+                        IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)),
                     ),
                 mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
             }
@@ -1062,89 +1188,87 @@ pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
     Mapped {
         inner:
             CHOICE(
-                Ref(IMPLICIT(2u64, BOOLEAN)),
-                Ref(IMPLICIT(3u64, OBJECT_IDENTIFIER)),
+                IMPLICIT(2u64, Ref(BOOLEAN)),
+                IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)),
             ),
         mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
     }
 }
 
 /// DER format for ASN.1 `InlineRecord`.
-pub type InlineRecordFmt = ASN1Fmt<Mapped<Pair<Ref<InlineRecordNestedFmt>, Pair<Ref<InlineRecordSelectedFmt>, Eof>>, BiMap<InlineRecordForward, InlineRecordReverse>>, DER>;
+pub type InlineRecordFmt = Mapped<SequenceFmt<Pair<Ref<InlineRecordNestedFmt>, Pair<Ref<InlineRecordSelectedFmt>, Eof>>>, BiMap<InlineRecordForward, InlineRecordReverse>>;
 #[verifier::allow_in_spec]
 #[allow(non_snake_case)]
 pub const fn INLINE_RECORD_FMT() -> InlineRecordFmt
     returns
         (
-            ASN1Fmt::<_, DER>(
-                TagFmt::SEQUENCE,
-                Mapped {
-                    inner:
+            Mapped {
+                inner:
+                    SEQUENCE(
                         REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()),
                         REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()),
                         Eof)),
-                    mapper: BiMap(InlineRecordForward, InlineRecordReverse),
-                },
-            )
+                    ),
+                mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+            }
         ),
 {
-    ASN1Fmt::<_, DER>(
-        TagFmt::SEQUENCE,
-        Mapped {
-            inner:
+    Mapped {
+        inner:
+            SEQUENCE(
                 REQUIRED(Ref(INLINE_RECORD_NESTED_FMT()),
                 REQUIRED(Ref(INLINE_RECORD_SELECTED_FMT()),
                 Eof)),
-            mapper: BiMap(InlineRecordForward, InlineRecordReverse),
-        },
-    )
+            ),
+        mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+    }
 }
 
 proof fn vestasn1_generated_formats_are_valid() {
     use vest_lib2::core::proof::*;
-    use vest_lib2::asn1::modifiers::{lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
     use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
     use vest_lib2::combinators::disjoint::disjointness_lemmas;
     broadcast use disjointness_lemmas;
     broadcast use lemma_tag_wf_implies_tag_consistent;
-    broadcast use {lemma_disjoint_asn1_tags, lemma_disjoint_defaulted};
+    broadcast use asn1_disjointness_lemmas;
     assert(FLAG_FMT().safe_inv());
     assert(FLAG_FMT().sound_inv());
     assert(FLAG_FMT().unambiguous());
     assert(COUNT_FMT().safe_inv());
     assert(COUNT_FMT().sound_inv());
     assert(COUNT_FMT().unambiguous());
+    assert(TAGGED_COUNT_FMT().safe_inv());
+    assert(TAGGED_COUNT_FMT().sound_inv());
+    assert(TAGGED_COUNT_FMT().unambiguous());
+    assert(RETAGGED_COUNT_FMT().safe_inv());
+    assert(RETAGGED_COUNT_FMT().sound_inv());
+    assert(RETAGGED_COUNT_FMT().unambiguous());
     assert(PAYLOAD_FMT().safe_inv());
     assert(PAYLOAD_FMT().sound_inv());
     assert(PAYLOAD_FMT().unambiguous());
     assert(HEADER_FMT().safe_inv());
     assert(HEADER_FMT().sound_inv());
-    assert((HEADER_FMT().1.inner).unambiguous());
+    assert((HEADER_FMT().inner.1).unambiguous());
     assert(HEADER_FMT().unambiguous());
     assert(ENVELOPE_FMT().safe_inv());
     assert(ENVELOPE_FMT().sound_inv());
-    assert(disjoint_domains(((ENVELOPE_FMT().1.inner).1).0, ((ENVELOPE_FMT().1.inner).1).1));
-    assert((ENVELOPE_FMT().1.inner).unambiguous());
+    assert((ENVELOPE_FMT().inner.1).unambiguous());
     assert(ENVELOPE_FMT().unambiguous());
     assert(ENVELOPES_FMT().safe_inv());
     assert(ENVELOPES_FMT().sound_inv());
     assert(ENVELOPES_FMT().unambiguous());
     assert(FEATURES_FMT().safe_inv());
     assert(FEATURES_FMT().sound_inv());
-    lemma_disjoint_asn1_tags((FEATURES_FMT().1.inner).0, ((FEATURES_FMT().1.inner).2).0);
-    assert(disjoint_domains((FEATURES_FMT().1.inner).0, (FEATURES_FMT().1.inner).2));
-    assert(disjoint_domains(((FEATURES_FMT().1.inner).2).0, ((FEATURES_FMT().1.inner).2).2));
-    assert((FEATURES_FMT().1.inner).unambiguous());
+    assert((FEATURES_FMT().inner.1).unambiguous());
     assert(FEATURES_FMT().unambiguous());
     assert(SELECTION_FMT().safe_inv());
     assert(SELECTION_FMT().sound_inv());
-    lemma_disjoint_asn1_tags(((SELECTION_FMT().inner).0).0, ((SELECTION_FMT().inner).1).0);
     assert((SELECTION_FMT().inner).unambiguous());
     assert(SELECTION_FMT().unambiguous());
     assert(CHOICE_ENVELOPE_FMT().safe_inv());
     assert(CHOICE_ENVELOPE_FMT().sound_inv());
-    assert(disjoint_domains((CHOICE_ENVELOPE_FMT().1.inner).0, (CHOICE_ENVELOPE_FMT().1.inner).1));
-    assert((CHOICE_ENVELOPE_FMT().1.inner).unambiguous());
+    assert((CHOICE_ENVELOPE_FMT().inner.1).unambiguous());
     assert(CHOICE_ENVELOPE_FMT().unambiguous());
     assert(COLOR_FMT().safe_inv());
     assert(COLOR_FMT().sound_inv());
@@ -1158,24 +1282,28 @@ proof fn vestasn1_generated_formats_are_valid() {
     assert(OPEN_VALUE_FMT().safe_inv());
     assert(OPEN_VALUE_FMT().sound_inv());
     assert(OPEN_VALUE_FMT().unambiguous());
+    assert(BMP_NAME_FMT().safe_inv());
+    assert(BMP_NAME_FMT().sound_inv());
+    assert(BMP_NAME_FMT().unambiguous());
+    assert(BMP_CONTAINER_FMT().safe_inv());
+    assert(BMP_CONTAINER_FMT().sound_inv());
+    assert((BMP_CONTAINER_FMT().inner.1).unambiguous());
+    assert(BMP_CONTAINER_FMT().unambiguous());
     assert(METADATA_FMT().safe_inv());
     assert(METADATA_FMT().sound_inv());
-    lemma_disjoint_asn1_tags((METADATA_FMT().1.inner).0, (((METADATA_FMT().1.inner).2).0).0);
-    assert(disjoint_domains((METADATA_FMT().1.inner).0, (METADATA_FMT().1.inner).2));
-    assert((METADATA_FMT().1.inner).unambiguous());
+    assert((METADATA_FMT().inner.1).unambiguous());
     assert(METADATA_FMT().unambiguous());
     assert(INLINE_RECORD_NESTED_FMT().safe_inv());
     assert(INLINE_RECORD_NESTED_FMT().sound_inv());
-    assert((INLINE_RECORD_NESTED_FMT().1.inner).unambiguous());
+    assert((INLINE_RECORD_NESTED_FMT().inner.1).unambiguous());
     assert(INLINE_RECORD_NESTED_FMT().unambiguous());
     assert(INLINE_RECORD_SELECTED_FMT().safe_inv());
     assert(INLINE_RECORD_SELECTED_FMT().sound_inv());
-    lemma_disjoint_asn1_tags(((INLINE_RECORD_SELECTED_FMT().inner).0).0, ((INLINE_RECORD_SELECTED_FMT().inner).1).0);
     assert((INLINE_RECORD_SELECTED_FMT().inner).unambiguous());
     assert(INLINE_RECORD_SELECTED_FMT().unambiguous());
     assert(INLINE_RECORD_FMT().safe_inv());
     assert(INLINE_RECORD_FMT().sound_inv());
-    assert((INLINE_RECORD_FMT().1.inner).unambiguous());
+    assert((INLINE_RECORD_FMT().inner.1).unambiguous());
     assert(INLINE_RECORD_FMT().unambiguous());
 }
 
