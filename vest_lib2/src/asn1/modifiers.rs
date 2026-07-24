@@ -1,13 +1,9 @@
-//! ASN.1 component modifiers.
-//!
-//! IMPLICIT and EXPLICIT tagging reduce directly to [`ASN1Fmt`]. OPTIONAL uses
-//! [`Optional`](crate::combinators::Optional). DEFAULT is a derived
-//! `Mapped<Refined<Optional<...>, ...>, ...>` format: BER accepts an explicitly
-//! encoded default while DER rejects it, and both serializers omit defaults.
-use crate::asn1::tag::{Class, TagNumber};
+//! Shared ASN.1 component modifiers and notation constructors.
+use crate::asn1::ber::{BerCharStringFmt, BerOctetStringFmt, BerSequenceFmt, BerSequenceOfFmt};
+use crate::asn1::tag::Class;
 use crate::asn1::{ASN1Fmt, Tag};
 use crate::combinators::mapped::spec::{FnSpecMapper, SpecMapper};
-use crate::combinators::{Mapped, Optional, Refined};
+use crate::combinators::{Choice, Mapped, Optional, Pair, Ref, Refined};
 use crate::core::exec::output::*;
 use crate::core::exec::{
     input::{InputBuf, InputSlice},
@@ -21,71 +17,511 @@ use OutputBuf;
 
 verus! {
 
-/// Apply an ASN.1 IMPLICIT tag. The base type's primitive/constructed form is preserved.
-#[allow(non_snake_case)]
-#[verifier::allow_in_spec]
-pub const fn Implicit<C: Copy, const DER: bool>(
-    class: Class,
-    number: u64,
-    inner: ASN1Fmt<C, DER>,
-) -> ASN1Fmt<C, DER>
-    returns
-        ASN1Fmt::<_, DER>(
-            Tag {
-                class,
-                constructed: inner.0.constructed,
-                number: super::tag::tag_num_from_uint(number),
-            },
-            inner.1,
-        ),
-{
-    ASN1Fmt(
-        Tag {
-            class,
-            constructed: inner.0.constructed,
-            number: super::tag::tag_num_from_uint(number),
-        },
-        inner.1,
-    )
+/// Formats whose outer ASN.1 tag can be replaced without changing their semantic value.
+///
+/// The replacement's class and number are authoritative; each format determines the
+/// primitive/constructed bit required by its own wire representation.
+pub trait Retaggable: Copy {
+    type Retagged;
+
+    spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged;
+
+    fn retagged(&self, tag: Tag) -> (retagged: Self::Retagged)
+        returns
+            self.spec_retagged(tag),
+    ;
 }
 
-/// Apply an ASN.1 EXPLICIT tag. The outer tag is always constructed.
+/// Const-constructible ASN.1 IMPLICIT tagging wrapper.
+#[derive(Copy)]
+pub struct ImplicitlyTaggedFmt<F>(pub Tag, pub F);
+
+impl<F: Clone> Clone for ImplicitlyTaggedFmt<F> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            cloned.0 == self.0,
+            call_ensures(F::clone, (&self.1,), cloned.1),
+    {
+        Self(self.0, self.1.clone())
+    }
+}
+
+/// Supports IMPLICIT tagging of an ordinary ASN.1 TLV.
+///
+/// Retagging replaces the tag class and number, preserves the base format's primitive/constructed
+/// form, and leaves its content format unchanged.
+impl<C: Copy, const DER: bool> Retaggable for ASN1Fmt<C, DER> {
+    type Retagged = ASN1Fmt<C, DER>;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        ASN1Fmt(
+            Tag { class: tag.class, constructed: self.0.constructed, number: tag.number },
+            self.1,
+        )
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        ASN1Fmt(
+            Tag { class: tag.class, constructed: self.0.constructed, number: tag.number },
+            self.1,
+        )
+    }
+}
+
+/// Supports IMPLICIT tagging of a BER `SEQUENCE` or EXPLICIT wrapper without losing its
+/// definite/indefinite-length parser.
+///
+/// Retagging replaces the tag class and number, forces the required constructed form, and
+/// preserves the schema-defined content format.
+impl<C: Copy> Retaggable for BerSequenceFmt<C> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
+    }
+}
+
+/// Supports IMPLICIT tagging of a BER `SEQUENCE OF`/`SET OF` while retaining its specialized
+/// definite/indefinite-length handling.
+///
+/// Retagging replaces the tag class and number, forces the required constructed form, and
+/// preserves the element format.
+impl<C: Copy> Retaggable for BerSequenceOfFmt<C> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
+    }
+}
+
+/// Supports IMPLICIT tagging of recursive BER OCTET STRING values.
+///
+/// The stored tag is normalized to the primitive form with the replacement class and number; this
+/// is fine since the parser permits both primitive and constructed forms.
+/// Recursive fragments keep universal tag 4 (see [`BerOctetStringFmt`]).
+impl<const LIMIT: usize> Retaggable for BerOctetStringFmt<LIMIT> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number })
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number })
+    }
+}
+
+/// Supports IMPLICIT tagging of a BER restricted character string layered over OCTET STRING.
+///
+/// The outer tag is normalized to the primitive form with the replacement class and number,
+/// while OCTET STRING fragment tags, the character-content format, and the recursion limit are
+/// preserved.
+impl<C: Copy, const LIMIT: usize> Retaggable for BerCharStringFmt<C, LIMIT> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number }, self.1)
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number }, self.1)
+    }
+}
+
+/// Allows IMPLICIT tagging to compose/chain through an existing IMPLICIT-tag wrapper.
+///
+/// The newer tag replaces the stored outer tag and the underlying format is retained; when used,
+/// the underlying [`Retaggable`] implementation selects the correct primitive/constructed form.
+impl<F: Retaggable> Retaggable for ImplicitlyTaggedFmt<F> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(tag, self.1)
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(tag, self.1)
+    }
+}
+
+/// Allows a value constraint to remain attached when its underlying ASN.1 format is retagged.
+///
+/// Retagging is delegated to the inner format and the refinement predicate is preserved.
+impl<F, P> Retaggable for Refined<F, P> where F: Retaggable, P: Copy {
+    type Retagged = Refined<F::Retagged, P>;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Refined(self.0.spec_retagged(tag), self.1)
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Refined(self.0.retagged(tag), self.1)
+    }
+}
+
+/// Allows a semantic mapping to remain attached when its underlying ASN.1 format is retagged.
+///
+/// Retagging is delegated to the inner format and the mapper is preserved.
+impl<F, M> Retaggable for Mapped<F, M> where F: Retaggable, M: Copy {
+    type Retagged = Mapped<F::Retagged, M>;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Mapped { inner: self.inner.spec_retagged(tag), mapper: self.mapper }
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Mapped { inner: self.inner.retagged(tag), mapper: self.mapper }
+    }
+}
+
+/// Allows references to retaggable formats to pass transparently through IMPLICIT tagging.
+///
+/// Retagging is delegated to the referenced format and the result remains wrapped in [`Ref`].
+impl<F> Retaggable for Ref<F> where F: Retaggable {
+    type Retagged = Ref<F::Retagged>;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Ref(self.0.spec_retagged(tag))
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Ref(self.0.retagged(tag))
+    }
+}
+
+mod implicit_specs {
+    use super::*;
+
+    impl<F> SpecParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SpecParser {
+        type PVal = <F::Retagged as SpecParser>::PVal;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            self.1.spec_retagged(self.0).spec_parse(ibuf)
+        }
+    }
+
+    impl<F> Consistency for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: Consistency {
+        type Val = <F::Retagged as Consistency>::Val;
+
+        open spec fn consistent(&self, value: Self::Val) -> bool {
+            self.1.spec_retagged(self.0).consistent(value)
+        }
+    }
+
+    impl<F> SpecSerializerDps for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: SpecSerializerDps,
+     {
+        type SValue = <F::Retagged as SpecSerializerDps>::SValue;
+
+        open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            self.1.spec_retagged(self.0).spec_serialize_dps(value, obuf)
+        }
+    }
+
+    impl<F> SpecSerializer for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: SpecSerializer,
+     {
+        type SVal = <F::Retagged as SpecSerializer>::SVal;
+
+        open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+            self.1.spec_retagged(self.0).spec_serialize(value)
+        }
+    }
+
+    impl<F> SpecByteLen for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SpecByteLen {
+        type T = <F::Retagged as SpecByteLen>::T;
+
+        open spec fn byte_len(&self, value: Self::T) -> nat {
+            self.1.spec_retagged(self.0).byte_len(value)
+        }
+    }
+
+}
+
+mod implicit_proofs {
+    use super::*;
+
+    impl<F> SafeParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SafeParser {
+        open spec fn safe_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).safe_inv()
+        }
+
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<F> Productive for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: Productive {
+        open spec fn productive_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).productive_inv()
+        }
+
+        proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_productive(ibuf);
+        }
+    }
+
+    impl<F> SoundParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SoundParser {
+        open spec fn sound_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).sound_inv()
+        }
+
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<F> NonTailFmt for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NonTailFmt {
+        open spec fn serialize_dps_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).serialize_dps_inv()
+        }
+
+        proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_serialize_dps_prepend(value, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_serialize_dps_len(value, obuf);
+        }
+    }
+
+    impl<F> GoodSerializer for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: GoodSerializer,
+     {
+        open spec fn serialize_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).serialize_inv()
+        }
+
+        proof fn lemma_serialize_len(&self, value: Self::SVal) {
+            self.1.spec_retagged(self.0).lemma_serialize_len(value);
+        }
+    }
+
+    impl<F> SPRoundTripDps for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: SPRoundTripDps,
+     {
+        open spec fn unambiguous(&self) -> bool {
+            self.1.spec_retagged(self.0).unambiguous()
+        }
+
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).theorem_serialize_dps_parse_roundtrip(value, obuf);
+        }
+    }
+
+    impl<F> NonMalleable for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NonMalleable {
+        open spec fn nonmal_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).nonmal_inv()
+        }
+
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl<F> NoLookAhead for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NoLookAhead {
+        open spec fn no_lookahead_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).no_lookahead_inv()
+        }
+
+        proof fn lemma_no_lookahead(&self, ibuf1: Seq<u8>, ibuf2: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_no_lookahead(ibuf1, ibuf2);
+        }
+    }
+
+    impl<F> EquivSerializersGeneral for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: EquivSerializersGeneral,
+     {
+        open spec fn equiv_general_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).equiv_general_inv()
+        }
+
+        proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_serialize_equiv(value, obuf);
+        }
+    }
+
+    impl<F> EquivSerializers for ImplicitlyTaggedFmt<F> where
+        F: Retaggable,
+        F::Retagged: EquivSerializers,
+     {
+        open spec fn equiv_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).equiv_inv()
+        }
+
+        proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
+            self.1.spec_retagged(self.0).lemma_serialize_equiv_on_empty(value);
+        }
+    }
+
+}
+
+impl<Input, F> Parser<Input> for ImplicitlyTaggedFmt<F> where
+    Input: InputBuf,
+    F: Retaggable,
+    F::Retagged: Parser<Input>,
+ {
+    type PT = <F::Retagged as Parser<Input>>::PT;
+
+    open spec fn exec_inv(&self) -> bool {
+        <F::Retagged as Parser<Input>>::exec_inv(&self.1.spec_retagged(self.0))
+    }
+
+    fn parse(&self, ibuf: &Input) -> PResult<Self::PT> {
+        self.1.retagged(self.0).parse(ibuf)
+    }
+}
+
+impl<Output, F, T> Serializer<Output, T> for ImplicitlyTaggedFmt<F> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    F: Retaggable,
+    F::Retagged: Serializer<Output, T>,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        <F::Retagged as Serializer<Output, T>>::exec_inv(&self.1.spec_retagged(self.0))
+    }
+
+    fn serialize_into(&self, value: &T, obuf: &mut Output) {
+        self.1.retagged(self.0).serialize_into(value, obuf)
+    }
+}
+
+impl<F, T> Prepare<T> for ImplicitlyTaggedFmt<F> where
+    T: DeepView + ?Sized,
+    F: Retaggable,
+    F::Retagged: Prepare<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <F::Retagged as Prepare<T>>::exec_inv(&self.1.spec_retagged(self.0))
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        self.1.retagged(self.0).prepare(value)
+    }
+}
+
+impl<F, T> ByteLen<T> for ImplicitlyTaggedFmt<F> where
+    T: DeepView + ?Sized,
+    F: Retaggable,
+    F::Retagged: ByteLen<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <F::Retagged as ByteLen<T>>::exec_inv(&self.1.spec_retagged(self.0))
+    }
+
+    fn length(&self, value: &T) -> usize {
+        self.1.retagged(self.0).length(value)
+    }
+}
+
+/// Rule-independent format type produced by ASN.1 IMPLICIT tagging.
+pub type ImplicitFmt<F> = ImplicitlyTaggedFmt<F>;
+
+/// Apply an ASN.1 IMPLICIT tag with an arbitrary tag class.
+///
+/// The supplied tag's constructed bit is only a placeholder: the concrete [`Retaggable`]
+/// implementation preserves or selects the encoding form required by the base format.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub const fn Explicit<C: Copy, const DER: bool>(class: Class, number: u64, inner: C) -> ASN1Fmt<
-    C,
-    DER,
->
+pub const fn implicitly_tagged<C: Copy>(class: Class, number: u64, inner: C) -> ImplicitFmt<C>
     returns
-        ASN1Fmt::<C, DER>(
-            Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) },
+        ImplicitlyTaggedFmt(
+            Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) },
             inner,
         ),
 {
-    ASN1Fmt(Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) }, inner)
+    ImplicitlyTaggedFmt(
+        Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) },
+        inner,
+    )
 }
 
-/// Apply an ASN.1 context-specific IMPLICIT tag.
+/// Apply a context-specific ASN.1 IMPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextImplicit<C: Copy, const DER: bool>(number: u64, inner: ASN1Fmt<C, DER>) -> ASN1Fmt<
-    C,
-    DER,
->
+pub const fn IMPLICIT<C: Copy>(number: u64, inner: C) -> ImplicitFmt<C>
     returns
-        Implicit(Class::ContextSpecific, number, inner),
+        implicitly_tagged(Class::ContextSpecific, number, inner),
 {
-    Implicit(Class::ContextSpecific, number, inner)
+    implicitly_tagged(Class::ContextSpecific, number, inner)
 }
 
-/// Apply an ASN.1 context-specific EXPLICIT tag.
+/// Apply an application-class ASN.1 IMPLICIT tag.
 #[allow(non_snake_case)]
 #[verifier::allow_in_spec]
-pub fn ContextExplicit<C: Copy, const DER: bool>(number: u64, inner: C) -> ASN1Fmt<C, DER>
+pub const fn IMPLICIT_APPLICATION<C: Copy>(number: u64, inner: C) -> ImplicitFmt<C>
     returns
-        Explicit::<C, DER>(Class::ContextSpecific, number, inner),
+        implicitly_tagged(Class::Application, number, inner),
 {
-    Explicit::<C, DER>(Class::ContextSpecific, number, inner)
+    implicitly_tagged(Class::Application, number, inner)
+}
+
+/// Apply a private-class ASN.1 IMPLICIT tag.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn IMPLICIT_PRIVATE<C: Copy>(number: u64, inner: C) -> ImplicitFmt<C>
+    returns
+        implicitly_tagged(Class::Private, number, inner),
+{
+    implicitly_tagged(Class::Private, number, inner)
+}
+
+/// Construct an ASN.1 OPTIONAL component with its continuation.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn OPTIONAL<Field, Rest>(field: Field, rest: Rest) -> Optional<Field, Rest>
+    returns
+        Optional(field, rest),
+{
+    Optional(field, rest)
+}
+
+/// Construct a required ASN.1 component with its continuation.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn REQUIRED<Field, Rest>(field: Field, rest: Rest) -> Pair<Field, Rest>
+    returns
+        Pair(field, rest),
+{
+    Pair(field, rest)
+}
+
+/// Construct a binary ASN.1 CHOICE.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn CHOICE<Left, Right>(left: Left, right: Right) -> Choice<Left, Right>
+    returns
+        Choice(left, right),
+{
+    Choice(left, right)
+}
+
+/// Construct the outer tag used by ASN.1 EXPLICIT tagging.
+#[verifier::allow_in_spec]
+pub const fn explicit_tag(class: Class, number: u64) -> Tag
+    returns
+        (Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) }),
+{
+    Tag { class, constructed: true, number: super::tag::tag_num_from_uint(number) }
 }
 
 /// ASN.1 DEFAULT component with continuation.
@@ -99,6 +535,19 @@ pub struct DefaultedFmt<Field, Default, Rest, const DER: bool = true>(
     pub Default,
     pub Rest,
 );
+
+/// Construct an ASN.1 DEFAULT component for the selected encoding rules.
+#[verifier::allow_in_spec]
+pub const fn defaulted<Field, Rest, const DER: bool>(
+    field: Field,
+    default: Field::T,
+    rest: Rest,
+) -> DefaultedFmt<Field, Field::T, Rest, DER> where Field: SpecByteLen
+    returns
+        DefaultedFmt::<Field, Field::T, Rest, DER>(field, default, rest),
+{
+    DefaultedFmt::<Field, Field::T, Rest, DER>(field, default, rest)
+}
 
 impl<Field: Clone, Default: Clone, Rest: Clone, const DER: bool> Clone for DefaultedFmt<
     Field,
@@ -562,40 +1011,6 @@ impl<Field, Default, Rest, R, const DER: bool> ByteLen<(Default, R)> for Default
         let n1 = self.2.length(&v.1);
         n0 + n1
     }
-}
-
-/// ASN.1 TLVs with distinct tags have disjoint parse domains.
-pub broadcast proof fn lemma_disjoint_asn1_tags<
-    A: SpecCombinator,
-    B: SpecCombinator,
-    const DER: bool,
->(a: ASN1Fmt<A, DER>, b: ASN1Fmt<B, DER>)
-    requires
-        a.0 != b.0,
-    ensures
-        #[trigger] disjoint_domains(a, b),
-{
-    reveal(disjoint_domains);
-}
-
-/// A [`DefaultedFmt<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
-pub broadcast proof fn lemma_disjoint_defaulted<P, A, B>(
-    p: P,
-    defaulted: DefaultedFmt<A, A::PVal, B, true>,
-) where
-    P: SpecParser,
-    A: SpecByteLen + SpecParser<PVal = A::T>,
-    B: SpecByteLen + SpecParser<PVal = B::T>,
-
-    requires
-        disjoint_domains(p, defaulted.0),
-        disjoint_domains(p, defaulted.2),
-    ensures
-        #[trigger] disjoint_domains(p, defaulted),
-{
-    reveal(disjoint_domains);
-    broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
-
 }
 
 } // verus!
