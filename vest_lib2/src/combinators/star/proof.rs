@@ -629,6 +629,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert(self.unambiguous());
         reveal(<super::Star::<_> as SpecSerializerDps>::spec_serialize_dps);
         let star = super::Star(self.0);
         let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
@@ -740,6 +741,7 @@ impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        assert(self.equiv_inv());
         Pair(super::Star(self.0), self.1).lemma_serialize_equiv_on_empty(v);
     }
 }

@@ -46,35 +46,27 @@ proof fn lemma_value_seq_byte_len<A: ValueByteLen>(inner: A, vs: Seq<A::T>)
     } else {
         let v0 = vs[0];
         let rest = vs.skip(1);
-        let f = |acc: nat, elem: A::T| acc + inner.byte_len(elem);
         let g = |acc: nat, elem: A::T| acc + A::value_byte_len(elem);
 
+        assert(vs == seq![v0] + rest);
+        star.lemma_byte_len_cons(v0, rest);
         lemma_value_seq_byte_len(inner, rest);
         inner.lemma_value_len_matches_byte_len(v0);
         assert(star.byte_len(rest) == rest.fold_left(0, g));
-
-        calc! {
-            (==)
-            star.byte_len(vs); {
-                assert(vs == seq![v0] + rest);
-            }
-            (seq![v0] + rest).fold_left(0, f); {
-                (seq![v0] + rest).lemma_fold_left_alt(0, f);
-            }
-            (seq![v0] + rest).fold_left_alt(0, f); {}
-            rest.fold_left_alt(inner.byte_len(v0), f); {
-                rest.lemma_fold_left_alt(inner.byte_len(v0), f);
-            }
-            rest.fold_left(inner.byte_len(v0), f); {
-                lemma_fold_left_accumulate_nat(rest, inner.byte_len(v0), f);
-            }
-            inner.byte_len(v0) + rest.fold_left(0, f); {}
-            inner.byte_len(v0) + star.byte_len(rest); {}
-            A::value_byte_len(v0) + rest.fold_left(0, g);
-        }
         lemma_fold_left_accumulate_nat(rest, A::value_byte_len(v0), g);
         rest.lemma_fold_left_alt(A::value_byte_len(v0), g);
         (seq![v0] + rest).lemma_fold_left_alt(0, g);
+        calc! {
+            (==)
+            star.byte_len(vs); {}
+            inner.byte_len(v0) + star.byte_len(rest); {}
+            A::value_byte_len(v0) + rest.fold_left(0, g); {}
+            rest.fold_left(A::value_byte_len(v0), g); {}
+            rest.fold_left_alt(A::value_byte_len(v0), g); {}
+            (seq![v0] + rest).fold_left_alt(0, g); {}
+            (seq![v0] + rest).fold_left(0, g); {}
+            vs.fold_left(0, g);
+        }
     }
 }
 
@@ -802,6 +794,7 @@ impl<A: GoodSerializer, B: GoodSerializer> GoodSerializer for super::Repeat<A, B
     }
 
     proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        assert(self.serialize_inv());
         Pair(super::Star(self.0), self.1).lemma_serialize_len(v);
     }
 }
