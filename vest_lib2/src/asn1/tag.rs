@@ -208,6 +208,24 @@ impl DeepView for Tag {
     }
 }
 
+/// Return the primitive form of a tag identity.
+#[verifier::allow_in_spec]
+pub fn primitive_tag(tag: Tag) -> Tag
+    returns
+        (Tag { class: tag.class, constructed: false, number: tag.number }),
+{
+    Tag { class: tag.class, constructed: false, number: tag.number }
+}
+
+/// Return the constructed form of a tag identity.
+#[verifier::allow_in_spec]
+pub fn constructed_tag(tag: Tag) -> Tag
+    returns
+        (Tag { class: tag.class, constructed: true, number: tag.number }),
+{
+    Tag { class: tag.class, constructed: true, number: tag.number }
+}
+
 pub open spec fn class_of_first_byte(b1: u8) -> Class {
     match b1 & TAG_CLASS_MASK {
         0b0000_0000u8 => Class::Universal,

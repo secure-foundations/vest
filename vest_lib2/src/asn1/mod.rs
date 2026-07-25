@@ -83,7 +83,7 @@ pub use printablestring::PrintableStringOwned;
 pub use printablestring::{PrintableString, PrintableStringSpec};
 pub use real::{Real, RealSpec};
 pub use set_of::{DerOrd, SetOfFmt};
-pub use tag::{Class, Tag};
+pub use tag::{constructed_tag, primitive_tag, Class, Tag};
 #[cfg(feature = "alloc")]
 pub use teletexstring::TeletexStringOwned;
 pub use teletexstring::{TeletexString, TeletexStringSpec};
