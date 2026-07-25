@@ -56,15 +56,14 @@ impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
     }
 }
 
-impl<Output: OutputBuf, Inner, M, MRev, T, InnerT> Serializer<Output, T> for super::Mapped<
+impl<Output: OutputBuf, Inner, M, MRev, T> Serializer<Output, T> for super::Mapped<
     Inner,
     BiMap<M, MRev>,
 > where
     T: DeepView,
-    InnerT: DeepView,
-    Inner: Serializer<Output, InnerT>,
-    M: SpecMap<Input = Inner::SVal, Output = T::V>,
-    MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::SVal>,
+    M: SpecMap<Input = MRev::Output, Output = T::V>,
+    MRev: SpecMap<Input = T::V> + for <'x>Map<&'x T>,
+    Inner: for <'x>Serializer<Output, <MRev as Map<&'x T>>::O>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -82,12 +81,11 @@ impl<Output: OutputBuf, Inner, M, MRev, T, InnerT> Serializer<Output, T> for sup
     }
 }
 
-impl<Inner, M, MRev, T, InnerT> Prepare<T> for super::Mapped<Inner, BiMap<M, MRev>> where
+impl<Inner, M, MRev, T> Prepare<T> for super::Mapped<Inner, BiMap<M, MRev>> where
     T: DeepView,
-    InnerT: DeepView,
-    Inner: Prepare<InnerT>,
-    M: SpecMap<Input = Inner::T, Output = T::V>,
-    MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
+    M: SpecMap<Input = MRev::Output, Output = T::V>,
+    MRev: SpecMap<Input = T::V> + for <'x>Map<&'x T>,
+    Inner: for <'x>Prepare<<MRev as Map<&'x T>>::O>,
  {
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
@@ -99,12 +97,11 @@ impl<Inner, M, MRev, T, InnerT> Prepare<T> for super::Mapped<Inner, BiMap<M, MRe
     }
 }
 
-impl<Inner, M, MRev, T, InnerT> ByteLen<T> for super::Mapped<Inner, BiMap<M, MRev>> where
+impl<Inner, M, MRev, T> ByteLen<T> for super::Mapped<Inner, BiMap<M, MRev>> where
     T: DeepView,
-    InnerT: DeepView,
-    Inner: ByteLen<InnerT>,
-    M: SpecMap<Input = Inner::T, Output = T::V>,
-    MRev: for <'x>Map<&'x T, O = InnerT, Input = T::V, Output = Inner::T>,
+    M: SpecMap<Input = MRev::Output, Output = T::V>,
+    MRev: SpecMap<Input = T::V> + for <'x>Map<&'x T>,
+    Inner: for <'x>ByteLen<<MRev as Map<&'x T>>::O>,
  {
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
