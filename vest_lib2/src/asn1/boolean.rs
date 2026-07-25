@@ -40,11 +40,14 @@ pub fn der_bool_byte(b: u8) -> bool
 }
 
 pub open spec fn true_byte<const DER: bool>() -> u8 {
-    if DER {
-        CANONICAL_TRUE_BYTE
-    } else {
-        choose|x: u8| non_zero(x)
-    }
+    // if DER {
+    //     CANONICAL_TRUE_BYTE
+    // } else {
+    //     choose|x: u8| non_zero(x)
+    // }
+    // BER accepts any non-zero TRUE octet, but the serializer deliberately
+    // normalizes both BER and DER output to DER's canonical 0xff spelling.
+    CANONICAL_TRUE_BYTE
 }
 
 pub type BoolFmt<const DER: bool> = Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<u8, bool>>;
@@ -229,7 +232,7 @@ impl<const DER: bool> Parser<&[u8]> for super::BoolFmt<DER> {
     }
 }
 
-impl<Output: OutputBuf> Serializer<Output, bool> for super::BoolFmt<true> {
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, bool> for super::BoolFmt<DER> {
     fn serialize_into(&self, v: &bool, obuf: &mut Output) {
         let b = if *v {
             CANONICAL_TRUE_BYTE
@@ -240,13 +243,13 @@ impl<Output: OutputBuf> Serializer<Output, bool> for super::BoolFmt<true> {
     }
 }
 
-impl Prepare<bool> for super::BoolFmt<true> {
+impl<const DER: bool> Prepare<bool> for super::BoolFmt<DER> {
     fn prepare(&self, _v: &bool) -> Result<usize, PreSerializeError> {
         Ok(BOOL_BYTE_LEN)
     }
 }
 
-impl ByteLen<bool> for super::BoolFmt<true> {
+impl<const DER: bool> ByteLen<bool> for super::BoolFmt<DER> {
     fn length(&self, _v: &bool) -> usize {
         BOOL_BYTE_LEN
     }
