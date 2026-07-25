@@ -51,10 +51,13 @@ pub mod utctime;
 /// ASN.1 UTF8String contents.
 pub mod utf8string;
 
+#[cfg(feature = "alloc")]
+pub use any::AnyOwned;
 pub use any::{Any, AnySpec};
 pub use ber::{
-    BerBmpStringFmt, BerCharStringFmt, BerIa5StringFmt, BerOctetStringFmt, BerPrintableStringFmt,
-    BerSequenceFmt, BerSequenceOfFmt, BerTeletexStringFmt, BerUtf8StringFmt, EocFmt, EOC,
+    BerAnyFmt, BerBitStringFmt, BerBmpStringFmt, BerCharStringFmt, BerIa5StringFmt,
+    BerOctetStringFmt, BerPrintableStringFmt, BerSequenceFmt, BerSequenceOfFmt,
+    BerTeletexStringFmt, BerUtf8StringFmt, EocFmt, EOC,
 };
 #[cfg(feature = "alloc")]
 pub use bitstring::BitStringOwned;
@@ -145,11 +148,14 @@ pub const DerBoolFmt: BoolFmt<true> = BoolFmt;
 #[derive(Clone, Copy)]
 pub struct AnyFmt<const DER: bool = true>;
 
-pub type BerAnyFmt = AnyFmt<false>;
+/// Definite-length-only BER ANY format.
+///
+/// Prefer [`ber::BerAnyFmt`] when indefinite constructed open values must be accepted.
+pub type BerDefiniteAnyFmt = AnyFmt<false>;
 
 pub type DerAnyFmt = AnyFmt<true>;
 
-pub const BerAnyFmt: BerAnyFmt = AnyFmt;
+pub const BerDefiniteAnyFmt: BerDefiniteAnyFmt = AnyFmt;
 
 pub const DerAnyFmt: DerAnyFmt = AnyFmt;
 
@@ -211,8 +217,8 @@ pub struct RealFmt;
 #[derive(Clone, Copy)]
 pub struct BitStringFmt<const DER: bool = true>;
 
-/// Convenience type alias for the BER variant of ASN.1 BIT STRING.
-pub type BerBitStringFmt = BitStringFmt<false>;
+/// Convenience type alias for primitive BER BIT STRING contents.
+pub type BerBitStringContentFmt = BitStringFmt<false>;
 
 /// ASN.1 tag format combinator.
 ///

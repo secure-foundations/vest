@@ -13,6 +13,8 @@ use crate::core::exec::{
     ParseError,
 };
 use crate::core::{proof::*, spec::*};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use vstd::prelude::*;
 
 use super::{AnyFmt, LengthFmt, Tag, TagFmt};
@@ -204,15 +206,74 @@ impl<'a> DeepView for Any<'a> {
 }
 
 impl<'a> Any<'a> {
-    pub fn new(tag: Tag, content: &'a [u8]) -> Self {
+    pub fn new(tag: Tag, content: &'a [u8]) -> (value: Self)
+        ensures
+            value.deep_view() == (AnySpec { tag, content: content.deep_view() }),
+    {
         Self { tag, content }
     }
 
-    pub fn tag(&self) -> Tag {
+    pub fn tag(&self) -> (tag: Tag)
+        ensures
+            tag == self.deep_view().tag,
+    {
         self.tag
     }
 
-    pub fn content(&self) -> &'a [u8] {
+    pub fn content(&self) -> (content: &'a [u8])
+        ensures
+            content.deep_view() == self.deep_view().content,
+    {
+        self.content
+    }
+}
+
+/// Owned executable open-type value.
+///
+/// This is the representation used by the recursive BER ANY parser: an indefinite-length
+/// constructed value has no single borrowed content slice once its terminating EOC is removed.
+#[cfg(feature = "alloc")]
+pub struct AnyOwned {
+    tag: Tag,
+    content: Vec<u8>,
+}
+
+#[cfg(feature = "alloc")]
+impl DeepView for AnyOwned {
+    type V = AnySpec;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        AnySpec { tag: self.tag, content: self.content.deep_view() }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl AnyOwned {
+    pub fn new(tag: Tag, content: Vec<u8>) -> (value: Self)
+        ensures
+            value.deep_view() == (AnySpec { tag, content: content.deep_view() }),
+    {
+        Self { tag, content }
+    }
+
+    pub fn tag(&self) -> (tag: Tag)
+        ensures
+            tag == self.deep_view().tag,
+    {
+        self.tag
+    }
+
+    pub fn content(&self) -> (content: &[u8])
+        ensures
+            content.deep_view() == self.deep_view().content,
+    {
+        self.content.as_slice()
+    }
+
+    pub fn into_content(self) -> (content: Vec<u8>)
+        ensures
+            content.deep_view() == self.deep_view().content,
+    {
         self.content
     }
 }
@@ -266,6 +327,43 @@ impl<'a, const DER: bool> ByteLen<Any<'a>> for AnyFmt<DER> {
     fn length(&self, v: &Any<'a>) -> usize {
         let n1 = TagFmt.length(&v.tag);
         let content_len = Tail.length(&v.content);
+        let n2 = LengthFmt::<DER>.length(&content_len);
+        n1 + n2 + content_len
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf, const DER: bool> Serializer<Output, AnyOwned> for AnyFmt<DER> {
+    fn serialize_into(&self, v: &AnyOwned, obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+        let len = v.content.len();
+        TagFmt.serialize_into(&v.tag, obuf);
+        LengthFmt::<DER>.serialize_into(&len, obuf);
+        Tail.serialize_into(v.content.as_slice(), obuf);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const DER: bool> Prepare<AnyOwned> for AnyFmt<DER> {
+    fn prepare(&self, v: &AnyOwned) -> Result<usize, PreSerializeError> {
+        if v.tag == TagFmt::EOC {
+            return Err(PreSerializeError::custom("EOC is not an open-type value"));
+        }
+        let n1 = TagFmt.prepare(&v.tag)?;
+        let content_len = Tail.prepare(v.content.as_slice())?;
+        let n2 = LengthFmt::<DER>.prepare(&content_len)?;
+        let header = n1.checked_add(n2).ok_or(PreSerializeError::length_too_large())?;
+        let total = header.checked_add(content_len).ok_or(PreSerializeError::length_too_large())?;
+        Ok(total)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const DER: bool> ByteLen<AnyOwned> for AnyFmt<DER> {
+    fn length(&self, v: &AnyOwned) -> usize {
+        let n1 = TagFmt.length(&v.tag);
+        let content_len = Tail.length(v.content.as_slice());
         let n2 = LengthFmt::<DER>.length(&content_len);
         n1 + n2 + content_len
     }

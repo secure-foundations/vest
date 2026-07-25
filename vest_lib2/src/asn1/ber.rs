@@ -1,12 +1,13 @@
 //! BER constructed-value formats and notation-style aliases.
 use crate::asn1::{
-    ASN1Fmt, BerLength, BerLengthFmt, BitStringFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt,
-    Ia5StringFmt, IntegerFmt, NullFmt, ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt,
-    RealFmt, Tag, TagFmt, TeletexStringFmt, Utf8StringFmt, BER,
+    ASN1Fmt, BerLength, BerLengthFmt, BitString, BitStringFmt, BitStringSpec, BmpStringFmt,
+    BoolFmt, Class, EnumeratedFmt, Ia5StringFmt, IntegerFmt, NullFmt, ObjectIdentifierFmt,
+    OctetStringFmt, PrintableStringFmt, RealFmt, Tag, TagFmt, TeletexStringFmt, Utf8StringFmt, BER,
 };
 #[cfg(feature = "alloc")]
 use crate::asn1::{
-    BmpString, Ia5StringOwned, PrintableStringOwned, TeletexStringOwned, Utf8StringOwned,
+    AnyOwned, BitStringOwned, BmpString, Ia5StringOwned, PrintableStringOwned, TeletexStringOwned,
+    Utf8StringOwned,
 };
 use crate::combinators::{
     bytes::ExactLen,
@@ -16,7 +17,7 @@ use crate::combinators::{
         ParserRecBody, ProductiveRecBody, SafeParserRecBody, SpecRecBody,
     },
     Bind, Const, Empty, FixWith, Mapped, Pair, PrefixTagged, Refined, Repeat, RepeatTillEnd, Sum,
-    Void, U8,
+    Tail, Void, U8,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -39,7 +40,9 @@ pub use super::modifiers::{
     implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION,
     IMPLICIT_PRIVATE, OPTIONAL, REQUIRED,
 };
-use super::{AnyFmt, GeneralizedTimeFmt, Integer16Fmt, Integer8Fmt, LengthFmt, UtcTimeFmt};
+use super::{
+    AnyFmt, AnySpec, GeneralizedTimeFmt, Integer16Fmt, Integer8Fmt, LengthFmt, UtcTimeFmt,
+};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -50,6 +53,85 @@ pub type EocFmt = Pair<Const<U8, u8>, Const<U8, u8>>;
 
 /// Exact BER end-of-contents marker (`00 00`).
 pub const EOC: EocFmt = Pair(Const(U8, 0u8), Const(U8, 0u8));
+
+/// A parsed value together with the exact octets consumed for it.
+///
+/// Recursive BER ANY needs this small internal layer because the contents of an
+/// indefinite-length parent are the original child TLVs, including any legal
+/// non-canonical BER tag or length encodings.
+#[verifier::ext_equal]
+#[doc(hidden)]
+pub struct Captured<T> {
+    pub value: T,
+    pub encoded: Seq<u8>,
+}
+
+/// Specification-only wrapper retaining the exact input prefix consumed by `C`.
+#[doc(hidden)]
+pub struct Capture<C>(pub C);
+
+impl<C: SpecParser> SpecParser for Capture<C> {
+    type PVal = Captured<C::PVal>;
+
+    open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
+        match self.0.spec_parse(input) {
+            Some((n, value)) => Some((n, Captured { value, encoded: input.take(n) })),
+            None => None,
+        }
+    }
+}
+
+impl<C: SpecCombinator> Consistency for Capture<C> {
+    type Val = Captured<C::T>;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.0.consistent(value.value)
+    }
+}
+
+impl<C: SpecCombinator> SpecSerializerDps for Capture<C> {
+    type SValue = Captured<C::T>;
+
+    open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        value.encoded + obuf
+    }
+}
+
+impl<C: SpecCombinator> SpecSerializer for Capture<C> {
+    type SVal = Captured<C::T>;
+
+    open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+        value.encoded
+    }
+}
+
+impl<C: SpecCombinator> SpecByteLen for Capture<C> {
+    type T = Captured<C::T>;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        value.encoded.len()
+    }
+}
+
+impl<C: SpecCombinator + SafeParser> SafeParser for Capture<C> {
+    open spec fn safe_inv(&self) -> bool {
+        self.0.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, input: Seq<u8>) {
+        self.0.lemma_parse_safe(input);
+    }
+}
+
+impl<C: SpecCombinator + Productive> Productive for Capture<C> {
+    open spec fn productive_inv(&self) -> bool {
+        self.0.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, input: Seq<u8>) {
+        self.0.lemma_productive(input);
+    }
+}
 
 /// End marker for a schema-defined BER constructed value.
 pub type BerEndFmt = Empty;
@@ -1191,6 +1273,986 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerOctetStringFmt<LIMIT> {
     }
 }
 
+type BerBitStringWireType = (
+    Tag,
+    Sum<
+        (usize, BitStringSpec),
+        Sum<(BerLength, Sum<Seq<BitStringSpec>, (Seq<BitStringSpec>, (u8, u8))>), Never>,
+    >,
+);
+
+type BerBitStringRawBodyFmt<Rec> = Bind<
+    TagFmt,
+    spec_fn(Tag) -> Sum<
+        Bind<LengthFmt<BER>, spec_fn(usize) -> ExactLen<BitStringFmt<BER>, usize>>,
+        Sum<
+            Bind<
+                BerLengthFmt,
+                spec_fn(BerLength) -> Sum<ExactLen<RepeatTillEnd<Rec>, usize>, Repeat<Rec, EocFmt>>,
+            >,
+            Void,
+        >,
+    >,
+>;
+
+type BerBitStringBodyFmt<Rec> = Mapped<
+    Refined<BerBitStringRawBodyFmt<Rec>, PredFnSpec<BerBitStringWireType>>,
+    FnSpecMapper<BerBitStringWireType, BitStringSpec>,
+>;
+
+/// Constructed BIT STRING segments are concatenable only when every segment except the last has
+/// zero unused bits (X.690, 8.6.4.2).
+pub open spec fn ber_bit_string_segments_wf(segments: Seq<BitStringSpec>) -> bool {
+    forall|i: int| 0 <= i < segments.len() - 1 ==> #[trigger] segments[i].unused == 0
+}
+
+pub open spec fn flatten_ber_bit_string_segments(segments: Seq<BitStringSpec>) -> BitStringSpec {
+    let bits = segments.map(|_i: int, segment: BitStringSpec| segment.bits).flatten();
+    BitStringSpec {
+        unused: if bits.len() == 0 || segments.len() == 0 {
+            0
+        } else {
+            segments.last().unused
+        },
+        bits,
+    }
+}
+
+pub open spec fn ber_bit_string_wire_wf(parsed: BerBitStringWireType) -> bool {
+    match parsed.1 {
+        L(_) => true,
+        R(L((_length, inner))) => match inner {
+            L(segments) => ber_bit_string_segments_wf(segments),
+            R((segments, _eoc)) => ber_bit_string_segments_wf(segments),
+        },
+        R(R(_)) => true,
+    }
+}
+
+/// One recursive unfolding of a BER BIT STRING.
+///
+/// IMPLICIT tagging replaces only the outer tag. Nested fragments retain universal BIT STRING
+/// tag 3, as required by X.690, 8.6.4.1.
+pub open spec fn ber_bit_string_rec_body(
+    tag: Tag,
+    rec: ParamRecSpecs<Tag, BitStringSpec>,
+) -> BerBitStringBodyFmt<BundledSpecs<BitStringSpec>> {
+    #[verusfmt::skip]
+    Mapped {
+        inner: Refined(
+            Bind(TagFmt, |parsed_tag: Tag|
+                match parsed_tag {
+                    t if t == primitive_tag(tag) =>
+                        L(Bind(LengthFmt::<BER>, |len: usize|
+                            ExactLen(len, BitStringFmt::<BER>))),
+                    t if t == constructed_tag(tag) =>
+                        R(L(Bind(BerLengthFmt, |len: BerLength|
+                            match len {
+                                BerLength::Definite(len) =>
+                                    L(ExactLen(len, RepeatTillEnd(rec(TagFmt::BIT_STRING)))),
+                                BerLength::Indefinite =>
+                                    R(Repeat(rec(TagFmt::BIT_STRING), EOC)),
+                            }))),
+                    _ => R(R(Void("Tag must match the configured BER BIT STRING identity"))),
+                },
+            ),
+            |parsed: BerBitStringWireType| ber_bit_string_wire_wf(parsed),
+        ),
+        mapper: (
+            |parsed: BerBitStringWireType|
+                match parsed.1 {
+                    L((_len, value)) => value,
+                    R(L((_len, inner))) => match inner {
+                        L(segments) => flatten_ber_bit_string_segments(segments),
+                        R((segments, _eoc)) => flatten_ber_bit_string_segments(segments),
+                    },
+                    R(R(_)) => arbitrary(), // unreachable
+                },
+            |value: BitStringSpec| (
+                primitive_tag(tag),
+                L((BitStringFmt::<BER>.byte_len(value) as usize, value)),
+            ),
+        ),
+    }
+}
+
+pub struct BerBitStringRecBody;
+
+impl SpecRecBody for BerBitStringRecBody {
+    type Param = Tag;
+
+    type T = BitStringSpec;
+
+    type Body = BerBitStringBodyFmt<BundledSpecs<BitStringSpec>>;
+
+    open spec fn spec_body(
+        &self,
+        tag: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        ber_bit_string_rec_body(tag, rec)
+    }
+}
+
+mod bit_string_recursive_proofs {
+    use super::*;
+
+    impl SafeParserRecBody for BerBitStringRecBody {
+        proof fn lemma_body_safe_inv_preservation(
+            &self,
+            _tag: Tag,
+            _rec: ParamRecSpecs<Tag, BitStringSpec>,
+        ) {
+        }
+    }
+
+    impl ProductiveRecBody for BerBitStringRecBody {
+        proof fn lemma_body_productive_inv_preservation(
+            &self,
+            _tag: Tag,
+            _rec: ParamRecSpecs<Tag, BitStringSpec>,
+        ) {
+        }
+    }
+
+}
+
+/// The primitive, definite-length BER encoding selected by the BIT STRING serializer.
+pub open spec fn ber_bit_string_normalized_fmt(tag: Tag) -> ASN1Fmt<BitStringFmt<BER>, BER> {
+    ASN1Fmt(primitive_tag(tag), BitStringFmt::<BER>)
+}
+
+/// BER BIT STRING with bounded constructed nesting and a configurable outer tag identity.
+///
+/// Parsing accepts primitive and constructed definite/indefinite forms. Serialization always
+/// emits a primitive definite-length BER encoding.
+#[derive(Clone, Copy)]
+pub struct BerBitStringFmt<const LIMIT: usize>(pub Tag);
+
+impl<const LIMIT: usize> BerBitStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::BIT_STRING),
+    {
+        Self(TagFmt::BIT_STRING)
+    }
+
+    #[verifier::allow_in_spec]
+    pub const fn implicit(class: Class, number: u64) -> Self
+        returns
+            Self(Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) }),
+    {
+        Self(Tag { class, constructed: false, number: super::tag::tag_num_from_uint(number) })
+    }
+}
+
+mod bit_string_specs {
+    use super::*;
+
+    impl<const LIMIT: usize> SpecParser for BerBitStringFmt<LIMIT> {
+        type PVal = BitStringSpec;
+
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).spec_parse(ibuf)
+        }
+    }
+
+    impl<const LIMIT: usize> Consistency for BerBitStringFmt<LIMIT> {
+        type Val = BitStringSpec;
+
+        open spec fn consistent(&self, value: Self::Val) -> bool {
+            ber_bit_string_normalized_fmt(self.0).consistent(value)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecSerializerDps for BerBitStringFmt<LIMIT> {
+        type SValue = BitStringSpec;
+
+        open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            ber_bit_string_normalized_fmt(self.0).spec_serialize_dps(value, obuf)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecSerializer for BerBitStringFmt<LIMIT> {
+        type SVal = BitStringSpec;
+
+        open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+            ber_bit_string_normalized_fmt(self.0).spec_serialize(value)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecByteLen for BerBitStringFmt<LIMIT> {
+        type T = BitStringSpec;
+
+        open spec fn byte_len(&self, value: Self::T) -> nat {
+            ber_bit_string_normalized_fmt(self.0).byte_len(value)
+        }
+    }
+
+}
+
+mod bit_string_proofs {
+    use super::*;
+
+    impl<const LIMIT: usize> SafeParser for BerBitStringFmt<LIMIT> {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> Productive for BerBitStringFmt<LIMIT> {
+        proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+            FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).lemma_productive(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> GoodSerializer for BerBitStringFmt<LIMIT> {
+        proof fn lemma_serialize_len(&self, value: BitStringSpec) {
+            ber_bit_string_normalized_fmt(self.0).lemma_serialize_len(value);
+        }
+    }
+
+    impl<const LIMIT: usize> NonTailFmt for BerBitStringFmt<LIMIT> {
+        proof fn lemma_serialize_dps_prepend(&self, value: BitStringSpec, obuf: Seq<u8>) {
+            ber_bit_string_normalized_fmt(self.0).lemma_serialize_dps_prepend(value, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, value: BitStringSpec, obuf: Seq<u8>) {
+            ber_bit_string_normalized_fmt(self.0).lemma_serialize_dps_len(value, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializersGeneral for BerBitStringFmt<LIMIT> {
+        proof fn lemma_serialize_equiv(&self, value: BitStringSpec, obuf: Seq<u8>) {
+            ber_bit_string_normalized_fmt(self.0).lemma_serialize_equiv(value, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializers for BerBitStringFmt<LIMIT> {
+        proof fn lemma_serialize_equiv_on_empty(&self, value: BitStringSpec) {
+            self.lemma_serialize_equiv(value, Seq::empty());
+        }
+    }
+
+    impl<const LIMIT: usize> SPRoundTripDps for BerBitStringFmt<LIMIT> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, value: BitStringSpec, obuf: Seq<u8>) {
+            ber_bit_string_normalized_fmt(self.0).theorem_serialize_dps_parse_roundtrip(
+                value,
+                obuf,
+            );
+        }
+    }
+
+}
+
+impl<Output, T, const LIMIT: usize> Serializer<Output, T> for BerBitStringFmt<LIMIT> where
+    Output: OutputBuf,
+    T: DeepView<V = BitStringSpec> + ?Sized,
+    ASN1Fmt<BitStringFmt<BER>, BER>: Serializer<Output, T>,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        <ASN1Fmt<BitStringFmt<BER>, BER> as Serializer<Output, T>>::exec_inv(
+            &ber_bit_string_normalized_fmt(self.0),
+        )
+    }
+
+    fn serialize_into(&self, value: &T, obuf: &mut Output) {
+        let normalized = ASN1Fmt::<BitStringFmt<BER>, BER>(
+            primitive_tag(self.0),
+            BitStringFmt::<BER>,
+        );
+        normalized.serialize_into(value, obuf);
+    }
+}
+
+impl<T, const LIMIT: usize> Prepare<T> for BerBitStringFmt<LIMIT> where
+    T: DeepView<V = BitStringSpec> + ?Sized,
+    ASN1Fmt<BitStringFmt<BER>, BER>: Prepare<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <ASN1Fmt<BitStringFmt<BER>, BER> as Prepare<T>>::exec_inv(
+            &ber_bit_string_normalized_fmt(self.0),
+        )
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        let normalized = ASN1Fmt::<BitStringFmt<BER>, BER>(
+            primitive_tag(self.0),
+            BitStringFmt::<BER>,
+        );
+        normalized.prepare(value)
+    }
+}
+
+impl<T, const LIMIT: usize> ByteLen<T> for BerBitStringFmt<LIMIT> where
+    T: DeepView<V = BitStringSpec> + ?Sized,
+    ASN1Fmt<BitStringFmt<BER>, BER>: ByteLen<T>,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        <ASN1Fmt<BitStringFmt<BER>, BER> as ByteLen<T>>::exec_inv(
+            &ber_bit_string_normalized_fmt(self.0),
+        )
+    }
+
+    fn length(&self, value: &T) -> usize {
+        let normalized = ASN1Fmt::<BitStringFmt<BER>, BER>(
+            primitive_tag(self.0),
+            BitStringFmt::<BER>,
+        );
+        normalized.length(value)
+    }
+}
+
+#[cfg(feature = "alloc")]
+fn bit_string_to_owned(value: BitString<'_, BER>) -> (owned: BitStringOwned)
+    ensures
+        owned.deep_view() == value.deep_view(),
+{
+    let unused = value.unused();
+    let bits = slice_to_vec(value.bits());
+    BitStringOwned::new(unused, bits)
+}
+
+#[cfg(feature = "alloc")]
+fn ber_bit_string_segments_wf_exec(segments: &Vec<BitStringOwned>) -> (valid: bool)
+    ensures
+        valid == ber_bit_string_segments_wf(segments.deep_view()),
+{
+    let ghost views = segments.deep_view();
+    let mut i = 0usize;
+    while i < segments.len()
+        invariant
+            segments.deep_view() == views,
+            i <= segments.len(),
+            forall|j: int| 0 <= j < i && j < views.len() - 1 ==> #[trigger] views[j].unused == 0,
+        decreases segments.len() - i,
+    {
+        if i + 1 < segments.len() {
+            let unused = segments[i].unused();
+            if unused != 0 {
+                assert(0 <= i as int);
+                assert((i as int) < views.len() - 1);
+                assert(views[i as int].unused != 0);
+                return false;
+            }
+        }
+        i += 1;
+    }
+    true
+}
+
+#[cfg(feature = "alloc")]
+fn flatten_bit_string_segments(segments: Vec<BitStringOwned>) -> (flat: BitStringOwned)
+    requires
+        ber_bit_string_segments_wf(segments.deep_view()),
+    ensures
+        flat.deep_view() == flatten_ber_bit_string_segments(segments.deep_view()),
+{
+    broadcast use vstd::seq_lib::group_seq_properties;
+
+    let ghost segment_views = segments.deep_view();
+    let ghost bit_views = segment_views.map(|_i: int, segment: BitStringSpec| segment.bits);
+    let mut bits = Vec::new();
+    for i in 0..segments.len()
+        invariant
+            segments.deep_view() == segment_views,
+            bit_views == segment_views.map(|_i: int, segment: BitStringSpec| segment.bits),
+            bits@ == bit_views.take(i as int).flatten(),
+    {
+        let segment_bits = segments[i].bits();
+        proof {
+            let prefix = bit_views.take(i as int);
+            prefix.lemma_flatten_push(segment_bits@);
+            assert(bit_views[i as int] == segment_bits@);
+            assert(bit_views.take(i as int + 1) == prefix.push(segment_bits@));
+        }
+        bits.extend_from_slice(segment_bits);
+    }
+
+    let unused = if bits.len() == 0 || segments.len() == 0 {
+        0
+    } else {
+        let last = &segments[segments.len() - 1];
+        last.unused()
+    };
+    BitStringOwned::new(unused, bits)
+}
+
+spec fn flattened_bit_string_result(result: Option<(int, Seq<BitStringSpec>)>) -> Option<
+    (int, BitStringSpec),
+> {
+    match result {
+        Some((n, segments)) if ber_bit_string_segments_wf(segments) => {
+            Some((n, flatten_ber_bit_string_segments(segments)))
+        },
+        _ => None,
+    }
+}
+
+spec fn flattened_bit_string_eoc_result(
+    result: Option<(int, (Seq<BitStringSpec>, (u8, u8)))>,
+) -> Option<(int, BitStringSpec)> {
+    match result {
+        Some((n, (segments, _eoc))) if ber_bit_string_segments_wf(segments) => {
+            Some((n, flatten_ber_bit_string_segments(segments)))
+        },
+        _ => None,
+    }
+}
+
+#[inline(always)]
+#[cfg(feature = "alloc")]
+fn parse_bit_string_segments<I, P>(parser: &P, ibuf: &I) -> (result: PResult<BitStringOwned>) where
+    I: InputBuf,
+    P: Parser<I, PT = Vec<BitStringOwned>, PVal = Seq<BitStringSpec>>,
+
+    requires
+        parser.exec_inv(),
+    ensures
+        parse_matches_spec(result, flattened_bit_string_result(parser.spec_parse(ibuf@))),
+{
+    let (n, segments) = parser.parse(ibuf)?;
+    if !ber_bit_string_segments_wf_exec(&segments) {
+        return Err(
+            ParseError::custom(
+                "Only the final constructed BIT STRING segment may have unused bits",
+            ),
+        );
+    }
+    let flat = flatten_bit_string_segments(segments);
+    Ok((n, flat))
+}
+
+#[inline(always)]
+#[cfg(feature = "alloc")]
+fn parse_bit_string_segments_eoc<I, P>(parser: &P, ibuf: &I) -> (result: PResult<
+    BitStringOwned,
+>) where
+    I: InputBuf,
+    P: Parser<I, PT = (Vec<BitStringOwned>, (u8, u8)), PVal = (Seq<BitStringSpec>, (u8, u8))>,
+
+    requires
+        parser.exec_inv(),
+    ensures
+        parse_matches_spec(result, flattened_bit_string_eoc_result(parser.spec_parse(ibuf@))),
+{
+    let (n, (segments, _eoc)) = parser.parse(ibuf)?;
+    if !ber_bit_string_segments_wf_exec(&segments) {
+        return Err(
+            ParseError::custom(
+                "Only the final constructed BIT STRING segment may have unused bits",
+            ),
+        );
+    }
+    let flat = flatten_bit_string_segments(segments);
+    Ok((n, flat))
+}
+
+#[cfg(feature = "alloc")]
+impl<'i> ParserRecBody<&'i [u8]> for BerBitStringRecBody {
+    type EP = Tag;
+
+    type O = BitStringOwned;
+
+    fn parse_body<Exec>(
+        &self,
+        expected: &Tag,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Tag, BitStringSpec>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<BitStringOwned> where Exec: Fn(&Tag, &&'i [u8]) -> PResult<BitStringOwned> {
+        use crate::combinators::congruence::*;
+        use crate::core::exec::bridge_lemmas::*;
+
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use lemma_parser_congruent_reflexive;
+
+        let _ = ibuf.len();
+        let (tag_len, actual_tag) = TagFmt.parse(ibuf)?;
+        let rest = ibuf.skip(tag_len);
+
+        if actual_tag == primitive_tag(*expected) {
+            let (length_len, content_len) = LengthFmt::<BER>.parse(&rest)?;
+            let content_bytes = rest.skip(length_len);
+            let (content_len, value) = ExactLen(content_len, BitStringFmt::<BER>).parse(
+                &content_bytes,
+            )?;
+            let value = bit_string_to_owned(value);
+            Ok((tag_len + length_len + content_len, value))
+        } else if actual_tag == constructed_tag(*expected) {
+            let (length_len, content_len) = BerLengthFmt.parse(&rest)?;
+            let content_bytes = rest.skip(length_len);
+            let ghost child_spec = spec_rec(TagFmt::BIT_STRING);
+            let child_exec = |input: &&'i [u8]| -> (r: PResult<BitStringOwned>)
+                ensures
+                    parse_matches_spec(r, child_spec.2(input@)),
+                { exec_rec(&TagFmt::BIT_STRING, input) };
+            let child: &FnParser<&'i [u8], BitStringOwned, BundledSpecs<BitStringSpec>, _> =
+                &FnParser::new(child_exec, Ghost(child_spec));
+            proof {
+                lemma_ref_parser_exec_inv::<&'i [u8], _>(child);
+                lemma_ref_safe_productive_inv(child);
+                lemma_ref_fn_parser_congruence(child);
+            }
+
+            let (content_len, value) = match content_len {
+                BerLength::Definite(content_len) => {
+                    let ghost repeated_spec = RepeatTillEnd(child_spec);
+                    let repeated = RepeatTillEnd(child);
+                    let exact = ExactLen(content_len, repeated);
+                    proof {
+                        lemma_repeat_till_end_parser_exec_inv::<&'i [u8], _>(&repeated);
+                        lemma_exact_len_parser_exec_inv::<&'i [u8], _, _>(&exact);
+                        lemma_repeat_till_end_parser_congruence(child, child_spec);
+                        lemma_exact_len_parser_congruence(content_len, repeated, repeated_spec);
+                        reveal(parser_congruent);
+                    }
+                    parse_bit_string_segments(&exact, &content_bytes)?
+                },
+                BerLength::Indefinite => {
+                    let repeated = Repeat(child, EOC);
+                    proof {
+                        lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
+                        lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
+                        reveal(parser_congruent);
+                    }
+                    parse_bit_string_segments_eoc(&repeated, &content_bytes)?
+                },
+            };
+            Ok((tag_len + length_len + content_len, value))
+        } else {
+            Err(ParseError::custom("Tag must match the configured BER BIT STRING identity"))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerBitStringFmt<LIMIT> {
+    type PT = BitStringOwned;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).parse(ibuf)
+    }
+}
+
+type BerAnyWireType = (
+    Tag,
+    Sum<(BerLength, Sum<Seq<u8>, Sum<(Seq<Captured<AnySpec>>, (u8, u8)), Never>>), Never>,
+);
+
+type BerAnyRawBodyFmt<Rec> = Bind<
+    TagFmt,
+    spec_fn(Tag) -> Sum<
+        Bind<
+            BerLengthFmt,
+            spec_fn(BerLength) -> Sum<ExactLen<Tail, usize>, Sum<Repeat<Rec, EocFmt>, Void>>,
+        >,
+        Void,
+    >,
+>;
+
+type BerAnyMappedBodyFmt<Rec> = Mapped<
+    BerAnyRawBodyFmt<Rec>,
+    FnSpecMapper<BerAnyWireType, AnySpec>,
+>;
+
+type BerAnyBodyFmt<Rec> = Capture<BerAnyMappedBodyFmt<Rec>>;
+
+pub open spec fn captured_any_contents(children: Seq<Captured<AnySpec>>) -> Seq<u8> {
+    children.map(|_i: int, child: Captured<AnySpec>| child.encoded).flatten()
+}
+
+/// One recursive unfolding of a BER open type.
+///
+/// Definite values retain their opaque contents. Indefinite values are legal only for
+/// constructed tags and retain the exact encodings of their child TLVs, excluding the
+/// terminating EOC. EOC itself is never accepted as an ANY value.
+pub open spec fn ber_any_rec_body(rec: ParamRecSpecs<(), Captured<AnySpec>>) -> BerAnyBodyFmt<
+    BundledSpecs<Captured<AnySpec>>,
+> {
+    #[verusfmt::skip]
+    Capture(Mapped {
+        inner: Bind(TagFmt, |tag: Tag|
+            if tag == TagFmt::EOC {
+                R(Void("EOC is not an open-type value"))
+            } else {
+                L(Bind(BerLengthFmt, |length: BerLength|
+                    match length {
+                        BerLength::Definite(len) =>
+                            L(ExactLen(len, Tail)),
+                        BerLength::Indefinite if tag.constructed =>
+                            R(L(Repeat(rec(()), EOC))),
+                        BerLength::Indefinite =>
+                            R(R(Void("Primitive values cannot use indefinite length"))),
+                    },
+                ))
+            },
+        ),
+        mapper: (
+            |parsed: BerAnyWireType| {
+                match parsed.1 {
+                    L((_length, L(content))) =>
+                        AnySpec { tag: parsed.0, content },
+                    L((_length, R(L((children, _eoc))))) =>
+                        AnySpec {
+                            tag: parsed.0,
+                            content: captured_any_contents(children),
+                        },
+                    L((_length, R(R(_)))) => arbitrary(),
+                    R(_) => arbitrary(),
+                }
+            },
+            |value: AnySpec| (
+                value.tag,
+                L((
+                    BerLength::Definite(value.content.len() as usize),
+                    L(value.content),
+                )),
+            ),
+        ),
+    })
+}
+
+pub struct BerAnyRecBody;
+
+impl SpecRecBody for BerAnyRecBody {
+    type Param = ();
+
+    type T = Captured<AnySpec>;
+
+    type Body = BerAnyBodyFmt<BundledSpecs<Captured<AnySpec>>>;
+
+    open spec fn spec_body(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<(), Captured<AnySpec>>,
+    ) -> Self::Body {
+        ber_any_rec_body(rec)
+    }
+}
+
+mod any_recursive_proofs {
+    use super::*;
+
+    impl SafeParserRecBody for BerAnyRecBody {
+        proof fn lemma_body_safe_inv_preservation(
+            &self,
+            _param: (),
+            rec: ParamRecSpecs<(), Captured<AnySpec>>,
+        ) {
+        }
+    }
+
+    impl ProductiveRecBody for BerAnyRecBody {
+        proof fn lemma_body_productive_inv_preservation(
+            &self,
+            _param: (),
+            rec: ParamRecSpecs<(), Captured<AnySpec>>,
+        ) {
+        }
+    }
+
+}
+
+/// BER ANY/open type with bounded nesting for indefinite-length constructed values.
+///
+/// Parsing accepts definite values and recursively framed indefinite constructed values.
+/// Serialization is normalized to a definite-length encoding.
+#[derive(Clone, Copy)]
+pub struct BerAnyFmt<const LIMIT: usize>;
+
+pub open spec fn ber_any_parse<const LIMIT: usize>(input: Seq<u8>) -> Option<(int, AnySpec)> {
+    match AnyFmt::<BER>.spec_parse(input) {
+        Some(parsed) => Some(parsed),
+        None => match FixWith::<LIMIT, _, _>(BerAnyRecBody, ()).spec_parse(input) {
+            Some((n, captured)) => Some((n, captured.value)),
+            None => None,
+        },
+    }
+}
+
+mod any_derived_specs {
+    use super::*;
+
+    impl<const LIMIT: usize> SpecParser for BerAnyFmt<LIMIT> {
+        type PVal = AnySpec;
+
+        open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
+            ber_any_parse::<LIMIT>(input)
+        }
+    }
+
+    impl<const LIMIT: usize> Consistency for BerAnyFmt<LIMIT> {
+        type Val = AnySpec;
+
+        open spec fn consistent(&self, value: Self::Val) -> bool {
+            AnyFmt::<BER>.consistent(value)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecSerializerDps for BerAnyFmt<LIMIT> {
+        type SValue = AnySpec;
+
+        open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            AnyFmt::<BER>.spec_serialize_dps(value, obuf)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecSerializer for BerAnyFmt<LIMIT> {
+        type SVal = AnySpec;
+
+        open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
+            AnyFmt::<BER>.spec_serialize(value)
+        }
+    }
+
+    impl<const LIMIT: usize> SpecByteLen for BerAnyFmt<LIMIT> {
+        type T = AnySpec;
+
+        open spec fn byte_len(&self, value: Self::T) -> nat {
+            AnyFmt::<BER>.byte_len(value)
+        }
+    }
+
+}
+
+mod any_derived_proofs {
+    use super::*;
+
+    impl<const LIMIT: usize> SafeParser for BerAnyFmt<LIMIT> {
+        proof fn lemma_parse_safe(&self, input: Seq<u8>) {
+            AnyFmt::<BER>.lemma_parse_safe(input);
+            FixWith::<LIMIT, _, _>(BerAnyRecBody, ()).lemma_parse_safe(input);
+        }
+    }
+
+    impl<const LIMIT: usize> Productive for BerAnyFmt<LIMIT> {
+        proof fn lemma_productive(&self, input: Seq<u8>) {
+            AnyFmt::<BER>.lemma_productive(input);
+            FixWith::<LIMIT, _, _>(BerAnyRecBody, ()).lemma_productive(input);
+        }
+    }
+
+    impl<const LIMIT: usize> GoodSerializer for BerAnyFmt<LIMIT> {
+        proof fn lemma_serialize_len(&self, value: AnySpec) {
+            AnyFmt::<BER>.lemma_serialize_len(value);
+        }
+    }
+
+    impl<const LIMIT: usize> NonTailFmt for BerAnyFmt<LIMIT> {
+        proof fn lemma_serialize_dps_prepend(&self, value: AnySpec, obuf: Seq<u8>) {
+            AnyFmt::<BER>.lemma_serialize_dps_prepend(value, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, value: AnySpec, obuf: Seq<u8>) {
+            AnyFmt::<BER>.lemma_serialize_dps_len(value, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializersGeneral for BerAnyFmt<LIMIT> {
+        proof fn lemma_serialize_equiv(&self, value: AnySpec, obuf: Seq<u8>) {
+            AnyFmt::<BER>.lemma_serialize_equiv(value, obuf);
+        }
+    }
+
+    impl<const LIMIT: usize> EquivSerializers for BerAnyFmt<LIMIT> {
+        proof fn lemma_serialize_equiv_on_empty(&self, value: AnySpec) {
+            self.lemma_serialize_equiv(value, Seq::empty());
+        }
+    }
+
+    impl<const LIMIT: usize> SPRoundTripDps for BerAnyFmt<LIMIT> {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, value: AnySpec, obuf: Seq<u8>) {
+            AnyFmt::<BER>.theorem_serialize_dps_parse_roundtrip(value, obuf);
+        }
+    }
+
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf, const LIMIT: usize> Serializer<Output, AnyOwned> for BerAnyFmt<LIMIT> {
+    fn serialize_into(&self, value: &AnyOwned, obuf: &mut Output) {
+        AnyFmt::<BER>.serialize_into(value, obuf)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const LIMIT: usize> Prepare<AnyOwned> for BerAnyFmt<LIMIT> {
+    fn prepare(&self, value: &AnyOwned) -> Result<usize, PreSerializeError> {
+        AnyFmt::<BER>.prepare(value)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const LIMIT: usize> ByteLen<AnyOwned> for BerAnyFmt<LIMIT> {
+    fn length(&self, value: &AnyOwned) -> usize {
+        AnyFmt::<BER>.length(value)
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[doc(hidden)]
+pub struct CapturedAnyOwned {
+    pub value: AnyOwned,
+    pub encoded: Vec<u8>,
+}
+
+#[cfg(feature = "alloc")]
+impl DeepView for CapturedAnyOwned {
+    type V = Captured<AnySpec>;
+
+    closed spec fn deep_view(&self) -> Self::V {
+        Captured { value: self.value.deep_view(), encoded: self.encoded.deep_view() }
+    }
+}
+
+#[cfg(feature = "alloc")]
+fn flatten_captured_any_contents(children: Vec<CapturedAnyOwned>) -> (content: Vec<u8>)
+    ensures
+        content.deep_view() == captured_any_contents(children.deep_view()),
+{
+    broadcast use vstd::seq_lib::group_seq_properties;
+
+    let ghost child_views = children.deep_view();
+    let ghost encoded_views = child_views.map(|_i: int, child: Captured<AnySpec>| child.encoded);
+    let mut content = Vec::new();
+    for i in 0..children.len()
+        invariant
+            children.deep_view() == child_views,
+            encoded_views == child_views.map(|_i: int, child: Captured<AnySpec>| child.encoded),
+            content.deep_view() == encoded_views.take(i as int).flatten(),
+    {
+        let encoded = children[i].encoded.as_slice();
+        proof {
+            let prefix = encoded_views.take(i as int);
+            prefix.lemma_flatten_push(encoded.deep_view());
+            assert(encoded_views[i as int] == encoded.deep_view());
+            assert(encoded_views.take(i as int + 1) == prefix.push(encoded.deep_view()));
+        }
+        content.extend_from_slice(encoded);
+    }
+    content
+}
+
+#[cfg(feature = "alloc")]
+spec fn flattened_captured_any_result(
+    result: Option<(int, (Seq<Captured<AnySpec>>, (u8, u8)))>,
+) -> Option<(int, Seq<u8>)> {
+    match result {
+        Some((n, (children, _eoc))) => Some((n, captured_any_contents(children))),
+        None => None,
+    }
+}
+
+#[cfg(feature = "alloc")]
+fn parse_captured_any_children<I, P>(parser: &P, input: &I) -> (result: PResult<Vec<u8>>) where
+    I: InputBuf,
+    P: Parser<I, PT = (Vec<CapturedAnyOwned>, (u8, u8)), PVal = (Seq<Captured<AnySpec>>, (u8, u8))>,
+
+    requires
+        parser.exec_inv(),
+    ensures
+        parse_matches_spec(result, flattened_captured_any_result(parser.spec_parse(input@))),
+{
+    let (n, (children, _eoc)) = parser.parse(input)?;
+    let content = flatten_captured_any_contents(children);
+    Ok((n, content))
+}
+
+#[cfg(feature = "alloc")]
+impl<'i> ParserRecBody<&'i [u8]> for BerAnyRecBody {
+    type EP = ();
+
+    type O = CapturedAnyOwned;
+
+    fn parse_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<(), Captured<AnySpec>>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<CapturedAnyOwned> where Exec: Fn(&(), &&'i [u8]) -> PResult<CapturedAnyOwned> {
+        use crate::combinators::congruence::*;
+        use crate::core::exec::bridge_lemmas::*;
+
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use lemma_parser_congruent_reflexive;
+
+        let _ = ibuf.len();
+        let (tag_len, tag) = TagFmt.parse(ibuf)?;
+        if tag == TagFmt::EOC {
+            return Err(ParseError::invalid_tag());
+        }
+        let after_tag = ibuf.skip(tag_len);
+        let (length_len, length) = BerLengthFmt.parse(&after_tag)?;
+        let contents = after_tag.skip(length_len);
+
+        let (content_len, value) = match length {
+            BerLength::Definite(len) => {
+                let (content_len, content) = ExactLen(len, Tail).parse(&contents)?;
+                let content = slice_to_vec(content);
+                let value = AnyOwned::new(tag, content);
+                (content_len, value)
+            },
+            BerLength::Indefinite => {
+                if !tag.constructed {
+                    return Err(ParseError::custom("Primitive values cannot use indefinite length"));
+                }
+                let ghost child_spec = spec_rec(());
+                let child_exec = |input: &&'i [u8]| -> (r: PResult<CapturedAnyOwned>)
+                    ensures
+                        parse_matches_spec(r, child_spec.2(input@)),
+                    { exec_rec(&(), input) };
+                let child: &FnParser<
+                    &'i [u8],
+                    CapturedAnyOwned,
+                    BundledSpecs<Captured<AnySpec>>,
+                    _,
+                > = &FnParser::new(child_exec, Ghost(child_spec));
+                proof {
+                    lemma_ref_parser_exec_inv::<&'i [u8], _>(child);
+                    lemma_ref_safe_productive_inv(child);
+                    lemma_ref_fn_parser_congruence(child);
+                }
+                let repeated = Repeat(child, EOC);
+                proof {
+                    lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
+                    lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
+                    reveal(parser_congruent);
+                }
+                let (content_len, content) = parse_captured_any_children(&repeated, &contents)?;
+                let value = AnyOwned::new(tag, content);
+                (content_len, value)
+            },
+        };
+
+        let total = tag_len + length_len + content_len;
+        let encoded = slice_to_vec(ibuf.take(total));
+        Ok((total, CapturedAnyOwned { value, encoded }))
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerAnyFmt<LIMIT> {
+    type PT = AnyOwned;
+
+    fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+        match AnyFmt::<BER>.parse(ibuf) {
+            Ok((n, value)) => {
+                let tag = value.tag();
+                let content = slice_to_vec(value.content());
+                Ok((n, AnyOwned::new(tag, content)))
+            },
+            Err(_) => {
+                let (n, captured) = FixWith::<LIMIT, _, _>(BerAnyRecBody, ()).parse(ibuf)?;
+                Ok((n, captured.value))
+            },
+        }
+    }
+}
+
 type BerRestrictedStringFmt__<C, const LIMIT: usize> = Mapped<
     Refined<BerOctetStringFmt<LIMIT>, PredFnSpec<Seq<u8>>>,
     FnSpecMapper<Seq<u8>, <C as SpecByteLen>::T>,
@@ -1636,7 +2698,7 @@ pub const MAX_RECURSION_DEPTH: usize = 30;
 /// Uniform notation aliases used by schema generators.
 pub type BoolTlvFmt = ASN1Fmt<BoolFmt<BER>, BER>;
 
-pub type AnyTlvFmt = AnyFmt<BER>;
+pub type AnyTlvFmt = BerAnyFmt<MAX_RECURSION_DEPTH>;
 
 pub type IntegerTlvFmt = ASN1Fmt<IntegerFmt, BER>;
 
@@ -1645,6 +2707,8 @@ pub type Integer8TlvFmt = ASN1Fmt<Integer8Fmt, BER>;
 pub type Integer16TlvFmt = ASN1Fmt<Integer16Fmt, BER>;
 
 pub type EnumeratedTlvFmt = ASN1Fmt<EnumeratedFmt, BER>;
+
+pub type Enumerated16TlvFmt = ASN1Fmt<Integer16Fmt, BER>;
 
 pub type ObjectIdentifierTlvFmt = ASN1Fmt<ObjectIdentifierFmt, BER>;
 
@@ -1682,7 +2746,7 @@ pub type DefaultFmt<Field, Default, Rest> = super::DefaultedFmt<Field, Default, 
 
 pub const BOOLEAN: BoolTlvFmt = ASN1Fmt(TagFmt::BOOLEAN, BoolFmt::<BER>);
 
-pub const ANY: AnyTlvFmt = AnyFmt::<BER>;
+pub const ANY: AnyTlvFmt = BerAnyFmt;
 
 pub const INTEGER: IntegerTlvFmt = ASN1Fmt(TagFmt::INTEGER, IntegerFmt);
 
@@ -1691,6 +2755,8 @@ pub const INTEGER8: Integer8TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer8Fmt);
 pub const INTEGER16: Integer16TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer16Fmt);
 
 pub const ENUMERATED: EnumeratedTlvFmt = ASN1Fmt(TagFmt::ENUMERATED, EnumeratedFmt);
+
+pub const ENUMERATED16: Enumerated16TlvFmt = ASN1Fmt(TagFmt::ENUMERATED, Integer16Fmt);
 
 pub const OBJECT_IDENTIFIER: ObjectIdentifierTlvFmt = ASN1Fmt(
     TagFmt::OBJECT_IDENTIFIER,

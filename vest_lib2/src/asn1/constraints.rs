@@ -1,6 +1,6 @@
 //! Reusable executable and specification predicates for ASN.1 subtype constraints.
 #[cfg(feature = "alloc")]
-use super::{BmpString, Ia5StringOwned, PrintableStringOwned, Utf8StringOwned};
+use super::{BmpString, Ia5StringOwned, PrintableStringOwned, TeletexStringOwned, Utf8StringOwned};
 use super::{
     BmpStringSpec, Ia5String, Ia5StringSpec, Integer, PrintableString, PrintableStringSpec,
     TeletexString, TeletexStringSpec,
@@ -189,6 +189,15 @@ impl<'a, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: 
     TeletexString<'a>,
 > for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
     fn test(&self, value: &TeletexString<'a>) -> (ok: bool) {
+        size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> Pred<
+    TeletexStringOwned,
+> for Size<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &TeletexStringOwned) -> (ok: bool) {
         size_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(value.inner().unicode_len())
     }
 }

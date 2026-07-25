@@ -28,6 +28,8 @@ pub type Integer16TlvFmt = ASN1Fmt<Integer16Fmt, DER>;
 
 pub type EnumeratedTlvFmt = ASN1Fmt<EnumeratedFmt, DER>;
 
+pub type Enumerated16TlvFmt = ASN1Fmt<Integer16Fmt, DER>;
+
 pub type ObjectIdentifierTlvFmt = ASN1Fmt<ObjectIdentifierFmt, DER>;
 
 pub type RealTlvFmt = ASN1Fmt<RealFmt, DER>;
@@ -78,6 +80,8 @@ pub const INTEGER8: Integer8TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer8Fmt);
 pub const INTEGER16: Integer16TlvFmt = ASN1Fmt(TagFmt::INTEGER, Integer16Fmt);
 
 pub const ENUMERATED: EnumeratedTlvFmt = ASN1Fmt(TagFmt::ENUMERATED, EnumeratedFmt);
+
+pub const ENUMERATED16: Enumerated16TlvFmt = ASN1Fmt(TagFmt::ENUMERATED, Integer16Fmt);
 
 pub const OBJECT_IDENTIFIER: ObjectIdentifierTlvFmt = ASN1Fmt(
     TagFmt::OBJECT_IDENTIFIER,
