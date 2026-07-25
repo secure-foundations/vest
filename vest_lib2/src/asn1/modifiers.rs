@@ -1,5 +1,7 @@
 //! Shared ASN.1 component modifiers and notation constructors.
-use crate::asn1::ber::{BerCharStringFmt, BerOctetStringFmt, BerSequenceFmt, BerSequenceOfFmt};
+use crate::asn1::ber::{
+    BerBitStringFmt, BerCharStringFmt, BerOctetStringFmt, BerSequenceFmt, BerSequenceOfFmt,
+};
 use crate::asn1::tag::Class;
 use crate::asn1::{ASN1Fmt, Tag};
 use crate::combinators::mapped::spec::{FnSpecMapper, SpecMapper};
@@ -108,6 +110,22 @@ impl<C: Copy> Retaggable for BerSequenceOfFmt<C> {
 /// is fine since the parser permits both primitive and constructed forms.
 /// Recursive fragments keep universal tag 4 (see [`BerOctetStringFmt`]).
 impl<const LIMIT: usize> Retaggable for BerOctetStringFmt<LIMIT> {
+    type Retagged = Self;
+
+    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number })
+    }
+
+    fn retagged(&self, tag: Tag) -> Self::Retagged {
+        Self(Tag { class: tag.class, constructed: false, number: tag.number })
+    }
+}
+
+/// Supports IMPLICIT tagging of recursive BER BIT STRING values.
+///
+/// The outer identity is replaced and normalized to primitive form; parsing still accepts both
+/// primitive and constructed forms, while nested fragments retain universal tag 3.
+impl<const LIMIT: usize> Retaggable for BerBitStringFmt<LIMIT> {
     type Retagged = Self;
 
     open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {

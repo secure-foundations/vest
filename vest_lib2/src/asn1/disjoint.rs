@@ -1,7 +1,8 @@
 //! Disjointness proofs for ASN.1 formats.
 use super::ber::*;
 use super::ber::{
-    BerCharStringFmt, BerOctetStringFmt, BerOctetStringRecBody, BerSequenceFmt, BerSequenceOfFmt,
+    BerBitStringFmt, BerCharStringFmt, BerOctetStringFmt, BerOctetStringRecBody, BerSequenceFmt,
+    BerSequenceOfFmt,
 };
 use super::modifiers::{DefaultedFmt, ImplicitlyTaggedFmt, Retaggable};
 use super::{ASN1Fmt, Tag, TagFmt};
@@ -230,6 +231,91 @@ pub broadcast proof fn lemma_disjoint_ber_octet_char_string<
     reveal(disjoint_domains);
 }
 
+/// BER BIT STRING formats with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_ber_bit_strings<const LEFT: usize, const RIGHT: usize>(
+    left: BerBitStringFmt<LEFT>,
+    right: BerBitStringFmt<RIGHT>,
+)
+    requires
+        left.0.class != right.0.class || left.0.number != right.0.number,
+    ensures
+        #[trigger] disjoint_domains(left, right),
+{
+    reveal(disjoint_domains);
+}
+
+/// An ordinary ASN.1 TLV and BER BIT STRING with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_asn1_ber_bit_string<
+    A: SpecCombinator,
+    const DER: bool,
+    const LIMIT: usize,
+>(asn1: ASN1Fmt<A, DER>, bits: BerBitStringFmt<LIMIT>)
+    requires
+        asn1.0.class != bits.0.class || asn1.0.number != bits.0.number,
+    ensures
+        #[trigger] disjoint_domains(asn1, bits),
+        #[trigger] disjoint_domains(bits, asn1),
+{
+    reveal(disjoint_domains);
+}
+
+/// A BER SEQUENCE and BER BIT STRING with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_ber_sequence_bit_string<
+    A: SpecCombinator,
+    const LIMIT: usize,
+>(sequence: BerSequenceFmt<A>, bits: BerBitStringFmt<LIMIT>)
+    requires
+        sequence.0.class != bits.0.class || sequence.0.number != bits.0.number,
+    ensures
+        #[trigger] disjoint_domains(sequence, bits),
+        #[trigger] disjoint_domains(bits, sequence),
+{
+    reveal(disjoint_domains);
+}
+
+/// A BER SEQUENCE OF and BER BIT STRING with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_ber_sequence_of_bit_string<
+    A: SpecCombinator,
+    const LIMIT: usize,
+>(sequence: BerSequenceOfFmt<A>, bits: BerBitStringFmt<LIMIT>)
+    requires
+        sequence.0.class != bits.0.class || sequence.0.number != bits.0.number,
+    ensures
+        #[trigger] disjoint_domains(sequence, bits),
+        #[trigger] disjoint_domains(bits, sequence),
+{
+    reveal(disjoint_domains);
+}
+
+/// BER OCTET STRING and BER BIT STRING with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_ber_octet_bit_string<const OCTETS: usize, const BITS: usize>(
+    octets: BerOctetStringFmt<OCTETS>,
+    bits: BerBitStringFmt<BITS>,
+)
+    requires
+        octets.0.class != bits.0.class || octets.0.number != bits.0.number,
+    ensures
+        #[trigger] disjoint_domains(octets, bits),
+        #[trigger] disjoint_domains(bits, octets),
+{
+    reveal(disjoint_domains);
+}
+
+/// BER BIT STRING and restricted character strings with different tag identities are disjoint.
+pub broadcast proof fn lemma_disjoint_ber_bit_char_string<
+    C: SpecCombinator,
+    const BITS: usize,
+    const STRING: usize,
+>(bits: BerBitStringFmt<BITS>, string: BerCharStringFmt<C, STRING>)
+    requires
+        bits.0.class != string.0.class || bits.0.number != string.0.number,
+    ensures
+        #[trigger] disjoint_domains(bits, string),
+        #[trigger] disjoint_domains(string, bits),
+{
+    reveal(disjoint_domains);
+}
+
 /// IMPLICIT tagging delegates its parse domain to the concretely retagged format.
 pub broadcast proof fn lemma_disjoint_implicitly_tagged_left<F, P>(
     implicit: ImplicitlyTaggedFmt<F>,
@@ -293,6 +379,12 @@ pub broadcast group asn1_disjointness_lemmas {
     lemma_disjoint_ber_sequence_char_string,
     lemma_disjoint_ber_sequence_of_char_string,
     lemma_disjoint_ber_octet_char_string,
+    lemma_disjoint_ber_bit_strings,
+    lemma_disjoint_asn1_ber_bit_string,
+    lemma_disjoint_ber_sequence_bit_string,
+    lemma_disjoint_ber_sequence_of_bit_string,
+    lemma_disjoint_ber_octet_bit_string,
+    lemma_disjoint_ber_bit_char_string,
     lemma_disjoint_implicitly_tagged_left,
     lemma_disjoint_implicitly_tagged_right,
     lemma_disjoint_defaulted,

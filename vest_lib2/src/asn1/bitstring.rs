@@ -72,11 +72,21 @@ impl<'a, const DER: bool> BitString<'a, DER> {
         BitString { unused, bits }
     }
 
-    pub fn unused(&self) -> u8 {
+    pub fn unused(&self) -> (unused: u8)
+        ensures
+            unused == self.deep_view().unused,
+            self.deep_view().wf::<DER>(),
+    {
+        proof {
+            use_type_invariant(self);
+        }
         self.unused
     }
 
-    pub fn bits(&self) -> &'a [u8] {
+    pub fn bits(&self) -> (bits: &'a [u8])
+        ensures
+            bits.deep_view() == self.deep_view().bits,
+    {
         self.bits
     }
 }
@@ -98,11 +108,21 @@ impl BitStringOwned {
         Self { unused, bits }
     }
 
-    pub fn unused(&self) -> u8 {
+    pub fn unused(&self) -> (unused: u8)
+        ensures
+            unused == self.deep_view().unused,
+            self.deep_view().wf::<false>(),
+    {
+        proof {
+            use_type_invariant(self);
+        }
         self.unused
     }
 
-    pub fn bits(&self) -> &[u8] {
+    pub fn bits(&self) -> (bits: &[u8])
+        ensures
+            bits.deep_view() == self.deep_view().bits,
+    {
         self.bits.as_slice()
     }
 }
