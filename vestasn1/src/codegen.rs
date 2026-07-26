@@ -2696,6 +2696,9 @@ fn pretty_format_expr(expr: &str, indent: usize) -> String {
     if is_sequence_chain(expr) {
         return pretty_format_sequence_chain(expr, indent, "");
     }
+    if is_choice_chain(expr) {
+        return pretty_format_choice_chain(expr, indent, "");
+    }
     let Some((head, opener, inner)) = split_root_group(expr) else {
         return format!("{}{expr}", " ".repeat(indent));
     };
@@ -2798,6 +2801,58 @@ fn pretty_format_sequence_chain(expr: &str, indent: usize, closing: &str) -> Str
         current_args,
         pretty_format_sequence_chain(continuation, indent, &format!("){closing}"))
     )
+}
+
+fn is_choice_chain(expr: &str) -> bool {
+    split_root_group(expr.trim()).is_some_and(|(head, opener, _)| {
+        opener == '(' && head.trim() == "CHOICE"
+    })
+}
+
+fn pretty_format_choice_chain(expr: &str, indent: usize, closing: &str) -> String {
+    let expr = expr.trim();
+    let Some((head, '(', inner)) = split_root_group(expr) else {
+        return format!("{}{}{closing}", " ".repeat(indent), expr);
+    };
+    if head.trim() != "CHOICE" {
+        return format!("{}{}{closing}", " ".repeat(indent), expr);
+    }
+    let args = split_top_level(inner);
+    if args.len() != 2 {
+        return format!("{}{}{closing}", " ".repeat(indent), expr);
+    }
+
+    format!(
+        "{}{}(\n{}",
+        " ".repeat(indent),
+        head.trim(),
+        pretty_format_choice_chain_body(args[0], args[1], indent, closing)
+    )
+}
+
+fn pretty_format_choice_chain_body(left: &str, right: &str, indent: usize, closing: &str) -> String {
+    let left = left.trim();
+    let right = right.trim();
+    let pretty_left = pretty_format_expr(left, indent + 4);
+
+    if is_choice_chain(right) {
+        let Some((_head, '(', inner)) = split_root_group(right) else {
+            let pretty_right = pretty_format_expr(right, indent + 4);
+            return format!("{pretty_left},\n{pretty_right}){closing}");
+        };
+        let args = split_top_level(inner);
+        if args.len() != 2 {
+            let pretty_right = pretty_format_expr(right, indent + 4);
+            return format!("{pretty_left},\n{pretty_right}){closing}");
+        }
+        format!(
+            "{pretty_left}, CHOICE(\n{}",
+            pretty_format_choice_chain_body(args[0], args[1], indent, &format!("){closing}"))
+        )
+    } else {
+        let pretty_right = pretty_format_expr(right, indent + 4);
+        format!("{pretty_left},\n{pretty_right}){closing}")
+    }
 }
 
 fn split_root_group(expr: &str) -> Option<(&str, char, &str)> {

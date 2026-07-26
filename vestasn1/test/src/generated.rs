@@ -1132,8 +1132,7 @@ pub const fn SELECTION_FMT() -> SelectionFmt
                 inner:
                     CHOICE(
                         IMPLICIT(1u64, Ref(FLAG_FMT())),
-                        EXPLICIT(2u64, Ref(PAYLOAD_FMT())),
-                    ),
+                        EXPLICIT(2u64, Ref(PAYLOAD_FMT()))),
                 mapper: BiMap(SelectionForward, SelectionReverse),
             }
         ),
@@ -1142,8 +1141,7 @@ pub const fn SELECTION_FMT() -> SelectionFmt
         inner:
             CHOICE(
                 IMPLICIT(1u64, Ref(FLAG_FMT())),
-                EXPLICIT(2u64, Ref(PAYLOAD_FMT())),
-            ),
+                EXPLICIT(2u64, Ref(PAYLOAD_FMT()))),
         mapper: BiMap(SelectionForward, SelectionReverse),
     }
 }
@@ -1344,8 +1342,7 @@ pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
                 inner:
                     CHOICE(
                         IMPLICIT(2u64, Ref(BOOLEAN)),
-                        IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)),
-                    ),
+                        IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
                 mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
             }
         ),
@@ -1354,8 +1351,7 @@ pub const fn INLINE_RECORD_SELECTED_FMT() -> InlineRecordSelectedFmt
         inner:
             CHOICE(
                 IMPLICIT(2u64, Ref(BOOLEAN)),
-                IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)),
-            ),
+                IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
         mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
     }
 }
@@ -1399,21 +1395,12 @@ pub const fn AUTOMATION_CHOICE_FMT() -> AutomationChoiceFmt
             Mapped {
                 inner:
                     CHOICE(
-                        IMPLICIT(10u64, Ref(BOOLEAN)),
-                        CHOICE(
-                            IMPLICIT(11u64, Ref(INTEGER)),
-                            CHOICE(
-                                IMPLICIT(12u64, Ref(OCTET_STRING)),
-                                CHOICE(
-                                    IMPLICIT(13u64, Ref(NULL)),
-                                    CHOICE(
-                                        EXPLICIT(14u64, Ref(UTF8_STRING)),
-                                        EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)),
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
+                        IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                        IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
+                        IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
+                        IMPLICIT(13u64, Ref(NULL)), CHOICE(
+                        EXPLICIT(14u64, Ref(UTF8_STRING)),
+                        EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
                 mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
             }
         ),
@@ -1421,21 +1408,12 @@ pub const fn AUTOMATION_CHOICE_FMT() -> AutomationChoiceFmt
     Mapped {
         inner:
             CHOICE(
-                IMPLICIT(10u64, Ref(BOOLEAN)),
-                CHOICE(
-                    IMPLICIT(11u64, Ref(INTEGER)),
-                    CHOICE(
-                        IMPLICIT(12u64, Ref(OCTET_STRING)),
-                        CHOICE(
-                            IMPLICIT(13u64, Ref(NULL)),
-                            CHOICE(
-                                EXPLICIT(14u64, Ref(UTF8_STRING)),
-                                EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
+                IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
+                IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
+                IMPLICIT(13u64, Ref(NULL)), CHOICE(
+                EXPLICIT(14u64, Ref(UTF8_STRING)),
+                EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
         mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
     }
 }

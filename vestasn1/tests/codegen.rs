@@ -396,6 +396,9 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
 #[test]
 fn checked_in_verified_fixture_is_fresh() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
+    if std::env::var("UPDATE_GOLDEN").is_ok() {
+        std::fs::write("test/src/generated.rs", &generated).unwrap();
+    }
     assert_eq!(generated, include_str!("../test/src/generated.rs"));
 }
 
@@ -428,5 +431,8 @@ fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
 #[test]
 fn checked_in_verified_ber_fixture_is_fresh() {
     let generated = compile_ber(include_str!("../test/fixture_ber.asn1")).unwrap();
+    if std::env::var("UPDATE_GOLDEN").is_ok() {
+        std::fs::write("test/src/generated_ber.rs", &generated).unwrap();
+    }
     assert_eq!(generated, include_str!("../test/src/generated_ber.rs"));
 }

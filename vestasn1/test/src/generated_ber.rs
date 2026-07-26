@@ -450,21 +450,12 @@ pub const fn AUTOMATION_CHOICE_FMT() -> AutomationChoiceFmt
             Mapped {
                 inner:
                     CHOICE(
-                        IMPLICIT(10u64, Ref(BOOLEAN)),
-                        CHOICE(
-                            IMPLICIT(11u64, Ref(OCTET_STRING)),
-                            CHOICE(
-                                IMPLICIT(12u64, Ref(BIT_STRING)),
-                                CHOICE(
-                                    IMPLICIT(13u64, Ref(UTF8_STRING)),
-                                    CHOICE(
-                                        IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
-                                        EXPLICIT(15u64, Ref(ANY)),
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
+                        IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                        IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
+                        IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
+                        IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
+                        IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                        EXPLICIT(15u64, Ref(ANY))))))),
                 mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
             }
         ),
@@ -472,21 +463,12 @@ pub const fn AUTOMATION_CHOICE_FMT() -> AutomationChoiceFmt
     Mapped {
         inner:
             CHOICE(
-                IMPLICIT(10u64, Ref(BOOLEAN)),
-                CHOICE(
-                    IMPLICIT(11u64, Ref(OCTET_STRING)),
-                    CHOICE(
-                        IMPLICIT(12u64, Ref(BIT_STRING)),
-                        CHOICE(
-                            IMPLICIT(13u64, Ref(UTF8_STRING)),
-                            CHOICE(
-                                IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
-                                EXPLICIT(15u64, Ref(ANY)),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
+                IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
+                IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
+                IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
+                IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                EXPLICIT(15u64, Ref(ANY))))))),
         mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
     }
 }
