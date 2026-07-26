@@ -171,6 +171,7 @@ impl<Inner, M, MRev> SPRoundTripDps for super::Mapped<Inner, BiMap<M, MRev>> whe
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        assert(self.unambiguous());
         assert(self.mapper.sound(v));
         let inner_v = self.mapper.1.spec_map(v);
         self.inner.theorem_serialize_dps_parse_roundtrip(inner_v, obuf);

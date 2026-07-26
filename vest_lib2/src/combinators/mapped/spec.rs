@@ -166,10 +166,12 @@ impl<Inner, M> NonTailFmt for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_dps_prepend(&self, v: M::Out, obuf: Seq<u8>) {
+        assert(self.serialize_dps_inv());
         self.inner.lemma_serialize_dps_prepend(self.mapper.spec_map_rev(v), obuf);
     }
 
     proof fn lemma_serialize_dps_len(&self, v: M::Out, obuf: Seq<u8>) {
+        assert(self.serialize_dps_inv());
         self.inner.lemma_serialize_dps_len(self.mapper.spec_map_rev(v), obuf);
     }
 }
