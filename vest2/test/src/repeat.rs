@@ -1048,7 +1048,7 @@ mod exec_impls {
 
             let OpaqueU16 { l, data } = v;
             U16Le.serialize_into(l, obuf);
-            Varied(l).serialize_into(*data, obuf);
+            Varied(*l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1065,7 +1065,7 @@ mod exec_impls {
                     (U16Le).prepare(l)
                 }
             }?;
-            let l2 = (Varied(l)).prepare(data)?;
+            let l2 = (Varied(*l)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -1139,7 +1139,7 @@ mod exec_impls {
 
             let ResponderIdList { l, list } = v;
             U16Le.serialize_into(l, obuf);
-            ExactLen(l, Star(ResponderIdFmt)).serialize_into(list, obuf);
+            ExactLen(*l, Star(ResponderIdFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1156,7 +1156,7 @@ mod exec_impls {
                     (U16Le).prepare(l)
                 }
             }?;
-            let l2 = (ExactLen(l, Star(ResponderIdFmt))).prepare(list)?;
+            let l2 = (ExactLen(*l, Star(ResponderIdFmt))).prepare(list)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -1227,7 +1227,7 @@ mod exec_impls {
 
             let RepeatDyn { l, data } = v;
             VarInt::<true>.serialize_into(l, obuf);
-            RepeatN(l, ResponderIdListFmt).serialize_into(data, obuf);
+            RepeatN(*l, ResponderIdListFmt).serialize_into(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1238,7 +1238,7 @@ mod exec_impls {
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let RepeatDyn { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (RepeatN(l, ResponderIdListFmt)).prepare(data)?;
+            let l2 = (RepeatN(*l, ResponderIdListFmt)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }

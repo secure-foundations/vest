@@ -4892,7 +4892,7 @@ mod exec_impls {
 
             let ChainAChoice1 { len, payload, next_tag, tail } = v;
             (U8).serialize_into(len, obuf);
-            (Varied(len)).serialize_into(*payload, obuf);
+            (Varied(*len)).serialize_into(*payload, obuf);
             (U8).serialize_into(next_tag, obuf);
             (ChainBFmt::<LIMIT> { tag: *next_tag }).serialize_gas(gas - 1, tail, obuf);
         }
@@ -4918,7 +4918,7 @@ mod exec_impls {
         {
             let ChainAChoice1 { len, payload, next_tag, tail } = v;
             let l1 = (U8).prepare(len)?;
-            let l2 = (Varied(len)).prepare(payload)?;
+            let l2 = (Varied(*len)).prepare(payload)?;
             let l3 = (U8).prepare(next_tag)?;
             if gas == 0 {
                 return Err(

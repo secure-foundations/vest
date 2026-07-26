@@ -2188,7 +2188,7 @@ mod exec_impls {
             let Msg { tag, len, content } = v;
             MsgTypeFmt.serialize_into(tag, obuf);
             U16Le.serialize_into(len, obuf);
-            ExactLen(len, MsgContentFmt { tag: *tag }).serialize_into(content, obuf);
+            ExactLen(*len, MsgContentFmt { tag: *tag }).serialize_into(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2200,7 +2200,7 @@ mod exec_impls {
             let Msg { tag, len, content } = v;
             let l1 = (Named("msg_type", MsgTypeFmt)).prepare(tag)?;
             let l2 = (U16Le).prepare(len)?;
-            let l3 = (ExactLen(len, Named("msg_content", MsgContentFmt { tag: *tag }))).prepare(
+            let l3 = (ExactLen(*len, Named("msg_content", MsgContentFmt { tag: *tag }))).prepare(
                 content,
             )?;
             let total_len = l1.checked_add(l2).ok_or(
@@ -2322,7 +2322,7 @@ mod exec_impls {
             let MsgAlt { tag, len, content } = v;
             U8.serialize_into(tag, obuf);
             U16Le.serialize_into(len, obuf);
-            ExactLen(len, MsgAltContentFmt { len: *len, tag: *tag }).serialize_into(content, obuf);
+            ExactLen(*len, MsgAltContentFmt { len: *len, tag: *tag }).serialize_into(content, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -2335,7 +2335,7 @@ mod exec_impls {
             let l1 = (U8).prepare(tag)?;
             let l2 = (U16Le).prepare(len)?;
             let l3 = (ExactLen(
-                len,
+                *len,
                 Named("msg_alt_content", MsgAltContentFmt { len: *len, tag: *tag }),
             )).prepare(content)?;
             let total_len = l1.checked_add(l2).ok_or(

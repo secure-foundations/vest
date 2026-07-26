@@ -4875,7 +4875,7 @@ mod exec_impls {
 
             let NestedInnerStruct { len, val } = v;
             U32Le.serialize_into(len, obuf);
-            ExactLen(len, NestedInnerStructValFmt).serialize_into(val, obuf);
+            ExactLen(*len, NestedInnerStructValFmt).serialize_into(val, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4887,7 +4887,7 @@ mod exec_impls {
             let NestedInnerStruct { len, val } = v;
             let l1 = (U32Le).prepare(len)?;
             let l2 = (ExactLen(
-                len,
+                *len,
                 Named("nested_inner_struct_val", NestedInnerStructValFmt),
             )).prepare(val)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -5006,7 +5006,7 @@ mod exec_impls {
             let CaptureOuterAndLocal { frame_len, payload } = v;
             U8.serialize_into(frame_len, obuf);
             ExactLen(
-                frame_len,
+                *frame_len,
                 CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
             ).serialize_into(payload, obuf);
 
@@ -5026,7 +5026,7 @@ mod exec_impls {
                 }
             }?;
             let l2 = (ExactLen(
-                frame_len,
+                *frame_len,
                 Named(
                     "capture_outer_and_local_payload",
                     CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
@@ -5389,7 +5389,7 @@ mod exec_impls {
 
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
             U8.serialize_into(count, obuf);
-            Varied(count).serialize_into(*items, obuf);
+            Varied(*count).serialize_into(*items, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5405,7 +5405,7 @@ mod exec_impls {
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
             let l1 = (U8).prepare(count)?;
-            let l2 = (Varied(count)).prepare(items)?;
+            let l2 = (Varied(*count)).prepare(items)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -5605,7 +5605,7 @@ mod exec_impls {
 
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
             U8.serialize_into(len, obuf);
-            Varied(len).serialize_into(*bytes, obuf);
+            Varied(*len).serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -5621,7 +5621,7 @@ mod exec_impls {
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
             let l1 = (U8).prepare(len)?;
-            let l2 = (Varied(len)).prepare(bytes)?;
+            let l2 = (Varied(*len)).prepare(bytes)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }

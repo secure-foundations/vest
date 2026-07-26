@@ -3043,7 +3043,7 @@ mod exec_impls {
             U32Le.serialize_into(bits, obuf);
             U32Le.serialize_into(nonce, obuf);
             VarInt::<true>.serialize_into(tx_count, obuf);
-            RepeatN(tx_count, TxFmt).serialize_into(txs, obuf);
+            RepeatN(*tx_count, TxFmt).serialize_into(txs, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3061,7 +3061,7 @@ mod exec_impls {
             let l5 = (U32Le).prepare(bits)?;
             let l6 = (U32Le).prepare(nonce)?;
             let l7 = (VarInt::<true>).prepare(tx_count)?;
-            let l8 = (RepeatN(tx_count, TxFmt)).prepare(txs)?;
+            let l8 = (RepeatN(*tx_count, TxFmt)).prepare(txs)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
@@ -3181,10 +3181,10 @@ mod exec_impls {
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
             U8.serialize_into(flag, obuf);
             VarInt::<true>.serialize_into(txin_count, obuf);
-            RepeatN(txin_count, TxinFmt).serialize_into(txins, obuf);
+            RepeatN(*txin_count, TxinFmt).serialize_into(txins, obuf);
             VarInt::<true>.serialize_into(txout_count, obuf);
-            RepeatN(txout_count, TxoutFmt).serialize_into(txouts, obuf);
-            RepeatN(txin_count, WitnessFmt).serialize_into(witness, obuf);
+            RepeatN(*txout_count, TxoutFmt).serialize_into(txouts, obuf);
+            RepeatN(*txin_count, WitnessFmt).serialize_into(witness, obuf);
             LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -3197,10 +3197,10 @@ mod exec_impls {
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
             let l1 = (Const(U8, 1)).prepare(flag)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (RepeatN(txin_count, TxinFmt)).prepare(txins)?;
+            let l3 = (RepeatN(*txin_count, TxinFmt)).prepare(txins)?;
             let l4 = (VarInt::<true>).prepare(txout_count)?;
-            let l5 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
-            let l6 = (RepeatN(txin_count, WitnessFmt)).prepare(witness)?;
+            let l5 = (RepeatN(*txout_count, TxoutFmt)).prepare(txouts)?;
+            let l6 = (RepeatN(*txin_count, WitnessFmt)).prepare(witness)?;
             let l7 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
@@ -3245,7 +3245,7 @@ mod exec_impls {
 
             let Witness { count, data } = v;
             VarInt::<true>.serialize_into(count, obuf);
-            RepeatN(count, WitnessComponentFmt).serialize_into(data, obuf);
+            RepeatN(*count, WitnessComponentFmt).serialize_into(data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3256,7 +3256,7 @@ mod exec_impls {
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let Witness { count, data } = v;
             let l1 = (VarInt::<true>).prepare(count)?;
-            let l2 = (RepeatN(count, WitnessComponentFmt)).prepare(data)?;
+            let l2 = (RepeatN(*count, WitnessComponentFmt)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -3294,7 +3294,7 @@ mod exec_impls {
 
             let WitnessComponent { l, data } = v;
             VarInt::<true>.serialize_into(l, obuf);
-            Varied(l).serialize_into(*data, obuf);
+            Varied(*l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3305,7 +3305,7 @@ mod exec_impls {
             reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
             let WitnessComponent { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(l)).prepare(data)?;
+            let l2 = (Varied(*l)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -3356,7 +3356,7 @@ mod exec_impls {
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
             RepeatN(self.txin_count, TxinFmt).serialize_into(txins, obuf);
             VarInt::<true>.serialize_into(txout_count, obuf);
-            RepeatN(txout_count, TxoutFmt).serialize_into(txouts, obuf);
+            RepeatN(*txout_count, TxoutFmt).serialize_into(txouts, obuf);
             LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -3373,7 +3373,7 @@ mod exec_impls {
             let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
             let l1 = (RepeatN(self.txin_count, TxinFmt)).prepare(txins)?;
             let l2 = (VarInt::<true>).prepare(txout_count)?;
-            let l3 = (RepeatN(txout_count, TxoutFmt)).prepare(txouts)?;
+            let l3 = (RepeatN(*txout_count, TxoutFmt)).prepare(txouts)?;
             let l4 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
@@ -3526,7 +3526,7 @@ mod exec_impls {
 
             let Script { l, data } = v;
             VarInt::<true>.serialize_into(l, obuf);
-            Varied(l).serialize_into(*data, obuf);
+            Varied(*l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3537,7 +3537,7 @@ mod exec_impls {
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let Script { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(l)).prepare(data)?;
+            let l2 = (Varied(*l)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -3679,7 +3679,7 @@ mod exec_impls {
 
             let ScriptSig { l, data } = v;
             VarInt::<true>.serialize_into(l, obuf);
-            Varied(l).serialize_into(*data, obuf);
+            Varied(*l).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -3690,7 +3690,7 @@ mod exec_impls {
             reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
             let ScriptSig { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(l)).prepare(data)?;
+            let l2 = (Varied(*l)).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }

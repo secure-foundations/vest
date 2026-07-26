@@ -1737,7 +1737,7 @@ mod exec_impls {
             let MsgC { f2, f3, f4 } = v;
             ContentTypeFmt.serialize_into(f2, obuf);
             U24Be.serialize_into(f3, obuf);
-            ExactLen(f3, MsgCF4Fmt { f2: *f2, f3: *f3 }).serialize_into(f4, obuf);
+            ExactLen(*f3, MsgCF4Fmt { f2: *f2, f3: *f3 }).serialize_into(f4, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -1749,7 +1749,9 @@ mod exec_impls {
             let MsgC { f2, f3, f4 } = v;
             let l1 = (Named("content_type", ContentTypeFmt)).prepare(f2)?;
             let l2 = (U24Be).prepare(f3)?;
-            let l3 = (ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: *f2, f3: *f3 }))).prepare(f4)?;
+            let l3 = (ExactLen(*f3, Named("msg_c_f4", MsgCF4Fmt { f2: *f2, f3: *f3 }))).prepare(
+                f4,
+            )?;
             let total_len = l1.checked_add(l2).ok_or(
                 PreSerializeError::length_too_large(),
             )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;

@@ -25976,7 +25976,7 @@ mod exec_impls {
                 data,
             } = v;
             U8.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -25990,7 +25990,7 @@ mod exec_impls {
                 data,
             } = v;
             let l1 = (U8).prepare (l) ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26038,7 +26038,7 @@ mod exec_impls {
                 data,
             } = v;
             U8.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26060,7 +26060,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26105,7 +26105,7 @@ mod exec_impls {
                 data,
             } = v;
             U16Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26119,7 +26119,7 @@ mod exec_impls {
                 data,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26167,7 +26167,7 @@ mod exec_impls {
                 data,
             } = v;
             U16Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26189,7 +26189,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26237,7 +26237,7 @@ mod exec_impls {
                 data,
             } = v;
             U16Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26259,7 +26259,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26304,7 +26304,7 @@ mod exec_impls {
                 data,
             } = v;
             U24Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26318,7 +26318,7 @@ mod exec_impls {
                 data,
             } = v;
             let l1 = (U24Be).prepare (l) ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26366,7 +26366,7 @@ mod exec_impls {
                 data,
             } = v;
             U24Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* data, obuf);
+            Varied (* l).serialize_into(* data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26388,7 +26388,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (data) ?;
+            let l2 = (Varied (* l)).prepare (data) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26802,7 +26802,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (ServerNameFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (ServerNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -26824,7 +26824,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ServerNameFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (ServerNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -26995,7 +26995,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (ResponderIdFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (ResponderIdFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27009,7 +27009,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (ResponderIdFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (ResponderIdFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27409,7 +27409,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (NamedGroupFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (NamedGroupFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27431,7 +27431,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (NamedGroupFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (NamedGroupFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27532,7 +27532,7 @@ mod exec_impls {
                 list,
             } = v;
             U8.serialize_into(l, obuf);
-            ExactLen (l, Star (EcPointFormatFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (EcPointFormatFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27554,7 +27554,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (EcPointFormatFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (EcPointFormatFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27700,7 +27700,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (SignatureSchemeFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (SignatureSchemeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27722,7 +27722,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SignatureSchemeFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (SignatureSchemeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -27805,7 +27805,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (SrtpProtectionProfileFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (SrtpProtectionProfileFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -27827,7 +27827,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SrtpProtectionProfileFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (SrtpProtectionProfileFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28071,7 +28071,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (ProtocolNameFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (ProtocolNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28093,7 +28093,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ProtocolNameFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (ProtocolNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28176,7 +28176,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (SerializedSctFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (SerializedSctFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28198,7 +28198,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SerializedSctFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (SerializedSctFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28296,7 +28296,7 @@ mod exec_impls {
                 list,
             } = v;
             U8.serialize_into(l, obuf);
-            ExactLen (l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28318,7 +28318,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CertificateTypeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28418,7 +28418,7 @@ mod exec_impls {
                 list,
             } = v;
             U8.serialize_into(l, obuf);
-            ExactLen (l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CertificateTypeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28440,7 +28440,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateTypeFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CertificateTypeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28597,7 +28597,7 @@ mod exec_impls {
                 padding,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (ZeroByteFmt)).serialize_into(padding, obuf);
+            ExactLen (* l, Star (ZeroByteFmt)).serialize_into(padding, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28615,7 +28615,7 @@ mod exec_impls {
                 padding,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (ZeroByteFmt))).prepare (padding) ?;
+            let l2 = (ExactLen (* l, Star (ZeroByteFmt))).prepare (padding) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28722,7 +28722,7 @@ mod exec_impls {
                 entries,
             } = v;
             U8.serialize_into(l, obuf);
-            Varied (l).serialize_into(* entries, obuf);
+            Varied (* l).serialize_into(* entries, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28744,7 +28744,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (entries) ?;
+            let l2 = (Varied (* l)).prepare (entries) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28792,7 +28792,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (PskIdentityFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (PskIdentityFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28814,7 +28814,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskIdentityFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (PskIdentityFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -28862,7 +28862,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (PskBinderEntryFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (PskBinderEntryFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -28884,7 +28884,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskBinderEntryFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (PskBinderEntryFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29147,7 +29147,7 @@ mod exec_impls {
                 list,
             } = v;
             U8.serialize_into(l, obuf);
-            ExactLen (l, Star (ProtocolVersionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (ProtocolVersionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29169,7 +29169,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ProtocolVersionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (ProtocolVersionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29337,7 +29337,7 @@ mod exec_impls {
                 list,
             } = v;
             U8.serialize_into(l, obuf);
-            ExactLen (l, Star (PskKeyExchangeModeFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (PskKeyExchangeModeFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29359,7 +29359,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (PskKeyExchangeModeFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (PskKeyExchangeModeFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29442,7 +29442,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (DistinguishedNameFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (DistinguishedNameFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29464,7 +29464,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (DistinguishedNameFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (DistinguishedNameFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29568,7 +29568,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (OidFilterFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (OidFilterFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29582,7 +29582,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (OidFilterFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (OidFilterFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29635,7 +29635,7 @@ mod exec_impls {
             } = v;
             NamedGroupFmt.serialize_into(group, obuf);
             U16Be.serialize_into(l, obuf);
-            Varied (l).serialize_into(* key_exchange, obuf);
+            Varied (* l).serialize_into(* key_exchange, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29659,7 +29659,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l3 = (Varied (l)).prepare (key_exchange) ?;
+            let l3 = (Varied (* l)).prepare (key_exchange) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?.checked_add (l3).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29704,7 +29704,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (KeyShareEntryFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (KeyShareEntryFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -29718,7 +29718,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (KeyShareEntryFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (KeyShareEntryFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -29842,7 +29842,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, ClientHelloExtensionExtensionDataFmt {
+            ExactLen (*ext_len, ClientHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -29863,7 +29863,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("client_hello_extension_extension_data", ClientHelloExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("client_hello_extension_extension_data", ClientHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -29921,7 +29921,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, SeverHelloExtensionExtensionDataFmt {
+            ExactLen (*ext_len, SeverHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -29942,7 +29942,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("sever_hello_extension_extension_data", SeverHelloExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("sever_hello_extension_extension_data", SeverHelloExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30000,7 +30000,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, HelloRetryExtensionExtensionDataFmt {
+            ExactLen (*ext_len, HelloRetryExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30021,7 +30021,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("hello_retry_extension_extension_data", HelloRetryExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("hello_retry_extension_extension_data", HelloRetryExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30079,7 +30079,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, EncryptedExtensionExtensionDataFmt {
+            ExactLen (*ext_len, EncryptedExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30100,7 +30100,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("encrypted_extension_extension_data", EncryptedExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("encrypted_extension_extension_data", EncryptedExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30158,7 +30158,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, CertificateRequestExtensionExtensionDataFmt {
+            ExactLen (*ext_len, CertificateRequestExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30179,7 +30179,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("certificate_request_extension_extension_data", CertificateRequestExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("certificate_request_extension_extension_data", CertificateRequestExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30237,7 +30237,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, CertificateExtensionExtensionDataFmt {
+            ExactLen (*ext_len, CertificateExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30258,7 +30258,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("certificate_extension_extension_data", CertificateExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("certificate_extension_extension_data", CertificateExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30316,7 +30316,7 @@ mod exec_impls {
             } = v;
             ExtensionTypeFmt.serialize_into(extension_type, obuf);
             U16Be.serialize_into(ext_len, obuf);
-            ExactLen (ext_len, NewSessionTicketExtensionExtensionDataFmt {
+            ExactLen (*ext_len, NewSessionTicketExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -30337,7 +30337,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("extension_type", ExtensionTypeFmt)).prepare (extension_type) ?;
             let l2 = (U16Be).prepare (ext_len) ?;
-            let l3 = (ExactLen (ext_len, Named ("new_session_ticket_extension_extension_data", NewSessionTicketExtensionExtensionDataFmt {
+            let l3 = (ExactLen (*ext_len, Named ("new_session_ticket_extension_extension_data", NewSessionTicketExtensionExtensionDataFmt {
                 ext_len: *ext_len,
                 extension_type: *extension_type
             }
@@ -31237,7 +31237,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (CipherSuiteFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CipherSuiteFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31259,7 +31259,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CipherSuiteFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CipherSuiteFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31307,7 +31307,7 @@ mod exec_impls {
                 id,
             } = v;
             U8.serialize_into(l, obuf);
-            Varied (l).serialize_into(* id, obuf);
+            Varied (* l).serialize_into(* id, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31329,7 +31329,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (Varied (l)).prepare (id) ?;
+            let l2 = (Varied (* l)).prepare (id) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31377,7 +31377,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (ClientHelloExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (ClientHelloExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31399,7 +31399,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (ClientHelloExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (ClientHelloExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31447,7 +31447,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (SeverHelloExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (SeverHelloExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31469,7 +31469,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (SeverHelloExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (SeverHelloExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31517,7 +31517,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (HelloRetryExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (HelloRetryExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31539,7 +31539,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (HelloRetryExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (HelloRetryExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31587,7 +31587,8 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (CertificateRequestExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CertificateRequestExtensionFmt))
+            .serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31609,7 +31610,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (CertificateRequestExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CertificateRequestExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31654,7 +31655,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (EncryptedExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (EncryptedExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31668,7 +31669,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (EncryptedExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (EncryptedExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31716,7 +31717,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (NewSessionTicketExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (NewSessionTicketExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31738,7 +31739,7 @@ mod exec_impls {
                 }
             }
             ?;
-            let l2 = (ExactLen (l, Star (NewSessionTicketExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (NewSessionTicketExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -31783,7 +31784,7 @@ mod exec_impls {
                 list,
             } = v;
             U16Be.serialize_into(l, obuf);
-            ExactLen (l, Star (CertificateExtensionFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CertificateExtensionFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -31797,7 +31798,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U16Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (CertificateExtensionFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CertificateExtensionFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -32040,7 +32041,7 @@ mod exec_impls {
                 list,
             } = v;
             U24Be.serialize_into(l, obuf);
-            ExactLen (l, Star (CertificateEntryOpaqueFmt)).serialize_into(list, obuf);
+            ExactLen (* l, Star (CertificateEntryOpaqueFmt)).serialize_into(list, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -32054,7 +32055,7 @@ mod exec_impls {
                 list,
             } = v;
             let l1 = (U24Be).prepare (l) ?;
-            let l2 = (ExactLen (l, Star (CertificateEntryOpaqueFmt))).prepare (list) ?;
+            let l2 = (ExactLen (* l, Star (CertificateEntryOpaqueFmt))).prepare (list) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
             Ok(total_len)
         }
@@ -32719,7 +32720,7 @@ mod exec_impls {
             } = v;
             HandshakeTypeFmt.serialize_into(msg_type, obuf);
             U24Be.serialize_into(length, obuf);
-            ExactLen (length, HandshakeMsgFmt {
+            ExactLen (*length, HandshakeMsgFmt {
                 length: *length,
                 msg_type: *msg_type
             }
@@ -32740,7 +32741,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("handshake_type", HandshakeTypeFmt)).prepare (msg_type) ?;
             let l2 = (U24Be).prepare (length) ?;
-            let l3 = (ExactLen (length, Named ("handshake_msg", HandshakeMsgFmt {
+            let l3 = (ExactLen (*length, Named ("handshake_msg", HandshakeMsgFmt {
                 length: *length,
                 msg_type: *msg_type
             }
