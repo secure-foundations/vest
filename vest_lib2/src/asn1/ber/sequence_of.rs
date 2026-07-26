@@ -15,13 +15,13 @@ use crate::core::{proof::*, spec::*};
 use alloc::vec::Vec;
 use vstd::prelude::*;
 
-use super::any::{EocFmt, EOC};
+use super::any::{parse_discard_eoc, EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
 verus! {
 
-type BerSequenceOfWireType<T> = (BerLength, Sum<Seq<T>, (Seq<T>, (u8, u8))>);
+type BerSequenceOfWireType<T> = (BerLength, Sum<Seq<T>, (Seq<T>, EocValue)>);
 
 type BerSequenceOfInnerFmt<C> = Mapped<
     PrefixTagged<
@@ -286,8 +286,17 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceOfFmt<C> where
             },
             BerLength::Indefinite => {
                 let repeated = Repeat(self.1, EOC);
-                let (n, (values, _eoc)) = repeated.parse(&content)?;
-                (n, values)
+                proof {
+                    crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(
+                        &EOC,
+                    );
+                    crate::core::exec::bridge_lemmas::lemma_repeat_parser_exec_inv::<
+                        &'i [u8],
+                        _,
+                        _,
+                    >(&repeated);
+                }
+                parse_discard_eoc(&repeated, &content)?
             },
         };
         let total = tag_len + length_len + content_len;

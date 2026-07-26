@@ -9,7 +9,7 @@ use crate::combinators::{
         BundledSpecs, EquivSerializersGeneralRecBody, GoodSerializerRecBody, ParamRecSpecs,
         ParserRecBody, ProductiveRecBody, SafeParserRecBody, SpecRecBody,
     },
-    Bind, Const, Empty, FixWith, Mapped, Pair, Repeat, Sum, Tail, Void, U8,
+    Bind, Const, FixWith, Mapped, Pair, Repeat, Sum, Tail, Void, U8,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -30,11 +30,170 @@ use Sum::Inr as R;
 
 verus! {
 
-/// Exact BER end-of-contents marker (`00 00`).
-pub type EocFmt = Pair<Const<U8, u8>, Const<U8, u8>>;
+/// Exact BER end-of-contents marker: the universal primitive EOC tag followed by a zero length
+/// octet (`00 00`).
+pub type EocFmt = Pair<Const<TagFmt, Tag>, Const<U8, u8>>;
+
+/// Parsed value of [`EocFmt`]. BER framing discards this value after recognizing the marker.
+pub(super) type EocValue = (Tag, u8);
 
 /// Exact BER end-of-contents marker (`00 00`).
-pub const EOC: EocFmt = Pair(Const(U8, 0u8), Const(U8, 0u8));
+pub const EOC: EocFmt = Pair(Const(TagFmt, TagFmt::EOC), Const(U8, 0u8));
+
+pub(super) open spec fn discard_eoc_result<T>(result: Option<(int, (T, EocValue))>) -> Option<
+    (int, T),
+> {
+    match result {
+        Some((n, (value, _eoc))) => Some((n, value)),
+        None => None,
+    }
+}
+
+pub(super) fn parse_discard_eoc<I, P, T>(parser: &P, input: &I) -> (result: PResult<T>) where
+    I: InputBuf,
+    T: DeepView,
+    P: Parser<I, PT = (T, EocValue), PVal = (T::V, EocValue)>,
+
+    requires
+        parser.exec_inv(),
+    ensures
+        parse_matches_spec(result, discard_eoc_result(parser.spec_parse(input@))),
+{
+    let (n, (value, _eoc)) = parser.parse(input)?;
+    Ok((n, value))
+}
+
+/// Zero-width boundary marker for the contents of a schema-defined BER constructed value.
+///
+/// It succeeds at the end of a definite-length input or immediately before EOC. In the latter
+/// case it deliberately leaves EOC unconsumed for the enclosing indefinite-length framing
+/// combinator. Serialization emits no bytes.
+#[derive(Clone, Copy)]
+pub struct BerEndFmt;
+
+/// BER constructed-content boundary.
+pub const BER_END: BerEndFmt = BerEndFmt;
+
+pub open spec fn at_ber_end(input: Seq<u8>) -> bool {
+    input.len() == 0 || EOC.spec_parse(input) is Some
+}
+
+impl SpecParser for BerEndFmt {
+    type PVal = ();
+
+    open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
+        if at_ber_end(input) {
+            Some((0, ()))
+        } else {
+            None
+        }
+    }
+}
+
+impl Consistency for BerEndFmt {
+    type Val = ();
+
+    open spec fn consistent(&self, _value: Self::Val) -> bool {
+        true
+    }
+}
+
+impl AdmitsUniqueVal for BerEndFmt {
+    proof fn lemma_unique_consistent_val(&self, _left: Self::Val, _right: Self::Val) {
+    }
+}
+
+impl SpecSerializerDps for BerEndFmt {
+    type SValue = ();
+
+    open spec fn spec_serialize_dps(&self, _value: Self::SValue, _obuf: Seq<u8>) -> Seq<u8> {
+        Seq::empty()
+    }
+}
+
+impl SpecSerializer for BerEndFmt {
+    type SVal = ();
+
+    open spec fn spec_serialize(&self, _value: Self::SVal) -> Seq<u8> {
+        Seq::empty()
+    }
+}
+
+impl SpecByteLen for BerEndFmt {
+    type T = ();
+
+    open spec fn byte_len(&self, _value: Self::T) -> nat {
+        0
+    }
+}
+
+impl SafeParser for BerEndFmt {
+    proof fn lemma_parse_safe(&self, _input: Seq<u8>) {
+    }
+}
+
+impl Productive for BerEndFmt {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, _input: Seq<u8>) {
+    }
+}
+
+impl GoodSerializer for BerEndFmt {
+    proof fn lemma_serialize_len(&self, _value: Self::SVal) {
+    }
+}
+
+impl EquivSerializers for BerEndFmt {
+    proof fn lemma_serialize_equiv_on_empty(&self, _value: Self::SVal) {
+    }
+}
+
+impl SPRoundTripDps for BerEndFmt {
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, _value: Self::T, _obuf: Seq<u8>) {
+    }
+}
+
+impl<'i> Parser<&'i [u8]> for BerEndFmt {
+    type PT = ();
+
+    fn parse(&self, input: &&'i [u8]) -> PResult<Self::PT> {
+        broadcast use crate::asn1::tag::lemma_const_tag_fmt_exec_inv;
+
+        proof {
+            crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&EOC);
+        }
+        if input.len() == 0 {
+            Ok((0, ()))
+        } else {
+            match EOC.parse(input) {
+                Ok(_) => Ok((0, ())),
+                Err(_) => Err(ParseError::custom("expected end of BER constructed contents")),
+            }
+        }
+    }
+}
+
+impl<Output: OutputBuf> Serializer<Output, ()> for BerEndFmt {
+    fn serialize_into(&self, _value: &(), _obuf: &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+    }
+}
+
+impl Prepare<()> for BerEndFmt {
+    fn prepare(&self, _value: &()) -> Result<usize, PreSerializeError> {
+        Ok(0)
+    }
+}
+
+impl ByteLen<()> for BerEndFmt {
+    fn length(&self, _value: &()) -> usize {
+        0
+    }
+}
 
 /// A parsed value together with the exact octets consumed for it.
 ///
@@ -115,19 +274,9 @@ impl<C: SpecCombinator + Productive> Productive for Capture<C> {
     }
 }
 
-/// End marker for a schema-defined BER constructed value.
-pub type BerEndFmt = Empty;
-
-/// Generated SEQUENCE field chains can end in `Eof` for both DER and BER by importing the
-/// encoding-rule module's notation.
-pub type Eof = BerEndFmt;
-
-#[allow(non_upper_case_globals)]
-pub const Eof: Eof = Empty;
-
 type BerAnyWireType = (
     Tag,
-    Sum<(BerLength, Sum<Seq<u8>, Sum<(Seq<Captured<AnySpec>>, (u8, u8)), Never>>), Never>,
+    Sum<(BerLength, Sum<Seq<u8>, Sum<(Seq<Captured<AnySpec>>, EocValue), Never>>), Never>,
 );
 
 type BerAnyRawBodyFmt<Rec> = Bind<
@@ -426,7 +575,7 @@ fn flatten_captured_any_contents(children: Vec<CapturedAnyOwned>) -> (content: V
 
 #[cfg(feature = "alloc")]
 spec fn flattened_captured_any_result(
-    result: Option<(int, (Seq<Captured<AnySpec>>, (u8, u8)))>,
+    result: Option<(int, (Seq<Captured<AnySpec>>, EocValue))>,
 ) -> Option<(int, Seq<u8>)> {
     match result {
         Some((n, (children, _eoc))) => Some((n, captured_any_contents(children))),
@@ -437,7 +586,7 @@ spec fn flattened_captured_any_result(
 #[cfg(feature = "alloc")]
 fn parse_captured_any_children<I, P>(parser: &P, input: &I) -> (result: PResult<Vec<u8>>) where
     I: InputBuf,
-    P: Parser<I, PT = (Vec<CapturedAnyOwned>, (u8, u8)), PVal = (Seq<Captured<AnySpec>>, (u8, u8))>,
+    P: Parser<I, PT = (Vec<CapturedAnyOwned>, EocValue), PVal = (Seq<Captured<AnySpec>>, EocValue)>,
 
     requires
         parser.exec_inv(),
@@ -466,6 +615,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerAnyRecBody {
         use crate::core::exec::bridge_lemmas::*;
 
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use crate::asn1::tag::lemma_const_tag_fmt_exec_inv;
         broadcast use lemma_parser_congruent_reflexive;
 
         let _ = ibuf.len();
@@ -506,6 +656,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerAnyRecBody {
                 }
                 let repeated = Repeat(child, EOC);
                 proof {
+                    lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&EOC);
                     lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                     lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
                     reveal(parser_congruent);

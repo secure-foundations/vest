@@ -27,7 +27,7 @@ use vstd::prelude::*;
 #[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
-use super::any::{EocFmt, EOC};
+use super::any::{EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -35,7 +35,7 @@ verus! {
 
 type BerOctetStringWireType = (
     Tag,
-    Sum<(usize, Seq<u8>), Sum<(BerLength, Sum<Seq<Seq<u8>>, (Seq<Seq<u8>>, (u8, u8))>), Never>>,
+    Sum<(usize, Seq<u8>), Sum<(BerLength, Sum<Seq<Seq<u8>>, (Seq<Seq<u8>>, EocValue)>), Never>>,
 );
 
 type BerOctetStringBodyFmt<Rec> = Mapped<
@@ -359,7 +359,7 @@ spec fn flattened_result(r: Option<(int, Seq<Seq<u8>>)>) -> Option<(int, Seq<u8>
     }
 }
 
-spec fn flattened_result_eoc(r: Option<(int, (Seq<Seq<u8>>, (u8, u8)))>) -> Option<(int, Seq<u8>)> {
+spec fn flattened_result_eoc(r: Option<(int, (Seq<Seq<u8>>, EocValue))>) -> Option<(int, Seq<u8>)> {
     match r {
         Some((n, (segments, _eoc))) => Some((n, segments.flatten())),
         None => None,
@@ -387,7 +387,7 @@ fn parse_segments_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>>) w
 #[cfg(feature = "alloc")]
 fn parse_segments_eoc_flatten<I, P>(parser: &P, ibuf: &I) -> (r: PResult<Vec<u8>>) where
     I: InputBuf,
-    P: Parser<I, PT = (Vec<Vec<u8>>, (u8, u8)), PVal = (Seq<Seq<u8>>, (u8, u8))>,
+    P: Parser<I, PT = (Vec<Vec<u8>>, EocValue), PVal = (Seq<Seq<u8>>, EocValue)>,
 
     requires
         parser.exec_inv(),
@@ -417,6 +417,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
         use crate::combinators::congruence::*;
 
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use crate::asn1::tag::lemma_const_tag_fmt_exec_inv;
         broadcast use lemma_parser_congruent_reflexive;
 
         let _ = ibuf.len();
@@ -468,6 +469,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
                 BerLength::Indefinite => {
                     let repeated = Repeat(child, EOC);
                     proof {
+                        lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&EOC);
                         lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                         lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
                         reveal(parser_congruent);

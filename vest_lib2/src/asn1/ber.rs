@@ -236,6 +236,28 @@ mod tests {
     }
 
     #[test]
+    fn eoc_is_exactly_the_canonical_tag_and_zero_length_octet() {
+        let input = [0x00, 0x00, 0xff];
+        assert_eq!(EOC.parse(&&input[..]).unwrap(), (2, (TagFmt::EOC, 0u8)),);
+
+        for invalid in [
+            &[0x00][..],
+            &[0x00, 0x01],
+            &[0x20, 0x00],
+            &[0x40, 0x00],
+            &[0x1f, 0x00, 0x00],
+        ] {
+            assert!(EOC.parse(&invalid).is_err());
+        }
+
+        let value = (TagFmt::EOC, 0u8);
+        let mut output = [0xff; 2];
+        assert_eq!(EOC.prepare(&value).unwrap(), output.len());
+        EOC.serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0x00, 0x00]);
+    }
+
+    #[test]
     fn ber_sequence_parses_definite_and_indefinite_schema_bodies() {
         let format = integer_fields_sequence();
         let definite = [0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];

@@ -29,7 +29,7 @@ use vstd::prelude::*;
 #[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
-use super::any::{EocFmt, EOC};
+use super::any::{EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -39,7 +39,7 @@ type BerBitStringWireType = (
     Tag,
     Sum<
         (usize, BitStringSpec),
-        Sum<(BerLength, Sum<Seq<BitStringSpec>, (Seq<BitStringSpec>, (u8, u8))>), Never>,
+        Sum<(BerLength, Sum<Seq<BitStringSpec>, (Seq<BitStringSpec>, EocValue)>), Never>,
     >,
 );
 
@@ -460,7 +460,7 @@ spec fn flattened_bit_string_result(result: Option<(int, Seq<BitStringSpec>)>) -
 }
 
 spec fn flattened_bit_string_eoc_result(
-    result: Option<(int, (Seq<BitStringSpec>, (u8, u8)))>,
+    result: Option<(int, (Seq<BitStringSpec>, EocValue))>,
 ) -> Option<(int, BitStringSpec)> {
     match result {
         Some((n, (segments, _eoc))) if ber_bit_string_segments_wf(segments) => {
@@ -499,7 +499,7 @@ fn parse_bit_string_segments_eoc<I, P>(parser: &P, ibuf: &I) -> (result: PResult
     BitStringOwned,
 >) where
     I: InputBuf,
-    P: Parser<I, PT = (Vec<BitStringOwned>, (u8, u8)), PVal = (Seq<BitStringSpec>, (u8, u8))>,
+    P: Parser<I, PT = (Vec<BitStringOwned>, EocValue), PVal = (Seq<BitStringSpec>, EocValue)>,
 
     requires
         parser.exec_inv(),
@@ -535,6 +535,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerBitStringRecBody {
         use crate::core::exec::bridge_lemmas::*;
 
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use crate::asn1::tag::lemma_const_tag_fmt_exec_inv;
         broadcast use lemma_parser_congruent_reflexive;
 
         let _ = ibuf.len();
@@ -582,6 +583,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerBitStringRecBody {
                 BerLength::Indefinite => {
                     let repeated = Repeat(child, EOC);
                     proof {
+                        lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&EOC);
                         lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                         lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
                         reveal(parser_congruent);
