@@ -6,19 +6,18 @@ use crate::combinators::{
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::parser::*;
 use crate::core::exec::{
-    ByteLen, OutputBuf, PResult, ParseError, ParseErrorKind, Parser, PreSerializeError, Prepare,
-    Serializer,
+    ByteLen, OutputBuf, PResult, Parser, PreSerializeError, Prepare, Serializer,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
-use super::any::{EocFmt, EOC};
+use super::any::{parse_discard_eoc, EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
 verus! {
 
-type BerSequenceWireType<T> = (BerLength, Sum<T, (T, (u8, u8))>);
+type BerSequenceWireType<T> = (BerLength, Sum<T, (T, EocValue)>);
 
 type BerSequenceFmt__<C> = Mapped<
     PrefixTagged<
@@ -31,9 +30,9 @@ type BerSequenceFmt__<C> = Mapped<
 
 /// BER `SEQUENCE` accepting definite and indefinite outer length forms.
 ///
-/// The schema-specific `content` format parses the sequence components. Definite contents are
-/// bounded by [`ExactLen`], while indefinite contents are followed by [`EOC`]. Serialization is
-/// normalized to the definite form.
+/// `content` ends in [`super::BerEndFmt`]. [`ExactLen`] makes that marker observe the end of a
+/// bounded definite body; under indefinite framing it recognizes EOC without consuming it, after
+/// which [`Pair`] consumes EOC. Serialization is normalized to definite-length BER.
 pub open spec fn ber_sequence_fmt<C: SpecCombinator>(tag: Tag, content: C) -> BerSequenceFmt__<C> {
     #[verusfmt::skip]
     Mapped {
@@ -50,11 +49,10 @@ pub open spec fn ber_sequence_fmt<C: SpecCombinator>(tag: Tag, content: C) -> Be
                     L(value) => value,
                     R((value, _eoc)) => value,
                 },
-            |value: C::T|
-                {
-                    let len = content.byte_len(value) as usize;
-                    (BerLength::Definite(len), L(value))
-                },
+            |value: C::T| {
+                let len = content.byte_len(value) as usize;
+                (BerLength::Definite(len), L(value))
+            },
         ),
     }
 }
@@ -66,8 +64,8 @@ pub open spec fn ber_sequence_normalized_fmt<C>(tag: Tag, content: C) -> ASN1Fmt
 
 /// BER `SEQUENCE` codec with a configurable outer tag.
 ///
-/// Parsing accepts either a definite-length schema body or the same body followed by [`EOC`]
-/// under indefinite-length framing. Serialization always emits definite-length BER.
+/// Parsing accepts definite and indefinite framing for one schema body. Serialization always
+/// emits the normalized definite-length form.
 #[derive(Copy)]
 pub struct BerSequenceFmt<C>(pub Tag, pub C);
 
@@ -186,7 +184,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_len(&self, value: Self::SVal) {
-            ber_sequence_fmt(self.0, self.1).lemma_serialize_len(value);
+            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_len(value);
         }
     }
 
@@ -226,15 +224,36 @@ mod derived_proofs {
     }
 
     impl<C> SPRoundTripDps for BerSequenceFmt<C> where
-        C: SpecCombinator + GoodSerializer + EquivSerializers + NonTailFmt + SPRoundTripDps,
+        C: SpecCombinator + GoodSerializer + EquivSerializers + SPRoundTripDps,
      {
         open spec fn unambiguous(&self) -> bool {
-            &&& self.1.sp_roundtrip_inv()
-            &&& self.1.serialize_dps_inv()
+            ber_sequence_normalized_fmt(self.0, self.1).unambiguous()
         }
 
         proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-            ber_sequence_fmt(self.0, self.1).theorem_serialize_dps_parse_roundtrip(value, obuf);
+            broadcast use vstd::seq_lib::group_seq_properties;
+
+            let normalized = ber_sequence_normalized_fmt(self.0, self.1);
+            normalized.theorem_serialize_dps_parse_roundtrip(value, obuf);
+            let len = self.1.byte_len(value) as usize;
+            let exact = ExactLen(len, self.1);
+            exact.theorem_serialize_dps_parse_roundtrip(value, obuf);
+            let content_suffix = exact.spec_serialize_dps(value, obuf);
+            BerLengthFmt.theorem_serialize_dps_parse_roundtrip(
+                BerLength::Definite(len),
+                content_suffix,
+            );
+            let length_suffix = BerLengthFmt.spec_serialize_dps(
+                BerLength::Definite(len),
+                content_suffix,
+            );
+            BerLengthFmt.lemma_serialize_dps_prepend(BerLength::Definite(len), content_suffix);
+            BerLengthFmt.lemma_serialize_dps_len(BerLength::Definite(len), content_suffix);
+            let length_len = BerLengthFmt.byte_len(BerLength::Definite(len)) as int;
+            TagFmt.theorem_serialize_dps_parse_roundtrip(self.0, length_suffix);
+            TagFmt.lemma_serialize_dps_prepend(self.0, length_suffix);
+            TagFmt.lemma_serialize_dps_len(self.0, length_suffix);
+
         }
     }
 
@@ -263,8 +282,16 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
         let (content_len, value) = match length {
             BerLength::Definite(len) => ExactLen(len, self.1).parse(&content)?,
             BerLength::Indefinite => {
-                let (n, (value, _eoc)) = Pair(self.1, EOC).parse(&content)?;
-                (n, value)
+                let framed = Pair(self.1, EOC);
+                proof {
+                    crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(
+                        &EOC,
+                    );
+                    crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(
+                        &framed,
+                    );
+                }
+                parse_discard_eoc(&framed, &content)?
             },
         };
         let total = tag_len + length_len + content_len;

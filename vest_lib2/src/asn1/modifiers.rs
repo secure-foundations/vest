@@ -71,7 +71,7 @@ impl<C: Copy, const DER: bool> Retaggable for ASN1Fmt<C, DER> {
 }
 
 /// Supports IMPLICIT tagging of a BER `SEQUENCE` or EXPLICIT wrapper without losing its
-/// definite/indefinite-length parser.
+/// definite/indefinite-length framing.
 ///
 /// Retagging replaces the tag class and number, forces the required constructed form, and
 /// preserves the schema-defined content format.
