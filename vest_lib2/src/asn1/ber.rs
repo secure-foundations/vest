@@ -49,7 +49,7 @@ pub type Enumerated16TlvFmt = ASN1Fmt<Integer16Fmt, BER>;
 
 pub type ObjectIdentifierTlvFmt = ASN1Fmt<ObjectIdentifierFmt, BER>;
 
-pub type RealTlvFmt = ASN1Fmt<RealFmt, BER>;
+pub type RealTlvFmt = ASN1Fmt<RealFmt<BER>, BER>;
 
 pub type BitStringTlvFmt = BerBitStringFmt<MAX_RECURSION_DEPTH>;
 
@@ -100,7 +100,7 @@ pub const OBJECT_IDENTIFIER: ObjectIdentifierTlvFmt = ASN1Fmt(
     ObjectIdentifierFmt,
 );
 
-pub const REAL: RealTlvFmt = ASN1Fmt(TagFmt::REAL, RealFmt);
+pub const REAL: RealTlvFmt = ASN1Fmt(TagFmt::REAL, RealFmt::<BER>);
 
 pub const BIT_STRING: BitStringTlvFmt = BerBitStringFmt(TagFmt::BIT_STRING);
 

@@ -204,9 +204,12 @@ pub struct EnumeratedFmt;
 #[derive(Clone, Copy)]
 pub struct ObjectIdentifierFmt;
 
-/// ASN.1 DER REAL contents format.
+/// ASN.1 REAL contents format.
+///
+/// `DER = true` accepts only the canonical DER forms. `DER = false` accepts the
+/// additional binary and ISO 6093 decimal forms permitted by BER.
 #[derive(Clone, Copy)]
-pub struct RealFmt;
+pub struct RealFmt<const DER: bool = true>;
 
 /// ASN.1 BIT STRING contents format.
 ///
