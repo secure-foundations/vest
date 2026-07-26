@@ -9,6 +9,33 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Disjointness is symmetric, but symmetry is deliberately not broadcast: broadcasting it
+/// creates a quantifier-instantiation cycle with every directional decomposition rule below.
+pub proof fn lemma_disjoint_symmetric<Left: SpecParser, Right: SpecParser>(left: Left, right: Right)
+    requires
+        disjoint_domains(left, right),
+    ensures
+        disjoint_domains(right, left),
+{
+    reveal(disjoint_domains);
+}
+
+/// [`Void`] accepts no input and is therefore disjoint from every parser.
+pub broadcast proof fn lemma_disjoint_void_left<Other: SpecParser>(void: Void, other: Other)
+    ensures
+        #[trigger] disjoint_domains(void, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// Every parser is disjoint from [`Void`].
+pub broadcast proof fn lemma_disjoint_void_right<Other: SpecParser>(other: Other, void: Void)
+    ensures
+        #[trigger] disjoint_domains(other, void),
+{
+    reveal(disjoint_domains);
+}
+
 /// Two [`Const`] parsers with the same inner parser but different values are disjoint.
 pub broadcast proof fn lemma_disjoint_const<Inner: SpecParser>(
     tag1: Const<Inner, Inner::PVal>,
@@ -121,6 +148,103 @@ pub broadcast proof fn lemma_disjoint_tuple<U: SpecParser, U1: SpecParser, V1: S
     reveal(disjoint_domains);
 }
 
+/// A tuple parser is disjoint from another parser if its first component is.
+pub broadcast proof fn lemma_disjoint_tuple_left<U1: SpecParser, V1: SpecParser, U: SpecParser>(
+    tuple: Pair<U1, V1>,
+    other: U,
+)
+    requires
+        disjoint_domains(tuple.0, other),
+    ensures
+        #[trigger] disjoint_domains(tuple, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// A dependent tuple is disjoint from another parser if its head parser is.
+pub broadcast proof fn lemma_disjoint_bind<
+    U: SpecParser,
+    Head: SpecParser,
+    Tail: SpecMap<Input = Head::PVal>,
+>(other: U, bind: Bind<Head, Tail>) where Tail::Output: SpecParser
+    requires
+        disjoint_domains(other, bind.0),
+    ensures
+        #[trigger] disjoint_domains(other, bind),
+{
+    reveal(disjoint_domains);
+}
+
+/// A dependent tuple is disjoint from another parser if its head parser is.
+pub broadcast proof fn lemma_disjoint_bind_left<
+    Head: SpecParser,
+    Tail: SpecMap<Input = Head::PVal>,
+    U: SpecParser,
+>(bind: Bind<Head, Tail>, other: U) where Tail::Output: SpecParser
+    requires
+        disjoint_domains(bind.0, other),
+    ensures
+        #[trigger] disjoint_domains(bind, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// An implicit dependent parser is disjoint from another parser if its head parser is.
+pub broadcast proof fn lemma_disjoint_implicit<
+    U: SpecParser,
+    Head: SpecParser,
+    Tail: DepCombinator<Key = Head::PVal>,
+>(other: U, implicit: Implicit<Head, Tail>) where Tail::Body: SpecParser<PVal = Tail::Val>
+    requires
+        disjoint_domains(other, implicit.0),
+    ensures
+        #[trigger] disjoint_domains(other, implicit),
+{
+    reveal(disjoint_domains);
+}
+
+/// An implicit dependent parser is disjoint from another parser if its head parser is.
+pub broadcast proof fn lemma_disjoint_implicit_left<
+    Head: SpecParser,
+    Tail: DepCombinator<Key = Head::PVal>,
+    U: SpecParser,
+>(implicit: Implicit<Head, Tail>, other: U) where Tail::Body: SpecParser<PVal = Tail::Val>
+    requires
+        disjoint_domains(implicit.0, other),
+    ensures
+        #[trigger] disjoint_domains(implicit, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// An [`AndThen`] parser is disjoint from another parser if its byte-source parser is.
+pub broadcast proof fn lemma_disjoint_and_then<
+    U: SpecParser,
+    Head: SpecParser<PVal = Seq<u8>>,
+    Tail: SpecParser,
+>(other: U, and_then: AndThen<Head, Tail>)
+    requires
+        disjoint_domains(other, and_then.0),
+    ensures
+        #[trigger] disjoint_domains(other, and_then),
+{
+    reveal(disjoint_domains);
+}
+
+/// An [`AndThen`] parser is disjoint from another parser if its byte-source parser is.
+pub broadcast proof fn lemma_disjoint_and_then_left<
+    Head: SpecParser<PVal = Seq<u8>>,
+    Tail: SpecParser,
+    U: SpecParser,
+>(and_then: AndThen<Head, Tail>, other: U)
+    requires
+        disjoint_domains(and_then.0, other),
+    ensures
+        #[trigger] disjoint_domains(and_then, other),
+{
+    reveal(disjoint_domains);
+}
+
 /// Two tuples are disjoint if their first parsers consume equal bytes and their second parsers are disjoint.
 pub broadcast proof fn lemma_disjoint_tuple_2<
     A: SpecParser,
@@ -155,6 +279,21 @@ pub broadcast proof fn lemma_disjoint_preceded<
     reveal(disjoint_domains);
 }
 
+/// A [`Preceded`] parser is disjoint from another parser if its prefix is.
+pub broadcast proof fn lemma_disjoint_preceded_left<
+    U1: SpecParser,
+    V1: SpecParser,
+    U: SpecParser,
+    const CHECK: bool,
+>(preceded: Preceded<U1, U1::PVal, V1, CHECK>, other: U)
+    requires
+        disjoint_domains(preceded.a, other),
+    ensures
+        #[trigger] disjoint_domains(preceded, other),
+{
+    reveal(disjoint_domains);
+}
+
 /// A [`Terminated`] parser is disjoint from another parser if its prefix is.
 pub broadcast proof fn lemma_disjoint_terminated<
     U: SpecParser,
@@ -166,6 +305,21 @@ pub broadcast proof fn lemma_disjoint_terminated<
         disjoint_domains(p, p1.a),
     ensures
         #[trigger] disjoint_domains(p, p1),
+{
+    reveal(disjoint_domains);
+}
+
+/// A [`Terminated`] parser is disjoint from another parser if its content parser is.
+pub broadcast proof fn lemma_disjoint_terminated_left<
+    U1: SpecParser,
+    V1: SpecParser,
+    U: SpecParser,
+    const CHECK: bool,
+>(terminated: Terminated<U1, V1, V1::PVal, CHECK>, other: U)
+    requires
+        disjoint_domains(terminated.a, other),
+    ensures
+        #[trigger] disjoint_domains(terminated, other),
 {
     reveal(disjoint_domains);
 }
@@ -246,6 +400,20 @@ pub broadcast proof fn lemma_disjoint_choice<S1: SpecParser, S2: SpecParser, S3:
     reveal(disjoint_domains);
 }
 
+/// A [`Choice`] parser is disjoint from another parser if both branches are.
+pub broadcast proof fn lemma_disjoint_choice_left<S1: SpecParser, S2: SpecParser, S3: SpecParser>(
+    choice: Choice<S1, S2>,
+    other: S3,
+)
+    requires
+        disjoint_domains(choice.0, other),
+        disjoint_domains(choice.1, other),
+    ensures
+        #[trigger] disjoint_domains(choice, other),
+{
+    reveal(disjoint_domains);
+}
+
 /// An [`Alt`] parser is disjoint from another parser if both branches are.
 ///
 /// ## NOTE
@@ -261,6 +429,21 @@ pub broadcast proof fn lemma_disjoint_alt<
         disjoint_domains(other, alt.1),
     ensures
         #[trigger] disjoint_domains(other, alt),
+{
+    reveal(disjoint_domains);
+}
+
+/// An [`Alt`] parser is disjoint from another parser if both branches are.
+pub broadcast proof fn lemma_disjoint_alt_left<
+    S1: SpecParser,
+    S2: SpecParser<PVal = S1::PVal>,
+    S3: SpecParser<PVal = S1::PVal>,
+>(alt: Alt<S1, S2>, other: S3)
+    requires
+        disjoint_domains(alt.0, other),
+        disjoint_domains(alt.1, other),
+    ensures
+        #[trigger] disjoint_domains(alt, other),
 {
     reveal(disjoint_domains);
 }
@@ -281,6 +464,22 @@ pub broadcast proof fn lemma_disjoint_optional<P: SpecParser, A: SpecParser, B: 
 
 }
 
+/// An [`Optional<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
+pub broadcast proof fn lemma_disjoint_optional_left<A: SpecParser, B: SpecParser, P: SpecParser>(
+    optional: Optional<A, B>,
+    p: P,
+)
+    requires
+        disjoint_domains(optional.0, p),
+        disjoint_domains(optional.1, p),
+    ensures
+        #[trigger] disjoint_domains(optional, p),
+{
+    reveal(disjoint_domains);
+    broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
+
+}
+
 /// A [`Repeat<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
 pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: SpecParser>(
     p: P,
@@ -291,6 +490,23 @@ pub broadcast proof fn lemma_disjoint_repeat<P: SpecParser, A: SpecParser, B: Sp
         disjoint_domains(p, repeat.1),
     ensures
         #[trigger] disjoint_domains(p, repeat),
+{
+    reveal(<super::Star::<_> as SpecParser>::spec_parse);
+    reveal(disjoint_domains);
+    broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
+
+}
+
+/// A [`Repeat<A, B>`] parser is disjoint from another parser if both `A` and `B` are.
+pub broadcast proof fn lemma_disjoint_repeat_left<A: SpecParser, B: SpecParser, P: SpecParser>(
+    repeat: Repeat<A, B>,
+    p: P,
+)
+    requires
+        disjoint_domains(repeat.0, p),
+        disjoint_domains(repeat.1, p),
+    ensures
+        #[trigger] disjoint_domains(repeat, p),
 {
     reveal(<super::Star::<_> as SpecParser>::spec_parse);
     reveal(disjoint_domains);
@@ -317,6 +533,18 @@ pub broadcast proof fn lemma_disjoint_eof<P: Productive>(p: P, eof: Eof)
             assert(input == Seq::<u8>::empty());
         }
     }
+}
+
+/// [`Eof`] is disjoint from a productive parser.
+pub broadcast proof fn lemma_disjoint_eof_left<P: Productive>(eof: Eof, p: P)
+    requires
+        p.productive_inv(),
+        p.safe_inv(),
+    ensures
+        #[trigger] disjoint_domains(eof, p),
+{
+    lemma_disjoint_eof(p, eof);
+    lemma_disjoint_symmetric(p, eof);
 }
 
 /// An [`OptionalEnd<A>`] parser is disjoint from another parser if its inner parser is
@@ -396,8 +624,37 @@ pub broadcast proof fn lemma_disjoint_ref_right<Other: SpecParser, Inner: SpecPa
     reveal(disjoint_domains);
 }
 
-/// Two borrowing adapters are disjoint whenever their underlying parsers are.
-pub broadcast proof fn lemma_disjoint_refs<Left: SpecParser, Right: SpecParser>(
+/// Naming adaptation does not change a parser's accepted byte domain.
+pub broadcast proof fn lemma_disjoint_named_left<Inner: SpecParser, Other: SpecParser>(
+    named: Named<Inner>,
+    other: Other,
+)
+    requires
+        disjoint_domains(named.1, other),
+    ensures
+        #[trigger] disjoint_domains(named, other),
+{
+    reveal(disjoint_domains);
+}
+
+/// Naming adaptation does not change a parser's accepted byte domain.
+pub broadcast proof fn lemma_disjoint_named_right<Other: SpecParser, Inner: SpecParser>(
+    other: Other,
+    named: Named<Inner>,
+)
+    requires
+        disjoint_domains(other, named.1),
+    ensures
+        #[trigger] disjoint_domains(other, named),
+{
+    reveal(disjoint_domains);
+}
+
+/// Compatibility helper for two borrowing adapters.
+///
+/// This fact is kept directly callable but is not broadcast; the directional `Ref` rules derive
+/// it without adding another competing trigger path.
+pub proof fn lemma_disjoint_refs<Left: SpecParser, Right: SpecParser>(
     left: Ref<Left>,
     right: Ref<Right>,
 )
@@ -409,7 +666,80 @@ pub broadcast proof fn lemma_disjoint_refs<Left: SpecParser, Right: SpecParser>(
     reveal(disjoint_domains);
 }
 
+/// Semantic leaf facts that do not recursively decompose parser syntax.
+pub broadcast group disjoint_leaf_lemmas {
+    lemma_disjoint_void_left,
+    lemma_disjoint_void_right,
+    lemma_disjoint_const,
+    lemma_disjoint_prefix_tagged,
+    lemma_disjoint_refined,
+    lemma_disjoint_const_refined,
+    lemma_disjoint_cond,
+}
+
+/// Domain-preserving or domain-narrowing wrappers on the left of `disjoint_domains`.
+pub broadcast group disjoint_left_wrapper_lemmas {
+    lemma_disjoint_refined_left,
+    lemma_disjoint_mapped_left,
+    lemma_disjoint_bimap_left,
+    lemma_disjoint_ref_left,
+    lemma_disjoint_named_left,
+}
+
+/// Domain-preserving or domain-narrowing wrappers on the right of `disjoint_domains`.
+pub broadcast group disjoint_right_wrapper_lemmas {
+    lemma_disjoint_refined_right,
+    lemma_disjoint_mapped,
+    lemma_disjoint_bimap,
+    lemma_disjoint_ref_right,
+    lemma_disjoint_named_right,
+}
+
+/// Syntax-directed decomposition of a right-hand continuation.
+pub broadcast group disjoint_right_continuation_lemmas {
+    lemma_disjoint_tuple,
+    lemma_disjoint_bind,
+    lemma_disjoint_implicit,
+    lemma_disjoint_and_then,
+    lemma_disjoint_preceded,
+    lemma_disjoint_terminated,
+    lemma_disjoint_choice,
+    lemma_disjoint_alt,
+    lemma_disjoint_optional,
+    lemma_disjoint_repeat,
+}
+
+/// Reverse-orientation decomposition, available explicitly when a format is left-associated.
+pub broadcast group disjoint_left_composite_lemmas {
+    lemma_disjoint_tuple_left,
+    lemma_disjoint_bind_left,
+    lemma_disjoint_implicit_left,
+    lemma_disjoint_and_then_left,
+    lemma_disjoint_preceded_left,
+    lemma_disjoint_terminated_left,
+    lemma_disjoint_choice_left,
+    lemma_disjoint_alt_left,
+    lemma_disjoint_optional_left,
+    lemma_disjoint_repeat_left,
+}
+
+/// Boundary rules with productivity/safety side conditions.
+pub broadcast group disjoint_boundary_lemmas {
+    lemma_disjoint_eof,
+    lemma_disjoint_eof_left,
+    lemma_disjoint_option_end,
+    lemma_disjoint_repeat_till_end,
+}
+
+/// Canonical automation for right-associated formats.
+///
+/// Every recursive rule reduces a constructor visible in the trigger. This includes the
+/// right-oriented `OptionalEnd` and `RepeatTillEnd` rules: although they expose productivity and
+/// safety side conditions, they still strictly peel the triggered continuation. Reverse-oriented
+/// rules remain opt-in so that automation cannot oscillate between equivalent orientations.
 pub broadcast group disjointness_lemmas {
+    lemma_disjoint_void_left,
+    lemma_disjoint_void_right,
     lemma_disjoint_choice,
     lemma_disjoint_alt,
     lemma_disjoint_const,
@@ -420,7 +750,9 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_const_refined,
     lemma_disjoint_cond,
     lemma_disjoint_tuple,
-    lemma_disjoint_tuple_2,
+    lemma_disjoint_bind,
+    lemma_disjoint_implicit,
+    lemma_disjoint_and_then,
     lemma_disjoint_preceded,
     lemma_disjoint_terminated,
     lemma_disjoint_mapped,
@@ -434,7 +766,8 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_repeat_till_end,
     lemma_disjoint_ref_left,
     lemma_disjoint_ref_right,
-    lemma_disjoint_refs,
+    lemma_disjoint_named_left,
+    lemma_disjoint_named_right,
 }
 
 #[cfg(verus_only)]
@@ -477,6 +810,31 @@ proof fn test_disjoinness() {
         ),
     );
     assert(fmt5.unambiguous());
+}
+
+#[cfg(verus_only)]
+proof fn test_directional_disjointness_normalization() {
+    broadcast use disjointness_lemmas;
+
+    let first = Const(U8, 1u8);
+    let second = Const(U8, 2u8);
+    let third = Const(U8, 3u8);
+
+    let tuple = Pair(second, U8);
+    assert(disjoint_domains(first, tuple));
+
+    let dependent = Bind(second, |_tag: u8| U8);
+    assert(disjoint_domains(first, dependent));
+
+    let named = Named("second", Ref(Refined(second, |_value: u8| true)));
+    assert(disjoint_domains(first, named));
+
+    let alternatives = Choice(second, third);
+    assert(disjoint_domains(first, alternatives));
+
+    broadcast use disjoint_left_composite_lemmas;
+
+    assert(disjoint_domains(alternatives, first));
 }
 
 } // verus!
