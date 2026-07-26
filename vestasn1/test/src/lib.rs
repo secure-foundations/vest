@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod generated;
+pub mod generated_ber;
 
 use vest_lib2::core::exec::parser::{PResult, Parser};
 use vstd::prelude::*;
@@ -64,6 +65,10 @@ mod tests {
         assert_eq!(consumed, encoded.len());
         assert!(envelope.header.flag);
         assert_eq!(envelope.payload, Some(&[0xaa, 0xbb][..]));
+
+        let mut output = vec![0; ENVELOPE_FMT().prepare(&envelope).unwrap()];
+        ENVELOPE_FMT().serialize(&envelope, output.as_mut_slice());
+        assert_eq!(output, encoded);
     }
 
     #[test]
@@ -72,6 +77,10 @@ mod tests {
         let input = encoded.as_slice();
         let (_, selection) = SELECTION_FMT().parse(&input).unwrap();
         assert!(matches!(selection, Selection::Flag(true)));
+
+        let mut output = vec![0; SELECTION_FMT().prepare(&selection).unwrap()];
+        SELECTION_FMT().serialize(&selection, output.as_mut_slice());
+        assert_eq!(output, encoded);
     }
 
     #[test]
@@ -171,9 +180,97 @@ mod tests {
         ];
         let (_, record) = INLINE_RECORD_FMT().parse(&encoded.as_slice()).unwrap();
         assert_eq!(record.nested.payload, &[0xaa]);
-        assert!(matches!(
-            record.selected,
-            InlineRecordSelected::Flag(true)
-        ));
+        assert!(matches!(record.selected, InlineRecordSelected::Flag(true)));
+
+        let mut output = vec![0; INLINE_RECORD_FMT().prepare(&record).unwrap()];
+        INLINE_RECORD_FMT().serialize(&record, output.as_mut_slice());
+        assert_eq!(output, encoded);
+    }
+
+    #[test]
+    fn ber_generated_sequence_flattens_constructed_values_and_normalizes_output() {
+        use super::generated_ber as ber;
+
+        #[rustfmt::skip]
+        let encoded = [
+            0x30, 0x80, // indefinite Item SEQUENCE
+            0x24, 0x80, // constructed indefinite OCTET STRING
+            0x04, 0x02, 0xaa, 0xbb, 0x04, 0x01, 0xcc, 0x00, 0x00,
+            0xa0, 0x80, // [0] IMPLICIT constructed BIT STRING
+            0x03, 0x02, 0x00, 0xf0, 0x03, 0x02, 0x04, 0xa0, 0x00, 0x00,
+            0xa1, 0x80, // [1] IMPLICIT constructed UTF8String
+            0x04, 0x02, b'h', b'i', 0x04, 0x01, b'!', 0x00, 0x00,
+            0x00, 0x00, // Item EOC
+        ];
+        let (consumed, item) = ber::ITEM_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(consumed, encoded.len());
+        assert_eq!(item.payload, [0xaa, 0xbb, 0xcc]);
+        assert_eq!(item.bits.unused(), 4);
+        assert_eq!(item.bits.bits(), &[0xf0, 0xa0]);
+        assert_eq!(item.label, "hi!");
+        assert!(item.printable.is_none());
+        assert!(item.open.is_none());
+
+        let mut payload = vec![0; ber::PAYLOAD_FMT().prepare(&item.payload).unwrap()];
+        ber::PAYLOAD_FMT().serialize(&item.payload, payload.as_mut_slice());
+        assert_eq!(payload, [0x04, 0x03, 0xaa, 0xbb, 0xcc]);
+
+        let mut bits = vec![0; ber::BITS_FMT().prepare(&item.bits).unwrap()];
+        ber::BITS_FMT().serialize(&item.bits, bits.as_mut_slice());
+        assert_eq!(bits, [0x03, 0x03, 0x04, 0xf0, 0xa0]);
+
+        let mut label = vec![0; ber::LABEL_FMT().prepare(&item.label).unwrap()];
+        ber::LABEL_FMT().serialize(&item.label, label.as_mut_slice());
+        assert_eq!(label, [0x0c, 0x03, b'h', b'i', b'!']);
+
+        let mut item_output = vec![0; ber::ITEM_FMT().prepare(&item).unwrap()];
+        ber::ITEM_FMT().serialize(&item, item_output.as_mut_slice());
+        assert_eq!(
+            item_output,
+            [
+                0x30, 0x0f, 0x04, 0x03, 0xaa, 0xbb, 0xcc, 0x80, 0x03, 0x04, 0xf0, 0xa0, 0x81, 0x03,
+                b'h', b'i', b'!'
+            ]
+        );
+    }
+
+    #[test]
+    fn ber_generated_sequence_of_accepts_indefinite_length() {
+        use super::generated_ber as ber;
+
+        let encoded = [0x30, 0x80, 0x01, 0x01, 0xff, 0x01, 0x01, 0x00, 0x00, 0x00];
+        let (_, flags) = ber::FLAGS_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(flags, [true, false]);
+
+        let mut output = vec![0; ber::FLAGS_FMT().prepare(&flags).unwrap()];
+        ber::FLAGS_FMT().serialize(&flags, output.as_mut_slice());
+        assert_eq!(output, [0x30, 0x06, 0x01, 0x01, 0xff, 0x01, 0x01, 0x00]);
+    }
+
+    #[test]
+    fn ber_generated_any_preserves_indefinite_contents_then_serializes_definite() {
+        use super::generated_ber as ber;
+
+        let encoded = [0x30, 0x80, 0x01, 0x01, 0xff, 0x04, 0x01, 0xaa, 0x00, 0x00];
+        let (_, value) = ber::OPEN_VALUE_FMT().parse(&encoded.as_slice()).unwrap();
+        assert_eq!(value.tag(), TagFmt::SEQUENCE);
+        assert_eq!(value.content(), &[0x01, 0x01, 0xff, 0x04, 0x01, 0xaa]);
+
+        let mut output = vec![0; ber::OPEN_VALUE_FMT().prepare(&value).unwrap()];
+        ber::OPEN_VALUE_FMT().serialize(&value, output.as_mut_slice());
+        assert_eq!(output, [0x30, 0x06, 0x01, 0x01, 0xff, 0x04, 0x01, 0xaa]);
+
+        let nested = [
+            0x30, 0x80, // outer SEQUENCE
+            0x31, 0x80, 0x01, 0x01, 0xff, 0x00, 0x00, // inner SET, including EOC
+            0x00, 0x00,
+        ];
+        let (_, value) = ber::OPEN_VALUE_FMT().parse(&nested.as_slice()).unwrap();
+        assert_eq!(value.content(), &[0x31, 0x80, 0x01, 0x01, 0xff, 0x00, 0x00]);
+
+        let primitive_indefinite = [0x04, 0x80, 0x04, 0x01, 0xaa, 0x00, 0x00];
+        assert!(ber::OPEN_VALUE_FMT()
+            .parse(&primitive_indefinite.as_slice())
+            .is_err());
     }
 }

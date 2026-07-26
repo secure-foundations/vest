@@ -1,4 +1,23 @@
-use vestasn1::{compile, Error};
+use vestasn1::{compile, compile_with_options, CodegenOptions, EncodingRules, Error};
+
+fn compile_ber(source: &str) -> Result<String, Error> {
+    compile_with_options(
+        source,
+        CodegenOptions {
+            encoding_rules: EncodingRules::Ber,
+        },
+    )
+}
+
+fn assert_uses_broadcast_disjointness_only(generated: &str) {
+    assert!(!generated.contains("assert(disjoint_domains"));
+    assert!(!generated.contains("lemma_disjoint_"));
+    assert!(!generated
+        .lines()
+        .any(|line| line.contains(".inner") && line.contains(".unambiguous()")));
+    assert!(generated.contains("broadcast use disjointness_lemmas;"));
+    assert!(generated.contains("broadcast use asn1_disjointness_lemmas;"));
+}
 
 const BASIC_SCHEMA: &str = r#"
 Example DEFINITIONS EXPLICIT TAGS ::= BEGIN
@@ -26,11 +45,31 @@ fn generates_vest_der_formats() {
     assert!(generated.contains("Optional<Ref<PayloadFmt>, Eof>"));
     assert!(generated.contains("pub const fn MESSAGES_FMT() -> MessagesFmt"));
     assert!(generated.contains("pub type MessagesFmt = SequenceOfFmt<MessageFmt>;"));
-    assert!(generated.contains(
-        "Choice<ImplicitFmt<Ref<FlagFmt>>, ExplicitFmt<Ref<PayloadFmt>>>"
-    ));
+    assert!(generated.contains("Choice<ImplicitFmt<Ref<FlagFmt>>, ExplicitFmt<Ref<PayloadFmt>>>"));
     assert!(generated.contains("IMPLICIT(0u64, Ref(FLAG_FMT()))"));
-    assert!(!generated.contains("assert(disjoint_domains"));
+    assert_uses_broadcast_disjointness_only(&generated);
+}
+
+#[test]
+fn relies_on_broadcast_disjointness_for_multiway_choice() {
+    let generated = compile(
+        r#"
+Choices DEFINITIONS ::= BEGIN
+    Value ::= CHOICE {
+        flag [0] IMPLICIT BOOLEAN,
+        count [1] IMPLICIT INTEGER,
+        payload [2] EXPLICIT OCTET STRING,
+        nothing [3] IMPLICIT NULL,
+        text [4] EXPLICIT UTF8String,
+        identifier [5] EXPLICIT OBJECT IDENTIFIER
+    }
+END
+"#,
+    )
+    .unwrap();
+
+    assert_uses_broadcast_disjointness_only(&generated);
+    assert!(generated.contains("assert(VALUE_FMT().unambiguous());"));
 }
 
 #[test]
@@ -38,9 +77,7 @@ fn generates_verified_octet_string_size_constraint() {
     let generated =
         compile("Example DEFINITIONS ::= BEGIN Payload ::= OCTET STRING (SIZE (1..32)) END")
             .unwrap();
-    assert!(generated.contains(
-        "Refined<OctetStringTlvFmt, Size<true, 1, true, 32>>"
-    ));
+    assert!(generated.contains("Refined<OctetStringTlvFmt, Size<true, 1, true, 32>>"));
     assert!(generated.contains("Refined(OCTET_STRING, Size::<true, 1, true, 32>)"));
 }
 
@@ -48,21 +85,15 @@ fn generates_verified_octet_string_size_constraint() {
 fn generates_verified_integer_range_constraint() {
     let generated =
         compile("Example DEFINITIONS ::= BEGIN Version ::= INTEGER (0..2) END").unwrap();
-    assert!(generated.contains(
-        "Refined<IntegerTlvFmt, IntegerRange<true, 0, true, 2>>"
-    ));
+    assert!(generated.contains("Refined<IntegerTlvFmt, IntegerRange<true, 0, true, 2>>"));
     assert!(generated.contains("Refined(INTEGER, IntegerRange::<true, 0, true, 2>)"));
 }
 
 #[test]
 fn generates_verified_string_size_constraint() {
-    let generated = compile(
-        "Example DEFINITIONS ::= BEGIN Label ::= UTF8String (SIZE (1..32)) END",
-    )
-    .unwrap();
-    assert!(generated.contains(
-        "Refined<Utf8StringTlvFmt, Size<true, 1, true, 32>>"
-    ));
+    let generated =
+        compile("Example DEFINITIONS ::= BEGIN Label ::= UTF8String (SIZE (1..32)) END").unwrap();
+    assert!(generated.contains("Refined<Utf8StringTlvFmt, Size<true, 1, true, 32>>"));
     assert!(generated.contains("Refined(UTF8_STRING, Size::<true, 1, true, 32>)"));
 }
 
@@ -122,7 +153,11 @@ END
     .unwrap();
     assert!(generated.contains("pub struct Flags"));
     assert!(generated.contains("DefaultFmt<ImplicitFmt<EnabledFmt>, bool,"));
-    let left_aligned = generated.lines().map(str::trim_start).collect::<Vec<_>>().join("\n");
+    let left_aligned = generated
+        .lines()
+        .map(str::trim_start)
+        .collect::<Vec<_>>()
+        .join("\n");
     assert!(left_aligned.contains("inner:\nSEQUENCE(\nDEFAULT("));
     assert!(generated.contains("IMPLICIT(0u64, ENABLED_FMT())"));
     assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
@@ -246,9 +281,9 @@ END
 "#,
     )
     .unwrap_err();
-    assert!(error.to_string().contains(
-        "OBJECT IDENTIFIER value assignments are not supported yet"
-    ));
+    assert!(error
+        .to_string()
+        .contains("OBJECT IDENTIFIER value assignments are not supported yet"));
 }
 
 #[test]
@@ -318,12 +353,8 @@ fn preserves_and_generates_collection_size_constraints() {
     let generated =
         compile("Sized DEFINITIONS ::= BEGIN Values ::= SEQUENCE SIZE (1..MAX) OF BOOLEAN END")
             .unwrap();
-    assert!(generated.contains(
-        "Refined<SequenceOfFmt<BoolTlvFmt>, Size<true, 1, false, 0>>"
-    ));
-    assert!(generated.contains(
-        "Refined(SEQUENCE_OF(BOOLEAN), Size::<true, 1, false, 0>)"
-    ));
+    assert!(generated.contains("Refined<SequenceOfFmt<BoolTlvFmt>, Size<true, 1, false, 0>>"));
+    assert!(generated.contains("Refined(SEQUENCE_OF(BOOLEAN), Size::<true, 1, false, 0>)"));
 }
 
 #[test]
@@ -348,7 +379,11 @@ fn emits_explicit_notation_for_untagged_choice_and_any() {
 #[test]
 fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
-    let left_aligned = generated.lines().map(str::trim_start).collect::<Vec<_>>().join("\n");
+    let left_aligned = generated
+        .lines()
+        .map(str::trim_start)
+        .collect::<Vec<_>>()
+        .join("\n");
     assert!(left_aligned.contains(concat!(
         "DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,\n",
         "REQUIRED(Ref(IDENTIFIER_FMT()),\n",
@@ -362,4 +397,36 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
 fn checked_in_verified_fixture_is_fresh() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
     assert_eq!(generated, include_str!("../test/src/generated.rs"));
+}
+
+#[test]
+fn generates_ber_formats_with_owned_flattened_values() {
+    let generated = compile_ber(include_str!("../test/fixture_ber.asn1")).unwrap();
+    assert!(generated.contains("// Generated formats parse and serialize BER."));
+    assert!(generated.contains("use vest_lib2::asn1::ber::{"));
+    assert!(generated.contains("pub type Payload = Vec<u8>;"));
+    assert!(generated.contains("pub type Bits = vest_lib2::asn1::BitStringOwned;"));
+    assert!(generated.contains("pub type Label = String;"));
+    assert!(generated.contains("pub type OpenValue = vest_lib2::asn1::AnyOwned;"));
+    assert!(!generated.contains("assert(ITEM_FMT().sound_inv());"));
+    assert!(generated.contains("assert(ITEM_FMT().safe_inv());"));
+    assert!(generated.contains("assert(ITEM_FMT().unambiguous());"));
+    assert!(generated.contains("BerEndFmt"));
+    assert!(generated.contains("BER_END"));
+    assert_uses_broadcast_disjointness_only(&generated);
+}
+
+#[test]
+fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
+    let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
+    assert!(generated.contains("pub type Measurement<'a> = vest_lib2::asn1::Real<'a, BER>;"));
+    assert!(generated.contains("pub type MeasurementFmt = RealTlvFmt;"));
+    assert!(generated.contains("assert(MEASUREMENT_FMT().unambiguous());"));
+    assert!(!generated.contains("assert(MEASUREMENT_FMT().sound_inv());"));
+}
+
+#[test]
+fn checked_in_verified_ber_fixture_is_fresh() {
+    let generated = compile_ber(include_str!("../test/fixture_ber.asn1")).unwrap();
+    assert_eq!(generated, include_str!("../test/src/generated_ber.rs"));
 }

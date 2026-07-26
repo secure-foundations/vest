@@ -63,6 +63,23 @@ Fixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
         }
     }
 
+    AutomationChoice ::= CHOICE {
+        booleanValue [10] IMPLICIT BOOLEAN,
+        integerValue [11] IMPLICIT INTEGER,
+        octetsValue [12] IMPLICIT OCTET STRING,
+        nullValue [13] IMPLICIT NULL,
+        textValue [14] EXPLICIT UTF8String,
+        oidValue [15] EXPLICIT OBJECT IDENTIFIER
+    }
+
+    AutomationSequence ::= SEQUENCE {
+        prefix [20] IMPLICIT BOOLEAN OPTIONAL,
+        enabled [21] IMPLICIT BOOLEAN DEFAULT TRUE,
+        payload [22] EXPLICIT OCTET STRING OPTIONAL,
+        marker [23] IMPLICIT NULL,
+        selected [24] EXPLICIT AutomationChoice OPTIONAL
+    }
+
     featureEnabled Flag ::= TRUE
     answer Count ::= 42
     defaultColor Color ::= green

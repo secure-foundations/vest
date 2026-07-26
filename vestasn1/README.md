@@ -1,11 +1,12 @@
 # vestasn1
 
 `vestasn1` parses ASN.1 modules with [`synta-codegen`](https://crates.io/crates/synta-codegen)
-and generates DER formats built directly from `vest_lib2`'s verified ASN.1
-primitives and combinators.
+and generates BER or DER formats built directly from `vest_lib2`'s verified
+ASN.1 primitives and combinators. DER remains the default.
 
 ```console
 cargo run -- schema.asn1 -o generated.rs
+cargo run -- --rules ber schema.asn1 -o generated_ber.rs
 ```
 
 The output is a Rust/Verus module containing one `FooFmt` type and one
@@ -16,12 +17,25 @@ deterministic helper names. Verified bidirectional mappers hide Vest's internal
 nested tuple and `Sum` representations.
 
 The backend supports BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER,
-REAL, ANY, BIT/OCTET STRING, NULL, the Vest-supported character/time strings,
+ANY, BIT/OCTET STRING, NULL, the Vest-supported character/time strings,
 SEQUENCE, SEQUENCE OF, CHOICE, OPTIONAL components, BOOLEAN/ENUMERATED DEFAULT
 components, local type references, and explicit/implicit tags. Parsed byte
-strings, integers, REAL values, open types, and applicable strings borrow
-from the input. Serialization of nominal structures reverse-maps to field
-references, avoiding clones and temporary heap allocations.
+strings and applicable strings borrow from the input under DER. BER uses owned
+values where constructed encodings must be flattened: `Vec<u8>`, owned string
+wrappers, `BitStringOwned`, and `AnyOwned`. BER serializers deterministically
+normalize these values to primitive or definite-length encodings.
+
+Generated DER modules prove parser safety, soundness, and the library's
+destination-passing unambiguity invariant. Generated BER modules prove safety
+and unambiguity, but deliberately do not claim DER-style parser soundness.
+For BER `SEQUENCE`, the generator emits a definite body ending in the real
+`Eof` combinator and an indefinite body ending in the EOC-consuming
+`EOC_END`; both have the same semantic tuple. This keeps terminal
+`OPTIONAL`/`DEFAULT` fields compositional.
+
+REAL is supported under both rules. The zero-copy `Real<'a, DER>` value retains
+canonical DER contents; `Real<'a, BER>` additionally accepts BER binary
+bases/scaling/non-normalized mantissas and ISO 6093 NR1/NR2/NR3 decimal forms.
 
 IMPLICIT tags applied to CHOICE or ANY are promoted to EXPLICIT as required by
 their lack of a replaceable inherent tag. The generator analyzes effective tag
@@ -36,7 +50,7 @@ assignments are retained by the vendored Synta frontend but rejected by codegen
 until the backend has a suitable Verus const representation.
 
 `SET` and `SET OF` are currently rejected. Generic `SET OF` generation remains
-disabled until the backend has an allocation-free DER ordering strategy.
+disabled until rule-correct ordering and duplicate handling are implemented.
 Generated ENUMERATED executable values currently use the verified `i16`
 integer-content backend, so larger numeric members are rejected explicitly.
 A schema construct whose constraints or encoding semantics are not implemented
@@ -50,8 +64,9 @@ typed value assignments, named scalar values, and OID references directly in
 its AST. `SEQUENCE OF` is generated and `SET OF` remains rejected for the
 DER-ordering reason above.
 
-The checked-in fixture under `test/` exercises nominal values, inline helpers,
+The checked-in DER and BER fixtures under `test/` exercise nominal values, inline helpers,
 allocation-free slice serialization, tagging, OPTIONAL, DEFAULT, CHOICE,
-SEQUENCE OF, ENUMERATED, OID parsing and round trips, REAL, ANY, and a SIZE
-refinement. Run `make test` or `make verify` there to regenerate it before
+SEQUENCE OF, ENUMERATED, OID parsing and round trips, REAL, recursive
+indefinite-length ANY, constructed OCTET/BIT/character strings, and SIZE
+refinements. Run `make test` or `make verify` there to regenerate them before
 testing or verification.
