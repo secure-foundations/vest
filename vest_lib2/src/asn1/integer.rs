@@ -245,7 +245,7 @@ pub proof fn lemma_integer_fmt_unambiguous()
 
 #[derive(Copy, Clone)]
 pub struct BigInt<'a> {
-    raw: &'a [u8],
+    pub(crate) raw: &'a [u8],
 }
 
 proof fn lemma_large_nonnegative_integer(bytes: Seq<u8>)
@@ -276,7 +276,7 @@ proof fn lemma_large_nonnegative_integer(bytes: Seq<u8>)
     }
 }
 
-proof fn lemma_large_integer_outside_i64(bytes: Seq<u8>)
+pub(crate) proof fn lemma_large_integer_outside_i64(bytes: Seq<u8>)
     requires
         bytes.len() > 8,
         integer_bytes_wf(bytes),
@@ -300,12 +300,12 @@ proof fn lemma_large_integer_outside_i64(bytes: Seq<u8>)
 }
 
 impl<'a> BigInt<'a> {
-    pub closed spec fn view(&self) -> Seq<u8> {
+    pub open(crate) spec fn view(&self) -> Seq<u8> {
         self.raw.deep_view()
     }
 
     #[verifier::type_invariant]
-    spec fn wf(&self) -> bool {
+    pub(crate) open(crate) spec fn wf(&self) -> bool {
         integer_bytes_wf(self.view()) && self.view().len() > 8
     }
 
@@ -341,6 +341,18 @@ impl<'a> BigInt<'a> {
         }
         self.raw[0] >= 0x80
     }
+}
+
+pub(crate) proof fn lemma_integer_small_view(value: i64)
+    ensures
+        (Integer::Small { v: value }).deep_view() == value as int,
+{
+}
+
+pub(crate) proof fn lemma_integer_big_view(raw: BigInt<'_>)
+    ensures
+        (Integer::Big { raw }).deep_view() == int_from_be_bytes(raw.view()),
+{
 }
 
 #[derive(Copy, Clone)]

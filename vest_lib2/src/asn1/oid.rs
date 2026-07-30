@@ -240,20 +240,40 @@ impl ObjectIdentifier {
         Self { first, second, rest }
     }
 
-    pub fn first(&self) -> UInt {
+    pub fn first(&self) -> (first: UInt)
+        ensures
+            first == self.deep_view().first,
+    {
         self.first
     }
 
-    pub fn second(&self) -> UInt {
+    pub fn second(&self) -> (second: UInt)
+        ensures
+            second == self.deep_view().second,
+    {
         self.second
     }
 
     pub fn rest(&self) -> &[UInt] {
         self.rest.as_slice()
     }
+
+    pub(crate) fn rest_vec(&self) -> (rest: &Vec<UInt>)
+        ensures
+            rest.deep_view() == self.deep_view().rest,
+    {
+        &self.rest
+    }
+
+    pub(crate) fn combined_first_subidentifier(&self) -> (combined: UInt)
+        ensures
+            combined == oid_first_subidentifier(self.deep_view()),
+    {
+        oid_first_subidentifier_exec(self.first, self.second)
+    }
 }
 
-fn oid_first_subidentifier_exec(first: UInt, second: UInt) -> (combined: UInt)
+pub(crate) fn oid_first_subidentifier_exec(first: UInt, second: UInt) -> (combined: UInt)
     ensures
         combined == oid_first_subidentifier(
             ObjectIdentifierSpec { first, second, rest: Seq::empty() },

@@ -356,6 +356,16 @@ pub proof fn lemma_base128_fmt_byte_len<const MINIMAL: bool>(v: UInt)
     lemma_star_byte_len_seq_u8(cont_bytes);
 }
 
+/// A consistent base-128 value fits the implementation's fixed-size stack buffer.
+pub(crate) proof fn lemma_base128_fmt_consistent_byte_len_bound<const MINIMAL: bool>(v: UInt)
+    requires
+        Base128Fmt::<MINIMAL>.consistent(v),
+    ensures
+        Base128Fmt::<MINIMAL>.byte_len(v) <= BASE128_MAX_BYTES,
+{
+    lemma_base128_fmt_byte_len::<MINIMAL>(v);
+}
+
 proof fn lemma_star_serialize_seq_u8(vs: Seq<u8>)
     ensures
         Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).spec_serialize(vs) == vs,

@@ -18,6 +18,8 @@ pub mod constraints;
 pub mod datetime;
 /// ASN.1 notation-style aliases for universal formats with DER encoding.
 pub mod der;
+/// Allocation-free ordering of values by their DER encodings.
+pub mod der_ord;
 /// Disjointness proofs for complete ASN.1 formats.
 pub mod disjoint;
 /// ASN.1 ENUMERATED contents octets.
@@ -68,6 +70,7 @@ pub use bmpstring::BmpStringSpec;
 pub use constraints::{ConstraintAnd, ConstraintNot, ConstraintOr, IntegerRange, Size};
 pub use datetime::{DateTime, TimePrecision, TimeZone};
 pub use der::*;
+pub use der_ord::{DeepViewIdentity, DerOrd};
 pub use enumerated::Enumerated;
 pub use generalizedtime::{GeneralizedTime, GeneralizedTimeSpec};
 #[cfg(feature = "alloc")]
@@ -82,7 +85,7 @@ pub use oid::ObjectIdentifierSpec;
 pub use printablestring::PrintableStringOwned;
 pub use printablestring::{PrintableString, PrintableStringSpec};
 pub use real::{Real, RealSpec};
-pub use set_of::{DerOrd, SetOfFmt};
+pub use set_of::SetOfFmt;
 pub use tag::{constructed_tag, primitive_tag, Class, Tag};
 #[cfg(feature = "alloc")]
 pub use teletexstring::TeletexStringOwned;

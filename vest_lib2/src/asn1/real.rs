@@ -1045,7 +1045,10 @@ impl<'a, const DER: bool> Real<'a, DER> {
         }
     }
 
-    pub fn contents(&self) -> &'a [u8] {
+    pub fn contents(&self) -> (contents: &'a [u8])
+        ensures
+            contents.deep_view() == self.deep_view(),
+    {
         self.contents
     }
 }

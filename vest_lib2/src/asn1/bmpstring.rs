@@ -286,6 +286,13 @@ mod derived_specs {
 
 }
 
+pub(crate) proof fn lemma_bmp_string_fmt_serialization(value: BmpStringSpec)
+    ensures
+        super::BmpStringFmt.spec_serialize(value) == encode_bmp_string(value.inner),
+        super::BmpStringFmt.byte_len(value) == value.inner.len() * 2,
+{
+}
+
 mod derived_proofs {
     use super::*;
 

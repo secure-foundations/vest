@@ -275,6 +275,14 @@ proof fn lemma_length_fmt_usize_props<const DER: bool>(o: usize)
     }
 }
 
+pub(crate) proof fn lemma_length_fmt_byte_len_bound<const DER: bool>(value: usize)
+    ensures
+        super::LengthFmt::<DER>.byte_len(value) <= 1 + size_of::<usize>(),
+{
+    lemma_length_fmt_usize_props::<DER>(value);
+    lemma_usize_to_be_bytes_len_bound(value);
+}
+
 pub(crate) broadcast proof fn lemma_length_fmt_short_byte_len<const DER: bool>(o: usize)
     requires
         o <= SHORT_FORM_MAX as usize,

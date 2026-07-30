@@ -42,6 +42,12 @@ impl DeepView for UtcTime {
     }
 }
 
+pub(crate) proof fn lemma_utc_time_deep_view(value: &UtcTime)
+    ensures
+        value.deep_view() == *value,
+{
+}
+
 impl UtcTime {
     /// Validates semantic well-formedness of the UTCTime value.
     /// Under X.680 clause 47.3, year is limited to the range 1950 to 2049.
@@ -343,7 +349,7 @@ pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTime)
 
 }
 
-#[verifier::rlimit(50)]
+#[verifier::rlimit(100)]
 pub proof fn lemma_der_utc_time_canonical(bytes: Seq<u8>)
     requires
         utc_time_bytes_wf::<true>(bytes),

@@ -97,6 +97,13 @@ impl<'a> GeneralizedTime<'a> {
     {
         GeneralizedTime { datetime, precision, fraction, zone }
     }
+
+    pub fn fraction(&self) -> (fraction: &'a [u8])
+        ensures
+            fraction.deep_view() == self.deep_view().fraction,
+    {
+        self.fraction
+    }
 }
 
 /// Helper spec function to validate the prefix date-time fields (YYYYMMDDhh[mm[ss]]).
@@ -570,6 +577,37 @@ pub open spec fn generalized_time_bytes(value: GeneralizedTimeSpec) -> Seq<u8> {
     )
 }
 
+pub(crate) fn generalized_time_der_prefix_bytes<'a>(value: &GeneralizedTime<'a>) -> (bytes:
+    [u8; 14])
+    requires
+        value.deep_view().der_wf(),
+    ensures
+        bytes@ == generalized_time_prefix(value.deep_view()),
+{
+    let year = decimal4_bytes(value.datetime.year);
+    let month = decimal2_bytes(value.datetime.month);
+    let day = decimal2_bytes(value.datetime.day);
+    let hour = decimal2_bytes(value.datetime.hour);
+    let minute = decimal2_bytes(value.datetime.minute);
+    let second = decimal2_bytes(value.datetime.second);
+    [
+        year[0],
+        year[1],
+        year[2],
+        year[3],
+        month[0],
+        month[1],
+        day[0],
+        day[1],
+        hour[0],
+        hour[1],
+        minute[0],
+        minute[1],
+        second[0],
+        second[1],
+    ]
+}
+
 /// Writes a `GeneralizedTime` directly to an output buffer without allocating.
 pub fn generalized_time_to_bytes<'a, Output: OutputBuf>(
     value: &GeneralizedTime<'a>,
@@ -871,6 +909,48 @@ mod derived_specs {
         }
     }
 
+}
+
+pub(crate) proof fn lemma_der_generalized_time_model(value: GeneralizedTimeSpec)
+    requires
+        super::GeneralizedTimeFmt::<true>.consistent(value),
+    ensures
+        value.der_wf(),
+        super::GeneralizedTimeFmt::<true>.spec_serialize(value) == generalized_time_prefix(value)
+            + generalized_time_fraction(value) + generalized_time_suffix(value),
+        super::GeneralizedTimeFmt::<true>.spec_serialize(value).len()
+            == super::GeneralizedTimeFmt::<true>.byte_len(value),
+        super::GeneralizedTimeFmt::<true>.spec_serialize(value).len() <= usize::MAX,
+        generalized_time_prefix(value).len() == 14,
+        generalized_time_suffix(value) == seq![0x5au8],
+{
+}
+
+pub(crate) proof fn lemma_der_generalized_time_layout(value: GeneralizedTimeSpec, pos: usize)
+    requires
+        super::GeneralizedTimeFmt::<true>.consistent(value),
+    ensures
+        super::GeneralizedTimeFmt::<true>.spec_serialize(value).len() == if value.fraction.len()
+            == 0 {
+            15
+        } else {
+            value.fraction.len() + 16
+        },
+        pos < super::GeneralizedTimeFmt::<true>.spec_serialize(value).len() ==> {
+            super::GeneralizedTimeFmt::<true>.spec_serialize(value)[pos as int] == if pos < 14 {
+                generalized_time_prefix(value)[pos as int]
+            } else if value.fraction.len() == 0 {
+                0x5au8
+            } else if pos == 14 {
+                0x2eu8
+            } else if (pos as nat) < value.fraction.len() + 15 {
+                value.fraction[pos as int - 15]
+            } else {
+                0x5au8
+            }
+        },
+{
+    lemma_der_generalized_time_model(value);
 }
 
 mod derived_proofs {

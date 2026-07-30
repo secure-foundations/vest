@@ -164,6 +164,18 @@ pub(super) open(super) spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<
     }
 }
 
+/// Exposes the serialization model used by the allocation-free DER ordering cursor.
+pub(crate) proof fn lemma_bit_string_fmt_serialization<const DER: bool>(value: BitStringSpec)
+    ensures
+        super::BitStringFmt::<DER>.spec_serialize(value) == Pair(U8, Tail).spec_serialize(
+            (value.unused, value.bits),
+        ),
+        super::BitStringFmt::<DER>.byte_len(value) == Pair(U8, Tail).byte_len(
+            (value.unused, value.bits),
+        ),
+{
+}
+
 mod derived_specs {
     use super::*;
     use super::super::BitStringFmt;
