@@ -1,11 +1,12 @@
 //! BER restricted character string combinators.
 use crate::asn1::{
-    primitive_tag, ASN1Fmt, BmpStringFmt, Class, Ia5StringFmt, PrintableStringFmt, Tag, TagFmt,
-    TeletexStringFmt, Utf8StringFmt, BER,
+    primitive_tag, ASN1Fmt, BmpStringFmt, Class, Ia5StringFmt, NumericStringFmt,
+    PrintableStringFmt, Tag, TagFmt, TeletexStringFmt, UniversalStringFmt, Utf8StringFmt, BER,
 };
 #[cfg(feature = "alloc")]
 use crate::asn1::{
-    BmpString, Ia5StringOwned, PrintableStringOwned, TeletexStringOwned, Utf8StringOwned,
+    BmpString, Ia5StringOwned, NumericStringOwned, PrintableStringOwned, TeletexStringOwned,
+    UniversalString, Utf8StringOwned,
 };
 use crate::combinators::{mapped::spec::FnSpecMapper, Mapped, Refined};
 use crate::core::exec::parser::*;
@@ -196,6 +197,10 @@ pub type BerTeletexStringFmt<const LIMIT: usize> = BerCharStringFmt<TeletexStrin
 
 pub type BerBmpStringFmt<const LIMIT: usize> = BerCharStringFmt<BmpStringFmt, LIMIT>;
 
+pub type BerNumericStringFmt<const LIMIT: usize> = BerCharStringFmt<NumericStringFmt, LIMIT>;
+
+pub type BerUniversalStringFmt<const LIMIT: usize> = BerCharStringFmt<UniversalStringFmt, LIMIT>;
+
 impl<const LIMIT: usize> BerUtf8StringFmt<LIMIT> {
     #[verifier::allow_in_spec]
     pub const fn universal() -> Self
@@ -286,6 +291,26 @@ impl<const LIMIT: usize> BerBmpStringFmt<LIMIT> {
     }
 }
 
+impl<const LIMIT: usize> BerNumericStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::NUMERIC_STRING, NumericStringFmt),
+    {
+        Self(TagFmt::NUMERIC_STRING, NumericStringFmt)
+    }
+}
+
+impl<const LIMIT: usize> BerUniversalStringFmt<LIMIT> {
+    #[verifier::allow_in_spec]
+    pub const fn universal() -> Self
+        returns
+            Self(TagFmt::UNIVERSAL_STRING, UniversalStringFmt),
+    {
+        Self(TagFmt::UNIVERSAL_STRING, UniversalStringFmt)
+    }
+}
+
 /// Executable bridge from owned BER contents octets to owned values.
 #[cfg(feature = "alloc")]
 pub trait BerDecoderOwned: SpecCombinator {
@@ -337,6 +362,39 @@ impl BerDecoderOwned for PrintableStringFmt {
             // SAFETY: the preceding check establishes that `bytes` is valid UTF-8.
             let inner = unsafe { String::from_utf8_unchecked(bytes) };
             Ok(PrintableStringOwned::new(inner))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for NumericStringFmt {
+    type Owned = NumericStringOwned;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        let value = <PrintableStringFmt as BerDecoderOwned>::decode_owned(
+            &PrintableStringFmt,
+            bytes,
+        )?;
+        if crate::core::exec::fns::Pred::test(
+            &crate::asn1::numericstring::NumericStringChars,
+            &value,
+        ) {
+            Ok(value)
+        } else {
+            Err(ParseError::custom("Invalid NumericString"))
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BerDecoderOwned for UniversalStringFmt {
+    type Owned = UniversalString;
+
+    fn decode_owned(&self, bytes: Vec<u8>) -> Result<Self::Owned, ParseError> {
+        if crate::asn1::universalstring::check_valid_universal_string(bytes.as_slice()) {
+            Ok(crate::asn1::universalstring::decode_universal_string_owned(bytes.as_slice()))
+        } else {
+            Err(ParseError::custom("Invalid UniversalString"))
         }
     }
 }

@@ -41,11 +41,52 @@ pub open spec fn integer_in_range<
     &&& (HAS_MAX ==> value <= MAX as int)
 }
 
+fn integer_in_range_exec<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64>(
+    value: i64,
+) -> (ok: bool)
+    ensures
+        ok == integer_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(value as int),
+{
+    (!HAS_MIN || MIN <= value) && (!HAS_MAX || value <= MAX)
+}
+
 impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> SpecPred<
     int,
 > for IntegerRange<HAS_MIN, MIN, HAS_MAX, MAX> {
     open spec fn apply(&self, value: int) -> bool {
         integer_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(value)
+    }
+}
+
+impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> SpecPred<
+    i8,
+> for IntegerRange<HAS_MIN, MIN, HAS_MAX, MAX> {
+    open spec fn apply(&self, value: i8) -> bool {
+        integer_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(value as int)
+    }
+}
+
+impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> Pred<
+    i8,
+> for IntegerRange<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &i8) -> (ok: bool) {
+        integer_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(*value as i64)
+    }
+}
+
+impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> SpecPred<
+    i16,
+> for IntegerRange<HAS_MIN, MIN, HAS_MAX, MAX> {
+    open spec fn apply(&self, value: i16) -> bool {
+        integer_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(value as int)
+    }
+}
+
+impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> Pred<
+    i16,
+> for IntegerRange<HAS_MIN, MIN, HAS_MAX, MAX> {
+    fn test(&self, value: &i16) -> (ok: bool) {
+        integer_in_range_exec::<HAS_MIN, MIN, HAS_MAX, MAX>(*value as i64)
     }
 }
 

@@ -6,9 +6,9 @@ pub use super::modifiers::{
 };
 use super::{
     ASN1Fmt, AnyFmt, BitStringFmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, GeneralizedTimeFmt,
-    Ia5StringFmt, Integer16Fmt, Integer8Fmt, IntegerFmt, NullFmt, ObjectIdentifierFmt,
-    OctetStringFmt, PrintableStringFmt, RealFmt, SetOfFmt, TagFmt, TeletexStringFmt, UtcTimeFmt,
-    Utf8StringFmt, DER,
+    Ia5StringFmt, Integer16Fmt, Integer8Fmt, IntegerFmt, NullFmt, NumericStringFmt,
+    ObjectIdentifierFmt, OctetStringFmt, PrintableStringFmt, RealFmt, SetOfFmt, TagFmt,
+    TeletexStringFmt, UniversalStringFmt, UtcTimeFmt, Utf8StringFmt, DER,
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
@@ -44,6 +44,8 @@ pub type Utf8StringTlvFmt = ASN1Fmt<Utf8StringFmt, DER>;
 
 pub type PrintableStringTlvFmt = ASN1Fmt<PrintableStringFmt, DER>;
 
+pub type NumericStringTlvFmt = ASN1Fmt<NumericStringFmt, DER>;
+
 pub type TeletexStringTlvFmt = ASN1Fmt<TeletexStringFmt, DER>;
 
 pub type Ia5StringTlvFmt = ASN1Fmt<Ia5StringFmt, DER>;
@@ -54,7 +56,11 @@ pub type GeneralizedTimeTlvFmt = ASN1Fmt<GeneralizedTimeFmt<DER>, DER>;
 
 pub type BmpStringTlvFmt = ASN1Fmt<BmpStringFmt, DER>;
 
+pub type UniversalStringTlvFmt = ASN1Fmt<UniversalStringFmt, DER>;
+
 pub type SequenceFmt<C> = ASN1Fmt<C, DER>;
+
+pub type SetFmt<C> = ASN1Fmt<C, DER>;
 
 pub type SequenceOfFmt<C> = ASN1Fmt<crate::combinators::RepeatTillEnd<C>, DER>;
 
@@ -103,6 +109,8 @@ pub const PRINTABLE_STRING: PrintableStringTlvFmt = ASN1Fmt(
     PrintableStringFmt,
 );
 
+pub const NUMERIC_STRING: NumericStringTlvFmt = ASN1Fmt(TagFmt::NUMERIC_STRING, NumericStringFmt);
+
 pub const TELETEX_STRING: TeletexStringTlvFmt = ASN1Fmt(TagFmt::TELETEX_STRING, TeletexStringFmt);
 
 pub const IA5_STRING: Ia5StringTlvFmt = ASN1Fmt(TagFmt::IA5_STRING, Ia5StringFmt);
@@ -115,6 +123,11 @@ pub const GENERALIZED_TIME: GeneralizedTimeTlvFmt = ASN1Fmt(
 );
 
 pub const BMP_STRING: BmpStringTlvFmt = ASN1Fmt(TagFmt::BMP_STRING, BmpStringFmt);
+
+pub const UNIVERSAL_STRING: UniversalStringTlvFmt = ASN1Fmt(
+    TagFmt::UNIVERSAL_STRING,
+    UniversalStringFmt,
+);
 
 /// Construct a DER `SET OF` whose elements are complete DER formats.
 #[allow(non_snake_case)]
@@ -134,6 +147,16 @@ pub const fn SEQUENCE<C: Copy>(inner: C) -> SequenceFmt<C>
         ASN1Fmt::<C, DER>(TagFmt::SEQUENCE, inner),
 {
     ASN1Fmt::<C, DER>(TagFmt::SEQUENCE, inner)
+}
+
+/// Construct a DER `SET` whose component chain is already in canonical tag order.
+#[allow(non_snake_case)]
+#[verifier::allow_in_spec]
+pub const fn SET<C: Copy>(inner: C) -> SetFmt<C>
+    returns
+        ASN1Fmt::<C, DER>(TagFmt::SET, inner),
+{
+    ASN1Fmt::<C, DER>(TagFmt::SET, inner)
 }
 
 /// Construct a DER `SEQUENCE OF` whose elements are complete DER formats.

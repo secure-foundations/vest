@@ -738,7 +738,7 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
 
         for i in 0..values.len()
             invariant
-                self.exec_inv(),
+                <Self as Prepare<[Elem]>>::exec_inv(self),
                 forall|k: int|
                     0 <= k < values.deep_view().len() ==> self.0.consistent(
                         #[trigger] values.deep_view()[k],
@@ -767,6 +767,49 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
         assert(values.deep_view().take(values.deep_view().len() as int) == values.deep_view());
 
         Ok(total)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Output: OutputBuf, C, Elem> Serializer<Output, Vec<Elem>> for SetOfFmt<C> where
+    Elem: DeepView,
+    C: SpecCombinator<T = <Elem as DeepView>::V> + Serializer<Output, Elem> + Copy,
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn serialize_into(&self, values: &Vec<Elem>, obuf: &mut Output) {
+        <Self as Serializer<Output, [Elem]>>::serialize_into(self, values.as_slice(), obuf)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<C, Elem> ByteLen<Vec<Elem>> for SetOfFmt<C> where
+    C: SpecByteLen<T = <Elem as DeepView>::V> + ByteLen<Elem> + Copy,
+    Elem: DeepView,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn length(&self, values: &Vec<Elem>) -> (len: usize) {
+        <Self as ByteLen<[Elem]>>::length(self, values.as_slice())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<C, Elem> Prepare<Vec<Elem>> for SetOfFmt<C> where
+    Elem: DeepView,
+    C: SpecCombinator<T = <Elem as DeepView>::V> + Prepare<Elem> + DerOrd<Elem> + Copy,
+ {
+    open spec fn exec_inv(&self) -> bool {
+        self.0.exec_inv()
+    }
+
+    fn prepare(&self, values: &Vec<Elem>) -> (checked: Result<usize, PreSerializeError>) {
+        <Self as Prepare<[Elem]>>::prepare(self, values.as_slice())
     }
 }
 

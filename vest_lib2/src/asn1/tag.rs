@@ -64,6 +64,7 @@ pub enum TagNumber {
     GeneralizedTime = 24,
     VisibleString = 26,
     GeneralString = 27,
+    UniversalString = 28,
     BmpString = 30,
     Other { tag_num: UInt },
 }
@@ -109,6 +110,7 @@ pub open spec fn tag_num_to_uint(num: TagNumber) -> UInt {
         TagNumber::GeneralizedTime => 24,
         TagNumber::VisibleString => 26,
         TagNumber::GeneralString => 27,
+        TagNumber::UniversalString => 28,
         TagNumber::BmpString => 30,
         TagNumber::Other { tag_num } => tag_num,
     }
@@ -138,6 +140,7 @@ pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
         24 => TagNumber::GeneralizedTime,
         26 => TagNumber::VisibleString,
         27 => TagNumber::GeneralString,
+        28 => TagNumber::UniversalString,
         30 => TagNumber::BmpString,
         other => TagNumber::Other { tag_num: other },
     }
@@ -146,7 +149,7 @@ pub open spec fn uint_to_tag_num(num: UInt) -> TagNumber {
 pub open spec fn tag_number_wf(num: TagNumber) -> bool {
     num matches TagNumber::Other { tag_num } ==> {
         &&& !matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
-            | 22 | 23 | 24 | 26 | 27 | 30)
+            | 22 | 23 | 24 | 26 | 27 | 28 | 30)
         &&& nat_to_base128(tag_num as nat).len() <= BASE128_MAX_BYTES
     }
 }
@@ -179,6 +182,7 @@ pub const fn tag_num_from_uint(num: u64) -> TagNumber
         24 => TagNumber::GeneralizedTime,
         26 => TagNumber::VisibleString,
         27 => TagNumber::GeneralString,
+        28 => TagNumber::UniversalString,
         30 => TagNumber::BmpString,
         other => TagNumber::Other { tag_num: other as UInt },
     }
@@ -654,6 +658,7 @@ impl Parser<&[u8]> for super::TagFmt {
             24 => TagNumber::GeneralizedTime,
             26 => TagNumber::VisibleString,
             27 => TagNumber::GeneralString,
+            28 => TagNumber::UniversalString,
             30 => TagNumber::BmpString,
             other => TagNumber::Other { tag_num: other },
         };
@@ -689,6 +694,7 @@ impl<Output: OutputBuf> Serializer<Output, Tag> for super::TagFmt {
             TagNumber::GeneralizedTime => 24,
             TagNumber::VisibleString => 26,
             TagNumber::GeneralString => 27,
+            TagNumber::UniversalString => 28,
             TagNumber::BmpString => 30,
             TagNumber::Other { tag_num } => tag_num,
         };
@@ -744,10 +750,11 @@ impl Prepare<Tag> for super::TagFmt {
             TagNumber::GeneralizedTime => 24,
             TagNumber::VisibleString => 26,
             TagNumber::GeneralString => 27,
+            TagNumber::UniversalString => 28,
             TagNumber::BmpString => 30,
             TagNumber::Other { tag_num } => {
                 if matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
-                    | 22 | 23 | 24 | 26 | 27 | 30) {
+                    | 22 | 23 | 24 | 26 | 27 | 28 | 30) {
                     return Err(PreSerializeError::custom("Invalid tag number"));
                 }
                 tag_num
@@ -800,6 +807,7 @@ impl ByteLen<Tag> for super::TagFmt {
             TagNumber::GeneralizedTime => 24,
             TagNumber::VisibleString => 26,
             TagNumber::GeneralString => 27,
+            TagNumber::UniversalString => 28,
             TagNumber::BmpString => 30,
             TagNumber::Other { tag_num } => tag_num,
         };
@@ -942,6 +950,12 @@ impl super::TagFmt {
         number: TagNumber::GeneralString,
     };
 
+    pub const UNIVERSAL_STRING: Tag = Tag {
+        class: Class::Universal,
+        constructed: false,
+        number: TagNumber::UniversalString,
+    };
+
     pub const BMP_STRING: Tag = Tag {
         class: Class::Universal,
         constructed: false,
@@ -1018,6 +1032,12 @@ impl super::TagFmt {
         class: Class::Universal,
         constructed: true,
         number: TagNumber::GeneralString,
+    };
+
+    pub const UNIVERSAL_STRING_CONSTRUCTED: Tag = Tag {
+        class: Class::Universal,
+        constructed: true,
+        number: TagNumber::UniversalString,
     };
 
     pub const BMP_STRING_CONSTRUCTED: Tag = Tag {

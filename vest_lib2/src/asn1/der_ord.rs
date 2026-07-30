@@ -9,11 +9,11 @@ use crate::asn1::{
     GeneralizedTimeSpec, Ia5String, Ia5StringFmt, Ia5StringSpec, ImplicitlyTaggedFmt, Integer,
     Integer16Fmt, Integer8Fmt, IntegerFmt, LengthFmt, ObjectIdentifierFmt, ObjectIdentifierSpec,
     PrintableString, PrintableStringFmt, PrintableStringSpec, Real, RealFmt, Retaggable, SetOfFmt,
-    Tag, TagFmt, TeletexString, TeletexStringFmt, TeletexStringSpec, UtcTime, UtcTimeFmt,
-    Utf8StringFmt,
+    Tag, TagFmt, TeletexString, TeletexStringFmt, TeletexStringSpec, UniversalStringFmt, UtcTime,
+    UtcTimeFmt, Utf8StringFmt,
 };
 #[cfg(feature = "alloc")]
-use crate::asn1::{BmpString, ObjectIdentifier};
+use crate::asn1::{BmpString, ObjectIdentifier, UniversalString};
 use crate::combinators::choice::Sum;
 use crate::combinators::mapped::spec::{BiMap, SpecMap};
 use crate::combinators::{
@@ -1852,12 +1852,12 @@ impl<A, T> DerOrd<Vec<T>> for Star<A> where T: DeepView, A: DerOrd<T> + Copy {
         state
     }
 
+    #[verifier::loop_isolation(false)]
     fn der_next(&self, v: &Vec<T>, state: &mut StarDerState<A::State>) -> (next: Option<u8>) {
         broadcast use lemma_star_consistent_index;
 
         let ghost vv = v.deep_view();
 
-        #[verifier::loop_isolation(false)]
         loop
             invariant
                 self.der_state_valid(vv, *state),
@@ -2093,6 +2093,76 @@ impl DerOrd<BmpString> for BmpStringFmt {
             } else {
                 byte = encoded[0];
                 state.second_octet = true;
+            }
+            Some(byte)
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[derive(Copy, Clone, Default)]
+pub struct UniversalStringDerState {
+    pub char_index: usize,
+    pub octet_index: u8,
+}
+
+#[cfg(feature = "alloc")]
+impl DerState for UniversalStringFmt {
+    type State = UniversalStringDerState;
+}
+
+#[cfg(feature = "alloc")]
+pub open spec fn universal_string_der_position(state: UniversalStringDerState) -> nat {
+    state.char_index as nat * 4 + state.octet_index as nat
+}
+
+#[cfg(feature = "alloc")]
+impl DerOrd<UniversalString> for UniversalStringFmt {
+    proof fn lemma_der_serialize_len(&self, value: Seq<char>) {
+        crate::asn1::universalstring::lemma_universal_string_fmt_serialization(value);
+    }
+
+    open spec fn der_remaining(&self, value: Seq<char>, state: UniversalStringDerState) -> Seq<u8> {
+        self.spec_serialize(value).skip(universal_string_der_position(state) as int)
+    }
+
+    open spec fn der_state_valid(&self, value: Seq<char>, state: UniversalStringDerState) -> bool {
+        &&& state.char_index <= value.len()
+        &&& state.octet_index < 4
+        &&& state.char_index == value.len() ==> state.octet_index == 0
+    }
+
+    fn der_start(&self, value: &UniversalString) -> (state: UniversalStringDerState) {
+        let state = UniversalStringDerState { char_index: 0, octet_index: 0 };
+        proof {
+            crate::asn1::universalstring::lemma_universal_string_fmt_serialization(
+                value.deep_view(),
+            );
+            good_start!(self, value.deep_view(), state);
+        }
+        state
+    }
+
+    fn der_next(&self, value: &UniversalString, state: &mut UniversalStringDerState) -> (next:
+        Option<u8>) {
+        proof {
+            crate::asn1::universalstring::lemma_universal_string_fmt_serialization(
+                value.deep_view(),
+            );
+        }
+        let inner = value.as_str();
+        let len = inner.unicode_len();
+        if state.char_index == len {
+            None
+        } else {
+            let c = inner.get_char(state.char_index);
+            let encoded = crate::combinators::uints::exec::u32_to_be_bytes(c as u32);
+            let byte = encoded[state.octet_index as usize];
+            if state.octet_index == 3 {
+                state.char_index += 1;
+                state.octet_index = 0;
+            } else {
+                state.octet_index += 1;
             }
             Some(byte)
         }

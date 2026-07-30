@@ -34,6 +34,8 @@ pub mod integer;
 pub mod length;
 /// Shared ASN.1 tagging and component modifiers.
 pub mod modifiers;
+/// ASN.1 NumericString contents.
+pub mod numericstring;
 /// ASN.1 OBJECT IDENTIFIER contents octets.
 pub mod oid;
 /// ASN.1 PrintableString contents.
@@ -48,6 +50,8 @@ pub mod tag;
 pub mod teletexstring;
 /// ASN.1 TLV wrapper.
 pub mod tlv;
+/// ASN.1 UniversalString contents.
+pub mod universalstring;
 /// ASN.1 UTCTime contents.
 pub mod utctime;
 /// ASN.1 UTF8String contents.
@@ -79,6 +83,9 @@ pub use ia5string::{Ia5String, Ia5StringSpec};
 pub use integer::{Integer, Integer16Fmt, Integer8Fmt};
 pub use modifiers::{DefaultedFmt, ImplicitlyTaggedFmt, Retaggable};
 #[cfg(feature = "alloc")]
+pub use numericstring::NumericStringOwned;
+pub use numericstring::{NumericString, NumericStringFmt, NumericStringSpec};
+#[cfg(feature = "alloc")]
 pub use oid::ObjectIdentifier;
 pub use oid::ObjectIdentifierSpec;
 #[cfg(feature = "alloc")]
@@ -90,6 +97,9 @@ pub use tag::{constructed_tag, primitive_tag, Class, Tag};
 #[cfg(feature = "alloc")]
 pub use teletexstring::TeletexStringOwned;
 pub use teletexstring::{TeletexString, TeletexStringSpec};
+#[cfg(feature = "alloc")]
+pub use universalstring::UniversalString;
+pub use universalstring::UniversalStringSpec;
 pub use utctime::UtcTime;
 pub use utf8string::Utf8String;
 #[cfg(feature = "alloc")]
@@ -313,6 +323,10 @@ pub struct BmpStringFmt;
 /// ASN.1 TeletexString format.
 #[derive(Clone, Copy)]
 pub struct TeletexStringFmt;
+
+/// ASN.1 UniversalString format.
+#[derive(Clone, Copy)]
+pub struct UniversalStringFmt;
 
 /// ASN.1 GeneralizedTime format.
 #[derive(Clone, Copy)]

@@ -1,7 +1,8 @@
 //! BER constructed-value formats and notation-style aliases.
 use crate::asn1::{
     ASN1Fmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, Ia5StringFmt, IntegerFmt, NullFmt,
-    ObjectIdentifierFmt, PrintableStringFmt, RealFmt, TagFmt, TeletexStringFmt, Utf8StringFmt, BER,
+    NumericStringFmt, ObjectIdentifierFmt, PrintableStringFmt, RealFmt, TagFmt, TeletexStringFmt,
+    UniversalStringFmt, Utf8StringFmt, BER,
 };
 use crate::core::spec::SpecByteLen;
 use vstd::prelude::*;
@@ -61,6 +62,8 @@ pub type Utf8StringTlvFmt = BerUtf8StringFmt<MAX_RECURSION_DEPTH>;
 
 pub type PrintableStringTlvFmt = BerPrintableStringFmt<MAX_RECURSION_DEPTH>;
 
+pub type NumericStringTlvFmt = BerNumericStringFmt<MAX_RECURSION_DEPTH>;
+
 pub type TeletexStringTlvFmt = BerTeletexStringFmt<MAX_RECURSION_DEPTH>;
 
 pub type Ia5StringTlvFmt = BerIa5StringFmt<MAX_RECURSION_DEPTH>;
@@ -70,6 +73,8 @@ pub type UtcTimeTlvFmt = ASN1Fmt<UtcTimeFmt<BER>, BER>;
 pub type GeneralizedTimeTlvFmt = ASN1Fmt<GeneralizedTimeFmt<BER>, BER>;
 
 pub type BmpStringTlvFmt = BerBmpStringFmt<MAX_RECURSION_DEPTH>;
+
+pub type UniversalStringTlvFmt = BerUniversalStringFmt<MAX_RECURSION_DEPTH>;
 
 pub type SequenceFmt<C> = BerSequenceFmt<C>;
 
@@ -122,6 +127,11 @@ pub const PRINTABLE_STRING: PrintableStringTlvFmt = BerCharStringFmt(
     PrintableStringFmt,
 );
 
+pub const NUMERIC_STRING: NumericStringTlvFmt = BerCharStringFmt(
+    TagFmt::NUMERIC_STRING,
+    NumericStringFmt,
+);
+
 pub const IA5_STRING: Ia5StringTlvFmt = BerCharStringFmt(TagFmt::IA5_STRING, Ia5StringFmt);
 
 pub const TELETEX_STRING: TeletexStringTlvFmt = BerCharStringFmt(
@@ -130,6 +140,11 @@ pub const TELETEX_STRING: TeletexStringTlvFmt = BerCharStringFmt(
 );
 
 pub const BMP_STRING: BmpStringTlvFmt = BerCharStringFmt(TagFmt::BMP_STRING, BmpStringFmt);
+
+pub const UNIVERSAL_STRING: UniversalStringTlvFmt = BerCharStringFmt(
+    TagFmt::UNIVERSAL_STRING,
+    UniversalStringFmt,
+);
 
 /// Construct a BER `SEQUENCE`.
 #[allow(non_snake_case)]

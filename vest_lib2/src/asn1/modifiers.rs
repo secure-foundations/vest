@@ -953,9 +953,9 @@ impl<Output: OutputBuf, Field, Default, Rest, R, const DER: bool> Serializer<
     (Default, R),
 > for DefaultedFmt<Field, Default, Rest, DER> where
     Field: SpecByteLen<T = Default> + Serializer<Output, Default>,
-    Rest: SpecByteLen<T = R> + Serializer<Output, R>,
+    Rest: SpecByteLen<T = R::V> + Serializer<Output, R>,
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
-    R: DeepView<V = R>,
+    R: DeepView,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -981,9 +981,9 @@ impl<Field, Default, Rest, R, const DER: bool> Prepare<(Default, R)> for Default
     DER,
 > where
     Field: SpecByteLen<T = Default> + Prepare<Default>,
-    Rest: SpecByteLen<T = R> + Prepare<R>,
+    Rest: SpecByteLen<T = R::V> + Prepare<R>,
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
-    R: DeepView<V = R>,
+    R: DeepView,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -1010,9 +1010,9 @@ impl<Field, Default, Rest, R, const DER: bool> ByteLen<(Default, R)> for Default
     DER,
 > where
     Field: SpecByteLen<T = Default> + ByteLen<Default>,
-    Rest: SpecByteLen<T = R> + ByteLen<R>,
+    Rest: SpecByteLen<T = R::V> + ByteLen<R>,
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
-    R: DeepView<V = R>,
+    R: DeepView,
  {
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
