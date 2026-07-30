@@ -185,6 +185,7 @@ impl<Inner, M> GoodSerializer for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_len(&self, v: M::Out) {
+        assert(self.serialize_inv());
         self.inner.lemma_serialize_len(self.mapper.spec_map_rev(v));
     }
 }
