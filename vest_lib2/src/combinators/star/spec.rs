@@ -126,6 +126,43 @@ impl<A: SpecByteLen> super::Star<A> {
     }
 }
 
+impl<A: SpecSerializer + Copy> super::Star<A> {
+    /// Serializing a nonempty sequence is the serialization of its first value followed by the
+    /// serialization of the remaining values.
+    pub proof fn lemma_spec_serialize_cons(&self, first: A::SVal, rest: Seq<A::SVal>)
+        ensures
+            self.spec_serialize(seq![first] + rest) == self.0.spec_serialize(first)
+                + self.spec_serialize(rest),
+    {
+        use crate::combinators::star::proof::lemma_fold_left_accumulate_seq;
+        reveal(<super::Star<_> as SpecSerializer>::spec_serialize);
+
+        let f = |acc: Seq<u8>, elem: A::SVal| acc + self.0.spec_serialize(elem);
+        let values = seq![first] + rest;
+        assert(values.len() > 0);
+        assert(values[0] == first);
+        assert(values.skip(1) =~= rest);
+        assert forall|acc: Seq<u8>, x: Seq<u8>, y: A::SVal| #[trigger]
+            f(acc + x, y) == acc + #[trigger] f(x, y) by {}
+        values.lemma_fold_left_alt(Seq::empty(), f);
+        rest.lemma_fold_left_alt(self.0.spec_serialize(first), f);
+        lemma_fold_left_accumulate_seq(rest, self.0.spec_serialize(first), f);
+    }
+
+    /// Decomposes the serialization suffix beginning at `i`.
+    pub proof fn lemma_spec_serialize_suffix_step(&self, vs: Seq<A::SVal>, i: int)
+        requires
+            0 <= i < vs.len(),
+        ensures
+            self.spec_serialize(vs.skip(i)) == self.0.spec_serialize(vs[i]) + self.spec_serialize(
+                vs.skip(i + 1),
+            ),
+    {
+        assert(vs.skip(i) =~= seq![vs[i]] + vs.skip(i + 1));
+        self.lemma_spec_serialize_cons(vs[i], vs.skip(i + 1));
+    }
+}
+
 impl<A: SafeParser> super::Star<A> {
     proof fn lemma_parse_rec_length(&self, ibuf: Seq<u8>)
         requires
