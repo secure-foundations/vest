@@ -2,19 +2,14 @@
 //!
 //! The enclosing universal tag and DER length are supplied by [`super::ASN1Fmt`]. Elements are
 //! ordered by their complete encodings, as required by X.690 section 11.6.
-use crate::combinators::{
-    star::{
-        exec::{length_slice, prepare_slice, serialize_slice},
-        spec::*,
-    },
-    Star,
-};
+use super::DerOrd;
+use crate::combinators::{star::spec::*, Star};
 use crate::core::exec::output::*;
 use crate::core::{
     exec::{
         input::InputBuf,
         parser::{PResult, Parser},
-        serializer::{ByteLen, PreSerializeError, Prepare, Serializer, SerializerExt},
+        serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
     proof::*,
@@ -22,7 +17,6 @@ use crate::core::{
 };
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use vstd::calc;
 use vstd::{prelude::*, relations::*};
 use OutputBuf;
 
@@ -54,23 +48,27 @@ pub open spec fn der_octet_at(bytes: Seq<u8>, i: nat) -> u8 {
     }
 }
 
-pub open spec fn der_octets_leq_from(a: Seq<u8>, b: Seq<u8>, i: nat, n: nat) -> bool
-    decreases n - i,
-{
-    ||| i >= n
-    ||| der_octet_at(a, i) < der_octet_at(b, i)
-    ||| (der_octet_at(a, i) == der_octet_at(b, i) && der_octets_leq_from(a, b, i + 1, n))
+pub open spec fn der_octets_drop_head(bytes: Seq<u8>) -> Seq<u8> {
+    if bytes.len() == 0 {
+        bytes
+    } else {
+        bytes.skip(1)
+    }
 }
 
 /// Whether complete element encodings are in nondecreasing DER order.
 /// As per X.690 section 11.6 ordering on encoded component values.
-pub open spec fn der_octets_leq(a: Seq<u8>, b: Seq<u8>) -> bool {
-    let n = if a.len() >= b.len() {
-        a.len()
+pub open spec fn der_octets_leq(a: Seq<u8>, b: Seq<u8>) -> bool
+    decreases a.len() + b.len(),
+{
+    if a.len() == 0 && b.len() == 0 {
+        true
     } else {
-        b.len()
-    };
-    der_octets_leq_from(a, b, 0, n)
+        let left = der_octet_at(a, 0);
+        let right = der_octet_at(b, 0);
+        ||| left < right
+        ||| (left == right && der_octets_leq(der_octets_drop_head(a), der_octets_drop_head(b)))
+    }
 }
 
 pub open spec fn der_encodings_sorted(encodings: Seq<Seq<u8>>) -> bool {
@@ -82,68 +80,17 @@ pub open spec fn set_of_values_sorted<C: SpecSerializer>(inner: C, values: Seq<C
     der_encodings_sorted(values.map_values(|v: C::SVal| inner.spec_serialize(v)))
 }
 
-proof fn lemma_der_octets_leq_from_zero_suffix(a: Seq<u8>, b: Seq<u8>, i: nat, n: nat)
+/// Expose the one-octet transition used by executable DER cursors.
+pub proof fn lemma_der_octets_leq_step(a: Seq<u8>, b: Seq<u8>)
     requires
-        a.len() <= i,
-        b.len() <= i,
-        i <= n,
+        a.len() > 0 || b.len() > 0,
     ensures
-        der_octets_leq_from(a, b, i, n),
-    decreases n - i,
+        der_octet_at(a, 0) < der_octet_at(b, 0) ==> der_octets_leq(a, b),
+        der_octet_at(a, 0) > der_octet_at(b, 0) ==> !der_octets_leq(a, b),
+        der_octet_at(a, 0) == der_octet_at(b, 0) ==> {
+            der_octets_leq(a, b) == der_octets_leq(der_octets_drop_head(a), der_octets_drop_head(b))
+        },
 {
-    if i < n {
-        lemma_der_octets_leq_from_zero_suffix(a, b, i + 1, n);
-    }
-}
-
-proof fn lemma_der_octets_leq_from_extend(a: Seq<u8>, b: Seq<u8>, i: nat, n: nat, m: nat)
-    requires
-        i <= n <= m,
-        a.len() <= n,
-        b.len() <= n,
-    ensures
-        der_octets_leq_from(a, b, i, n) == der_octets_leq_from(a, b, i, m),
-    decreases n - i,
-{
-    if i < n {
-        lemma_der_octets_leq_from_extend(a, b, i + 1, n, m);
-    } else {
-        lemma_der_octets_leq_from_zero_suffix(a, b, i, m);
-    }
-}
-
-proof fn lemma_der_octets_leq_at_common_bound(a: Seq<u8>, b: Seq<u8>, n: nat)
-    requires
-        a.len() <= n,
-        b.len() <= n,
-    ensures
-        der_octets_leq(a, b) == der_octets_leq_from(a, b, 0, n),
-{
-    let pair_len = if a.len() >= b.len() {
-        a.len()
-    } else {
-        b.len()
-    };
-    lemma_der_octets_leq_from_extend(a, b, 0, pair_len, n);
-}
-
-proof fn lemma_der_octets_leq_from_transitive(a: Seq<u8>, b: Seq<u8>, c: Seq<u8>, i: nat, n: nat)
-    requires
-        i <= n,
-        der_octets_leq_from(a, b, i, n),
-        der_octets_leq_from(b, c, i, n),
-    ensures
-        der_octets_leq_from(a, c, i, n),
-    decreases n - i,
-{
-    if i < n {
-        let ai = der_octet_at(a, i);
-        let bi = der_octet_at(b, i);
-        let ci = der_octet_at(c, i);
-        if ai == bi && bi == ci {
-            lemma_der_octets_leq_from_transitive(a, b, c, i + 1, n);
-        }
-    }
 }
 
 /// Padded DER octet ordering is transitive.
@@ -153,57 +100,31 @@ pub proof fn lemma_der_octets_leq_transitive(a: Seq<u8>, b: Seq<u8>, c: Seq<u8>)
         der_octets_leq(b, c),
     ensures
         der_octets_leq(a, c),
+    decreases a.len() + b.len() + c.len(),
 {
-    let n = if a.len() >= b.len() {
-        if a.len() >= c.len() {
-            a.len()
-        } else {
-            c.len()
+    if a.len() > 0 || b.len() > 0 || c.len() > 0 {
+        if a.len() > 0 || b.len() > 0 {
+            lemma_der_octets_leq_step(a, b);
         }
-    } else {
-        if b.len() >= c.len() {
-            b.len()
-        } else {
-            c.len()
+        if b.len() > 0 || c.len() > 0 {
+            lemma_der_octets_leq_step(b, c);
         }
-    };
-    lemma_der_octets_leq_at_common_bound(a, b, n);
-    lemma_der_octets_leq_at_common_bound(b, c, n);
-    lemma_der_octets_leq_at_common_bound(a, c, n);
-    lemma_der_octets_leq_from_transitive(a, b, c, 0, n);
+        if a.len() > 0 || c.len() > 0 {
+            lemma_der_octets_leq_step(a, c);
+        }
+        let ai = der_octet_at(a, 0);
+        let bi = der_octet_at(b, 0);
+        let ci = der_octet_at(c, 0);
+        if ai == bi && bi == ci {
+            lemma_der_octets_leq_transitive(
+                der_octets_drop_head(a),
+                der_octets_drop_head(b),
+                der_octets_drop_head(c),
+            );
+        }
+    }
 }
 
-// proof fn lemma_der_octets_leq_from_reflexive(a: Seq<u8>, i: nat, n: nat)
-//     requires
-//         i <= n,
-//     ensures
-//         der_octets_leq_from(a, a, i, n),
-//     decreases n - i,
-// {
-//     if i < n {
-//         lemma_der_octets_leq_from_reflexive(a, i + 1, n);
-//     }
-// }
-// /// Padded DER octet ordering is reflexive.
-// pub proof fn lemma_der_octets_leq_reflexive(a: Seq<u8>)
-//     ensures
-//         der_octets_leq(a, a),
-// {
-//     lemma_der_octets_leq_from_reflexive(a, 0, a.len());
-// }
-// /// The relation used for DER ordering is a preorder (but not an antisymmetric total order).
-// pub proof fn lemma_der_octets_leq_preordering()
-//     ensures
-//         pre_ordering(|a: Seq<u8>, b: Seq<u8>| der_octets_leq(a, b)),
-// {
-//     assert forall|a: Seq<u8>| #[trigger] der_octets_leq(a, a) by {
-//         lemma_der_octets_leq_reflexive(a);
-//     }
-//     assert forall|a: Seq<u8>, b: Seq<u8>, c: Seq<u8>| #[trigger]
-//         der_octets_leq(a, b) && #[trigger] der_octets_leq(b, c) implies der_octets_leq(a, c) by {
-//         lemma_der_octets_leq_transitive(a, b, c);
-//     }
-// }
 proof fn lemma_sorted_by_index<T>(values: Seq<T>, leq: spec_fn(T, T) -> bool, i: int, j: int)
     requires
         sorted_by(values, leq),
@@ -659,32 +580,32 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
     ensures
         leq == der_octets_leq(a.deep_view(), b.deep_view()),
 {
-    let n = if a.len() >= b.len() {
-        a.len()
-    } else {
-        b.len()
-    };
-    for i in 0..n
+    let mut left = 0usize;
+    let mut right = 0usize;
+    assert(a.deep_view().skip(0) == a.deep_view());
+    assert(b.deep_view().skip(0) == b.deep_view());
+    while left < a.len() || right < b.len()
         invariant
-            n == if a.len() >= b.len() {
-                a.len()
-            } else {
-                b.len()
-            },
-            der_octets_leq_from(a.deep_view(), b.deep_view(), 0, n as nat) == der_octets_leq_from(
-                a.deep_view(),
-                b.deep_view(),
-                i as nat,
-                n as nat,
+            left <= a.len(),
+            right <= b.len(),
+            der_octets_leq(a.deep_view(), b.deep_view()) == der_octets_leq(
+                a.deep_view().skip(left as int),
+                b.deep_view().skip(right as int),
             ),
+        decreases a.len() - left + b.len() - right,
     {
-        let ai = if i < a.len() {
-            a[i]
+        let ghost old_left = a.deep_view().skip(left as int);
+        let ghost old_right = b.deep_view().skip(right as int);
+        proof {
+            lemma_der_octets_leq_step(old_left, old_right);
+        }
+        let ai = if left < a.len() {
+            a[left]
         } else {
             0u8
         };
-        let bi = if i < b.len() {
-            b[i]
+        let bi = if right < b.len() {
+            b[right]
         } else {
             0u8
         };
@@ -694,6 +615,14 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
         if ai > bi {
             return false;
         }
+        if left < a.len() {
+            left += 1;
+        }
+        if right < b.len() {
+            right += 1;
+        }
+        assert(der_octets_drop_head(old_left) == a.deep_view().skip(left as int));
+        assert(der_octets_drop_head(old_right) == b.deep_view().skip(right as int));
     }
     true
 }
@@ -795,40 +724,12 @@ impl<C, Elem> ByteLen<[Elem]> for SetOfFmt<C> where
     }
 }
 
-/// Executable comparison of values by their complete DER encodings.
-///
-/// This is a separate capability from [`Serializer`]: serializer invariants may be prophetic,
-/// whereas [`Prepare`] must be able to validate canonical order using a non-prophetic invariant.
-/// Implementations may compare values directly instead of allocating their encodings.
-pub trait DerOrd<T>: SpecSerializer<SVal = T::V> + SpecByteLen<T = T::V> + Consistency<
-    Val = T::V,
-> where T: DeepView + ?Sized {
-    open spec fn der_ord_exec_inv(&self) -> bool {
-        true
-    }
-
-    fn der_leq(&self, left: &T, right: &T) -> (leq: bool)
-        requires
-            self.der_ord_exec_inv(),
-            self.consistent(left.deep_view()),
-            self.consistent(right.deep_view()),
-            self.byte_len(left.deep_view()) <= usize::MAX,
-            self.byte_len(right.deep_view()) <= usize::MAX,
-        ensures
-            leq == der_octets_leq(
-                self.spec_serialize(left.deep_view()),
-                self.spec_serialize(right.deep_view()),
-            ),
-    ;
-}
-
 impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Prepare<Elem> + DerOrd<Elem> + Copy,
  {
     open spec fn exec_inv(&self) -> bool {
-        &&& self.0.exec_inv()
-        &&& self.0.der_ord_exec_inv()
+        self.0.exec_inv()
     }
 
     fn prepare(&self, values: &[Elem]) -> (checked: Result<usize, PreSerializeError>) {
@@ -848,8 +749,6 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
             if i > 0 {
                 assert(self.0.consistent(values.deep_view()[i as int - 1]));
                 assert(self.0.consistent(values.deep_view()[i as int]));
-                let _ = self.0.prepare(&values[i - 1])?;
-                let _ = self.0.prepare(&values[i])?;
                 if !self.0.der_leq(&values[i - 1], &values[i]) {
                     return Err(
                         PreSerializeError::custom("SET OF elements are not in canonical DER order"),
@@ -868,57 +767,6 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
         assert(values.deep_view().take(values.deep_view().len() as int) == values.deep_view());
 
         Ok(total)
-    }
-}
-
-// Maximum tag, one short-form length octet, and at most two INTEGER content octets.
-const SMALL_INTEGER_TLV_MAX_LEN: usize = super::tag::TAG_FMT_MAX_BYTE_LEN + 3;
-
-impl DerOrd<i8> for super::ASN1Fmt<super::Integer8Fmt, true> {
-    fn der_leq(&self, left: &i8, right: &i8) -> (leq: bool) {
-        broadcast use super::length::lemma_length_fmt_short_byte_len;
-        broadcast use super::integer::lemma_integer8_fmt_byte_len;
-        broadcast use super::tag::lemma_tag_fmt_byte_len_bound;
-
-        let left_len = self.length(left);
-        let right_len = self.length(right);
-        assert(left_len <= SMALL_INTEGER_TLV_MAX_LEN);
-        assert(right_len <= SMALL_INTEGER_TLV_MAX_LEN);
-
-        let mut left_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
-        let mut right_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
-        let (left_slice, _) = left_encoding.split_at_mut(left_len);
-        let (right_slice, _) = right_encoding.split_at_mut(right_len);
-        self.serialize(left, left_slice);
-        self.serialize(right, right_slice);
-
-        assert(left_slice.deep_view() == self.spec_serialize(left.deep_view()));
-        assert(right_slice.deep_view() == self.spec_serialize(right.deep_view()));
-        der_leq(left_slice, right_slice)
-    }
-}
-
-impl DerOrd<i16> for super::ASN1Fmt<super::Integer16Fmt, true> {
-    fn der_leq(&self, left: &i16, right: &i16) -> (leq: bool) {
-        broadcast use super::length::lemma_length_fmt_short_byte_len;
-        broadcast use super::integer::lemma_integer16_fmt_byte_len_bound;
-        broadcast use super::tag::lemma_tag_fmt_byte_len_bound;
-
-        let left_len = self.length(left);
-        let right_len = self.length(right);
-        assert(left_len <= SMALL_INTEGER_TLV_MAX_LEN);
-        assert(right_len <= SMALL_INTEGER_TLV_MAX_LEN);
-
-        let mut left_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
-        let mut right_encoding = [0u8;SMALL_INTEGER_TLV_MAX_LEN];
-        let (left_slice, _) = left_encoding.split_at_mut(left_len);
-        let (right_slice, _) = right_encoding.split_at_mut(right_len);
-        self.serialize(left, left_slice);
-        self.serialize(right, right_slice);
-
-        assert(left_slice.deep_view() == self.spec_serialize(left.deep_view()));
-        assert(right_slice.deep_view() == self.spec_serialize(right.deep_view()));
-        der_leq(left_slice, right_slice)
     }
 }
 
