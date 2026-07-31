@@ -3,7 +3,7 @@
 #![allow(unused_imports)]
 
 use vest_lib2::asn1::*;
-use vest_lib2::asn1::ber::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UTC_TIME, UTF8_STRING};
+use vest_lib2::asn1::ber::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
 use vest_lib2::asn1::ber::{BerEndFmt, BER_END};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
@@ -139,6 +139,9 @@ pub type ItemsSpec = Seq<ItemSpec>;
 
 pub type Flags = Vec<bool>;
 pub type FlagsSpec = Seq<bool>;
+
+pub type FlagSet = Vec<bool>;
+pub type FlagSetSpec = Seq<bool>;
 
 #[derive(Clone, Copy)]
 pub struct ItemForward;
@@ -534,7 +537,31 @@ pub const fn FLAGS_FMT() -> FlagsFmt
     SEQUENCE_OF(BOOLEAN)
 }
 
-proof fn vestasn1_generated_formats_are_valid() {
+/// BER format for ASN.1 `FlagSet`.
+pub type FlagSetFmt = SetOfTlvFmt<BoolTlvFmt>;
+#[verifier::allow_in_spec]
+#[allow(non_snake_case)]
+pub const fn FLAG_SET_FMT() -> FlagSetFmt
+    returns
+        (
+            SET_OF(BOOLEAN)
+        ),
+{
+    SET_OF(BOOLEAN)
+}
+
+/// Pure specification certificate for ASN.1 `Payload`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_payload_format_spec_invariants()
+    ensures
+        PAYLOAD_FMT().safe_inv(),
+        PAYLOAD_FMT().productive_inv(),
+        PAYLOAD_FMT().serialize_inv(),
+        PAYLOAD_FMT().serialize_dps_inv(),
+        PAYLOAD_FMT().unambiguous(),
+        PAYLOAD_FMT().equiv_general_inv(),
+        PAYLOAD_FMT().equiv_inv(),
+{
     use vest_lib2::core::proof::*;
     use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
     use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
@@ -543,31 +570,635 @@ proof fn vestasn1_generated_formats_are_valid() {
     broadcast use lemma_tag_wf_implies_tag_consistent;
     broadcast use asn1_disjointness_lemmas;
     assert(PAYLOAD_FMT().safe_inv());
+    assert(PAYLOAD_FMT().productive_inv());
+    assert(PAYLOAD_FMT().serialize_inv());
+    assert(PAYLOAD_FMT().serialize_dps_inv());
     assert(PAYLOAD_FMT().unambiguous());
+    assert(PAYLOAD_FMT().equiv_general_inv());
+    assert(PAYLOAD_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Payload`.
+pub proof fn lemma_payload_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <PayloadFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&PAYLOAD_FMT()),
+        <PayloadFmt as vest_lib2::core::exec::serializer::Serializer<Output, Payload>>::exec_inv(&PAYLOAD_FMT()),
+        <PayloadFmt as vest_lib2::core::exec::serializer::Prepare<Payload>>::exec_inv(&PAYLOAD_FMT()),
+        <PayloadFmt as vest_lib2::core::exec::serializer::ByteLen<Payload>>::exec_inv(&PAYLOAD_FMT()),
+{
+    lemma_payload_format_spec_invariants();
+    assert(<PayloadFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&PAYLOAD_FMT()));
+    assert(<PayloadFmt as vest_lib2::core::exec::serializer::Serializer<Output, Payload>>::exec_inv(&PAYLOAD_FMT()));
+    assert(<PayloadFmt as vest_lib2::core::exec::serializer::Prepare<Payload>>::exec_inv(&PAYLOAD_FMT()));
+    assert(<PayloadFmt as vest_lib2::core::exec::serializer::ByteLen<Payload>>::exec_inv(&PAYLOAD_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Bits`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_bits_format_spec_invariants()
+    ensures
+        BITS_FMT().safe_inv(),
+        BITS_FMT().productive_inv(),
+        BITS_FMT().serialize_inv(),
+        BITS_FMT().serialize_dps_inv(),
+        BITS_FMT().unambiguous(),
+        BITS_FMT().equiv_general_inv(),
+        BITS_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(BITS_FMT().safe_inv());
+    assert(BITS_FMT().productive_inv());
+    assert(BITS_FMT().serialize_inv());
+    assert(BITS_FMT().serialize_dps_inv());
     assert(BITS_FMT().unambiguous());
+    assert(BITS_FMT().equiv_general_inv());
+    assert(BITS_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Bits`.
+pub proof fn lemma_bits_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <BitsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&BITS_FMT()),
+        <BitsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Bits>>::exec_inv(&BITS_FMT()),
+        <BitsFmt as vest_lib2::core::exec::serializer::Prepare<Bits>>::exec_inv(&BITS_FMT()),
+        <BitsFmt as vest_lib2::core::exec::serializer::ByteLen<Bits>>::exec_inv(&BITS_FMT()),
+{
+    lemma_bits_format_spec_invariants();
+    assert(<BitsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&BITS_FMT()));
+    assert(<BitsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Bits>>::exec_inv(&BITS_FMT()));
+    assert(<BitsFmt as vest_lib2::core::exec::serializer::Prepare<Bits>>::exec_inv(&BITS_FMT()));
+    assert(<BitsFmt as vest_lib2::core::exec::serializer::ByteLen<Bits>>::exec_inv(&BITS_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Label`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_label_format_spec_invariants()
+    ensures
+        LABEL_FMT().safe_inv(),
+        LABEL_FMT().productive_inv(),
+        LABEL_FMT().serialize_inv(),
+        LABEL_FMT().serialize_dps_inv(),
+        LABEL_FMT().unambiguous(),
+        LABEL_FMT().equiv_general_inv(),
+        LABEL_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(LABEL_FMT().safe_inv());
+    assert(LABEL_FMT().productive_inv());
+    assert(LABEL_FMT().serialize_inv());
+    assert(LABEL_FMT().serialize_dps_inv());
     assert(LABEL_FMT().unambiguous());
+    assert(LABEL_FMT().equiv_general_inv());
+    assert(LABEL_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Label`.
+pub proof fn lemma_label_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <LabelFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&LABEL_FMT()),
+        <LabelFmt as vest_lib2::core::exec::serializer::Serializer<Output, Label>>::exec_inv(&LABEL_FMT()),
+        <LabelFmt as vest_lib2::core::exec::serializer::Prepare<Label>>::exec_inv(&LABEL_FMT()),
+        <LabelFmt as vest_lib2::core::exec::serializer::ByteLen<Label>>::exec_inv(&LABEL_FMT()),
+{
+    lemma_label_format_spec_invariants();
+    assert(<LabelFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&LABEL_FMT()));
+    assert(<LabelFmt as vest_lib2::core::exec::serializer::Serializer<Output, Label>>::exec_inv(&LABEL_FMT()));
+    assert(<LabelFmt as vest_lib2::core::exec::serializer::Prepare<Label>>::exec_inv(&LABEL_FMT()));
+    assert(<LabelFmt as vest_lib2::core::exec::serializer::ByteLen<Label>>::exec_inv(&LABEL_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Printable`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_printable_format_spec_invariants()
+    ensures
+        PRINTABLE_FMT().safe_inv(),
+        PRINTABLE_FMT().productive_inv(),
+        PRINTABLE_FMT().serialize_inv(),
+        PRINTABLE_FMT().serialize_dps_inv(),
+        PRINTABLE_FMT().unambiguous(),
+        PRINTABLE_FMT().equiv_general_inv(),
+        PRINTABLE_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(PRINTABLE_FMT().safe_inv());
+    assert(PRINTABLE_FMT().productive_inv());
+    assert(PRINTABLE_FMT().serialize_inv());
+    assert(PRINTABLE_FMT().serialize_dps_inv());
     assert(PRINTABLE_FMT().unambiguous());
+    assert(PRINTABLE_FMT().equiv_general_inv());
+    assert(PRINTABLE_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Printable`.
+pub proof fn lemma_printable_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <PrintableFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&PRINTABLE_FMT()),
+        <PrintableFmt as vest_lib2::core::exec::serializer::Serializer<Output, Printable>>::exec_inv(&PRINTABLE_FMT()),
+        <PrintableFmt as vest_lib2::core::exec::serializer::Prepare<Printable>>::exec_inv(&PRINTABLE_FMT()),
+        <PrintableFmt as vest_lib2::core::exec::serializer::ByteLen<Printable>>::exec_inv(&PRINTABLE_FMT()),
+{
+    lemma_printable_format_spec_invariants();
+    assert(<PrintableFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&PRINTABLE_FMT()));
+    assert(<PrintableFmt as vest_lib2::core::exec::serializer::Serializer<Output, Printable>>::exec_inv(&PRINTABLE_FMT()));
+    assert(<PrintableFmt as vest_lib2::core::exec::serializer::Prepare<Printable>>::exec_inv(&PRINTABLE_FMT()));
+    assert(<PrintableFmt as vest_lib2::core::exec::serializer::ByteLen<Printable>>::exec_inv(&PRINTABLE_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Ascii`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_ascii_format_spec_invariants()
+    ensures
+        ASCII_FMT().safe_inv(),
+        ASCII_FMT().productive_inv(),
+        ASCII_FMT().serialize_inv(),
+        ASCII_FMT().serialize_dps_inv(),
+        ASCII_FMT().unambiguous(),
+        ASCII_FMT().equiv_general_inv(),
+        ASCII_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(ASCII_FMT().safe_inv());
+    assert(ASCII_FMT().productive_inv());
+    assert(ASCII_FMT().serialize_inv());
+    assert(ASCII_FMT().serialize_dps_inv());
     assert(ASCII_FMT().unambiguous());
+    assert(ASCII_FMT().equiv_general_inv());
+    assert(ASCII_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Ascii`.
+pub proof fn lemma_ascii_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <AsciiFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ASCII_FMT()),
+        <AsciiFmt as vest_lib2::core::exec::serializer::Serializer<Output, Ascii>>::exec_inv(&ASCII_FMT()),
+        <AsciiFmt as vest_lib2::core::exec::serializer::Prepare<Ascii>>::exec_inv(&ASCII_FMT()),
+        <AsciiFmt as vest_lib2::core::exec::serializer::ByteLen<Ascii>>::exec_inv(&ASCII_FMT()),
+{
+    lemma_ascii_format_spec_invariants();
+    assert(<AsciiFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ASCII_FMT()));
+    assert(<AsciiFmt as vest_lib2::core::exec::serializer::Serializer<Output, Ascii>>::exec_inv(&ASCII_FMT()));
+    assert(<AsciiFmt as vest_lib2::core::exec::serializer::Prepare<Ascii>>::exec_inv(&ASCII_FMT()));
+    assert(<AsciiFmt as vest_lib2::core::exec::serializer::ByteLen<Ascii>>::exec_inv(&ASCII_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Legacy`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_legacy_format_spec_invariants()
+    ensures
+        LEGACY_FMT().safe_inv(),
+        LEGACY_FMT().productive_inv(),
+        LEGACY_FMT().serialize_inv(),
+        LEGACY_FMT().serialize_dps_inv(),
+        LEGACY_FMT().unambiguous(),
+        LEGACY_FMT().equiv_general_inv(),
+        LEGACY_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(LEGACY_FMT().safe_inv());
+    assert(LEGACY_FMT().productive_inv());
+    assert(LEGACY_FMT().serialize_inv());
+    assert(LEGACY_FMT().serialize_dps_inv());
     assert(LEGACY_FMT().unambiguous());
+    assert(LEGACY_FMT().equiv_general_inv());
+    assert(LEGACY_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Legacy`.
+pub proof fn lemma_legacy_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <LegacyFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&LEGACY_FMT()),
+        <LegacyFmt as vest_lib2::core::exec::serializer::Serializer<Output, Legacy>>::exec_inv(&LEGACY_FMT()),
+        <LegacyFmt as vest_lib2::core::exec::serializer::Prepare<Legacy>>::exec_inv(&LEGACY_FMT()),
+        <LegacyFmt as vest_lib2::core::exec::serializer::ByteLen<Legacy>>::exec_inv(&LEGACY_FMT()),
+{
+    lemma_legacy_format_spec_invariants();
+    assert(<LegacyFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&LEGACY_FMT()));
+    assert(<LegacyFmt as vest_lib2::core::exec::serializer::Serializer<Output, Legacy>>::exec_inv(&LEGACY_FMT()));
+    assert(<LegacyFmt as vest_lib2::core::exec::serializer::Prepare<Legacy>>::exec_inv(&LEGACY_FMT()));
+    assert(<LegacyFmt as vest_lib2::core::exec::serializer::ByteLen<Legacy>>::exec_inv(&LEGACY_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Wide`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_wide_format_spec_invariants()
+    ensures
+        WIDE_FMT().safe_inv(),
+        WIDE_FMT().productive_inv(),
+        WIDE_FMT().serialize_inv(),
+        WIDE_FMT().serialize_dps_inv(),
+        WIDE_FMT().unambiguous(),
+        WIDE_FMT().equiv_general_inv(),
+        WIDE_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(WIDE_FMT().safe_inv());
+    assert(WIDE_FMT().productive_inv());
+    assert(WIDE_FMT().serialize_inv());
+    assert(WIDE_FMT().serialize_dps_inv());
     assert(WIDE_FMT().unambiguous());
+    assert(WIDE_FMT().equiv_general_inv());
+    assert(WIDE_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Wide`.
+pub proof fn lemma_wide_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <WideFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&WIDE_FMT()),
+        <WideFmt as vest_lib2::core::exec::serializer::Serializer<Output, Wide>>::exec_inv(&WIDE_FMT()),
+        <WideFmt as vest_lib2::core::exec::serializer::Prepare<Wide>>::exec_inv(&WIDE_FMT()),
+        <WideFmt as vest_lib2::core::exec::serializer::ByteLen<Wide>>::exec_inv(&WIDE_FMT()),
+{
+    lemma_wide_format_spec_invariants();
+    assert(<WideFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&WIDE_FMT()));
+    assert(<WideFmt as vest_lib2::core::exec::serializer::Serializer<Output, Wide>>::exec_inv(&WIDE_FMT()));
+    assert(<WideFmt as vest_lib2::core::exec::serializer::Prepare<Wide>>::exec_inv(&WIDE_FMT()));
+    assert(<WideFmt as vest_lib2::core::exec::serializer::ByteLen<Wide>>::exec_inv(&WIDE_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `OpenValue`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_open_value_format_spec_invariants()
+    ensures
+        OPEN_VALUE_FMT().safe_inv(),
+        OPEN_VALUE_FMT().productive_inv(),
+        OPEN_VALUE_FMT().serialize_inv(),
+        OPEN_VALUE_FMT().serialize_dps_inv(),
+        OPEN_VALUE_FMT().unambiguous(),
+        OPEN_VALUE_FMT().equiv_general_inv(),
+        OPEN_VALUE_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(OPEN_VALUE_FMT().safe_inv());
+    assert(OPEN_VALUE_FMT().productive_inv());
+    assert(OPEN_VALUE_FMT().serialize_inv());
+    assert(OPEN_VALUE_FMT().serialize_dps_inv());
     assert(OPEN_VALUE_FMT().unambiguous());
+    assert(OPEN_VALUE_FMT().equiv_general_inv());
+    assert(OPEN_VALUE_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `OpenValue`.
+pub proof fn lemma_open_value_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <OpenValueFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&OPEN_VALUE_FMT()),
+        <OpenValueFmt as vest_lib2::core::exec::serializer::Serializer<Output, OpenValue>>::exec_inv(&OPEN_VALUE_FMT()),
+        <OpenValueFmt as vest_lib2::core::exec::serializer::Prepare<OpenValue>>::exec_inv(&OPEN_VALUE_FMT()),
+        <OpenValueFmt as vest_lib2::core::exec::serializer::ByteLen<OpenValue>>::exec_inv(&OPEN_VALUE_FMT()),
+{
+    lemma_open_value_format_spec_invariants();
+    assert(<OpenValueFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&OPEN_VALUE_FMT()));
+    assert(<OpenValueFmt as vest_lib2::core::exec::serializer::Serializer<Output, OpenValue>>::exec_inv(&OPEN_VALUE_FMT()));
+    assert(<OpenValueFmt as vest_lib2::core::exec::serializer::Prepare<OpenValue>>::exec_inv(&OPEN_VALUE_FMT()));
+    assert(<OpenValueFmt as vest_lib2::core::exec::serializer::ByteLen<OpenValue>>::exec_inv(&OPEN_VALUE_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Item`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_item_format_spec_invariants()
+    ensures
+        ITEM_FMT().safe_inv(),
+        ITEM_FMT().productive_inv(),
+        ITEM_FMT().serialize_inv(),
+        ITEM_FMT().serialize_dps_inv(),
+        ITEM_FMT().unambiguous(),
+        ITEM_FMT().equiv_general_inv(),
+        ITEM_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
+    lemma_bits_format_spec_invariants();
+    lemma_label_format_spec_invariants();
+    lemma_open_value_format_spec_invariants();
+    lemma_payload_format_spec_invariants();
+    lemma_printable_format_spec_invariants();
     assert(ITEM_FMT().safe_inv());
+    assert(ITEM_FMT().productive_inv());
+    assert(ITEM_FMT().serialize_inv());
+    assert(ITEM_FMT().serialize_dps_inv());
     assert(ITEM_FMT().unambiguous());
+    assert(ITEM_FMT().equiv_general_inv());
+    assert(ITEM_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Item`.
+pub proof fn lemma_item_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <ItemFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ITEM_FMT()),
+        <ItemFmt as vest_lib2::core::exec::serializer::Serializer<Output, Item>>::exec_inv(&ITEM_FMT()),
+        <ItemFmt as vest_lib2::core::exec::serializer::Prepare<Item>>::exec_inv(&ITEM_FMT()),
+        <ItemFmt as vest_lib2::core::exec::serializer::ByteLen<Item>>::exec_inv(&ITEM_FMT()),
+{
+    lemma_item_format_spec_invariants();
+    lemma_bits_format_spec_invariants();
+    lemma_bits_format_exec_invariants::<Output>();
+    lemma_label_format_spec_invariants();
+    lemma_label_format_exec_invariants::<Output>();
+    lemma_open_value_format_spec_invariants();
+    lemma_open_value_format_exec_invariants::<Output>();
+    lemma_payload_format_spec_invariants();
+    lemma_payload_format_exec_invariants::<Output>();
+    lemma_printable_format_spec_invariants();
+    lemma_printable_format_exec_invariants::<Output>();
+    assert(<ItemFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ITEM_FMT()));
+    assert(<ItemFmt as vest_lib2::core::exec::serializer::Serializer<Output, Item>>::exec_inv(&ITEM_FMT()));
+    assert(<ItemFmt as vest_lib2::core::exec::serializer::Prepare<Item>>::exec_inv(&ITEM_FMT()));
+    assert(<ItemFmt as vest_lib2::core::exec::serializer::ByteLen<Item>>::exec_inv(&ITEM_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `AutomationChoice`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_automation_choice_format_spec_invariants()
+    ensures
+        AUTOMATION_CHOICE_FMT().safe_inv(),
+        AUTOMATION_CHOICE_FMT().productive_inv(),
+        AUTOMATION_CHOICE_FMT().serialize_inv(),
+        AUTOMATION_CHOICE_FMT().serialize_dps_inv(),
+        AUTOMATION_CHOICE_FMT().unambiguous(),
+        AUTOMATION_CHOICE_FMT().equiv_general_inv(),
+        AUTOMATION_CHOICE_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(AUTOMATION_CHOICE_FMT().safe_inv());
+    assert(AUTOMATION_CHOICE_FMT().productive_inv());
+    assert(AUTOMATION_CHOICE_FMT().serialize_inv());
+    assert(AUTOMATION_CHOICE_FMT().serialize_dps_inv());
     assert(AUTOMATION_CHOICE_FMT().unambiguous());
+    assert(AUTOMATION_CHOICE_FMT().equiv_general_inv());
+    assert(AUTOMATION_CHOICE_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `AutomationChoice`.
+pub proof fn lemma_automation_choice_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <AutomationChoiceFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&AUTOMATION_CHOICE_FMT()),
+        <AutomationChoiceFmt as vest_lib2::core::exec::serializer::Serializer<Output, AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()),
+        <AutomationChoiceFmt as vest_lib2::core::exec::serializer::Prepare<AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()),
+        <AutomationChoiceFmt as vest_lib2::core::exec::serializer::ByteLen<AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()),
+{
+    lemma_automation_choice_format_spec_invariants();
+    assert(<AutomationChoiceFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&AUTOMATION_CHOICE_FMT()));
+    assert(<AutomationChoiceFmt as vest_lib2::core::exec::serializer::Serializer<Output, AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()));
+    assert(<AutomationChoiceFmt as vest_lib2::core::exec::serializer::Prepare<AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()));
+    assert(<AutomationChoiceFmt as vest_lib2::core::exec::serializer::ByteLen<AutomationChoice>>::exec_inv(&AUTOMATION_CHOICE_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `AutomationSequence`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_automation_sequence_format_spec_invariants()
+    ensures
+        AUTOMATION_SEQUENCE_FMT().safe_inv(),
+        AUTOMATION_SEQUENCE_FMT().productive_inv(),
+        AUTOMATION_SEQUENCE_FMT().serialize_inv(),
+        AUTOMATION_SEQUENCE_FMT().serialize_dps_inv(),
+        AUTOMATION_SEQUENCE_FMT().unambiguous(),
+        AUTOMATION_SEQUENCE_FMT().equiv_general_inv(),
+        AUTOMATION_SEQUENCE_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
+    lemma_automation_choice_format_spec_invariants();
     assert(AUTOMATION_SEQUENCE_FMT().safe_inv());
+    assert(AUTOMATION_SEQUENCE_FMT().productive_inv());
+    assert(AUTOMATION_SEQUENCE_FMT().serialize_inv());
+    assert(AUTOMATION_SEQUENCE_FMT().serialize_dps_inv());
     assert(AUTOMATION_SEQUENCE_FMT().unambiguous());
+    assert(AUTOMATION_SEQUENCE_FMT().equiv_general_inv());
+    assert(AUTOMATION_SEQUENCE_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `AutomationSequence`.
+pub proof fn lemma_automation_sequence_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <AutomationSequenceFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()),
+        <AutomationSequenceFmt as vest_lib2::core::exec::serializer::Serializer<Output, AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()),
+        <AutomationSequenceFmt as vest_lib2::core::exec::serializer::Prepare<AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()),
+        <AutomationSequenceFmt as vest_lib2::core::exec::serializer::ByteLen<AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()),
+{
+    lemma_automation_sequence_format_spec_invariants();
+    lemma_automation_choice_format_spec_invariants();
+    lemma_automation_choice_format_exec_invariants::<Output>();
+    assert(<AutomationSequenceFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()));
+    assert(<AutomationSequenceFmt as vest_lib2::core::exec::serializer::Serializer<Output, AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()));
+    assert(<AutomationSequenceFmt as vest_lib2::core::exec::serializer::Prepare<AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()));
+    assert(<AutomationSequenceFmt as vest_lib2::core::exec::serializer::ByteLen<AutomationSequence>>::exec_inv(&AUTOMATION_SEQUENCE_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Items`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_items_format_spec_invariants()
+    ensures
+        ITEMS_FMT().safe_inv(),
+        ITEMS_FMT().productive_inv(),
+        ITEMS_FMT().serialize_inv(),
+        ITEMS_FMT().serialize_dps_inv(),
+        ITEMS_FMT().unambiguous(),
+        ITEMS_FMT().equiv_general_inv(),
+        ITEMS_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
+    lemma_item_format_spec_invariants();
     assert(ITEMS_FMT().safe_inv());
+    assert(ITEMS_FMT().productive_inv());
+    assert(ITEMS_FMT().serialize_inv());
+    assert(ITEMS_FMT().serialize_dps_inv());
     assert(ITEMS_FMT().unambiguous());
+    assert(ITEMS_FMT().equiv_general_inv());
+    assert(ITEMS_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Items`.
+pub proof fn lemma_items_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <ItemsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ITEMS_FMT()),
+        <ItemsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Items>>::exec_inv(&ITEMS_FMT()),
+        <ItemsFmt as vest_lib2::core::exec::serializer::Prepare<Items>>::exec_inv(&ITEMS_FMT()),
+        <ItemsFmt as vest_lib2::core::exec::serializer::ByteLen<Items>>::exec_inv(&ITEMS_FMT()),
+{
+    lemma_items_format_spec_invariants();
+    lemma_item_format_spec_invariants();
+    lemma_item_format_exec_invariants::<Output>();
+    assert(<ItemsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&ITEMS_FMT()));
+    assert(<ItemsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Items>>::exec_inv(&ITEMS_FMT()));
+    assert(<ItemsFmt as vest_lib2::core::exec::serializer::Prepare<Items>>::exec_inv(&ITEMS_FMT()));
+    assert(<ItemsFmt as vest_lib2::core::exec::serializer::ByteLen<Items>>::exec_inv(&ITEMS_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `Flags`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_flags_format_spec_invariants()
+    ensures
+        FLAGS_FMT().safe_inv(),
+        FLAGS_FMT().productive_inv(),
+        FLAGS_FMT().serialize_inv(),
+        FLAGS_FMT().serialize_dps_inv(),
+        FLAGS_FMT().unambiguous(),
+        FLAGS_FMT().equiv_general_inv(),
+        FLAGS_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
     assert(FLAGS_FMT().safe_inv());
+    assert(FLAGS_FMT().productive_inv());
+    assert(FLAGS_FMT().serialize_inv());
+    assert(FLAGS_FMT().serialize_dps_inv());
     assert(FLAGS_FMT().unambiguous());
+    assert(FLAGS_FMT().equiv_general_inv());
+    assert(FLAGS_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `Flags`.
+pub proof fn lemma_flags_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <FlagsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&FLAGS_FMT()),
+        <FlagsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Flags>>::exec_inv(&FLAGS_FMT()),
+        <FlagsFmt as vest_lib2::core::exec::serializer::Prepare<Flags>>::exec_inv(&FLAGS_FMT()),
+        <FlagsFmt as vest_lib2::core::exec::serializer::ByteLen<Flags>>::exec_inv(&FLAGS_FMT()),
+{
+    lemma_flags_format_spec_invariants();
+    assert(<FlagsFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&FLAGS_FMT()));
+    assert(<FlagsFmt as vest_lib2::core::exec::serializer::Serializer<Output, Flags>>::exec_inv(&FLAGS_FMT()));
+    assert(<FlagsFmt as vest_lib2::core::exec::serializer::Prepare<Flags>>::exec_inv(&FLAGS_FMT()));
+    assert(<FlagsFmt as vest_lib2::core::exec::serializer::ByteLen<Flags>>::exec_inv(&FLAGS_FMT()));
+}
+
+/// Pure specification certificate for ASN.1 `FlagSet`.
+/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply.
+pub proof fn lemma_flag_set_format_spec_invariants()
+    ensures
+        FLAG_SET_FMT().safe_inv(),
+        FLAG_SET_FMT().productive_inv(),
+        FLAG_SET_FMT().serialize_inv(),
+        FLAG_SET_FMT().serialize_dps_inv(),
+        FLAG_SET_FMT().unambiguous(),
+        FLAG_SET_FMT().equiv_general_inv(),
+        FLAG_SET_FMT().equiv_inv(),
+{
+    use vest_lib2::core::proof::*;
+    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;
+    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;
+    use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use disjointness_lemmas;
+    broadcast use lemma_tag_wf_implies_tag_consistent;
+    broadcast use asn1_disjointness_lemmas;
+    assert(FLAG_SET_FMT().safe_inv());
+    assert(FLAG_SET_FMT().productive_inv());
+    assert(FLAG_SET_FMT().serialize_inv());
+    assert(FLAG_SET_FMT().serialize_dps_inv());
+    assert(FLAG_SET_FMT().unambiguous());
+    assert(FLAG_SET_FMT().equiv_general_inv());
+    assert(FLAG_SET_FMT().equiv_inv());
+}
+
+/// Executable API certificate for ASN.1 `FlagSet`.
+pub proof fn lemma_flag_set_format_exec_invariants<'i, Output>()
+    where
+        Output: vest_lib2::core::exec::output::OutputBuf,
+    ensures
+        <FlagSetFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&FLAG_SET_FMT()),
+        <FlagSetFmt as vest_lib2::core::exec::serializer::Serializer<Output, FlagSet>>::exec_inv(&FLAG_SET_FMT()),
+        <FlagSetFmt as vest_lib2::core::exec::serializer::Prepare<FlagSet>>::exec_inv(&FLAG_SET_FMT()),
+        <FlagSetFmt as vest_lib2::core::exec::serializer::ByteLen<FlagSet>>::exec_inv(&FLAG_SET_FMT()),
+{
+    lemma_flag_set_format_spec_invariants();
+    assert(<FlagSetFmt as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&FLAG_SET_FMT()));
+    assert(<FlagSetFmt as vest_lib2::core::exec::serializer::Serializer<Output, FlagSet>>::exec_inv(&FLAG_SET_FMT()));
+    assert(<FlagSetFmt as vest_lib2::core::exec::serializer::Prepare<FlagSet>>::exec_inv(&FLAG_SET_FMT()));
+    assert(<FlagSetFmt as vest_lib2::core::exec::serializer::ByteLen<FlagSet>>::exec_inv(&FLAG_SET_FMT()));
 }
 
 

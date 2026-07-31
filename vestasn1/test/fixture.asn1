@@ -80,6 +80,8 @@ Fixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
         selected [24] EXPLICIT AutomationChoice OPTIONAL
     }
 
+    Headers ::= SET OF Header
+
     featureEnabled Flag ::= TRUE
     answer Count ::= 42
     defaultColor Color ::= green

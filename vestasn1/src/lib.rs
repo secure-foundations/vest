@@ -9,7 +9,9 @@ mod error;
 mod frontend;
 mod naming;
 
-pub use codegen::{generate, generate_with_options, CodegenOptions, EncodingRules};
+pub use codegen::{
+    generate, generate_with_options, generate_with_rule_overrides, CodegenOptions, EncodingRules,
+};
 pub use error::{CodegenError, Error};
 pub use frontend::{SchemaModule, SchemaValue, SchemaValueAssignment};
 pub use synta_codegen::ast;
@@ -31,4 +33,20 @@ pub fn compile(source: &str) -> Result<String, Error> {
 pub fn compile_with_options(source: &str, options: CodegenOptions) -> Result<String, Error> {
     let module = parse(source)?;
     Ok(generate_with_options(&module, options)?)
+}
+
+/// Parse an ASN.1 module and generate it with per-definition encoding-rule
+/// overrides. Definitions without an override inherit the rule of their use
+/// site; shared definitions are emitted once per required rule.
+pub fn compile_with_rule_overrides(
+    source: &str,
+    options: CodegenOptions,
+    definition_rules: &std::collections::BTreeMap<String, EncodingRules>,
+) -> Result<String, Error> {
+    let module = parse(source)?;
+    Ok(generate_with_rule_overrides(
+        &module,
+        options,
+        definition_rules,
+    )?)
 }

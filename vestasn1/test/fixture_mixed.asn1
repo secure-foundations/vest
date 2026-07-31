@@ -1,0 +1,31 @@
+MixedFixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+Version ::= INTEGER {
+    v1(0),
+    v2(1)
+} (0..1)
+
+Shared ::= SEQUENCE {
+    version Version DEFAULT v1,
+    payload OCTET STRING
+}
+
+Canonical ::= SET OF Shared
+
+Ordered ::= SET {
+    first [0] IMPLICIT BOOLEAN,
+    second [1] IMPLICIT INTEGER OPTIONAL
+}
+
+Outer ::= SEQUENCE {
+    shared Shared,
+    canonical [0] IMPLICIT Canonical,
+    ordered [1] EXPLICIT Ordered,
+    trailing ANY OPTIONAL
+}
+
+NumericLabel ::= NumericString (SIZE (1..16))
+
+UniversalLabel ::= UniversalString (SIZE (1..16))
+
+END

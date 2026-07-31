@@ -3,9 +3,9 @@ use crate::error::CodegenError;
 use crate::frontend::{SchemaModule, SchemaValue, SchemaValueAssignment};
 use crate::naming::{
     format_const_name, format_type_name, rust_field_name, rust_variant_name, spec_type_name,
-    value_const_name, value_type_name,
+    to_snake_case, value_const_name, value_type_name,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::Write;
 use synta_codegen::ast::{
     ChoiceVariant, Constraint, ConstraintSpec, ConstraintValue, Definition, Module, NamedNumber,
@@ -23,6 +23,13 @@ struct LengthBounds {
 struct IntegerBounds {
     min: Option<i64>,
     max: Option<i64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum IntegerRepr {
+    I8,
+    I16,
+    General,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -44,6 +51,8 @@ struct Names {
     spec: String,
     format: String,
     format_const: String,
+    spec_invariants: String,
+    exec_invariants: String,
     forward: String,
     reverse: String,
     predicate: String,
@@ -63,7 +72,7 @@ enum TagDomain {
 }
 
 /// ASN.1 encoding rules used by generated formats.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EncodingRules {
     /// Distinguished Encoding Rules.
     #[default]
@@ -103,21 +112,38 @@ pub fn generate_with_options(
     schema: &SchemaModule,
     options: CodegenOptions,
 ) -> Result<String, CodegenError> {
-    Generator::new(schema, options)?.generate()
+    Generator::new(schema, options, &BTreeMap::new())?.generate()
+}
+
+/// Generate one module with selected named definitions forced to a different
+/// encoding rule. Non-overridden references inherit the caller's rule; a
+/// shared definition is emitted once per rule when both variants are needed.
+pub fn generate_with_rule_overrides(
+    schema: &SchemaModule,
+    options: CodegenOptions,
+    definition_rules: &BTreeMap<String, EncodingRules>,
+) -> Result<String, CodegenError> {
+    Generator::new(schema, options, definition_rules)?.generate()
 }
 
 struct Generator<'a> {
-    schema: &'a SchemaModule,
     module: &'a Module,
     definitions: Vec<Definition>,
     definition_index: BTreeMap<String, usize>,
     names: BTreeMap<String, Names>,
     borrows: BTreeMap<String, bool>,
+    rules: BTreeMap<String, EncodingRules>,
+    values: Vec<SchemaValueAssignment>,
+    mixed_rules: bool,
     options: CodegenOptions,
 }
 
 impl<'a> Generator<'a> {
-    fn new(schema: &'a SchemaModule, options: CodegenOptions) -> Result<Self, CodegenError> {
+    fn new(
+        schema: &'a SchemaModule,
+        options: CodegenOptions,
+        definition_rules: &BTreeMap<String, EncodingRules>,
+    ) -> Result<Self, CodegenError> {
         let module = schema;
         if !module.imports.is_empty() {
             return Err(CodegenError::new(
@@ -132,7 +158,13 @@ impl<'a> Generator<'a> {
             ));
         }
 
-        let definitions = normalize_definitions(module)?;
+        let normalized = normalize_definitions(module)?;
+        let (definitions, rules, values) = expand_rule_variants(
+            normalized,
+            &schema.values,
+            options.encoding_rules,
+            definition_rules,
+        )?;
         let definition_index = definitions
             .iter()
             .enumerate()
@@ -175,6 +207,14 @@ impl<'a> Generator<'a> {
                     forward: format!("{value}Forward"),
                     reverse: format!("{value}Reverse"),
                     predicate: format!("{value}Predicate"),
+                    spec_invariants: format!(
+                        "lemma_{}_format_spec_invariants",
+                        to_snake_case(&definition.name)
+                    ),
+                    exec_invariants: format!(
+                        "lemma_{}_format_exec_invariants",
+                        to_snake_case(&definition.name)
+                    ),
                     value,
                     spec,
                     format,
@@ -183,7 +223,7 @@ impl<'a> Generator<'a> {
             );
         }
 
-        for assignment in &schema.values {
+        for assignment in &values {
             let constant = value_const_name(&assignment.name);
             if let Some(previous) = rust_consts.insert(constant.clone(), assignment.name.clone()) {
                 return Err(CodegenError::new(
@@ -194,12 +234,14 @@ impl<'a> Generator<'a> {
         }
 
         let mut generator = Self {
-            schema,
             module,
             definitions,
             definition_index,
             names,
             borrows: BTreeMap::new(),
+            rules,
+            values,
+            mixed_rules: !definition_rules.is_empty(),
             options,
         };
         generator.compute_lifetimes()?;
@@ -218,7 +260,11 @@ impl<'a> Generator<'a> {
 
     fn compute_lifetimes(&mut self) -> Result<(), CodegenError> {
         for definition in &self.definitions {
-            let borrows = self.type_borrows(&definition.ty, &mut BTreeSet::new())?;
+            let borrows = self.type_borrows(
+                &definition.ty,
+                &mut BTreeSet::new(),
+                self.rules[&definition.name],
+            )?;
             self.borrows.insert(definition.name.clone(), borrows);
         }
         Ok(())
@@ -228,6 +274,7 @@ impl<'a> Generator<'a> {
         &self,
         ty: &Type,
         visiting: &mut BTreeSet<String>,
+        rule: EncodingRules,
     ) -> Result<bool, CodegenError> {
         Ok(match ty {
             Type::Integer(_, _) | Type::Real | Type::GeneralizedTime => true,
@@ -237,28 +284,39 @@ impl<'a> Generator<'a> {
             | Type::PrintableString(_)
             | Type::IA5String(_)
             | Type::TeletexString(_)
-            | Type::Any => self.options.encoding_rules == EncodingRules::Der,
+            | Type::Any => rule == EncodingRules::Der,
+            Type::NumericString(_) => rule == EncodingRules::Der,
             Type::BmpString(_) => false,
             Type::Sequence(fields) | Type::Set(fields) => {
                 let mut borrows = false;
                 for field in fields {
-                    borrows |= self.type_borrows(&field.ty, visiting)?;
+                    borrows |= self.type_borrows(&field.ty, visiting, rule)?;
                 }
                 borrows
             }
             Type::Choice(variants) => {
                 let mut borrows = false;
                 for variant in variants {
-                    borrows |= self.type_borrows(&variant.ty, visiting)?;
+                    borrows |= self.type_borrows(&variant.ty, visiting, rule)?;
                 }
                 borrows
             }
-            Type::SequenceOf(inner, _)
-            | Type::SetOf(inner, _)
-            | Type::Tagged { inner, .. }
-            | Type::Constrained {
-                base_type: inner, ..
-            } => self.type_borrows(inner, visiting)?,
+            Type::SequenceOf(inner, _) | Type::SetOf(inner, _) | Type::Tagged { inner, .. } => {
+                self.type_borrows(inner, visiting, rule)?
+            }
+            Type::Constrained {
+                base_type: inner,
+                constraint,
+            } => {
+                if matches!(inner.as_ref(), Type::Integer(None, _))
+                    && integer_repr(integer_value_bounds(constraint, "INTEGER")?)
+                        != IntegerRepr::General
+                {
+                    false
+                } else {
+                    self.type_borrows(inner, visiting, rule)?
+                }
+            }
             Type::TypeRef(name) => {
                 if let Some(value) = self.borrows.get(name) {
                     *value
@@ -269,7 +327,8 @@ impl<'a> Generator<'a> {
                             "recursive ASN.1 definitions require a Vest fixpoint combinator",
                         ));
                     }
-                    let value = self.type_borrows(&self.definition(name)?.ty, visiting)?;
+                    let value =
+                        self.type_borrows(&self.definition(name)?.ty, visiting, self.rules[name])?;
                     visiting.remove(name);
                     value
                 }
@@ -279,10 +338,9 @@ impl<'a> Generator<'a> {
             | Type::UtcTime
             | Type::Enumerated(_)
             | Type::ObjectIdentifier => false,
+            Type::UniversalString(_) => false,
             Type::RelativeOid
-            | Type::UniversalString(_)
             | Type::GeneralString(_)
-            | Type::NumericString(_)
             | Type::VisibleString(_)
             | Type::AnyDefinedBy(_)
             | Type::Class(_) => false,
@@ -291,7 +349,11 @@ impl<'a> Generator<'a> {
 
     fn validate(&self) -> Result<(), CodegenError> {
         for definition in &self.definitions {
-            self.validate_type(&definition.ty, &definition.name)?;
+            self.validate_type(
+                &definition.ty,
+                &definition.name,
+                self.rules[&definition.name],
+            )?;
         }
 
         let mut visiting = BTreeSet::new();
@@ -306,7 +368,7 @@ impl<'a> Generator<'a> {
         }
 
         let mut value_names = BTreeSet::new();
-        for assignment in &self.schema.values {
+        for assignment in &self.values {
             if !value_names.insert(assignment.name.as_str()) {
                 return Err(CodegenError::new(
                     &assignment.name,
@@ -318,9 +380,14 @@ impl<'a> Generator<'a> {
         Ok(())
     }
 
-    fn validate_type(&self, ty: &Type, path: &str) -> Result<(), CodegenError> {
+    fn validate_type(
+        &self,
+        ty: &Type,
+        path: &str,
+        rule: EncodingRules,
+    ) -> Result<(), CodegenError> {
         match ty {
-            Type::Sequence(fields) => {
+            Type::Sequence(fields) | Type::Set(fields) => {
                 let mut rust_fields = BTreeMap::<String, String>::new();
                 for field in fields {
                     let rust_name = rust_field_name(&field.name);
@@ -336,30 +403,27 @@ impl<'a> Generator<'a> {
                         ));
                     }
                     let field_path = format!("{path}.{}", field.name);
-                    self.validate_type(&field.ty, &field_path)?;
+                    self.validate_type(&field.ty, &field_path, rule)?;
                     if let Some(default) = &field.default {
                         self.render_default(&field.ty, default, &field_path)?;
                     }
                 }
-                self.validate_sequence_dispatch(fields, path)?;
+                self.validate_sequence_dispatch(fields, path, rule)?;
+                if matches!(ty, Type::Set(_)) {
+                    if rule != EncodingRules::Der {
+                        return Err(CodegenError::new(
+                            path,
+                            "heterogeneous SET is supported only for DER schemas whose fields are already in canonical tag order",
+                        ));
+                    }
+                    self.validate_set_order(fields, path, rule)?;
+                }
             }
-            Type::SequenceOf(inner, constraint) => {
+            Type::SequenceOf(inner, constraint) | Type::SetOf(inner, constraint) => {
                 if let Some(constraint) = constraint {
                     legacy_size_bounds(constraint, path)?;
                 }
-                self.validate_type(inner, &format!("{path}[]"))?;
-            }
-            Type::Set(_) => {
-                return Err(CodegenError::new(
-                    path,
-                    "SET needs order-independent component parsing and is not supported yet",
-                ));
-            }
-            Type::SetOf(_, _) => {
-                return Err(CodegenError::new(
-                    path,
-                    "SET OF generation is disabled until rule-correct ordering and duplicate handling are implemented",
-                ));
+                self.validate_type(inner, &format!("{path}[]"), rule)?;
             }
             Type::Choice(variants) => {
                 if variants.is_empty() {
@@ -381,16 +445,17 @@ impl<'a> Generator<'a> {
                         ));
                     }
                     let variant_path = format!("{path}.{}", variant.name);
-                    self.validate_type(&variant.ty, &variant_path)?;
+                    self.validate_type(&variant.ty, &variant_path, rule)?;
                     if variants.len() > 1
-                        && self.tag_shape(&variant.ty, &mut BTreeSet::new())? == TagShape::Untagged
+                        && self.tag_shape(&variant.ty, &mut BTreeSet::new(), rule)?
+                            == TagShape::Untagged
                     {
                         return Err(CodegenError::new(
                             &variant_path,
                             "an untagged CHOICE/open-type alternative must be explicitly tagged before it can participate in another CHOICE",
                         ));
                     }
-                    let domain = self.tag_domain(&variant.ty, &mut BTreeSet::new())?;
+                    let domain = self.tag_domain(&variant.ty, &mut BTreeSet::new(), rule)?;
                     if domains_overlap(&seen, &domain) {
                         return Err(CodegenError::new(
                             &variant_path,
@@ -426,24 +491,31 @@ impl<'a> Generator<'a> {
                     legacy_size_bounds(constraint.as_ref().unwrap(), path)?;
                 }
             }
+            Type::NumericString(constraint) | Type::UniversalString(constraint) => {
+                if let Some(constraint) = constraint {
+                    legacy_size_bounds(constraint, path)?;
+                }
+            }
             Type::BitString(constraint) => {
                 if constraint.is_some() {
                     return Err(CodegenError::new(path, "BIT STRING SIZE constraints need a bit-length predicate and are not supported yet"));
                 }
             }
-            Type::Tagged { inner, .. } => self.validate_type(inner, path)?,
+            Type::Tagged { inner, .. } => self.validate_type(inner, path, rule)?,
             Type::Constrained {
                 base_type,
                 constraint,
             } => {
-                self.validate_type(base_type, path)?;
+                self.validate_type(base_type, path, rule)?;
                 match base_type.as_ref() {
                     Type::OctetString(None)
                     | Type::Utf8String(None)
                     | Type::PrintableString(None)
                     | Type::IA5String(None)
                     | Type::TeletexString(None)
-                    | Type::BmpString(None) => {
+                    | Type::BmpString(None)
+                    | Type::NumericString(None)
+                    | Type::UniversalString(None) => {
                         string_size_bounds(constraint, path)?;
                     }
                     Type::Integer(None, _) => {
@@ -458,9 +530,7 @@ impl<'a> Generator<'a> {
                 }
             }
             Type::RelativeOid => return self.unsupported(path, "RELATIVE-OID"),
-            Type::UniversalString(_) => return self.unsupported(path, "UniversalString"),
             Type::GeneralString(_) => return self.unsupported(path, "GeneralString"),
-            Type::NumericString(_) => return self.unsupported(path, "NumericString"),
             Type::VisibleString(_) => return self.unsupported(path, "VisibleString"),
             Type::AnyDefinedBy(_) => {
                 return Err(CodegenError::new(
@@ -490,6 +560,37 @@ impl<'a> Generator<'a> {
             path,
             format!("{construct} has no faithful vest_lib2 ASN.1 backend format yet"),
         ))
+    }
+
+    fn backend_item(&self, rule: EncodingRules, item: &str) -> String {
+        if self.mixed_rules {
+            format!("vest_lib2::asn1::{}::{item}", rule.module())
+        } else {
+            item.to_string()
+        }
+    }
+
+    fn render_constrained_integer(&self, bounds: IntegerBounds, rule: EncodingRules) -> Rendered {
+        let has_min = bounds.min.is_some();
+        let min = bounds.min.unwrap_or(0);
+        let has_max = bounds.max.is_some();
+        let max = bounds.max.unwrap_or(0);
+        let predicate_type = format!("IntegerRange<{has_min}, {min}, {has_max}, {max}>");
+        let predicate_expr = format!("IntegerRange::<{has_min}, {min}, {has_max}, {max}>");
+        let (format_type, format_expr) = match integer_repr(bounds) {
+            IntegerRepr::I8 => ("Integer8TlvFmt", "INTEGER8"),
+            IntegerRepr::I16 => ("Integer16TlvFmt", "INTEGER16"),
+            IntegerRepr::General => ("IntegerTlvFmt", "INTEGER"),
+        };
+        refine(
+            primitive(
+                &self.backend_item(rule, format_type),
+                &self.backend_item(rule, format_expr),
+                false,
+            ),
+            predicate_type,
+            predicate_expr,
+        )
     }
 
     fn validate_enumerated(&self, values: &[NamedNumber], path: &str) -> Result<(), CodegenError> {
@@ -535,33 +636,12 @@ impl<'a> Generator<'a> {
         &self,
         fields: &[SequenceField],
         path: &str,
+        rule: EncodingRules,
     ) -> Result<(), CodegenError> {
-        for (index, field) in fields.iter().enumerate() {
-            if !(field.optional || field.default.is_some()) {
-                continue;
-            }
-            for following in &fields[index + 1..] {
-                if self.tag_shape(&following.ty, &mut BTreeSet::new())? == TagShape::Untagged {
-                    return Err(CodegenError::new(
-                        format!("{path}.{}", following.name),
-                        "a CHOICE/open type following an optional/defaulted field must be explicitly tagged",
-                    ));
-                }
-                if !(following.optional || following.default.is_some()) {
-                    break;
-                }
-            }
-        }
         let mut suffix = TagDomain::Finite(BTreeSet::new());
         for field in fields.iter().rev() {
-            let current = self.tag_domain(&field.ty, &mut BTreeSet::new())?;
+            let current = self.tag_domain(&field.ty, &mut BTreeSet::new(), rule)?;
             if field.optional || field.default.is_some() {
-                if self.tag_shape(&field.ty, &mut BTreeSet::new())? == TagShape::Untagged {
-                    return Err(CodegenError::new(
-                        format!("{path}.{}", field.name),
-                        "an optional/defaulted CHOICE or open type must be explicitly tagged",
-                    ));
-                }
                 if domains_overlap(&current, &suffix) {
                     return Err(CodegenError::new(
                         format!("{path}.{}", field.name),
@@ -572,6 +652,51 @@ impl<'a> Generator<'a> {
             } else {
                 suffix = current;
             }
+        }
+        Ok(())
+    }
+
+    fn validate_set_order(
+        &self,
+        fields: &[SequenceField],
+        path: &str,
+        rule: EncodingRules,
+    ) -> Result<(), CodegenError> {
+        let mut previous_max: Option<Vec<u8>> = None;
+        for field in fields {
+            let domain = self.tag_domain(&field.ty, &mut BTreeSet::new(), rule)?;
+            let TagDomain::Finite(tags) = domain else {
+                return Err(CodegenError::new(
+                    format!("{path}.{}", field.name),
+                    "a statically ordered DER SET field must have a finite outer-tag domain",
+                ));
+            };
+            if tags.is_empty() {
+                return Err(CodegenError::new(
+                    format!("{path}.{}", field.name),
+                    "a DER SET field has no possible outer tag",
+                ));
+            }
+            let min = tags
+                .iter()
+                .map(der_identifier_octets)
+                .min()
+                .expect("non-empty tag domain");
+            let max = tags
+                .iter()
+                .map(der_identifier_octets)
+                .max()
+                .expect("non-empty tag domain");
+            if previous_max
+                .as_ref()
+                .is_some_and(|previous| previous >= &min)
+            {
+                return Err(CodegenError::new(
+                    format!("{path}.{}", field.name),
+                    "DER SET fields are not in strict canonical order by complete identifier octets",
+                ));
+            }
+            previous_max = Some(max);
         }
         Ok(())
     }
@@ -660,32 +785,51 @@ impl<'a> Generator<'a> {
         writeln!(
             output,
             "// Generated formats parse and serialize {}.",
-            self.options.encoding_rules.display()
+            if self.mixed_rules {
+                "a schema-selected mixture of BER and DER"
+            } else {
+                self.options.encoding_rules.display()
+            }
         )
         .unwrap();
         writeln!(output, "#![allow(unused_imports)]").unwrap();
         writeln!(output).unwrap();
         writeln!(output, "use vest_lib2::asn1::*;").unwrap();
-        writeln!(
-            output,
-            "use vest_lib2::asn1::{}::{{\
-             AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, \
-             Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, \
-             Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, \
-             IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, \
-             PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, \
-             TeletexStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, \
-             BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, \
-             EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, \
-             IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, \
-             OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, \
-             SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UTC_TIME, UTF8_STRING\
-             }};",
-            self.options.encoding_rules.module()
-        )
-        .unwrap();
-        if self.options.encoding_rules == EncodingRules::Ber {
-            writeln!(output, "use vest_lib2::asn1::ber::{{BerEndFmt, BER_END}};").unwrap();
+        if self.mixed_rules {
+            writeln!(
+                output,
+                "use vest_lib2::asn1::modifiers::{{\
+                 implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, \
+                 IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, OPTIONAL, REQUIRED\
+                 }};"
+            )
+            .unwrap();
+        } else {
+            writeln!(
+                output,
+                "use vest_lib2::asn1::{}::{{\
+                 AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, \
+                 Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, \
+                 Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, \
+                 IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, \
+                 NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, \
+                 SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, \
+                 Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, \
+                 BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, \
+                 EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, \
+                 IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, \
+                 NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, \
+                 REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, \
+                 UTC_TIME, UTF8_STRING\
+                 }};",
+                self.options.encoding_rules.module()
+            )
+            .unwrap();
+            if self.options.encoding_rules == EncodingRules::Ber {
+                writeln!(output, "use vest_lib2::asn1::ber::{{BerEndFmt, BER_END}};").unwrap();
+            } else {
+                writeln!(output, "use vest_lib2::asn1::der::{{SetFmt, SET}};").unwrap();
+            }
         }
         writeln!(
             output,
@@ -709,7 +853,163 @@ impl<'a> Generator<'a> {
             self.render_format_declaration(definition, &mut output)?;
         }
 
-        writeln!(output, "proof fn vestasn1_generated_formats_are_valid() {{").unwrap();
+        for definition in &self.definitions {
+            self.render_format_invariant_certificates(definition, &mut output)?;
+        }
+        for assignment in &self.values {
+            self.render_value_constant(assignment, &mut output)?;
+        }
+        writeln!(output, "\n}} // verus!").unwrap();
+        Ok(output)
+    }
+
+    fn render_format_invariant_certificates(
+        &self,
+        definition: &Definition,
+        output: &mut String,
+    ) -> Result<(), CodegenError> {
+        let names = &self.names[&definition.name];
+        let rule = self.rules[&definition.name];
+        let format = format!("{}()", names.format_const);
+        let value = format!(
+            "{}{}",
+            names.value,
+            lifetime_application(self.borrows[&definition.name], "'i")
+        );
+        let dependencies = self.direct_dependencies(definition);
+
+        writeln!(
+            output,
+            "/// Pure specification certificate for ASN.1 `{}`.",
+            definition.name
+        )
+        .unwrap();
+        if rule == EncodingRules::Ber {
+            writeln!(
+                output,
+                "/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply."
+            )
+            .unwrap();
+        }
+        writeln!(
+            output,
+            "pub proof fn {}()\n    ensures",
+            names.spec_invariants
+        )
+        .unwrap();
+        writeln!(output, "        {format}.safe_inv(),").unwrap();
+        writeln!(output, "        {format}.productive_inv(),").unwrap();
+        if rule == EncodingRules::Der {
+            writeln!(output, "        {format}.sound_inv(),").unwrap();
+            writeln!(output, "        {format}.nonmal_inv(),").unwrap();
+        }
+        writeln!(output, "        {format}.serialize_inv(),").unwrap();
+        writeln!(output, "        {format}.serialize_dps_inv(),").unwrap();
+        writeln!(output, "        {format}.unambiguous(),").unwrap();
+        writeln!(output, "        {format}.equiv_general_inv(),").unwrap();
+        writeln!(output, "        {format}.equiv_inv(),").unwrap();
+        writeln!(output, "{{").unwrap();
+        self.render_invariant_proof_prelude(output);
+        for dependency in &dependencies {
+            writeln!(output, "    {}();", self.names[dependency].spec_invariants).unwrap();
+        }
+        writeln!(output, "    assert({format}.safe_inv());").unwrap();
+        writeln!(output, "    assert({format}.productive_inv());").unwrap();
+        if rule == EncodingRules::Der {
+            writeln!(output, "    assert({format}.sound_inv());").unwrap();
+            writeln!(output, "    assert({format}.nonmal_inv());").unwrap();
+        }
+        writeln!(output, "    assert({format}.serialize_inv());").unwrap();
+        writeln!(output, "    assert({format}.serialize_dps_inv());").unwrap();
+        writeln!(output, "    assert({format}.unambiguous());").unwrap();
+        writeln!(output, "    assert({format}.equiv_general_inv());").unwrap();
+        writeln!(output, "    assert({format}.equiv_inv());").unwrap();
+        writeln!(output, "}}\n").unwrap();
+
+        writeln!(
+            output,
+            "/// Executable API certificate for ASN.1 `{}`.",
+            definition.name
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "pub proof fn {}<'i, Output>()",
+            names.exec_invariants
+        )
+        .unwrap();
+        writeln!(output, "    where").unwrap();
+        writeln!(
+            output,
+            "        Output: vest_lib2::core::exec::output::OutputBuf,"
+        )
+        .unwrap();
+        writeln!(output, "    ensures").unwrap();
+        writeln!(
+            output,
+            "        <{} as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&{format}),",
+            names.format
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "        <{} as vest_lib2::core::exec::serializer::Serializer<Output, {}>>::exec_inv(&{format}),",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "        <{} as vest_lib2::core::exec::serializer::Prepare<{}>>::exec_inv(&{format}),",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "        <{} as vest_lib2::core::exec::serializer::ByteLen<{}>>::exec_inv(&{format}),",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(output, "{{").unwrap();
+        writeln!(output, "    {}();", names.spec_invariants).unwrap();
+        for dependency in &dependencies {
+            let dependency_names = &self.names[dependency];
+            writeln!(output, "    {}();", dependency_names.spec_invariants).unwrap();
+            writeln!(
+                output,
+                "    {}::<Output>();",
+                dependency_names.exec_invariants
+            )
+            .unwrap();
+        }
+        writeln!(
+            output,
+            "    assert(<{} as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&{format}));",
+            names.format
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "    assert(<{} as vest_lib2::core::exec::serializer::Serializer<Output, {}>>::exec_inv(&{format}));",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "    assert(<{} as vest_lib2::core::exec::serializer::Prepare<{}>>::exec_inv(&{format}));",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "    assert(<{} as vest_lib2::core::exec::serializer::ByteLen<{}>>::exec_inv(&{format}));",
+            names.format, value
+        )
+        .unwrap();
+        writeln!(output, "}}\n").unwrap();
+        Ok(())
+    }
+
+    fn render_invariant_proof_prelude(&self, output: &mut String) {
         writeln!(output, "    use vest_lib2::core::proof::*;").unwrap();
         writeln!(
             output,
@@ -733,20 +1033,12 @@ impl<'a> Generator<'a> {
         )
         .unwrap();
         writeln!(output, "    broadcast use asn1_disjointness_lemmas;").unwrap();
-        for definition in &self.definitions {
-            let format = format!("{}()", self.names[&definition.name].format_const);
-            writeln!(output, "    assert({format}.safe_inv());").unwrap();
-            if self.options.encoding_rules == EncodingRules::Der {
-                writeln!(output, "    assert({format}.sound_inv());").unwrap();
-            }
-            writeln!(output, "    assert({format}.unambiguous());").unwrap();
-        }
-        writeln!(output, "}}\n").unwrap();
-        for assignment in &self.schema.values {
-            self.render_value_constant(assignment, &mut output)?;
-        }
-        writeln!(output, "\n}} // verus!").unwrap();
-        Ok(output)
+    }
+
+    fn direct_dependencies(&self, definition: &Definition) -> BTreeSet<String> {
+        let mut references = Vec::new();
+        collect_type_refs(&definition.ty, &mut references);
+        references.into_iter().map(str::to_string).collect()
     }
 
     fn render_value_declaration(
@@ -755,8 +1047,9 @@ impl<'a> Generator<'a> {
         output: &mut String,
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
+        let rule = self.rules[&definition.name];
         match &definition.ty {
-            Type::Sequence(fields) => {
+            Type::Sequence(fields) | Type::Set(fields) => {
                 let lifetime = self.borrows[&definition.name];
                 writeln!(output, "/// Value type for ASN.1 `{}`.", definition.name).unwrap();
                 writeln!(
@@ -767,7 +1060,7 @@ impl<'a> Generator<'a> {
                 )
                 .unwrap();
                 for field in fields {
-                    let mut ty = self.exec_type(&field.ty, "'a")?;
+                    let mut ty = self.exec_type(&field.ty, "'a", rule)?;
                     if field.optional {
                         ty = format!("Option<{ty}>");
                     }
@@ -824,7 +1117,7 @@ impl<'a> Generator<'a> {
                         output,
                         "    {}({}),",
                         rust_variant_name(&variant.name),
-                        self.exec_type(&variant.ty, "'a")?
+                        self.exec_type(&variant.ty, "'a", rule)?
                     )
                     .unwrap();
                 }
@@ -895,6 +1188,9 @@ impl<'a> Generator<'a> {
                 )
                 .unwrap();
                 writeln!(output, "}}").unwrap();
+                writeln!(output, "impl DeepViewIdentity for {} {{", names.value).unwrap();
+                writeln!(output, "    proof fn lemma_deep_view_identity(&self) {{}}").unwrap();
+                writeln!(output, "}}").unwrap();
                 writeln!(output, "#[cfg(not(verus_keep_ghost))]").unwrap();
                 writeln!(output, "unsafe impl Structural for {} {{}}\n", names.value).unwrap();
             }
@@ -905,7 +1201,7 @@ impl<'a> Generator<'a> {
                     "pub type {}{} = {};",
                     names.value,
                     lifetime_declaration(lifetime),
-                    self.exec_type(ty, "'a")?
+                    self.exec_type(ty, "'a", rule)?
                 )
                 .unwrap();
                 writeln!(
@@ -926,7 +1222,9 @@ impl<'a> Generator<'a> {
         output: &mut String,
     ) -> Result<(), CodegenError> {
         match &definition.ty {
-            Type::Sequence(fields) => self.render_sequence_mappers(definition, fields, output),
+            Type::Sequence(fields) | Type::Set(fields) => {
+                self.render_sequence_mappers(definition, fields, output)
+            }
             Type::Choice(variants) => self.render_choice_mappers(definition, variants, output),
             Type::Enumerated(values) => self.render_enumerated_mappers(definition, values, output),
             _ => Ok(()),
@@ -941,6 +1239,7 @@ impl<'a> Generator<'a> {
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
         let lifetime = self.borrows[&definition.name];
+        let rule = self.rules[&definition.name];
         let mut spec_parts = fields
             .iter()
             .map(|field| {
@@ -955,7 +1254,7 @@ impl<'a> Generator<'a> {
         let mut parsed_parts = fields
             .iter()
             .map(|field| {
-                let ty = self.exec_type(&field.ty, "'a")?;
+                let ty = self.exec_type(&field.ty, "'a", rule)?;
                 Ok(if field.optional {
                     format!("Option<{ty}>")
                 } else {
@@ -966,7 +1265,7 @@ impl<'a> Generator<'a> {
         let mut reverse_parts = fields
             .iter()
             .map(|field| {
-                let ty = self.exec_type(&field.ty, "'a")?;
+                let ty = self.exec_type(&field.ty, "'a", rule)?;
                 Ok(if field.default.is_some() {
                     ty
                 } else if field.optional {
@@ -1114,13 +1413,14 @@ impl<'a> Generator<'a> {
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
         let lifetime = self.borrows[&definition.name];
+        let rule = self.rules[&definition.name];
         let spec_parts = variants
             .iter()
             .map(|variant| self.spec_type(&variant.ty))
             .collect::<Result<Vec<_>, _>>()?;
         let parsed_parts = variants
             .iter()
-            .map(|variant| self.exec_type(&variant.ty, "'a"))
+            .map(|variant| self.exec_type(&variant.ty, "'a", rule))
             .collect::<Result<Vec<_>, _>>()?;
         let reverse_parts = parsed_parts
             .iter()
@@ -1366,52 +1666,66 @@ impl<'a> Generator<'a> {
         output: &mut String,
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
+        let rule = self.rules[&definition.name];
         let rendered = match &definition.ty {
             Type::Sequence(fields) => {
-                let sequence = match self.options.encoding_rules {
+                let sequence = match rule {
                     EncodingRules::Der => {
-                        let raw = self.render_sequence_fields(fields, &definition.name)?;
+                        let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
                         Rendered {
-                            ty: format!("SequenceFmt<{}>", raw.ty),
-                            expr: format!("SEQUENCE({})", raw.expr),
+                            ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
+                            expr: format!("{}({})", self.backend_item(rule, "SEQUENCE"), raw.expr),
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
                     EncodingRules::Ber => {
+                        let end_ty = self.backend_item(rule, "BerEndFmt");
+                        let end_expr = self.backend_item(rule, "BER_END");
                         let raw = self.render_sequence_fields_with_end(
                             fields,
                             &definition.name,
-                            "BerEndFmt",
-                            "BER_END",
+                            &end_ty,
+                            &end_expr,
+                            rule,
                         )?;
                         Rendered {
-                            ty: format!("SequenceFmt<{}>", raw.ty),
-                            expr: format!("SEQUENCE({})", raw.expr),
+                            ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
+                            expr: format!("{}({})", self.backend_item(rule, "SEQUENCE"), raw.expr),
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
                 };
                 map_with_bimap(sequence, &names.forward, &names.reverse)
             }
+            Type::Set(fields) => {
+                debug_assert_eq!(rule, EncodingRules::Der);
+                let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
+                let set = Rendered {
+                    ty: format!("{}<{}>", self.backend_item(rule, "SetFmt"), raw.ty),
+                    expr: format!("{}({})", self.backend_item(rule, "SET"), raw.expr),
+                    shape: TagShape::Tlv { constructed: true },
+                };
+                map_with_bimap(set, &names.forward, &names.reverse)
+            }
             Type::Choice(variants) => {
-                let raw = self.render_choice_raw(variants)?;
+                let raw = self.render_choice_raw(variants, rule)?;
                 map_with_bimap(raw, &names.forward, &names.reverse)
             }
             Type::Enumerated(_) => {
                 let wire = Rendered {
-                    ty: "Enumerated16TlvFmt".to_string(),
-                    expr: "ENUMERATED16".to_string(),
+                    ty: self.backend_item(rule, "Enumerated16TlvFmt"),
+                    expr: self.backend_item(rule, "ENUMERATED16"),
                     shape: TagShape::Tlv { constructed: false },
                 };
                 let refined = refine(wire, names.predicate.clone(), names.predicate.clone());
                 map_with_bimap(refined, &names.forward, &names.reverse)
             }
-            ty => self.render_type(ty)?,
+            ty => self.render_type(ty, rule)?,
         };
         writeln!(
             output,
             "/// {} format for ASN.1 `{}`.",
-            self.options.encoding_rules.display(),
+            rule.display(),
             definition.name
         )
         .unwrap();
@@ -1429,13 +1743,20 @@ impl<'a> Generator<'a> {
         Ok(())
     }
 
-    fn render_type(&self, ty: &Type) -> Result<Rendered, CodegenError> {
+    fn render_type(&self, ty: &Type, rule: EncodingRules) -> Result<Rendered, CodegenError> {
+        let backend_primitive = |ty: &str, expr: &str, constructed: bool| {
+            primitive(
+                &self.backend_item(rule, ty),
+                &self.backend_item(rule, expr),
+                constructed,
+            )
+        };
         Ok(match ty {
             Type::SequenceOf(inner, constraint) => {
-                let inner = self.render_type(inner)?;
+                let inner = self.render_type(inner, rule)?;
                 let sequence_of = Rendered {
-                    ty: format!("SequenceOfFmt<{}>", inner.ty),
-                    expr: format!("SEQUENCE_OF({})", inner.expr),
+                    ty: format!("{}<{}>", self.backend_item(rule, "SequenceOfFmt"), inner.ty),
+                    expr: format!("{}({})", self.backend_item(rule, "SEQUENCE_OF"), inner.expr),
                     shape: TagShape::Tlv { constructed: true },
                 };
                 if let Some(constraint) = constraint {
@@ -1446,107 +1767,144 @@ impl<'a> Generator<'a> {
                     sequence_of
                 }
             }
+            Type::SetOf(inner, constraint) => {
+                let inner = self.render_type(inner, rule)?;
+                let set_of = Rendered {
+                    ty: format!("{}<{}>", self.backend_item(rule, "SetOfTlvFmt"), inner.ty),
+                    expr: format!("{}({})", self.backend_item(rule, "SET_OF"), inner.expr),
+                    shape: TagShape::Tlv { constructed: true },
+                };
+                if let Some(constraint) = constraint {
+                    let bounds = legacy_size_bounds(constraint, "SET OF")?;
+                    let (predicate_type, predicate_expr) = render_size_predicate(bounds);
+                    refine(set_of, predicate_type, predicate_expr)
+                } else {
+                    set_of
+                }
+            }
             Type::TypeRef(name) => {
                 let names = &self.names[name];
                 Rendered {
                     ty: names.format.clone(),
                     expr: format!("{}()", names.format_const),
-                    shape: self.tag_shape(ty, &mut BTreeSet::new())?,
+                    shape: self.tag_shape(ty, &mut BTreeSet::new(), self.rules[name])?,
                 }
             }
-            Type::Integer(_, _) => primitive("IntegerTlvFmt", "INTEGER", false),
-            Type::Boolean => primitive("BoolTlvFmt", "BOOLEAN", false),
+            Type::Integer(_, _) => backend_primitive("IntegerTlvFmt", "INTEGER", false),
+            Type::Boolean => backend_primitive("BoolTlvFmt", "BOOLEAN", false),
             Type::OctetString(constraint) => match constraint {
-                Some(constraint) => {
-                    render_sized_octet_string(legacy_size_bounds(constraint, "OCTET STRING")?)
-                }
-                None => primitive("OctetStringTlvFmt", "OCTET_STRING", false),
+                Some(constraint) => render_sized_format(
+                    &self.backend_item(rule, "OctetStringTlvFmt"),
+                    &self.backend_item(rule, "OCTET_STRING"),
+                    legacy_size_bounds(constraint, "OCTET STRING")?,
+                ),
+                None => backend_primitive("OctetStringTlvFmt", "OCTET_STRING", false),
             },
-            Type::BitString(_) => primitive("BitStringTlvFmt", "BIT_STRING", false),
+            Type::BitString(_) => backend_primitive("BitStringTlvFmt", "BIT_STRING", false),
             Type::ObjectIdentifier => {
-                primitive("ObjectIdentifierTlvFmt", "OBJECT_IDENTIFIER", false)
+                backend_primitive("ObjectIdentifierTlvFmt", "OBJECT_IDENTIFIER", false)
             }
-            Type::Real => primitive("RealTlvFmt", "REAL", false),
-            Type::Null => primitive("NullTlvFmt", "NULL", false),
+            Type::Real => backend_primitive("RealTlvFmt", "REAL", false),
+            Type::Null => backend_primitive("NullTlvFmt", "NULL", false),
             Type::Utf8String(constraint) => render_optionally_sized_string(
-                "Utf8StringTlvFmt",
-                "UTF8_STRING",
+                &self.backend_item(rule, "Utf8StringTlvFmt"),
+                &self.backend_item(rule, "UTF8_STRING"),
                 constraint.as_ref(),
             )?,
             Type::PrintableString(constraint) => render_optionally_sized_string(
-                "PrintableStringTlvFmt",
-                "PRINTABLE_STRING",
+                &self.backend_item(rule, "PrintableStringTlvFmt"),
+                &self.backend_item(rule, "PRINTABLE_STRING"),
                 constraint.as_ref(),
             )?,
             Type::IA5String(constraint) => render_optionally_sized_string(
-                "Ia5StringTlvFmt",
-                "IA5_STRING",
+                &self.backend_item(rule, "Ia5StringTlvFmt"),
+                &self.backend_item(rule, "IA5_STRING"),
                 constraint.as_ref(),
             )?,
             Type::TeletexString(constraint) => render_optionally_sized_string(
-                "TeletexStringTlvFmt",
-                "TELETEX_STRING",
+                &self.backend_item(rule, "TeletexStringTlvFmt"),
+                &self.backend_item(rule, "TELETEX_STRING"),
                 constraint.as_ref(),
             )?,
             Type::BmpString(constraint) => render_optionally_sized_string(
-                "BmpStringTlvFmt",
-                "BMP_STRING",
+                &self.backend_item(rule, "BmpStringTlvFmt"),
+                &self.backend_item(rule, "BMP_STRING"),
                 constraint.as_ref(),
             )?,
-            Type::UtcTime => primitive("UtcTimeTlvFmt", "UTC_TIME", false),
-            Type::GeneralizedTime => primitive("GeneralizedTimeTlvFmt", "GENERALIZED_TIME", false),
+            Type::NumericString(constraint) => render_optionally_sized_string(
+                &self.backend_item(rule, "NumericStringTlvFmt"),
+                &self.backend_item(rule, "NUMERIC_STRING"),
+                constraint.as_ref(),
+            )?,
+            Type::UniversalString(constraint) => render_optionally_sized_string(
+                &self.backend_item(rule, "UniversalStringTlvFmt"),
+                &self.backend_item(rule, "UNIVERSAL_STRING"),
+                constraint.as_ref(),
+            )?,
+            Type::UtcTime => backend_primitive("UtcTimeTlvFmt", "UTC_TIME", false),
+            Type::GeneralizedTime => {
+                backend_primitive("GeneralizedTimeTlvFmt", "GENERALIZED_TIME", false)
+            }
             Type::Any => Rendered {
-                ty: "AnyTlvFmt".to_string(),
-                expr: "ANY".to_string(),
+                ty: self.backend_item(rule, "AnyTlvFmt"),
+                expr: self.backend_item(rule, "ANY"),
                 shape: TagShape::Untagged,
             },
-            Type::Tagged { tag, inner } => self.render_tagged(tag, inner)?,
+            Type::Tagged { tag, inner } => self.render_tagged(tag, inner, rule)?,
             Type::Constrained {
                 base_type,
                 constraint,
             } => match base_type.as_ref() {
-                Type::OctetString(None) => {
-                    render_sized_octet_string(string_size_bounds(constraint, "OCTET STRING")?)
-                }
+                Type::OctetString(None) => render_sized_format(
+                    &self.backend_item(rule, "OctetStringTlvFmt"),
+                    &self.backend_item(rule, "OCTET_STRING"),
+                    string_size_bounds(constraint, "OCTET STRING")?,
+                ),
                 Type::Utf8String(None) => render_sized_format(
-                    "Utf8StringTlvFmt",
-                    "UTF8_STRING",
+                    &self.backend_item(rule, "Utf8StringTlvFmt"),
+                    &self.backend_item(rule, "UTF8_STRING"),
                     string_size_bounds(constraint, "UTF8String")?,
                 ),
                 Type::PrintableString(None) => render_sized_format(
-                    "PrintableStringTlvFmt",
-                    "PRINTABLE_STRING",
+                    &self.backend_item(rule, "PrintableStringTlvFmt"),
+                    &self.backend_item(rule, "PRINTABLE_STRING"),
                     string_size_bounds(constraint, "PrintableString")?,
                 ),
                 Type::IA5String(None) => render_sized_format(
-                    "Ia5StringTlvFmt",
-                    "IA5_STRING",
+                    &self.backend_item(rule, "Ia5StringTlvFmt"),
+                    &self.backend_item(rule, "IA5_STRING"),
                     string_size_bounds(constraint, "IA5String")?,
                 ),
                 Type::TeletexString(None) => render_sized_format(
-                    "TeletexStringTlvFmt",
-                    "TELETEX_STRING",
+                    &self.backend_item(rule, "TeletexStringTlvFmt"),
+                    &self.backend_item(rule, "TELETEX_STRING"),
                     string_size_bounds(constraint, "TeletexString")?,
                 ),
                 Type::BmpString(None) => render_sized_format(
-                    "BmpStringTlvFmt",
-                    "BMP_STRING",
+                    &self.backend_item(rule, "BmpStringTlvFmt"),
+                    &self.backend_item(rule, "BMP_STRING"),
                     string_size_bounds(constraint, "BMPString")?,
                 ),
-                Type::Integer(None, _) => {
-                    render_constrained_integer(integer_value_bounds(constraint, "INTEGER")?)
-                }
+                Type::NumericString(None) => render_sized_format(
+                    &self.backend_item(rule, "NumericStringTlvFmt"),
+                    &self.backend_item(rule, "NUMERIC_STRING"),
+                    string_size_bounds(constraint, "NumericString")?,
+                ),
+                Type::UniversalString(None) => render_sized_format(
+                    &self.backend_item(rule, "UniversalStringTlvFmt"),
+                    &self.backend_item(rule, "UNIVERSAL_STRING"),
+                    string_size_bounds(constraint, "UniversalString")?,
+                ),
+                Type::Integer(None, _) => self
+                    .render_constrained_integer(integer_value_bounds(constraint, "INTEGER")?, rule),
                 _ => unreachable!("validated constrained type"),
             },
             Type::Sequence(_)
             | Type::Choice(_)
             | Type::Enumerated(_)
             | Type::Set(_)
-            | Type::SetOf(_, _)
             | Type::RelativeOid
-            | Type::UniversalString(_)
             | Type::GeneralString(_)
-            | Type::NumericString(_)
             | Type::VisibleString(_)
             | Type::AnyDefinedBy(_)
             | Type::Class(_) => {
@@ -1562,8 +1920,9 @@ impl<'a> Generator<'a> {
         &self,
         fields: &[SequenceField],
         path: &str,
+        rule: EncodingRules,
     ) -> Result<Rendered, CodegenError> {
-        self.render_sequence_fields_with_end(fields, path, "Eof", "Eof")
+        self.render_sequence_fields_with_end(fields, path, "Eof", "Eof", rule)
     }
 
     fn render_sequence_fields_with_end(
@@ -1572,6 +1931,7 @@ impl<'a> Generator<'a> {
         path: &str,
         end_ty: &str,
         end_expr: &str,
+        rule: EncodingRules,
     ) -> Result<Rendered, CodegenError> {
         let mut result = Rendered {
             ty: end_ty.to_string(),
@@ -1581,22 +1941,28 @@ impl<'a> Generator<'a> {
 
         for field in fields.iter().rev() {
             result = if let Some(default) = &field.default {
-                let field_rendered = self.render_type(&field.ty)?;
+                let field_rendered = self.render_type(&field.ty, rule)?;
                 let default =
                     self.render_default(&field.ty, default, &format!("{path}.{}", field.name))?;
                 Rendered {
                     ty: format!(
-                        "DefaultFmt<{}, {}, {}>",
-                        field_rendered.ty, default.ty, result.ty
+                        "{}<{}, {}, {}>",
+                        self.backend_item(rule, "DefaultFmt"),
+                        field_rendered.ty,
+                        default.ty,
+                        result.ty
                     ),
                     expr: format!(
-                        "DEFAULT({}, {}, {})",
-                        field_rendered.expr, default.expr, result.expr
+                        "{}({}, {}, {})",
+                        self.backend_item(rule, "DEFAULT"),
+                        field_rendered.expr,
+                        default.expr,
+                        result.expr
                     ),
                     shape: TagShape::Untagged,
                 }
             } else {
-                let field_rendered = self.render_type_by_ref(&field.ty)?;
+                let field_rendered = self.render_type_by_ref(&field.ty, rule)?;
                 let (ty_constructor, expr_constructor) = if field.optional {
                     ("Optional", "OPTIONAL")
                 } else {
@@ -1615,10 +1981,14 @@ impl<'a> Generator<'a> {
         Ok(result)
     }
 
-    fn render_choice_raw(&self, variants: &[ChoiceVariant]) -> Result<Rendered, CodegenError> {
+    fn render_choice_raw(
+        &self,
+        variants: &[ChoiceVariant],
+        rule: EncodingRules,
+    ) -> Result<Rendered, CodegenError> {
         let rendered = variants
             .iter()
-            .map(|variant| self.render_type_by_ref(&variant.ty))
+            .map(|variant| self.render_type_by_ref(&variant.ty, rule))
             .collect::<Result<Vec<_>, _>>()?;
         let mut result = rendered
             .last()
@@ -1635,41 +2005,46 @@ impl<'a> Generator<'a> {
         Ok(result)
     }
 
-    fn render_tagged(&self, tag: &TagInfo, inner_ty: &Type) -> Result<Rendered, CodegenError> {
-        let inner = self.render_type(inner_ty)?;
-        Ok(self.apply_tag(tag, inner))
+    fn render_tagged(
+        &self,
+        tag: &TagInfo,
+        inner_ty: &Type,
+        rule: EncodingRules,
+    ) -> Result<Rendered, CodegenError> {
+        let inner = self.render_type(inner_ty, rule)?;
+        Ok(self.apply_tag(tag, inner, rule))
     }
 
-    fn render_type_by_ref(&self, ty: &Type) -> Result<Rendered, CodegenError> {
+    fn render_type_by_ref(&self, ty: &Type, rule: EncodingRules) -> Result<Rendered, CodegenError> {
         match ty {
             Type::Tagged { tag, inner } => {
-                let inner = self.render_type_by_ref(inner)?;
-                Ok(self.apply_tag(tag, inner))
+                let inner = self.render_type_by_ref(inner, rule)?;
+                Ok(self.apply_tag(tag, inner, rule))
             }
-            _ => self.render_type(ty).map(wrap_ref),
+            _ => self.render_type(ty, rule).map(wrap_ref),
         }
     }
 
-    fn apply_tag(&self, tag: &TagInfo, inner: Rendered) -> Rendered {
+    fn apply_tag(&self, tag: &TagInfo, inner: Rendered, rule: EncodingRules) -> Rendered {
         match (tag.tagging.clone(), inner.shape) {
             (Tagging::Explicit, TagShape::Untagged) => Rendered {
-                ty: format!("ExplicitFmt<{}>", inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr),
+                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
+                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
                 shape: TagShape::Tlv { constructed: true },
             },
             (Tagging::Explicit, TagShape::Tlv { .. }) => Rendered {
-                ty: format!("ExplicitFmt<{}>", inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr),
+                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
+                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
                 shape: TagShape::Tlv { constructed: true },
             },
             (Tagging::Implicit, TagShape::Untagged) => Rendered {
-                ty: format!("ExplicitFmt<{}>", inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr),
+                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
+                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
                 shape: TagShape::Tlv { constructed: true },
             },
             (Tagging::Implicit, TagShape::Tlv { constructed }) => Rendered {
                 ty: format!("ImplicitFmt<{}>", inner.ty),
-                expr: render_retag_helper(tag, false, &inner.expr),
+                expr: render_retag_helper(tag, false, &inner.expr, None),
                 shape: TagShape::Tlv { constructed },
             },
         }
@@ -1679,6 +2054,7 @@ impl<'a> Generator<'a> {
         &self,
         ty: &Type,
         visiting: &mut BTreeSet<String>,
+        rule: EncodingRules,
     ) -> Result<TagShape, CodegenError> {
         match ty {
             Type::Choice(_) | Type::Any => Ok(TagShape::Untagged),
@@ -1689,13 +2065,14 @@ impl<'a> Generator<'a> {
                         "recursive type while resolving tags",
                     ));
                 }
-                let shape = self.tag_shape(&self.definition(name)?.ty, visiting)?;
+                let shape =
+                    self.tag_shape(&self.definition(name)?.ty, visiting, self.rules[name])?;
                 visiting.remove(name);
                 Ok(shape)
             }
             Type::Tagged { tag, inner } => match tag.tagging {
                 Tagging::Explicit => Ok(TagShape::Tlv { constructed: true }),
-                Tagging::Implicit => match self.tag_shape(inner, visiting)? {
+                Tagging::Implicit => match self.tag_shape(inner, visiting, rule)? {
                     TagShape::Untagged => Ok(TagShape::Tlv { constructed: true }),
                     shape => Ok(shape),
                 },
@@ -1703,7 +2080,7 @@ impl<'a> Generator<'a> {
             Type::Sequence(_) | Type::SequenceOf(_, _) | Type::Set(_) | Type::SetOf(_, _) => {
                 Ok(TagShape::Tlv { constructed: true })
             }
-            Type::Constrained { base_type, .. } => self.tag_shape(base_type, visiting),
+            Type::Constrained { base_type, .. } => self.tag_shape(base_type, visiting, rule),
             _ => Ok(TagShape::Tlv { constructed: false }),
         }
     }
@@ -1712,6 +2089,7 @@ impl<'a> Generator<'a> {
         &self,
         ty: &Type,
         visiting: &mut BTreeSet<String>,
+        rule: EncodingRules,
     ) -> Result<TagDomain, CodegenError> {
         let singleton = |class, number, constructed| {
             TagDomain::Finite(BTreeSet::from([WireTag {
@@ -1737,52 +2115,44 @@ impl<'a> Generator<'a> {
         Ok(match ty {
             Type::Boolean => singleton(0, 1, false),
             Type::Integer(_, _) => singleton(0, 2, false),
-            Type::BitString(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 3)
-            }
+            Type::BitString(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 3),
             Type::BitString(_) => singleton(0, 3, false),
-            Type::OctetString(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 4)
-            }
+            Type::OctetString(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 4),
             Type::OctetString(_) => singleton(0, 4, false),
             Type::Null => singleton(0, 5, false),
             Type::ObjectIdentifier => singleton(0, 6, false),
             Type::Real => singleton(0, 9, false),
             Type::Enumerated(_) => singleton(0, 10, false),
-            Type::Utf8String(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 12)
-            }
+            Type::Utf8String(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 12),
             Type::Utf8String(_) => singleton(0, 12, false),
             Type::RelativeOid => singleton(0, 13, false),
             Type::Sequence(_) | Type::SequenceOf(_, _) => singleton(0, 16, true),
             Type::Set(_) | Type::SetOf(_, _) => singleton(0, 17, true),
+            Type::NumericString(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 18),
             Type::NumericString(_) => singleton(0, 18, false),
-            Type::PrintableString(_) if self.options.encoding_rules == EncodingRules::Ber => {
+            Type::PrintableString(_) if rule == EncodingRules::Ber => {
                 primitive_or_constructed(0, 19)
             }
             Type::PrintableString(_) => singleton(0, 19, false),
-            Type::TeletexString(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 20)
-            }
+            Type::TeletexString(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 20),
             Type::TeletexString(_) => singleton(0, 20, false),
-            Type::IA5String(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 22)
-            }
+            Type::IA5String(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 22),
             Type::IA5String(_) => singleton(0, 22, false),
             Type::UtcTime => singleton(0, 23, false),
             Type::GeneralizedTime => singleton(0, 24, false),
             Type::VisibleString(_) => singleton(0, 26, false),
             Type::GeneralString(_) => singleton(0, 27, false),
-            Type::UniversalString(_) => singleton(0, 28, false),
-            Type::BmpString(_) if self.options.encoding_rules == EncodingRules::Ber => {
-                primitive_or_constructed(0, 30)
+            Type::UniversalString(_) if rule == EncodingRules::Ber => {
+                primitive_or_constructed(0, 28)
             }
+            Type::UniversalString(_) => singleton(0, 28, false),
+            Type::BmpString(_) if rule == EncodingRules::Ber => primitive_or_constructed(0, 30),
             Type::BmpString(_) => singleton(0, 30, false),
             Type::Any | Type::AnyDefinedBy(_) => TagDomain::Open,
             Type::Choice(variants) => {
                 let mut domain = TagDomain::Finite(BTreeSet::new());
                 for variant in variants {
-                    domain = union_domains(domain, self.tag_domain(&variant.ty, visiting)?);
+                    domain = union_domains(domain, self.tag_domain(&variant.ty, visiting, rule)?);
                 }
                 domain
             }
@@ -1793,27 +2163,30 @@ impl<'a> Generator<'a> {
                         "recursive type while resolving tags",
                     ));
                 }
-                let domain = self.tag_domain(&self.definition(name)?.ty, visiting)?;
+                let domain =
+                    self.tag_domain(&self.definition(name)?.ty, visiting, self.rules[name])?;
                 visiting.remove(name);
                 domain
             }
             Type::Tagged { tag, inner } => {
                 let constructed = match tag.tagging {
                     Tagging::Explicit => true,
-                    Tagging::Implicit => match self.tag_shape(inner, &mut BTreeSet::new())? {
-                        TagShape::Tlv { constructed } => constructed,
-                        TagShape::Untagged => true,
-                    },
+                    Tagging::Implicit => {
+                        match self.tag_shape(inner, &mut BTreeSet::new(), rule)? {
+                            TagShape::Tlv { constructed } => constructed,
+                            TagShape::Untagged => true,
+                        }
+                    }
                 };
                 if tag.tagging == Tagging::Implicit
-                    && self.accepts_primitive_and_constructed(inner, &mut BTreeSet::new())?
+                    && self.accepts_primitive_and_constructed(inner, &mut BTreeSet::new(), rule)?
                 {
                     primitive_or_constructed(tag_class_id(&tag.class), tag.number)
                 } else {
                     singleton(tag_class_id(&tag.class), tag.number, constructed)
                 }
             }
-            Type::Constrained { base_type, .. } => self.tag_domain(base_type, visiting)?,
+            Type::Constrained { base_type, .. } => self.tag_domain(base_type, visiting, rule)?,
             Type::Class(_) => TagDomain::Open,
         })
     }
@@ -1822,20 +2195,23 @@ impl<'a> Generator<'a> {
         &self,
         ty: &Type,
         visiting: &mut BTreeSet<String>,
+        rule: EncodingRules,
     ) -> Result<bool, CodegenError> {
-        if self.options.encoding_rules != EncodingRules::Ber {
+        if rule != EncodingRules::Ber {
             return Ok(false);
         }
         Ok(match ty {
             Type::BitString(_)
             | Type::OctetString(_)
             | Type::Utf8String(_)
+            | Type::NumericString(_)
             | Type::PrintableString(_)
             | Type::IA5String(_)
             | Type::TeletexString(_)
+            | Type::UniversalString(_)
             | Type::BmpString(_) => true,
             Type::Constrained { base_type, .. } => {
-                self.accepts_primitive_and_constructed(base_type, visiting)?
+                self.accepts_primitive_and_constructed(base_type, visiting, rule)?
             }
             Type::TypeRef(name) => {
                 if !visiting.insert(name.clone()) {
@@ -1844,21 +2220,29 @@ impl<'a> Generator<'a> {
                         "recursive type while resolving BER tag forms",
                     ));
                 }
-                let accepts =
-                    self.accepts_primitive_and_constructed(&self.definition(name)?.ty, visiting)?;
+                let accepts = self.accepts_primitive_and_constructed(
+                    &self.definition(name)?.ty,
+                    visiting,
+                    self.rules[name],
+                )?;
                 visiting.remove(name);
                 accepts
             }
             Type::Tagged { tag, inner } => {
                 tag.tagging == Tagging::Implicit
-                    && self.tag_shape(inner, &mut BTreeSet::new())? != TagShape::Untagged
-                    && self.accepts_primitive_and_constructed(inner, visiting)?
+                    && self.tag_shape(inner, &mut BTreeSet::new(), rule)? != TagShape::Untagged
+                    && self.accepts_primitive_and_constructed(inner, visiting, rule)?
             }
             _ => false,
         })
     }
 
-    fn exec_type(&self, ty: &Type, lifetime: &str) -> Result<String, CodegenError> {
+    fn exec_type(
+        &self,
+        ty: &Type,
+        lifetime: &str,
+        rule: EncodingRules,
+    ) -> Result<String, CodegenError> {
         Ok(match ty {
             Type::TypeRef(name) => {
                 let names = &self.names[name];
@@ -1870,65 +2254,77 @@ impl<'a> Generator<'a> {
             }
             Type::Integer(_, _) => format!("vest_lib2::asn1::Integer<{lifetime}>"),
             Type::Boolean => "bool".to_string(),
-            Type::OctetString(_) => match self.options.encoding_rules {
+            Type::OctetString(_) => match rule {
                 EncodingRules::Der => format!("&{lifetime} [u8]"),
                 EncodingRules::Ber => "Vec<u8>".to_string(),
             },
-            Type::BitString(_) => match self.options.encoding_rules {
+            Type::BitString(_) => match rule {
                 EncodingRules::Der => {
                     format!("vest_lib2::asn1::BitString<{lifetime}, DER>")
                 }
                 EncodingRules::Ber => "vest_lib2::asn1::BitStringOwned".to_string(),
             },
             Type::ObjectIdentifier => "vest_lib2::asn1::ObjectIdentifier".to_string(),
-            Type::Real => format!(
-                "vest_lib2::asn1::Real<{lifetime}, {}>",
-                self.options.encoding_rules.display()
-            ),
+            Type::Real => format!("vest_lib2::asn1::Real<{lifetime}, {}>", rule.display()),
             Type::Null => "()".to_string(),
-            Type::Utf8String(_) => match self.options.encoding_rules {
+            Type::Utf8String(_) => match rule {
                 EncodingRules::Der => format!("&{lifetime} str"),
                 EncodingRules::Ber => "String".to_string(),
             },
-            Type::PrintableString(_) => match self.options.encoding_rules {
+            Type::PrintableString(_) => match rule {
                 EncodingRules::Der => {
                     format!("vest_lib2::asn1::PrintableString<{lifetime}>")
                 }
                 EncodingRules::Ber => "vest_lib2::asn1::PrintableStringOwned".to_string(),
             },
-            Type::IA5String(_) => match self.options.encoding_rules {
+            Type::IA5String(_) => match rule {
                 EncodingRules::Der => format!("vest_lib2::asn1::Ia5String<{lifetime}>"),
                 EncodingRules::Ber => "vest_lib2::asn1::Ia5StringOwned".to_string(),
             },
-            Type::TeletexString(_) => match self.options.encoding_rules {
+            Type::TeletexString(_) => match rule {
                 EncodingRules::Der => {
                     format!("vest_lib2::asn1::TeletexString<{lifetime}>")
                 }
                 EncodingRules::Ber => "vest_lib2::asn1::TeletexStringOwned".to_string(),
             },
             Type::BmpString(_) => "vest_lib2::asn1::BmpString".to_string(),
+            Type::NumericString(_) => match rule {
+                EncodingRules::Der => format!("vest_lib2::asn1::NumericString<{lifetime}>"),
+                EncodingRules::Ber => "vest_lib2::asn1::NumericStringOwned".to_string(),
+            },
+            Type::UniversalString(_) => "vest_lib2::asn1::UniversalString".to_string(),
             Type::UtcTime => "vest_lib2::asn1::UtcTime".to_string(),
             Type::GeneralizedTime => {
                 format!("vest_lib2::asn1::GeneralizedTime<{lifetime}>")
             }
-            Type::Any => match self.options.encoding_rules {
+            Type::Any => match rule {
                 EncodingRules::Der => format!("vest_lib2::asn1::Any<{lifetime}>"),
                 EncodingRules::Ber => "vest_lib2::asn1::AnyOwned".to_string(),
             },
-            Type::SequenceOf(inner, _) => {
-                format!("Vec<{}>", self.exec_type(inner, lifetime)?)
+            Type::SequenceOf(inner, _) | Type::SetOf(inner, _) => {
+                format!("Vec<{}>", self.exec_type(inner, lifetime, rule)?)
             }
-            Type::Tagged { inner, .. } => self.exec_type(inner, lifetime)?,
-            Type::Constrained { base_type, .. } => self.exec_type(base_type, lifetime)?,
+            Type::Tagged { inner, .. } => self.exec_type(inner, lifetime, rule)?,
+            Type::Constrained {
+                base_type,
+                constraint,
+            } => {
+                if matches!(base_type.as_ref(), Type::Integer(None, _)) {
+                    match integer_repr(integer_value_bounds(constraint, "INTEGER")?) {
+                        IntegerRepr::I8 => "i8".to_string(),
+                        IntegerRepr::I16 => "i16".to_string(),
+                        IntegerRepr::General => self.exec_type(base_type, lifetime, rule)?,
+                    }
+                } else {
+                    self.exec_type(base_type, lifetime, rule)?
+                }
+            }
             Type::Sequence(_)
             | Type::Choice(_)
             | Type::Enumerated(_)
             | Type::Set(_)
-            | Type::SetOf(_, _)
             | Type::RelativeOid
-            | Type::UniversalString(_)
             | Type::GeneralString(_)
-            | Type::NumericString(_)
             | Type::VisibleString(_)
             | Type::AnyDefinedBy(_)
             | Type::Class(_) => {
@@ -1955,20 +2351,34 @@ impl<'a> Generator<'a> {
             Type::IA5String(_) => "vest_lib2::asn1::Ia5StringSpec".to_string(),
             Type::TeletexString(_) => "vest_lib2::asn1::TeletexStringSpec".to_string(),
             Type::BmpString(_) => "vest_lib2::asn1::BmpStringSpec".to_string(),
+            Type::NumericString(_) => "vest_lib2::asn1::NumericStringSpec".to_string(),
+            Type::UniversalString(_) => "vest_lib2::asn1::UniversalStringSpec".to_string(),
             Type::UtcTime => "vest_lib2::asn1::UtcTime".to_string(),
             Type::GeneralizedTime => "vest_lib2::asn1::GeneralizedTimeSpec".to_string(),
             Type::Any => "vest_lib2::asn1::AnySpec".to_string(),
-            Type::SequenceOf(inner, _) => format!("Seq<{}>", self.spec_type(inner)?),
+            Type::SequenceOf(inner, _) | Type::SetOf(inner, _) => {
+                format!("Seq<{}>", self.spec_type(inner)?)
+            }
             Type::Tagged { inner, .. } => self.spec_type(inner)?,
-            Type::Constrained { base_type, .. } => self.spec_type(base_type)?,
+            Type::Constrained {
+                base_type,
+                constraint,
+            } => {
+                if matches!(base_type.as_ref(), Type::Integer(None, _)) {
+                    match integer_repr(integer_value_bounds(constraint, "INTEGER")?) {
+                        IntegerRepr::I8 => "i8".to_string(),
+                        IntegerRepr::I16 => "i16".to_string(),
+                        IntegerRepr::General => self.spec_type(base_type)?,
+                    }
+                } else {
+                    self.spec_type(base_type)?
+                }
+            }
             Type::Sequence(_)
             | Type::Choice(_)
             | Type::Set(_)
-            | Type::SetOf(_, _)
             | Type::RelativeOid
-            | Type::UniversalString(_)
             | Type::GeneralString(_)
-            | Type::NumericString(_)
             | Type::VisibleString(_)
             | Type::AnyDefinedBy(_)
             | Type::Class(_) => {
@@ -2017,10 +2427,62 @@ impl<'a> Generator<'a> {
                     expr: format!("{rust_type}::{}", rust_variant_name(&value.name)),
                 })
             }
+            Type::Integer(_, named) => {
+                let value = match default.parse::<i64>() {
+                    Ok(value) => value,
+                    Err(_) => lookup_named_number(named, default, path)?.value,
+                };
+                match self.integer_repr_for_type(ty, &mut BTreeSet::new())? {
+                    Some(IntegerRepr::I8) => Ok(RenderedDefault {
+                        ty: "i8".to_string(),
+                        expr: format!("{value}i8"),
+                    }),
+                    Some(IntegerRepr::I16) => Ok(RenderedDefault {
+                        ty: "i16".to_string(),
+                        expr: format!("{value}i16"),
+                    }),
+                    _ => Err(CodegenError::new(
+                        path,
+                        "INTEGER DEFAULT requires a finite constraint contained in i8 or i16 so the generated default is Structural + Copy",
+                    )),
+                }
+            }
             _ => Err(CodegenError::new(
                 path,
-                "only BOOLEAN and ENUMERATED DEFAULT values are currently supported",
+                "only BOOLEAN, ENUMERATED, and compact constrained INTEGER DEFAULT values are currently supported",
             )),
+        }
+    }
+
+    fn integer_repr_for_type(
+        &self,
+        ty: &Type,
+        visiting: &mut BTreeSet<String>,
+    ) -> Result<Option<IntegerRepr>, CodegenError> {
+        match ty {
+            Type::Integer(_, _) => Ok(Some(IntegerRepr::General)),
+            Type::Constrained {
+                base_type,
+                constraint,
+            } if matches!(base_type.as_ref(), Type::Integer(None, _)) => Ok(Some(integer_repr(
+                integer_value_bounds(constraint, "INTEGER")?,
+            ))),
+            Type::Constrained { base_type, .. }
+            | Type::Tagged {
+                inner: base_type, ..
+            } => self.integer_repr_for_type(base_type, visiting),
+            Type::TypeRef(name) => {
+                if !visiting.insert(name.clone()) {
+                    return Err(CodegenError::new(
+                        name,
+                        "recursive reference while resolving INTEGER representation",
+                    ));
+                }
+                let repr = self.integer_repr_for_type(&self.definition(name)?.ty, visiting)?;
+                visiting.remove(name);
+                Ok(repr)
+            }
+            _ => Ok(None),
         }
     }
 
@@ -2055,7 +2517,8 @@ impl<'a> Generator<'a> {
     ) -> Result<(), CodegenError> {
         let constant = value_const_name(&assignment.name);
         let (base, base_name) = self.resolve_base_type(&assignment.ty, &mut BTreeSet::new())?;
-        let declared_type = self.exec_type(&assignment.ty, "'static")?;
+        let declared_type =
+            self.exec_type(&assignment.ty, "'static", self.options.encoding_rules)?;
         match (base, &assignment.value) {
             (Type::Boolean, SchemaValue::Boolean(value)) => {
                 writeln!(output, "pub const {constant}: {declared_type} = {value};").unwrap();
@@ -2068,11 +2531,29 @@ impl<'a> Generator<'a> {
                     }
                     _ => unreachable!("validated integer assignment"),
                 };
-                writeln!(
-                    output,
-                    "pub const {constant}: {declared_type} = vest_lib2::asn1::Integer::Small {{ v: {integer}i64 }};"
-                )
-                .unwrap();
+                match self.integer_repr_for_type(&assignment.ty, &mut BTreeSet::new())? {
+                    Some(IntegerRepr::I8) => {
+                        writeln!(
+                            output,
+                            "pub const {constant}: {declared_type} = {integer}i8;"
+                        )
+                        .unwrap();
+                    }
+                    Some(IntegerRepr::I16) => {
+                        writeln!(
+                            output,
+                            "pub const {constant}: {declared_type} = {integer}i16;"
+                        )
+                        .unwrap();
+                    }
+                    _ => {
+                        writeln!(
+                            output,
+                            "pub const {constant}: {declared_type} = vest_lib2::asn1::Integer::Small {{ v: {integer}i64 }};"
+                        )
+                        .unwrap();
+                    }
+                }
             }
             (Type::Enumerated(values), value) => {
                 let member = match value {
@@ -2111,6 +2592,212 @@ struct RenderedDefault {
     expr: String,
 }
 
+fn expand_rule_variants(
+    definitions: Vec<Definition>,
+    values: &[SchemaValueAssignment],
+    default_rule: EncodingRules,
+    overrides: &BTreeMap<String, EncodingRules>,
+) -> Result<
+    (
+        Vec<Definition>,
+        BTreeMap<String, EncodingRules>,
+        Vec<SchemaValueAssignment>,
+    ),
+    CodegenError,
+> {
+    let by_name = definitions
+        .iter()
+        .map(|definition| (definition.name.clone(), definition))
+        .collect::<BTreeMap<_, _>>();
+    for name in overrides.keys() {
+        if !by_name.contains_key(name) {
+            return Err(CodegenError::new(
+                name,
+                "encoding-rule override names an unknown ASN.1 definition",
+            ));
+        }
+    }
+
+    let mut needed = BTreeSet::<(String, EncodingRules)>::new();
+    let mut pending = VecDeque::new();
+    for definition in &definitions {
+        let rule = overrides
+            .get(&definition.name)
+            .copied()
+            .unwrap_or(default_rule);
+        if needed.insert((definition.name.clone(), rule)) {
+            pending.push_back((definition.name.clone(), rule));
+        }
+    }
+
+    while let Some((name, rule)) = pending.pop_front() {
+        let definition = by_name[&name];
+        let mut references = Vec::new();
+        collect_type_refs(&definition.ty, &mut references);
+        for reference in references {
+            if !by_name.contains_key(reference) {
+                return Err(CodegenError::new(
+                    &name,
+                    format!("unknown ASN.1 type reference `{reference}`"),
+                ));
+            }
+            let target_rule = overrides.get(reference).copied().unwrap_or(rule);
+            if needed.insert((reference.to_string(), target_rule)) {
+                pending.push_back((reference.to_string(), target_rule));
+            }
+        }
+    }
+
+    let mut rules_by_name = BTreeMap::<String, BTreeSet<EncodingRules>>::new();
+    for (name, rule) in &needed {
+        rules_by_name.entry(name.clone()).or_default().insert(*rule);
+    }
+
+    let mut used_names = definitions
+        .iter()
+        .map(|definition| definition.name.clone())
+        .collect::<BTreeSet<_>>();
+    let mut variant_names = BTreeMap::<(String, EncodingRules), String>::new();
+    for definition in &definitions {
+        let root_rule = overrides
+            .get(&definition.name)
+            .copied()
+            .unwrap_or(default_rule);
+        for rule in &rules_by_name[&definition.name] {
+            let generated = if *rule == root_rule {
+                definition.name.clone()
+            } else {
+                let suffix = match rule {
+                    EncodingRules::Der => "der",
+                    EncodingRules::Ber => "ber",
+                };
+                let base = format!("{}-{suffix}", definition.name);
+                let mut candidate = base.clone();
+                let mut index = 2usize;
+                while !used_names.insert(candidate.clone()) {
+                    candidate = format!("{base}-{index}");
+                    index += 1;
+                }
+                candidate
+            };
+            variant_names.insert((definition.name.clone(), *rule), generated);
+        }
+    }
+
+    let mut expanded = Vec::new();
+    let mut rules = BTreeMap::new();
+    for definition in &definitions {
+        let root_rule = overrides
+            .get(&definition.name)
+            .copied()
+            .unwrap_or(default_rule);
+        let mut variants = rules_by_name[&definition.name]
+            .iter()
+            .copied()
+            .collect::<Vec<_>>();
+        variants.sort_by_key(|rule| (*rule != root_rule, *rule));
+        for rule in variants {
+            let name = variant_names[&(definition.name.clone(), rule)].clone();
+            let ty = rewrite_rule_refs(&definition.ty, rule, overrides, &variant_names)?;
+            rules.insert(name.clone(), rule);
+            expanded.push(Definition { name, ty });
+        }
+    }
+
+    let values = values
+        .iter()
+        .map(|assignment| {
+            Ok(SchemaValueAssignment {
+                name: assignment.name.clone(),
+                ty: rewrite_rule_refs(&assignment.ty, default_rule, overrides, &variant_names)?,
+                value: assignment.value.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>, CodegenError>>()?;
+
+    Ok((expanded, rules, values))
+}
+
+fn rewrite_rule_refs(
+    ty: &Type,
+    rule: EncodingRules,
+    overrides: &BTreeMap<String, EncodingRules>,
+    variant_names: &BTreeMap<(String, EncodingRules), String>,
+) -> Result<Type, CodegenError> {
+    Ok(match ty {
+        Type::TypeRef(name) => {
+            let target_rule = overrides.get(name).copied().unwrap_or(rule);
+            let target = variant_names
+                .get(&(name.clone(), target_rule))
+                .ok_or_else(|| {
+                    CodegenError::new(
+                        name,
+                        format!(
+                            "missing {} variant while expanding encoding rules",
+                            target_rule.display()
+                        ),
+                    )
+                })?
+                .clone();
+            Type::TypeRef(target)
+        }
+        Type::Sequence(fields) | Type::Set(fields) => {
+            let rewritten = fields
+                .iter()
+                .map(|field| {
+                    Ok(SequenceField {
+                        name: field.name.clone(),
+                        ty: rewrite_rule_refs(&field.ty, rule, overrides, variant_names)?,
+                        optional: field.optional,
+                        default: field.default.clone(),
+                    })
+                })
+                .collect::<Result<Vec<_>, CodegenError>>()?;
+            if matches!(ty, Type::Sequence(_)) {
+                Type::Sequence(rewritten)
+            } else {
+                Type::Set(rewritten)
+            }
+        }
+        Type::Choice(variants) => Type::Choice(
+            variants
+                .iter()
+                .map(|variant| {
+                    Ok(ChoiceVariant {
+                        name: variant.name.clone(),
+                        ty: rewrite_rule_refs(&variant.ty, rule, overrides, variant_names)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, CodegenError>>()?,
+        ),
+        Type::SequenceOf(inner, constraint) => Type::SequenceOf(
+            Box::new(rewrite_rule_refs(inner, rule, overrides, variant_names)?),
+            constraint.clone(),
+        ),
+        Type::SetOf(inner, constraint) => Type::SetOf(
+            Box::new(rewrite_rule_refs(inner, rule, overrides, variant_names)?),
+            constraint.clone(),
+        ),
+        Type::Tagged { tag, inner } => Type::Tagged {
+            tag: tag.clone(),
+            inner: Box::new(rewrite_rule_refs(inner, rule, overrides, variant_names)?),
+        },
+        Type::Constrained {
+            base_type,
+            constraint,
+        } => Type::Constrained {
+            base_type: Box::new(rewrite_rule_refs(
+                base_type,
+                rule,
+                overrides,
+                variant_names,
+            )?),
+            constraint: constraint.clone(),
+        },
+        _ => ty.clone(),
+    })
+}
+
 fn normalize_definitions(module: &Module) -> Result<Vec<Definition>, CodegenError> {
     let mut used = module
         .definitions
@@ -2144,8 +2831,8 @@ fn lower_root_type(
     used: &mut BTreeSet<String>,
 ) -> Result<Type, CodegenError> {
     Ok(match ty {
-        Type::Sequence(fields) => Type::Sequence(
-            fields
+        Type::Sequence(fields) | Type::Set(fields) => {
+            let lowered = fields
                 .iter()
                 .map(|field| {
                     let hint = format!("{parent}-{}", field.name);
@@ -2156,8 +2843,13 @@ fn lower_root_type(
                         default: field.default.clone(),
                     })
                 })
-                .collect::<Result<Vec<_>, CodegenError>>()?,
-        ),
+                .collect::<Result<Vec<_>, CodegenError>>()?;
+            if matches!(ty, Type::Sequence(_)) {
+                Type::Sequence(lowered)
+            } else {
+                Type::Set(lowered)
+            }
+        }
         Type::Choice(variants) => Type::Choice(
             variants
                 .iter()
@@ -2210,7 +2902,7 @@ fn lower_child_type(
     used: &mut BTreeSet<String>,
 ) -> Result<Type, CodegenError> {
     match ty {
-        Type::Sequence(_) | Type::Choice(_) | Type::Enumerated(_) => {
+        Type::Sequence(_) | Type::Set(_) | Type::Choice(_) | Type::Enumerated(_) => {
             if !used.insert(hint.to_string()) {
                 return Err(CodegenError::new(
                     hint,
@@ -2263,10 +2955,6 @@ fn map_with_bimap(rendered: Rendered, forward: &str, reverse: &str) -> Rendered 
     }
 }
 
-fn render_sized_octet_string(bounds: LengthBounds) -> Rendered {
-    render_sized_format("OctetStringTlvFmt", "OCTET_STRING", bounds)
-}
-
 fn render_optionally_sized_string(
     unconstrained_type: &str,
     unconstrained_expr: &str,
@@ -2305,18 +2993,14 @@ fn render_size_predicate(bounds: LengthBounds) -> (String, String) {
     (predicate_type, predicate_expr)
 }
 
-fn render_constrained_integer(bounds: IntegerBounds) -> Rendered {
-    let has_min = bounds.min.is_some();
-    let min = bounds.min.unwrap_or(0);
-    let has_max = bounds.max.is_some();
-    let max = bounds.max.unwrap_or(0);
-    let predicate_type = format!("IntegerRange<{has_min}, {min}, {has_max}, {max}>");
-    let predicate_expr = format!("IntegerRange::<{has_min}, {min}, {has_max}, {max}>");
-    refine(
-        primitive("IntegerTlvFmt", "INTEGER", false),
-        predicate_type,
-        predicate_expr,
-    )
+fn integer_repr(bounds: IntegerBounds) -> IntegerRepr {
+    match (bounds.min, bounds.max) {
+        (Some(min), Some(max)) if min >= i8::MIN as i64 && max <= i8::MAX as i64 => IntegerRepr::I8,
+        (Some(min), Some(max)) if min >= i16::MIN as i64 && max <= i16::MAX as i64 => {
+            IntegerRepr::I16
+        }
+        _ => IntegerRepr::General,
+    }
 }
 
 fn lifetime_declaration(has_lifetime: bool) -> &'static str {
@@ -2461,6 +3145,27 @@ fn union_domains(left: TagDomain, right: TagDomain) -> TagDomain {
             TagDomain::Finite(left)
         }
     }
+}
+
+fn der_identifier_octets(tag: &WireTag) -> Vec<u8> {
+    let class_bits = tag.class << 6;
+    let constructed_bit = if tag.constructed { 0x20 } else { 0 };
+    if tag.number < 31 {
+        return vec![class_bits | constructed_bit | tag.number as u8];
+    }
+
+    let mut number = tag.number;
+    let mut encoded_number = vec![(number & 0x7f) as u8];
+    number >>= 7;
+    while number != 0 {
+        encoded_number.push(((number & 0x7f) as u8) | 0x80);
+        number >>= 7;
+    }
+    encoded_number.reverse();
+
+    let mut octets = vec![class_bits | constructed_bit | 0x1f];
+    octets.extend(encoded_number);
+    octets
 }
 
 fn tag_class_id(class: &TagClass) -> u8 {
@@ -2673,8 +3378,13 @@ fn validate_length_bounds(bounds: LengthBounds, path: &str) -> Result<LengthBoun
     Ok(bounds)
 }
 
-fn render_retag_helper(tag: &TagInfo, explicit: bool, inner: &str) -> String {
-    let helper = match (&tag.class, explicit) {
+fn render_retag_helper(
+    tag: &TagInfo,
+    explicit: bool,
+    inner: &str,
+    qualified_explicit_rule: Option<EncodingRules>,
+) -> String {
+    let mut helper = match (&tag.class, explicit) {
         (TagClass::ContextSpecific, false) => "IMPLICIT",
         (TagClass::ContextSpecific, true) => "EXPLICIT",
         (TagClass::Application, false) => "IMPLICIT_APPLICATION",
@@ -2684,10 +3394,15 @@ fn render_retag_helper(tag: &TagInfo, explicit: bool, inner: &str) -> String {
         (TagClass::Universal, false) => {
             return format!("Implicit(Class::Universal, {}u64, {inner})", tag.number);
         }
-        (TagClass::Universal, true) => {
-            return format!("Explicit(Class::Universal, {}u64, {inner})", tag.number);
-        }
-    };
+        (TagClass::Universal, true) => "Explicit",
+    }
+    .to_string();
+    if let Some(rule) = qualified_explicit_rule {
+        helper = format!("vest_lib2::asn1::{}::{helper}", rule.module());
+    }
+    if matches!(tag.class, TagClass::Universal) {
+        return format!("{helper}(Class::Universal, {}u64, {inner})", tag.number);
+    }
     format!("{helper}({}u64, {inner})", tag.number)
 }
 
@@ -2804,9 +3519,8 @@ fn pretty_format_sequence_chain(expr: &str, indent: usize, closing: &str) -> Str
 }
 
 fn is_choice_chain(expr: &str) -> bool {
-    split_root_group(expr.trim()).is_some_and(|(head, opener, _)| {
-        opener == '(' && head.trim() == "CHOICE"
-    })
+    split_root_group(expr.trim())
+        .is_some_and(|(head, opener, _)| opener == '(' && head.trim() == "CHOICE")
 }
 
 fn pretty_format_choice_chain(expr: &str, indent: usize, closing: &str) -> String {
@@ -2830,7 +3544,12 @@ fn pretty_format_choice_chain(expr: &str, indent: usize, closing: &str) -> Strin
     )
 }
 
-fn pretty_format_choice_chain_body(left: &str, right: &str, indent: usize, closing: &str) -> String {
+fn pretty_format_choice_chain_body(
+    left: &str,
+    right: &str,
+    indent: usize,
+    closing: &str,
+) -> String {
     let left = left.trim();
     let right = right.trim();
     let pretty_left = pretty_format_expr(left, indent + 4);

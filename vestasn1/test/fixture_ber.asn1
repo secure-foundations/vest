@@ -35,4 +35,5 @@ BerFixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
 
     Items ::= SEQUENCE OF Item
     Flags ::= SEQUENCE OF BOOLEAN
+    FlagSet ::= SET OF BOOLEAN
 END
