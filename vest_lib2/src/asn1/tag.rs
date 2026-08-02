@@ -188,6 +188,43 @@ pub const fn tag_num_from_uint(num: u64) -> TagNumber
     }
 }
 
+/// Return the numeric identifier represented by an ASN.1 tag number.
+///
+/// This is the executable counterpart of [`tag_num_to_uint`].
+#[verifier::allow_in_spec]
+pub const fn tag_number_value(number: TagNumber) -> UInt
+    returns
+        tag_num_to_uint(number),
+{
+    match number {
+        TagNumber::EOC => 0,
+        TagNumber::Boolean => 1,
+        TagNumber::Integer => 2,
+        TagNumber::BitString => 3,
+        TagNumber::OctetString => 4,
+        TagNumber::Null => 5,
+        TagNumber::ObjectIdentifier => 6,
+        TagNumber::Real => 9,
+        TagNumber::Enumerated => 10,
+        TagNumber::Utf8String => 12,
+        TagNumber::RelativeOid => 13,
+        TagNumber::Sequence => 16,
+        TagNumber::Set => 17,
+        TagNumber::NumericString => 18,
+        TagNumber::PrintableString => 19,
+        TagNumber::TeletexString => 20,
+        TagNumber::VideotexString => 21,
+        TagNumber::Ia5String => 22,
+        TagNumber::UtcTime => 23,
+        TagNumber::GeneralizedTime => 24,
+        TagNumber::VisibleString => 26,
+        TagNumber::GeneralString => 27,
+        TagNumber::UniversalString => 28,
+        TagNumber::BmpString => 30,
+        TagNumber::Other { tag_num } => tag_num,
+    }
+}
+
 impl DeepView for TagNumber {
     type V = Self;
 
@@ -671,33 +708,7 @@ impl<Output: OutputBuf> Serializer<Output, Tag> for super::TagFmt {
     fn serialize_into(&self, v: &Tag, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
 
-        let num = match v.number {
-            TagNumber::EOC => 0,
-            TagNumber::Boolean => 1,
-            TagNumber::Integer => 2,
-            TagNumber::BitString => 3,
-            TagNumber::OctetString => 4,
-            TagNumber::Null => 5,
-            TagNumber::ObjectIdentifier => 6,
-            TagNumber::Real => 9,
-            TagNumber::Enumerated => 10,
-            TagNumber::Utf8String => 12,
-            TagNumber::RelativeOid => 13,
-            TagNumber::Sequence => 16,
-            TagNumber::Set => 17,
-            TagNumber::NumericString => 18,
-            TagNumber::PrintableString => 19,
-            TagNumber::TeletexString => 20,
-            TagNumber::VideotexString => 21,
-            TagNumber::Ia5String => 22,
-            TagNumber::UtcTime => 23,
-            TagNumber::GeneralizedTime => 24,
-            TagNumber::VisibleString => 26,
-            TagNumber::GeneralString => 27,
-            TagNumber::UniversalString => 28,
-            TagNumber::BmpString => 30,
-            TagNumber::Other { tag_num } => tag_num,
-        };
+        let num = tag_number_value(v.number);
 
         let class_bits = match v.class {
             Class::Universal => 0b0000_0000u8,
@@ -727,39 +738,13 @@ impl<Output: OutputBuf> Serializer<Output, Tag> for super::TagFmt {
 
 impl Prepare<Tag> for super::TagFmt {
     fn prepare(&self, v: &Tag) -> Result<usize, PreSerializeError> {
-        let num = match v.number {
-            TagNumber::EOC => 0,
-            TagNumber::Boolean => 1,
-            TagNumber::Integer => 2,
-            TagNumber::BitString => 3,
-            TagNumber::OctetString => 4,
-            TagNumber::Null => 5,
-            TagNumber::ObjectIdentifier => 6,
-            TagNumber::Real => 9,
-            TagNumber::Enumerated => 10,
-            TagNumber::Utf8String => 12,
-            TagNumber::RelativeOid => 13,
-            TagNumber::Sequence => 16,
-            TagNumber::Set => 17,
-            TagNumber::NumericString => 18,
-            TagNumber::PrintableString => 19,
-            TagNumber::TeletexString => 20,
-            TagNumber::VideotexString => 21,
-            TagNumber::Ia5String => 22,
-            TagNumber::UtcTime => 23,
-            TagNumber::GeneralizedTime => 24,
-            TagNumber::VisibleString => 26,
-            TagNumber::GeneralString => 27,
-            TagNumber::UniversalString => 28,
-            TagNumber::BmpString => 30,
-            TagNumber::Other { tag_num } => {
-                if matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
-                    | 22 | 23 | 24 | 26 | 27 | 28 | 30) {
-                    return Err(PreSerializeError::custom("Invalid tag number"));
-                }
-                tag_num
-            },
-        };
+        if let TagNumber::Other { tag_num } = v.number {
+            if matches!(tag_num, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 9 | 10 | 12 | 13 | 16 | 17 | 18 | 19 | 20 | 21
+                | 22 | 23 | 24 | 26 | 27 | 28 | 30) {
+                return Err(PreSerializeError::custom("Invalid tag number"));
+            }
+        }
+        let num = tag_number_value(v.number);
 
         proof {
             lemma_to_base128_len_bounds();
@@ -784,33 +769,7 @@ impl Prepare<Tag> for super::TagFmt {
 
 impl ByteLen<Tag> for super::TagFmt {
     fn length(&self, v: &Tag) -> usize {
-        let num = match v.number {
-            TagNumber::EOC => 0,
-            TagNumber::Boolean => 1,
-            TagNumber::Integer => 2,
-            TagNumber::BitString => 3,
-            TagNumber::OctetString => 4,
-            TagNumber::Null => 5,
-            TagNumber::ObjectIdentifier => 6,
-            TagNumber::Real => 9,
-            TagNumber::Enumerated => 10,
-            TagNumber::Utf8String => 12,
-            TagNumber::RelativeOid => 13,
-            TagNumber::Sequence => 16,
-            TagNumber::Set => 17,
-            TagNumber::NumericString => 18,
-            TagNumber::PrintableString => 19,
-            TagNumber::TeletexString => 20,
-            TagNumber::VideotexString => 21,
-            TagNumber::Ia5String => 22,
-            TagNumber::UtcTime => 23,
-            TagNumber::GeneralizedTime => 24,
-            TagNumber::VisibleString => 26,
-            TagNumber::GeneralString => 27,
-            TagNumber::UniversalString => 28,
-            TagNumber::BmpString => 30,
-            TagNumber::Other { tag_num } => tag_num,
-        };
+        let num = tag_number_value(v.number);
 
         proof {
             lemma_to_base128_len_bounds();
