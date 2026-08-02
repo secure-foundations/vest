@@ -275,10 +275,7 @@ impl<Inner: HasAsn1Start> HasAsn1Start for Named<Inner> {
 }
 
 /// IMPLICIT tagging delegates parsing and its start domain to the concretely retagged format.
-impl<Format> HasAsn1Start for ImplicitlyTaggedFmt<Format> where
-    Format: Retaggable,
-    Format::Retagged: HasAsn1Start,
- {
+impl<Format> HasAsn1Start for ImplicitlyTaggedFmt<Format> where Format: Retaggable + HasAsn1Start {
     open spec fn asn1_start(&self) -> Asn1StartDomain {
         self.1.spec_retagged(self.0).asn1_start()
     }

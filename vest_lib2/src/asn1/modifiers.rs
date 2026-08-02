@@ -24,11 +24,9 @@ verus! {
 /// The replacement's class and number are authoritative; each format determines the
 /// primitive/constructed bit required by its own wire representation.
 pub trait Retaggable: Copy {
-    type Retagged;
+    spec fn spec_retagged(&self, tag: Tag) -> Self;
 
-    spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged;
-
-    fn retagged(&self, tag: Tag) -> (retagged: Self::Retagged)
+    fn retagged(&self, tag: Tag) -> (retagged: Self)
         returns
             self.spec_retagged(tag),
     ;
@@ -53,16 +51,14 @@ impl<F: Clone> Clone for ImplicitlyTaggedFmt<F> {
 /// Retagging replaces the tag class and number, preserves the base format's primitive/constructed
 /// form, and leaves its content format unchanged.
 impl<C: Copy, const DER: bool> Retaggable for ASN1Fmt<C, DER> {
-    type Retagged = ASN1Fmt<C, DER>;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         ASN1Fmt(
             Tag { class: tag.class, constructed: self.0.constructed, number: tag.number },
             self.1,
         )
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         ASN1Fmt(
             Tag { class: tag.class, constructed: self.0.constructed, number: tag.number },
             self.1,
@@ -76,13 +72,11 @@ impl<C: Copy, const DER: bool> Retaggable for ASN1Fmt<C, DER> {
 /// Retagging replaces the tag class and number, forces the required constructed form, and
 /// preserves the schema-defined content format.
 impl<C: Copy> Retaggable for BerSequenceFmt<C> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
     }
 }
@@ -93,13 +87,11 @@ impl<C: Copy> Retaggable for BerSequenceFmt<C> {
 /// Retagging replaces the tag class and number, forces the required constructed form, and
 /// preserves the element format.
 impl<C: Copy> Retaggable for BerSequenceOfFmt<C> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: true, number: tag.number }, self.1)
     }
 }
@@ -110,13 +102,11 @@ impl<C: Copy> Retaggable for BerSequenceOfFmt<C> {
 /// is fine since the parser permits both primitive and constructed forms.
 /// Recursive fragments keep universal tag 4 (see [`BerOctetStringFmt`]).
 impl<const LIMIT: usize> Retaggable for BerOctetStringFmt<LIMIT> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number })
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number })
     }
 }
@@ -126,13 +116,11 @@ impl<const LIMIT: usize> Retaggable for BerOctetStringFmt<LIMIT> {
 /// The outer identity is replaced and normalized to primitive form; parsing still accepts both
 /// primitive and constructed forms, while nested fragments retain universal tag 3.
 impl<const LIMIT: usize> Retaggable for BerBitStringFmt<LIMIT> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number })
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number })
     }
 }
@@ -143,13 +131,11 @@ impl<const LIMIT: usize> Retaggable for BerBitStringFmt<LIMIT> {
 /// while OCTET STRING fragment tags, the character-content format, and the recursion limit are
 /// preserved.
 impl<C: Copy, const LIMIT: usize> Retaggable for BerCharStringFmt<C, LIMIT> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number }, self.1)
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(Tag { class: tag.class, constructed: false, number: tag.number }, self.1)
     }
 }
@@ -159,13 +145,11 @@ impl<C: Copy, const LIMIT: usize> Retaggable for BerCharStringFmt<C, LIMIT> {
 /// The newer tag replaces the stored outer tag and the underlying format is retained; when used,
 /// the underlying [`Retaggable`] implementation selects the correct primitive/constructed form.
 impl<F: Retaggable> Retaggable for ImplicitlyTaggedFmt<F> {
-    type Retagged = Self;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Self(tag, self.1)
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Self(tag, self.1)
     }
 }
@@ -174,13 +158,11 @@ impl<F: Retaggable> Retaggable for ImplicitlyTaggedFmt<F> {
 ///
 /// Retagging is delegated to the inner format and the refinement predicate is preserved.
 impl<F, P> Retaggable for Refined<F, P> where F: Retaggable, P: Copy {
-    type Retagged = Refined<F::Retagged, P>;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Refined(self.0.spec_retagged(tag), self.1)
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Refined(self.0.retagged(tag), self.1)
     }
 }
@@ -189,13 +171,11 @@ impl<F, P> Retaggable for Refined<F, P> where F: Retaggable, P: Copy {
 ///
 /// Retagging is delegated to the inner format and the mapper is preserved.
 impl<F, M> Retaggable for Mapped<F, M> where F: Retaggable, M: Copy {
-    type Retagged = Mapped<F::Retagged, M>;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Mapped { inner: self.inner.spec_retagged(tag), mapper: self.mapper }
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Mapped { inner: self.inner.retagged(tag), mapper: self.mapper }
     }
 }
@@ -204,13 +184,11 @@ impl<F, M> Retaggable for Mapped<F, M> where F: Retaggable, M: Copy {
 ///
 /// Retagging is delegated to the referenced format and the result remains wrapped in [`Ref`].
 impl<F> Retaggable for Ref<F> where F: Retaggable {
-    type Retagged = Ref<F::Retagged>;
-
-    open spec fn spec_retagged(&self, tag: Tag) -> Self::Retagged {
+    open spec fn spec_retagged(&self, tag: Tag) -> Self {
         Ref(self.0.spec_retagged(tag))
     }
 
-    fn retagged(&self, tag: Tag) -> Self::Retagged {
+    fn retagged(&self, tag: Tag) -> Self {
         Ref(self.0.retagged(tag))
     }
 }
@@ -218,46 +196,40 @@ impl<F> Retaggable for Ref<F> where F: Retaggable {
 mod implicit_specs {
     use super::*;
 
-    impl<F> SpecParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SpecParser {
-        type PVal = <F::Retagged as SpecParser>::PVal;
+    impl<F> SpecParser for ImplicitlyTaggedFmt<F> where F: Retaggable + SpecParser {
+        type PVal = <F as SpecParser>::PVal;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             self.1.spec_retagged(self.0).spec_parse(ibuf)
         }
     }
 
-    impl<F> Consistency for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: Consistency {
-        type Val = <F::Retagged as Consistency>::Val;
+    impl<F> Consistency for ImplicitlyTaggedFmt<F> where F: Retaggable + Consistency {
+        type Val = <F as Consistency>::Val;
 
         open spec fn consistent(&self, value: Self::Val) -> bool {
             self.1.spec_retagged(self.0).consistent(value)
         }
     }
 
-    impl<F> SpecSerializerDps for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: SpecSerializerDps,
-     {
-        type SValue = <F::Retagged as SpecSerializerDps>::SValue;
+    impl<F> SpecSerializerDps for ImplicitlyTaggedFmt<F> where F: Retaggable + SpecSerializerDps {
+        type SValue = <F as SpecSerializerDps>::SValue;
 
         open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             self.1.spec_retagged(self.0).spec_serialize_dps(value, obuf)
         }
     }
 
-    impl<F> SpecSerializer for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: SpecSerializer,
-     {
-        type SVal = <F::Retagged as SpecSerializer>::SVal;
+    impl<F> SpecSerializer for ImplicitlyTaggedFmt<F> where F: Retaggable + SpecSerializer {
+        type SVal = <F as SpecSerializer>::SVal;
 
         open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
             self.1.spec_retagged(self.0).spec_serialize(value)
         }
     }
 
-    impl<F> SpecByteLen for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SpecByteLen {
-        type T = <F::Retagged as SpecByteLen>::T;
+    impl<F> SpecByteLen for ImplicitlyTaggedFmt<F> where F: Retaggable + SpecByteLen {
+        type T = <F as SpecByteLen>::T;
 
         open spec fn byte_len(&self, value: Self::T) -> nat {
             self.1.spec_retagged(self.0).byte_len(value)
@@ -269,7 +241,7 @@ mod implicit_specs {
 mod implicit_proofs {
     use super::*;
 
-    impl<F> SafeParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SafeParser {
+    impl<F> SafeParser for ImplicitlyTaggedFmt<F> where F: Retaggable + SafeParser {
         open spec fn safe_inv(&self) -> bool {
             self.1.spec_retagged(self.0).safe_inv()
         }
@@ -279,7 +251,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> Productive for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: Productive {
+    impl<F> Productive for ImplicitlyTaggedFmt<F> where F: Retaggable + Productive {
         open spec fn productive_inv(&self) -> bool {
             self.1.spec_retagged(self.0).productive_inv()
         }
@@ -289,7 +261,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> SoundParser for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: SoundParser {
+    impl<F> SoundParser for ImplicitlyTaggedFmt<F> where F: Retaggable + SoundParser {
         open spec fn sound_inv(&self) -> bool {
             self.1.spec_retagged(self.0).sound_inv()
         }
@@ -303,7 +275,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> NonTailFmt for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NonTailFmt {
+    impl<F> NonTailFmt for ImplicitlyTaggedFmt<F> where F: Retaggable + NonTailFmt {
         open spec fn serialize_dps_inv(&self) -> bool {
             self.1.spec_retagged(self.0).serialize_dps_inv()
         }
@@ -317,10 +289,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> GoodSerializer for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: GoodSerializer,
-     {
+    impl<F> GoodSerializer for ImplicitlyTaggedFmt<F> where F: Retaggable + GoodSerializer {
         open spec fn serialize_inv(&self) -> bool {
             self.1.spec_retagged(self.0).serialize_inv()
         }
@@ -330,10 +299,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> SPRoundTripDps for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: SPRoundTripDps,
-     {
+    impl<F> SPRoundTripDps for ImplicitlyTaggedFmt<F> where F: Retaggable + SPRoundTripDps {
         open spec fn unambiguous(&self) -> bool {
             self.1.spec_retagged(self.0).unambiguous()
         }
@@ -343,7 +309,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> NonMalleable for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NonMalleable {
+    impl<F> NonMalleable for ImplicitlyTaggedFmt<F> where F: Retaggable + NonMalleable {
         open spec fn nonmal_inv(&self) -> bool {
             self.1.spec_retagged(self.0).nonmal_inv()
         }
@@ -353,7 +319,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> NoLookAhead for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: NoLookAhead {
+    impl<F> NoLookAhead for ImplicitlyTaggedFmt<F> where F: Retaggable + NoLookAhead {
         open spec fn no_lookahead_inv(&self) -> bool {
             self.1.spec_retagged(self.0).no_lookahead_inv()
         }
@@ -364,8 +330,7 @@ mod implicit_proofs {
     }
 
     impl<F> EquivSerializersGeneral for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: EquivSerializersGeneral,
+        F: Retaggable + EquivSerializersGeneral,
      {
         open spec fn equiv_general_inv(&self) -> bool {
             self.1.spec_retagged(self.0).equiv_general_inv()
@@ -376,10 +341,7 @@ mod implicit_proofs {
         }
     }
 
-    impl<F> EquivSerializers for ImplicitlyTaggedFmt<F> where
-        F: Retaggable,
-        F::Retagged: EquivSerializers,
-     {
+    impl<F> EquivSerializers for ImplicitlyTaggedFmt<F> where F: Retaggable + EquivSerializers {
         open spec fn equiv_inv(&self) -> bool {
             self.1.spec_retagged(self.0).equiv_inv()
         }
@@ -393,13 +355,12 @@ mod implicit_proofs {
 
 impl<Input, F> Parser<Input> for ImplicitlyTaggedFmt<F> where
     Input: InputBuf,
-    F: Retaggable,
-    F::Retagged: Parser<Input>,
+    F: Retaggable + Parser<Input>,
  {
-    type PT = <F::Retagged as Parser<Input>>::PT;
+    type PT = <F as Parser<Input>>::PT;
 
     open spec fn exec_inv(&self) -> bool {
-        <F::Retagged as Parser<Input>>::exec_inv(&self.1.spec_retagged(self.0))
+        <F as Parser<Input>>::exec_inv(&self.1.spec_retagged(self.0))
     }
 
     fn parse(&self, ibuf: &Input) -> PResult<Self::PT> {
@@ -410,12 +371,11 @@ impl<Input, F> Parser<Input> for ImplicitlyTaggedFmt<F> where
 impl<Output, F, T> Serializer<Output, T> for ImplicitlyTaggedFmt<F> where
     Output: OutputBuf,
     T: DeepView + ?Sized,
-    F: Retaggable,
-    F::Retagged: Serializer<Output, T>,
+    F: Retaggable + Serializer<Output, T>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
-        <F::Retagged as Serializer<Output, T>>::exec_inv(&self.1.spec_retagged(self.0))
+        <F as Serializer<Output, T>>::exec_inv(&self.1.spec_retagged(self.0))
     }
 
     fn serialize_into(&self, value: &T, obuf: &mut Output) {
@@ -425,11 +385,10 @@ impl<Output, F, T> Serializer<Output, T> for ImplicitlyTaggedFmt<F> where
 
 impl<F, T> Prepare<T> for ImplicitlyTaggedFmt<F> where
     T: DeepView + ?Sized,
-    F: Retaggable,
-    F::Retagged: Prepare<T>,
+    F: Retaggable + Prepare<T>,
  {
     open spec fn exec_inv(&self) -> bool {
-        <F::Retagged as Prepare<T>>::exec_inv(&self.1.spec_retagged(self.0))
+        <F as Prepare<T>>::exec_inv(&self.1.spec_retagged(self.0))
     }
 
     fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
@@ -439,11 +398,10 @@ impl<F, T> Prepare<T> for ImplicitlyTaggedFmt<F> where
 
 impl<F, T> ByteLen<T> for ImplicitlyTaggedFmt<F> where
     T: DeepView + ?Sized,
-    F: Retaggable,
-    F::Retagged: ByteLen<T>,
+    F: Retaggable + ByteLen<T>,
  {
     open spec fn exec_inv(&self) -> bool {
-        <F::Retagged as ByteLen<T>>::exec_inv(&self.1.spec_retagged(self.0))
+        <F as ByteLen<T>>::exec_inv(&self.1.spec_retagged(self.0))
     }
 
     fn length(&self, value: &T) -> usize {

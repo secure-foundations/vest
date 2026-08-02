@@ -2282,34 +2282,27 @@ impl<A, T> DerOrd<Vec<T>> for SetOfFmt<A> where T: DeepView, A: DerOrd<T> + Copy
     }
 }
 
-impl<F> DerState for ImplicitlyTaggedFmt<F> where F: Retaggable, F::Retagged: DerState {
-    type State = <F::Retagged as DerState>::State;
+impl<F> DerState for ImplicitlyTaggedFmt<F> where F: Retaggable + DerState {
+    type State = <F as DerState>::State;
 }
 
 impl<F, T> DerOrd<T> for ImplicitlyTaggedFmt<F> where
     T: DeepView + ?Sized,
-    F: Retaggable,
-    F::Retagged: DerOrd<T>,
+    F: Retaggable + DerOrd<T>,
  {
     proof fn lemma_der_serialize_len(&self, value: T::V) {
         self.1.spec_retagged(self.0).lemma_der_serialize_len(value);
     }
 
-    open spec fn der_remaining(&self, value: T::V, state: <F::Retagged as DerState>::State) -> Seq<
-        u8,
-    > {
+    open spec fn der_remaining(&self, value: T::V, state: <F as DerState>::State) -> Seq<u8> {
         self.1.spec_retagged(self.0).der_remaining(value, state)
     }
 
-    open spec fn der_state_valid(
-        &self,
-        value: T::V,
-        state: <F::Retagged as DerState>::State,
-    ) -> bool {
+    open spec fn der_state_valid(&self, value: T::V, state: <F as DerState>::State) -> bool {
         self.1.spec_retagged(self.0).der_state_valid(value, state)
     }
 
-    fn der_start(&self, v: &T) -> (state: <F::Retagged as DerState>::State) {
+    fn der_start(&self, v: &T) -> (state: <F as DerState>::State) {
         let retagged = self.1.retagged(self.0);
         let state = retagged.der_start(v);
         proof {
@@ -2318,7 +2311,7 @@ impl<F, T> DerOrd<T> for ImplicitlyTaggedFmt<F> where
         state
     }
 
-    fn der_next(&self, v: &T, state: &mut <F::Retagged as DerState>::State) -> (next: Option<u8>) {
+    fn der_next(&self, v: &T, state: &mut <F as DerState>::State) -> (next: Option<u8>) {
         let retagged = self.1.retagged(self.0);
         let next = retagged.der_next(v, state);
         next
