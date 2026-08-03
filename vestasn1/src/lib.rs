@@ -1,8 +1,9 @@
 //! ASN.1-to-Vest code generation.
 //!
 //! The frontend is Synta's ASN.1 parser and AST. The backend emits concrete
-//! `vest_lib2::asn1` BER or DER formats, so the generated parsers and serializers
-//! use Vest's verified combinators directly.
+//! nominal `vest_lib2::asn1` BER or DER formats, so generated parsers and
+//! serializers use Vest's verified combinators directly while enclosing formats
+//! depend on compact, already-proved interfaces.
 
 mod codegen;
 mod error;
@@ -22,14 +23,14 @@ pub fn parse(source: &str) -> Result<SchemaModule, Error> {
     Ok(parse_synta(source)?)
 }
 
-/// Parse an ASN.1 module and generate Vest DER format declarations.
+/// Parse an ASN.1 module and generate nominal Vest DER formats.
 ///
 /// This compatibility entry point defaults to DER.
 pub fn compile(source: &str) -> Result<String, Error> {
     compile_with_options(source, CodegenOptions::default())
 }
 
-/// Parse an ASN.1 module and generate formats using the selected encoding rules.
+/// Parse an ASN.1 module and generate nominal formats using the selected rules.
 pub fn compile_with_options(source: &str, options: CodegenOptions) -> Result<String, Error> {
     let module = parse(source)?;
     Ok(generate_with_options(&module, options)?)

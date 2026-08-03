@@ -1,72 +1,124 @@
 # vestasn1
 
-`vestasn1` parses ASN.1 modules with [`synta-codegen`](https://crates.io/crates/synta-codegen)
-and generates BER or DER formats built directly from `vest_lib2`'s verified
-ASN.1 primitives and combinators. DER remains the default.
+`vestasn1` parses ASN.1 modules with a vendored, locally patched
+[`synta-codegen`](https://crates.io/crates/synta-codegen) frontend and emits BER
+or DER codecs built directly from `vest_lib2`'s verified ASN.1 primitives and
+combinators. DER is the default.
 
 ```console
 cargo run -- schema.asn1 -o generated.rs
 cargo run -- --rules ber schema.asn1 -o generated_ber.rs
 ```
 
-The output is a Rust/Verus module containing one `FooFmt` type and one
-notation-style `FOO_FMT()` const function per ASN.1 definition. `SEQUENCE` definitions become named Rust
-structs, `CHOICE` definitions become named Rust enums, and `ENUMERATED`
-definitions become closed, typed enums. Anonymous composites in fields receive
-deterministic helper names. Verified bidirectional mappers hide Vest's internal
-nested tuple and `Sum` representations.
+Individual definitions can use a rule different from the module default. The
+selected rule propagates through references, and a shared definition is emitted
+once per rule when both variants are required:
 
-The backend supports BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER,
-ANY, BIT/OCTET STRING, NULL, the Vest-supported character/time strings,
-SEQUENCE, SEQUENCE OF, CHOICE, OPTIONAL components, BOOLEAN/ENUMERATED DEFAULT
-components, local type references, and explicit/implicit tags. Parsed byte
-strings and applicable strings borrow from the input under DER. BER uses owned
-values where constructed encodings must be flattened: `Vec<u8>`, owned string
-wrappers, `BitStringOwned`, and `AnyOwned`. BER serializers deterministically
-normalize these values to primitive or definite-length encodings.
+```console
+cargo run -- --rules ber \
+  --der-definition SignedAttributes \
+  --der-definition CertificateSet \
+  schema.asn1 -o generated_mixed.rs
+```
 
-Generated DER modules prove parser safety, soundness, and the library's
-destination-passing unambiguity invariant. Generated BER modules prove safety
-and unambiguity, but deliberately do not claim DER-style parser soundness.
-For BER `SEQUENCE`, the generator emits a definite body ending in the real
-`Eof` combinator and an indefinite body ending in the EOC-consuming
-`EOC_END`; both have the same semantic tuple. This keeps terminal
-`OPTIONAL`/`DEFAULT` fields compositional.
+## Generated API
 
-REAL is supported under both rules. The zero-copy `Real<'a, DER>` value retains
-canonical DER contents; `Real<'a, BER>` additionally accepts BER binary
-bases/scaling/non-normalized mantissas and ISO 6093 NR1/NR2/NR3 decimal forms.
+Each ASN.1 definition gets a fully verified nominal format type with an
+associated `Fmt` value. For example, `AlgorithmIdentifier` becomes the format
+type `ALGORITHM_IDENTIFIER`, used as `ALGORITHM_IDENTIFIER::Fmt`.
+The nested combinator type is a private implementation detail named `ALGORITHM_IDENTIFIER__`.
 
-IMPLICIT tags applied to CHOICE or ANY are promoted to EXPLICIT as required by
-their lack of a replaceable inherent tag. The generator analyzes effective tag
-domains and rejects ambiguous CHOICE and OPTIONAL/DEFAULT dispatch before
-verification. Fixed, bounded, and one-sided string and `SEQUENCE OF SIZE`
-constraints are emitted with the backend's verified `Size` predicate. INTEGER
-single-value and range constraints use the verified `IntegerRange` predicate.
+`SEQUENCE` and `SET` definitions become named Rust structs, `CHOICE`
+definitions become named Rust enums, and `ENUMERATED` definitions become
+closed, typed enums. Anonymous composite fields receive deterministic nominal
+helper definitions. Verified bidirectional mappers hide Vest's nested tuple and
+`Sum`s from users.
+
+The nominal types delegate their specifications and executable operations to
+the private combinator formats. `vest_lib2::impl_der!` and
+`vest_lib2::impl_ber!` expose the proved parser, serializer, prepare, length,
+tagging, and DER-ordering interfaces without re-expanding the nested format at
+each use site. This boundary is important for scalable verification of larger
+modules such as CMS.
+
+## Supported ASN.1
+
+The backend currently supports:
+
+- BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER, REAL, NULL, and ANY;
+- BIT STRING, OCTET STRING, and the supported character and time strings;
+- SEQUENCE, SEQUENCE OF, SET OF, and CHOICE;
+- DER heterogeneous SET when its fields are statically in strict canonical tag
+  order;
+- OPTIONAL and supported DEFAULT components;
+- local type references and EXPLICIT/IMPLICIT tags in the context-specific,
+  application, and private classes; and
+- fixed, bounded, and one-sided SIZE constraints for supported strings and
+  collections, plus INTEGER single-value and range constraints.
+
+DER `SET OF` uses the backend's verified DER ordering and rejects unsorted
+values during preparation; duplicate encodings remain permitted. BER `SET OF`
+does not impose DER ordering. Heterogeneous BER `SET` is not yet generated.
+
+DEFAULT values are supported for BOOLEAN, ENUMERATED, and INTEGER types whose
+finite constraint selects the `i8` or `i16` backend required by the current
+`Structural + Copy` default representation.
+
+IMPLICIT tagging of CHOICE or ANY is emitted as EXPLICIT because these untagged
+formats have no single inherent tag to replace. The generator computes
+effective first-tag domains and rejects ambiguous CHOICE and
+OPTIONAL/DEFAULT dispatch before verification.
+
+## BER and DER behavior
+
+DER byte strings and applicable character strings borrow from the input. BER
+uses owned values where constructed encodings must be flattened, including
+`Vec<u8>`, `String` or the relevant owned string representation,
+`BitStringOwned`, and `AnyOwned`. Serialization deterministically normalizes
+accepted BER alternatives to the backend's selected output form.
+
+BER SEQUENCE uses one schema-shaped field chain ending in `BER_END`; the
+specialized backend accepts both definite and indefinite lengths and consumes
+EOC only for the indefinite form.
+
+REAL is supported under both rules. `Real<'a, DER>` retains canonical DER
+contents. `Real<'a, BER>` additionally accepts BER binary bases, scaling,
+non-normalized mantissas, and ISO 6093 NR1/NR2/NR3 decimal forms.
+
+Generated DER nominal formats expose the backend's safety, productivity,
+soundness, non-malleability, serialization, unambiguity, and executable
+invariants. BER formats expose the applicable safety, productivity,
+serialization, unambiguity, and executable invariants, but intentionally do not
+claim DER-style soundness or non-malleability.
+
+## Current limitations
 
 Boolean, integer, and ENUMERATED value assignments are emitted as typed Rust
-constants inside the generated `verus!` block. OBJECT IDENTIFIER value
-assignments are retained by the vendored Synta frontend but rejected by codegen
-until the backend has a suitable Verus const representation.
+constants inside the generated `verus!` block. OBJECT IDENTIFIER and REAL value
+assignments are retained by the frontend but rejected until suitable Verus
+constant representations are available.
 
-`SET` and `SET OF` are currently rejected. Generic `SET OF` generation remains
-disabled until rule-correct ordering and duplicate handling are implemented.
-Generated ENUMERATED executable values currently use the verified `i16`
-integer-content backend, so larger numeric members are rejected explicitly.
-A schema construct whose constraints or encoding semantics are not implemented
-is rejected with a path-aware error rather than silently approximated.
+ENUMERATED executable values currently use the verified `i16` integer-content
+backend, so larger numeric members are rejected. BIT STRING SIZE constraints,
+RELATIVE-OID, GeneralString, VisibleString, ANY DEFINED BY, and general
+constraint combinations are not yet supported. Recursive schema definitions
+are rejected until nominal recursive formats are generated with a fixpoint
+backend.
 
-The checked `parse`/`compile` entry points reject extension markers, extension
-addition groups, and `WITH COMPONENTS`. Synta 0.3.0 removes those constructs
-from its public AST, so accepting them would otherwise silently change the
-schema. The patched parser also preserves `SEQUENCE/SET SIZE ... OF`, local
-typed value assignments, named scalar values, and OID references directly in
-its AST. `SEQUENCE OF` is generated and `SET OF` remains rejected for the
-DER-ordering reason above.
+The checked `parse` and `compile` entry points reject extension markers,
+extension-addition groups, `WITH COMPONENTS`, imports, and AUTOMATIC TAGS when
+the frontend cannot preserve enough information to generate them faithfully. A
+recognized but unsupported construct produces a path-aware error instead of a
+silent approximation.
 
-The checked-in DER and BER fixtures under `test/` exercise nominal values, inline helpers,
-allocation-free slice serialization, tagging, OPTIONAL, DEFAULT, CHOICE,
-SEQUENCE OF, ENUMERATED, OID parsing and round trips, REAL, recursive
-indefinite-length ANY, constructed OCTET/BIT/character strings, and SIZE
-refinements. Run `make test` or `make verify` there to regenerate them before
-testing or verification.
+## Tests
+
+The checked-in DER, BER, and mixed-rule fixtures under `test/` cover nominal
+formats, inline helpers, slice serialization, tagging, OPTIONAL, DEFAULT,
+CHOICE, SEQUENCE/SET OF, heterogeneous DER SET, ENUMERATED, OID and REAL round
+trips, BER constructed values, SIZE refinements, and generated proof
+interfaces.
+
+Run `make test` or `make verify` in `test/` to test or verify the generated
+fixtures. Codegen freshness is checked by `cargo test`; set `UPDATE_GOLDEN=1`
+when intentionally regenerating the checked-in Rust files.

@@ -66,9 +66,9 @@ pub fn generate_with_options(
     Generator::new(schema, options, &BTreeMap::new())?.generate()
 }
 
-/// Generate one module with selected named definitions forced to a different
-/// encoding rule. Non-overridden references inherit the caller's rule; a
-/// shared definition is emitted once per rule when both variants are needed.
+/// Generate one nominal-format module with selected definitions forced to a
+/// different encoding rule. Non-overridden references inherit the caller's
+/// rule; a shared definition is emitted once per rule when both are needed.
 pub fn generate_with_rule_overrides(
     schema: &SchemaModule,
     options: CodegenOptions,

@@ -132,7 +132,10 @@ mod tests {
 
     #[test]
     fn converts_asn1_names() {
-        assert_eq!(format_type_name("AlgorithmIdentifier"), "ALGORITHM_IDENTIFIER");
+        assert_eq!(
+            format_type_name("AlgorithmIdentifier"),
+            "ALGORITHM_IDENTIFIER"
+        );
         assert_eq!(format_type_name("KDC-REQ"), "KDC_REQ");
         assert_eq!(rust_field_name("type"), "type_");
         assert_eq!(rust_variant_name("needs-review"), "NeedsReview");
