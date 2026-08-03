@@ -1,8 +1,60 @@
 //! Implementations for generated nominal ASN.1 format types.
 //!
 //! These macros are exported at the crate root as [`impl_der!`] and [`impl_ber!`]. A generated
-//! nominal format supplies `spec_inner()` and `exec_inner()` methods. Tagged formats additionally
-//! store their outer tag class and number in tuple fields `0` and `1`.
+//! nominal format supplies a duel spec-exec `schema()` constructor. Tagged formats
+//! additionally store their outer tag class and number in tuple fields `0` and `1`; the macros
+//! apply that effective tag when constructing the inner format.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __impl_asn1_nominal_inner {
+    (tagged($constructed:expr), $fmt:ident, $inner:ty) => {
+        verus! {
+
+        impl $fmt {
+            pub open spec fn spec_inner(&self) -> $inner {
+                Self::schema().spec_retagged($crate::asn1::Tag {
+                    class: self.0,
+                    constructed: $constructed,
+                    number: $crate::asn1::tag::tag_num_from_uint(self.1),
+                })
+            }
+
+            fn exec_inner(&self) -> (fmt: $inner)
+                ensures
+                    fmt == self.spec_inner(),
+            {
+                Self::schema().retagged($crate::asn1::Tag {
+                    class: self.0,
+                    constructed: $constructed,
+                    number: $crate::asn1::tag::tag_num_from_uint(self.1),
+                })
+            }
+        }
+
+        } // verus!
+    };
+    (untagged_start, $fmt:ident, $inner:ty) => {
+        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
+    };
+    (untagged, $fmt:ident, $inner:ty) => {
+        verus! {
+
+        impl $fmt {
+            pub open spec fn spec_inner(&self) -> $inner {
+                Self::schema()
+            }
+
+            fn exec_inner(&self) -> (fmt: $inner)
+                ensures
+                    fmt == self.spec_inner(),
+            {
+                Self::schema()
+            }
+        }
+
+        } // verus!
+    };
+}
 
 #[doc(hidden)]
 #[macro_export]
@@ -509,16 +561,15 @@ macro_rules! __impl_asn1_nominal_der_ord_owned {
 /// Implements the verified DER traits and executable APIs for a generated nominal format.
 #[macro_export]
 macro_rules! impl_der {
-    ($fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
-        $crate::impl_der!(tagged, borrowed, $fmt, $inner, $spec, $value);
-    };
-    ($kind:ident, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
+    ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
+        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value);
         $crate::__impl_asn1_nominal_der_ord_borrowed!($fmt, $inner, $spec, $value);
         $crate::impl_der!(@kind $kind, $fmt);
     };
-    ($kind:ident, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty) => {
+    ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty) => {
+        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_owned!($fmt, $value);
         $crate::__impl_asn1_nominal_der_ord_owned!($fmt, $inner, $spec, $value);
@@ -542,15 +593,14 @@ macro_rules! impl_der {
 /// BER formats deliberately do not implement `SoundParser`, `NonMalleable`, or DER ordering.
 #[macro_export]
 macro_rules! impl_ber {
-    ($fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
-        $crate::impl_ber!(tagged, borrowed, $fmt, $inner, $spec, $value);
-    };
-    ($kind:ident, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
+    ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident) => {
+        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value);
         $crate::impl_ber!(@kind $kind, $fmt);
     };
-    ($kind:ident, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty) => {
+    ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty) => {
+        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_owned!($fmt, $value);
         $crate::impl_ber!(@kind $kind, $fmt);

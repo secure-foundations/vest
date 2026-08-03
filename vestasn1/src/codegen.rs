@@ -207,7 +207,6 @@ impl<'a> Generator<'a> {
             "use vest_lib2::asn1::der_ord::{{DerOrd, DerState}};"
         ));
         output.line(format_args!("use vest_lib2::asn1::disjoint::HasAsn1Start;"));
-        output.line(format_args!("use vest_lib2::asn1::tag::tag_num_from_uint;"));
         if self.mixed_rules {
             output.line(format_args!(
                 "use vest_lib2::asn1::modifiers::{{\
@@ -300,9 +299,9 @@ impl<'a> Generator<'a> {
         let names = &self.names[&definition.name];
         let rule = self.rules[&definition.name];
         let kind = match self.nominal_kind(definition)? {
-            NominalKind::Tagged { .. } => "tagged",
-            NominalKind::UntaggedStart => "untagged_start",
-            NominalKind::Untagged => "untagged",
+            NominalKind::Tagged { constructed } => format!("tagged({constructed})"),
+            NominalKind::UntaggedStart => "untagged_start".to_string(),
+            NominalKind::Untagged => "untagged".to_string(),
         };
         let ownership = if self.borrows[&definition.name] {
             "borrowed"

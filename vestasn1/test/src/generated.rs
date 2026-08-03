@@ -7,7 +7,6 @@
 use vest_lib2::asn1::*;
 use vest_lib2::asn1::der_ord::{DerOrd, DerState};
 use vest_lib2::asn1::disjoint::HasAsn1Start;
-use vest_lib2::asn1::tag::tag_num_from_uint;
 use vest_lib2::asn1::der::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
 use vest_lib2::asn1::der::{SetFmt, SET};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
@@ -982,24 +981,14 @@ pub struct FLAG(pub Class, pub u64);
 impl FLAG {
     pub const Fmt: Self = Self(Class::Universal, 1u64);
 
-    pub open spec fn spec_inner(&self) -> FLAG__ {
-        let fmt = BOOLEAN;
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: FLAG__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> FLAG__
+        returns
+            (
+                BOOLEAN
+            ),
     {
-        let fmt = BOOLEAN;
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        BOOLEAN
     }
 }
 
@@ -1011,24 +1000,14 @@ pub struct COUNT(pub Class, pub u64);
 impl COUNT {
     pub const Fmt: Self = Self(Class::Universal, 2u64);
 
-    pub open spec fn spec_inner(&self) -> COUNT__ {
-        let fmt = INTEGER;
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: COUNT__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> COUNT__
+        returns
+            (
+                INTEGER
+            ),
     {
-        let fmt = INTEGER;
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        INTEGER
     }
 }
 
@@ -1040,24 +1019,14 @@ pub struct TAGGED_COUNT(pub Class, pub u64);
 impl TAGGED_COUNT {
     pub const Fmt: Self = Self(Class::ContextSpecific, 4u64);
 
-    pub open spec fn spec_inner(&self) -> TAGGED_COUNT__ {
-        let fmt = IMPLICIT(4u64, COUNT::Fmt);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: TAGGED_COUNT__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> TAGGED_COUNT__
+        returns
+            (
+                IMPLICIT(4u64, COUNT::Fmt)
+            ),
     {
-        let fmt = IMPLICIT(4u64, COUNT::Fmt);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        IMPLICIT(4u64, COUNT::Fmt)
     }
 }
 
@@ -1069,24 +1038,14 @@ pub struct RETAGGED_COUNT(pub Class, pub u64);
 impl RETAGGED_COUNT {
     pub const Fmt: Self = Self(Class::ContextSpecific, 5u64);
 
-    pub open spec fn spec_inner(&self) -> RETAGGED_COUNT__ {
-        let fmt = IMPLICIT(5u64, TAGGED_COUNT::Fmt);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: RETAGGED_COUNT__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> RETAGGED_COUNT__
+        returns
+            (
+                IMPLICIT(5u64, TAGGED_COUNT::Fmt)
+            ),
     {
-        let fmt = IMPLICIT(5u64, TAGGED_COUNT::Fmt);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        IMPLICIT(5u64, TAGGED_COUNT::Fmt)
     }
 }
 
@@ -1098,24 +1057,14 @@ pub struct PAYLOAD(pub Class, pub u64);
 impl PAYLOAD {
     pub const Fmt: Self = Self(Class::Universal, 4u64);
 
-    pub open spec fn spec_inner(&self) -> PAYLOAD__ {
-        let fmt = Refined(OCTET_STRING, Size::<true, 2, true, 4>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: PAYLOAD__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> PAYLOAD__
+        returns
+            (
+                Refined(OCTET_STRING, Size::<true, 2, true, 4>)
+            ),
     {
-        let fmt = Refined(OCTET_STRING, Size::<true, 2, true, 4>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(OCTET_STRING, Size::<true, 2, true, 4>)
     }
 }
 
@@ -1127,27 +1076,22 @@ pub struct HEADER(pub Class, pub u64);
 impl HEADER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> HEADER__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(FLAG::Fmt),
-                    REQUIRED(Ref(COUNT::Fmt),
-                    Eof)),
-                ),
-            mapper: BiMap(HeaderForward, HeaderReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: HEADER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> HEADER__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(FLAG::Fmt),
+                            REQUIRED(Ref(COUNT::Fmt),
+                            Eof)),
+                        ),
+                    mapper: BiMap(HeaderForward, HeaderReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(FLAG::Fmt),
@@ -1155,12 +1099,7 @@ impl HEADER {
                     Eof)),
                 ),
             mapper: BiMap(HeaderForward, HeaderReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1172,27 +1111,22 @@ pub struct ENVELOPE(pub Class, pub u64);
 impl ENVELOPE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> ENVELOPE__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(HEADER::Fmt),
-                    OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)),
-                    Eof)),
-                ),
-            mapper: BiMap(EnvelopeForward, EnvelopeReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: ENVELOPE__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> ENVELOPE__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(HEADER::Fmt),
+                            OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)),
+                            Eof)),
+                        ),
+                    mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(HEADER::Fmt),
@@ -1200,12 +1134,7 @@ impl ENVELOPE {
                     Eof)),
                 ),
             mapper: BiMap(EnvelopeForward, EnvelopeReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1217,24 +1146,14 @@ pub struct ENVELOPES(pub Class, pub u64);
 impl ENVELOPES {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> ENVELOPES__ {
-        let fmt = SEQUENCE_OF(ENVELOPE::Fmt);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: ENVELOPES__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> ENVELOPES__
+        returns
+            (
+                SEQUENCE_OF(ENVELOPE::Fmt)
+            ),
     {
-        let fmt = SEQUENCE_OF(ENVELOPE::Fmt);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        SEQUENCE_OF(ENVELOPE::Fmt)
     }
 }
 
@@ -1246,27 +1165,22 @@ pub struct FEATURES(pub Class, pub u64);
 impl FEATURES {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> FEATURES__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true,
-                    DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
-                    Eof)),
-                ),
-            mapper: BiMap(FeaturesForward, FeaturesReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: FEATURES__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> FEATURES__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true,
+                            DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+                            Eof)),
+                        ),
+                    mapper: BiMap(FeaturesForward, FeaturesReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true,
@@ -1274,12 +1188,7 @@ impl FEATURES {
                     Eof)),
                 ),
             mapper: BiMap(FeaturesForward, FeaturesReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1291,28 +1200,26 @@ pub struct SELECTION;
 impl SELECTION {
     pub const Fmt: Self = Self;
 
-    pub open spec fn spec_inner(&self) -> SELECTION__ {
-        let fmt = Mapped {
-            inner:
-                CHOICE(
-                    IMPLICIT(1u64, Ref(FLAG::Fmt)),
-                    EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
-            mapper: BiMap(SelectionForward, SelectionReverse),
-        };
-        fmt
-    }
-
-    pub fn exec_inner(&self) -> (fmt: SELECTION__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> SELECTION__
+        returns
+            (
+                Mapped {
+                    inner:
+                        CHOICE(
+                            IMPLICIT(1u64, Ref(FLAG::Fmt)),
+                            EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
+                    mapper: BiMap(SelectionForward, SelectionReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 CHOICE(
                     IMPLICIT(1u64, Ref(FLAG::Fmt)),
                     EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
             mapper: BiMap(SelectionForward, SelectionReverse),
-        };
-        fmt
+        }
     }
 }
 
@@ -1324,38 +1231,28 @@ pub struct CHOICE_ENVELOPE(pub Class, pub u64);
 impl CHOICE_ENVELOPE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> CHOICE_ENVELOPE__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)),
-                    Eof),
-                ),
-            mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: CHOICE_ENVELOPE__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> CHOICE_ENVELOPE__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)),
+                            Eof),
+                        ),
+                    mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)),
                     Eof),
                 ),
             mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1367,24 +1264,14 @@ pub struct COLOR(pub Class, pub u64);
 impl COLOR {
     pub const Fmt: Self = Self(Class::Universal, 10u64);
 
-    pub open spec fn spec_inner(&self) -> COLOR__ {
-        let fmt = Mapped { inner: Refined(ENUMERATED16, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: COLOR__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> COLOR__
+        returns
+            (
+                Mapped { inner: Refined(ENUMERATED16, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) }
+            ),
     {
-        let fmt = Mapped { inner: Refined(ENUMERATED16, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Mapped { inner: Refined(ENUMERATED16, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) }
     }
 }
 
@@ -1396,24 +1283,14 @@ pub struct IDENTIFIER(pub Class, pub u64);
 impl IDENTIFIER {
     pub const Fmt: Self = Self(Class::Universal, 6u64);
 
-    pub open spec fn spec_inner(&self) -> IDENTIFIER__ {
-        let fmt = OBJECT_IDENTIFIER;
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: IDENTIFIER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> IDENTIFIER__
+        returns
+            (
+                OBJECT_IDENTIFIER
+            ),
     {
-        let fmt = OBJECT_IDENTIFIER;
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        OBJECT_IDENTIFIER
     }
 }
 
@@ -1425,24 +1302,14 @@ pub struct MEASUREMENT(pub Class, pub u64);
 impl MEASUREMENT {
     pub const Fmt: Self = Self(Class::Universal, 9u64);
 
-    pub open spec fn spec_inner(&self) -> MEASUREMENT__ {
-        let fmt = REAL;
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: MEASUREMENT__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> MEASUREMENT__
+        returns
+            (
+                REAL
+            ),
     {
-        let fmt = REAL;
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        REAL
     }
 }
 
@@ -1454,16 +1321,14 @@ pub struct OPEN_VALUE;
 impl OPEN_VALUE {
     pub const Fmt: Self = Self;
 
-    pub open spec fn spec_inner(&self) -> OPEN_VALUE__ {
-        let fmt = ANY;
-        fmt
-    }
-
-    pub fn exec_inner(&self) -> (fmt: OPEN_VALUE__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> OPEN_VALUE__
+        returns
+            (
+                ANY
+            ),
     {
-        let fmt = ANY;
-        fmt
+        ANY
     }
 }
 
@@ -1475,24 +1340,14 @@ pub struct BMP_NAME(pub Class, pub u64);
 impl BMP_NAME {
     pub const Fmt: Self = Self(Class::Universal, 30u64);
 
-    pub open spec fn spec_inner(&self) -> BMP_NAME__ {
-        let fmt = Refined(BMP_STRING, Size::<true, 1, true, 4>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: BMP_NAME__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> BMP_NAME__
+        returns
+            (
+                Refined(BMP_STRING, Size::<true, 1, true, 4>)
+            ),
     {
-        let fmt = Refined(BMP_STRING, Size::<true, 1, true, 4>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(BMP_STRING, Size::<true, 1, true, 4>)
     }
 }
 
@@ -1504,38 +1359,28 @@ pub struct BMP_CONTAINER(pub Class, pub u64);
 impl BMP_CONTAINER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> BMP_CONTAINER__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(BMP_NAME::Fmt),
-                    Eof),
-                ),
-            mapper: BiMap(BmpContainerForward, BmpContainerReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: BMP_CONTAINER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> BMP_CONTAINER__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(BMP_NAME::Fmt),
+                            Eof),
+                        ),
+                    mapper: BiMap(BmpContainerForward, BmpContainerReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(BMP_NAME::Fmt),
                     Eof),
                 ),
             mapper: BiMap(BmpContainerForward, BmpContainerReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1547,29 +1392,24 @@ pub struct METADATA(pub Class, pub u64);
 impl METADATA {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> METADATA__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,
-                    REQUIRED(Ref(IDENTIFIER::Fmt),
-                    REQUIRED(Ref(MEASUREMENT::Fmt),
-                    REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),
-                    Eof)))),
-                ),
-            mapper: BiMap(MetadataForward, MetadataReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: METADATA__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> METADATA__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,
+                            REQUIRED(Ref(IDENTIFIER::Fmt),
+                            REQUIRED(Ref(MEASUREMENT::Fmt),
+                            REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),
+                            Eof)))),
+                        ),
+                    mapper: BiMap(MetadataForward, MetadataReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,
@@ -1579,12 +1419,7 @@ impl METADATA {
                     Eof)))),
                 ),
             mapper: BiMap(MetadataForward, MetadataReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1596,38 +1431,28 @@ pub struct INLINE_RECORD_NESTED(pub Class, pub u64);
 impl INLINE_RECORD_NESTED {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> INLINE_RECORD_NESTED__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(OCTET_STRING),
-                    Eof),
-                ),
-            mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: INLINE_RECORD_NESTED__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> INLINE_RECORD_NESTED__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(OCTET_STRING),
+                            Eof),
+                        ),
+                    mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OCTET_STRING),
                     Eof),
                 ),
             mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1639,28 +1464,26 @@ pub struct INLINE_RECORD_SELECTED;
 impl INLINE_RECORD_SELECTED {
     pub const Fmt: Self = Self;
 
-    pub open spec fn spec_inner(&self) -> INLINE_RECORD_SELECTED__ {
-        let fmt = Mapped {
-            inner:
-                CHOICE(
-                    IMPLICIT(2u64, Ref(BOOLEAN)),
-                    IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
-            mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
-        };
-        fmt
-    }
-
-    pub fn exec_inner(&self) -> (fmt: INLINE_RECORD_SELECTED__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> INLINE_RECORD_SELECTED__
+        returns
+            (
+                Mapped {
+                    inner:
+                        CHOICE(
+                            IMPLICIT(2u64, Ref(BOOLEAN)),
+                            IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
+                    mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 CHOICE(
                     IMPLICIT(2u64, Ref(BOOLEAN)),
                     IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
             mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
-        };
-        fmt
+        }
     }
 }
 
@@ -1672,27 +1495,22 @@ pub struct INLINE_RECORD(pub Class, pub u64);
 impl INLINE_RECORD {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> INLINE_RECORD__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt),
-                    REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt),
-                    Eof)),
-                ),
-            mapper: BiMap(InlineRecordForward, InlineRecordReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: INLINE_RECORD__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> INLINE_RECORD__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt),
+                            REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt),
+                            Eof)),
+                        ),
+                    mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt),
@@ -1700,12 +1518,7 @@ impl INLINE_RECORD {
                     Eof)),
                 ),
             mapper: BiMap(InlineRecordForward, InlineRecordReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1717,25 +1530,24 @@ pub struct AUTOMATION_CHOICE;
 impl AUTOMATION_CHOICE {
     pub const Fmt: Self = Self;
 
-    pub open spec fn spec_inner(&self) -> AUTOMATION_CHOICE__ {
-        let fmt = Mapped {
-            inner:
-                CHOICE(
-                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
-                    IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
-                    IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
-                    IMPLICIT(13u64, Ref(NULL)), CHOICE(
-                    EXPLICIT(14u64, Ref(UTF8_STRING)),
-                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
-            mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
-        };
-        fmt
-    }
-
-    pub fn exec_inner(&self) -> (fmt: AUTOMATION_CHOICE__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> AUTOMATION_CHOICE__
+        returns
+            (
+                Mapped {
+                    inner:
+                        CHOICE(
+                            IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                            IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
+                            IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
+                            IMPLICIT(13u64, Ref(NULL)), CHOICE(
+                            EXPLICIT(14u64, Ref(UTF8_STRING)),
+                            EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
+                    mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 CHOICE(
                     IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
@@ -1745,8 +1557,7 @@ impl AUTOMATION_CHOICE {
                     EXPLICIT(14u64, Ref(UTF8_STRING)),
                     EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
             mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
-        };
-        fmt
+        }
     }
 }
 
@@ -1758,30 +1569,25 @@ pub struct AUTOMATION_SEQUENCE(pub Class, pub u64);
 impl AUTOMATION_SEQUENCE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> AUTOMATION_SEQUENCE__ {
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
-                    DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
-                    OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
-                    REQUIRED(IMPLICIT(23u64, Ref(NULL)),
-                    OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
-                    Eof))))),
-                ),
-            mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: AUTOMATION_SEQUENCE__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> AUTOMATION_SEQUENCE__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
+                            DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+                            OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+                            REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+                            OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+                            Eof))))),
+                        ),
+                    mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
+                }
+            ),
     {
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
@@ -1792,12 +1598,7 @@ impl AUTOMATION_SEQUENCE {
                     Eof))))),
                 ),
             mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -1809,24 +1610,14 @@ pub struct HEADERS(pub Class, pub u64);
 impl HEADERS {
     pub const Fmt: Self = Self(Class::Universal, 17u64);
 
-    pub open spec fn spec_inner(&self) -> HEADERS__ {
-        let fmt = SET_OF(HEADER::Fmt);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: HEADERS__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> HEADERS__
+        returns
+            (
+                SET_OF(HEADER::Fmt)
+            ),
     {
-        let fmt = SET_OF(HEADER::Fmt);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        SET_OF(HEADER::Fmt)
     }
 }
 
@@ -1836,50 +1627,50 @@ pub const DEFAULT_COLOR: Color = Color::Green;
 
 } // verus!
 
-vest_lib2::impl_der!(tagged, owned, FLAG, FLAG__, FlagSpec, Flag);
+vest_lib2::impl_der!(tagged(false), owned, FLAG, FLAG__, FlagSpec, Flag);
 
-vest_lib2::impl_der!(tagged, borrowed, COUNT, COUNT__, CountSpec, Count);
+vest_lib2::impl_der!(tagged(false), borrowed, COUNT, COUNT__, CountSpec, Count);
 
-vest_lib2::impl_der!(tagged, borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
+vest_lib2::impl_der!(tagged(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
 
-vest_lib2::impl_der!(tagged, borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
+vest_lib2::impl_der!(tagged(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
 
-vest_lib2::impl_der!(tagged, borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+vest_lib2::impl_der!(tagged(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
 
-vest_lib2::impl_der!(tagged, borrowed, HEADER, HEADER__, HeaderSpec, Header);
+vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header);
 
-vest_lib2::impl_der!(tagged, borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope);
+vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope);
 
-vest_lib2::impl_der!(tagged, borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
+vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
 
-vest_lib2::impl_der!(tagged, owned, FEATURES, FEATURES__, FeaturesSpec, Features);
+vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features);
 
 vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection);
 
-vest_lib2::impl_der!(tagged, borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope);
+vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope);
 
-vest_lib2::impl_der!(tagged, owned, COLOR, COLOR__, ColorSpec, Color);
+vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color);
 
-vest_lib2::impl_der!(tagged, owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
+vest_lib2::impl_der!(tagged(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
 
-vest_lib2::impl_der!(tagged, borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
+vest_lib2::impl_der!(tagged(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
 
 vest_lib2::impl_der!(untagged_start, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
 
-vest_lib2::impl_der!(tagged, owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
+vest_lib2::impl_der!(tagged(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
 
-vest_lib2::impl_der!(tagged, owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer);
+vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer);
 
-vest_lib2::impl_der!(tagged, borrowed, METADATA, METADATA__, MetadataSpec, Metadata);
+vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata);
 
-vest_lib2::impl_der!(tagged, borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested);
+vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested);
 
 vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected);
 
-vest_lib2::impl_der!(tagged, borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord);
+vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord);
 
 vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
 
-vest_lib2::impl_der!(tagged, borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
 
-vest_lib2::impl_der!(tagged, borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
+vest_lib2::impl_der!(tagged(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);

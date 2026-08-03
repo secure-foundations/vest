@@ -173,7 +173,7 @@ END
     assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
     assert!(left_aligned.contains("Eof))"));
     assert!(generated.contains("pub struct FLAGS(pub Class, pub u64);"));
-    assert!(generated.contains("pub open spec fn spec_inner(&self)"));
+    assert!(generated.contains("pub const fn schema()"));
 }
 
 #[test]
@@ -531,8 +531,8 @@ fn generates_ber_formats_with_owned_flattened_values() {
     assert!(generated.contains("pub type Bits = vest_lib2::asn1::BitStringOwned;"));
     assert!(generated.contains("pub type Label = String;"));
     assert!(generated.contains("pub type OpenValue = vest_lib2::asn1::AnyOwned;"));
-    assert!(!generated.contains("impl_der!(tagged, owned, ITEM"));
-    assert!(generated.contains("impl_ber!(tagged, owned, ITEM"));
+    assert!(!generated.contains("impl_der!(tagged(true), owned, ITEM"));
+    assert!(generated.contains("impl_ber!(tagged(true), owned, ITEM"));
     assert!(generated.contains("BerEndFmt"));
     assert!(generated.contains("BER_END"));
     assert_uses_broadcast_disjointness_only(&generated);
@@ -543,7 +543,7 @@ fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
     let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
     assert!(generated.contains("pub type Measurement<'a> = vest_lib2::asn1::Real<'a, BER>;"));
     assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
-    assert!(generated.contains("impl_ber!(tagged, borrowed, MEASUREMENT"));
+    assert!(generated.contains("impl_ber!(tagged(false), borrowed, MEASUREMENT"));
 }
 
 #[test]
@@ -606,8 +606,8 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib2::asn1::der::"));
     assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib2::asn1::ber::"));
     assert!(generated.contains("type ALGORITHM_IDENTIFIER_DER__"));
-    assert!(generated.contains("impl_der!(tagged, borrowed, SIGNED_ATTRIBUTES"));
-    assert!(generated.contains("impl_ber!(tagged, owned, CONTENT_INFO"));
+    assert!(generated.contains("impl_der!(tagged(true), borrowed, SIGNED_ATTRIBUTES"));
+    assert!(generated.contains("impl_ber!(tagged(true), owned, CONTENT_INFO"));
 }
 
 #[test]

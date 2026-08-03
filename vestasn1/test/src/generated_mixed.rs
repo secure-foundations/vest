@@ -7,7 +7,6 @@
 use vest_lib2::asn1::*;
 use vest_lib2::asn1::der_ord::{DerOrd, DerState};
 use vest_lib2::asn1::disjoint::HasAsn1Start;
-use vest_lib2::asn1::tag::tag_num_from_uint;
 use vest_lib2::asn1::modifiers::{implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, OPTIONAL, REQUIRED};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
@@ -317,26 +316,16 @@ pub struct VERSION(pub Class, pub u64);
 impl VERSION {
     pub const Fmt: Self = Self(Class::Universal, 2u64);
 
-    pub open spec fn spec_inner(&self) -> VERSION__ {
-        use vest_lib2::asn1::ber::INTEGER8;
-        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: VERSION__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> VERSION__
+        returns
+            ({
+                use vest_lib2::asn1::ber::INTEGER8;
+                Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
+            }),
     {
         use vest_lib2::asn1::ber::INTEGER8;
-        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
     }
 }
 
@@ -348,26 +337,16 @@ pub struct VERSION_DER(pub Class, pub u64);
 impl VERSION_DER {
     pub const Fmt: Self = Self(Class::Universal, 2u64);
 
-    pub open spec fn spec_inner(&self) -> VERSION_DER__ {
-        use vest_lib2::asn1::der::INTEGER8;
-        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: VERSION_DER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> VERSION_DER__
+        returns
+            ({
+                use vest_lib2::asn1::der::INTEGER8;
+                Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
+            }),
     {
         use vest_lib2::asn1::der::INTEGER8;
-        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
     }
 }
 
@@ -379,29 +358,24 @@ pub struct SHARED(pub Class, pub u64);
 impl SHARED {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> SHARED__ {
-        use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    DEFAULT(VERSION::Fmt, 0i8,
-                    REQUIRED(Ref(OCTET_STRING),
-                    BER_END)),
-                ),
-            mapper: BiMap(SharedForward, SharedReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: SHARED__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> SHARED__
+        returns
+            ({
+                use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            DEFAULT(VERSION::Fmt, 0i8,
+                            REQUIRED(Ref(OCTET_STRING),
+                            BER_END)),
+                        ),
+                    mapper: BiMap(SharedForward, SharedReverse),
+                }
+            }),
     {
         use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     DEFAULT(VERSION::Fmt, 0i8,
@@ -409,12 +383,7 @@ impl SHARED {
                     BER_END)),
                 ),
             mapper: BiMap(SharedForward, SharedReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -426,29 +395,24 @@ pub struct SHARED_DER(pub Class, pub u64);
 impl SHARED_DER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> SHARED_DER__ {
-        use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    DEFAULT(VERSION_DER::Fmt, 0i8,
-                    REQUIRED(Ref(OCTET_STRING),
-                    Eof)),
-                ),
-            mapper: BiMap(SharedDerForward, SharedDerReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: SHARED_DER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> SHARED_DER__
+        returns
+            ({
+                use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            DEFAULT(VERSION_DER::Fmt, 0i8,
+                            REQUIRED(Ref(OCTET_STRING),
+                            Eof)),
+                        ),
+                    mapper: BiMap(SharedDerForward, SharedDerReverse),
+                }
+            }),
     {
         use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     DEFAULT(VERSION_DER::Fmt, 0i8,
@@ -456,12 +420,7 @@ impl SHARED_DER {
                     Eof)),
                 ),
             mapper: BiMap(SharedDerForward, SharedDerReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -473,26 +432,16 @@ pub struct CANONICAL(pub Class, pub u64);
 impl CANONICAL {
     pub const Fmt: Self = Self(Class::Universal, 17u64);
 
-    pub open spec fn spec_inner(&self) -> CANONICAL__ {
-        use vest_lib2::asn1::der::SET_OF;
-        let fmt = SET_OF(SHARED_DER::Fmt);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: CANONICAL__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> CANONICAL__
+        returns
+            ({
+                use vest_lib2::asn1::der::SET_OF;
+                SET_OF(SHARED_DER::Fmt)
+            }),
     {
         use vest_lib2::asn1::der::SET_OF;
-        let fmt = SET_OF(SHARED_DER::Fmt);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        SET_OF(SHARED_DER::Fmt)
     }
 }
 
@@ -504,29 +453,24 @@ pub struct ORDERED(pub Class, pub u64);
 impl ORDERED {
     pub const Fmt: Self = Self(Class::Universal, 17u64);
 
-    pub open spec fn spec_inner(&self) -> ORDERED__ {
-        use vest_lib2::asn1::der::{BOOLEAN, INTEGER, SET};
-        let fmt = Mapped {
-            inner:
-                SET(
-                    REQUIRED(IMPLICIT(0u64, Ref(BOOLEAN)),
-                    OPTIONAL(IMPLICIT(1u64, Ref(INTEGER)),
-                    Eof)),
-                ),
-            mapper: BiMap(OrderedForward, OrderedReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: ORDERED__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> ORDERED__
+        returns
+            ({
+                use vest_lib2::asn1::der::{BOOLEAN, INTEGER, SET};
+                Mapped {
+                    inner:
+                        SET(
+                            REQUIRED(IMPLICIT(0u64, Ref(BOOLEAN)),
+                            OPTIONAL(IMPLICIT(1u64, Ref(INTEGER)),
+                            Eof)),
+                        ),
+                    mapper: BiMap(OrderedForward, OrderedReverse),
+                }
+            }),
     {
         use vest_lib2::asn1::der::{BOOLEAN, INTEGER, SET};
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SET(
                     REQUIRED(IMPLICIT(0u64, Ref(BOOLEAN)),
@@ -534,12 +478,7 @@ impl ORDERED {
                     Eof)),
                 ),
             mapper: BiMap(OrderedForward, OrderedReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -551,31 +490,26 @@ pub struct OUTER(pub Class, pub u64);
 impl OUTER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
-    pub open spec fn spec_inner(&self) -> OUTER__ {
-        use vest_lib2::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
-        let fmt = Mapped {
-            inner:
-                SEQUENCE(
-                    REQUIRED(Ref(SHARED::Fmt),
-                    REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
-                    REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
-                    OPTIONAL(Ref(ANY),
-                    BER_END)))),
-                ),
-            mapper: BiMap(OuterForward, OuterReverse),
-        };
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: OUTER__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> OUTER__
+        returns
+            ({
+                use vest_lib2::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            REQUIRED(Ref(SHARED::Fmt),
+                            REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
+                            REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
+                            OPTIONAL(Ref(ANY),
+                            BER_END)))),
+                        ),
+                    mapper: BiMap(OuterForward, OuterReverse),
+                }
+            }),
     {
         use vest_lib2::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
-        let fmt = Mapped {
+        Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SHARED::Fmt),
@@ -585,12 +519,7 @@ impl OUTER {
                     BER_END)))),
                 ),
             mapper: BiMap(OuterForward, OuterReverse),
-        };
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: true,
-            number: tag_num_from_uint(self.1),
-        })
+        }
     }
 }
 
@@ -602,26 +531,16 @@ pub struct NUMERIC_LABEL(pub Class, pub u64);
 impl NUMERIC_LABEL {
     pub const Fmt: Self = Self(Class::Universal, 18u64);
 
-    pub open spec fn spec_inner(&self) -> NUMERIC_LABEL__ {
-        use vest_lib2::asn1::ber::NUMERIC_STRING;
-        let fmt = Refined(NUMERIC_STRING, Size::<true, 1, true, 16>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: NUMERIC_LABEL__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> NUMERIC_LABEL__
+        returns
+            ({
+                use vest_lib2::asn1::ber::NUMERIC_STRING;
+                Refined(NUMERIC_STRING, Size::<true, 1, true, 16>)
+            }),
     {
         use vest_lib2::asn1::ber::NUMERIC_STRING;
-        let fmt = Refined(NUMERIC_STRING, Size::<true, 1, true, 16>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(NUMERIC_STRING, Size::<true, 1, true, 16>)
     }
 }
 
@@ -633,46 +552,36 @@ pub struct UNIVERSAL_LABEL(pub Class, pub u64);
 impl UNIVERSAL_LABEL {
     pub const Fmt: Self = Self(Class::Universal, 28u64);
 
-    pub open spec fn spec_inner(&self) -> UNIVERSAL_LABEL__ {
-        use vest_lib2::asn1::ber::UNIVERSAL_STRING;
-        let fmt = Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>);
-        fmt.spec_retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
-    }
-
-    pub fn exec_inner(&self) -> (fmt: UNIVERSAL_LABEL__)
-        ensures fmt == self.spec_inner(),
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> UNIVERSAL_LABEL__
+        returns
+            ({
+                use vest_lib2::asn1::ber::UNIVERSAL_STRING;
+                Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>)
+            }),
     {
         use vest_lib2::asn1::ber::UNIVERSAL_STRING;
-        let fmt = Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>);
-        fmt.retagged(Tag {
-            class: self.0,
-            constructed: false,
-            number: tag_num_from_uint(self.1),
-        })
+        Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>)
     }
 }
 
 
 } // verus!
 
-vest_lib2::impl_ber!(tagged, owned, VERSION, VERSION__, VersionSpec, Version);
+vest_lib2::impl_ber!(tagged(false), owned, VERSION, VERSION__, VersionSpec, Version);
 
-vest_lib2::impl_der!(tagged, owned, VERSION_DER, VERSION_DER__, VersionDerSpec, VersionDer);
+vest_lib2::impl_der!(tagged(false), owned, VERSION_DER, VERSION_DER__, VersionDerSpec, VersionDer);
 
-vest_lib2::impl_ber!(tagged, owned, SHARED, SHARED__, SharedSpec, Shared);
+vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared);
 
-vest_lib2::impl_der!(tagged, borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer);
+vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer);
 
-vest_lib2::impl_der!(tagged, borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
+vest_lib2::impl_der!(tagged(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
 
-vest_lib2::impl_der!(tagged, borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered);
+vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered);
 
-vest_lib2::impl_ber!(tagged, borrowed, OUTER, OUTER__, OuterSpec, Outer);
+vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer);
 
-vest_lib2::impl_ber!(tagged, owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
+vest_lib2::impl_ber!(tagged(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
 
-vest_lib2::impl_ber!(tagged, owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
+vest_lib2::impl_ber!(tagged(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);

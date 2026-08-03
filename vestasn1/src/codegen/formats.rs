@@ -89,7 +89,7 @@ impl<'a> Generator<'a> {
         output.line(format_args!("#[derive(Clone, Copy)]"));
         output.line(format_args!("#[verifier::ext_equal]"));
         match self.nominal_kind(definition)? {
-            NominalKind::Tagged { constructed } => {
+            NominalKind::Tagged { .. } => {
                 let (class, number) = self.nominal_tag(definition)?;
                 output.line(format_args!(
                     "pub struct {}(pub Class, pub u64);",
@@ -99,93 +99,49 @@ impl<'a> Generator<'a> {
                 output.line(format_args!(
                     "    pub const Fmt: Self = Self({class}, {number}u64);"
                 ));
-                output.blank_line();
-                output.line(format_args!(
-                    "    pub open spec fn spec_inner(&self) -> {} {{",
-                    names.inner_format
-                ));
-                if let Some(local_import) = &local_import {
-                    output.line(format_args!("        {local_import}"));
-                }
-                output.line(format_args!(
-                    "        let fmt = {};",
-                    indent_continuation(&rendered_expr, 8)
-                ));
-                output.line(format_args!("        fmt.spec_retagged(Tag {{"));
-                output.line(format_args!("            class: self.0,"));
-                output.line(format_args!("            constructed: {constructed},"));
-                output.line(format_args!(
-                    "            number: tag_num_from_uint(self.1),"
-                ));
-                output.line(format_args!("        }})"));
-                output.line(format_args!("    }}"));
-                output.blank_line();
-                output.line(format_args!(
-                    "    pub fn exec_inner(&self) -> (fmt: {})",
-                    names.inner_format
-                ));
-                output.line(format_args!("        ensures fmt == self.spec_inner(),"));
-                output.line(format_args!("    {{"));
-                if let Some(local_import) = &local_import {
-                    output.line(format_args!("        {local_import}"));
-                }
-                output.line(format_args!(
-                    "        let fmt = {};",
-                    indent_continuation(&rendered_expr, 8)
-                ));
-                output.line(format_args!("        fmt.retagged(Tag {{"));
-                output.line(format_args!("            class: self.0,"));
-                output.line(format_args!("            constructed: {constructed},"));
-                output.line(format_args!(
-                    "            number: tag_num_from_uint(self.1),"
-                ));
-                output.line(format_args!("        }})"));
-                output.line(format_args!("    }}"));
-                output.line(format_args!(
-                    "}}
-"
-                ));
             }
             NominalKind::UntaggedStart | NominalKind::Untagged => {
                 output.line(format_args!("pub struct {};", names.format));
                 output.line(format_args!("impl {} {{", names.format));
                 output.line(format_args!("    pub const Fmt: Self = Self;"));
-                output.blank_line();
-                output.line(format_args!(
-                    "    pub open spec fn spec_inner(&self) -> {} {{",
-                    names.inner_format
-                ));
-                if let Some(local_import) = &local_import {
-                    output.line(format_args!("        {local_import}"));
-                }
-                output.line(format_args!(
-                    "        let fmt = {};",
-                    indent_continuation(&rendered_expr, 8)
-                ));
-                output.line(format_args!("        fmt"));
-                output.line(format_args!("    }}"));
-                output.blank_line();
-                output.line(format_args!(
-                    "    pub fn exec_inner(&self) -> (fmt: {})",
-                    names.inner_format
-                ));
-                output.line(format_args!("        ensures fmt == self.spec_inner(),"));
-                output.line(format_args!("    {{"));
-                if let Some(local_import) = &local_import {
-                    output.line(format_args!("        {local_import}"));
-                }
-                output.line(format_args!(
-                    "        let fmt = {};",
-                    indent_continuation(&rendered_expr, 8)
-                ));
-                output.line(format_args!("        fmt"));
-                output.line(format_args!("    }}"));
-                output.line(format_args!(
-                    "}}
-"
-                ));
             }
         }
+        output.blank_line();
+        output.line(format_args!("    #[verifier::allow_in_spec]"));
+        output.line(format_args!(
+            "    pub const fn schema() -> {}",
+            names.inner_format
+        ));
+        output.line(format_args!("        returns"));
+        if let Some(local_import) = &local_import {
+            output.line(format_args!("            ({{"));
+            output.line(format_args!("                {local_import}"));
+            output.line(format_args!(
+                "                {}",
+                indent_continuation(&rendered_expr, 16)
+            ));
+            output.line(format_args!("            }}),"));
+        } else {
+            output.line(format_args!("            ("));
+            output.line(format_args!(
+                "                {}",
+                indent_continuation(&rendered_expr, 16)
+            ));
+            output.line(format_args!("            ),"));
+        }
+        output.line(format_args!("    {{"));
+        if let Some(local_import) = &local_import {
+            output.line(format_args!("        {local_import}"));
+        }
+        output.line(format_args!(
+            "        {}",
+            indent_continuation(&rendered_expr, 8)
+        ));
+        output.line(format_args!("    }}"));
+        output.line(format_args!(
+            "}}
+"
+        ));
         Ok(())
     }
 
