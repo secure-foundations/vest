@@ -32,6 +32,8 @@ pub mod ia5string;
 pub mod integer;
 /// ASN.1 definite length octets.
 pub mod length;
+/// Macros for implementing verified nominal ASN.1 formats.
+pub mod macros;
 /// Shared ASN.1 tagging and component modifiers.
 pub mod modifiers;
 /// ASN.1 NumericString contents.
