@@ -7,12 +7,6 @@ const RUST_KEYWORDS: &[&str] = &[
 ];
 
 pub(crate) fn format_type_name(name: &str) -> String {
-    let mut result = value_type_name(name);
-    result.push_str("Fmt");
-    result
-}
-
-pub(crate) fn format_const_name(name: &str) -> String {
     let mut result = to_snake_case(name).to_ascii_uppercase();
     if result.is_empty() || result.starts_with(|c: char| c.is_ascii_digit()) {
         result.insert_str(0, "ASN1_");
@@ -23,7 +17,6 @@ pub(crate) fn format_const_name(name: &str) -> String {
     {
         result.push_str("_ASN1");
     }
-    result.push_str("_FMT");
     result
 }
 
@@ -139,16 +132,8 @@ mod tests {
 
     #[test]
     fn converts_asn1_names() {
-        assert_eq!(
-            format_type_name("AlgorithmIdentifier"),
-            "AlgorithmIdentifierFmt"
-        );
-        assert_eq!(format_type_name("KDC-REQ"), "KdcReqFmt");
-        assert_eq!(
-            format_const_name("AlgorithmIdentifier"),
-            "ALGORITHM_IDENTIFIER_FMT"
-        );
-        assert_eq!(format_const_name("KDC-REQ"), "KDC_REQ_FMT");
+        assert_eq!(format_type_name("AlgorithmIdentifier"), "ALGORITHM_IDENTIFIER");
+        assert_eq!(format_type_name("KDC-REQ"), "KDC_REQ");
         assert_eq!(rust_field_name("type"), "type_");
         assert_eq!(rust_variant_name("needs-review"), "NeedsReview");
     }

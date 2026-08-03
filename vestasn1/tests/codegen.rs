@@ -19,8 +19,8 @@ fn assert_uses_broadcast_disjointness_only(generated: &str) {
     assert!(!generated
         .lines()
         .any(|line| line.contains(".inner") && line.contains(".unambiguous()")));
-    assert!(generated.contains("broadcast use disjointness_lemmas;"));
-    assert!(generated.contains("broadcast use asn1_disjointness_lemmas;"));
+    assert!(generated.contains("vest_lib2::impl_"));
+    assert!(!generated.contains("format_spec_invariants"));
 }
 
 const BASIC_SCHEMA: &str = r#"
@@ -45,12 +45,12 @@ END
 fn generates_vest_der_formats() {
     let generated = compile(BASIC_SCHEMA).unwrap();
     assert!(generated.contains("pub struct Message<'a>"));
-    assert!(generated.contains("pub type MessageFmt = Mapped<SequenceFmt<Pair<"));
-    assert!(generated.contains("Optional<Ref<PayloadFmt>, Eof>"));
-    assert!(generated.contains("pub const fn MESSAGES_FMT() -> MessagesFmt"));
-    assert!(generated.contains("pub type MessagesFmt = SequenceOfFmt<MessageFmt>;"));
-    assert!(generated.contains("Choice<ImplicitFmt<Ref<FlagFmt>>, ExplicitFmt<Ref<PayloadFmt>>>"));
-    assert!(generated.contains("IMPLICIT(0u64, Ref(FLAG_FMT()))"));
+    assert!(generated.contains("type MESSAGE__ = Mapped<SequenceFmt<Pair<"));
+    assert!(generated.contains("Optional<Ref<PAYLOAD>, Eof>"));
+    assert!(generated.contains("pub struct MESSAGES(pub Class, pub u64);"));
+    assert!(generated.contains("type MESSAGES__ = SequenceOfFmt<MESSAGE>;"));
+    assert!(generated.contains("Choice<ImplicitFmt<Ref<FLAG>>, ExplicitFmt<Ref<PAYLOAD>>>"));
+    assert!(generated.contains("IMPLICIT(0u64, Ref(FLAG::Fmt))"));
     assert_uses_broadcast_disjointness_only(&generated);
 }
 
@@ -73,7 +73,7 @@ END
     .unwrap();
 
     assert_uses_broadcast_disjointness_only(&generated);
-    assert!(generated.contains("assert(VALUE_FMT().unambiguous());"));
+    assert!(generated.contains("impl_der!(untagged, borrowed, VALUE"));
 }
 
 #[test]
@@ -157,18 +157,18 @@ END
     )
     .unwrap();
     assert!(generated.contains("pub struct Flags"));
-    assert!(generated.contains("DefaultFmt<ImplicitFmt<EnabledFmt>, bool,"));
+    assert!(generated.contains("DefaultFmt<ImplicitFmt<ENABLED>, bool,"));
     let left_aligned = generated
         .lines()
         .map(str::trim_start)
         .collect::<Vec<_>>()
         .join("\n");
-    assert!(left_aligned.contains("inner:\nSEQUENCE(\nDEFAULT("));
-    assert!(generated.contains("IMPLICIT(0u64, ENABLED_FMT())"));
+    assert!(left_aligned.contains("SEQUENCE(DEFAULT("));
+    assert!(generated.contains("IMPLICIT(0u64, ENABLED::Fmt)"));
     assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
     assert!(left_aligned.contains("Eof))"));
-    assert!(generated.contains("pub const fn FLAGS_FMT()"));
-    assert!(generated.contains("{\n    Mapped {"));
+    assert!(generated.contains("pub struct FLAGS(pub Class, pub u64);"));
+    assert!(generated.contains("pub open spec fn spec_inner(&self)"));
 }
 
 #[test]
@@ -193,8 +193,8 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("Optional<ExplicitFmt<Ref<ValueFmt>>, Eof>"));
-    assert!(generated.contains("EXPLICIT(0u64, Ref(VALUE_FMT()))"));
+    assert!(generated.contains("Optional<ExplicitFmt<Ref<VALUE>>, Eof>"));
+    assert!(generated.contains("EXPLICIT(0u64, Ref(VALUE::Fmt))"));
 }
 
 #[test]
@@ -225,16 +225,16 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("pub type BaseFmt = ImplicitFmt<IntegerTlvFmt>;"));
-    assert!(generated.contains("pub type RetaggedFmt = ImplicitFmt<BaseFmt>;"));
-    assert!(generated.contains("IMPLICIT(1u64, BASE_FMT())"));
+    assert!(generated.contains("type BASE__ = ImplicitFmt<IntegerTlvFmt>;"));
+    assert!(generated.contains("type RETAGGED__ = ImplicitFmt<BASE>;"));
+    assert!(generated.contains("IMPLICIT(1u64, BASE::Fmt)"));
 }
 
 #[test]
 fn format_value_names_do_not_collide_with_vest_der_symbols() {
     let generated = compile("Names DEFINITIONS ::= BEGIN DER ::= BOOLEAN END").unwrap();
-    assert!(generated.contains("pub type DerFmt = BoolTlvFmt;"));
-    assert!(generated.contains("pub const fn DER_FMT() -> DerFmt"));
+    assert!(generated.contains("type DER__ = BoolTlvFmt;"));
+    assert!(generated.contains("pub struct DER(pub Class, pub u64);"));
 }
 
 #[test]
@@ -310,9 +310,9 @@ END
 "#,
     )
     .unwrap();
-    assert!(generated.contains("pub type IdentifierFmt = ObjectIdentifierTlvFmt;"));
-    assert!(generated.contains("pub type MeasurementFmt = RealTlvFmt;"));
-    assert!(generated.contains("pub type OpenValueFmt = AnyTlvFmt;"));
+    assert!(generated.contains("type IDENTIFIER__ = ObjectIdentifierTlvFmt;"));
+    assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
+    assert!(generated.contains("type OPEN_VALUE__ = AnyTlvFmt;"));
     assert!(generated.contains("pub struct ContainerNested"));
     assert!(generated.contains("pub enum ContainerSelected<'a>"));
 }
@@ -321,7 +321,7 @@ END
 fn emits_set_of_for_der_and_ber() {
     let schema = "Sets DEFINITIONS ::= BEGIN Values ::= SET OF INTEGER END";
     let der = compile(schema).unwrap();
-    assert!(der.contains("pub type ValuesFmt = SetOfTlvFmt<IntegerTlvFmt>;"));
+    assert!(der.contains("type VALUES__ = SetOfTlvFmt<IntegerTlvFmt>;"));
     assert!(der.contains("SET_OF(INTEGER)"));
 
     let ber = compile_with_options(
@@ -331,7 +331,7 @@ fn emits_set_of_for_der_and_ber() {
         },
     )
     .unwrap();
-    assert!(ber.contains("pub type ValuesFmt = SetOfTlvFmt<IntegerTlvFmt>;"));
+    assert!(ber.contains("type VALUES__ = SetOfTlvFmt<IntegerTlvFmt>;"));
     assert!(ber.contains("SET_OF(INTEGER)"));
 }
 
@@ -376,7 +376,7 @@ fn emits_only_statically_ordered_heterogeneous_der_sets() {
         "Sets DEFINITIONS ::= BEGIN Value ::= SET { a [0] IMPLICIT BOOLEAN, b [1] IMPLICIT INTEGER OPTIONAL } END",
     )
     .unwrap();
-    assert!(generated.contains("pub type ValueFmt = Mapped<SetFmt<"));
+    assert!(generated.contains("type VALUE__ = Mapped<SetFmt<"));
     assert!(generated.contains("SET("));
 
     let unordered = compile(
@@ -429,10 +429,10 @@ fn mixed_rules_propagate_and_duplicate_shared_definitions() {
     assert!(generated.contains("pub struct Shared {"));
     assert!(generated.contains("pub struct SharedDer<'a> {"));
     assert!(generated
-        .contains("pub type CanonicalFmt = vest_lib2::asn1::der::SetOfTlvFmt<SharedDerFmt>;"));
+        .contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;"));
     assert!(generated.contains("vest_lib2::asn1::ber::SEQUENCE("));
-    assert!(generated.contains("vest_lib2::asn1::der::SET_OF(SHARED_DER_FMT())"));
-    assert!(generated.contains("pub type OrderedFmt = Mapped<vest_lib2::asn1::der::SetFmt<"));
+    assert!(generated.contains("vest_lib2::asn1::der::SET_OF(SHARED_DER::Fmt)"));
+    assert!(generated.contains("type ORDERED__ = Mapped<vest_lib2::asn1::der::SetFmt<"));
     assert!(generated.contains("pub type Version = i8;"));
     assert!(generated.contains("pub type VersionDer = i8;"));
 }
@@ -470,8 +470,8 @@ fn vendored_frontend_rejects_unrepresented_with_components() {
 #[test]
 fn emits_explicit_notation_for_untagged_choice_and_any() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
-    assert!(generated.contains("EXPLICIT(3u64, Ref(SELECTION_FMT()))"));
-    assert!(generated.contains("EXPLICIT(1u64, Ref(OPEN_VALUE_FMT()))"));
+    assert!(generated.contains("EXPLICIT(3u64, Ref(SELECTION::Fmt))"));
+    assert!(generated.contains("EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt))"));
     assert!(!generated.contains("Tag { class: Class::ContextSpecific"));
 }
 
@@ -484,11 +484,7 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(left_aligned.contains(concat!(
-        "DEFAULT(IMPLICIT(0u64, COLOR_FMT()), Color::Green,\n",
-        "REQUIRED(Ref(IDENTIFIER_FMT()),\n",
-        "REQUIRED(Ref(MEASUREMENT_FMT()),\n",
-        "REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE_FMT())),\n",
-        "Eof))))",
+        "DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green, REQUIRED(Ref(IDENTIFIER::Fmt), REQUIRED(Ref(MEASUREMENT::Fmt), REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)), Eof))))",
     )));
 }
 
@@ -510,9 +506,8 @@ fn generates_ber_formats_with_owned_flattened_values() {
     assert!(generated.contains("pub type Bits = vest_lib2::asn1::BitStringOwned;"));
     assert!(generated.contains("pub type Label = String;"));
     assert!(generated.contains("pub type OpenValue = vest_lib2::asn1::AnyOwned;"));
-    assert!(!generated.contains("assert(ITEM_FMT().sound_inv());"));
-    assert!(generated.contains("assert(ITEM_FMT().safe_inv());"));
-    assert!(generated.contains("assert(ITEM_FMT().unambiguous());"));
+    assert!(!generated.contains("impl_der!(tagged, owned, ITEM"));
+    assert!(generated.contains("impl_ber!(tagged, owned, ITEM"));
     assert!(generated.contains("BerEndFmt"));
     assert!(generated.contains("BER_END"));
     assert_uses_broadcast_disjointness_only(&generated);
@@ -522,9 +517,8 @@ fn generates_ber_formats_with_owned_flattened_values() {
 fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
     let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
     assert!(generated.contains("pub type Measurement<'a> = vest_lib2::asn1::Real<'a, BER>;"));
-    assert!(generated.contains("pub type MeasurementFmt = RealTlvFmt;"));
-    assert!(generated.contains("assert(MEASUREMENT_FMT().unambiguous());"));
-    assert!(!generated.contains("assert(MEASUREMENT_FMT().sound_inv());"));
+    assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
+    assert!(generated.contains("impl_ber!(tagged, borrowed, MEASUREMENT"));
 }
 
 #[test]
@@ -581,13 +575,14 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     )
     .unwrap();
 
-    assert!(generated
-        .contains("pub type SignedAttributesFmt = Refined<vest_lib2::asn1::der::SetOfTlvFmt<"));
-    assert!(generated.contains("pub type CertificateFmt = Mapped<vest_lib2::asn1::der::"));
-    assert!(generated.contains("pub type ContentInfoFmt = Mapped<vest_lib2::asn1::ber::"));
-    assert!(generated.contains("pub type AlgorithmIdentifierDerFmt"));
-    assert!(generated.contains("assert(SIGNED_ATTRIBUTES_FMT().sound_inv());"));
-    assert!(!generated.contains("assert(CONTENT_INFO_FMT().sound_inv());"));
+    assert!(generated.contains(
+        "type SIGNED_ATTRIBUTES__ = Refined<vest_lib2::asn1::der::SetOfTlvFmt<"
+    ));
+    assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib2::asn1::der::"));
+    assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib2::asn1::ber::"));
+    assert!(generated.contains("type ALGORITHM_IDENTIFIER_DER__"));
+    assert!(generated.contains("impl_der!(tagged, borrowed, SIGNED_ATTRIBUTES"));
+    assert!(generated.contains("impl_ber!(tagged, owned, CONTENT_INFO"));
 }
 
 #[test]

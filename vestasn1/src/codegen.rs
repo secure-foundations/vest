@@ -2,8 +2,8 @@
 use crate::error::CodegenError;
 use crate::frontend::{SchemaModule, SchemaValue, SchemaValueAssignment};
 use crate::naming::{
-    format_const_name, format_type_name, rust_field_name, rust_variant_name, spec_type_name,
-    to_snake_case, value_const_name, value_type_name,
+    format_type_name, rust_field_name, rust_variant_name, spec_type_name, value_const_name,
+    value_type_name,
 };
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::Write;
@@ -38,6 +38,13 @@ enum TagShape {
     Untagged,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum NominalKind {
+    Tagged { constructed: bool },
+    UntaggedStart,
+    Untagged,
+}
+
 #[derive(Clone, Debug)]
 struct Rendered {
     ty: String,
@@ -50,9 +57,7 @@ struct Names {
     value: String,
     spec: String,
     format: String,
-    format_const: String,
-    spec_invariants: String,
-    exec_invariants: String,
+    inner_format: String,
     forward: String,
     reverse: String,
     predicate: String,
@@ -178,8 +183,8 @@ impl<'a> Generator<'a> {
             let value = value_type_name(&definition.name);
             let spec = spec_type_name(&definition.name);
             let format = format_type_name(&definition.name);
-            let format_const = format_const_name(&definition.name);
-            for generated in [&value, &spec, &format] {
+            let inner_format = format!("{format}__");
+            for generated in [&value, &spec, &format, &inner_format] {
                 if let Some(previous) =
                     rust_types.insert(generated.clone(), definition.name.clone())
                 {
@@ -191,34 +196,16 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-            if let Some(previous) =
-                rust_consts.insert(format_const.clone(), definition.name.clone())
-            {
-                return Err(CodegenError::new(
-                    &definition.name,
-                    format!(
-                        "generated Rust constant name `{format_const}` collides with definition `{previous}`"
-                    ),
-                ));
-            }
             names.insert(
                 definition.name.clone(),
                 Names {
                     forward: format!("{value}Forward"),
                     reverse: format!("{value}Reverse"),
                     predicate: format!("{value}Predicate"),
-                    spec_invariants: format!(
-                        "lemma_{}_format_spec_invariants",
-                        to_snake_case(&definition.name)
-                    ),
-                    exec_invariants: format!(
-                        "lemma_{}_format_exec_invariants",
-                        to_snake_case(&definition.name)
-                    ),
                     value,
                     spec,
                     format,
-                    format_const,
+                    inner_format,
                 },
             );
         }
@@ -793,8 +780,17 @@ impl<'a> Generator<'a> {
         )
         .unwrap();
         writeln!(output, "#![allow(unused_imports)]").unwrap();
+        writeln!(output, "#![allow(non_camel_case_types)]").unwrap();
+        writeln!(output, "#![allow(non_upper_case_globals)]").unwrap();
         writeln!(output).unwrap();
         writeln!(output, "use vest_lib2::asn1::*;").unwrap();
+        writeln!(
+            output,
+            "use vest_lib2::asn1::der_ord::{{DerOrd, DerState}};"
+        )
+        .unwrap();
+        writeln!(output, "use vest_lib2::asn1::disjoint::HasAsn1Start;").unwrap();
+        writeln!(output, "use vest_lib2::asn1::tag::tag_num_from_uint;").unwrap();
         if self.mixed_rules {
             writeln!(
                 output,
@@ -839,6 +835,14 @@ impl<'a> Generator<'a> {
         writeln!(output, "use vest_lib2::combinators::*;").unwrap();
         writeln!(output, "use vest_lib2::combinators::Eof;").unwrap();
         writeln!(output, "use vest_lib2::core::exec::fns::{{Map, Pred}};").unwrap();
+        writeln!(output, "use vest_lib2::core::exec::output::OutputBuf;").unwrap();
+        writeln!(
+            output,
+            "use vest_lib2::core::exec::parser::{{PResult, Parser}};"
+        )
+        .unwrap();
+        writeln!(output, "use vest_lib2::core::exec::serializer::{{ByteLen, PreSerializeError, Prepare, Serializer}};").unwrap();
+        writeln!(output, "use vest_lib2::core::proof::*;").unwrap();
         writeln!(output, "use vest_lib2::core::spec::*;").unwrap();
         writeln!(output, "use vstd::prelude::*;\n").unwrap();
         writeln!(output, "verus! {{\n").unwrap();
@@ -853,192 +857,45 @@ impl<'a> Generator<'a> {
             self.render_format_declaration(definition, &mut output)?;
         }
 
-        for definition in &self.definitions {
-            self.render_format_invariant_certificates(definition, &mut output)?;
-        }
         for assignment in &self.values {
             self.render_value_constant(assignment, &mut output)?;
         }
         writeln!(output, "\n}} // verus!").unwrap();
+        for definition in &self.definitions {
+            self.render_format_impl_invocation(definition, &mut output)?;
+        }
         Ok(output)
     }
 
-    fn render_format_invariant_certificates(
+    fn render_format_impl_invocation(
         &self,
         definition: &Definition,
         output: &mut String,
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
         let rule = self.rules[&definition.name];
-        let format = format!("{}()", names.format_const);
-        let value = format!(
-            "{}{}",
-            names.value,
-            lifetime_application(self.borrows[&definition.name], "'i")
-        );
-        let dependencies = self.direct_dependencies(definition);
-
+        let kind = match self.nominal_kind(definition)? {
+            NominalKind::Tagged { .. } => "tagged",
+            NominalKind::UntaggedStart => "untagged_start",
+            NominalKind::Untagged => "untagged",
+        };
+        let ownership = if self.borrows[&definition.name] {
+            "borrowed"
+        } else {
+            "owned"
+        };
+        let implementation = match rule {
+            EncodingRules::Der => "impl_der",
+            EncodingRules::Ber => "impl_ber",
+        };
+        writeln!(output).unwrap();
         writeln!(
             output,
-            "/// Pure specification certificate for ASN.1 `{}`.",
-            definition.name
+            "vest_lib2::{implementation}!({kind}, {ownership}, {}, {}, {}, {});",
+            names.format, names.inner_format, names.spec, names.value
         )
         .unwrap();
-        if rule == EncodingRules::Ber {
-            writeln!(
-                output,
-                "/// BER accepts non-canonical encodings, so `sound_inv` and `nonmal_inv` do not apply."
-            )
-            .unwrap();
-        }
-        writeln!(
-            output,
-            "pub proof fn {}()\n    ensures",
-            names.spec_invariants
-        )
-        .unwrap();
-        writeln!(output, "        {format}.safe_inv(),").unwrap();
-        writeln!(output, "        {format}.productive_inv(),").unwrap();
-        if rule == EncodingRules::Der {
-            writeln!(output, "        {format}.sound_inv(),").unwrap();
-            writeln!(output, "        {format}.nonmal_inv(),").unwrap();
-        }
-        writeln!(output, "        {format}.serialize_inv(),").unwrap();
-        writeln!(output, "        {format}.serialize_dps_inv(),").unwrap();
-        writeln!(output, "        {format}.unambiguous(),").unwrap();
-        writeln!(output, "        {format}.equiv_general_inv(),").unwrap();
-        writeln!(output, "        {format}.equiv_inv(),").unwrap();
-        writeln!(output, "{{").unwrap();
-        self.render_invariant_proof_prelude(output);
-        for dependency in &dependencies {
-            writeln!(output, "    {}();", self.names[dependency].spec_invariants).unwrap();
-        }
-        writeln!(output, "    assert({format}.safe_inv());").unwrap();
-        writeln!(output, "    assert({format}.productive_inv());").unwrap();
-        if rule == EncodingRules::Der {
-            writeln!(output, "    assert({format}.sound_inv());").unwrap();
-            writeln!(output, "    assert({format}.nonmal_inv());").unwrap();
-        }
-        writeln!(output, "    assert({format}.serialize_inv());").unwrap();
-        writeln!(output, "    assert({format}.serialize_dps_inv());").unwrap();
-        writeln!(output, "    assert({format}.unambiguous());").unwrap();
-        writeln!(output, "    assert({format}.equiv_general_inv());").unwrap();
-        writeln!(output, "    assert({format}.equiv_inv());").unwrap();
-        writeln!(output, "}}\n").unwrap();
-
-        writeln!(
-            output,
-            "/// Executable API certificate for ASN.1 `{}`.",
-            definition.name
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "pub proof fn {}<'i, Output>()",
-            names.exec_invariants
-        )
-        .unwrap();
-        writeln!(output, "    where").unwrap();
-        writeln!(
-            output,
-            "        Output: vest_lib2::core::exec::output::OutputBuf,"
-        )
-        .unwrap();
-        writeln!(output, "    ensures").unwrap();
-        writeln!(
-            output,
-            "        <{} as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&{format}),",
-            names.format
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "        <{} as vest_lib2::core::exec::serializer::Serializer<Output, {}>>::exec_inv(&{format}),",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "        <{} as vest_lib2::core::exec::serializer::Prepare<{}>>::exec_inv(&{format}),",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "        <{} as vest_lib2::core::exec::serializer::ByteLen<{}>>::exec_inv(&{format}),",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(output, "{{").unwrap();
-        writeln!(output, "    {}();", names.spec_invariants).unwrap();
-        for dependency in &dependencies {
-            let dependency_names = &self.names[dependency];
-            writeln!(output, "    {}();", dependency_names.spec_invariants).unwrap();
-            writeln!(
-                output,
-                "    {}::<Output>();",
-                dependency_names.exec_invariants
-            )
-            .unwrap();
-        }
-        writeln!(
-            output,
-            "    assert(<{} as vest_lib2::core::exec::parser::Parser<&'i [u8]>>::exec_inv(&{format}));",
-            names.format
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    assert(<{} as vest_lib2::core::exec::serializer::Serializer<Output, {}>>::exec_inv(&{format}));",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    assert(<{} as vest_lib2::core::exec::serializer::Prepare<{}>>::exec_inv(&{format}));",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    assert(<{} as vest_lib2::core::exec::serializer::ByteLen<{}>>::exec_inv(&{format}));",
-            names.format, value
-        )
-        .unwrap();
-        writeln!(output, "}}\n").unwrap();
         Ok(())
-    }
-
-    fn render_invariant_proof_prelude(&self, output: &mut String) {
-        writeln!(output, "    use vest_lib2::core::proof::*;").unwrap();
-        writeln!(
-            output,
-            "    use vest_lib2::asn1::disjoint::asn1_disjointness_lemmas;"
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    use vest_lib2::asn1::tag::lemma_tag_wf_implies_tag_consistent;"
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    use vest_lib2::combinators::disjoint::disjointness_lemmas;"
-        )
-        .unwrap();
-        writeln!(output, "    broadcast use disjointness_lemmas;").unwrap();
-        writeln!(
-            output,
-            "    broadcast use lemma_tag_wf_implies_tag_consistent;"
-        )
-        .unwrap();
-        writeln!(output, "    broadcast use asn1_disjointness_lemmas;").unwrap();
-    }
-
-    fn direct_dependencies(&self, definition: &Definition) -> BTreeSet<String> {
-        let mut references = Vec::new();
-        collect_type_refs(&definition.ty, &mut references);
-        references.into_iter().map(str::to_string).collect()
     }
 
     fn render_value_declaration(
@@ -1729,17 +1586,80 @@ impl<'a> Generator<'a> {
             definition.name
         )
         .unwrap();
-        writeln!(output, "pub type {} = {};", names.format, rendered.ty).unwrap();
-        writeln!(output, "#[verifier::allow_in_spec]").unwrap();
-        writeln!(output, "#[allow(non_snake_case)]").unwrap();
-        let returns_expr = pretty_format_expr(&rendered.expr, 12);
-        let body_expr = pretty_format_expr(&rendered.expr, 4);
-        writeln!(
-            output,
-            "pub const fn {}() -> {}\n    returns\n        (\n{}\n        ),\n{{\n{}\n}}\n",
-            names.format_const, names.format, returns_expr, body_expr
-        )
-        .unwrap();
+        writeln!(output, "type {} = {};", names.inner_format, rendered.ty).unwrap();
+        writeln!(output, "#[derive(Clone, Copy)]").unwrap();
+        writeln!(output, "#[verifier::ext_equal]").unwrap();
+        match self.nominal_kind(definition)? {
+            NominalKind::Tagged { constructed } => {
+                let (class, number) = self.nominal_tag(definition)?;
+                writeln!(output, "pub struct {}(pub Class, pub u64);", names.format).unwrap();
+                writeln!(output, "impl {} {{", names.format).unwrap();
+                writeln!(
+                    output,
+                    "    pub const Fmt: Self = Self({class}, {number}u64);"
+                )
+                .unwrap();
+                writeln!(output).unwrap();
+                writeln!(
+                    output,
+                    "    pub open spec fn spec_inner(&self) -> {} {{",
+                    names.inner_format
+                )
+                .unwrap();
+                writeln!(output, "        let fmt = {};", rendered.expr).unwrap();
+                writeln!(output, "        fmt.spec_retagged(Tag {{").unwrap();
+                writeln!(output, "            class: self.0,").unwrap();
+                writeln!(output, "            constructed: {constructed},").unwrap();
+                writeln!(output, "            number: tag_num_from_uint(self.1),").unwrap();
+                writeln!(output, "        }})").unwrap();
+                writeln!(output, "    }}").unwrap();
+                writeln!(output).unwrap();
+                writeln!(
+                    output,
+                    "    pub fn exec_inner(&self) -> (fmt: {})",
+                    names.inner_format
+                )
+                .unwrap();
+                writeln!(output, "        ensures fmt == self.spec_inner(),").unwrap();
+                writeln!(output, "    {{").unwrap();
+                writeln!(output, "        let fmt = {};", rendered.expr).unwrap();
+                writeln!(output, "        fmt.retagged(Tag {{").unwrap();
+                writeln!(output, "            class: self.0,").unwrap();
+                writeln!(output, "            constructed: {constructed},").unwrap();
+                writeln!(output, "            number: tag_num_from_uint(self.1),").unwrap();
+                writeln!(output, "        }})").unwrap();
+                writeln!(output, "    }}").unwrap();
+                writeln!(output, "}}\n").unwrap();
+            }
+            NominalKind::UntaggedStart | NominalKind::Untagged => {
+                writeln!(output, "pub struct {};", names.format).unwrap();
+                writeln!(output, "impl {} {{", names.format).unwrap();
+                writeln!(output, "    pub const Fmt: Self = Self;").unwrap();
+                writeln!(output).unwrap();
+                writeln!(
+                    output,
+                    "    pub open spec fn spec_inner(&self) -> {} {{",
+                    names.inner_format
+                )
+                .unwrap();
+                writeln!(output, "        let fmt = {};", rendered.expr).unwrap();
+                writeln!(output, "        fmt").unwrap();
+                writeln!(output, "    }}").unwrap();
+                writeln!(output).unwrap();
+                writeln!(
+                    output,
+                    "    pub fn exec_inner(&self) -> (fmt: {})",
+                    names.inner_format
+                )
+                .unwrap();
+                writeln!(output, "        ensures fmt == self.spec_inner(),").unwrap();
+                writeln!(output, "    {{").unwrap();
+                writeln!(output, "        let fmt = {};", rendered.expr).unwrap();
+                writeln!(output, "        fmt").unwrap();
+                writeln!(output, "    }}").unwrap();
+                writeln!(output, "}}\n").unwrap();
+            }
+        }
         Ok(())
     }
 
@@ -1786,7 +1706,7 @@ impl<'a> Generator<'a> {
                 let names = &self.names[name];
                 Rendered {
                     ty: names.format.clone(),
-                    expr: format!("{}()", names.format_const),
+                    expr: format!("{}::Fmt", names.format),
                     shape: self.tag_shape(ty, &mut BTreeSet::new(), self.rules[name])?,
                 }
             }
@@ -2083,6 +2003,80 @@ impl<'a> Generator<'a> {
             Type::Constrained { base_type, .. } => self.tag_shape(base_type, visiting, rule),
             _ => Ok(TagShape::Tlv { constructed: false }),
         }
+    }
+
+    fn nominal_kind(&self, definition: &Definition) -> Result<NominalKind, CodegenError> {
+        let rule = self.rules[&definition.name];
+        match self.tag_shape(&definition.ty, &mut BTreeSet::new(), rule)? {
+            TagShape::Tlv { constructed } => Ok(NominalKind::Tagged { constructed }),
+            TagShape::Untagged
+                if self.untagged_has_asn1_start(&definition.ty, &mut BTreeSet::new())? =>
+            {
+                Ok(NominalKind::UntaggedStart)
+            }
+            TagShape::Untagged => Ok(NominalKind::Untagged),
+        }
+    }
+
+    fn untagged_has_asn1_start(
+        &self,
+        ty: &Type,
+        visiting: &mut BTreeSet<String>,
+    ) -> Result<bool, CodegenError> {
+        Ok(match ty {
+            Type::Any => true,
+            Type::Constrained { base_type, .. } => {
+                self.untagged_has_asn1_start(base_type, visiting)?
+            }
+            Type::TypeRef(name) => {
+                if !visiting.insert(name.clone()) {
+                    return Err(CodegenError::new(
+                        name,
+                        "recursive type while resolving ASN.1 starts",
+                    ));
+                }
+                let has_start =
+                    self.untagged_has_asn1_start(&self.definition(name)?.ty, visiting)?;
+                visiting.remove(name);
+                has_start
+            }
+            _ => false,
+        })
+    }
+
+    fn nominal_tag(&self, definition: &Definition) -> Result<(&'static str, u32), CodegenError> {
+        let rule = self.rules[&definition.name];
+        let TagDomain::Finite(tags) =
+            self.tag_domain(&definition.ty, &mut BTreeSet::new(), rule)?
+        else {
+            return Err(CodegenError::new(
+                &definition.name,
+                "a tagged nominal format must have a finite outer tag domain",
+            ));
+        };
+        let Some(first) = tags.iter().next() else {
+            return Err(CodegenError::new(
+                &definition.name,
+                "a tagged nominal format must accept an outer tag",
+            ));
+        };
+        if tags
+            .iter()
+            .any(|tag| tag.class != first.class || tag.number != first.number)
+        {
+            return Err(CodegenError::new(
+                &definition.name,
+                "a tagged nominal format must have one outer tag identity",
+            ));
+        }
+        let class = match first.class {
+            0 => "Class::Universal",
+            1 => "Class::Application",
+            2 => "Class::ContextSpecific",
+            3 => "Class::Private",
+            _ => unreachable!("tag classes are normalized by tag_class_id"),
+        };
+        Ok((class, first.number))
     }
 
     fn tag_domain(
@@ -3404,281 +3398,6 @@ fn render_retag_helper(
         return format!("{helper}(Class::Universal, {}u64, {inner})", tag.number);
     }
     format!("{helper}({}u64, {inner})", tag.number)
-}
-
-fn pretty_format_expr(expr: &str, indent: usize) -> String {
-    let expr = expr.trim();
-    if is_sequence_chain(expr) {
-        return pretty_format_sequence_chain(expr, indent, "");
-    }
-    if is_choice_chain(expr) {
-        return pretty_format_choice_chain(expr, indent, "");
-    }
-    let Some((head, opener, inner)) = split_root_group(expr) else {
-        return format!("{}{expr}", " ".repeat(indent));
-    };
-
-    if opener == '{' {
-        let fields = split_top_level(inner);
-        let mut output = format!("{}{} {{", " ".repeat(indent), head.trim_end());
-        for field in fields {
-            let Some((name, value)) = split_struct_field(field) else {
-                output.push('\n');
-                output.push_str(&pretty_format_expr(field, indent + 4));
-                output.push(',');
-                continue;
-            };
-            let pretty_value = pretty_format_expr(value, indent + 4);
-            output.push('\n');
-            if pretty_value.contains('\n') {
-                output.push_str(&format!("{}{}:\n", " ".repeat(indent + 4), name.trim()));
-                output.push_str(&pretty_format_expr(value, indent + 8));
-            } else {
-                output.push_str(&format!(
-                    "{}{}: {}",
-                    " ".repeat(indent + 4),
-                    name.trim(),
-                    pretty_value.trim_start()
-                ));
-            }
-            output.push(',');
-        }
-        output.push('\n');
-        output.push_str(&format!("{}}}", " ".repeat(indent)));
-        return output;
-    }
-
-    let args = split_top_level(inner);
-    let pretty_args = args
-        .iter()
-        .map(|arg| pretty_format_expr(arg, indent + 4))
-        .collect::<Vec<_>>();
-    let force_multiline = matches!(
-        head.trim(),
-        "REQUIRED" | "OPTIONAL" | "DEFAULT" | "CHOICE" | "ASN1Fmt::<_, DER>"
-    );
-    let multiline = force_multiline
-        || pretty_args.iter().any(|arg| arg.contains('\n'))
-        || expr.len() + indent > 92;
-    if !multiline {
-        return format!(
-            "{}{}({})",
-            " ".repeat(indent),
-            head.trim(),
-            pretty_args
-                .iter()
-                .map(|arg| arg.trim())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-    }
-
-    let mut output = format!("{}{}(", " ".repeat(indent), head.trim());
-    for arg in pretty_args {
-        output.push('\n');
-        output.push_str(&arg);
-        output.push(',');
-    }
-    output.push('\n');
-    output.push_str(&format!("{})", " ".repeat(indent)));
-    output
-}
-
-fn is_sequence_chain(expr: &str) -> bool {
-    if matches!(expr.trim(), "Eof" | "BER_END") {
-        return true;
-    }
-    split_root_group(expr).is_some_and(|(head, opener, _)| {
-        opener == '(' && matches!(head.trim(), "REQUIRED" | "OPTIONAL" | "DEFAULT")
-    })
-}
-
-fn pretty_format_sequence_chain(expr: &str, indent: usize, closing: &str) -> String {
-    let expr = expr.trim();
-    if matches!(expr, "Eof" | "BER_END") {
-        return format!("{}{expr}{closing}", " ".repeat(indent));
-    }
-    let Some((head, '(', inner)) = split_root_group(expr) else {
-        return format!("{}{}{closing}", " ".repeat(indent), expr);
-    };
-    let args = split_top_level(inner);
-    let continuation_index = match head.trim() {
-        "REQUIRED" | "OPTIONAL" if args.len() == 2 => 1,
-        "DEFAULT" if args.len() == 3 => 2,
-        _ => return format!("{}{}{closing}", " ".repeat(indent), expr),
-    };
-    let current_args = args[..continuation_index].join(", ");
-    let continuation = args[continuation_index];
-    format!(
-        "{}{}({},\n{}",
-        " ".repeat(indent),
-        head.trim(),
-        current_args,
-        pretty_format_sequence_chain(continuation, indent, &format!("){closing}"))
-    )
-}
-
-fn is_choice_chain(expr: &str) -> bool {
-    split_root_group(expr.trim())
-        .is_some_and(|(head, opener, _)| opener == '(' && head.trim() == "CHOICE")
-}
-
-fn pretty_format_choice_chain(expr: &str, indent: usize, closing: &str) -> String {
-    let expr = expr.trim();
-    let Some((head, '(', inner)) = split_root_group(expr) else {
-        return format!("{}{}{closing}", " ".repeat(indent), expr);
-    };
-    if head.trim() != "CHOICE" {
-        return format!("{}{}{closing}", " ".repeat(indent), expr);
-    }
-    let args = split_top_level(inner);
-    if args.len() != 2 {
-        return format!("{}{}{closing}", " ".repeat(indent), expr);
-    }
-
-    format!(
-        "{}{}(\n{}",
-        " ".repeat(indent),
-        head.trim(),
-        pretty_format_choice_chain_body(args[0], args[1], indent, closing)
-    )
-}
-
-fn pretty_format_choice_chain_body(
-    left: &str,
-    right: &str,
-    indent: usize,
-    closing: &str,
-) -> String {
-    let left = left.trim();
-    let right = right.trim();
-    let pretty_left = pretty_format_expr(left, indent + 4);
-
-    if is_choice_chain(right) {
-        let Some((_head, '(', inner)) = split_root_group(right) else {
-            let pretty_right = pretty_format_expr(right, indent + 4);
-            return format!("{pretty_left},\n{pretty_right}){closing}");
-        };
-        let args = split_top_level(inner);
-        if args.len() != 2 {
-            let pretty_right = pretty_format_expr(right, indent + 4);
-            return format!("{pretty_left},\n{pretty_right}){closing}");
-        }
-        format!(
-            "{pretty_left}, CHOICE(\n{}",
-            pretty_format_choice_chain_body(args[0], args[1], indent, &format!("){closing}"))
-        )
-    } else {
-        let pretty_right = pretty_format_expr(right, indent + 4);
-        format!("{pretty_left},\n{pretty_right}){closing}")
-    }
-}
-
-fn split_root_group(expr: &str) -> Option<(&str, char, &str)> {
-    let bytes = expr.as_bytes();
-    let mut stack = Vec::<u8>::new();
-    for (index, byte) in bytes.iter().copied().enumerate() {
-        match byte {
-            b'<' | b'[' => stack.push(byte),
-            b'>' => {
-                if stack.last() == Some(&b'<') {
-                    stack.pop();
-                }
-            }
-            b']' => {
-                if stack.last() == Some(&b'[') {
-                    stack.pop();
-                }
-            }
-            b'(' | b'{' if stack.is_empty() => {
-                let close = if byte == b'(' { b')' } else { b'}' };
-                let end = matching_delimiter(bytes, index, byte, close)?;
-                if end + 1 == bytes.len() {
-                    return Some((&expr[..index], byte as char, &expr[index + 1..end]));
-                }
-                return None;
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
-fn matching_delimiter(bytes: &[u8], start: usize, open: u8, close: u8) -> Option<usize> {
-    let mut depth = 0usize;
-    for (index, byte) in bytes.iter().copied().enumerate().skip(start) {
-        if byte == open {
-            depth += 1;
-        } else if byte == close {
-            depth -= 1;
-            if depth == 0 {
-                return Some(index);
-            }
-        }
-    }
-    None
-}
-
-fn split_top_level(input: &str) -> Vec<&str> {
-    let bytes = input.as_bytes();
-    let mut stack = Vec::<u8>::new();
-    let mut start = 0usize;
-    let mut parts = Vec::new();
-    for (index, byte) in bytes.iter().copied().enumerate() {
-        match byte {
-            b'(' | b'{' | b'[' | b'<' => stack.push(byte),
-            b')' => {
-                if stack.last() == Some(&b'(') {
-                    stack.pop();
-                }
-            }
-            b'}' => {
-                if stack.last() == Some(&b'{') {
-                    stack.pop();
-                }
-            }
-            b']' => {
-                if stack.last() == Some(&b'[') {
-                    stack.pop();
-                }
-            }
-            b'>' => {
-                if stack.last() == Some(&b'<') {
-                    stack.pop();
-                }
-            }
-            b',' if stack.is_empty() => {
-                parts.push(input[start..index].trim());
-                start = index + 1;
-            }
-            _ => {}
-        }
-    }
-    if start < input.len() || parts.is_empty() {
-        parts.push(input[start..].trim());
-    }
-    parts.into_iter().filter(|part| !part.is_empty()).collect()
-}
-
-fn split_struct_field(field: &str) -> Option<(&str, &str)> {
-    let bytes = field.as_bytes();
-    let mut stack = Vec::<u8>::new();
-    for (index, byte) in bytes.iter().copied().enumerate() {
-        match byte {
-            b'(' | b'{' | b'[' | b'<' => stack.push(byte),
-            b')' | b'}' | b']' | b'>' => {
-                stack.pop();
-            }
-            b':' if stack.is_empty()
-                && bytes.get(index.wrapping_sub(1)) != Some(&b':')
-                && bytes.get(index + 1) != Some(&b':') =>
-            {
-                return Some((&field[..index], &field[index + 1..]));
-            }
-            _ => {}
-        }
-    }
-    None
 }
 
 fn collect_type_refs<'a>(ty: &'a Type, output: &mut Vec<&'a str>) {
