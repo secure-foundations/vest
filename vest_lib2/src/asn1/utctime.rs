@@ -9,6 +9,7 @@ use crate::{
     combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, Tail},
     core::{proof::*, spec::*},
 };
+use vstd::assert_seqs_equal;
 use vstd::prelude::*;
 use OutputBuf;
 
@@ -336,7 +337,51 @@ pub fn utc_time_to_bytes<Output: OutputBuf>(value: &UtcTime, obuf: &mut Output)
     obuf.write_byte(ASCII_Z);
 }
 
-#[verifier::rlimit(100)]
+// The reverse direction of `lemma_utc_year_short`, also pure arithmetic.
+proof fn lemma_utc_year_roundtrip(year: u16)
+    requires
+        1950 <= year <= 2049,
+    ensures
+        (year as int % 100) as u8 <= 99,
+        utc_year((year as int % 100) as u8) == year,
+{
+}
+
+// All the decoding facts about `utc_time_bytes`, established once so that the well-formedness
+// and round-trip queries never have to redo the sequence-concatenation reasoning.
+proof fn lemma_utc_time_bytes_layout(value: UtcTime)
+    requires
+        value.wf(),
+    ensures
+        ({
+            let bytes = utc_time_bytes(value);
+            let end = if value.precision == TimePrecision::Second {
+                12int
+            } else {
+                10int
+            };
+            &&& bytes.len() == end + 1
+            &&& bytes[end] == ASCII_Z
+            &&& digits(bytes, 0, end)
+            &&& utc_year(decimal2(bytes, 0)) == value.datetime.year
+            &&& decimal2(bytes, 2) == value.datetime.month
+            &&& decimal2(bytes, 4) == value.datetime.day
+            &&& decimal2(bytes, 6) == value.datetime.hour
+            &&& decimal2(bytes, 8) == value.datetime.minute
+            &&& value.precision == TimePrecision::Second ==> decimal2(bytes, 10)
+                == value.datetime.second
+        }),
+{
+    let short_year = (value.datetime.year as int % 100) as u8;
+    lemma_utc_year_roundtrip(value.datetime.year);
+    lemma_decimal2_roundtrip(short_year);
+    lemma_decimal2_roundtrip(value.datetime.month);
+    lemma_decimal2_roundtrip(value.datetime.day);
+    lemma_decimal2_roundtrip(value.datetime.hour);
+    lemma_decimal2_roundtrip(value.datetime.minute);
+    lemma_decimal2_roundtrip(value.datetime.second);
+}
+
 pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTime)
     requires
         value.wf(),
@@ -345,19 +390,24 @@ pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTime)
         utc_time_bytes_wf::<DER>(utc_time_bytes(value)),
         utc_time_value(utc_time_bytes(value)) == Some(value),
 {
-    broadcast use lemma_decimal2_roundtrip;
-
+    lemma_utc_time_bytes_layout(value);
 }
 
-#[verifier::rlimit(100)]
 pub proof fn lemma_der_utc_time_canonical(bytes: Seq<u8>)
     requires
         utc_time_bytes_wf::<true>(bytes),
     ensures
         utc_time_bytes(utc_time_value(bytes)->0) == bytes,
 {
-    broadcast use lemma_decimal2_canonical;
-
+    assert(digits(bytes, 0, 12));
+    assert(ascii_digit(bytes[0]));
+    assert(ascii_digit(bytes[1]));
+    lemma_decimal2_canonical(bytes, 0);
+    lemma_decimal2_canonical(bytes, 2);
+    lemma_decimal2_canonical(bytes, 4);
+    lemma_decimal2_canonical(bytes, 6);
+    lemma_decimal2_canonical(bytes, 8);
+    lemma_decimal2_canonical(bytes, 10);
 }
 
 type UtcTimeInnerFmt<const DER: bool> = Mapped<
