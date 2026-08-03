@@ -13,6 +13,8 @@ use vest_lib2::asn1::der::{SetFmt, SET};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
 use vest_lib2::combinators::Eof;
+use Sum::Inl as L;
+use Sum::Inr as R;
 use vest_lib2::core::exec::fns::{Map, Pred};
 use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::{PResult, Parser};
@@ -497,8 +499,8 @@ impl SpecMap for SelectionForward {
     type Output = SelectionSpec;
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            Sum::Inl(value) => SelectionSpec::Flag(value),
-            Sum::Inr(value) => SelectionSpec::Payload(value),
+            L(value) => SelectionSpec::Flag(value),
+            R(value) => SelectionSpec::Payload(value),
         }
     }
 }
@@ -508,8 +510,8 @@ impl SpecMap for SelectionReverse {
     type Output = Sum<FlagSpec, PayloadSpec>;
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            SelectionSpec::Flag(value) => Sum::Inl(value),
-            SelectionSpec::Payload(value) => Sum::Inr(value),
+            SelectionSpec::Flag(value) => L(value),
+            SelectionSpec::Payload(value) => R(value),
         }
     }
 }
@@ -518,8 +520,8 @@ impl<'a> Map<Sum<Flag, Payload<'a>>> for SelectionForward {
     type O = Selection<'a>;
     fn map(&self, input: Sum<Flag, Payload<'a>>) -> (value: Self::O) {
         match input {
-            Sum::Inl(value) => Selection::Flag(value),
-            Sum::Inr(value) => Selection::Payload(value),
+            L(value) => Selection::Flag(value),
+            R(value) => Selection::Payload(value),
         }
     }
 }
@@ -528,8 +530,8 @@ impl<'a, 'x> Map<&'x Selection<'a>> for SelectionReverse {
     type O = Sum<&'x Flag, &'x Payload<'a>>;
     fn map(&self, value: &'x Selection<'a>) -> (output: Self::O) {
         match value {
-            Selection::Flag(value) => Sum::Inl(value),
-            Selection::Payload(value) => Sum::Inr(value),
+            Selection::Flag(value) => L(value),
+            Selection::Payload(value) => R(value),
         }
     }
 }
@@ -780,8 +782,8 @@ impl SpecMap for InlineRecordSelectedForward {
     type Output = InlineRecordSelectedSpec;
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            Sum::Inl(value) => InlineRecordSelectedSpec::Flag(value),
-            Sum::Inr(value) => InlineRecordSelectedSpec::Identifier(value),
+            L(value) => InlineRecordSelectedSpec::Flag(value),
+            R(value) => InlineRecordSelectedSpec::Identifier(value),
         }
     }
 }
@@ -791,8 +793,8 @@ impl SpecMap for InlineRecordSelectedReverse {
     type Output = Sum<bool, vest_lib2::asn1::ObjectIdentifierSpec>;
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            InlineRecordSelectedSpec::Flag(value) => Sum::Inl(value),
-            InlineRecordSelectedSpec::Identifier(value) => Sum::Inr(value),
+            InlineRecordSelectedSpec::Flag(value) => L(value),
+            InlineRecordSelectedSpec::Identifier(value) => R(value),
         }
     }
 }
@@ -801,8 +803,8 @@ impl Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier>> for InlineRecordSelectedF
     type O = InlineRecordSelected;
     fn map(&self, input: Sum<bool, vest_lib2::asn1::ObjectIdentifier>) -> (value: Self::O) {
         match input {
-            Sum::Inl(value) => InlineRecordSelected::Flag(value),
-            Sum::Inr(value) => InlineRecordSelected::Identifier(value),
+            L(value) => InlineRecordSelected::Flag(value),
+            R(value) => InlineRecordSelected::Identifier(value),
         }
     }
 }
@@ -811,8 +813,8 @@ impl<'x> Map<&'x InlineRecordSelected> for InlineRecordSelectedReverse {
     type O = Sum<&'x bool, &'x vest_lib2::asn1::ObjectIdentifier>;
     fn map(&self, value: &'x InlineRecordSelected) -> (output: Self::O) {
         match value {
-            InlineRecordSelected::Flag(value) => Sum::Inl(value),
-            InlineRecordSelected::Identifier(value) => Sum::Inr(value),
+            InlineRecordSelected::Flag(value) => L(value),
+            InlineRecordSelected::Identifier(value) => R(value),
         }
     }
 }
@@ -870,12 +872,12 @@ impl SpecMap for AutomationChoiceForward {
     type Output = AutomationChoiceSpec;
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            Sum::Inl(value) => AutomationChoiceSpec::BooleanValue(value),
-            Sum::Inr(Sum::Inl(value)) => AutomationChoiceSpec::IntegerValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inl(value))) => AutomationChoiceSpec::OctetsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))) => AutomationChoiceSpec::NullValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))) => AutomationChoiceSpec::TextValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))) => AutomationChoiceSpec::OidValue(value),
+            L(value) => AutomationChoiceSpec::BooleanValue(value),
+            R(L(value)) => AutomationChoiceSpec::IntegerValue(value),
+            R(R(L(value))) => AutomationChoiceSpec::OctetsValue(value),
+            R(R(R(L(value)))) => AutomationChoiceSpec::NullValue(value),
+            R(R(R(R(L(value))))) => AutomationChoiceSpec::TextValue(value),
+            R(R(R(R(R(value))))) => AutomationChoiceSpec::OidValue(value),
         }
     }
 }
@@ -885,12 +887,12 @@ impl SpecMap for AutomationChoiceReverse {
     type Output = Sum<bool, Sum<int, Sum<Seq<u8>, Sum<(), Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>>>;
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            AutomationChoiceSpec::BooleanValue(value) => Sum::Inl(value),
-            AutomationChoiceSpec::IntegerValue(value) => Sum::Inr(Sum::Inl(value)),
-            AutomationChoiceSpec::OctetsValue(value) => Sum::Inr(Sum::Inr(Sum::Inl(value))),
-            AutomationChoiceSpec::NullValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))),
-            AutomationChoiceSpec::TextValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))),
-            AutomationChoiceSpec::OidValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))),
+            AutomationChoiceSpec::BooleanValue(value) => L(value),
+            AutomationChoiceSpec::IntegerValue(value) => R(L(value)),
+            AutomationChoiceSpec::OctetsValue(value) => R(R(L(value))),
+            AutomationChoiceSpec::NullValue(value) => R(R(R(L(value)))),
+            AutomationChoiceSpec::TextValue(value) => R(R(R(R(L(value))))),
+            AutomationChoiceSpec::OidValue(value) => R(R(R(R(R(value))))),
         }
     }
 }
@@ -899,12 +901,12 @@ impl<'a> Map<Sum<bool, Sum<vest_lib2::asn1::Integer<'a>, Sum<&'a [u8], Sum<(), S
     type O = AutomationChoice<'a>;
     fn map(&self, input: Sum<bool, Sum<vest_lib2::asn1::Integer<'a>, Sum<&'a [u8], Sum<(), Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>>>) -> (value: Self::O) {
         match input {
-            Sum::Inl(value) => AutomationChoice::BooleanValue(value),
-            Sum::Inr(Sum::Inl(value)) => AutomationChoice::IntegerValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inl(value))) => AutomationChoice::OctetsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))) => AutomationChoice::NullValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))) => AutomationChoice::TextValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))) => AutomationChoice::OidValue(value),
+            L(value) => AutomationChoice::BooleanValue(value),
+            R(L(value)) => AutomationChoice::IntegerValue(value),
+            R(R(L(value))) => AutomationChoice::OctetsValue(value),
+            R(R(R(L(value)))) => AutomationChoice::NullValue(value),
+            R(R(R(R(L(value))))) => AutomationChoice::TextValue(value),
+            R(R(R(R(R(value))))) => AutomationChoice::OidValue(value),
         }
     }
 }
@@ -913,12 +915,12 @@ impl<'a, 'x> Map<&'x AutomationChoice<'a>> for AutomationChoiceReverse {
     type O = Sum<&'x bool, Sum<&'x vest_lib2::asn1::Integer<'a>, Sum<&'x &'a [u8], Sum<&'x (), Sum<&'x &'a str, &'x vest_lib2::asn1::ObjectIdentifier>>>>>;
     fn map(&self, value: &'x AutomationChoice<'a>) -> (output: Self::O) {
         match value {
-            AutomationChoice::BooleanValue(value) => Sum::Inl(value),
-            AutomationChoice::IntegerValue(value) => Sum::Inr(Sum::Inl(value)),
-            AutomationChoice::OctetsValue(value) => Sum::Inr(Sum::Inr(Sum::Inl(value))),
-            AutomationChoice::NullValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))),
-            AutomationChoice::TextValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))),
-            AutomationChoice::OidValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))),
+            AutomationChoice::BooleanValue(value) => L(value),
+            AutomationChoice::IntegerValue(value) => R(L(value)),
+            AutomationChoice::OctetsValue(value) => R(R(L(value))),
+            AutomationChoice::NullValue(value) => R(R(R(L(value)))),
+            AutomationChoice::TextValue(value) => R(R(R(R(L(value))))),
+            AutomationChoice::OidValue(value) => R(R(R(R(R(value))))),
         }
     }
 }
@@ -1126,7 +1128,15 @@ impl HEADER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> HEADER__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(FLAG::Fmt), REQUIRED(Ref(COUNT::Fmt), Eof))), mapper: BiMap(HeaderForward, HeaderReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(FLAG::Fmt),
+                    REQUIRED(Ref(COUNT::Fmt),
+                    Eof)),
+                ),
+            mapper: BiMap(HeaderForward, HeaderReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1137,7 +1147,15 @@ impl HEADER {
     pub fn exec_inner(&self) -> (fmt: HEADER__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(FLAG::Fmt), REQUIRED(Ref(COUNT::Fmt), Eof))), mapper: BiMap(HeaderForward, HeaderReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(FLAG::Fmt),
+                    REQUIRED(Ref(COUNT::Fmt),
+                    Eof)),
+                ),
+            mapper: BiMap(HeaderForward, HeaderReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1155,7 +1173,15 @@ impl ENVELOPE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> ENVELOPE__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(HEADER::Fmt), OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)), Eof))), mapper: BiMap(EnvelopeForward, EnvelopeReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(HEADER::Fmt),
+                    OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)),
+                    Eof)),
+                ),
+            mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1166,7 +1192,15 @@ impl ENVELOPE {
     pub fn exec_inner(&self) -> (fmt: ENVELOPE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(HEADER::Fmt), OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)), Eof))), mapper: BiMap(EnvelopeForward, EnvelopeReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(HEADER::Fmt),
+                    OPTIONAL(IMPLICIT(0u64, Ref(PAYLOAD::Fmt)),
+                    Eof)),
+                ),
+            mapper: BiMap(EnvelopeForward, EnvelopeReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1213,7 +1247,15 @@ impl FEATURES {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> FEATURES__ {
-        let fmt = Mapped { inner: SEQUENCE(DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true, DEFAULT(IMPLICIT(1u64, BOOLEAN), false, Eof))), mapper: BiMap(FeaturesForward, FeaturesReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true,
+                    DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+                    Eof)),
+                ),
+            mapper: BiMap(FeaturesForward, FeaturesReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1224,7 +1266,15 @@ impl FEATURES {
     pub fn exec_inner(&self) -> (fmt: FEATURES__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true, DEFAULT(IMPLICIT(1u64, BOOLEAN), false, Eof))), mapper: BiMap(FeaturesForward, FeaturesReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    DEFAULT(IMPLICIT(0u64, FLAG::Fmt), true,
+                    DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+                    Eof)),
+                ),
+            mapper: BiMap(FeaturesForward, FeaturesReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1242,14 +1292,26 @@ impl SELECTION {
     pub const Fmt: Self = Self;
 
     pub open spec fn spec_inner(&self) -> SELECTION__ {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(1u64, Ref(FLAG::Fmt)), EXPLICIT(2u64, Ref(PAYLOAD::Fmt))), mapper: BiMap(SelectionForward, SelectionReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(1u64, Ref(FLAG::Fmt)),
+                    EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
+            mapper: BiMap(SelectionForward, SelectionReverse),
+        };
         fmt
     }
 
     pub fn exec_inner(&self) -> (fmt: SELECTION__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(1u64, Ref(FLAG::Fmt)), EXPLICIT(2u64, Ref(PAYLOAD::Fmt))), mapper: BiMap(SelectionForward, SelectionReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(1u64, Ref(FLAG::Fmt)),
+                    EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
+            mapper: BiMap(SelectionForward, SelectionReverse),
+        };
         fmt
     }
 }
@@ -1263,7 +1325,14 @@ impl CHOICE_ENVELOPE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> CHOICE_ENVELOPE__ {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)), Eof)), mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)),
+                    Eof),
+                ),
+            mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1274,7 +1343,14 @@ impl CHOICE_ENVELOPE {
     pub fn exec_inner(&self) -> (fmt: CHOICE_ENVELOPE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)), Eof)), mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(EXPLICIT(3u64, Ref(SELECTION::Fmt)),
+                    Eof),
+                ),
+            mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1429,7 +1505,14 @@ impl BMP_CONTAINER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> BMP_CONTAINER__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(BMP_NAME::Fmt), Eof)), mapper: BiMap(BmpContainerForward, BmpContainerReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(BMP_NAME::Fmt),
+                    Eof),
+                ),
+            mapper: BiMap(BmpContainerForward, BmpContainerReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1440,7 +1523,14 @@ impl BMP_CONTAINER {
     pub fn exec_inner(&self) -> (fmt: BMP_CONTAINER__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(BMP_NAME::Fmt), Eof)), mapper: BiMap(BmpContainerForward, BmpContainerReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(BMP_NAME::Fmt),
+                    Eof),
+                ),
+            mapper: BiMap(BmpContainerForward, BmpContainerReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1458,7 +1548,17 @@ impl METADATA {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> METADATA__ {
-        let fmt = Mapped { inner: SEQUENCE(DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green, REQUIRED(Ref(IDENTIFIER::Fmt), REQUIRED(Ref(MEASUREMENT::Fmt), REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)), Eof))))), mapper: BiMap(MetadataForward, MetadataReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,
+                    REQUIRED(Ref(IDENTIFIER::Fmt),
+                    REQUIRED(Ref(MEASUREMENT::Fmt),
+                    REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),
+                    Eof)))),
+                ),
+            mapper: BiMap(MetadataForward, MetadataReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1469,7 +1569,17 @@ impl METADATA {
     pub fn exec_inner(&self) -> (fmt: METADATA__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green, REQUIRED(Ref(IDENTIFIER::Fmt), REQUIRED(Ref(MEASUREMENT::Fmt), REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)), Eof))))), mapper: BiMap(MetadataForward, MetadataReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,
+                    REQUIRED(Ref(IDENTIFIER::Fmt),
+                    REQUIRED(Ref(MEASUREMENT::Fmt),
+                    REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),
+                    Eof)))),
+                ),
+            mapper: BiMap(MetadataForward, MetadataReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1487,7 +1597,14 @@ impl INLINE_RECORD_NESTED {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> INLINE_RECORD_NESTED__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(OCTET_STRING), Eof)), mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(OCTET_STRING),
+                    Eof),
+                ),
+            mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1498,7 +1615,14 @@ impl INLINE_RECORD_NESTED {
     pub fn exec_inner(&self) -> (fmt: INLINE_RECORD_NESTED__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(OCTET_STRING), Eof)), mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(OCTET_STRING),
+                    Eof),
+                ),
+            mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1516,14 +1640,26 @@ impl INLINE_RECORD_SELECTED {
     pub const Fmt: Self = Self;
 
     pub open spec fn spec_inner(&self) -> INLINE_RECORD_SELECTED__ {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(2u64, Ref(BOOLEAN)), IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))), mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(2u64, Ref(BOOLEAN)),
+                    IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
+            mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
+        };
         fmt
     }
 
     pub fn exec_inner(&self) -> (fmt: INLINE_RECORD_SELECTED__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(2u64, Ref(BOOLEAN)), IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))), mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(2u64, Ref(BOOLEAN)),
+                    IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
+            mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
+        };
         fmt
     }
 }
@@ -1537,7 +1673,15 @@ impl INLINE_RECORD {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> INLINE_RECORD__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt), REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt), Eof))), mapper: BiMap(InlineRecordForward, InlineRecordReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt),
+                    REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt),
+                    Eof)),
+                ),
+            mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1548,7 +1692,15 @@ impl INLINE_RECORD {
     pub fn exec_inner(&self) -> (fmt: INLINE_RECORD__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt), REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt), Eof))), mapper: BiMap(InlineRecordForward, InlineRecordReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(INLINE_RECORD_NESTED::Fmt),
+                    REQUIRED(Ref(INLINE_RECORD_SELECTED::Fmt),
+                    Eof)),
+                ),
+            mapper: BiMap(InlineRecordForward, InlineRecordReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1566,14 +1718,34 @@ impl AUTOMATION_CHOICE {
     pub const Fmt: Self = Self;
 
     pub open spec fn spec_inner(&self) -> AUTOMATION_CHOICE__ {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(IMPLICIT(11u64, Ref(INTEGER)), CHOICE(IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(IMPLICIT(13u64, Ref(NULL)), CHOICE(EXPLICIT(14u64, Ref(UTF8_STRING)), EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))), mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                    IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
+                    IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
+                    IMPLICIT(13u64, Ref(NULL)), CHOICE(
+                    EXPLICIT(14u64, Ref(UTF8_STRING)),
+                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
+            mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
+        };
         fmt
     }
 
     pub fn exec_inner(&self) -> (fmt: AUTOMATION_CHOICE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(IMPLICIT(11u64, Ref(INTEGER)), CHOICE(IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(IMPLICIT(13u64, Ref(NULL)), CHOICE(EXPLICIT(14u64, Ref(UTF8_STRING)), EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))), mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                    IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
+                    IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
+                    IMPLICIT(13u64, Ref(NULL)), CHOICE(
+                    EXPLICIT(14u64, Ref(UTF8_STRING)),
+                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
+            mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
+        };
         fmt
     }
 }
@@ -1587,7 +1759,18 @@ impl AUTOMATION_SEQUENCE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> AUTOMATION_SEQUENCE__ {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)), DEFAULT(IMPLICIT(21u64, BOOLEAN), true, OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)), REQUIRED(IMPLICIT(23u64, Ref(NULL)), OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)), Eof)))))), mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
+                    DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+                    OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+                    REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+                    OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+                    Eof))))),
+                ),
+            mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -1598,7 +1781,18 @@ impl AUTOMATION_SEQUENCE {
     pub fn exec_inner(&self) -> (fmt: AUTOMATION_SEQUENCE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)), DEFAULT(IMPLICIT(21u64, BOOLEAN), true, OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)), REQUIRED(IMPLICIT(23u64, Ref(NULL)), OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)), Eof)))))), mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
+                    DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+                    OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+                    REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+                    OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+                    Eof))))),
+                ),
+            mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,

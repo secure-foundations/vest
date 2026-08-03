@@ -320,14 +320,46 @@ pub(super) fn refine(
 }
 
 pub(super) fn map_with_bimap(rendered: Rendered, forward: &str, reverse: &str) -> Rendered {
-    Rendered {
-        ty: format!("Mapped<{}, BiMap<{forward}, {reverse}>>", rendered.ty),
-        expr: format!(
+    let expr = if rendered.expr.contains('\n') {
+        format!(
+            "Mapped {{\n    inner:\n        {},\n    mapper: BiMap({forward}, {reverse}),\n}}",
+            indent_continuation(&rendered.expr, 8),
+        )
+    } else {
+        format!(
             "Mapped {{ inner: {}, mapper: BiMap({forward}, {reverse}) }}",
             rendered.expr
-        ),
+        )
+    };
+    Rendered {
+        ty: format!("Mapped<{}, BiMap<{forward}, {reverse}>>", rendered.ty),
+        expr,
         shape: rendered.shape,
     }
+}
+
+/// Indent every line after the first one by `spaces` columns.
+pub(super) fn indent_continuation(value: &str, spaces: usize) -> String {
+    value.replace('\n', &format!("\n{}", " ".repeat(spaces)))
+}
+
+/// Render an outer list-like combinator around an already flattened chain.
+pub(super) fn render_list_combinator(name: &str, inner: &str) -> String {
+    format!("{name}(\n    {},\n)", indent_continuation(inner, 4))
+}
+
+/// Render one node of a visually flattened, right-nested `CHOICE` chain.
+pub(super) fn render_choice_combinator(left: &str, right: &str) -> String {
+    format!("CHOICE(\n    {}, {right})", indent_continuation(left, 4),)
+}
+
+/// Render the final two alternatives of a flattened `CHOICE` chain.
+pub(super) fn render_final_choice_combinator(left: &str, right: &str) -> String {
+    format!(
+        "CHOICE(\n    {},\n    {})",
+        indent_continuation(left, 4),
+        indent_continuation(right, 4),
+    )
 }
 
 pub(super) fn render_optionally_sized_string(
@@ -438,9 +470,9 @@ pub(super) fn sum_pattern(index: usize, len: usize, binding: &str) -> String {
     if len == 1 {
         binding.to_string()
     } else if index == 0 {
-        format!("Sum::Inl({binding})")
+        format!("L({binding})")
     } else {
-        format!("Sum::Inr({})", sum_pattern(index - 1, len - 1, binding))
+        format!("R({})", sum_pattern(index - 1, len - 1, binding))
     }
 }
 
@@ -448,9 +480,9 @@ pub(super) fn sum_expression(index: usize, len: usize, value: &str) -> String {
     if len == 1 {
         value.to_string()
     } else if index == 0 {
-        format!("Sum::Inl({value})")
+        format!("L({value})")
     } else {
-        format!("Sum::Inr({})", sum_expression(index - 1, len - 1, value))
+        format!("R({})", sum_expression(index - 1, len - 1, value))
     }
 }
 
@@ -616,5 +648,35 @@ impl Write for CodeWriter {
     fn write_str(&mut self, value: &str) -> fmt::Result {
         self.output.push_str(value);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn code_writer_emits_lines_and_blank_lines() {
+        let mut writer = CodeWriter::new();
+        writer.line("first");
+        writer.blank_line();
+        writer.line(format_args!("{} {}", "second", 2));
+        assert_eq!(writer.finish(), "first\n\nsecond 2\n");
+    }
+
+    #[test]
+    fn pretty_prints_flattened_sequence_and_choice_chains() {
+        let sequence = render_list_combinator("SEQUENCE", "REQUIRED(A,\nOPTIONAL(B,\nEof))");
+        assert_eq!(
+            sequence,
+            "SEQUENCE(\n    REQUIRED(A,\n    OPTIONAL(B,\n    Eof)),\n)"
+        );
+
+        let tail = render_final_choice_combinator("C", "D");
+        let choice = render_choice_combinator("B", &tail);
+        assert_eq!(choice, "CHOICE(\n    B, CHOICE(\n    C,\n    D))");
+
+        assert_eq!(sum_pattern(2, 4, "value"), "R(R(L(value)))");
+        assert_eq!(sum_expression(3, 4, "value"), "R(R(R(value)))");
     }
 }

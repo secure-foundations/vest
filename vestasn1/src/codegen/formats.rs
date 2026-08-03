@@ -17,7 +17,10 @@ impl<'a> Generator<'a> {
                         let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
                         Rendered {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
-                            expr: format!("{}({})", self.backend_item(rule, "SEQUENCE"), raw.expr),
+                            expr: render_list_combinator(
+                                &self.backend_item(rule, "SEQUENCE"),
+                                &raw.expr,
+                            ),
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
@@ -33,7 +36,10 @@ impl<'a> Generator<'a> {
                         )?;
                         Rendered {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
-                            expr: format!("{}({})", self.backend_item(rule, "SEQUENCE"), raw.expr),
+                            expr: render_list_combinator(
+                                &self.backend_item(rule, "SEQUENCE"),
+                                &raw.expr,
+                            ),
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
@@ -45,7 +51,7 @@ impl<'a> Generator<'a> {
                 let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
                 let set = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SetFmt"), raw.ty),
-                    expr: format!("{}({})", self.backend_item(rule, "SET"), raw.expr),
+                    expr: render_list_combinator(&self.backend_item(rule, "SET"), &raw.expr),
                     shape: TagShape::Tlv { constructed: true },
                 };
                 map_with_bimap(set, &names.forward, &names.reverse)
@@ -92,7 +98,10 @@ impl<'a> Generator<'a> {
                     "    pub open spec fn spec_inner(&self) -> {} {{",
                     names.inner_format
                 ));
-                output.line(format_args!("        let fmt = {};", rendered.expr));
+                output.line(format_args!(
+                    "        let fmt = {};",
+                    indent_continuation(&rendered.expr, 8)
+                ));
                 output.line(format_args!("        fmt.spec_retagged(Tag {{"));
                 output.line(format_args!("            class: self.0,"));
                 output.line(format_args!("            constructed: {constructed},"));
@@ -108,7 +117,10 @@ impl<'a> Generator<'a> {
                 ));
                 output.line(format_args!("        ensures fmt == self.spec_inner(),"));
                 output.line(format_args!("    {{"));
-                output.line(format_args!("        let fmt = {};", rendered.expr));
+                output.line(format_args!(
+                    "        let fmt = {};",
+                    indent_continuation(&rendered.expr, 8)
+                ));
                 output.line(format_args!("        fmt.retagged(Tag {{"));
                 output.line(format_args!("            class: self.0,"));
                 output.line(format_args!("            constructed: {constructed},"));
@@ -131,7 +143,10 @@ impl<'a> Generator<'a> {
                     "    pub open spec fn spec_inner(&self) -> {} {{",
                     names.inner_format
                 ));
-                output.line(format_args!("        let fmt = {};", rendered.expr));
+                output.line(format_args!(
+                    "        let fmt = {};",
+                    indent_continuation(&rendered.expr, 8)
+                ));
                 output.line(format_args!("        fmt"));
                 output.line(format_args!("    }}"));
                 output.blank_line();
@@ -141,7 +156,10 @@ impl<'a> Generator<'a> {
                 ));
                 output.line(format_args!("        ensures fmt == self.spec_inner(),"));
                 output.line(format_args!("    {{"));
-                output.line(format_args!("        let fmt = {};", rendered.expr));
+                output.line(format_args!(
+                    "        let fmt = {};",
+                    indent_continuation(&rendered.expr, 8)
+                ));
                 output.line(format_args!("        fmt"));
                 output.line(format_args!("    }}"));
                 output.line(format_args!(
@@ -367,7 +385,7 @@ impl<'a> Generator<'a> {
                         result.ty
                     ),
                     expr: format!(
-                        "{}({}, {}, {})",
+                        "{}({}, {},\n{})",
                         self.backend_item(rule, "DEFAULT"),
                         field_rendered.expr,
                         default.expr,
@@ -385,7 +403,7 @@ impl<'a> Generator<'a> {
                 Rendered {
                     ty: format!("{ty_constructor}<{}, {}>", field_rendered.ty, result.ty),
                     expr: format!(
-                        "{expr_constructor}({}, {})",
+                        "{expr_constructor}({},\n{})",
                         field_rendered.expr, result.expr
                     ),
                     shape: TagShape::Untagged,
@@ -404,14 +422,27 @@ impl<'a> Generator<'a> {
             .iter()
             .map(|variant| self.render_type_by_ref(&variant.ty, rule))
             .collect::<Result<Vec<_>, _>>()?;
-        let mut result = rendered
+        let last = rendered
             .last()
             .cloned()
             .expect("empty CHOICE rejected during validation");
-        for variant in rendered[..rendered.len() - 1].iter().rev() {
+        let (mut result, remaining) = if rendered.len() == 1 {
+            (last, &rendered[..0])
+        } else {
+            let penultimate = &rendered[rendered.len() - 2];
+            (
+                Rendered {
+                    ty: format!("Choice<{}, {}>", penultimate.ty, last.ty),
+                    expr: render_final_choice_combinator(&penultimate.expr, &last.expr),
+                    shape: TagShape::Untagged,
+                },
+                &rendered[..rendered.len() - 2],
+            )
+        };
+        for variant in remaining.iter().rev() {
             result = Rendered {
                 ty: format!("Choice<{}, {}>", variant.ty, result.ty),
-                expr: format!("CHOICE({}, {})", variant.expr, result.expr),
+                expr: render_choice_combinator(&variant.expr, &result.expr),
                 shape: TagShape::Untagged,
             };
         }

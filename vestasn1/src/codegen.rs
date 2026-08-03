@@ -246,6 +246,8 @@ impl<'a> Generator<'a> {
         ));
         output.line(format_args!("use vest_lib2::combinators::*;"));
         output.line(format_args!("use vest_lib2::combinators::Eof;"));
+        output.line(format_args!("use Sum::Inl as L;"));
+        output.line(format_args!("use Sum::Inr as R;"));
         output.line(format_args!(
             "use vest_lib2::core::exec::fns::{{Map, Pred}};"
         ));

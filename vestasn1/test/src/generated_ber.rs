@@ -13,6 +13,8 @@ use vest_lib2::asn1::ber::{BerEndFmt, BER_END};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
 use vest_lib2::combinators::Eof;
+use Sum::Inl as L;
+use Sum::Inr as R;
 use vest_lib2::core::exec::fns::{Map, Pred};
 use vest_lib2::core::exec::output::OutputBuf;
 use vest_lib2::core::exec::parser::{PResult, Parser};
@@ -211,12 +213,12 @@ impl SpecMap for AutomationChoiceForward {
     type Output = AutomationChoiceSpec;
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            Sum::Inl(value) => AutomationChoiceSpec::BooleanValue(value),
-            Sum::Inr(Sum::Inl(value)) => AutomationChoiceSpec::OctetsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inl(value))) => AutomationChoiceSpec::BitsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))) => AutomationChoiceSpec::TextValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))) => AutomationChoiceSpec::PrintableValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))) => AutomationChoiceSpec::OpenValue(value),
+            L(value) => AutomationChoiceSpec::BooleanValue(value),
+            R(L(value)) => AutomationChoiceSpec::OctetsValue(value),
+            R(R(L(value))) => AutomationChoiceSpec::BitsValue(value),
+            R(R(R(L(value)))) => AutomationChoiceSpec::TextValue(value),
+            R(R(R(R(L(value))))) => AutomationChoiceSpec::PrintableValue(value),
+            R(R(R(R(R(value))))) => AutomationChoiceSpec::OpenValue(value),
         }
     }
 }
@@ -226,12 +228,12 @@ impl SpecMap for AutomationChoiceReverse {
     type Output = Sum<bool, Sum<Seq<u8>, Sum<vest_lib2::asn1::BitStringSpec, Sum<Seq<char>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>>>;
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            AutomationChoiceSpec::BooleanValue(value) => Sum::Inl(value),
-            AutomationChoiceSpec::OctetsValue(value) => Sum::Inr(Sum::Inl(value)),
-            AutomationChoiceSpec::BitsValue(value) => Sum::Inr(Sum::Inr(Sum::Inl(value))),
-            AutomationChoiceSpec::TextValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))),
-            AutomationChoiceSpec::PrintableValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))),
-            AutomationChoiceSpec::OpenValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))),
+            AutomationChoiceSpec::BooleanValue(value) => L(value),
+            AutomationChoiceSpec::OctetsValue(value) => R(L(value)),
+            AutomationChoiceSpec::BitsValue(value) => R(R(L(value))),
+            AutomationChoiceSpec::TextValue(value) => R(R(R(L(value)))),
+            AutomationChoiceSpec::PrintableValue(value) => R(R(R(R(L(value))))),
+            AutomationChoiceSpec::OpenValue(value) => R(R(R(R(R(value))))),
         }
     }
 }
@@ -240,12 +242,12 @@ impl Map<Sum<bool, Sum<Vec<u8>, Sum<vest_lib2::asn1::BitStringOwned, Sum<String,
     type O = AutomationChoice;
     fn map(&self, input: Sum<bool, Sum<Vec<u8>, Sum<vest_lib2::asn1::BitStringOwned, Sum<String, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>>>) -> (value: Self::O) {
         match input {
-            Sum::Inl(value) => AutomationChoice::BooleanValue(value),
-            Sum::Inr(Sum::Inl(value)) => AutomationChoice::OctetsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inl(value))) => AutomationChoice::BitsValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))) => AutomationChoice::TextValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))) => AutomationChoice::PrintableValue(value),
-            Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))) => AutomationChoice::OpenValue(value),
+            L(value) => AutomationChoice::BooleanValue(value),
+            R(L(value)) => AutomationChoice::OctetsValue(value),
+            R(R(L(value))) => AutomationChoice::BitsValue(value),
+            R(R(R(L(value)))) => AutomationChoice::TextValue(value),
+            R(R(R(R(L(value))))) => AutomationChoice::PrintableValue(value),
+            R(R(R(R(R(value))))) => AutomationChoice::OpenValue(value),
         }
     }
 }
@@ -254,12 +256,12 @@ impl<'x> Map<&'x AutomationChoice> for AutomationChoiceReverse {
     type O = Sum<&'x bool, Sum<&'x Vec<u8>, Sum<&'x vest_lib2::asn1::BitStringOwned, Sum<&'x String, Sum<&'x vest_lib2::asn1::PrintableStringOwned, &'x vest_lib2::asn1::AnyOwned>>>>>;
     fn map(&self, value: &'x AutomationChoice) -> (output: Self::O) {
         match value {
-            AutomationChoice::BooleanValue(value) => Sum::Inl(value),
-            AutomationChoice::OctetsValue(value) => Sum::Inr(Sum::Inl(value)),
-            AutomationChoice::BitsValue(value) => Sum::Inr(Sum::Inr(Sum::Inl(value))),
-            AutomationChoice::TextValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value)))),
-            AutomationChoice::PrintableValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inl(value))))),
-            AutomationChoice::OpenValue(value) => Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(Sum::Inr(value))))),
+            AutomationChoice::BooleanValue(value) => L(value),
+            AutomationChoice::OctetsValue(value) => R(L(value)),
+            AutomationChoice::BitsValue(value) => R(R(L(value))),
+            AutomationChoice::TextValue(value) => R(R(R(L(value)))),
+            AutomationChoice::PrintableValue(value) => R(R(R(R(L(value))))),
+            AutomationChoice::OpenValue(value) => R(R(R(R(R(value))))),
         }
     }
 }
@@ -546,7 +548,18 @@ impl ITEM {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> ITEM__ {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(PAYLOAD::Fmt), REQUIRED(IMPLICIT(0u64, Ref(BITS::Fmt)), REQUIRED(IMPLICIT(1u64, Ref(LABEL::Fmt)), OPTIONAL(IMPLICIT(2u64, Ref(PRINTABLE::Fmt)), OPTIONAL(EXPLICIT(3u64, Ref(OPEN_VALUE::Fmt)), BER_END)))))), mapper: BiMap(ItemForward, ItemReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(PAYLOAD::Fmt),
+                    REQUIRED(IMPLICIT(0u64, Ref(BITS::Fmt)),
+                    REQUIRED(IMPLICIT(1u64, Ref(LABEL::Fmt)),
+                    OPTIONAL(IMPLICIT(2u64, Ref(PRINTABLE::Fmt)),
+                    OPTIONAL(EXPLICIT(3u64, Ref(OPEN_VALUE::Fmt)),
+                    BER_END))))),
+                ),
+            mapper: BiMap(ItemForward, ItemReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -557,7 +570,18 @@ impl ITEM {
     pub fn exec_inner(&self) -> (fmt: ITEM__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(REQUIRED(Ref(PAYLOAD::Fmt), REQUIRED(IMPLICIT(0u64, Ref(BITS::Fmt)), REQUIRED(IMPLICIT(1u64, Ref(LABEL::Fmt)), OPTIONAL(IMPLICIT(2u64, Ref(PRINTABLE::Fmt)), OPTIONAL(EXPLICIT(3u64, Ref(OPEN_VALUE::Fmt)), BER_END)))))), mapper: BiMap(ItemForward, ItemReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    REQUIRED(Ref(PAYLOAD::Fmt),
+                    REQUIRED(IMPLICIT(0u64, Ref(BITS::Fmt)),
+                    REQUIRED(IMPLICIT(1u64, Ref(LABEL::Fmt)),
+                    OPTIONAL(IMPLICIT(2u64, Ref(PRINTABLE::Fmt)),
+                    OPTIONAL(EXPLICIT(3u64, Ref(OPEN_VALUE::Fmt)),
+                    BER_END))))),
+                ),
+            mapper: BiMap(ItemForward, ItemReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -575,14 +599,34 @@ impl AUTOMATION_CHOICE {
     pub const Fmt: Self = Self;
 
     pub open spec fn spec_inner(&self) -> AUTOMATION_CHOICE__ {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(IMPLICIT(14u64, Ref(PRINTABLE_STRING)), EXPLICIT(15u64, Ref(ANY))))))), mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                    IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
+                    IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
+                    IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
+                    IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                    EXPLICIT(15u64, Ref(ANY))))))),
+            mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
+        };
         fmt
     }
 
     pub fn exec_inner(&self) -> (fmt: AUTOMATION_CHOICE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: CHOICE(IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(IMPLICIT(14u64, Ref(PRINTABLE_STRING)), EXPLICIT(15u64, Ref(ANY))))))), mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse) };
+        let fmt = Mapped {
+            inner:
+                CHOICE(
+                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
+                    IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
+                    IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
+                    IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
+                    IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                    EXPLICIT(15u64, Ref(ANY))))))),
+            mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
+        };
         fmt
     }
 }
@@ -596,7 +640,18 @@ impl AUTOMATION_SEQUENCE {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> AUTOMATION_SEQUENCE__ {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)), DEFAULT(IMPLICIT(21u64, BOOLEAN), true, OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)), REQUIRED(IMPLICIT(23u64, Ref(BOOLEAN)), OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)), BER_END)))))), mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
+                    DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+                    OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+                    REQUIRED(IMPLICIT(23u64, Ref(BOOLEAN)),
+                    OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+                    BER_END))))),
+                ),
+            mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
+        };
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -607,7 +662,18 @@ impl AUTOMATION_SEQUENCE {
     pub fn exec_inner(&self) -> (fmt: AUTOMATION_SEQUENCE__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Mapped { inner: SEQUENCE(OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)), DEFAULT(IMPLICIT(21u64, BOOLEAN), true, OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)), REQUIRED(IMPLICIT(23u64, Ref(BOOLEAN)), OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)), BER_END)))))), mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse) };
+        let fmt = Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(IMPLICIT(20u64, Ref(BOOLEAN)),
+                    DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+                    OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+                    REQUIRED(IMPLICIT(23u64, Ref(BOOLEAN)),
+                    OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+                    BER_END))))),
+                ),
+            mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
+        };
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,

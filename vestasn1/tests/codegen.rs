@@ -74,6 +74,11 @@ END
 
     assert_uses_broadcast_disjointness_only(&generated);
     assert!(generated.contains("impl_der!(untagged, borrowed, VALUE"));
+    assert!(generated.contains("use Sum::Inl as L;"));
+    assert!(generated.contains("use Sum::Inr as R;"));
+    assert!(generated.contains("R(R(L(value)))"));
+    assert!(!generated.contains("Sum::Inl("));
+    assert!(!generated.contains("Sum::Inr("));
 }
 
 #[test]
@@ -163,7 +168,7 @@ END
         .map(str::trim_start)
         .collect::<Vec<_>>()
         .join("\n");
-    assert!(left_aligned.contains("SEQUENCE(DEFAULT("));
+    assert!(left_aligned.contains("SEQUENCE(\nDEFAULT("));
     assert!(generated.contains("IMPLICIT(0u64, ENABLED::Fmt)"));
     assert!(generated.contains("IMPLICIT(1u64, BOOLEAN)"));
     assert!(left_aligned.contains("Eof))"));
@@ -428,8 +433,7 @@ fn mixed_rules_propagate_and_duplicate_shared_definitions() {
 
     assert!(generated.contains("pub struct Shared {"));
     assert!(generated.contains("pub struct SharedDer<'a> {"));
-    assert!(generated
-        .contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;"));
+    assert!(generated.contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;"));
     assert!(generated.contains("vest_lib2::asn1::ber::SEQUENCE("));
     assert!(generated.contains("vest_lib2::asn1::der::SET_OF(SHARED_DER::Fmt)"));
     assert!(generated.contains("type ORDERED__ = Mapped<vest_lib2::asn1::der::SetFmt<"));
@@ -484,7 +488,23 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(left_aligned.contains(concat!(
-        "DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green, REQUIRED(Ref(IDENTIFIER::Fmt), REQUIRED(Ref(MEASUREMENT::Fmt), REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)), Eof))))",
+        "SEQUENCE(\n",
+        "DEFAULT(IMPLICIT(0u64, COLOR::Fmt), Color::Green,\n",
+        "REQUIRED(Ref(IDENTIFIER::Fmt),\n",
+        "REQUIRED(Ref(MEASUREMENT::Fmt),\n",
+        "REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),\n",
+        "Eof)))),\n",
+        ")",
+    )));
+
+    assert!(left_aligned.contains(concat!(
+        "CHOICE(\n",
+        "IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(\n",
+        "IMPLICIT(11u64, Ref(INTEGER)), CHOICE(\n",
+        "IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(\n",
+        "IMPLICIT(13u64, Ref(NULL)), CHOICE(\n",
+        "EXPLICIT(14u64, Ref(UTF8_STRING)),\n",
+        "EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))",
     )));
 }
 
@@ -575,9 +595,9 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     )
     .unwrap();
 
-    assert!(generated.contains(
-        "type SIGNED_ATTRIBUTES__ = Refined<vest_lib2::asn1::der::SetOfTlvFmt<"
-    ));
+    assert!(
+        generated.contains("type SIGNED_ATTRIBUTES__ = Refined<vest_lib2::asn1::der::SetOfTlvFmt<")
+    );
     assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib2::asn1::der::"));
     assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib2::asn1::ber::"));
     assert!(generated.contains("type ALGORITHM_IDENTIFIER_DER__"));
