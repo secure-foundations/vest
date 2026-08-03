@@ -318,7 +318,8 @@ impl VERSION {
     pub const Fmt: Self = Self(Class::Universal, 2u64);
 
     pub open spec fn spec_inner(&self) -> VERSION__ {
-        let fmt = Refined(vest_lib2::asn1::ber::INTEGER8, IntegerRange::<true, 0, true, 1>);
+        use vest_lib2::asn1::ber::INTEGER8;
+        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: false,
@@ -329,7 +330,8 @@ impl VERSION {
     pub fn exec_inner(&self) -> (fmt: VERSION__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Refined(vest_lib2::asn1::ber::INTEGER8, IntegerRange::<true, 0, true, 1>);
+        use vest_lib2::asn1::ber::INTEGER8;
+        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
         fmt.retagged(Tag {
             class: self.0,
             constructed: false,
@@ -347,7 +349,8 @@ impl VERSION_DER {
     pub const Fmt: Self = Self(Class::Universal, 2u64);
 
     pub open spec fn spec_inner(&self) -> VERSION_DER__ {
-        let fmt = Refined(vest_lib2::asn1::der::INTEGER8, IntegerRange::<true, 0, true, 1>);
+        use vest_lib2::asn1::der::INTEGER8;
+        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: false,
@@ -358,7 +361,8 @@ impl VERSION_DER {
     pub fn exec_inner(&self) -> (fmt: VERSION_DER__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Refined(vest_lib2::asn1::der::INTEGER8, IntegerRange::<true, 0, true, 1>);
+        use vest_lib2::asn1::der::INTEGER8;
+        let fmt = Refined(INTEGER8, IntegerRange::<true, 0, true, 1>);
         fmt.retagged(Tag {
             class: self.0,
             constructed: false,
@@ -376,12 +380,13 @@ impl SHARED {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> SHARED__ {
+        use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::ber::SEQUENCE(
-                    vest_lib2::asn1::ber::DEFAULT(VERSION::Fmt, 0i8,
-                    REQUIRED(Ref(vest_lib2::asn1::ber::OCTET_STRING),
-                    vest_lib2::asn1::ber::BER_END)),
+                SEQUENCE(
+                    DEFAULT(VERSION::Fmt, 0i8,
+                    REQUIRED(Ref(OCTET_STRING),
+                    BER_END)),
                 ),
             mapper: BiMap(SharedForward, SharedReverse),
         };
@@ -395,12 +400,13 @@ impl SHARED {
     pub fn exec_inner(&self) -> (fmt: SHARED__)
         ensures fmt == self.spec_inner(),
     {
+        use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::ber::SEQUENCE(
-                    vest_lib2::asn1::ber::DEFAULT(VERSION::Fmt, 0i8,
-                    REQUIRED(Ref(vest_lib2::asn1::ber::OCTET_STRING),
-                    vest_lib2::asn1::ber::BER_END)),
+                SEQUENCE(
+                    DEFAULT(VERSION::Fmt, 0i8,
+                    REQUIRED(Ref(OCTET_STRING),
+                    BER_END)),
                 ),
             mapper: BiMap(SharedForward, SharedReverse),
         };
@@ -421,11 +427,12 @@ impl SHARED_DER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> SHARED_DER__ {
+        use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::der::SEQUENCE(
-                    vest_lib2::asn1::der::DEFAULT(VERSION_DER::Fmt, 0i8,
-                    REQUIRED(Ref(vest_lib2::asn1::der::OCTET_STRING),
+                SEQUENCE(
+                    DEFAULT(VERSION_DER::Fmt, 0i8,
+                    REQUIRED(Ref(OCTET_STRING),
                     Eof)),
                 ),
             mapper: BiMap(SharedDerForward, SharedDerReverse),
@@ -440,11 +447,12 @@ impl SHARED_DER {
     pub fn exec_inner(&self) -> (fmt: SHARED_DER__)
         ensures fmt == self.spec_inner(),
     {
+        use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::der::SEQUENCE(
-                    vest_lib2::asn1::der::DEFAULT(VERSION_DER::Fmt, 0i8,
-                    REQUIRED(Ref(vest_lib2::asn1::der::OCTET_STRING),
+                SEQUENCE(
+                    DEFAULT(VERSION_DER::Fmt, 0i8,
+                    REQUIRED(Ref(OCTET_STRING),
                     Eof)),
                 ),
             mapper: BiMap(SharedDerForward, SharedDerReverse),
@@ -466,7 +474,8 @@ impl CANONICAL {
     pub const Fmt: Self = Self(Class::Universal, 17u64);
 
     pub open spec fn spec_inner(&self) -> CANONICAL__ {
-        let fmt = vest_lib2::asn1::der::SET_OF(SHARED_DER::Fmt);
+        use vest_lib2::asn1::der::SET_OF;
+        let fmt = SET_OF(SHARED_DER::Fmt);
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: true,
@@ -477,7 +486,8 @@ impl CANONICAL {
     pub fn exec_inner(&self) -> (fmt: CANONICAL__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = vest_lib2::asn1::der::SET_OF(SHARED_DER::Fmt);
+        use vest_lib2::asn1::der::SET_OF;
+        let fmt = SET_OF(SHARED_DER::Fmt);
         fmt.retagged(Tag {
             class: self.0,
             constructed: true,
@@ -495,11 +505,12 @@ impl ORDERED {
     pub const Fmt: Self = Self(Class::Universal, 17u64);
 
     pub open spec fn spec_inner(&self) -> ORDERED__ {
+        use vest_lib2::asn1::der::{BOOLEAN, INTEGER, SET};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::der::SET(
-                    REQUIRED(IMPLICIT(0u64, Ref(vest_lib2::asn1::der::BOOLEAN)),
-                    OPTIONAL(IMPLICIT(1u64, Ref(vest_lib2::asn1::der::INTEGER)),
+                SET(
+                    REQUIRED(IMPLICIT(0u64, Ref(BOOLEAN)),
+                    OPTIONAL(IMPLICIT(1u64, Ref(INTEGER)),
                     Eof)),
                 ),
             mapper: BiMap(OrderedForward, OrderedReverse),
@@ -514,11 +525,12 @@ impl ORDERED {
     pub fn exec_inner(&self) -> (fmt: ORDERED__)
         ensures fmt == self.spec_inner(),
     {
+        use vest_lib2::asn1::der::{BOOLEAN, INTEGER, SET};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::der::SET(
-                    REQUIRED(IMPLICIT(0u64, Ref(vest_lib2::asn1::der::BOOLEAN)),
-                    OPTIONAL(IMPLICIT(1u64, Ref(vest_lib2::asn1::der::INTEGER)),
+                SET(
+                    REQUIRED(IMPLICIT(0u64, Ref(BOOLEAN)),
+                    OPTIONAL(IMPLICIT(1u64, Ref(INTEGER)),
                     Eof)),
                 ),
             mapper: BiMap(OrderedForward, OrderedReverse),
@@ -540,14 +552,15 @@ impl OUTER {
     pub const Fmt: Self = Self(Class::Universal, 16u64);
 
     pub open spec fn spec_inner(&self) -> OUTER__ {
+        use vest_lib2::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::ber::SEQUENCE(
+                SEQUENCE(
                     REQUIRED(Ref(SHARED::Fmt),
                     REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
-                    REQUIRED(vest_lib2::asn1::ber::EXPLICIT(1u64, Ref(ORDERED::Fmt)),
-                    OPTIONAL(Ref(vest_lib2::asn1::ber::ANY),
-                    vest_lib2::asn1::ber::BER_END)))),
+                    REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
+                    OPTIONAL(Ref(ANY),
+                    BER_END)))),
                 ),
             mapper: BiMap(OuterForward, OuterReverse),
         };
@@ -561,14 +574,15 @@ impl OUTER {
     pub fn exec_inner(&self) -> (fmt: OUTER__)
         ensures fmt == self.spec_inner(),
     {
+        use vest_lib2::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
         let fmt = Mapped {
             inner:
-                vest_lib2::asn1::ber::SEQUENCE(
+                SEQUENCE(
                     REQUIRED(Ref(SHARED::Fmt),
                     REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
-                    REQUIRED(vest_lib2::asn1::ber::EXPLICIT(1u64, Ref(ORDERED::Fmt)),
-                    OPTIONAL(Ref(vest_lib2::asn1::ber::ANY),
-                    vest_lib2::asn1::ber::BER_END)))),
+                    REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
+                    OPTIONAL(Ref(ANY),
+                    BER_END)))),
                 ),
             mapper: BiMap(OuterForward, OuterReverse),
         };
@@ -589,7 +603,8 @@ impl NUMERIC_LABEL {
     pub const Fmt: Self = Self(Class::Universal, 18u64);
 
     pub open spec fn spec_inner(&self) -> NUMERIC_LABEL__ {
-        let fmt = Refined(vest_lib2::asn1::ber::NUMERIC_STRING, Size::<true, 1, true, 16>);
+        use vest_lib2::asn1::ber::NUMERIC_STRING;
+        let fmt = Refined(NUMERIC_STRING, Size::<true, 1, true, 16>);
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: false,
@@ -600,7 +615,8 @@ impl NUMERIC_LABEL {
     pub fn exec_inner(&self) -> (fmt: NUMERIC_LABEL__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Refined(vest_lib2::asn1::ber::NUMERIC_STRING, Size::<true, 1, true, 16>);
+        use vest_lib2::asn1::ber::NUMERIC_STRING;
+        let fmt = Refined(NUMERIC_STRING, Size::<true, 1, true, 16>);
         fmt.retagged(Tag {
             class: self.0,
             constructed: false,
@@ -618,7 +634,8 @@ impl UNIVERSAL_LABEL {
     pub const Fmt: Self = Self(Class::Universal, 28u64);
 
     pub open spec fn spec_inner(&self) -> UNIVERSAL_LABEL__ {
-        let fmt = Refined(vest_lib2::asn1::ber::UNIVERSAL_STRING, Size::<true, 1, true, 16>);
+        use vest_lib2::asn1::ber::UNIVERSAL_STRING;
+        let fmt = Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>);
         fmt.spec_retagged(Tag {
             class: self.0,
             constructed: false,
@@ -629,7 +646,8 @@ impl UNIVERSAL_LABEL {
     pub fn exec_inner(&self) -> (fmt: UNIVERSAL_LABEL__)
         ensures fmt == self.spec_inner(),
     {
-        let fmt = Refined(vest_lib2::asn1::ber::UNIVERSAL_STRING, Size::<true, 1, true, 16>);
+        use vest_lib2::asn1::ber::UNIVERSAL_STRING;
+        let fmt = Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>);
         fmt.retagged(Tag {
             class: self.0,
             constructed: false,

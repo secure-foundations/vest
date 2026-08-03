@@ -434,8 +434,13 @@ fn mixed_rules_propagate_and_duplicate_shared_definitions() {
     assert!(generated.contains("pub struct Shared {"));
     assert!(generated.contains("pub struct SharedDer<'a> {"));
     assert!(generated.contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;"));
-    assert!(generated.contains("vest_lib2::asn1::ber::SEQUENCE("));
-    assert!(generated.contains("vest_lib2::asn1::der::SET_OF(SHARED_DER::Fmt)"));
+    assert!(
+        generated.contains("use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};")
+    );
+    assert!(generated.contains("use vest_lib2::asn1::der::SET_OF;"));
+    assert!(generated.contains("SET_OF(SHARED_DER::Fmt)"));
+    assert!(!generated.contains("vest_lib2::asn1::ber::SEQUENCE("));
+    assert!(!generated.contains("vest_lib2::asn1::der::SET_OF("));
     assert!(generated.contains("type ORDERED__ = Mapped<vest_lib2::asn1::der::SetFmt<"));
     assert!(generated.contains("pub type Version = i8;"));
     assert!(generated.contains("pub type VersionDer = i8;"));

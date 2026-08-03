@@ -71,6 +71,12 @@ impl<'a> Generator<'a> {
             }
             ty => self.render_type(ty, rule)?,
         };
+        let (rendered_expr, local_items) = if self.mixed_rules {
+            localize_rule_items(&rendered.expr, rule)
+        } else {
+            (rendered.expr.clone(), Vec::new())
+        };
+        let local_import = render_local_rule_import(rule, &local_items);
         output.line(format_args!(
             "/// {} format for ASN.1 `{}`.",
             rule.display(),
@@ -98,9 +104,12 @@ impl<'a> Generator<'a> {
                     "    pub open spec fn spec_inner(&self) -> {} {{",
                     names.inner_format
                 ));
+                if let Some(local_import) = &local_import {
+                    output.line(format_args!("        {local_import}"));
+                }
                 output.line(format_args!(
                     "        let fmt = {};",
-                    indent_continuation(&rendered.expr, 8)
+                    indent_continuation(&rendered_expr, 8)
                 ));
                 output.line(format_args!("        fmt.spec_retagged(Tag {{"));
                 output.line(format_args!("            class: self.0,"));
@@ -117,9 +126,12 @@ impl<'a> Generator<'a> {
                 ));
                 output.line(format_args!("        ensures fmt == self.spec_inner(),"));
                 output.line(format_args!("    {{"));
+                if let Some(local_import) = &local_import {
+                    output.line(format_args!("        {local_import}"));
+                }
                 output.line(format_args!(
                     "        let fmt = {};",
-                    indent_continuation(&rendered.expr, 8)
+                    indent_continuation(&rendered_expr, 8)
                 ));
                 output.line(format_args!("        fmt.retagged(Tag {{"));
                 output.line(format_args!("            class: self.0,"));
@@ -143,9 +155,12 @@ impl<'a> Generator<'a> {
                     "    pub open spec fn spec_inner(&self) -> {} {{",
                     names.inner_format
                 ));
+                if let Some(local_import) = &local_import {
+                    output.line(format_args!("        {local_import}"));
+                }
                 output.line(format_args!(
                     "        let fmt = {};",
-                    indent_continuation(&rendered.expr, 8)
+                    indent_continuation(&rendered_expr, 8)
                 ));
                 output.line(format_args!("        fmt"));
                 output.line(format_args!("    }}"));
@@ -156,9 +171,12 @@ impl<'a> Generator<'a> {
                 ));
                 output.line(format_args!("        ensures fmt == self.spec_inner(),"));
                 output.line(format_args!("    {{"));
+                if let Some(local_import) = &local_import {
+                    output.line(format_args!("        {local_import}"));
+                }
                 output.line(format_args!(
                     "        let fmt = {};",
-                    indent_continuation(&rendered.expr, 8)
+                    indent_continuation(&rendered_expr, 8)
                 ));
                 output.line(format_args!("        fmt"));
                 output.line(format_args!("    }}"));
