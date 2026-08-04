@@ -68,6 +68,7 @@ pub struct ItemSpec {
 
 impl DeepView for Item {
     type V = ItemSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ItemSpec {
             payload: self.payload.deep_view(),
@@ -101,6 +102,7 @@ pub enum AutomationChoiceSpec {
 
 impl DeepView for AutomationChoice {
     type V = AutomationChoiceSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             AutomationChoice::BooleanValue(value) => AutomationChoiceSpec::BooleanValue(value.deep_view()),
@@ -133,6 +135,7 @@ pub struct AutomationSequenceSpec {
 
 impl DeepView for AutomationSequence {
     type V = AutomationSequenceSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         AutomationSequenceSpec {
             prefix: self.prefix.deep_view(),
@@ -161,6 +164,7 @@ pub struct ItemReverse;
 impl SpecMap for ItemForward {
     type Input = (PayloadSpec, (BitsSpec, (LabelSpec, (Option<PrintableSpec>, (Option<OpenValueSpec>, ())))));
     type Output = ItemSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (payload, (bits, (label, (printable, (open, _end))))) = input;
         ItemSpec {
@@ -176,6 +180,7 @@ impl SpecMap for ItemForward {
 impl SpecMap for ItemReverse {
     type Input = ItemSpec;
     type Output = (PayloadSpec, (BitsSpec, (LabelSpec, (Option<PrintableSpec>, (Option<OpenValueSpec>, ())))));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.payload, (value.bits, (value.label, (value.printable, (value.open, ())))))
     }
@@ -184,6 +189,10 @@ impl SpecMap for ItemReverse {
 impl Map<(Payload, (Bits, (Label, (Option<Printable>, (Option<OpenValue>, ())))))> for ItemForward {
     type O = Item;
     fn map(&self, input: (Payload, (Bits, (Label, (Option<Printable>, (Option<OpenValue>, ())))))) -> (value: Self::O) {
+        proof {
+            reveal(<Item as DeepView>::deep_view);
+            reveal(<ItemForward as SpecMap>::spec_map);
+        }
         let (payload, (bits, (label, (printable, (open, _end))))) = input;
         Item {
             payload,
@@ -198,6 +207,10 @@ impl Map<(Payload, (Bits, (Label, (Option<Printable>, (Option<OpenValue>, ()))))
 impl<'x> Map<&'x Item> for ItemReverse {
     type O = (&'x Payload, (&'x Bits, (&'x Label, (Option<&'x Printable>, (Option<&'x OpenValue>, ())))));
     fn map(&self, value: &'x Item) -> (output: Self::O) {
+        proof {
+            reveal(<Item as DeepView>::deep_view);
+            reveal(<ItemReverse as SpecMap>::spec_map);
+        }
         (&value.payload, (&value.bits, (&value.label, (value.printable.as_ref(), (value.open.as_ref(), ())))))
     }
 }
@@ -208,59 +221,69 @@ pub struct AutomationChoiceForward;
 pub struct AutomationChoiceReverse;
 
 impl SpecMap for AutomationChoiceForward {
-    type Input = Sum<bool, Sum<Seq<u8>, Sum<vest_lib2::asn1::BitStringSpec, Sum<Seq<char>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>>>;
+    type Input = Sum<Sum<bool, Seq<u8>>, Sum<Sum<vest_lib2::asn1::BitStringSpec, Seq<char>>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>;
     type Output = AutomationChoiceSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            L(value) => AutomationChoiceSpec::BooleanValue(value),
-            R(L(value)) => AutomationChoiceSpec::OctetsValue(value),
-            R(R(L(value))) => AutomationChoiceSpec::BitsValue(value),
-            R(R(R(L(value)))) => AutomationChoiceSpec::TextValue(value),
-            R(R(R(R(L(value))))) => AutomationChoiceSpec::PrintableValue(value),
-            R(R(R(R(R(value))))) => AutomationChoiceSpec::OpenValue(value),
+            L(L(value)) => AutomationChoiceSpec::BooleanValue(value),
+            L(R(value)) => AutomationChoiceSpec::OctetsValue(value),
+            R(L(L(value))) => AutomationChoiceSpec::BitsValue(value),
+            R(L(R(value))) => AutomationChoiceSpec::TextValue(value),
+            R(R(L(value))) => AutomationChoiceSpec::PrintableValue(value),
+            R(R(R(value))) => AutomationChoiceSpec::OpenValue(value),
         }
     }
 }
 
 impl SpecMap for AutomationChoiceReverse {
     type Input = AutomationChoiceSpec;
-    type Output = Sum<bool, Sum<Seq<u8>, Sum<vest_lib2::asn1::BitStringSpec, Sum<Seq<char>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>>>;
+    type Output = Sum<Sum<bool, Seq<u8>>, Sum<Sum<vest_lib2::asn1::BitStringSpec, Seq<char>>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            AutomationChoiceSpec::BooleanValue(value) => L(value),
-            AutomationChoiceSpec::OctetsValue(value) => R(L(value)),
-            AutomationChoiceSpec::BitsValue(value) => R(R(L(value))),
-            AutomationChoiceSpec::TextValue(value) => R(R(R(L(value)))),
-            AutomationChoiceSpec::PrintableValue(value) => R(R(R(R(L(value))))),
-            AutomationChoiceSpec::OpenValue(value) => R(R(R(R(R(value))))),
+            AutomationChoiceSpec::BooleanValue(value) => L(L(value)),
+            AutomationChoiceSpec::OctetsValue(value) => L(R(value)),
+            AutomationChoiceSpec::BitsValue(value) => R(L(L(value))),
+            AutomationChoiceSpec::TextValue(value) => R(L(R(value))),
+            AutomationChoiceSpec::PrintableValue(value) => R(R(L(value))),
+            AutomationChoiceSpec::OpenValue(value) => R(R(R(value))),
         }
     }
 }
 
-impl Map<Sum<bool, Sum<Vec<u8>, Sum<vest_lib2::asn1::BitStringOwned, Sum<String, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>>>> for AutomationChoiceForward {
+impl Map<Sum<Sum<bool, Vec<u8>>, Sum<Sum<vest_lib2::asn1::BitStringOwned, String>, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>> for AutomationChoiceForward {
     type O = AutomationChoice;
-    fn map(&self, input: Sum<bool, Sum<Vec<u8>, Sum<vest_lib2::asn1::BitStringOwned, Sum<String, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>>>) -> (value: Self::O) {
+    fn map(&self, input: Sum<Sum<bool, Vec<u8>>, Sum<Sum<vest_lib2::asn1::BitStringOwned, String>, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>) -> (value: Self::O) {
+        proof {
+            reveal(<AutomationChoice as DeepView>::deep_view);
+            reveal(<AutomationChoiceForward as SpecMap>::spec_map);
+        }
         match input {
-            L(value) => AutomationChoice::BooleanValue(value),
-            R(L(value)) => AutomationChoice::OctetsValue(value),
-            R(R(L(value))) => AutomationChoice::BitsValue(value),
-            R(R(R(L(value)))) => AutomationChoice::TextValue(value),
-            R(R(R(R(L(value))))) => AutomationChoice::PrintableValue(value),
-            R(R(R(R(R(value))))) => AutomationChoice::OpenValue(value),
+            L(L(value)) => AutomationChoice::BooleanValue(value),
+            L(R(value)) => AutomationChoice::OctetsValue(value),
+            R(L(L(value))) => AutomationChoice::BitsValue(value),
+            R(L(R(value))) => AutomationChoice::TextValue(value),
+            R(R(L(value))) => AutomationChoice::PrintableValue(value),
+            R(R(R(value))) => AutomationChoice::OpenValue(value),
         }
     }
 }
 
 impl<'x> Map<&'x AutomationChoice> for AutomationChoiceReverse {
-    type O = Sum<&'x bool, Sum<&'x Vec<u8>, Sum<&'x vest_lib2::asn1::BitStringOwned, Sum<&'x String, Sum<&'x vest_lib2::asn1::PrintableStringOwned, &'x vest_lib2::asn1::AnyOwned>>>>>;
+    type O = Sum<Sum<&'x bool, &'x Vec<u8>>, Sum<Sum<&'x vest_lib2::asn1::BitStringOwned, &'x String>, Sum<&'x vest_lib2::asn1::PrintableStringOwned, &'x vest_lib2::asn1::AnyOwned>>>;
     fn map(&self, value: &'x AutomationChoice) -> (output: Self::O) {
+        proof {
+            reveal(<AutomationChoice as DeepView>::deep_view);
+            reveal(<AutomationChoiceReverse as SpecMap>::spec_map);
+        }
         match value {
-            AutomationChoice::BooleanValue(value) => L(value),
-            AutomationChoice::OctetsValue(value) => R(L(value)),
-            AutomationChoice::BitsValue(value) => R(R(L(value))),
-            AutomationChoice::TextValue(value) => R(R(R(L(value)))),
-            AutomationChoice::PrintableValue(value) => R(R(R(R(L(value))))),
-            AutomationChoice::OpenValue(value) => R(R(R(R(R(value))))),
+            AutomationChoice::BooleanValue(value) => L(L(value)),
+            AutomationChoice::OctetsValue(value) => L(R(value)),
+            AutomationChoice::BitsValue(value) => R(L(L(value))),
+            AutomationChoice::TextValue(value) => R(L(R(value))),
+            AutomationChoice::PrintableValue(value) => R(R(L(value))),
+            AutomationChoice::OpenValue(value) => R(R(R(value))),
         }
     }
 }
@@ -273,6 +296,7 @@ pub struct AutomationSequenceReverse;
 impl SpecMap for AutomationSequenceForward {
     type Input = (Option<bool>, (bool, (Option<Seq<u8>>, (bool, (Option<AutomationChoiceSpec>, ())))));
     type Output = AutomationSequenceSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequenceSpec {
@@ -288,6 +312,7 @@ impl SpecMap for AutomationSequenceForward {
 impl SpecMap for AutomationSequenceReverse {
     type Input = AutomationSequenceSpec;
     type Output = (Option<bool>, (bool, (Option<Seq<u8>>, (bool, (Option<AutomationChoiceSpec>, ())))));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.prefix, (value.enabled, (value.payload, (value.marker, (value.selected, ())))))
     }
@@ -296,6 +321,10 @@ impl SpecMap for AutomationSequenceReverse {
 impl Map<(Option<bool>, (bool, (Option<Vec<u8>>, (bool, (Option<AutomationChoice>, ())))))> for AutomationSequenceForward {
     type O = AutomationSequence;
     fn map(&self, input: (Option<bool>, (bool, (Option<Vec<u8>>, (bool, (Option<AutomationChoice>, ())))))) -> (value: Self::O) {
+        proof {
+            reveal(<AutomationSequence as DeepView>::deep_view);
+            reveal(<AutomationSequenceForward as SpecMap>::spec_map);
+        }
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequence {
             prefix,
@@ -310,6 +339,10 @@ impl Map<(Option<bool>, (bool, (Option<Vec<u8>>, (bool, (Option<AutomationChoice
 impl<'x> Map<&'x AutomationSequence> for AutomationSequenceReverse {
     type O = (Option<&'x bool>, (bool, (Option<&'x Vec<u8>>, (&'x bool, (Option<&'x AutomationChoice>, ())))));
     fn map(&self, value: &'x AutomationSequence) -> (output: Self::O) {
+        proof {
+            reveal(<AutomationSequence as DeepView>::deep_view);
+            reveal(<AutomationSequenceReverse as SpecMap>::spec_map);
+        }
         (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))))
     }
 }
@@ -508,7 +541,7 @@ impl ITEM {
 }
 
 /// BER format for ASN.1 `AutomationChoice`.
-type AUTOMATION_CHOICE__ = Mapped<Choice<ImplicitFmt<Ref<BoolTlvFmt>>, Choice<ImplicitFmt<Ref<OctetStringTlvFmt>>, Choice<ImplicitFmt<Ref<BitStringTlvFmt>>, Choice<ImplicitFmt<Ref<Utf8StringTlvFmt>>, Choice<ImplicitFmt<Ref<PrintableStringTlvFmt>>, ExplicitFmt<Ref<AnyTlvFmt>>>>>>>, BiMap<AutomationChoiceForward, AutomationChoiceReverse>>;
+type AUTOMATION_CHOICE__ = Mapped<Choice<Choice<ImplicitFmt<Ref<BoolTlvFmt>>, ImplicitFmt<Ref<OctetStringTlvFmt>>>, Choice<Choice<ImplicitFmt<Ref<BitStringTlvFmt>>, ImplicitFmt<Ref<Utf8StringTlvFmt>>>, Choice<ImplicitFmt<Ref<PrintableStringTlvFmt>>, ExplicitFmt<Ref<AnyTlvFmt>>>>>, BiMap<AutomationChoiceForward, AutomationChoiceReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct AUTOMATION_CHOICE;
@@ -522,12 +555,16 @@ impl AUTOMATION_CHOICE {
                 Mapped {
                     inner:
                         CHOICE(
-                            IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
-                            IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
-                            IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
-                            IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
-                            IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
-                            EXPLICIT(15u64, Ref(ANY))))))),
+                            CHOICE(
+                                IMPLICIT(10u64, Ref(BOOLEAN)),
+                                IMPLICIT(11u64, Ref(OCTET_STRING))),
+                            CHOICE(
+                                CHOICE(
+                                    IMPLICIT(12u64, Ref(BIT_STRING)),
+                                    IMPLICIT(13u64, Ref(UTF8_STRING))),
+                                CHOICE(
+                                    IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                                    EXPLICIT(15u64, Ref(ANY))))),
                     mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
                 }
             ),
@@ -535,12 +572,16 @@ impl AUTOMATION_CHOICE {
         Mapped {
             inner:
                 CHOICE(
-                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
-                    IMPLICIT(11u64, Ref(OCTET_STRING)), CHOICE(
-                    IMPLICIT(12u64, Ref(BIT_STRING)), CHOICE(
-                    IMPLICIT(13u64, Ref(UTF8_STRING)), CHOICE(
-                    IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
-                    EXPLICIT(15u64, Ref(ANY))))))),
+                    CHOICE(
+                        IMPLICIT(10u64, Ref(BOOLEAN)),
+                        IMPLICIT(11u64, Ref(OCTET_STRING))),
+                    CHOICE(
+                        CHOICE(
+                            IMPLICIT(12u64, Ref(BIT_STRING)),
+                            IMPLICIT(13u64, Ref(UTF8_STRING))),
+                        CHOICE(
+                            IMPLICIT(14u64, Ref(PRINTABLE_STRING)),
+                            EXPLICIT(15u64, Ref(ANY))))),
             mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
         }
     }
@@ -698,19 +739,19 @@ mod __impl_open_value {
 mod __impl_item {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, ITEM, ITEM__, ItemSpec, Item);
+    vest_lib2::impl_ber!(tagged(true), owned, ITEM, ITEM__, ItemSpec, Item, ItemForward, ItemReverse);
 }
 
 mod __impl_automation_choice {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+    vest_lib2::impl_ber!(untagged, owned, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
 }
 
 mod __impl_automation_sequence {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+    vest_lib2::impl_ber!(tagged(true), owned, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
 }
 
 mod __impl_items {

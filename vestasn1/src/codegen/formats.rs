@@ -392,34 +392,27 @@ impl<'a> Generator<'a> {
         variants: &[ChoiceVariant],
         rule: EncodingRules,
     ) -> Result<Rendered, CodegenError> {
+        fn combine(rendered: &[Rendered]) -> Rendered {
+            match rendered {
+                [] => unreachable!("empty CHOICE rejected during validation"),
+                [only] => return only.clone(),
+                _ => {}
+            }
+            let middle = choice_split(rendered.len());
+            let left = combine(&rendered[..middle]);
+            let right = combine(&rendered[middle..]);
+            Rendered {
+                ty: format!("Choice<{}, {}>", left.ty, right.ty),
+                expr: render_choice_combinator(&left.expr, &right.expr),
+                shape: TagShape::Untagged,
+            }
+        }
+
         let rendered = variants
             .iter()
             .map(|variant| self.render_type_by_ref(&variant.ty, rule))
             .collect::<Result<Vec<_>, _>>()?;
-        let last = rendered
-            .last()
-            .cloned()
-            .expect("empty CHOICE rejected during validation");
-        let (mut result, remaining) = if rendered.len() == 1 {
-            (last, &rendered[..0])
-        } else {
-            let penultimate = &rendered[rendered.len() - 2];
-            (
-                Rendered {
-                    ty: format!("Choice<{}, {}>", penultimate.ty, last.ty),
-                    expr: render_final_choice_combinator(&penultimate.expr, &last.expr),
-                    shape: TagShape::Untagged,
-                },
-                &rendered[..rendered.len() - 2],
-            )
-        };
-        for variant in remaining.iter().rev() {
-            result = Rendered {
-                ty: format!("Choice<{}, {}>", variant.ty, result.ty),
-                expr: render_choice_combinator(&variant.expr, &result.expr),
-                shape: TagShape::Untagged,
-            };
-        }
+        let mut result = combine(&rendered);
         result.shape = TagShape::Untagged;
         Ok(result)
     }

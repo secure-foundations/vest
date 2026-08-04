@@ -505,12 +505,16 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
 
     assert!(left_aligned.contains(concat!(
         "CHOICE(\n",
-        "IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(\n",
-        "IMPLICIT(11u64, Ref(INTEGER)), CHOICE(\n",
-        "IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(\n",
-        "IMPLICIT(13u64, Ref(NULL)), CHOICE(\n",
+        "CHOICE(\n",
+        "IMPLICIT(10u64, Ref(BOOLEAN)),\n",
+        "IMPLICIT(11u64, Ref(INTEGER))),\n",
+        "CHOICE(\n",
+        "CHOICE(\n",
+        "IMPLICIT(12u64, Ref(OCTET_STRING)),\n",
+        "IMPLICIT(13u64, Ref(NULL))),\n",
+        "CHOICE(\n",
         "EXPLICIT(14u64, Ref(UTF8_STRING)),\n",
-        "EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))",
+        "EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)))))",
     )));
 }
 

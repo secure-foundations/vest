@@ -414,6 +414,27 @@ pub broadcast proof fn lemma_disjoint_choice_left<S1: SpecParser, S2: SpecParser
     reveal(disjoint_domains);
 }
 
+/// Two balanced [`Choice`] trees are disjoint if every cross-branch pair is disjoint.
+///
+/// Unlike composing the two directional decomposition rules, this rule strictly reduces both
+/// visible choice constructors and therefore does not introduce a trigger cycle.
+pub broadcast proof fn lemma_disjoint_choices<
+    A: SpecParser,
+    B: SpecParser,
+    C: SpecParser,
+    D: SpecParser,
+>(left: Choice<A, B>, right: Choice<C, D>)
+    requires
+        disjoint_domains(left.0, right.0),
+        disjoint_domains(left.0, right.1),
+        disjoint_domains(left.1, right.0),
+        disjoint_domains(left.1, right.1),
+    ensures
+        #[trigger] disjoint_domains(left, right),
+{
+    reveal(disjoint_domains);
+}
+
 /// An [`Alt`] parser is disjoint from another parser if both branches are.
 ///
 /// ## NOTE
@@ -741,6 +762,7 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_void_left,
     lemma_disjoint_void_right,
     lemma_disjoint_choice,
+    lemma_disjoint_choices,
     lemma_disjoint_alt,
     lemma_disjoint_const,
     lemma_disjoint_prefix_tagged,

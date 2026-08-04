@@ -43,6 +43,7 @@ pub struct SharedSpec {
 
 impl DeepView for Shared {
     type V = SharedSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         SharedSpec {
             version: self.version.deep_view(),
@@ -65,6 +66,7 @@ pub struct SharedDerSpec {
 
 impl<'a> DeepView for SharedDer<'a> {
     type V = SharedDerSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         SharedDerSpec {
             version: self.version.deep_view(),
@@ -90,6 +92,7 @@ pub struct OrderedSpec {
 
 impl<'a> DeepView for Ordered<'a> {
     type V = OrderedSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         OrderedSpec {
             first: self.first.deep_view(),
@@ -116,6 +119,7 @@ pub struct OuterSpec {
 
 impl<'a> DeepView for Outer<'a> {
     type V = OuterSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         OuterSpec {
             shared: self.shared.deep_view(),
@@ -140,6 +144,7 @@ pub struct SharedReverse;
 impl SpecMap for SharedForward {
     type Input = (VersionSpec, (Seq<u8>, ()));
     type Output = SharedSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (version, (payload, _end)) = input;
         SharedSpec {
@@ -152,6 +157,7 @@ impl SpecMap for SharedForward {
 impl SpecMap for SharedReverse {
     type Input = SharedSpec;
     type Output = (VersionSpec, (Seq<u8>, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.version, (value.payload, ()))
     }
@@ -160,6 +166,10 @@ impl SpecMap for SharedReverse {
 impl Map<(Version, (Vec<u8>, ()))> for SharedForward {
     type O = Shared;
     fn map(&self, input: (Version, (Vec<u8>, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<Shared as DeepView>::deep_view);
+            reveal(<SharedForward as SpecMap>::spec_map);
+        }
         let (version, (payload, _end)) = input;
         Shared {
             version,
@@ -171,6 +181,10 @@ impl Map<(Version, (Vec<u8>, ()))> for SharedForward {
 impl<'x> Map<&'x Shared> for SharedReverse {
     type O = (Version, (&'x Vec<u8>, ()));
     fn map(&self, value: &'x Shared) -> (output: Self::O) {
+        proof {
+            reveal(<Shared as DeepView>::deep_view);
+            reveal(<SharedReverse as SpecMap>::spec_map);
+        }
         (value.version, (&value.payload, ()))
     }
 }
@@ -183,6 +197,7 @@ pub struct SharedDerReverse;
 impl SpecMap for SharedDerForward {
     type Input = (VersionDerSpec, (Seq<u8>, ()));
     type Output = SharedDerSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (version, (payload, _end)) = input;
         SharedDerSpec {
@@ -195,6 +210,7 @@ impl SpecMap for SharedDerForward {
 impl SpecMap for SharedDerReverse {
     type Input = SharedDerSpec;
     type Output = (VersionDerSpec, (Seq<u8>, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.version, (value.payload, ()))
     }
@@ -203,6 +219,10 @@ impl SpecMap for SharedDerReverse {
 impl<'a> Map<(VersionDer, (&'a [u8], ()))> for SharedDerForward {
     type O = SharedDer<'a>;
     fn map(&self, input: (VersionDer, (&'a [u8], ()))) -> (value: Self::O) {
+        proof {
+            reveal(<SharedDer as DeepView>::deep_view);
+            reveal(<SharedDerForward as SpecMap>::spec_map);
+        }
         let (version, (payload, _end)) = input;
         SharedDer {
             version,
@@ -214,6 +234,10 @@ impl<'a> Map<(VersionDer, (&'a [u8], ()))> for SharedDerForward {
 impl<'a, 'x> Map<&'x SharedDer<'a>> for SharedDerReverse {
     type O = (VersionDer, (&'x &'a [u8], ()));
     fn map(&self, value: &'x SharedDer<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<SharedDer as DeepView>::deep_view);
+            reveal(<SharedDerReverse as SpecMap>::spec_map);
+        }
         (value.version, (&value.payload, ()))
     }
 }
@@ -226,6 +250,7 @@ pub struct OrderedReverse;
 impl SpecMap for OrderedForward {
     type Input = (bool, (Option<int>, ()));
     type Output = OrderedSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (first, (second, _end)) = input;
         OrderedSpec {
@@ -238,6 +263,7 @@ impl SpecMap for OrderedForward {
 impl SpecMap for OrderedReverse {
     type Input = OrderedSpec;
     type Output = (bool, (Option<int>, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.first, (value.second, ()))
     }
@@ -246,6 +272,10 @@ impl SpecMap for OrderedReverse {
 impl<'a> Map<(bool, (Option<vest_lib2::asn1::Integer<'a>>, ()))> for OrderedForward {
     type O = Ordered<'a>;
     fn map(&self, input: (bool, (Option<vest_lib2::asn1::Integer<'a>>, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<Ordered as DeepView>::deep_view);
+            reveal(<OrderedForward as SpecMap>::spec_map);
+        }
         let (first, (second, _end)) = input;
         Ordered {
             first,
@@ -257,6 +287,10 @@ impl<'a> Map<(bool, (Option<vest_lib2::asn1::Integer<'a>>, ()))> for OrderedForw
 impl<'a, 'x> Map<&'x Ordered<'a>> for OrderedReverse {
     type O = (&'x bool, (Option<&'x vest_lib2::asn1::Integer<'a>>, ()));
     fn map(&self, value: &'x Ordered<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Ordered as DeepView>::deep_view);
+            reveal(<OrderedReverse as SpecMap>::spec_map);
+        }
         (&value.first, (value.second.as_ref(), ()))
     }
 }
@@ -269,6 +303,7 @@ pub struct OuterReverse;
 impl SpecMap for OuterForward {
     type Input = (SharedSpec, (CanonicalSpec, (OrderedSpec, (Option<vest_lib2::asn1::AnySpec>, ()))));
     type Output = OuterSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (shared, (canonical, (ordered, (trailing, _end)))) = input;
         OuterSpec {
@@ -283,6 +318,7 @@ impl SpecMap for OuterForward {
 impl SpecMap for OuterReverse {
     type Input = OuterSpec;
     type Output = (SharedSpec, (CanonicalSpec, (OrderedSpec, (Option<vest_lib2::asn1::AnySpec>, ()))));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.shared, (value.canonical, (value.ordered, (value.trailing, ()))))
     }
@@ -291,6 +327,10 @@ impl SpecMap for OuterReverse {
 impl<'a> Map<(Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))> for OuterForward {
     type O = Outer<'a>;
     fn map(&self, input: (Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))) -> (value: Self::O) {
+        proof {
+            reveal(<Outer as DeepView>::deep_view);
+            reveal(<OuterForward as SpecMap>::spec_map);
+        }
         let (shared, (canonical, (ordered, (trailing, _end)))) = input;
         Outer {
             shared,
@@ -304,6 +344,10 @@ impl<'a> Map<(Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::Any
 impl<'a, 'x> Map<&'x Outer<'a>> for OuterReverse {
     type O = (&'x Shared, (&'x Canonical<'a>, (&'x Ordered<'a>, (Option<&'x vest_lib2::asn1::AnyOwned>, ()))));
     fn map(&self, value: &'x Outer<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Outer as DeepView>::deep_view);
+            reveal(<OuterReverse as SpecMap>::spec_map);
+        }
         (&value.shared, (&value.canonical, (&value.ordered, (value.trailing.as_ref(), ()))))
     }
 }
@@ -583,13 +627,13 @@ mod __impl_version_der {
 mod __impl_shared {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared);
+    vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared, SharedForward, SharedReverse);
 }
 
 mod __impl_shared_der {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer);
+    vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer, SharedDerForward, SharedDerReverse);
 }
 
 mod __impl_canonical {
@@ -601,13 +645,13 @@ mod __impl_canonical {
 mod __impl_ordered {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered);
+    vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered, OrderedForward, OrderedReverse);
 }
 
 mod __impl_outer {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer);
+    vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer, OuterForward, OuterReverse);
 }
 
 mod __impl_numeric_label {

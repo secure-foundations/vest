@@ -63,6 +63,7 @@ impl<'a> Generator<'a> {
                     lifetime_application(lifetime, "'a")
                 ));
                 output.line(format_args!("    type V = {};", names.spec));
+                output.line(format_args!("    #[verifier::opaque]"));
                 output.line(format_args!(
                     "    open spec fn deep_view(&self) -> Self::V {{"
                 ));
@@ -124,6 +125,7 @@ impl<'a> Generator<'a> {
                     lifetime_application(lifetime, "'a")
                 ));
                 output.line(format_args!("    type V = {};", names.spec));
+                output.line(format_args!("    #[verifier::opaque]"));
                 output.line(format_args!(
                     "    open spec fn deep_view(&self) -> Self::V {{"
                 ));
@@ -167,9 +169,7 @@ impl<'a> Generator<'a> {
                 ));
                 output.line(format_args!("}}"));
                 output.line(format_args!("impl DeepViewIdentity for {} {{", names.value));
-                output.line(format_args!(
-                    "    proof fn lemma_deep_view_identity(&self) {{}}"
-                ));
+                output.line(format_args!("    proof fn lemma_deep_view_identity(&self) {{}}"));
                 output.line(format_args!("}}"));
                 output.line(format_args!("#[cfg(not(verus_keep_ghost))]"));
                 output.line(format_args!(
@@ -280,6 +280,7 @@ impl<'a> Generator<'a> {
             nested_type(&spec_parts)
         ));
         output.line(format_args!("    type Output = {};", names.spec));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {{"
         ));
@@ -304,6 +305,7 @@ impl<'a> Generator<'a> {
             "    type Output = {};",
             nested_type(&spec_parts)
         ));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {{"
         ));
@@ -337,6 +339,16 @@ impl<'a> Generator<'a> {
             "    fn map(&self, input: {}) -> (value: Self::O) {{",
             nested_type(&parsed_parts)
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.forward
+        ));
+        output.line(format_args!("        }}"));
         output.line(format_args!(
             "        let {} = input;",
             nested_pattern(&tuple_identifiers)
@@ -368,6 +380,16 @@ impl<'a> Generator<'a> {
             names.value,
             lifetime_application(lifetime, "'a")
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.reverse
+        ));
+        output.line(format_args!("        }}"));
         let mut reverse_expressions = fields
             .iter()
             .map(|field| {
@@ -430,6 +452,7 @@ impl<'a> Generator<'a> {
             nested_sum_type(&spec_parts)
         ));
         output.line(format_args!("    type Output = {};", names.spec));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {{"
         ));
@@ -455,6 +478,7 @@ impl<'a> Generator<'a> {
             "    type Output = {};",
             nested_sum_type(&spec_parts)
         ));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {{"
         ));
@@ -489,6 +513,16 @@ impl<'a> Generator<'a> {
             "    fn map(&self, input: {}) -> (value: Self::O) {{",
             nested_sum_type(&parsed_parts)
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.forward
+        ));
+        output.line(format_args!("        }}"));
         output.line(format_args!("        match input {{"));
         for (index, variant) in variants.iter().enumerate() {
             output.line(format_args!(
@@ -521,6 +555,16 @@ impl<'a> Generator<'a> {
             names.value,
             lifetime_application(lifetime, "'a")
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.reverse
+        ));
+        output.line(format_args!("        }}"));
         output.line(format_args!("        match value {{"));
         for (index, variant) in variants.iter().enumerate() {
             let variant_name = rust_variant_name(&variant.name);
@@ -594,6 +638,7 @@ impl<'a> Generator<'a> {
         output.line(format_args!("impl SpecMap for {} {{", names.forward));
         output.line(format_args!("    type Input = i16;"));
         output.line(format_args!("    type Output = {};", names.value));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: i16) -> Self::Output {{"
         ));
@@ -606,6 +651,7 @@ impl<'a> Generator<'a> {
         output.line(format_args!("impl SpecMap for {} {{", names.reverse));
         output.line(format_args!("    type Input = {};", names.value));
         output.line(format_args!("    type Output = i16;"));
+        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> i16 {{"
         ));
@@ -620,6 +666,16 @@ impl<'a> Generator<'a> {
         output.line(format_args!(
             "    fn map(&self, value: i16) -> (output: Self::O) {{"
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.forward
+        ));
+        output.line(format_args!("        }}"));
         render_enum_number_match(values, &names.value, output, 8);
         output.line(format_args!("    }}"));
         output.line(format_args!(
@@ -635,6 +691,16 @@ impl<'a> Generator<'a> {
             "    fn map(&self, value: &'a {}) -> (output: i16) {{",
             names.value
         ));
+        output.line(format_args!("        proof {{"));
+        output.line(format_args!(
+            "            reveal(<{} as DeepView>::deep_view);",
+            names.value
+        ));
+        output.line(format_args!(
+            "            reveal(<{} as SpecMap>::spec_map);",
+            names.reverse
+        ));
+        output.line(format_args!("        }}"));
         output.line(format_args!("        match value {{"));
         for value in values {
             output.line(format_args!(

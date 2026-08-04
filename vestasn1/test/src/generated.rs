@@ -53,6 +53,7 @@ pub struct HeaderSpec {
 
 impl<'a> DeepView for Header<'a> {
     type V = HeaderSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         HeaderSpec {
             flag: self.flag.deep_view(),
@@ -75,6 +76,7 @@ pub struct EnvelopeSpec {
 
 impl<'a> DeepView for Envelope<'a> {
     type V = EnvelopeSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         EnvelopeSpec {
             header: self.header.deep_view(),
@@ -100,6 +102,7 @@ pub struct FeaturesSpec {
 
 impl DeepView for Features {
     type V = FeaturesSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         FeaturesSpec {
             enabled: self.enabled.deep_view(),
@@ -122,6 +125,7 @@ pub enum SelectionSpec {
 
 impl<'a> DeepView for Selection<'a> {
     type V = SelectionSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             Selection::Flag(value) => SelectionSpec::Flag(value.deep_view()),
@@ -142,6 +146,7 @@ pub struct ChoiceEnvelopeSpec {
 
 impl<'a> DeepView for ChoiceEnvelope<'a> {
     type V = ChoiceEnvelopeSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ChoiceEnvelopeSpec {
             selection: self.selection.deep_view(),
@@ -193,6 +198,7 @@ pub struct BmpContainerSpec {
 
 impl DeepView for BmpContainer {
     type V = BmpContainerSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         BmpContainerSpec {
             name: self.name.deep_view(),
@@ -218,6 +224,7 @@ pub struct MetadataSpec {
 
 impl<'a> DeepView for Metadata<'a> {
     type V = MetadataSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MetadataSpec {
             color: self.color.deep_view(),
@@ -240,6 +247,7 @@ pub struct InlineRecordNestedSpec {
 
 impl<'a> DeepView for InlineRecordNested<'a> {
     type V = InlineRecordNestedSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         InlineRecordNestedSpec {
             payload: self.payload.deep_view(),
@@ -261,6 +269,7 @@ pub enum InlineRecordSelectedSpec {
 
 impl DeepView for InlineRecordSelected {
     type V = InlineRecordSelectedSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             InlineRecordSelected::Flag(value) => InlineRecordSelectedSpec::Flag(value.deep_view()),
@@ -283,6 +292,7 @@ pub struct InlineRecordSpec {
 
 impl<'a> DeepView for InlineRecord<'a> {
     type V = InlineRecordSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         InlineRecordSpec {
             nested: self.nested.deep_view(),
@@ -313,6 +323,7 @@ pub enum AutomationChoiceSpec {
 
 impl<'a> DeepView for AutomationChoice<'a> {
     type V = AutomationChoiceSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             AutomationChoice::BooleanValue(value) => AutomationChoiceSpec::BooleanValue(value.deep_view()),
@@ -345,6 +356,7 @@ pub struct AutomationSequenceSpec {
 
 impl<'a> DeepView for AutomationSequence<'a> {
     type V = AutomationSequenceSpec;
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         AutomationSequenceSpec {
             prefix: self.prefix.deep_view(),
@@ -367,6 +379,7 @@ pub struct HeaderReverse;
 impl SpecMap for HeaderForward {
     type Input = (FlagSpec, (CountSpec, ()));
     type Output = HeaderSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (flag, (count, _end)) = input;
         HeaderSpec {
@@ -379,6 +392,7 @@ impl SpecMap for HeaderForward {
 impl SpecMap for HeaderReverse {
     type Input = HeaderSpec;
     type Output = (FlagSpec, (CountSpec, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.flag, (value.count, ()))
     }
@@ -387,6 +401,10 @@ impl SpecMap for HeaderReverse {
 impl<'a> Map<(Flag, (Count<'a>, ()))> for HeaderForward {
     type O = Header<'a>;
     fn map(&self, input: (Flag, (Count<'a>, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<Header as DeepView>::deep_view);
+            reveal(<HeaderForward as SpecMap>::spec_map);
+        }
         let (flag, (count, _end)) = input;
         Header {
             flag,
@@ -398,6 +416,10 @@ impl<'a> Map<(Flag, (Count<'a>, ()))> for HeaderForward {
 impl<'a, 'x> Map<&'x Header<'a>> for HeaderReverse {
     type O = (&'x Flag, (&'x Count<'a>, ()));
     fn map(&self, value: &'x Header<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Header as DeepView>::deep_view);
+            reveal(<HeaderReverse as SpecMap>::spec_map);
+        }
         (&value.flag, (&value.count, ()))
     }
 }
@@ -410,6 +432,7 @@ pub struct EnvelopeReverse;
 impl SpecMap for EnvelopeForward {
     type Input = (HeaderSpec, (Option<PayloadSpec>, ()));
     type Output = EnvelopeSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (header, (payload, _end)) = input;
         EnvelopeSpec {
@@ -422,6 +445,7 @@ impl SpecMap for EnvelopeForward {
 impl SpecMap for EnvelopeReverse {
     type Input = EnvelopeSpec;
     type Output = (HeaderSpec, (Option<PayloadSpec>, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.header, (value.payload, ()))
     }
@@ -430,6 +454,10 @@ impl SpecMap for EnvelopeReverse {
 impl<'a> Map<(Header<'a>, (Option<Payload<'a>>, ()))> for EnvelopeForward {
     type O = Envelope<'a>;
     fn map(&self, input: (Header<'a>, (Option<Payload<'a>>, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<Envelope as DeepView>::deep_view);
+            reveal(<EnvelopeForward as SpecMap>::spec_map);
+        }
         let (header, (payload, _end)) = input;
         Envelope {
             header,
@@ -441,6 +469,10 @@ impl<'a> Map<(Header<'a>, (Option<Payload<'a>>, ()))> for EnvelopeForward {
 impl<'a, 'x> Map<&'x Envelope<'a>> for EnvelopeReverse {
     type O = (&'x Header<'a>, (Option<&'x Payload<'a>>, ()));
     fn map(&self, value: &'x Envelope<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Envelope as DeepView>::deep_view);
+            reveal(<EnvelopeReverse as SpecMap>::spec_map);
+        }
         (&value.header, (value.payload.as_ref(), ()))
     }
 }
@@ -453,6 +485,7 @@ pub struct FeaturesReverse;
 impl SpecMap for FeaturesForward {
     type Input = (FlagSpec, (bool, ()));
     type Output = FeaturesSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (enabled, (visible, _end)) = input;
         FeaturesSpec {
@@ -465,6 +498,7 @@ impl SpecMap for FeaturesForward {
 impl SpecMap for FeaturesReverse {
     type Input = FeaturesSpec;
     type Output = (FlagSpec, (bool, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.enabled, (value.visible, ()))
     }
@@ -473,6 +507,10 @@ impl SpecMap for FeaturesReverse {
 impl Map<(Flag, (bool, ()))> for FeaturesForward {
     type O = Features;
     fn map(&self, input: (Flag, (bool, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<Features as DeepView>::deep_view);
+            reveal(<FeaturesForward as SpecMap>::spec_map);
+        }
         let (enabled, (visible, _end)) = input;
         Features {
             enabled,
@@ -484,6 +522,10 @@ impl Map<(Flag, (bool, ()))> for FeaturesForward {
 impl<'x> Map<&'x Features> for FeaturesReverse {
     type O = (Flag, (bool, ()));
     fn map(&self, value: &'x Features) -> (output: Self::O) {
+        proof {
+            reveal(<Features as DeepView>::deep_view);
+            reveal(<FeaturesReverse as SpecMap>::spec_map);
+        }
         (value.enabled, (value.visible, ()))
     }
 }
@@ -496,6 +538,7 @@ pub struct SelectionReverse;
 impl SpecMap for SelectionForward {
     type Input = Sum<FlagSpec, PayloadSpec>;
     type Output = SelectionSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
             L(value) => SelectionSpec::Flag(value),
@@ -507,6 +550,7 @@ impl SpecMap for SelectionForward {
 impl SpecMap for SelectionReverse {
     type Input = SelectionSpec;
     type Output = Sum<FlagSpec, PayloadSpec>;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
             SelectionSpec::Flag(value) => L(value),
@@ -518,6 +562,10 @@ impl SpecMap for SelectionReverse {
 impl<'a> Map<Sum<Flag, Payload<'a>>> for SelectionForward {
     type O = Selection<'a>;
     fn map(&self, input: Sum<Flag, Payload<'a>>) -> (value: Self::O) {
+        proof {
+            reveal(<Selection as DeepView>::deep_view);
+            reveal(<SelectionForward as SpecMap>::spec_map);
+        }
         match input {
             L(value) => Selection::Flag(value),
             R(value) => Selection::Payload(value),
@@ -528,6 +576,10 @@ impl<'a> Map<Sum<Flag, Payload<'a>>> for SelectionForward {
 impl<'a, 'x> Map<&'x Selection<'a>> for SelectionReverse {
     type O = Sum<&'x Flag, &'x Payload<'a>>;
     fn map(&self, value: &'x Selection<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Selection as DeepView>::deep_view);
+            reveal(<SelectionReverse as SpecMap>::spec_map);
+        }
         match value {
             Selection::Flag(value) => L(value),
             Selection::Payload(value) => R(value),
@@ -543,6 +595,7 @@ pub struct ChoiceEnvelopeReverse;
 impl SpecMap for ChoiceEnvelopeForward {
     type Input = (Option<SelectionSpec>, ());
     type Output = ChoiceEnvelopeSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (selection, _end) = input;
         ChoiceEnvelopeSpec {
@@ -554,6 +607,7 @@ impl SpecMap for ChoiceEnvelopeForward {
 impl SpecMap for ChoiceEnvelopeReverse {
     type Input = ChoiceEnvelopeSpec;
     type Output = (Option<SelectionSpec>, ());
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.selection, ())
     }
@@ -562,6 +616,10 @@ impl SpecMap for ChoiceEnvelopeReverse {
 impl<'a> Map<(Option<Selection<'a>>, ())> for ChoiceEnvelopeForward {
     type O = ChoiceEnvelope<'a>;
     fn map(&self, input: (Option<Selection<'a>>, ())) -> (value: Self::O) {
+        proof {
+            reveal(<ChoiceEnvelope as DeepView>::deep_view);
+            reveal(<ChoiceEnvelopeForward as SpecMap>::spec_map);
+        }
         let (selection, _end) = input;
         ChoiceEnvelope {
             selection,
@@ -572,6 +630,10 @@ impl<'a> Map<(Option<Selection<'a>>, ())> for ChoiceEnvelopeForward {
 impl<'a, 'x> Map<&'x ChoiceEnvelope<'a>> for ChoiceEnvelopeReverse {
     type O = (Option<&'x Selection<'a>>, ());
     fn map(&self, value: &'x ChoiceEnvelope<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<ChoiceEnvelope as DeepView>::deep_view);
+            reveal(<ChoiceEnvelopeReverse as SpecMap>::spec_map);
+        }
         (value.selection.as_ref(), ())
     }
 }
@@ -597,6 +659,7 @@ pub struct ColorReverse;
 impl SpecMap for ColorForward {
     type Input = i16;
     type Output = Color;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: i16) -> Self::Output {
         match value {
             0i16 => Color::Red,
@@ -610,6 +673,7 @@ impl SpecMap for ColorForward {
 impl SpecMap for ColorReverse {
     type Input = Color;
     type Output = i16;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> i16 {
         match value {
             Color::Red => 0i16,
@@ -622,6 +686,10 @@ impl SpecMap for ColorReverse {
 impl Map<i16> for ColorForward {
     type O = Color;
     fn map(&self, value: i16) -> (output: Self::O) {
+        proof {
+            reveal(<Color as DeepView>::deep_view);
+            reveal(<ColorForward as SpecMap>::spec_map);
+        }
         match value {
             0i16 => Color::Red,
             1i16 => Color::Green,
@@ -634,6 +702,10 @@ impl Map<i16> for ColorForward {
 impl<'a> Map<&'a Color> for ColorReverse {
     type O = i16;
     fn map(&self, value: &'a Color) -> (output: i16) {
+        proof {
+            reveal(<Color as DeepView>::deep_view);
+            reveal(<ColorReverse as SpecMap>::spec_map);
+        }
         match value {
             Color::Red => 0i16,
             Color::Green => 1i16,
@@ -650,6 +722,7 @@ pub struct BmpContainerReverse;
 impl SpecMap for BmpContainerForward {
     type Input = (BmpNameSpec, ());
     type Output = BmpContainerSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (name, _end) = input;
         BmpContainerSpec {
@@ -661,6 +734,7 @@ impl SpecMap for BmpContainerForward {
 impl SpecMap for BmpContainerReverse {
     type Input = BmpContainerSpec;
     type Output = (BmpNameSpec, ());
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.name, ())
     }
@@ -669,6 +743,10 @@ impl SpecMap for BmpContainerReverse {
 impl Map<(BmpName, ())> for BmpContainerForward {
     type O = BmpContainer;
     fn map(&self, input: (BmpName, ())) -> (value: Self::O) {
+        proof {
+            reveal(<BmpContainer as DeepView>::deep_view);
+            reveal(<BmpContainerForward as SpecMap>::spec_map);
+        }
         let (name, _end) = input;
         BmpContainer {
             name,
@@ -679,6 +757,10 @@ impl Map<(BmpName, ())> for BmpContainerForward {
 impl<'x> Map<&'x BmpContainer> for BmpContainerReverse {
     type O = (&'x BmpName, ());
     fn map(&self, value: &'x BmpContainer) -> (output: Self::O) {
+        proof {
+            reveal(<BmpContainer as DeepView>::deep_view);
+            reveal(<BmpContainerReverse as SpecMap>::spec_map);
+        }
         (&value.name, ())
     }
 }
@@ -691,6 +773,7 @@ pub struct MetadataReverse;
 impl SpecMap for MetadataForward {
     type Input = (ColorSpec, (IdentifierSpec, (MeasurementSpec, (OpenValueSpec, ()))));
     type Output = MetadataSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (color, (identifier, (measurement, (open, _end)))) = input;
         MetadataSpec {
@@ -705,6 +788,7 @@ impl SpecMap for MetadataForward {
 impl SpecMap for MetadataReverse {
     type Input = MetadataSpec;
     type Output = (ColorSpec, (IdentifierSpec, (MeasurementSpec, (OpenValueSpec, ()))));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.color, (value.identifier, (value.measurement, (value.open, ()))))
     }
@@ -713,6 +797,10 @@ impl SpecMap for MetadataReverse {
 impl<'a> Map<(Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))> for MetadataForward {
     type O = Metadata<'a>;
     fn map(&self, input: (Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))) -> (value: Self::O) {
+        proof {
+            reveal(<Metadata as DeepView>::deep_view);
+            reveal(<MetadataForward as SpecMap>::spec_map);
+        }
         let (color, (identifier, (measurement, (open, _end)))) = input;
         Metadata {
             color,
@@ -726,6 +814,10 @@ impl<'a> Map<(Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))> for 
 impl<'a, 'x> Map<&'x Metadata<'a>> for MetadataReverse {
     type O = (Color, (&'x Identifier, (&'x Measurement<'a>, (&'x OpenValue<'a>, ()))));
     fn map(&self, value: &'x Metadata<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<Metadata as DeepView>::deep_view);
+            reveal(<MetadataReverse as SpecMap>::spec_map);
+        }
         (value.color, (&value.identifier, (&value.measurement, (&value.open, ()))))
     }
 }
@@ -738,6 +830,7 @@ pub struct InlineRecordNestedReverse;
 impl SpecMap for InlineRecordNestedForward {
     type Input = (Seq<u8>, ());
     type Output = InlineRecordNestedSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (payload, _end) = input;
         InlineRecordNestedSpec {
@@ -749,6 +842,7 @@ impl SpecMap for InlineRecordNestedForward {
 impl SpecMap for InlineRecordNestedReverse {
     type Input = InlineRecordNestedSpec;
     type Output = (Seq<u8>, ());
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.payload, ())
     }
@@ -757,6 +851,10 @@ impl SpecMap for InlineRecordNestedReverse {
 impl<'a> Map<(&'a [u8], ())> for InlineRecordNestedForward {
     type O = InlineRecordNested<'a>;
     fn map(&self, input: (&'a [u8], ())) -> (value: Self::O) {
+        proof {
+            reveal(<InlineRecordNested as DeepView>::deep_view);
+            reveal(<InlineRecordNestedForward as SpecMap>::spec_map);
+        }
         let (payload, _end) = input;
         InlineRecordNested {
             payload,
@@ -767,6 +865,10 @@ impl<'a> Map<(&'a [u8], ())> for InlineRecordNestedForward {
 impl<'a, 'x> Map<&'x InlineRecordNested<'a>> for InlineRecordNestedReverse {
     type O = (&'x &'a [u8], ());
     fn map(&self, value: &'x InlineRecordNested<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<InlineRecordNested as DeepView>::deep_view);
+            reveal(<InlineRecordNestedReverse as SpecMap>::spec_map);
+        }
         (&value.payload, ())
     }
 }
@@ -779,6 +881,7 @@ pub struct InlineRecordSelectedReverse;
 impl SpecMap for InlineRecordSelectedForward {
     type Input = Sum<bool, vest_lib2::asn1::ObjectIdentifierSpec>;
     type Output = InlineRecordSelectedSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
             L(value) => InlineRecordSelectedSpec::Flag(value),
@@ -790,6 +893,7 @@ impl SpecMap for InlineRecordSelectedForward {
 impl SpecMap for InlineRecordSelectedReverse {
     type Input = InlineRecordSelectedSpec;
     type Output = Sum<bool, vest_lib2::asn1::ObjectIdentifierSpec>;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
             InlineRecordSelectedSpec::Flag(value) => L(value),
@@ -801,6 +905,10 @@ impl SpecMap for InlineRecordSelectedReverse {
 impl Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier>> for InlineRecordSelectedForward {
     type O = InlineRecordSelected;
     fn map(&self, input: Sum<bool, vest_lib2::asn1::ObjectIdentifier>) -> (value: Self::O) {
+        proof {
+            reveal(<InlineRecordSelected as DeepView>::deep_view);
+            reveal(<InlineRecordSelectedForward as SpecMap>::spec_map);
+        }
         match input {
             L(value) => InlineRecordSelected::Flag(value),
             R(value) => InlineRecordSelected::Identifier(value),
@@ -811,6 +919,10 @@ impl Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier>> for InlineRecordSelectedF
 impl<'x> Map<&'x InlineRecordSelected> for InlineRecordSelectedReverse {
     type O = Sum<&'x bool, &'x vest_lib2::asn1::ObjectIdentifier>;
     fn map(&self, value: &'x InlineRecordSelected) -> (output: Self::O) {
+        proof {
+            reveal(<InlineRecordSelected as DeepView>::deep_view);
+            reveal(<InlineRecordSelectedReverse as SpecMap>::spec_map);
+        }
         match value {
             InlineRecordSelected::Flag(value) => L(value),
             InlineRecordSelected::Identifier(value) => R(value),
@@ -826,6 +938,7 @@ pub struct InlineRecordReverse;
 impl SpecMap for InlineRecordForward {
     type Input = (InlineRecordNestedSpec, (InlineRecordSelectedSpec, ()));
     type Output = InlineRecordSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (nested, (selected, _end)) = input;
         InlineRecordSpec {
@@ -838,6 +951,7 @@ impl SpecMap for InlineRecordForward {
 impl SpecMap for InlineRecordReverse {
     type Input = InlineRecordSpec;
     type Output = (InlineRecordNestedSpec, (InlineRecordSelectedSpec, ()));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.nested, (value.selected, ()))
     }
@@ -846,6 +960,10 @@ impl SpecMap for InlineRecordReverse {
 impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected, ()))> for InlineRecordForward {
     type O = InlineRecord<'a>;
     fn map(&self, input: (InlineRecordNested<'a>, (InlineRecordSelected, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<InlineRecord as DeepView>::deep_view);
+            reveal(<InlineRecordForward as SpecMap>::spec_map);
+        }
         let (nested, (selected, _end)) = input;
         InlineRecord {
             nested,
@@ -857,6 +975,10 @@ impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected, ()))> for InlineRec
 impl<'a, 'x> Map<&'x InlineRecord<'a>> for InlineRecordReverse {
     type O = (&'x InlineRecordNested<'a>, (&'x InlineRecordSelected, ()));
     fn map(&self, value: &'x InlineRecord<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<InlineRecord as DeepView>::deep_view);
+            reveal(<InlineRecordReverse as SpecMap>::spec_map);
+        }
         (&value.nested, (&value.selected, ()))
     }
 }
@@ -867,59 +989,69 @@ pub struct AutomationChoiceForward;
 pub struct AutomationChoiceReverse;
 
 impl SpecMap for AutomationChoiceForward {
-    type Input = Sum<bool, Sum<int, Sum<Seq<u8>, Sum<(), Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>>>;
+    type Input = Sum<Sum<bool, int>, Sum<Sum<Seq<u8>, ()>, Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>;
     type Output = AutomationChoiceSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         match input {
-            L(value) => AutomationChoiceSpec::BooleanValue(value),
-            R(L(value)) => AutomationChoiceSpec::IntegerValue(value),
-            R(R(L(value))) => AutomationChoiceSpec::OctetsValue(value),
-            R(R(R(L(value)))) => AutomationChoiceSpec::NullValue(value),
-            R(R(R(R(L(value))))) => AutomationChoiceSpec::TextValue(value),
-            R(R(R(R(R(value))))) => AutomationChoiceSpec::OidValue(value),
+            L(L(value)) => AutomationChoiceSpec::BooleanValue(value),
+            L(R(value)) => AutomationChoiceSpec::IntegerValue(value),
+            R(L(L(value))) => AutomationChoiceSpec::OctetsValue(value),
+            R(L(R(value))) => AutomationChoiceSpec::NullValue(value),
+            R(R(L(value))) => AutomationChoiceSpec::TextValue(value),
+            R(R(R(value))) => AutomationChoiceSpec::OidValue(value),
         }
     }
 }
 
 impl SpecMap for AutomationChoiceReverse {
     type Input = AutomationChoiceSpec;
-    type Output = Sum<bool, Sum<int, Sum<Seq<u8>, Sum<(), Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>>>;
+    type Output = Sum<Sum<bool, int>, Sum<Sum<Seq<u8>, ()>, Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>;
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         match value {
-            AutomationChoiceSpec::BooleanValue(value) => L(value),
-            AutomationChoiceSpec::IntegerValue(value) => R(L(value)),
-            AutomationChoiceSpec::OctetsValue(value) => R(R(L(value))),
-            AutomationChoiceSpec::NullValue(value) => R(R(R(L(value)))),
-            AutomationChoiceSpec::TextValue(value) => R(R(R(R(L(value))))),
-            AutomationChoiceSpec::OidValue(value) => R(R(R(R(R(value))))),
+            AutomationChoiceSpec::BooleanValue(value) => L(L(value)),
+            AutomationChoiceSpec::IntegerValue(value) => L(R(value)),
+            AutomationChoiceSpec::OctetsValue(value) => R(L(L(value))),
+            AutomationChoiceSpec::NullValue(value) => R(L(R(value))),
+            AutomationChoiceSpec::TextValue(value) => R(R(L(value))),
+            AutomationChoiceSpec::OidValue(value) => R(R(R(value))),
         }
     }
 }
 
-impl<'a> Map<Sum<bool, Sum<vest_lib2::asn1::Integer<'a>, Sum<&'a [u8], Sum<(), Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>>>> for AutomationChoiceForward {
+impl<'a> Map<Sum<Sum<bool, vest_lib2::asn1::Integer<'a>>, Sum<Sum<&'a [u8], ()>, Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>> for AutomationChoiceForward {
     type O = AutomationChoice<'a>;
-    fn map(&self, input: Sum<bool, Sum<vest_lib2::asn1::Integer<'a>, Sum<&'a [u8], Sum<(), Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>>>) -> (value: Self::O) {
+    fn map(&self, input: Sum<Sum<bool, vest_lib2::asn1::Integer<'a>>, Sum<Sum<&'a [u8], ()>, Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>) -> (value: Self::O) {
+        proof {
+            reveal(<AutomationChoice as DeepView>::deep_view);
+            reveal(<AutomationChoiceForward as SpecMap>::spec_map);
+        }
         match input {
-            L(value) => AutomationChoice::BooleanValue(value),
-            R(L(value)) => AutomationChoice::IntegerValue(value),
-            R(R(L(value))) => AutomationChoice::OctetsValue(value),
-            R(R(R(L(value)))) => AutomationChoice::NullValue(value),
-            R(R(R(R(L(value))))) => AutomationChoice::TextValue(value),
-            R(R(R(R(R(value))))) => AutomationChoice::OidValue(value),
+            L(L(value)) => AutomationChoice::BooleanValue(value),
+            L(R(value)) => AutomationChoice::IntegerValue(value),
+            R(L(L(value))) => AutomationChoice::OctetsValue(value),
+            R(L(R(value))) => AutomationChoice::NullValue(value),
+            R(R(L(value))) => AutomationChoice::TextValue(value),
+            R(R(R(value))) => AutomationChoice::OidValue(value),
         }
     }
 }
 
 impl<'a, 'x> Map<&'x AutomationChoice<'a>> for AutomationChoiceReverse {
-    type O = Sum<&'x bool, Sum<&'x vest_lib2::asn1::Integer<'a>, Sum<&'x &'a [u8], Sum<&'x (), Sum<&'x &'a str, &'x vest_lib2::asn1::ObjectIdentifier>>>>>;
+    type O = Sum<Sum<&'x bool, &'x vest_lib2::asn1::Integer<'a>>, Sum<Sum<&'x &'a [u8], &'x ()>, Sum<&'x &'a str, &'x vest_lib2::asn1::ObjectIdentifier>>>;
     fn map(&self, value: &'x AutomationChoice<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<AutomationChoice as DeepView>::deep_view);
+            reveal(<AutomationChoiceReverse as SpecMap>::spec_map);
+        }
         match value {
-            AutomationChoice::BooleanValue(value) => L(value),
-            AutomationChoice::IntegerValue(value) => R(L(value)),
-            AutomationChoice::OctetsValue(value) => R(R(L(value))),
-            AutomationChoice::NullValue(value) => R(R(R(L(value)))),
-            AutomationChoice::TextValue(value) => R(R(R(R(L(value))))),
-            AutomationChoice::OidValue(value) => R(R(R(R(R(value))))),
+            AutomationChoice::BooleanValue(value) => L(L(value)),
+            AutomationChoice::IntegerValue(value) => L(R(value)),
+            AutomationChoice::OctetsValue(value) => R(L(L(value))),
+            AutomationChoice::NullValue(value) => R(L(R(value))),
+            AutomationChoice::TextValue(value) => R(R(L(value))),
+            AutomationChoice::OidValue(value) => R(R(R(value))),
         }
     }
 }
@@ -932,6 +1064,7 @@ pub struct AutomationSequenceReverse;
 impl SpecMap for AutomationSequenceForward {
     type Input = (Option<bool>, (bool, (Option<Seq<u8>>, ((), (Option<AutomationChoiceSpec>, ())))));
     type Output = AutomationSequenceSpec;
+    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequenceSpec {
@@ -947,6 +1080,7 @@ impl SpecMap for AutomationSequenceForward {
 impl SpecMap for AutomationSequenceReverse {
     type Input = AutomationSequenceSpec;
     type Output = (Option<bool>, (bool, (Option<Seq<u8>>, ((), (Option<AutomationChoiceSpec>, ())))));
+    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         (value.prefix, (value.enabled, (value.payload, (value.marker, (value.selected, ())))))
     }
@@ -955,6 +1089,10 @@ impl SpecMap for AutomationSequenceReverse {
 impl<'a> Map<(Option<bool>, (bool, (Option<&'a [u8]>, ((), (Option<AutomationChoice<'a>>, ())))))> for AutomationSequenceForward {
     type O = AutomationSequence<'a>;
     fn map(&self, input: (Option<bool>, (bool, (Option<&'a [u8]>, ((), (Option<AutomationChoice<'a>>, ())))))) -> (value: Self::O) {
+        proof {
+            reveal(<AutomationSequence as DeepView>::deep_view);
+            reveal(<AutomationSequenceForward as SpecMap>::spec_map);
+        }
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequence {
             prefix,
@@ -969,6 +1107,10 @@ impl<'a> Map<(Option<bool>, (bool, (Option<&'a [u8]>, ((), (Option<AutomationCho
 impl<'a, 'x> Map<&'x AutomationSequence<'a>> for AutomationSequenceReverse {
     type O = (Option<&'x bool>, (bool, (Option<&'x &'a [u8]>, (&'x (), (Option<&'x AutomationChoice<'a>>, ())))));
     fn map(&self, value: &'x AutomationSequence<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<AutomationSequence as DeepView>::deep_view);
+            reveal(<AutomationSequenceReverse as SpecMap>::spec_map);
+        }
         (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))))
     }
 }
@@ -1523,7 +1665,7 @@ impl INLINE_RECORD {
 }
 
 /// DER format for ASN.1 `AutomationChoice`.
-type AUTOMATION_CHOICE__ = Mapped<Choice<ImplicitFmt<Ref<BoolTlvFmt>>, Choice<ImplicitFmt<Ref<IntegerTlvFmt>>, Choice<ImplicitFmt<Ref<OctetStringTlvFmt>>, Choice<ImplicitFmt<Ref<NullTlvFmt>>, Choice<ExplicitFmt<Ref<Utf8StringTlvFmt>>, ExplicitFmt<Ref<ObjectIdentifierTlvFmt>>>>>>>, BiMap<AutomationChoiceForward, AutomationChoiceReverse>>;
+type AUTOMATION_CHOICE__ = Mapped<Choice<Choice<ImplicitFmt<Ref<BoolTlvFmt>>, ImplicitFmt<Ref<IntegerTlvFmt>>>, Choice<Choice<ImplicitFmt<Ref<OctetStringTlvFmt>>, ImplicitFmt<Ref<NullTlvFmt>>>, Choice<ExplicitFmt<Ref<Utf8StringTlvFmt>>, ExplicitFmt<Ref<ObjectIdentifierTlvFmt>>>>>, BiMap<AutomationChoiceForward, AutomationChoiceReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct AUTOMATION_CHOICE;
@@ -1537,12 +1679,16 @@ impl AUTOMATION_CHOICE {
                 Mapped {
                     inner:
                         CHOICE(
-                            IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
-                            IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
-                            IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
-                            IMPLICIT(13u64, Ref(NULL)), CHOICE(
-                            EXPLICIT(14u64, Ref(UTF8_STRING)),
-                            EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
+                            CHOICE(
+                                IMPLICIT(10u64, Ref(BOOLEAN)),
+                                IMPLICIT(11u64, Ref(INTEGER))),
+                            CHOICE(
+                                CHOICE(
+                                    IMPLICIT(12u64, Ref(OCTET_STRING)),
+                                    IMPLICIT(13u64, Ref(NULL))),
+                                CHOICE(
+                                    EXPLICIT(14u64, Ref(UTF8_STRING)),
+                                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))),
                     mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
                 }
             ),
@@ -1550,12 +1696,16 @@ impl AUTOMATION_CHOICE {
         Mapped {
             inner:
                 CHOICE(
-                    IMPLICIT(10u64, Ref(BOOLEAN)), CHOICE(
-                    IMPLICIT(11u64, Ref(INTEGER)), CHOICE(
-                    IMPLICIT(12u64, Ref(OCTET_STRING)), CHOICE(
-                    IMPLICIT(13u64, Ref(NULL)), CHOICE(
-                    EXPLICIT(14u64, Ref(UTF8_STRING)),
-                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))))),
+                    CHOICE(
+                        IMPLICIT(10u64, Ref(BOOLEAN)),
+                        IMPLICIT(11u64, Ref(INTEGER))),
+                    CHOICE(
+                        CHOICE(
+                            IMPLICIT(12u64, Ref(OCTET_STRING)),
+                            IMPLICIT(13u64, Ref(NULL))),
+                        CHOICE(
+                            EXPLICIT(14u64, Ref(UTF8_STRING)),
+                            EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))))),
             mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
         }
     }
@@ -1660,13 +1810,13 @@ mod __impl_payload {
 mod __impl_header {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header);
+    vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header, HeaderForward, HeaderReverse);
 }
 
 mod __impl_envelope {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope);
+    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope, EnvelopeForward, EnvelopeReverse);
 }
 
 mod __impl_envelopes {
@@ -1678,25 +1828,25 @@ mod __impl_envelopes {
 mod __impl_features {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features);
+    vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features, FeaturesForward, FeaturesReverse);
 }
 
 mod __impl_selection {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection);
+    vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection, SelectionForward, SelectionReverse);
 }
 
 mod __impl_choice_envelope {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope);
+    vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope, ChoiceEnvelopeForward, ChoiceEnvelopeReverse);
 }
 
 mod __impl_color {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color);
+    vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color, ColorForward, ColorReverse);
 }
 
 mod __impl_identifier {
@@ -1726,43 +1876,43 @@ mod __impl_bmp_name {
 mod __impl_bmp_container {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer);
+    vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer, BmpContainerForward, BmpContainerReverse);
 }
 
 mod __impl_metadata {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata);
+    vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata, MetadataForward, MetadataReverse);
 }
 
 mod __impl_inline_record_nested {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested);
+    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested, InlineRecordNestedForward, InlineRecordNestedReverse);
 }
 
 mod __impl_inline_record_selected {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected);
+    vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected, InlineRecordSelectedForward, InlineRecordSelectedReverse);
 }
 
 mod __impl_inline_record {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord);
+    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord, InlineRecordForward, InlineRecordReverse);
 }
 
 mod __impl_automation_choice {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+    vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
 }
 
 mod __impl_automation_sequence {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+    vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
 }
 
 mod __impl_headers {

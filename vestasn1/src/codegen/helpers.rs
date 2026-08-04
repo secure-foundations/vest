@@ -348,13 +348,8 @@ pub(super) fn render_list_combinator(name: &str, inner: &str) -> String {
     format!("{name}(\n    {},\n)", indent_continuation(inner, 4))
 }
 
-/// Render one node of a visually flattened, right-nested `CHOICE` chain.
+/// Render one node of a balanced binary `CHOICE` tree.
 pub(super) fn render_choice_combinator(left: &str, right: &str) -> String {
-    format!("CHOICE(\n    {}, {right})", indent_continuation(left, 4),)
-}
-
-/// Render the final two alternatives of a flattened `CHOICE` chain.
-pub(super) fn render_final_choice_combinator(left: &str, right: &str) -> String {
     format!(
         "CHOICE(\n    {},\n    {})",
         indent_continuation(left, 4),
@@ -505,28 +500,51 @@ pub(super) fn nested_sum_type(parts: &[String]) -> String {
     match parts {
         [] => "Never".to_string(),
         [only] => only.clone(),
-        [first, rest @ ..] => format!("Sum<{}, {}>", first, nested_sum_type(rest)),
+        _ => {
+            let middle = choice_split(parts.len());
+            format!(
+                "Sum<{}, {}>",
+                nested_sum_type(&parts[..middle]),
+                nested_sum_type(&parts[middle..]),
+            )
+        }
     }
 }
 
 pub(super) fn sum_pattern(index: usize, len: usize, binding: &str) -> String {
     if len == 1 {
         binding.to_string()
-    } else if index == 0 {
-        format!("L({binding})")
     } else {
-        format!("R({})", sum_pattern(index - 1, len - 1, binding))
+        let middle = choice_split(len);
+        if index < middle {
+            format!("L({})", sum_pattern(index, middle, binding))
+        } else {
+            format!("R({})", sum_pattern(index - middle, len - middle, binding))
+        }
     }
 }
 
 pub(super) fn sum_expression(index: usize, len: usize, value: &str) -> String {
     if len == 1 {
         value.to_string()
-    } else if index == 0 {
-        format!("L({value})")
     } else {
-        format!("R({})", sum_expression(index - 1, len - 1, value))
+        let middle = choice_split(len);
+        if index < middle {
+            format!("L({})", sum_expression(index, middle, value))
+        } else {
+            format!("R({})", sum_expression(index - middle, len - middle, value))
+        }
     }
+}
+
+/// Split a CHOICE into a smaller remainder and a perfect right subtree.
+///
+/// Besides logarithmic depth, this orientation lets disjointness automation recursively peel
+/// choices on the right without ever needing the reverse `choice-left` rule.
+pub(super) fn choice_split(len: usize) -> usize {
+    debug_assert!(len >= 2);
+    let right_len = 1usize << ((usize::BITS - (len - 1).leading_zeros() - 1) as usize);
+    len - right_len
 }
 
 pub(super) fn render_enum_number_match(
@@ -708,19 +726,41 @@ mod tests {
     }
 
     #[test]
-    fn pretty_prints_flattened_sequence_and_choice_chains() {
+    fn pretty_prints_sequence_and_balanced_choice_trees() {
         let sequence = render_list_combinator("SEQUENCE", "REQUIRED(A,\nOPTIONAL(B,\nEof))");
         assert_eq!(
             sequence,
             "SEQUENCE(\n    REQUIRED(A,\n    OPTIONAL(B,\n    Eof)),\n)"
         );
 
-        let tail = render_final_choice_combinator("C", "D");
-        let choice = render_choice_combinator("B", &tail);
-        assert_eq!(choice, "CHOICE(\n    B, CHOICE(\n    C,\n    D))");
+        let left = render_choice_combinator("A", "B");
+        let right = render_choice_combinator("C", "D");
+        let choice = render_choice_combinator(&left, &right);
+        assert_eq!(
+            choice,
+            "CHOICE(\n    CHOICE(\n        A,\n        B),\n    CHOICE(\n        C,\n        D))"
+        );
 
-        assert_eq!(sum_pattern(2, 4, "value"), "R(R(L(value)))");
-        assert_eq!(sum_expression(3, 4, "value"), "R(R(R(value)))");
+        assert_eq!(
+            nested_sum_type(&["A".into(), "B".into(), "C".into(), "D".into()]),
+            "Sum<Sum<A, B>, Sum<C, D>>"
+        );
+        assert_eq!(sum_pattern(2, 4, "value"), "R(L(value))");
+        assert_eq!(sum_expression(3, 4, "value"), "R(R(value))");
+        assert_eq!(choice_split(3), 1);
+        assert_eq!(choice_split(6), 2);
+        assert_eq!(choice_split(9), 1);
+        assert_eq!(
+            nested_sum_type(&[
+                "A".into(),
+                "B".into(),
+                "C".into(),
+                "D".into(),
+                "E".into(),
+                "F".into(),
+            ]),
+            "Sum<Sum<A, B>, Sum<Sum<C, D>, Sum<E, F>>>"
+        );
 
         let (localized, items) = localize_rule_items(
             "vest_lib2::asn1::ber::SEQUENCE(vest_lib2::asn1::ber::BER_END)",
