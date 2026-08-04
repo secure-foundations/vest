@@ -312,11 +312,16 @@ impl<'a> Generator<'a> {
             EncodingRules::Der => "impl_der",
             EncodingRules::Ber => "impl_ber",
         };
+        let module = format!("__impl_{}", names.format.to_ascii_lowercase());
+        output.blank_line();
+        output.line(format_args!("mod {module} {{"));
+        output.line(format_args!("    use super::*;"));
         output.blank_line();
         output.line(format_args!(
-            "vest_lib2::{implementation}!({kind}, {ownership}, {}, {}, {}, {});",
+            "    vest_lib2::{implementation}!({kind}, {ownership}, {}, {}, {}, {});",
             names.format, names.inner_format, names.spec, names.value
         ));
+        output.line(format_args!("}}"));
         Ok(())
     }
 }

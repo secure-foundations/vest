@@ -647,30 +647,86 @@ impl FLAG_SET {
 
 } // verus!
 
-vest_lib2::impl_ber!(tagged(false), owned, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+mod __impl_payload {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(false), owned, BITS, BITS__, BitsSpec, Bits);
+    vest_lib2::impl_ber!(tagged(false), owned, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+}
 
-vest_lib2::impl_ber!(tagged(false), owned, LABEL, LABEL__, LabelSpec, Label);
+mod __impl_bits {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(false), owned, PRINTABLE, PRINTABLE__, PrintableSpec, Printable);
+    vest_lib2::impl_ber!(tagged(false), owned, BITS, BITS__, BitsSpec, Bits);
+}
 
-vest_lib2::impl_ber!(tagged(false), owned, ASCII, ASCII__, AsciiSpec, Ascii);
+mod __impl_label {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(false), owned, LEGACY, LEGACY__, LegacySpec, Legacy);
+    vest_lib2::impl_ber!(tagged(false), owned, LABEL, LABEL__, LabelSpec, Label);
+}
 
-vest_lib2::impl_ber!(tagged(false), owned, WIDE, WIDE__, WideSpec, Wide);
+mod __impl_printable {
+    use super::*;
 
-vest_lib2::impl_ber!(untagged_start, owned, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+    vest_lib2::impl_ber!(tagged(false), owned, PRINTABLE, PRINTABLE__, PrintableSpec, Printable);
+}
 
-vest_lib2::impl_ber!(tagged(true), owned, ITEM, ITEM__, ItemSpec, Item);
+mod __impl_ascii {
+    use super::*;
 
-vest_lib2::impl_ber!(untagged, owned, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+    vest_lib2::impl_ber!(tagged(false), owned, ASCII, ASCII__, AsciiSpec, Ascii);
+}
 
-vest_lib2::impl_ber!(tagged(true), owned, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+mod __impl_legacy {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(true), owned, ITEMS, ITEMS__, ItemsSpec, Items);
+    vest_lib2::impl_ber!(tagged(false), owned, LEGACY, LEGACY__, LegacySpec, Legacy);
+}
 
-vest_lib2::impl_ber!(tagged(true), owned, FLAGS, FLAGS__, FlagsSpec, Flags);
+mod __impl_wide {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(true), owned, FLAG_SET, FLAG_SET__, FlagSetSpec, FlagSet);
+    vest_lib2::impl_ber!(tagged(false), owned, WIDE, WIDE__, WideSpec, Wide);
+}
+
+mod __impl_open_value {
+    use super::*;
+
+    vest_lib2::impl_ber!(untagged_start, owned, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+}
+
+mod __impl_item {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), owned, ITEM, ITEM__, ItemSpec, Item);
+}
+
+mod __impl_automation_choice {
+    use super::*;
+
+    vest_lib2::impl_ber!(untagged, owned, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+}
+
+mod __impl_automation_sequence {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), owned, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+}
+
+mod __impl_items {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), owned, ITEMS, ITEMS__, ItemsSpec, Items);
+}
+
+mod __impl_flags {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), owned, FLAGS, FLAGS__, FlagsSpec, Flags);
+}
+
+mod __impl_flag_set {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), owned, FLAG_SET, FLAG_SET__, FlagSetSpec, FlagSet);
+}

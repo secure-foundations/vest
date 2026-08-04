@@ -74,6 +74,7 @@ END
 
     assert_uses_broadcast_disjointness_only(&generated);
     assert!(generated.contains("impl_der!(untagged, borrowed, VALUE"));
+    assert!(generated.contains("mod __impl_value {\n    use super::*;"));
     assert!(generated.contains("use Sum::Inl as L;"));
     assert!(generated.contains("use Sum::Inr as R;"));
     assert!(generated.contains("R(R(L(value)))"));

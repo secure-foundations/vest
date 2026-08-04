@@ -1627,50 +1627,146 @@ pub const DEFAULT_COLOR: Color = Color::Green;
 
 } // verus!
 
-vest_lib2::impl_der!(tagged(false), owned, FLAG, FLAG__, FlagSpec, Flag);
+mod __impl_flag {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), borrowed, COUNT, COUNT__, CountSpec, Count);
+    vest_lib2::impl_der!(tagged(false), owned, FLAG, FLAG__, FlagSpec, Flag);
+}
 
-vest_lib2::impl_der!(tagged(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
+mod __impl_count {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
+    vest_lib2::impl_der!(tagged(false), borrowed, COUNT, COUNT__, CountSpec, Count);
+}
 
-vest_lib2::impl_der!(tagged(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+mod __impl_tagged_count {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header);
+    vest_lib2::impl_der!(tagged(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope);
+mod __impl_retagged_count {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
+    vest_lib2::impl_der!(tagged(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
+}
 
-vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features);
+mod __impl_payload {
+    use super::*;
 
-vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection);
+    vest_lib2::impl_der!(tagged(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope);
+mod __impl_header {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color);
+    vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header);
+}
 
-vest_lib2::impl_der!(tagged(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
+mod __impl_envelope {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
+    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope);
+}
 
-vest_lib2::impl_der!(untagged_start, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+mod __impl_envelopes {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
+    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
+}
 
-vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer);
+mod __impl_features {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata);
+    vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested);
+mod __impl_selection {
+    use super::*;
 
-vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected);
+    vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord);
+mod __impl_choice_envelope {
+    use super::*;
 
-vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+    vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+mod __impl_color {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
+    vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color);
+}
+
+mod __impl_identifier {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
+}
+
+mod __impl_measurement {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
+}
+
+mod __impl_open_value {
+    use super::*;
+
+    vest_lib2::impl_der!(untagged_start, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+}
+
+mod __impl_bmp_name {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
+}
+
+mod __impl_bmp_container {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer);
+}
+
+mod __impl_metadata {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata);
+}
+
+mod __impl_inline_record_nested {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested);
+}
+
+mod __impl_inline_record_selected {
+    use super::*;
+
+    vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected);
+}
+
+mod __impl_inline_record {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord);
+}
+
+mod __impl_automation_choice {
+    use super::*;
+
+    vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice);
+}
+
+mod __impl_automation_sequence {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence);
+}
+
+mod __impl_headers {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
+}

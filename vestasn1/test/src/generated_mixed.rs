@@ -568,20 +568,56 @@ impl UNIVERSAL_LABEL {
 
 } // verus!
 
-vest_lib2::impl_ber!(tagged(false), owned, VERSION, VERSION__, VersionSpec, Version);
+mod __impl_version {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(false), owned, VERSION_DER, VERSION_DER__, VersionDerSpec, VersionDer);
+    vest_lib2::impl_ber!(tagged(false), owned, VERSION, VERSION__, VersionSpec, Version);
+}
 
-vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared);
+mod __impl_version_der {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer);
+    vest_lib2::impl_der!(tagged(false), owned, VERSION_DER, VERSION_DER__, VersionDerSpec, VersionDer);
+}
 
-vest_lib2::impl_der!(tagged(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
+mod __impl_shared {
+    use super::*;
 
-vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered);
+    vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared);
+}
 
-vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer);
+mod __impl_shared_der {
+    use super::*;
 
-vest_lib2::impl_ber!(tagged(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
+    vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer);
+}
 
-vest_lib2::impl_ber!(tagged(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
+mod __impl_canonical {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
+}
+
+mod __impl_ordered {
+    use super::*;
+
+    vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered);
+}
+
+mod __impl_outer {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer);
+}
+
+mod __impl_numeric_label {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
+}
+
+mod __impl_universal_label {
+    use super::*;
+
+    vest_lib2::impl_ber!(tagged(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
+}
