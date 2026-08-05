@@ -231,8 +231,6 @@ mod derived_proofs {
         }
 
         proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-            broadcast use vstd::seq_lib::group_seq_properties;
-
             let normalized = ber_sequence_normalized_fmt(self.0, self.1);
             normalized.theorem_serialize_dps_parse_roundtrip(value, obuf);
             let len = self.1.byte_len(value) as usize;

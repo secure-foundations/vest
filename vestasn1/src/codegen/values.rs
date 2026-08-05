@@ -39,16 +39,31 @@ impl<'a> Generator<'a> {
                 ));
 
                 output.line(format_args!("#[verifier::ext_equal]"));
-                output.line(format_args!("pub struct {} {{", names.spec));
-                for field in fields {
-                    let mut ty = self.spec_type(&field.ty)?;
-                    if field.optional {
-                        ty = format!("Option<{ty}>");
-                    }
+                let spec_field_types = fields
+                    .iter()
+                    .map(|field| {
+                        let ty = self.spec_type(&field.ty)?;
+                        Ok(if field.optional {
+                            format!("Option<{ty}>")
+                        } else {
+                            ty
+                        })
+                    })
+                    .collect::<Result<Vec<_>, CodegenError>>()?;
+                let spec_parameters = spec_field_types
+                    .iter()
+                    .enumerate()
+                    .map(|(index, ty)| format!("T{index} = {ty}"))
+                    .collect::<Vec<_>>();
+                output.line(format_args!(
+                    "pub struct {}{} {{",
+                    names.spec,
+                    angle_bracketed(&spec_parameters)
+                ));
+                for (index, field) in fields.iter().enumerate() {
                     output.line(format_args!(
-                        "    pub {}: {},",
+                        "    pub {}: T{index},",
                         rust_field_name(&field.name),
-                        ty
                     ));
                 }
                 output.line(format_args!(
@@ -105,12 +120,24 @@ impl<'a> Generator<'a> {
                 ));
 
                 output.line(format_args!("#[verifier::ext_equal]"));
-                output.line(format_args!("pub enum {} {{", names.spec));
-                for variant in variants {
+                let spec_variant_types = variants
+                    .iter()
+                    .map(|variant| self.spec_type(&variant.ty))
+                    .collect::<Result<Vec<_>, CodegenError>>()?;
+                let spec_parameters = spec_variant_types
+                    .iter()
+                    .enumerate()
+                    .map(|(index, ty)| format!("T{index} = {ty}"))
+                    .collect::<Vec<_>>();
+                output.line(format_args!(
+                    "pub enum {}{} {{",
+                    names.spec,
+                    angle_bracketed(&spec_parameters)
+                ));
+                for (index, variant) in variants.iter().enumerate() {
                     output.line(format_args!(
-                        "    {}({}),",
+                        "    {}(T{index}),",
                         rust_variant_name(&variant.name),
-                        self.spec_type(&variant.ty)?
                     ));
                 }
                 output.line(format_args!(
@@ -260,6 +287,13 @@ impl<'a> Generator<'a> {
             .iter()
             .map(|field| rust_field_name(&field.name))
             .collect::<Vec<_>>();
+        let spec_parameters = (0..fields.len())
+            .map(|index| format!("T{index}"))
+            .collect::<Vec<_>>();
+        let generic_spec = format!("{}{}", names.spec, angle_bracketed(&spec_parameters));
+        let mut generic_tuple_parts = spec_parameters.clone();
+        generic_tuple_parts.push("()".to_string());
+        let generic_tuple = nested_type(&generic_tuple_parts);
         let mut tuple_identifiers = identifiers.clone();
         spec_parts.push("()".to_string());
         parsed_parts.push("()".to_string());
@@ -274,25 +308,72 @@ impl<'a> Generator<'a> {
 ",
             names.reverse
         ));
+        output.line(format_args!(
+            "impl{} {} {{",
+            angle_bracketed(&spec_parameters),
+            generic_spec
+        ));
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn from_structural(input: {generic_tuple}) -> Self {{"
+        ));
+        output.line(format_args!(
+            "        let {} = input;",
+            nested_pattern(&tuple_identifiers)
+        ));
+        output.line(format_args!("        Self {{"));
+        for identifier in &identifiers {
+            output.line(format_args!("            {identifier},"));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn into_structural(self) -> {generic_tuple} {{"
+        ));
+        let mut generic_expressions = identifiers
+            .iter()
+            .map(|identifier| format!("self.{identifier}"))
+            .collect::<Vec<_>>();
+        generic_expressions.push("()".to_string());
+        output.line(format_args!(
+            "        {}",
+            nested_expression(&generic_expressions)
+        ));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    pub proof fn lemma_from_into(self)"));
+        output.line(format_args!(
+            "        ensures Self::from_structural(Self::into_structural(self)) == self,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!("        reveal({}::from_structural);", names.spec));
+        output.line(format_args!("        reveal({}::into_structural);", names.spec));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!(
+            "    pub proof fn lemma_into_from(input: {generic_tuple})"
+        ));
+        output.line(format_args!(
+            "        ensures Self::into_structural(Self::from_structural(input)) == input,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!("        reveal({}::from_structural);", names.spec));
+        output.line(format_args!("        reveal({}::into_structural);", names.spec));
+        output.line(format_args!("    }}"));
+        output.line(format_args!("}}
+"));
         output.line(format_args!("impl SpecMap for {} {{", names.forward));
         output.line(format_args!(
             "    type Input = {};",
             nested_type(&spec_parts)
         ));
         output.line(format_args!("    type Output = {};", names.spec));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {{"
         ));
-        output.line(format_args!(
-            "        let {} = input;",
-            nested_pattern(&tuple_identifiers)
-        ));
-        output.line(format_args!("        {} {{", names.spec));
-        for identifier in &identifiers {
-            output.line(format_args!("            {identifier},"));
-        }
-        output.line(format_args!("        }}"));
+        output.line(format_args!("        {}::from_structural(input)", names.spec));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -305,19 +386,10 @@ impl<'a> Generator<'a> {
             "    type Output = {};",
             nested_type(&spec_parts)
         ));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {{"
         ));
-        let mut spec_expressions = identifiers
-            .iter()
-            .map(|identifier| format!("value.{identifier}"))
-            .collect::<Vec<_>>();
-        spec_expressions.push("()".to_string());
-        output.line(format_args!(
-            "        {}",
-            nested_expression(&spec_expressions)
-        ));
+        output.line(format_args!("        value.into_structural()"));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -344,10 +416,7 @@ impl<'a> Generator<'a> {
             "            reveal(<{} as DeepView>::deep_view);",
             names.value
         ));
-        output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.forward
-        ));
+        output.line(format_args!("            reveal({}::from_structural);", names.spec));
         output.line(format_args!("        }}"));
         output.line(format_args!(
             "        let {} = input;",
@@ -385,10 +454,7 @@ impl<'a> Generator<'a> {
             "            reveal(<{} as DeepView>::deep_view);",
             names.value
         ));
-        output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.reverse
-        ));
+        output.line(format_args!("            reveal({}::into_structural);", names.spec));
         output.line(format_args!("        }}"));
         let mut reverse_expressions = fields
             .iter()
@@ -437,6 +503,11 @@ impl<'a> Generator<'a> {
             .iter()
             .map(|ty| format!("&'x {ty}"))
             .collect::<Vec<_>>();
+        let spec_parameters = (0..variants.len())
+            .map(|index| format!("T{index}"))
+            .collect::<Vec<_>>();
+        let generic_spec = format!("{}{}", names.spec, angle_bracketed(&spec_parameters));
+        let generic_sum = nested_sum_type(&spec_parameters);
 
         output.line(format_args!("#[derive(Clone, Copy)]"));
         output.line(format_args!("pub struct {};", names.forward));
@@ -446,26 +517,88 @@ impl<'a> Generator<'a> {
 ",
             names.reverse
         ));
+        output.line(format_args!(
+            "impl{} {} {{",
+            angle_bracketed(&spec_parameters),
+            generic_spec
+        ));
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn from_structural(input: {generic_sum}) -> Self {{"
+        ));
+        output.line(format_args!("        match input {{"));
+        for (index, variant) in variants.iter().enumerate() {
+            output.line(format_args!(
+                "            {} => Self::{}(value),",
+                sum_pattern(index, variants.len(), "value"),
+                rust_variant_name(&variant.name)
+            ));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn into_structural(self) -> {generic_sum} {{"
+        ));
+        output.line(format_args!("        match self {{"));
+        for (index, variant) in variants.iter().enumerate() {
+            output.line(format_args!(
+                "            Self::{}(value) => {},",
+                rust_variant_name(&variant.name),
+                sum_expression(index, variants.len(), "value")
+            ));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    pub proof fn lemma_from_into(self)"));
+        output.line(format_args!(
+            "        ensures Self::from_structural(Self::into_structural(self)) == self,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!("        reveal({}::from_structural);", names.spec));
+        output.line(format_args!("        reveal({}::into_structural);", names.spec));
+        output.line(format_args!("        match self {{"));
+        for variant in variants {
+            output.line(format_args!(
+                "            Self::{}(_) => {{}},",
+                rust_variant_name(&variant.name)
+            ));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!(
+            "    pub proof fn lemma_into_from(input: {generic_sum})"
+        ));
+        output.line(format_args!(
+            "        ensures Self::into_structural(Self::from_structural(input)) == input,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!("        reveal({}::from_structural);", names.spec));
+        output.line(format_args!("        reveal({}::into_structural);", names.spec));
+        output.line(format_args!("        match input {{"));
+        for index in 0..variants.len() {
+            output.line(format_args!(
+                "            {} => {{}},",
+                sum_pattern(index, variants.len(), "_")
+            ));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.line(format_args!("}}
+"));
         output.line(format_args!("impl SpecMap for {} {{", names.forward));
         output.line(format_args!(
             "    type Input = {};",
             nested_sum_type(&spec_parts)
         ));
         output.line(format_args!("    type Output = {};", names.spec));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {{"
         ));
-        output.line(format_args!("        match input {{"));
-        for (index, variant) in variants.iter().enumerate() {
-            output.line(format_args!(
-                "            {} => {}::{}(value),",
-                sum_pattern(index, variants.len(), "value"),
-                names.spec,
-                rust_variant_name(&variant.name)
-            ));
-        }
-        output.line(format_args!("        }}"));
+        output.line(format_args!("        {}::from_structural(input)", names.spec));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -478,20 +611,10 @@ impl<'a> Generator<'a> {
             "    type Output = {};",
             nested_sum_type(&spec_parts)
         ));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {{"
         ));
-        output.line(format_args!("        match value {{"));
-        for (index, variant) in variants.iter().enumerate() {
-            let variant_name = rust_variant_name(&variant.name);
-            output.line(format_args!(
-                "            {}::{variant_name}(value) => {},",
-                names.spec,
-                sum_expression(index, variants.len(), "value")
-            ));
-        }
-        output.line(format_args!("        }}"));
+        output.line(format_args!("        value.into_structural()"));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -518,10 +641,7 @@ impl<'a> Generator<'a> {
             "            reveal(<{} as DeepView>::deep_view);",
             names.value
         ));
-        output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.forward
-        ));
+        output.line(format_args!("            reveal({}::from_structural);", names.spec));
         output.line(format_args!("        }}"));
         output.line(format_args!("        match input {{"));
         for (index, variant) in variants.iter().enumerate() {
@@ -560,10 +680,7 @@ impl<'a> Generator<'a> {
             "            reveal(<{} as DeepView>::deep_view);",
             names.value
         ));
-        output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.reverse
-        ));
+        output.line(format_args!("            reveal({}::into_structural);", names.spec));
         output.line(format_args!("        }}"));
         output.line(format_args!("        match value {{"));
         for (index, variant) in variants.iter().enumerate() {
@@ -635,14 +752,69 @@ impl<'a> Generator<'a> {
 ",
             names.reverse
         ));
+        output.line(format_args!("impl {} {{", names.value));
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn from_structural(value: i16) -> Self {{"
+        ));
+        render_enum_number_match(values, &names.value, output, 8);
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    #[verifier::opaque]"));
+        output.line(format_args!(
+            "    pub open spec fn into_structural(self) -> i16 {{"
+        ));
+        output.line(format_args!("        let value = self;"));
+        render_enum_value_match(values, &names.value, output, 8);
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    pub proof fn lemma_from_into(self)"));
+        output.line(format_args!(
+            "        ensures Self::from_structural(Self::into_structural(self)) == self,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!(
+            "        reveal({}::from_structural);",
+            names.value
+        ));
+        output.line(format_args!(
+            "        reveal({}::into_structural);",
+            names.value
+        ));
+        output.line(format_args!("        match self {{"));
+        for value in values {
+            output.line(format_args!(
+                "            Self::{} => {{}},",
+                rust_variant_name(&value.name)
+            ));
+        }
+        output.line(format_args!("        }}"));
+        output.line(format_args!("    }}"));
+        output.blank_line();
+        output.line(format_args!("    pub proof fn lemma_into_from(input: i16)"));
+        output.line(format_args!("        requires {}.apply(input),", names.predicate));
+        output.line(format_args!(
+            "        ensures Self::into_structural(Self::from_structural(input)) == input,"
+        ));
+        output.line(format_args!("    {{"));
+        output.line(format_args!(
+            "        reveal({}::from_structural);",
+            names.value
+        ));
+        output.line(format_args!(
+            "        reveal({}::into_structural);",
+            names.value
+        ));
+        output.line(format_args!("    }}"));
+        output.line(format_args!("}}
+"));
         output.line(format_args!("impl SpecMap for {} {{", names.forward));
         output.line(format_args!("    type Input = i16;"));
         output.line(format_args!("    type Output = {};", names.value));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: i16) -> Self::Output {{"
         ));
-        render_enum_number_match(values, &names.value, output, 8);
+        output.line(format_args!("        {}::from_structural(value)", names.value));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -651,11 +823,10 @@ impl<'a> Generator<'a> {
         output.line(format_args!("impl SpecMap for {} {{", names.reverse));
         output.line(format_args!("    type Input = {};", names.value));
         output.line(format_args!("    type Output = i16;"));
-        output.line(format_args!("    #[verifier::opaque]"));
         output.line(format_args!(
             "    open spec fn spec_map(&self, value: Self::Input) -> i16 {{"
         ));
-        render_enum_value_match(values, &names.value, output, 8);
+        output.line(format_args!("        value.into_structural()"));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -672,8 +843,8 @@ impl<'a> Generator<'a> {
             names.value
         ));
         output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.forward
+            "            reveal({}::from_structural);",
+            names.value
         ));
         output.line(format_args!("        }}"));
         render_enum_number_match(values, &names.value, output, 8);
@@ -697,8 +868,8 @@ impl<'a> Generator<'a> {
             names.value
         ));
         output.line(format_args!(
-            "            reveal(<{} as SpecMap>::spec_map);",
-            names.reverse
+            "            reveal({}::into_structural);",
+            names.value
         ));
         output.line(format_args!("        }}"));
         output.line(format_args!("        match value {{"));

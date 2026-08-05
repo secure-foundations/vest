@@ -37,6 +37,14 @@ pub(super) enum NominalKind {
     Untagged,
 }
 
+pub(super) fn angle_bracketed(parts: &[String]) -> String {
+    if parts.is_empty() {
+        String::new()
+    } else {
+        format!("<{}>", parts.join(", "))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(super) struct Rendered {
     pub(super) ty: String,

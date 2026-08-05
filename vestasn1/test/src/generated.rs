@@ -46,9 +46,9 @@ pub struct Header<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct HeaderSpec {
-    pub flag: FlagSpec,
-    pub count: CountSpec,
+pub struct HeaderSpec<T0 = FlagSpec, T1 = CountSpec> {
+    pub flag: T0,
+    pub count: T1,
 }
 
 impl<'a> DeepView for Header<'a> {
@@ -69,9 +69,9 @@ pub struct Envelope<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct EnvelopeSpec {
-    pub header: HeaderSpec,
-    pub payload: Option<PayloadSpec>,
+pub struct EnvelopeSpec<T0 = HeaderSpec, T1 = Option<PayloadSpec>> {
+    pub header: T0,
+    pub payload: T1,
 }
 
 impl<'a> DeepView for Envelope<'a> {
@@ -95,9 +95,9 @@ pub struct Features {
 }
 
 #[verifier::ext_equal]
-pub struct FeaturesSpec {
-    pub enabled: FlagSpec,
-    pub visible: bool,
+pub struct FeaturesSpec<T0 = FlagSpec, T1 = bool> {
+    pub enabled: T0,
+    pub visible: T1,
 }
 
 impl DeepView for Features {
@@ -118,9 +118,9 @@ pub enum Selection<'a> {
 }
 
 #[verifier::ext_equal]
-pub enum SelectionSpec {
-    Flag(FlagSpec),
-    Payload(PayloadSpec),
+pub enum SelectionSpec<T0 = FlagSpec, T1 = PayloadSpec> {
+    Flag(T0),
+    Payload(T1),
 }
 
 impl<'a> DeepView for Selection<'a> {
@@ -140,8 +140,8 @@ pub struct ChoiceEnvelope<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct ChoiceEnvelopeSpec {
-    pub selection: Option<SelectionSpec>,
+pub struct ChoiceEnvelopeSpec<T0 = Option<SelectionSpec>> {
+    pub selection: T0,
 }
 
 impl<'a> DeepView for ChoiceEnvelope<'a> {
@@ -192,8 +192,8 @@ pub struct BmpContainer {
 }
 
 #[verifier::ext_equal]
-pub struct BmpContainerSpec {
-    pub name: BmpNameSpec,
+pub struct BmpContainerSpec<T0 = BmpNameSpec> {
+    pub name: T0,
 }
 
 impl DeepView for BmpContainer {
@@ -215,11 +215,11 @@ pub struct Metadata<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct MetadataSpec {
-    pub color: ColorSpec,
-    pub identifier: IdentifierSpec,
-    pub measurement: MeasurementSpec,
-    pub open: OpenValueSpec,
+pub struct MetadataSpec<T0 = ColorSpec, T1 = IdentifierSpec, T2 = MeasurementSpec, T3 = OpenValueSpec> {
+    pub color: T0,
+    pub identifier: T1,
+    pub measurement: T2,
+    pub open: T3,
 }
 
 impl<'a> DeepView for Metadata<'a> {
@@ -241,8 +241,8 @@ pub struct InlineRecordNested<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct InlineRecordNestedSpec {
-    pub payload: Seq<u8>,
+pub struct InlineRecordNestedSpec<T0 = Seq<u8>> {
+    pub payload: T0,
 }
 
 impl<'a> DeepView for InlineRecordNested<'a> {
@@ -262,9 +262,9 @@ pub enum InlineRecordSelected {
 }
 
 #[verifier::ext_equal]
-pub enum InlineRecordSelectedSpec {
-    Flag(bool),
-    Identifier(vest_lib2::asn1::ObjectIdentifierSpec),
+pub enum InlineRecordSelectedSpec<T0 = bool, T1 = vest_lib2::asn1::ObjectIdentifierSpec> {
+    Flag(T0),
+    Identifier(T1),
 }
 
 impl DeepView for InlineRecordSelected {
@@ -285,9 +285,9 @@ pub struct InlineRecord<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct InlineRecordSpec {
-    pub nested: InlineRecordNestedSpec,
-    pub selected: InlineRecordSelectedSpec,
+pub struct InlineRecordSpec<T0 = InlineRecordNestedSpec, T1 = InlineRecordSelectedSpec> {
+    pub nested: T0,
+    pub selected: T1,
 }
 
 impl<'a> DeepView for InlineRecord<'a> {
@@ -312,13 +312,13 @@ pub enum AutomationChoice<'a> {
 }
 
 #[verifier::ext_equal]
-pub enum AutomationChoiceSpec {
-    BooleanValue(bool),
-    IntegerValue(int),
-    OctetsValue(Seq<u8>),
-    NullValue(()),
-    TextValue(Seq<char>),
-    OidValue(vest_lib2::asn1::ObjectIdentifierSpec),
+pub enum AutomationChoiceSpec<T0 = bool, T1 = int, T2 = Seq<u8>, T3 = (), T4 = Seq<char>, T5 = vest_lib2::asn1::ObjectIdentifierSpec> {
+    BooleanValue(T0),
+    IntegerValue(T1),
+    OctetsValue(T2),
+    NullValue(T3),
+    TextValue(T4),
+    OidValue(T5),
 }
 
 impl<'a> DeepView for AutomationChoice<'a> {
@@ -346,12 +346,12 @@ pub struct AutomationSequence<'a> {
 }
 
 #[verifier::ext_equal]
-pub struct AutomationSequenceSpec {
-    pub prefix: Option<bool>,
-    pub enabled: bool,
-    pub payload: Option<Seq<u8>>,
-    pub marker: (),
-    pub selected: Option<AutomationChoiceSpec>,
+pub struct AutomationSequenceSpec<T0 = Option<bool>, T1 = bool, T2 = Option<Seq<u8>>, T3 = (), T4 = Option<AutomationChoiceSpec>> {
+    pub prefix: T0,
+    pub enabled: T1,
+    pub payload: T2,
+    pub marker: T3,
+    pub selected: T4,
 }
 
 impl<'a> DeepView for AutomationSequence<'a> {
@@ -376,25 +376,49 @@ pub struct HeaderForward;
 #[derive(Clone, Copy)]
 pub struct HeaderReverse;
 
-impl SpecMap for HeaderForward {
-    type Input = (FlagSpec, (CountSpec, ()));
-    type Output = HeaderSpec;
+impl<T0, T1> HeaderSpec<T0, T1> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
         let (flag, (count, _end)) = input;
-        HeaderSpec {
+        Self {
             flag,
             count,
         }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
+        (self.flag, (self.count, ()))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(HeaderSpec::from_structural);
+        reveal(HeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, ())))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(HeaderSpec::from_structural);
+        reveal(HeaderSpec::into_structural);
+    }
+}
+
+impl SpecMap for HeaderForward {
+    type Input = (FlagSpec, (CountSpec, ()));
+    type Output = HeaderSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        HeaderSpec::from_structural(input)
     }
 }
 
 impl SpecMap for HeaderReverse {
     type Input = HeaderSpec;
     type Output = (FlagSpec, (CountSpec, ()));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.flag, (value.count, ()))
+        value.into_structural()
     }
 }
 
@@ -403,7 +427,7 @@ impl<'a> Map<(Flag, (Count<'a>, ()))> for HeaderForward {
     fn map(&self, input: (Flag, (Count<'a>, ()))) -> (value: Self::O) {
         proof {
             reveal(<Header as DeepView>::deep_view);
-            reveal(<HeaderForward as SpecMap>::spec_map);
+            reveal(HeaderSpec::from_structural);
         }
         let (flag, (count, _end)) = input;
         Header {
@@ -418,7 +442,7 @@ impl<'a, 'x> Map<&'x Header<'a>> for HeaderReverse {
     fn map(&self, value: &'x Header<'a>) -> (output: Self::O) {
         proof {
             reveal(<Header as DeepView>::deep_view);
-            reveal(<HeaderReverse as SpecMap>::spec_map);
+            reveal(HeaderSpec::into_structural);
         }
         (&value.flag, (&value.count, ()))
     }
@@ -429,25 +453,49 @@ pub struct EnvelopeForward;
 #[derive(Clone, Copy)]
 pub struct EnvelopeReverse;
 
-impl SpecMap for EnvelopeForward {
-    type Input = (HeaderSpec, (Option<PayloadSpec>, ()));
-    type Output = EnvelopeSpec;
+impl<T0, T1> EnvelopeSpec<T0, T1> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
         let (header, (payload, _end)) = input;
-        EnvelopeSpec {
+        Self {
             header,
             payload,
         }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
+        (self.header, (self.payload, ()))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(EnvelopeSpec::from_structural);
+        reveal(EnvelopeSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, ())))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(EnvelopeSpec::from_structural);
+        reveal(EnvelopeSpec::into_structural);
+    }
+}
+
+impl SpecMap for EnvelopeForward {
+    type Input = (HeaderSpec, (Option<PayloadSpec>, ()));
+    type Output = EnvelopeSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        EnvelopeSpec::from_structural(input)
     }
 }
 
 impl SpecMap for EnvelopeReverse {
     type Input = EnvelopeSpec;
     type Output = (HeaderSpec, (Option<PayloadSpec>, ()));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.header, (value.payload, ()))
+        value.into_structural()
     }
 }
 
@@ -456,7 +504,7 @@ impl<'a> Map<(Header<'a>, (Option<Payload<'a>>, ()))> for EnvelopeForward {
     fn map(&self, input: (Header<'a>, (Option<Payload<'a>>, ()))) -> (value: Self::O) {
         proof {
             reveal(<Envelope as DeepView>::deep_view);
-            reveal(<EnvelopeForward as SpecMap>::spec_map);
+            reveal(EnvelopeSpec::from_structural);
         }
         let (header, (payload, _end)) = input;
         Envelope {
@@ -471,7 +519,7 @@ impl<'a, 'x> Map<&'x Envelope<'a>> for EnvelopeReverse {
     fn map(&self, value: &'x Envelope<'a>) -> (output: Self::O) {
         proof {
             reveal(<Envelope as DeepView>::deep_view);
-            reveal(<EnvelopeReverse as SpecMap>::spec_map);
+            reveal(EnvelopeSpec::into_structural);
         }
         (&value.header, (value.payload.as_ref(), ()))
     }
@@ -482,25 +530,49 @@ pub struct FeaturesForward;
 #[derive(Clone, Copy)]
 pub struct FeaturesReverse;
 
-impl SpecMap for FeaturesForward {
-    type Input = (FlagSpec, (bool, ()));
-    type Output = FeaturesSpec;
+impl<T0, T1> FeaturesSpec<T0, T1> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
         let (enabled, (visible, _end)) = input;
-        FeaturesSpec {
+        Self {
             enabled,
             visible,
         }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
+        (self.enabled, (self.visible, ()))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(FeaturesSpec::from_structural);
+        reveal(FeaturesSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, ())))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(FeaturesSpec::from_structural);
+        reveal(FeaturesSpec::into_structural);
+    }
+}
+
+impl SpecMap for FeaturesForward {
+    type Input = (FlagSpec, (bool, ()));
+    type Output = FeaturesSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        FeaturesSpec::from_structural(input)
     }
 }
 
 impl SpecMap for FeaturesReverse {
     type Input = FeaturesSpec;
     type Output = (FlagSpec, (bool, ()));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.enabled, (value.visible, ()))
+        value.into_structural()
     }
 }
 
@@ -509,7 +581,7 @@ impl Map<(Flag, (bool, ()))> for FeaturesForward {
     fn map(&self, input: (Flag, (bool, ()))) -> (value: Self::O) {
         proof {
             reveal(<Features as DeepView>::deep_view);
-            reveal(<FeaturesForward as SpecMap>::spec_map);
+            reveal(FeaturesSpec::from_structural);
         }
         let (enabled, (visible, _end)) = input;
         Features {
@@ -524,7 +596,7 @@ impl<'x> Map<&'x Features> for FeaturesReverse {
     fn map(&self, value: &'x Features) -> (output: Self::O) {
         proof {
             reveal(<Features as DeepView>::deep_view);
-            reveal(<FeaturesReverse as SpecMap>::spec_map);
+            reveal(FeaturesSpec::into_structural);
         }
         (value.enabled, (value.visible, ()))
     }
@@ -535,27 +607,59 @@ pub struct SelectionForward;
 #[derive(Clone, Copy)]
 pub struct SelectionReverse;
 
+impl<T0, T1> SelectionSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Flag(value),
+            R(value) => Self::Payload(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Flag(value) => L(value),
+            Self::Payload(value) => R(value),
+        }
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(SelectionSpec::from_structural);
+        reveal(SelectionSpec::into_structural);
+        match self {
+            Self::Flag(_) => {},
+            Self::Payload(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(SelectionSpec::from_structural);
+        reveal(SelectionSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(_) => {},
+        }
+    }
+}
+
 impl SpecMap for SelectionForward {
     type Input = Sum<FlagSpec, PayloadSpec>;
     type Output = SelectionSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        match input {
-            L(value) => SelectionSpec::Flag(value),
-            R(value) => SelectionSpec::Payload(value),
-        }
+        SelectionSpec::from_structural(input)
     }
 }
 
 impl SpecMap for SelectionReverse {
     type Input = SelectionSpec;
     type Output = Sum<FlagSpec, PayloadSpec>;
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        match value {
-            SelectionSpec::Flag(value) => L(value),
-            SelectionSpec::Payload(value) => R(value),
-        }
+        value.into_structural()
     }
 }
 
@@ -564,7 +668,7 @@ impl<'a> Map<Sum<Flag, Payload<'a>>> for SelectionForward {
     fn map(&self, input: Sum<Flag, Payload<'a>>) -> (value: Self::O) {
         proof {
             reveal(<Selection as DeepView>::deep_view);
-            reveal(<SelectionForward as SpecMap>::spec_map);
+            reveal(SelectionSpec::from_structural);
         }
         match input {
             L(value) => Selection::Flag(value),
@@ -578,7 +682,7 @@ impl<'a, 'x> Map<&'x Selection<'a>> for SelectionReverse {
     fn map(&self, value: &'x Selection<'a>) -> (output: Self::O) {
         proof {
             reveal(<Selection as DeepView>::deep_view);
-            reveal(<SelectionReverse as SpecMap>::spec_map);
+            reveal(SelectionSpec::into_structural);
         }
         match value {
             Selection::Flag(value) => L(value),
@@ -592,24 +696,48 @@ pub struct ChoiceEnvelopeForward;
 #[derive(Clone, Copy)]
 pub struct ChoiceEnvelopeReverse;
 
+impl<T0> ChoiceEnvelopeSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, ())) -> Self {
+        let (selection, _end) = input;
+        Self {
+            selection,
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, ()) {
+        (self.selection, ())
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ChoiceEnvelopeSpec::from_structural);
+        reveal(ChoiceEnvelopeSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, ()))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ChoiceEnvelopeSpec::from_structural);
+        reveal(ChoiceEnvelopeSpec::into_structural);
+    }
+}
+
 impl SpecMap for ChoiceEnvelopeForward {
     type Input = (Option<SelectionSpec>, ());
     type Output = ChoiceEnvelopeSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        let (selection, _end) = input;
-        ChoiceEnvelopeSpec {
-            selection,
-        }
+        ChoiceEnvelopeSpec::from_structural(input)
     }
 }
 
 impl SpecMap for ChoiceEnvelopeReverse {
     type Input = ChoiceEnvelopeSpec;
     type Output = (Option<SelectionSpec>, ());
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.selection, ())
+        value.into_structural()
     }
 }
 
@@ -618,7 +746,7 @@ impl<'a> Map<(Option<Selection<'a>>, ())> for ChoiceEnvelopeForward {
     fn map(&self, input: (Option<Selection<'a>>, ())) -> (value: Self::O) {
         proof {
             reveal(<ChoiceEnvelope as DeepView>::deep_view);
-            reveal(<ChoiceEnvelopeForward as SpecMap>::spec_map);
+            reveal(ChoiceEnvelopeSpec::from_structural);
         }
         let (selection, _end) = input;
         ChoiceEnvelope {
@@ -632,7 +760,7 @@ impl<'a, 'x> Map<&'x ChoiceEnvelope<'a>> for ChoiceEnvelopeReverse {
     fn map(&self, value: &'x ChoiceEnvelope<'a>) -> (output: Self::O) {
         proof {
             reveal(<ChoiceEnvelope as DeepView>::deep_view);
-            reveal(<ChoiceEnvelopeReverse as SpecMap>::spec_map);
+            reveal(ChoiceEnvelopeSpec::into_structural);
         }
         (value.selection.as_ref(), ())
     }
@@ -656,11 +784,9 @@ pub struct ColorForward;
 #[derive(Clone, Copy)]
 pub struct ColorReverse;
 
-impl SpecMap for ColorForward {
-    type Input = i16;
-    type Output = Color;
+impl Color {
     #[verifier::opaque]
-    open spec fn spec_map(&self, value: i16) -> Self::Output {
+    pub open spec fn from_structural(value: i16) -> Self {
         match value {
             0i16 => Color::Red,
             1i16 => Color::Green,
@@ -668,18 +794,51 @@ impl SpecMap for ColorForward {
             _ => Color::Red,
         }
     }
-}
 
-impl SpecMap for ColorReverse {
-    type Input = Color;
-    type Output = i16;
     #[verifier::opaque]
-    open spec fn spec_map(&self, value: Self::Input) -> i16 {
+    pub open spec fn into_structural(self) -> i16 {
+        let value = self;
         match value {
             Color::Red => 0i16,
             Color::Green => 1i16,
             Color::Blue => 2i16,
         }
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(Color::from_structural);
+        reveal(Color::into_structural);
+        match self {
+            Self::Red => {},
+            Self::Green => {},
+            Self::Blue => {},
+        }
+    }
+
+    pub proof fn lemma_into_from(input: i16)
+        requires ColorPredicate.apply(input),
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(Color::from_structural);
+        reveal(Color::into_structural);
+    }
+}
+
+impl SpecMap for ColorForward {
+    type Input = i16;
+    type Output = Color;
+    open spec fn spec_map(&self, value: i16) -> Self::Output {
+        Color::from_structural(value)
+    }
+}
+
+impl SpecMap for ColorReverse {
+    type Input = Color;
+    type Output = i16;
+    open spec fn spec_map(&self, value: Self::Input) -> i16 {
+        value.into_structural()
     }
 }
 
@@ -688,7 +847,7 @@ impl Map<i16> for ColorForward {
     fn map(&self, value: i16) -> (output: Self::O) {
         proof {
             reveal(<Color as DeepView>::deep_view);
-            reveal(<ColorForward as SpecMap>::spec_map);
+            reveal(Color::from_structural);
         }
         match value {
             0i16 => Color::Red,
@@ -704,7 +863,7 @@ impl<'a> Map<&'a Color> for ColorReverse {
     fn map(&self, value: &'a Color) -> (output: i16) {
         proof {
             reveal(<Color as DeepView>::deep_view);
-            reveal(<ColorReverse as SpecMap>::spec_map);
+            reveal(Color::into_structural);
         }
         match value {
             Color::Red => 0i16,
@@ -719,24 +878,48 @@ pub struct BmpContainerForward;
 #[derive(Clone, Copy)]
 pub struct BmpContainerReverse;
 
+impl<T0> BmpContainerSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, ())) -> Self {
+        let (name, _end) = input;
+        Self {
+            name,
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, ()) {
+        (self.name, ())
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(BmpContainerSpec::from_structural);
+        reveal(BmpContainerSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, ()))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(BmpContainerSpec::from_structural);
+        reveal(BmpContainerSpec::into_structural);
+    }
+}
+
 impl SpecMap for BmpContainerForward {
     type Input = (BmpNameSpec, ());
     type Output = BmpContainerSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        let (name, _end) = input;
-        BmpContainerSpec {
-            name,
-        }
+        BmpContainerSpec::from_structural(input)
     }
 }
 
 impl SpecMap for BmpContainerReverse {
     type Input = BmpContainerSpec;
     type Output = (BmpNameSpec, ());
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.name, ())
+        value.into_structural()
     }
 }
 
@@ -745,7 +928,7 @@ impl Map<(BmpName, ())> for BmpContainerForward {
     fn map(&self, input: (BmpName, ())) -> (value: Self::O) {
         proof {
             reveal(<BmpContainer as DeepView>::deep_view);
-            reveal(<BmpContainerForward as SpecMap>::spec_map);
+            reveal(BmpContainerSpec::from_structural);
         }
         let (name, _end) = input;
         BmpContainer {
@@ -759,7 +942,7 @@ impl<'x> Map<&'x BmpContainer> for BmpContainerReverse {
     fn map(&self, value: &'x BmpContainer) -> (output: Self::O) {
         proof {
             reveal(<BmpContainer as DeepView>::deep_view);
-            reveal(<BmpContainerReverse as SpecMap>::spec_map);
+            reveal(BmpContainerSpec::into_structural);
         }
         (&value.name, ())
     }
@@ -770,27 +953,51 @@ pub struct MetadataForward;
 #[derive(Clone, Copy)]
 pub struct MetadataReverse;
 
-impl SpecMap for MetadataForward {
-    type Input = (ColorSpec, (IdentifierSpec, (MeasurementSpec, (OpenValueSpec, ()))));
-    type Output = MetadataSpec;
+impl<T0, T1, T2, T3> MetadataSpec<T0, T1, T2, T3> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, ()))))) -> Self {
         let (color, (identifier, (measurement, (open, _end)))) = input;
-        MetadataSpec {
+        Self {
             color,
             identifier,
             measurement,
             open,
         }
     }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, ())))) {
+        (self.color, (self.identifier, (self.measurement, (self.open, ()))))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MetadataSpec::from_structural);
+        reveal(MetadataSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, ())))))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MetadataSpec::from_structural);
+        reveal(MetadataSpec::into_structural);
+    }
+}
+
+impl SpecMap for MetadataForward {
+    type Input = (ColorSpec, (IdentifierSpec, (MeasurementSpec, (OpenValueSpec, ()))));
+    type Output = MetadataSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MetadataSpec::from_structural(input)
+    }
 }
 
 impl SpecMap for MetadataReverse {
     type Input = MetadataSpec;
     type Output = (ColorSpec, (IdentifierSpec, (MeasurementSpec, (OpenValueSpec, ()))));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.color, (value.identifier, (value.measurement, (value.open, ()))))
+        value.into_structural()
     }
 }
 
@@ -799,7 +1006,7 @@ impl<'a> Map<(Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))> for 
     fn map(&self, input: (Color, (Identifier, (Measurement<'a>, (OpenValue<'a>, ()))))) -> (value: Self::O) {
         proof {
             reveal(<Metadata as DeepView>::deep_view);
-            reveal(<MetadataForward as SpecMap>::spec_map);
+            reveal(MetadataSpec::from_structural);
         }
         let (color, (identifier, (measurement, (open, _end)))) = input;
         Metadata {
@@ -816,7 +1023,7 @@ impl<'a, 'x> Map<&'x Metadata<'a>> for MetadataReverse {
     fn map(&self, value: &'x Metadata<'a>) -> (output: Self::O) {
         proof {
             reveal(<Metadata as DeepView>::deep_view);
-            reveal(<MetadataReverse as SpecMap>::spec_map);
+            reveal(MetadataSpec::into_structural);
         }
         (value.color, (&value.identifier, (&value.measurement, (&value.open, ()))))
     }
@@ -827,24 +1034,48 @@ pub struct InlineRecordNestedForward;
 #[derive(Clone, Copy)]
 pub struct InlineRecordNestedReverse;
 
+impl<T0> InlineRecordNestedSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, ())) -> Self {
+        let (payload, _end) = input;
+        Self {
+            payload,
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, ()) {
+        (self.payload, ())
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(InlineRecordNestedSpec::from_structural);
+        reveal(InlineRecordNestedSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, ()))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(InlineRecordNestedSpec::from_structural);
+        reveal(InlineRecordNestedSpec::into_structural);
+    }
+}
+
 impl SpecMap for InlineRecordNestedForward {
     type Input = (Seq<u8>, ());
     type Output = InlineRecordNestedSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        let (payload, _end) = input;
-        InlineRecordNestedSpec {
-            payload,
-        }
+        InlineRecordNestedSpec::from_structural(input)
     }
 }
 
 impl SpecMap for InlineRecordNestedReverse {
     type Input = InlineRecordNestedSpec;
     type Output = (Seq<u8>, ());
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.payload, ())
+        value.into_structural()
     }
 }
 
@@ -853,7 +1084,7 @@ impl<'a> Map<(&'a [u8], ())> for InlineRecordNestedForward {
     fn map(&self, input: (&'a [u8], ())) -> (value: Self::O) {
         proof {
             reveal(<InlineRecordNested as DeepView>::deep_view);
-            reveal(<InlineRecordNestedForward as SpecMap>::spec_map);
+            reveal(InlineRecordNestedSpec::from_structural);
         }
         let (payload, _end) = input;
         InlineRecordNested {
@@ -867,7 +1098,7 @@ impl<'a, 'x> Map<&'x InlineRecordNested<'a>> for InlineRecordNestedReverse {
     fn map(&self, value: &'x InlineRecordNested<'a>) -> (output: Self::O) {
         proof {
             reveal(<InlineRecordNested as DeepView>::deep_view);
-            reveal(<InlineRecordNestedReverse as SpecMap>::spec_map);
+            reveal(InlineRecordNestedSpec::into_structural);
         }
         (&value.payload, ())
     }
@@ -878,27 +1109,59 @@ pub struct InlineRecordSelectedForward;
 #[derive(Clone, Copy)]
 pub struct InlineRecordSelectedReverse;
 
+impl<T0, T1> InlineRecordSelectedSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Flag(value),
+            R(value) => Self::Identifier(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Flag(value) => L(value),
+            Self::Identifier(value) => R(value),
+        }
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(InlineRecordSelectedSpec::from_structural);
+        reveal(InlineRecordSelectedSpec::into_structural);
+        match self {
+            Self::Flag(_) => {},
+            Self::Identifier(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(InlineRecordSelectedSpec::from_structural);
+        reveal(InlineRecordSelectedSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(_) => {},
+        }
+    }
+}
+
 impl SpecMap for InlineRecordSelectedForward {
     type Input = Sum<bool, vest_lib2::asn1::ObjectIdentifierSpec>;
     type Output = InlineRecordSelectedSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        match input {
-            L(value) => InlineRecordSelectedSpec::Flag(value),
-            R(value) => InlineRecordSelectedSpec::Identifier(value),
-        }
+        InlineRecordSelectedSpec::from_structural(input)
     }
 }
 
 impl SpecMap for InlineRecordSelectedReverse {
     type Input = InlineRecordSelectedSpec;
     type Output = Sum<bool, vest_lib2::asn1::ObjectIdentifierSpec>;
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        match value {
-            InlineRecordSelectedSpec::Flag(value) => L(value),
-            InlineRecordSelectedSpec::Identifier(value) => R(value),
-        }
+        value.into_structural()
     }
 }
 
@@ -907,7 +1170,7 @@ impl Map<Sum<bool, vest_lib2::asn1::ObjectIdentifier>> for InlineRecordSelectedF
     fn map(&self, input: Sum<bool, vest_lib2::asn1::ObjectIdentifier>) -> (value: Self::O) {
         proof {
             reveal(<InlineRecordSelected as DeepView>::deep_view);
-            reveal(<InlineRecordSelectedForward as SpecMap>::spec_map);
+            reveal(InlineRecordSelectedSpec::from_structural);
         }
         match input {
             L(value) => InlineRecordSelected::Flag(value),
@@ -921,7 +1184,7 @@ impl<'x> Map<&'x InlineRecordSelected> for InlineRecordSelectedReverse {
     fn map(&self, value: &'x InlineRecordSelected) -> (output: Self::O) {
         proof {
             reveal(<InlineRecordSelected as DeepView>::deep_view);
-            reveal(<InlineRecordSelectedReverse as SpecMap>::spec_map);
+            reveal(InlineRecordSelectedSpec::into_structural);
         }
         match value {
             InlineRecordSelected::Flag(value) => L(value),
@@ -935,25 +1198,49 @@ pub struct InlineRecordForward;
 #[derive(Clone, Copy)]
 pub struct InlineRecordReverse;
 
-impl SpecMap for InlineRecordForward {
-    type Input = (InlineRecordNestedSpec, (InlineRecordSelectedSpec, ()));
-    type Output = InlineRecordSpec;
+impl<T0, T1> InlineRecordSpec<T0, T1> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
         let (nested, (selected, _end)) = input;
-        InlineRecordSpec {
+        Self {
             nested,
             selected,
         }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
+        (self.nested, (self.selected, ()))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(InlineRecordSpec::from_structural);
+        reveal(InlineRecordSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, ())))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(InlineRecordSpec::from_structural);
+        reveal(InlineRecordSpec::into_structural);
+    }
+}
+
+impl SpecMap for InlineRecordForward {
+    type Input = (InlineRecordNestedSpec, (InlineRecordSelectedSpec, ()));
+    type Output = InlineRecordSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        InlineRecordSpec::from_structural(input)
     }
 }
 
 impl SpecMap for InlineRecordReverse {
     type Input = InlineRecordSpec;
     type Output = (InlineRecordNestedSpec, (InlineRecordSelectedSpec, ()));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.nested, (value.selected, ()))
+        value.into_structural()
     }
 }
 
@@ -962,7 +1249,7 @@ impl<'a> Map<(InlineRecordNested<'a>, (InlineRecordSelected, ()))> for InlineRec
     fn map(&self, input: (InlineRecordNested<'a>, (InlineRecordSelected, ()))) -> (value: Self::O) {
         proof {
             reveal(<InlineRecord as DeepView>::deep_view);
-            reveal(<InlineRecordForward as SpecMap>::spec_map);
+            reveal(InlineRecordSpec::from_structural);
         }
         let (nested, (selected, _end)) = input;
         InlineRecord {
@@ -977,7 +1264,7 @@ impl<'a, 'x> Map<&'x InlineRecord<'a>> for InlineRecordReverse {
     fn map(&self, value: &'x InlineRecord<'a>) -> (output: Self::O) {
         proof {
             reveal(<InlineRecord as DeepView>::deep_view);
-            reveal(<InlineRecordReverse as SpecMap>::spec_map);
+            reveal(InlineRecordSpec::into_structural);
         }
         (&value.nested, (&value.selected, ()))
     }
@@ -988,35 +1275,75 @@ pub struct AutomationChoiceForward;
 #[derive(Clone, Copy)]
 pub struct AutomationChoiceReverse;
 
+impl<T0, T1, T2, T3, T4, T5> AutomationChoiceSpec<T0, T1, T2, T3, T4, T5> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>>) -> Self {
+        match input {
+            L(L(value)) => Self::BooleanValue(value),
+            L(R(value)) => Self::IntegerValue(value),
+            R(L(L(value))) => Self::OctetsValue(value),
+            R(L(R(value))) => Self::NullValue(value),
+            R(R(L(value))) => Self::TextValue(value),
+            R(R(R(value))) => Self::OidValue(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>> {
+        match self {
+            Self::BooleanValue(value) => L(L(value)),
+            Self::IntegerValue(value) => L(R(value)),
+            Self::OctetsValue(value) => R(L(L(value))),
+            Self::NullValue(value) => R(L(R(value))),
+            Self::TextValue(value) => R(R(L(value))),
+            Self::OidValue(value) => R(R(R(value))),
+        }
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AutomationChoiceSpec::from_structural);
+        reveal(AutomationChoiceSpec::into_structural);
+        match self {
+            Self::BooleanValue(_) => {},
+            Self::IntegerValue(_) => {},
+            Self::OctetsValue(_) => {},
+            Self::NullValue(_) => {},
+            Self::TextValue(_) => {},
+            Self::OidValue(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_from(input: Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>>)
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AutomationChoiceSpec::from_structural);
+        reveal(AutomationChoiceSpec::into_structural);
+        match input {
+            L(L(_)) => {},
+            L(R(_)) => {},
+            R(L(L(_))) => {},
+            R(L(R(_))) => {},
+            R(R(L(_))) => {},
+            R(R(R(_))) => {},
+        }
+    }
+}
+
 impl SpecMap for AutomationChoiceForward {
     type Input = Sum<Sum<bool, int>, Sum<Sum<Seq<u8>, ()>, Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>;
     type Output = AutomationChoiceSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        match input {
-            L(L(value)) => AutomationChoiceSpec::BooleanValue(value),
-            L(R(value)) => AutomationChoiceSpec::IntegerValue(value),
-            R(L(L(value))) => AutomationChoiceSpec::OctetsValue(value),
-            R(L(R(value))) => AutomationChoiceSpec::NullValue(value),
-            R(R(L(value))) => AutomationChoiceSpec::TextValue(value),
-            R(R(R(value))) => AutomationChoiceSpec::OidValue(value),
-        }
+        AutomationChoiceSpec::from_structural(input)
     }
 }
 
 impl SpecMap for AutomationChoiceReverse {
     type Input = AutomationChoiceSpec;
     type Output = Sum<Sum<bool, int>, Sum<Sum<Seq<u8>, ()>, Sum<Seq<char>, vest_lib2::asn1::ObjectIdentifierSpec>>>;
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        match value {
-            AutomationChoiceSpec::BooleanValue(value) => L(L(value)),
-            AutomationChoiceSpec::IntegerValue(value) => L(R(value)),
-            AutomationChoiceSpec::OctetsValue(value) => R(L(L(value))),
-            AutomationChoiceSpec::NullValue(value) => R(L(R(value))),
-            AutomationChoiceSpec::TextValue(value) => R(R(L(value))),
-            AutomationChoiceSpec::OidValue(value) => R(R(R(value))),
-        }
+        value.into_structural()
     }
 }
 
@@ -1025,7 +1352,7 @@ impl<'a> Map<Sum<Sum<bool, vest_lib2::asn1::Integer<'a>>, Sum<Sum<&'a [u8], ()>,
     fn map(&self, input: Sum<Sum<bool, vest_lib2::asn1::Integer<'a>>, Sum<Sum<&'a [u8], ()>, Sum<&'a str, vest_lib2::asn1::ObjectIdentifier>>>) -> (value: Self::O) {
         proof {
             reveal(<AutomationChoice as DeepView>::deep_view);
-            reveal(<AutomationChoiceForward as SpecMap>::spec_map);
+            reveal(AutomationChoiceSpec::from_structural);
         }
         match input {
             L(L(value)) => AutomationChoice::BooleanValue(value),
@@ -1043,7 +1370,7 @@ impl<'a, 'x> Map<&'x AutomationChoice<'a>> for AutomationChoiceReverse {
     fn map(&self, value: &'x AutomationChoice<'a>) -> (output: Self::O) {
         proof {
             reveal(<AutomationChoice as DeepView>::deep_view);
-            reveal(<AutomationChoiceReverse as SpecMap>::spec_map);
+            reveal(AutomationChoiceSpec::into_structural);
         }
         match value {
             AutomationChoice::BooleanValue(value) => L(L(value)),
@@ -1061,13 +1388,11 @@ pub struct AutomationSequenceForward;
 #[derive(Clone, Copy)]
 pub struct AutomationSequenceReverse;
 
-impl SpecMap for AutomationSequenceForward {
-    type Input = (Option<bool>, (bool, (Option<Seq<u8>>, ((), (Option<AutomationChoiceSpec>, ())))));
-    type Output = AutomationSequenceSpec;
+impl<T0, T1, T2, T3, T4> AutomationSequenceSpec<T0, T1, T2, T3, T4> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, ())))))) -> Self {
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
-        AutomationSequenceSpec {
+        Self {
             prefix,
             enabled,
             payload,
@@ -1075,14 +1400,40 @@ impl SpecMap for AutomationSequenceForward {
             selected,
         }
     }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, ()))))) {
+        (self.prefix, (self.enabled, (self.payload, (self.marker, (self.selected, ())))))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AutomationSequenceSpec::from_structural);
+        reveal(AutomationSequenceSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, ()))))))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AutomationSequenceSpec::from_structural);
+        reveal(AutomationSequenceSpec::into_structural);
+    }
+}
+
+impl SpecMap for AutomationSequenceForward {
+    type Input = (Option<bool>, (bool, (Option<Seq<u8>>, ((), (Option<AutomationChoiceSpec>, ())))));
+    type Output = AutomationSequenceSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AutomationSequenceSpec::from_structural(input)
+    }
 }
 
 impl SpecMap for AutomationSequenceReverse {
     type Input = AutomationSequenceSpec;
     type Output = (Option<bool>, (bool, (Option<Seq<u8>>, ((), (Option<AutomationChoiceSpec>, ())))));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.prefix, (value.enabled, (value.payload, (value.marker, (value.selected, ())))))
+        value.into_structural()
     }
 }
 
@@ -1091,7 +1442,7 @@ impl<'a> Map<(Option<bool>, (bool, (Option<&'a [u8]>, ((), (Option<AutomationCho
     fn map(&self, input: (Option<bool>, (bool, (Option<&'a [u8]>, ((), (Option<AutomationChoice<'a>>, ())))))) -> (value: Self::O) {
         proof {
             reveal(<AutomationSequence as DeepView>::deep_view);
-            reveal(<AutomationSequenceForward as SpecMap>::spec_map);
+            reveal(AutomationSequenceSpec::from_structural);
         }
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequence {
@@ -1109,7 +1460,7 @@ impl<'a, 'x> Map<&'x AutomationSequence<'a>> for AutomationSequenceReverse {
     fn map(&self, value: &'x AutomationSequence<'a>) -> (output: Self::O) {
         proof {
             reveal(<AutomationSequence as DeepView>::deep_view);
-            reveal(<AutomationSequenceReverse as SpecMap>::spec_map);
+            reveal(AutomationSequenceSpec::into_structural);
         }
         (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))))
     }

@@ -58,12 +58,12 @@ pub struct Item {
 }
 
 #[verifier::ext_equal]
-pub struct ItemSpec {
-    pub payload: PayloadSpec,
-    pub bits: BitsSpec,
-    pub label: LabelSpec,
-    pub printable: Option<PrintableSpec>,
-    pub open: Option<OpenValueSpec>,
+pub struct ItemSpec<T0 = PayloadSpec, T1 = BitsSpec, T2 = LabelSpec, T3 = Option<PrintableSpec>, T4 = Option<OpenValueSpec>> {
+    pub payload: T0,
+    pub bits: T1,
+    pub label: T2,
+    pub printable: T3,
+    pub open: T4,
 }
 
 impl DeepView for Item {
@@ -91,13 +91,13 @@ pub enum AutomationChoice {
 }
 
 #[verifier::ext_equal]
-pub enum AutomationChoiceSpec {
-    BooleanValue(bool),
-    OctetsValue(Seq<u8>),
-    BitsValue(vest_lib2::asn1::BitStringSpec),
-    TextValue(Seq<char>),
-    PrintableValue(vest_lib2::asn1::PrintableStringSpec),
-    OpenValue(vest_lib2::asn1::AnySpec),
+pub enum AutomationChoiceSpec<T0 = bool, T1 = Seq<u8>, T2 = vest_lib2::asn1::BitStringSpec, T3 = Seq<char>, T4 = vest_lib2::asn1::PrintableStringSpec, T5 = vest_lib2::asn1::AnySpec> {
+    BooleanValue(T0),
+    OctetsValue(T1),
+    BitsValue(T2),
+    TextValue(T3),
+    PrintableValue(T4),
+    OpenValue(T5),
 }
 
 impl DeepView for AutomationChoice {
@@ -125,12 +125,12 @@ pub struct AutomationSequence {
 }
 
 #[verifier::ext_equal]
-pub struct AutomationSequenceSpec {
-    pub prefix: Option<bool>,
-    pub enabled: bool,
-    pub payload: Option<Seq<u8>>,
-    pub marker: bool,
-    pub selected: Option<AutomationChoiceSpec>,
+pub struct AutomationSequenceSpec<T0 = Option<bool>, T1 = bool, T2 = Option<Seq<u8>>, T3 = bool, T4 = Option<AutomationChoiceSpec>> {
+    pub prefix: T0,
+    pub enabled: T1,
+    pub payload: T2,
+    pub marker: T3,
+    pub selected: T4,
 }
 
 impl DeepView for AutomationSequence {
@@ -161,13 +161,11 @@ pub struct ItemForward;
 #[derive(Clone, Copy)]
 pub struct ItemReverse;
 
-impl SpecMap for ItemForward {
-    type Input = (PayloadSpec, (BitsSpec, (LabelSpec, (Option<PrintableSpec>, (Option<OpenValueSpec>, ())))));
-    type Output = ItemSpec;
+impl<T0, T1, T2, T3, T4> ItemSpec<T0, T1, T2, T3, T4> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, ())))))) -> Self {
         let (payload, (bits, (label, (printable, (open, _end))))) = input;
-        ItemSpec {
+        Self {
             payload,
             bits,
             label,
@@ -175,14 +173,40 @@ impl SpecMap for ItemForward {
             open,
         }
     }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, ()))))) {
+        (self.payload, (self.bits, (self.label, (self.printable, (self.open, ())))))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ItemSpec::from_structural);
+        reveal(ItemSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, ()))))))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ItemSpec::from_structural);
+        reveal(ItemSpec::into_structural);
+    }
+}
+
+impl SpecMap for ItemForward {
+    type Input = (PayloadSpec, (BitsSpec, (LabelSpec, (Option<PrintableSpec>, (Option<OpenValueSpec>, ())))));
+    type Output = ItemSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ItemSpec::from_structural(input)
+    }
 }
 
 impl SpecMap for ItemReverse {
     type Input = ItemSpec;
     type Output = (PayloadSpec, (BitsSpec, (LabelSpec, (Option<PrintableSpec>, (Option<OpenValueSpec>, ())))));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.payload, (value.bits, (value.label, (value.printable, (value.open, ())))))
+        value.into_structural()
     }
 }
 
@@ -191,7 +215,7 @@ impl Map<(Payload, (Bits, (Label, (Option<Printable>, (Option<OpenValue>, ()))))
     fn map(&self, input: (Payload, (Bits, (Label, (Option<Printable>, (Option<OpenValue>, ())))))) -> (value: Self::O) {
         proof {
             reveal(<Item as DeepView>::deep_view);
-            reveal(<ItemForward as SpecMap>::spec_map);
+            reveal(ItemSpec::from_structural);
         }
         let (payload, (bits, (label, (printable, (open, _end))))) = input;
         Item {
@@ -209,7 +233,7 @@ impl<'x> Map<&'x Item> for ItemReverse {
     fn map(&self, value: &'x Item) -> (output: Self::O) {
         proof {
             reveal(<Item as DeepView>::deep_view);
-            reveal(<ItemReverse as SpecMap>::spec_map);
+            reveal(ItemSpec::into_structural);
         }
         (&value.payload, (&value.bits, (&value.label, (value.printable.as_ref(), (value.open.as_ref(), ())))))
     }
@@ -220,35 +244,75 @@ pub struct AutomationChoiceForward;
 #[derive(Clone, Copy)]
 pub struct AutomationChoiceReverse;
 
+impl<T0, T1, T2, T3, T4, T5> AutomationChoiceSpec<T0, T1, T2, T3, T4, T5> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>>) -> Self {
+        match input {
+            L(L(value)) => Self::BooleanValue(value),
+            L(R(value)) => Self::OctetsValue(value),
+            R(L(L(value))) => Self::BitsValue(value),
+            R(L(R(value))) => Self::TextValue(value),
+            R(R(L(value))) => Self::PrintableValue(value),
+            R(R(R(value))) => Self::OpenValue(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>> {
+        match self {
+            Self::BooleanValue(value) => L(L(value)),
+            Self::OctetsValue(value) => L(R(value)),
+            Self::BitsValue(value) => R(L(L(value))),
+            Self::TextValue(value) => R(L(R(value))),
+            Self::PrintableValue(value) => R(R(L(value))),
+            Self::OpenValue(value) => R(R(R(value))),
+        }
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AutomationChoiceSpec::from_structural);
+        reveal(AutomationChoiceSpec::into_structural);
+        match self {
+            Self::BooleanValue(_) => {},
+            Self::OctetsValue(_) => {},
+            Self::BitsValue(_) => {},
+            Self::TextValue(_) => {},
+            Self::PrintableValue(_) => {},
+            Self::OpenValue(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_from(input: Sum<Sum<T0, T1>, Sum<Sum<T2, T3>, Sum<T4, T5>>>)
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AutomationChoiceSpec::from_structural);
+        reveal(AutomationChoiceSpec::into_structural);
+        match input {
+            L(L(_)) => {},
+            L(R(_)) => {},
+            R(L(L(_))) => {},
+            R(L(R(_))) => {},
+            R(R(L(_))) => {},
+            R(R(R(_))) => {},
+        }
+    }
+}
+
 impl SpecMap for AutomationChoiceForward {
     type Input = Sum<Sum<bool, Seq<u8>>, Sum<Sum<vest_lib2::asn1::BitStringSpec, Seq<char>>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>;
     type Output = AutomationChoiceSpec;
-    #[verifier::opaque]
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        match input {
-            L(L(value)) => AutomationChoiceSpec::BooleanValue(value),
-            L(R(value)) => AutomationChoiceSpec::OctetsValue(value),
-            R(L(L(value))) => AutomationChoiceSpec::BitsValue(value),
-            R(L(R(value))) => AutomationChoiceSpec::TextValue(value),
-            R(R(L(value))) => AutomationChoiceSpec::PrintableValue(value),
-            R(R(R(value))) => AutomationChoiceSpec::OpenValue(value),
-        }
+        AutomationChoiceSpec::from_structural(input)
     }
 }
 
 impl SpecMap for AutomationChoiceReverse {
     type Input = AutomationChoiceSpec;
     type Output = Sum<Sum<bool, Seq<u8>>, Sum<Sum<vest_lib2::asn1::BitStringSpec, Seq<char>>, Sum<vest_lib2::asn1::PrintableStringSpec, vest_lib2::asn1::AnySpec>>>;
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        match value {
-            AutomationChoiceSpec::BooleanValue(value) => L(L(value)),
-            AutomationChoiceSpec::OctetsValue(value) => L(R(value)),
-            AutomationChoiceSpec::BitsValue(value) => R(L(L(value))),
-            AutomationChoiceSpec::TextValue(value) => R(L(R(value))),
-            AutomationChoiceSpec::PrintableValue(value) => R(R(L(value))),
-            AutomationChoiceSpec::OpenValue(value) => R(R(R(value))),
-        }
+        value.into_structural()
     }
 }
 
@@ -257,7 +321,7 @@ impl Map<Sum<Sum<bool, Vec<u8>>, Sum<Sum<vest_lib2::asn1::BitStringOwned, String
     fn map(&self, input: Sum<Sum<bool, Vec<u8>>, Sum<Sum<vest_lib2::asn1::BitStringOwned, String>, Sum<vest_lib2::asn1::PrintableStringOwned, vest_lib2::asn1::AnyOwned>>>) -> (value: Self::O) {
         proof {
             reveal(<AutomationChoice as DeepView>::deep_view);
-            reveal(<AutomationChoiceForward as SpecMap>::spec_map);
+            reveal(AutomationChoiceSpec::from_structural);
         }
         match input {
             L(L(value)) => AutomationChoice::BooleanValue(value),
@@ -275,7 +339,7 @@ impl<'x> Map<&'x AutomationChoice> for AutomationChoiceReverse {
     fn map(&self, value: &'x AutomationChoice) -> (output: Self::O) {
         proof {
             reveal(<AutomationChoice as DeepView>::deep_view);
-            reveal(<AutomationChoiceReverse as SpecMap>::spec_map);
+            reveal(AutomationChoiceSpec::into_structural);
         }
         match value {
             AutomationChoice::BooleanValue(value) => L(L(value)),
@@ -293,13 +357,11 @@ pub struct AutomationSequenceForward;
 #[derive(Clone, Copy)]
 pub struct AutomationSequenceReverse;
 
-impl SpecMap for AutomationSequenceForward {
-    type Input = (Option<bool>, (bool, (Option<Seq<u8>>, (bool, (Option<AutomationChoiceSpec>, ())))));
-    type Output = AutomationSequenceSpec;
+impl<T0, T1, T2, T3, T4> AutomationSequenceSpec<T0, T1, T2, T3, T4> {
     #[verifier::opaque]
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, ())))))) -> Self {
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
-        AutomationSequenceSpec {
+        Self {
             prefix,
             enabled,
             payload,
@@ -307,14 +369,40 @@ impl SpecMap for AutomationSequenceForward {
             selected,
         }
     }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, ()))))) {
+        (self.prefix, (self.enabled, (self.payload, (self.marker, (self.selected, ())))))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AutomationSequenceSpec::from_structural);
+        reveal(AutomationSequenceSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, ()))))))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AutomationSequenceSpec::from_structural);
+        reveal(AutomationSequenceSpec::into_structural);
+    }
+}
+
+impl SpecMap for AutomationSequenceForward {
+    type Input = (Option<bool>, (bool, (Option<Seq<u8>>, (bool, (Option<AutomationChoiceSpec>, ())))));
+    type Output = AutomationSequenceSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AutomationSequenceSpec::from_structural(input)
+    }
 }
 
 impl SpecMap for AutomationSequenceReverse {
     type Input = AutomationSequenceSpec;
     type Output = (Option<bool>, (bool, (Option<Seq<u8>>, (bool, (Option<AutomationChoiceSpec>, ())))));
-    #[verifier::opaque]
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        (value.prefix, (value.enabled, (value.payload, (value.marker, (value.selected, ())))))
+        value.into_structural()
     }
 }
 
@@ -323,7 +411,7 @@ impl Map<(Option<bool>, (bool, (Option<Vec<u8>>, (bool, (Option<AutomationChoice
     fn map(&self, input: (Option<bool>, (bool, (Option<Vec<u8>>, (bool, (Option<AutomationChoice>, ())))))) -> (value: Self::O) {
         proof {
             reveal(<AutomationSequence as DeepView>::deep_view);
-            reveal(<AutomationSequenceForward as SpecMap>::spec_map);
+            reveal(AutomationSequenceSpec::from_structural);
         }
         let (prefix, (enabled, (payload, (marker, (selected, _end))))) = input;
         AutomationSequence {
@@ -341,7 +429,7 @@ impl<'x> Map<&'x AutomationSequence> for AutomationSequenceReverse {
     fn map(&self, value: &'x AutomationSequence) -> (output: Self::O) {
         proof {
             reveal(<AutomationSequence as DeepView>::deep_view);
-            reveal(<AutomationSequenceReverse as SpecMap>::spec_map);
+            reveal(AutomationSequenceSpec::into_structural);
         }
         (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))))
     }
