@@ -88,6 +88,47 @@ impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
     }
 }
 
+
+pub trait NonAmbiguous where
+    Self: Consistency + SpecSerializer<SVal = Self::Val>
+{
+    open spec fn nonamb_inv(&self) -> bool {
+        true
+    }
+
+    proof fn lemma_serialize_injective(&self, v1: Self::Val, v2: Self::Val)
+        requires
+            self.nonamb_inv(),
+            self.consistent(v1),
+            self.consistent(v2),
+        ensures
+            self.spec_serialize(v1) == self.spec_serialize(v2) ==> v1 == v2
+    ;
+
+    proof fn corollary_serialize_injective_contrapositive(&self, v1: Self::Val, v2: Self::Val)
+        requires
+            self.nonamb_inv(),
+            self.consistent(v1),
+            self.consistent(v2),
+        ensures
+            v1 != v2 ==> self.spec_serialize(v1) != self.spec_serialize(v2),
+    {
+        self.lemma_serialize_injective(v1, v2);
+    }
+}
+
+impl<C: SPRoundTrip> NonAmbiguous for C {
+    open spec fn nonamb_inv(&self) -> bool {
+        self.sp_roundtrip_inv()
+    }
+
+    proof fn lemma_serialize_injective(&self, v1: Self::Val, v2: Self::Val) {
+        self.theorem_serialize_parse_roundtrip(v1);
+        self.theorem_serialize_parse_roundtrip(v2);
+    }
+}
+
+
 /// Parse-serialize roundtrip.
 ///
 /// Parsing a buffer and serializing the result reproduces the consumed bytes.
