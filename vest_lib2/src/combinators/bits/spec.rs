@@ -87,6 +87,7 @@ impl<Repr, Tuple, Nominal> SafeParser for super::Bits<Repr, Tuple, Nominal> wher
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
+        assert(self.safe_inv() == fmt.safe_inv());
         fmt.lemma_parse_safe(ibuf);
     }
 }

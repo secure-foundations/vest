@@ -51,6 +51,7 @@ impl<Repr, Tuple, Nominal> NoLookAhead for super::Bits<Repr, Tuple, Nominal> whe
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
+        assert(self.no_lookahead_inv() == fmt.no_lookahead_inv());
         fmt.lemma_no_lookahead(i1, i2);
     }
 }
