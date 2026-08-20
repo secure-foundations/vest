@@ -10,9 +10,9 @@ use crate::combinators::{
     Alt, Array, Bind, Choice, Cond, Const, Mapped, Opt, Pair, Preceded, PrefixTagged, Refined,
     Repeat, RepeatN, Star, SuffixTagged, Sum, Terminated,
 };
-use crate::core::exec::fns::{Map, MapRef, Pred};
+use crate::core::exec::fns::{FnByteLen, FnPrepare, FnSerializer, Map, MapRef, Pred};
 use crate::core::exec::input::InputBuf;
-use crate::core::exec::{OutputBuf, Parser, Prepare, Serializer};
+use crate::core::exec::{ByteLen, OutputBuf, Parser, Prepare, Serializer};
 use crate::core::proof::Productive;
 use crate::core::spec::{
     BytesCombinator, Consistency, SafeParser, SpecByteLen, SpecParser, SpecPred, SpecSerializer,
@@ -23,6 +23,138 @@ use alloc::vec::Vec;
 use vstd::prelude::*;
 
 verus! {
+
+// ----------------------------------------------------
+// Executable function adapters
+// ----------------------------------------------------
+
+/// Exposes the semantic specification bundled into an [`FnSerializer`] without requiring callers
+/// to unfold the adapter's individual trait implementations.
+pub proof fn lemma_fn_serializer_specs<Output, T, Spec, Exec>(
+    serializer: &FnSerializer<Output, T, Spec, Exec>,
+    value: T::V,
+) where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+
+    ensures
+        serializer.consistent(value) == serializer.spec_fn@.consistent(value),
+        serializer.byte_len(value) == serializer.spec_fn@.byte_len(value),
+        serializer.spec_serialize(value) == serializer.spec_fn@.spec_serialize(value),
+{
+}
+
+/// Connects an executable serializer callback, through the Rust reference adapter, directly to
+/// its bundled ghost serializer.
+pub proof fn lemma_ref_fn_serializer_congruence<Output, T, Spec, Exec>(
+    serializer: &FnSerializer<Output, T, Spec, Exec>,
+) where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+
+    ensures
+        crate::combinators::congruence::serializer_congruent(serializer, serializer.spec_fn@),
+{
+    use crate::combinators::congruence::*;
+
+    assert forall|value: T::V| #[trigger]
+        serializer.consistent(value) == serializer.spec_fn@.consistent(value) by {
+        lemma_fn_serializer_specs(serializer, value);
+    }
+    assert forall|value: T::V| #[trigger]
+        serializer.byte_len(value) == serializer.spec_fn@.byte_len(value) by {
+        lemma_fn_serializer_specs(serializer, value);
+    }
+    assert forall|value: T::V| #[trigger]
+        serializer.spec_serialize(value) == serializer.spec_fn@.spec_serialize(value) by {
+        lemma_fn_serializer_specs(serializer, value);
+    }
+    lemma_prepare_congruent_intro(serializer, serializer.spec_fn@);
+    lemma_serializer_congruent_intro(serializer, serializer.spec_fn@);
+}
+
+/// Exposes the consistency and byte-length specification bundled into an [`FnPrepare`].
+pub proof fn lemma_fn_prepare_specs<T, Spec, Exec>(
+    prepare: &FnPrepare<T, Spec, Exec>,
+    value: T::V,
+) where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, crate::core::exec::PreSerializeError>,
+
+    ensures
+        prepare.consistent(value) == prepare.spec_fn@.consistent(value),
+        prepare.byte_len(value) == prepare.spec_fn@.byte_len(value),
+{
+}
+
+/// Connects an executable preparation callback, through the Rust reference adapter, directly to
+/// its bundled ghost preparation specification.
+pub proof fn lemma_ref_fn_prepare_congruence<T, Spec, Exec>(
+    prepare: &FnPrepare<T, Spec, Exec>,
+) where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, crate::core::exec::PreSerializeError>,
+
+    ensures
+        crate::combinators::congruence::prepare_congruent(prepare, prepare.spec_fn@),
+{
+    use crate::combinators::congruence::*;
+
+    assert forall|value: T::V| #[trigger]
+        prepare.consistent(value) == prepare.spec_fn@.consistent(value) by {
+        lemma_fn_prepare_specs(prepare, value);
+    }
+    assert forall|value: T::V| #[trigger]
+        prepare.byte_len(value) == prepare.spec_fn@.byte_len(value) by {
+        lemma_fn_prepare_specs(prepare, value);
+    }
+    lemma_prepare_congruent_intro(prepare, prepare.spec_fn@);
+}
+
+/// Exposes the byte-length and consistency specification bundled into an [`FnByteLen`].
+pub proof fn lemma_fn_byte_len_specs<T, Spec, Exec>(
+    length: &FnByteLen<T, Spec, Exec>,
+    value: T::V,
+) where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+
+    ensures
+        length.consistent(value) == length.spec_fn@.consistent(value),
+        length.byte_len(value) == length.spec_fn@.byte_len(value),
+{
+}
+
+/// Relates a referenced executable byte-length callback to its bundled ghost specification.
+pub proof fn lemma_ref_fn_byte_len_congruence<T, Spec, Exec>(
+    length: &FnByteLen<T, Spec, Exec>,
+) where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+
+    ensures
+        crate::combinators::congruence::prepare_congruent(length, length.spec_fn@),
+{
+    use crate::combinators::congruence::*;
+
+    assert forall|value: T::V| #[trigger]
+        length.consistent(value) == length.spec_fn@.consistent(value) by {
+        lemma_fn_byte_len_specs(length, value);
+    }
+    assert forall|value: T::V| #[trigger]
+        length.byte_len(value) == length.spec_fn@.byte_len(value) by {
+        lemma_fn_byte_len_specs(length, value);
+    }
+    lemma_prepare_congruent_intro(length, length.spec_fn@);
+}
 
 // ----------------------------------------------------
 // ExactLen
@@ -788,6 +920,37 @@ pub proof fn lemma_ref_prepare_exec_inv<S, T>(serializer: &S) where
 
     ensures
         serializer.exec_inv() ==> (&serializer).exec_inv(),
+{
+}
+
+pub proof fn lemma_ref_byte_len_exec_inv<S, T>(length: &S) where
+    S: ByteLen<T>,
+    T: DeepView + ?Sized,
+
+    ensures
+        length.exec_inv() ==> ByteLen::<T>::exec_inv(&length),
+{
+}
+
+pub proof fn lemma_pair_byte_len_exec_inv<A, B, TA, TB>(fmt: &Pair<A, B>) where
+    A: ByteLen<TA>,
+    B: ByteLen<TB>,
+    TA: DeepView,
+    TB: DeepView,
+
+    ensures
+        (ByteLen::<TA>::exec_inv(&fmt.0) && ByteLen::<TB>::exec_inv(&fmt.1)) ==>
+            ByteLen::<(TA, TB)>::exec_inv(fmt),
+{
+}
+
+pub proof fn lemma_repeat_n_byte_len_exec_inv<Inner, N, T>(fmt: &RepeatN<Inner, N>) where
+    Inner: ByteLen<T>,
+    N: AsLen,
+    T: DeepView,
+
+    ensures
+        ByteLen::<T>::exec_inv(&fmt.1) ==> ByteLen::<[T]>::exec_inv(fmt),
 {
 }
 

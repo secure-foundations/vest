@@ -2,7 +2,10 @@
 use crate::combinators::mapped::spec::{SpecMap, SpecMapper};
 use crate::core::exec::output::*;
 use crate::core::exec::parser::*;
-use crate::core::exec::{output::OutputBuf, serializer::Serializer};
+use crate::core::exec::{
+    output::OutputBuf,
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+};
 use crate::core::proof::Productive;
 use crate::core::spec::*;
 use core::marker::PhantomData;
@@ -452,6 +455,164 @@ impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Sp
 
     fn serialize_into(&self, v: &T, obuf: &mut Output) {
         (self.exec_fn)(v, obuf)
+    }
+}
+
+/// Pairs an executable preparation closure with its consistency and byte-length specification.
+#[verifier::reject_recursive_types(T)]
+pub struct FnPrepare<
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (prepare: Self)
+        requires
+            forall|value: &T| #[trigger] call_requires(exec_fn, (value,)),
+            forall|value: &T, result: Result<usize, PreSerializeError>|
+                #[trigger] call_ensures(exec_fn, (value,), result) ==> (
+                    result matches Ok(len) ==> {
+                        &&& spec_fn.consistent(value.deep_view())
+                        &&& len == spec_fn.byte_len(value.deep_view())
+                    }
+                ),
+        ensures
+            prepare.exec_inv(),
+            prepare.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    type Val = T::V;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.spec_fn@.consistent(value)
+    }
+}
+
+impl<T, Spec, Exec> SpecByteLen for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    type T = T::V;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        self.spec_fn@.byte_len(value)
+    }
+}
+
+impl<T, Spec, Exec> Prepare<T> for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|value: &T| #[trigger] call_requires(self.exec_fn, (value,))
+        &&& forall|value: &T, result: Result<usize, PreSerializeError>|
+            #[trigger] call_ensures(self.exec_fn, (value,), result) ==> (
+                result matches Ok(len) ==> {
+                    &&& self.spec_fn@.consistent(value.deep_view())
+                    &&& len == self.spec_fn@.byte_len(value.deep_view())
+                }
+            )
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        (self.exec_fn)(value)
+    }
+}
+
+/// Pairs an executable byte-length closure with its specification.
+#[verifier::reject_recursive_types(T)]
+pub struct FnByteLen<
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (length: Self)
+        requires
+            forall|value: &T|
+                spec_fn.byte_len(value.deep_view()) <= usize::MAX ==> #[trigger]
+                    call_requires(exec_fn, (value,)),
+            forall|value: &T, len: usize| #[trigger]
+                call_ensures(exec_fn, (value,), len) ==> len == spec_fn.byte_len(
+                    value.deep_view(),
+                ),
+        ensures
+            length.exec_inv(),
+            length.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    type Val = T::V;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.spec_fn@.consistent(value)
+    }
+}
+
+impl<T, Spec, Exec> SpecByteLen for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    type T = T::V;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        self.spec_fn@.byte_len(value)
+    }
+}
+
+impl<T, Spec, Exec> ByteLen<T> for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|value: &T|
+            self.spec_fn@.byte_len(value.deep_view()) <= usize::MAX ==> #[trigger]
+                call_requires(self.exec_fn, (value,))
+        &&& forall|value: &T, len: usize| #[trigger]
+            call_ensures(self.exec_fn, (value,), len) ==> len == self.spec_fn@.byte_len(
+                value.deep_view(),
+            )
+    }
+
+    fn length(&self, value: &T) -> usize {
+        (self.exec_fn)(value)
     }
 }
 
