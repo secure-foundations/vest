@@ -64,6 +64,8 @@ extern crate std;
 pub type Never = combinators::marker::exec::ExecNever;
 
 pub mod asn1;
+#[cfg(feature = "alloc")]
+pub mod cbor;
 pub mod combinators;
 pub mod core;
 pub mod macros;
