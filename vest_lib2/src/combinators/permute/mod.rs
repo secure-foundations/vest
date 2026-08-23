@@ -1,6 +1,17 @@
 //! Combinators for parsing permutations of sub-parsers.
-/// Executable serializer-preparation implementations for this combinator.
+//!
+//! Each `Permute*` combinator accepts any ordering of its components while its serializer always
+//! emits the declared order. That makes them deliberately *malleable*: distinct byte strings map to
+//! the same value, so [`NonMalleable`](crate::core::proof::NonMalleable) and
+//! [`PSRoundTrip`](crate::core::proof::PSRoundTrip) are not available. Soundness is, because
+//! reordering preserves the total length.
+//!
+//! Only widths 2 to 4 are provided. The construction enumerates orderings, so the number of parse
+//! paths grows as `N!` (`Permute4` already has 24).
+/// Executable parser and serializer implementations for this combinator.
 pub mod exec;
+/// Proofs of the security and correctness properties for this combinator.
+pub mod proof;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
@@ -15,48 +26,24 @@ pub open spec fn swap2<A, B>(i: (B, A)) -> (A, B) {
     (i.1, i.0)
 }
 
-pub open spec fn unswap2<A, B>(o: (A, B)) -> (B, A) {
-    (o.1, o.0)
-}
-
 pub open spec fn swap3_1<A, B, C>(i: (B, (A, C))) -> (A, (B, C)) {
     (i.1.0, (i.0, i.1.1))
-}
-
-pub open spec fn unswap3_1<A, B, C>(o: (A, (B, C))) -> (B, (A, C)) {
-    (o.1.0, (o.0, o.1.1))
 }
 
 pub open spec fn swap3_2<A, B, C>(i: (C, (A, B))) -> (A, (B, C)) {
     (i.1.0, (i.1.1, i.0))
 }
 
-pub open spec fn unswap3_2<A, B, C>(o: (A, (B, C))) -> (C, (A, B)) {
-    (o.1.1, (o.0, o.1.0))
-}
-
 pub open spec fn swap4_1<A, B, C, D>(i: (B, (A, (C, D)))) -> (A, (B, (C, D))) {
     (i.1.0, (i.0, i.1.1))
-}
-
-pub open spec fn unswap4_1<A, B, C, D>(o: (A, (B, (C, D)))) -> (B, (A, (C, D))) {
-    (o.1.0, (o.0, o.1.1))
 }
 
 pub open spec fn swap4_2<A, B, C, D>(i: (C, (A, (B, D)))) -> (A, (B, (C, D))) {
     (i.1.0, (i.1.1.0, (i.0, i.1.1.1)))
 }
 
-pub open spec fn unswap4_2<A, B, C, D>(o: (A, (B, (C, D)))) -> (C, (A, (B, D))) {
-    (o.1.1.0, (o.0, (o.1.0, o.1.1.1)))
-}
-
 pub open spec fn swap4_3<A, B, C, D>(i: (D, (A, (B, C)))) -> (A, (B, (C, D))) {
     (i.1.0, (i.1.1.0, (i.1.1.1, i.0)))
-}
-
-pub open spec fn unswap4_3<A, B, C, D>(o: (A, (B, (C, D)))) -> (D, (A, (B, C))) {
-    (o.1.1.1, (o.0, (o.1.0, o.1.1.0)))
 }
 
 /// `Permute2<P1, P2>` parses either `(P1, P2)` or `(P2, P1)` and produces `(P1::PVal, P2::PVal)`
@@ -130,3 +117,104 @@ impl<A: Clone, B: Clone, C: Clone, D: Clone> Clone for Permute4<A, B, C, D> {
 }
 
 } // verus!
+#[cfg(test)]
+mod tests {
+    use super::{Permute2, Permute3, Permute4};
+    use crate::combinators::{Const, U8};
+    use crate::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
+
+    /// A one-byte format that only accepts `b`, so orderings are distinguishable.
+    fn tag(b: u8) -> Const<U8, u8> {
+        Const(U8, b)
+    }
+
+    /// Serializes `$v` with `$fmt`, checking that `prepare` and `length` agree.
+    macro_rules! serialized {
+        ($fmt:expr, $v:expr) => {{
+            let len = $fmt.prepare(&$v).unwrap();
+            assert_eq!($fmt.length(&$v), len, "length and prepare disagree");
+            let mut out = vec![0u8; len];
+            $fmt.serialize(&$v, out.as_mut_slice());
+            out
+        }};
+    }
+
+    #[test]
+    fn permute2_accepts_both_orders_and_serializes_the_declared_one() {
+        let fmt = Permute2(tag(0xAA), tag(0xBB));
+        let value = (0xAAu8, 0xBBu8);
+
+        // Declared order and the swap both parse to the same value: the malleability witness.
+        assert_eq!(fmt.parse(&&[0xAA, 0xBB][..]), Ok((2, value)));
+        assert_eq!(fmt.parse(&&[0xBB, 0xAA][..]), Ok((2, value)));
+
+        // Serialization always emits the declared order.
+        assert_eq!(serialized!(fmt, value), vec![0xAA, 0xBB]);
+    }
+
+    #[test]
+    fn permute2_rejects_wrong_and_truncated_input() {
+        let fmt = Permute2(tag(0xAA), tag(0xBB));
+        assert!(fmt.parse(&&[0xAA, 0xAA][..]).is_err());
+        assert!(fmt.parse(&&[0xAA][..]).is_err());
+        assert!(fmt.parse(&&[][..]).is_err());
+    }
+
+    #[test]
+    fn permute3_accepts_all_six_orders() {
+        let fmt = Permute3(tag(0xA1), tag(0xB2), tag(0xC3));
+        let value = (0xA1u8, (0xB2u8, 0xC3u8));
+
+        for order in [
+            [0xA1, 0xB2, 0xC3],
+            [0xA1, 0xC3, 0xB2],
+            [0xB2, 0xA1, 0xC3],
+            [0xB2, 0xC3, 0xA1],
+            [0xC3, 0xA1, 0xB2],
+            [0xC3, 0xB2, 0xA1],
+        ] {
+            assert_eq!(fmt.parse(&&order[..]), Ok((3, value)), "order {order:02x?}");
+        }
+
+        assert_eq!(serialized!(fmt, value), vec![0xA1, 0xB2, 0xC3]);
+        assert!(fmt.parse(&&[0xA1, 0xB2, 0xB2][..]).is_err());
+        assert!(fmt.parse(&&[0xA1, 0xB2][..]).is_err());
+    }
+
+    #[test]
+    fn permute4_accepts_every_order() {
+        let fmt = Permute4(tag(0xA1), tag(0xB2), tag(0xC3), tag(0xD4));
+        let value = (0xA1u8, (0xB2u8, (0xC3u8, 0xD4u8)));
+
+        // All 24 permutations, generated so the test covers each branch of each nesting level.
+        let bytes = [0xA1u8, 0xB2, 0xC3, 0xD4];
+        let mut count = 0;
+        for i in 0..4 {
+            for j in 0..4 {
+                for k in 0..4 {
+                    for l in 0..4 {
+                        if i == j || i == k || i == l || j == k || j == l || k == l {
+                            continue;
+                        }
+                        let order = [bytes[i], bytes[j], bytes[k], bytes[l]];
+                        assert_eq!(fmt.parse(&&order[..]), Ok((4, value)), "order {order:02x?}");
+                        count += 1;
+                    }
+                }
+            }
+        }
+        assert_eq!(count, 24);
+
+        assert_eq!(serialized!(fmt, value), vec![0xA1, 0xB2, 0xC3, 0xD4]);
+        assert!(fmt.parse(&&[0xA1, 0xB2, 0xC3][..]).is_err());
+        assert!(fmt.parse(&&[0xA1, 0xB2, 0xC3, 0xC3][..]).is_err());
+    }
+
+    #[test]
+    fn parsing_consumes_only_the_permutation_and_leaves_trailing_bytes() {
+        let fmt = Permute2(tag(0xAA), tag(0xBB));
+        let (consumed, value) = fmt.parse(&&[0xBB, 0xAA, 0x99][..]).unwrap();
+        assert_eq!(consumed, 2);
+        assert_eq!(value, (0xAAu8, 0xBBu8));
+    }
+}

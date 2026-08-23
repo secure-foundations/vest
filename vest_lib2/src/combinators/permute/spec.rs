@@ -14,10 +14,7 @@ impl<P1, P2> SpecParser for super::Permute2<P1, P2> where P1: SpecParser, P2: Sp
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt::<_, _, false>(
             Pair(self.0, self.1),
-            Mapped {
-                inner: Pair(self.1, self.0),
-                mapper: (|i| super::swap2(i), |o| super::unswap2(o)),
-            },
+            Mapped { inner: Pair(self.1, self.0), mapper: |i| super::swap2(i) },
         );
         inner.spec_parse(ibuf)
     }
@@ -146,11 +143,11 @@ impl<A, B, C> SpecParser for super::Permute3<A, B, C> where
             Alt::<_, _, false>(
                 Mapped {
                     inner: Pair(self.1, super::Permute2(self.0, self.2)),
-                    mapper: (|i| super::swap3_1(i), |o| super::unswap3_1(o)),
+                    mapper: |i| super::swap3_1(i),
                 },
                 Mapped {
                     inner: Pair(self.2, super::Permute2(self.0, self.1)),
-                    mapper: (|i| super::swap3_2(i), |o| super::unswap3_2(o)),
+                    mapper: |i| super::swap3_2(i),
                 },
             ),
         );
@@ -310,16 +307,16 @@ impl<A, B, C, D> SpecParser for super::Permute4<A, B, C, D> where
             Alt::<_, _, false>(
                 Mapped {
                     inner: Pair(self.1, super::Permute3(self.0, self.2, self.3)),
-                    mapper: (|i| super::swap4_1(i), |o| super::unswap4_1(o)),
+                    mapper: |i| super::swap4_1(i),
                 },
                 Alt::<_, _, false>(
                     Mapped {
                         inner: Pair(self.2, super::Permute3(self.0, self.1, self.3)),
-                        mapper: (|i| super::swap4_2(i), |o| super::unswap4_2(o)),
+                        mapper: |i| super::swap4_2(i),
                     },
                     Mapped {
                         inner: Pair(self.3, super::Permute3(self.0, self.1, self.2)),
-                        mapper: (|i| super::swap4_3(i), |o| super::unswap4_3(o)),
+                        mapper: |i| super::swap4_3(i),
                     },
                 ),
             ),

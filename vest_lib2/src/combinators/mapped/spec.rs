@@ -273,6 +273,26 @@ impl<Inner: SpecParser, Out> SpecParser for super::Mapped<Inner, spec_fn(Inner::
     }
 }
 
+impl<Inner: SafeParser, Out> SafeParser for super::Mapped<Inner, spec_fn(Inner::PVal) -> Out> {
+    open spec fn safe_inv(&self) -> bool {
+        self.inner.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        self.inner.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<Inner: Productive, Out> Productive for super::Mapped<Inner, spec_fn(Inner::PVal) -> Out> {
+    open spec fn productive_inv(&self) -> bool {
+        self.inner.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        self.inner.lemma_productive(s);
+    }
+}
+
 impl<Inner: SoundParser, Out> SoundParser for super::Mapped<Inner, FnSpecMapper<Inner::PVal, Out>> {
     open spec fn sound_inv(&self) -> bool {
         &&& self.inner.sound_inv()

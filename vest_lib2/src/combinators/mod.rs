@@ -31,6 +31,9 @@
 //! | [`Array<N, C>`] | Array of values of length `N` |
 //! | [`Preceded<A, AVal, B>`] | Same as `Pair(A, B)`, but discards A's value and uses `a_val` as its serialization witness |
 //! | [`Terminated<A, B, BVal>`] | Same as `Pair(A, B)`, but discards B's value and uses `b_val` as its serialization witness |
+//! | [`Permute2<P1, P2>`] | Accepts either order of two components, serializes the declared order (malleable) |
+//! | [`Permute3<A, B, C>`] | Accepts any of the 6 orders of three components (malleable) |
+//! | [`Permute4<A, B, C, D>`] | Accepts any of the 24 orders of four components (malleable) |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
