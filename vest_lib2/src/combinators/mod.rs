@@ -34,6 +34,7 @@
 //! | [`Permute2<P1, P2>`] | Accepts either order of two components, serializes the declared order (malleable) |
 //! | [`Permute3<A, B, C>`] | Accepts any of the 6 orders of three components (malleable) |
 //! | [`Permute4<A, B, C, D>`] | Accepts any of the 24 orders of four components (malleable) |
+//! | [`Permute5<A, B, C, D, E>`] | Accepts any of the 120 orders of five components (malleable) |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
 //! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
@@ -117,7 +118,7 @@ pub use mapped::{Mapped, TryMap};
 pub use marker::{exec::ExecNever, Empty, Void};
 pub use named::Named;
 pub use opt::{Opt, Optional};
-pub use permute::{Permute2, Permute3, Permute4};
+pub use permute::{Permute2, Permute3, Permute4, Permute5};
 pub use preceded::Preceded;
 pub use recursive::FixWith;
 pub use reference::Ref;

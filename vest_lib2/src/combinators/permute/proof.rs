@@ -468,4 +468,244 @@ impl<A, B, C, D> EquivSerializers for super::Permute4<A, B, C, D> where
     }
 }
 
+// ============================================================================
+// Permute5
+// ============================================================================
+impl<A: SafeParser, B: SafeParser, C: SafeParser, D: SafeParser, E: SafeParser> SafeParser for super::Permute5<
+    A,
+    B,
+    C,
+    D,
+    E,
+> {
+    open spec fn safe_inv(&self) -> bool {
+        &&& self.0.safe_inv()
+        &&& self.1.safe_inv()
+        &&& self.2.safe_inv()
+        &&& self.3.safe_inv()
+        &&& self.4.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        Alt::<_, _, false>(
+            Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)),
+            Alt::<_, _, false>(
+                Mapped {
+                    inner: Pair(self.1, super::Permute4(self.0, self.2, self.3, self.4)),
+                    mapper: |i| super::swap5_1(i),
+                },
+                Alt::<_, _, false>(
+                    Mapped {
+                        inner: Pair(self.2, super::Permute4(self.0, self.1, self.3, self.4)),
+                        mapper: |i| super::swap5_2(i),
+                    },
+                    Alt::<_, _, false>(
+                        Mapped {
+                            inner: Pair(self.3, super::Permute4(self.0, self.1, self.2, self.4)),
+                            mapper: |i| super::swap5_3(i),
+                        },
+                        Mapped {
+                            inner: Pair(self.4, super::Permute4(self.0, self.1, self.2, self.3)),
+                            mapper: |i| super::swap5_4(i),
+                        },
+                    ),
+                ),
+            ),
+        ).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<A: Productive, B: Productive, C: Productive, D: Productive, E: Productive> Productive for super::Permute5<
+    A,
+    B,
+    C,
+    D,
+    E,
+> {
+    open spec fn productive_inv(&self) -> bool {
+        &&& self.0.productive_inv()
+        &&& self.1.productive_inv()
+        &&& self.2.productive_inv()
+        &&& self.3.productive_inv()
+        &&& self.4.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        Alt::<_, _, false>(
+            Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)),
+            Alt::<_, _, false>(
+                Mapped {
+                    inner: Pair(self.1, super::Permute4(self.0, self.2, self.3, self.4)),
+                    mapper: |i| super::swap5_1(i),
+                },
+                Alt::<_, _, false>(
+                    Mapped {
+                        inner: Pair(self.2, super::Permute4(self.0, self.1, self.3, self.4)),
+                        mapper: |i| super::swap5_2(i),
+                    },
+                    Alt::<_, _, false>(
+                        Mapped {
+                            inner: Pair(self.3, super::Permute4(self.0, self.1, self.2, self.4)),
+                            mapper: |i| super::swap5_3(i),
+                        },
+                        Mapped {
+                            inner: Pair(self.4, super::Permute4(self.0, self.1, self.2, self.3)),
+                            mapper: |i| super::swap5_4(i),
+                        },
+                    ),
+                ),
+            ),
+        ).lemma_productive(ibuf);
+    }
+}
+
+impl<
+    A: SoundParser,
+    B: SoundParser,
+    C: SoundParser,
+    D: SoundParser,
+    E: SoundParser,
+> SoundParser for super::Permute5<A, B, C, D, E> {
+    open spec fn sound_inv(&self) -> bool {
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
+        &&& self.2.sound_inv()
+        &&& self.3.sound_inv()
+        &&& self.4.sound_inv()
+    }
+
+    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        let b0 = Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4));
+        let b1 = Pair(self.1, super::Permute4(self.0, self.2, self.3, self.4));
+        let b2 = Pair(self.2, super::Permute4(self.0, self.1, self.3, self.4));
+        let b3 = Pair(self.3, super::Permute4(self.0, self.1, self.2, self.4));
+        let b4 = Pair(self.4, super::Permute4(self.0, self.1, self.2, self.3));
+        b0.lemma_parse_sound_consumption(ibuf);
+        b1.lemma_parse_sound_consumption(ibuf);
+        b2.lemma_parse_sound_consumption(ibuf);
+        b3.lemma_parse_sound_consumption(ibuf);
+        b4.lemma_parse_sound_consumption(ibuf);
+        if b0.spec_parse(ibuf) is None {
+            if let Some((_n, iv)) = b1.spec_parse(ibuf) {
+                assert(self.byte_len(super::swap5_1(iv)) == b1.byte_len(iv));
+            }
+            if b1.spec_parse(ibuf) is None {
+                if let Some((_n, iv)) = b2.spec_parse(ibuf) {
+                    assert(self.byte_len(super::swap5_2(iv)) == b2.byte_len(iv));
+                }
+                if b2.spec_parse(ibuf) is None {
+                    if let Some((_n, iv)) = b3.spec_parse(ibuf) {
+                        assert(self.byte_len(super::swap5_3(iv)) == b3.byte_len(iv));
+                    }
+                    if b3.spec_parse(ibuf) is None {
+                        if let Some((_n, iv)) = b4.spec_parse(ibuf) {
+                            assert(self.byte_len(super::swap5_4(iv)) == b4.byte_len(iv));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        let b0 = Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4));
+        let b1 = Pair(self.1, super::Permute4(self.0, self.2, self.3, self.4));
+        let b2 = Pair(self.2, super::Permute4(self.0, self.1, self.3, self.4));
+        let b3 = Pair(self.3, super::Permute4(self.0, self.1, self.2, self.4));
+        let b4 = Pair(self.4, super::Permute4(self.0, self.1, self.2, self.3));
+        b0.lemma_parse_sound_value(ibuf);
+        b1.lemma_parse_sound_value(ibuf);
+        b2.lemma_parse_sound_value(ibuf);
+        b3.lemma_parse_sound_value(ibuf);
+        b4.lemma_parse_sound_value(ibuf);
+        if b0.spec_parse(ibuf) is None {
+            if let Some((_n, iv)) = b1.spec_parse(ibuf) {
+                assert(self.consistent(super::swap5_1(iv)));
+            }
+            if b1.spec_parse(ibuf) is None {
+                if let Some((_n, iv)) = b2.spec_parse(ibuf) {
+                    assert(self.consistent(super::swap5_2(iv)));
+                }
+                if b2.spec_parse(ibuf) is None {
+                    if let Some((_n, iv)) = b3.spec_parse(ibuf) {
+                        assert(self.consistent(super::swap5_3(iv)));
+                    }
+                    if b3.spec_parse(ibuf) is None {
+                        if let Some((_n, iv)) = b4.spec_parse(ibuf) {
+                            assert(self.consistent(super::swap5_4(iv)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<A, B, C, D, E> SPRoundTripDps for super::Permute5<A, B, C, D, E> where
+    A: SPRoundTripDps + NonTailFmt,
+    B: SPRoundTripDps + NonTailFmt,
+    C: SPRoundTripDps + NonTailFmt,
+    D: SPRoundTripDps + NonTailFmt,
+    E: SPRoundTripDps,
+{
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& self.2.unambiguous()
+        &&& self.3.unambiguous()
+        &&& self.4.unambiguous()
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+        &&& self.2.serialize_dps_inv()
+        &&& self.3.serialize_dps_inv()
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).theorem_serialize_dps_parse_roundtrip(
+            v,
+            obuf,
+        );
+    }
+}
+
+impl<A, B, C, D, E> EquivSerializersGeneral for super::Permute5<A, B, C, D, E> where
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+    C: EquivSerializersGeneral,
+    D: EquivSerializersGeneral,
+    E: EquivSerializersGeneral,
+{
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+        &&& self.2.equiv_general_inv()
+        &&& self.3.equiv_general_inv()
+        &&& self.4.equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<A, B, C, D, E> EquivSerializers for super::Permute5<A, B, C, D, E> where
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+    C: EquivSerializersGeneral,
+    D: EquivSerializersGeneral,
+    E: EquivSerializers,
+{
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+        &&& self.2.equiv_general_inv()
+        &&& self.3.equiv_general_inv()
+        &&& self.4.equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_serialize_equiv_on_empty(v);
+    }
+}
+
 } // verus!

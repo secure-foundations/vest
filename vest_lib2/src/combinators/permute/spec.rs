@@ -473,4 +473,225 @@ impl<
     }
 }
 
+// ============== Permute5 ==============
+// Permute5(A, B, C, D, E) ::= Alt(
+//     (A, Permute4(B, C, D, E)),
+//     Alt(
+//         Mapped((B, Permute4(A, C, D, E)), swap5_1),
+//         Alt(
+//             Mapped((C, Permute4(A, B, D, E)), swap5_2),
+//             Alt(
+//                 Mapped((D, Permute4(A, B, C, E)), swap5_3),
+//                 Mapped((E, Permute4(A, B, C, D)), swap5_4),
+//             )
+//         )
+//     )
+// )
+impl<A, B, C, D, E> SpecParser for super::Permute5<A, B, C, D, E> where
+    A: SpecParser,
+    B: SpecParser,
+    C: SpecParser,
+    D: SpecParser,
+    E: SpecParser,
+{
+    type PVal = (A::PVal, (B::PVal, (C::PVal, (D::PVal, E::PVal))));
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        let inner = Alt::<_, _, false>(
+            Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)),
+            Alt::<_, _, false>(
+                Mapped {
+                    inner: Pair(self.1, super::Permute4(self.0, self.2, self.3, self.4)),
+                    mapper: |i| super::swap5_1(i),
+                },
+                Alt::<_, _, false>(
+                    Mapped {
+                        inner: Pair(self.2, super::Permute4(self.0, self.1, self.3, self.4)),
+                        mapper: |i| super::swap5_2(i),
+                    },
+                    Alt::<_, _, false>(
+                        Mapped {
+                            inner: Pair(self.3, super::Permute4(self.0, self.1, self.2, self.4)),
+                            mapper: |i| super::swap5_3(i),
+                        },
+                        Mapped {
+                            inner: Pair(self.4, super::Permute4(self.0, self.1, self.2, self.3)),
+                            mapper: |i| super::swap5_4(i),
+                        },
+                    ),
+                ),
+            ),
+        );
+        inner.spec_parse(ibuf)
+    }
+}
+
+impl<A, B, C, D, E> Consistency for super::Permute5<A, B, C, D, E> where
+    A: Consistency,
+    B: Consistency,
+    C: Consistency,
+    D: Consistency,
+    E: Consistency,
+{
+    type Val = (A::Val, (B::Val, (C::Val, (D::Val, E::Val))));
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        self.0.consistent(v.0) && self.1.consistent(v.1.0) && self.2.consistent(v.1.1.0)
+            && self.3.consistent(v.1.1.1.0) && self.4.consistent(v.1.1.1.1)
+    }
+}
+
+impl<A, B, C, D, E> SpecSerializerDps for super::Permute5<A, B, C, D, E> where
+    A: SpecSerializerDps,
+    B: SpecSerializerDps,
+    C: SpecSerializerDps,
+    D: SpecSerializerDps,
+    E: SpecSerializerDps,
+{
+    type SValue = (A::SValue, (B::SValue, (C::SValue, (D::SValue, E::SValue))));
+
+    open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).spec_serialize_dps(v, obuf)
+    }
+}
+
+impl<A, B, C, D, E> SpecSerializer for super::Permute5<A, B, C, D, E> where
+    A: SpecSerializer,
+    B: SpecSerializer,
+    C: SpecSerializer,
+    D: SpecSerializer,
+    E: SpecSerializer,
+{
+    type SVal = (A::SVal, (B::SVal, (C::SVal, (D::SVal, E::SVal))));
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).spec_serialize(v)
+    }
+}
+
+impl<A, B, C, D, E> NonTailFmt for super::Permute5<A, B, C, D, E> where
+    A: NonTailFmt,
+    B: NonTailFmt,
+    C: NonTailFmt,
+    D: NonTailFmt,
+    E: NonTailFmt,
+{
+    open spec fn serialize_dps_inv(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.1.serialize_dps_inv()
+        &&& self.2.serialize_dps_inv()
+        &&& self.3.serialize_dps_inv()
+        &&& self.4.serialize_dps_inv()
+    }
+
+    proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_serialize_dps_prepend(
+            v,
+            obuf,
+        );
+    }
+
+    proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_serialize_dps_len(
+            v,
+            obuf,
+        );
+    }
+}
+
+impl<A, B, C, D, E> GoodSerializer for super::Permute5<A, B, C, D, E> where
+    A: GoodSerializer,
+    B: GoodSerializer,
+    C: GoodSerializer,
+    D: GoodSerializer,
+    E: GoodSerializer,
+{
+    open spec fn serialize_inv(&self) -> bool {
+        &&& self.0.serialize_inv()
+        &&& self.1.serialize_inv()
+        &&& self.2.serialize_inv()
+        &&& self.3.serialize_inv()
+        &&& self.4.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_serialize_len(v);
+    }
+}
+
+impl<
+    A: SpecByteLen,
+    B: SpecByteLen,
+    C: SpecByteLen,
+    D: SpecByteLen,
+    E: SpecByteLen,
+> SpecByteLen for super::Permute5<A, B, C, D, E> {
+    type T = (A::T, (B::T, (C::T, (D::T, E::T))));
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).byte_len(v)
+    }
+}
+
+impl<
+    A: MinMaxByteLen,
+    B: MinMaxByteLen,
+    C: MinMaxByteLen,
+    D: MinMaxByteLen,
+    E: MinMaxByteLen,
+> MinMaxByteLen for super::Permute5<A, B, C, D, E> {
+    open spec fn min(&self) -> nat {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        Pair(self.0, super::Permute4(self.1, self.2, self.3, self.4)).lemma_min_max_byte_len(v);
+    }
+}
+
+impl<
+    A: ValueByteLen,
+    B: ValueByteLen,
+    C: ValueByteLen,
+    D: ValueByteLen,
+    E: ValueByteLen,
+> ValueByteLen for super::Permute5<A, B, C, D, E> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        <crate::combinators::Pair<A, super::Permute4<B, C, D, E>> as ValueByteLen>::value_byte_len(
+            v,
+        )
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        crate::combinators::Pair(
+            self.0,
+            super::Permute4(self.1, self.2, self.3, self.4),
+        ).lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<
+    A: StaticByteLen,
+    B: StaticByteLen,
+    C: StaticByteLen,
+    D: StaticByteLen,
+    E: StaticByteLen,
+> StaticByteLen for super::Permute5<A, B, C, D, E> {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len() + <super::Permute4<B, C, D, E> as StaticByteLen>::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v.0);
+        self.1.lemma_static_len_matches_byte_len(v.1.0);
+        self.2.lemma_static_len_matches_byte_len(v.1.1.0);
+        self.3.lemma_static_len_matches_byte_len(v.1.1.1.0);
+        self.4.lemma_static_len_matches_byte_len(v.1.1.1.1);
+    }
+}
+
 } // verus!
