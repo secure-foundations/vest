@@ -36,8 +36,103 @@ pub type AClosedEnumInner = u8;
 impl DeepView for AClosedEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl AClosedEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<AClosedEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: AClosedEnumInner) -> bool {
+        {
+            let x = input;
+            x == 0 || x == 1 || x == 2
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: AClosedEnumInner) -> Self {
+        match input {
+            0 => Self::A,
+            1 => Self::B,
+            2 => Self::C,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> AClosedEnumInner {
+        match self {
+            Self::A => 0,
+            Self::B => 1,
+            Self::C => 2,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AClosedEnum::from_structural);
+        reveal(AClosedEnum::into_structural);
+        match self {
+            Self::A => {},
+            Self::B => {},
+            Self::C => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: AClosedEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AClosedEnum::from_structural);
+        reveal(AClosedEnum::into_structural);
+        match input {
+            0 => {},
+            1 => {},
+            2 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AClosedEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AClosedEnumReverse;
+
+impl SpecMap for AClosedEnumForward {
+    type Input = AClosedEnumInner;
+
+    type Output = AClosedEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AClosedEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for AClosedEnumReverse {
+    type Input = AClosedEnumSpec;
+
+    type Output = AClosedEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -48,22 +143,129 @@ unsafe impl Structural for AClosedEnum {
 
 # [doc = "data type for `a_regular_choose`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum ARegularChoose {
     A(u8),
     B(u16),
     C(u32),
 }
 
-pub type ARegularChooseSpec = ARegularChoose;
+# [verifier::ext_equal]
+pub enum ARegularChooseSpec<T0 = u8, T1 = u16, T2 = u32> {
+    A(T0),
+    B(T1),
+    C(T2),
+}
 
 pub type ARegularChooseInner = Sum<u8, Sum<u16, u32>>;
 
 impl DeepView for ARegularChoose {
-    type V = Self;
+    type V = ARegularChooseSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            ARegularChoose::A(v) => ARegularChooseSpec::A(v.deep_view()),
+            ARegularChoose::B(v) => ARegularChooseSpec::B(v.deep_view()),
+            ARegularChoose::C(v) => ARegularChooseSpec::C(v.deep_view()),
+        }
+    }
+}
+
+impl ARegularChoose {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                ARegularChoose::A(v) => ARegularChooseSpec::A(v.deep_view()),
+                ARegularChoose::B(v) => ARegularChooseSpec::B(v.deep_view()),
+                ARegularChoose::C(v) => ARegularChooseSpec::C(v.deep_view()),
+            },
+    {
+        reveal(<ARegularChoose as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> ARegularChooseSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, Sum<T1, T2>>) -> Self {
+        match input {
+            L(value) => Self::A(value),
+            R(L(value)) => Self::B(value),
+            R(R(value)) => Self::C(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, Sum<T1, T2>> {
+        match self {
+            Self::A(value) => L(value),
+            Self::B(value) => R(L(value)),
+            Self::C(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ARegularChooseSpec::from_structural);
+        reveal(ARegularChooseSpec::into_structural);
+        match self {
+            Self::A(_) => {},
+            Self::B(_) => {},
+            Self::C(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, Sum<T1, T2>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ARegularChooseSpec::from_structural);
+        reveal(ARegularChooseSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::A(value) => L(value),
+                Self::B(value) => R(L(value)),
+                Self::C(value) => R(R(value)),
+            },
+    {
+        reveal(ARegularChooseSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ARegularChooseForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ARegularChooseReverse;
+
+impl SpecMap for ARegularChooseForward {
+    type Input = ARegularChooseInner;
+
+    type Output = ARegularChooseSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ARegularChooseSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ARegularChooseReverse {
+    type Input = ARegularChooseSpec;
+
+    type Output = ARegularChooseInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -84,8 +286,111 @@ pub type AnOpenEnumInner = Sum<u8, u8>;
 impl DeepView for AnOpenEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl AnOpenEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<AnOpenEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: AnOpenEnumInner) -> bool {
+        match input {
+            L(x) => x == 0 || x == 1 || x == 2,
+            R(x) => true,
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: AnOpenEnumInner) -> Self {
+        match input {
+            L(x) => match x {
+                0 => Self::A,
+                1 => Self::B,
+                2 => Self::C,
+                _ => arbitrary(),
+            },
+            R(x) => Self::Unknown(x),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> AnOpenEnumInner {
+        match self {
+            Self::A => L(0),
+            Self::B => L(1),
+            Self::C => L(2),
+            Self::Unknown(x) => R(x),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AnOpenEnum::from_structural);
+        reveal(AnOpenEnum::into_structural);
+        match self {
+            Self::A => {},
+            Self::B => {},
+            Self::C => {},
+            Self::Unknown(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: AnOpenEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AnOpenEnum::from_structural);
+        reveal(AnOpenEnum::into_structural);
+        match input {
+            L(x) => match x {
+                0 => {},
+                1 => {},
+                2 => {},
+                _ => {
+                    assert(false);
+                },
+            },
+            R(_) => {},
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AnOpenEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AnOpenEnumReverse;
+
+impl SpecMap for AnOpenEnumForward {
+    type Input = AnOpenEnumInner;
+
+    type Output = AnOpenEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AnOpenEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for AnOpenEnumReverse {
+    type Input = AnOpenEnumSpec;
+
+    type Output = AnOpenEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -104,18 +409,19 @@ pub enum AChooseWithDefault<'i> {
 }
 
 # [verifier::ext_equal]
-pub enum AChooseWithDefaultSpec {
-    A(u8),
-    B(u16),
-    C(u32),
-    Default(Seq<u8>),
+pub enum AChooseWithDefaultSpec<T0 = u8, T1 = u16, T2 = u32, T3 = Seq<u8>> {
+    A(T0),
+    B(T1),
+    C(T2),
+    Default(T3),
 }
 
-pub type AChooseWithDefaultInner = Sum<u8, Sum<u16, Sum<u32, Seq<u8>>>>;
+pub type AChooseWithDefaultInner = Sum<Sum<u8, u16>, Sum<u32, Seq<u8>>>;
 
 impl<'i> DeepView for AChooseWithDefault<'i> {
     type V = AChooseWithDefaultSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             AChooseWithDefault::A(v) => AChooseWithDefaultSpec::A(v.deep_view()),
@@ -126,24 +432,241 @@ impl<'i> DeepView for AChooseWithDefault<'i> {
     }
 }
 
+impl<'i> AChooseWithDefault<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                AChooseWithDefault::A(v) => AChooseWithDefaultSpec::A(v.deep_view()),
+                AChooseWithDefault::B(v) => AChooseWithDefaultSpec::B(v.deep_view()),
+                AChooseWithDefault::C(v) => AChooseWithDefaultSpec::C(v.deep_view()),
+                AChooseWithDefault::Default(v) => AChooseWithDefaultSpec::Default(v.deep_view()),
+            },
+    {
+        reveal(<AChooseWithDefault as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> AChooseWithDefaultSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<T2, T3>>) -> Self {
+        match input {
+            L(L(value)) => Self::A(value),
+            L(R(value)) => Self::B(value),
+            R(L(value)) => Self::C(value),
+            R(R(value)) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<T2, T3>> {
+        match self {
+            Self::A(value) => L(L(value)),
+            Self::B(value) => L(R(value)),
+            Self::C(value) => R(L(value)),
+            Self::Default(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AChooseWithDefaultSpec::from_structural);
+        reveal(AChooseWithDefaultSpec::into_structural);
+        match self {
+            Self::A(_) => {},
+            Self::B(_) => {},
+            Self::C(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<Sum<T0, T1>, Sum<T2, T3>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AChooseWithDefaultSpec::from_structural);
+        reveal(AChooseWithDefaultSpec::into_structural);
+        match input {
+            L(L(_)) => {},
+            L(R(_)) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::A(value) => L(L(value)),
+                Self::B(value) => L(R(value)),
+                Self::C(value) => R(L(value)),
+                Self::Default(value) => R(R(value)),
+            },
+    {
+        reveal(AChooseWithDefaultSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AChooseWithDefaultForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AChooseWithDefaultReverse;
+
+impl SpecMap for AChooseWithDefaultForward {
+    type Input = AChooseWithDefaultInner;
+
+    type Output = AChooseWithDefaultSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AChooseWithDefaultSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for AChooseWithDefaultReverse {
+    type Input = AChooseWithDefaultSpec;
+
+    type Output = AChooseWithDefaultInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `a_non_dependent_choose`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum ANonDependentChoose {
     Variant1(u8),
     Variant2(u8),
     Variant3(u8),
 }
 
-pub type ANonDependentChooseSpec = ANonDependentChoose;
+# [verifier::ext_equal]
+pub enum ANonDependentChooseSpec<T0 = u8, T1 = u8, T2 = u8> {
+    Variant1(T0),
+    Variant2(T1),
+    Variant3(T2),
+}
 
 pub type ANonDependentChooseInner = Sum<u8, Sum<u8, u8>>;
 
 impl DeepView for ANonDependentChoose {
-    type V = Self;
+    type V = ANonDependentChooseSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            ANonDependentChoose::Variant1(v) => ANonDependentChooseSpec::Variant1(v.deep_view()),
+            ANonDependentChoose::Variant2(v) => ANonDependentChooseSpec::Variant2(v.deep_view()),
+            ANonDependentChoose::Variant3(v) => ANonDependentChooseSpec::Variant3(v.deep_view()),
+        }
+    }
+}
+
+impl ANonDependentChoose {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                ANonDependentChoose::Variant1(v) => ANonDependentChooseSpec::Variant1(
+                    v.deep_view(),
+                ),
+                ANonDependentChoose::Variant2(v) => ANonDependentChooseSpec::Variant2(
+                    v.deep_view(),
+                ),
+                ANonDependentChoose::Variant3(v) => ANonDependentChooseSpec::Variant3(
+                    v.deep_view(),
+                ),
+            },
+    {
+        reveal(<ANonDependentChoose as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> ANonDependentChooseSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, Sum<T1, T2>>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(L(value)) => Self::Variant2(value),
+            R(R(value)) => Self::Variant3(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, Sum<T1, T2>> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Variant2(value) => R(L(value)),
+            Self::Variant3(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ANonDependentChooseSpec::from_structural);
+        reveal(ANonDependentChooseSpec::into_structural);
+        match self {
+            Self::Variant1(_) => {},
+            Self::Variant2(_) => {},
+            Self::Variant3(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, Sum<T1, T2>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ANonDependentChooseSpec::from_structural);
+        reveal(ANonDependentChooseSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::Variant1(value) => L(value),
+                Self::Variant2(value) => R(L(value)),
+                Self::Variant3(value) => R(R(value)),
+            },
+    {
+        reveal(ANonDependentChooseSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ANonDependentChooseForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ANonDependentChooseReverse;
+
+impl SpecMap for ANonDependentChooseForward {
+    type Input = ANonDependentChooseInner;
+
+    type Output = ANonDependentChooseSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ANonDependentChooseSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ANonDependentChooseReverse {
+    type Input = ANonDependentChooseSpec;
+
+    type Output = ANonDependentChooseInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -163,8 +686,103 @@ pub type ATypedClosedEnumInner = u16;
 impl DeepView for ATypedClosedEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl ATypedClosedEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<ATypedClosedEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: ATypedClosedEnumInner) -> bool {
+        {
+            let x = input;
+            x == 0 || x == 1 || x == 2
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: ATypedClosedEnumInner) -> Self {
+        match input {
+            0 => Self::X,
+            1 => Self::Y,
+            2 => Self::Z,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> ATypedClosedEnumInner {
+        match self {
+            Self::X => 0,
+            Self::Y => 1,
+            Self::Z => 2,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ATypedClosedEnum::from_structural);
+        reveal(ATypedClosedEnum::into_structural);
+        match self {
+            Self::X => {},
+            Self::Y => {},
+            Self::Z => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: ATypedClosedEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ATypedClosedEnum::from_structural);
+        reveal(ATypedClosedEnum::into_structural);
+        match input {
+            0 => {},
+            1 => {},
+            2 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedClosedEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedClosedEnumReverse;
+
+impl SpecMap for ATypedClosedEnumForward {
+    type Input = ATypedClosedEnumInner;
+
+    type Output = ATypedClosedEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ATypedClosedEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for ATypedClosedEnumReverse {
+    type Input = ATypedClosedEnumSpec;
+
+    type Output = ATypedClosedEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -175,22 +793,129 @@ unsafe impl Structural for ATypedClosedEnum {
 
 # [doc = "data type for `a_typed_choose`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum ATypedChoose {
     X(u8),
     Y(u16),
     Z(u32),
 }
 
-pub type ATypedChooseSpec = ATypedChoose;
+# [verifier::ext_equal]
+pub enum ATypedChooseSpec<T0 = u8, T1 = u16, T2 = u32> {
+    X(T0),
+    Y(T1),
+    Z(T2),
+}
 
 pub type ATypedChooseInner = Sum<u8, Sum<u16, u32>>;
 
 impl DeepView for ATypedChoose {
-    type V = Self;
+    type V = ATypedChooseSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            ATypedChoose::X(v) => ATypedChooseSpec::X(v.deep_view()),
+            ATypedChoose::Y(v) => ATypedChooseSpec::Y(v.deep_view()),
+            ATypedChoose::Z(v) => ATypedChooseSpec::Z(v.deep_view()),
+        }
+    }
+}
+
+impl ATypedChoose {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                ATypedChoose::X(v) => ATypedChooseSpec::X(v.deep_view()),
+                ATypedChoose::Y(v) => ATypedChooseSpec::Y(v.deep_view()),
+                ATypedChoose::Z(v) => ATypedChooseSpec::Z(v.deep_view()),
+            },
+    {
+        reveal(<ATypedChoose as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> ATypedChooseSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, Sum<T1, T2>>) -> Self {
+        match input {
+            L(value) => Self::X(value),
+            R(L(value)) => Self::Y(value),
+            R(R(value)) => Self::Z(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, Sum<T1, T2>> {
+        match self {
+            Self::X(value) => L(value),
+            Self::Y(value) => R(L(value)),
+            Self::Z(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ATypedChooseSpec::from_structural);
+        reveal(ATypedChooseSpec::into_structural);
+        match self {
+            Self::X(_) => {},
+            Self::Y(_) => {},
+            Self::Z(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, Sum<T1, T2>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ATypedChooseSpec::from_structural);
+        reveal(ATypedChooseSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::X(value) => L(value),
+                Self::Y(value) => R(L(value)),
+                Self::Z(value) => R(R(value)),
+            },
+    {
+        reveal(ATypedChooseSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedChooseForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedChooseReverse;
+
+impl SpecMap for ATypedChooseForward {
+    type Input = ATypedChooseInner;
+
+    type Output = ATypedChooseSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ATypedChooseSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ATypedChooseReverse {
+    type Input = ATypedChooseSpec;
+
+    type Output = ATypedChooseInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -211,8 +936,111 @@ pub type ATypedOpenEnumInner = Sum<u32, u32>;
 impl DeepView for ATypedOpenEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl ATypedOpenEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<ATypedOpenEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: ATypedOpenEnumInner) -> bool {
+        match input {
+            L(x) => x == 0 || x == 1 || x == 2,
+            R(x) => true,
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: ATypedOpenEnumInner) -> Self {
+        match input {
+            L(x) => match x {
+                0 => Self::P,
+                1 => Self::Q,
+                2 => Self::R,
+                _ => arbitrary(),
+            },
+            R(x) => Self::Unknown(x),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> ATypedOpenEnumInner {
+        match self {
+            Self::P => L(0),
+            Self::Q => L(1),
+            Self::R => L(2),
+            Self::Unknown(x) => R(x),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ATypedOpenEnum::from_structural);
+        reveal(ATypedOpenEnum::into_structural);
+        match self {
+            Self::P => {},
+            Self::Q => {},
+            Self::R => {},
+            Self::Unknown(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: ATypedOpenEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ATypedOpenEnum::from_structural);
+        reveal(ATypedOpenEnum::into_structural);
+        match input {
+            L(x) => match x {
+                0 => {},
+                1 => {},
+                2 => {},
+                _ => {
+                    assert(false);
+                },
+            },
+            R(_) => {},
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedOpenEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedOpenEnumReverse;
+
+impl SpecMap for ATypedOpenEnumForward {
+    type Input = ATypedOpenEnumInner;
+
+    type Output = ATypedOpenEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ATypedOpenEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for ATypedOpenEnumReverse {
+    type Input = ATypedOpenEnumSpec;
+
+    type Output = ATypedOpenEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -231,18 +1059,19 @@ pub enum ATypedChooseWithDefault<'i> {
 }
 
 # [verifier::ext_equal]
-pub enum ATypedChooseWithDefaultSpec {
-    P(u8),
-    Q(u16),
-    R(u32),
-    Default(Seq<u8>),
+pub enum ATypedChooseWithDefaultSpec<T0 = u8, T1 = u16, T2 = u32, T3 = Seq<u8>> {
+    P(T0),
+    Q(T1),
+    R(T2),
+    Default(T3),
 }
 
-pub type ATypedChooseWithDefaultInner = Sum<u8, Sum<u16, Sum<u32, Seq<u8>>>>;
+pub type ATypedChooseWithDefaultInner = Sum<Sum<u8, u16>, Sum<u32, Seq<u8>>>;
 
 impl<'i> DeepView for ATypedChooseWithDefault<'i> {
     type V = ATypedChooseWithDefaultSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             ATypedChooseWithDefault::P(v) => ATypedChooseWithDefaultSpec::P(v.deep_view()),
@@ -252,6 +1081,112 @@ impl<'i> DeepView for ATypedChooseWithDefault<'i> {
                 v.deep_view(),
             ),
         }
+    }
+}
+
+impl<'i> ATypedChooseWithDefault<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                ATypedChooseWithDefault::P(v) => ATypedChooseWithDefaultSpec::P(v.deep_view()),
+                ATypedChooseWithDefault::Q(v) => ATypedChooseWithDefaultSpec::Q(v.deep_view()),
+                ATypedChooseWithDefault::R(v) => ATypedChooseWithDefaultSpec::R(v.deep_view()),
+                ATypedChooseWithDefault::Default(v) => ATypedChooseWithDefaultSpec::Default(
+                    v.deep_view(),
+                ),
+            },
+    {
+        reveal(<ATypedChooseWithDefault as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> ATypedChooseWithDefaultSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<T2, T3>>) -> Self {
+        match input {
+            L(L(value)) => Self::P(value),
+            L(R(value)) => Self::Q(value),
+            R(L(value)) => Self::R(value),
+            R(R(value)) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<T2, T3>> {
+        match self {
+            Self::P(value) => L(L(value)),
+            Self::Q(value) => L(R(value)),
+            Self::R(value) => R(L(value)),
+            Self::Default(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ATypedChooseWithDefaultSpec::from_structural);
+        reveal(ATypedChooseWithDefaultSpec::into_structural);
+        match self {
+            Self::P(_) => {},
+            Self::Q(_) => {},
+            Self::R(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<Sum<T0, T1>, Sum<T2, T3>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ATypedChooseWithDefaultSpec::from_structural);
+        reveal(ATypedChooseWithDefaultSpec::into_structural);
+        match input {
+            L(L(_)) => {},
+            L(R(_)) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::P(value) => L(L(value)),
+                Self::Q(value) => L(R(value)),
+                Self::R(value) => R(L(value)),
+                Self::Default(value) => R(R(value)),
+            },
+    {
+        reveal(ATypedChooseWithDefaultSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedChooseWithDefaultForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ATypedChooseWithDefaultReverse;
+
+impl SpecMap for ATypedChooseWithDefaultForward {
+    type Input = ATypedChooseWithDefaultInner;
+
+    type Output = ATypedChooseWithDefaultSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ATypedChooseWithDefaultSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ATypedChooseWithDefaultReverse {
+    type Input = ATypedChooseWithDefaultSpec;
+
+    type Output = ATypedChooseWithDefaultInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -271,8 +1206,103 @@ pub type AMixedTypedEnumInner = u8;
 impl DeepView for AMixedTypedEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl AMixedTypedEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<AMixedTypedEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: AMixedTypedEnumInner) -> bool {
+        {
+            let x = input;
+            x == 0 || x == 1 || x == 2
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: AMixedTypedEnumInner) -> Self {
+        match input {
+            0 => Self::M,
+            1 => Self::N,
+            2 => Self::O,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> AMixedTypedEnumInner {
+        match self {
+            Self::M => 0,
+            Self::N => 1,
+            Self::O => 2,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AMixedTypedEnum::from_structural);
+        reveal(AMixedTypedEnum::into_structural);
+        match self {
+            Self::M => {},
+            Self::N => {},
+            Self::O => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: AMixedTypedEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AMixedTypedEnum::from_structural);
+        reveal(AMixedTypedEnum::into_structural);
+        match input {
+            0 => {},
+            1 => {},
+            2 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AMixedTypedEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AMixedTypedEnumReverse;
+
+impl SpecMap for AMixedTypedEnumForward {
+    type Input = AMixedTypedEnumInner;
+
+    type Output = AMixedTypedEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AMixedTypedEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for AMixedTypedEnumReverse {
+    type Input = AMixedTypedEnumSpec;
+
+    type Output = AMixedTypedEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -289,7 +1319,7 @@ unsafe impl Structural for AMixedTypedEnum {
 pub struct AClosedEnumFmt;
 
 pub type AClosedEnumFmtSpec = Named<
-    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<AClosedEnumInner, AClosedEnumSpec>>,
+    Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<AClosedEnumForward, AClosedEnumReverse>>,
 >;
 
 impl AClosedEnumFmt {
@@ -299,25 +1329,7 @@ impl AClosedEnumFmt {
             "a_closed_enum",
             Mapped {
                 inner: Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
-                mapper: (
-                    |parsed: AClosedEnumInner| -> AClosedEnumSpec
-                        {
-                            match parsed {
-                                0 => AClosedEnumSpec::A,
-                                1 => AClosedEnumSpec::B,
-                                2 => AClosedEnumSpec::C,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: AClosedEnumSpec| -> AClosedEnumInner
-                        {
-                            match value {
-                                AClosedEnumSpec::A => 0,
-                                AClosedEnumSpec::B => 1,
-                                AClosedEnumSpec::C => 2,
-                            }
-                        },
-                ),
+                mapper: BiMap(AClosedEnumForward, AClosedEnumReverse),
             },
         )
     }
@@ -345,7 +1357,7 @@ impl ARegularChooseFmt {
 }
 
 pub type ARegularChooseFmtSpec = Named<
-    Mapped<Sum<U8, Sum<U16Le, U32Le>>, FnSpecMapper<ARegularChooseInner, ARegularChooseSpec>>,
+    Mapped<Sum<U8, Sum<U16Le, U32Le>>, BiMap<ARegularChooseForward, ARegularChooseReverse>>,
 >;
 
 impl ARegularChooseFmt {
@@ -359,24 +1371,7 @@ impl ARegularChooseFmt {
                     AClosedEnumSpec::B => R(L(U16Le)),
                     AClosedEnumSpec::C => R(R(U32Le)),
                 },
-                mapper: (
-                    |parsed: ARegularChooseInner| -> ARegularChooseSpec
-                        {
-                            match parsed {
-                                L(v) => ARegularChooseSpec::A(v),
-                                R(L(v)) => ARegularChooseSpec::B(v),
-                                R(R(v)) => ARegularChooseSpec::C(v),
-                            }
-                        },
-                    |value: ARegularChooseSpec| -> ARegularChooseInner
-                        {
-                            match value {
-                                ARegularChooseSpec::A(v) => L(v),
-                                ARegularChooseSpec::B(v) => R(L(v)),
-                                ARegularChooseSpec::C(v) => R(R(v)),
-                            }
-                        },
-                ),
+                mapper: BiMap(ARegularChooseForward, ARegularChooseReverse),
             },
         )
     }
@@ -389,7 +1384,7 @@ pub struct AnOpenEnumFmt;
 pub type AnOpenEnumFmtSpec = Named<
     Mapped<
         Choice<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
-        FnSpecMapper<AnOpenEnumInner, AnOpenEnumSpec>,
+        BiMap<AnOpenEnumForward, AnOpenEnumReverse>,
     >,
 >;
 
@@ -403,29 +1398,7 @@ impl AnOpenEnumFmt {
                     Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
                     Refined(U8, |x: u8| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
-                mapper: (
-                    |parsed: AnOpenEnumInner| -> AnOpenEnumSpec
-                        {
-                            match parsed {
-                                L(x) => match x {
-                                    0 => AnOpenEnumSpec::A,
-                                    1 => AnOpenEnumSpec::B,
-                                    2 => AnOpenEnumSpec::C,
-                                    _ => arbitrary(),
-                                },
-                                R(x) => AnOpenEnumSpec::Unknown(x),
-                            }
-                        },
-                    |value: AnOpenEnumSpec| -> AnOpenEnumInner
-                        {
-                            match value {
-                                AnOpenEnumSpec::A => L(0),
-                                AnOpenEnumSpec::B => L(1),
-                                AnOpenEnumSpec::C => L(2),
-                                AnOpenEnumSpec::Unknown(x) => R(x),
-                            }
-                        },
-                ),
+                mapper: BiMap(AnOpenEnumForward, AnOpenEnumReverse),
             },
         )
     }
@@ -454,8 +1427,8 @@ impl AChooseWithDefaultFmt {
 
 pub type AChooseWithDefaultFmtSpec = Named<
     Mapped<
-        Sum<U8, Sum<U16Le, Sum<U32Le, Tail>>>,
-        FnSpecMapper<AChooseWithDefaultInner, AChooseWithDefaultSpec>,
+        Sum<Sum<U8, U16Le>, Sum<U32Le, Tail>>,
+        BiMap<AChooseWithDefaultForward, AChooseWithDefaultReverse>,
     >,
 >;
 
@@ -466,31 +1439,12 @@ impl AChooseWithDefaultFmt {
             "a_choose_with_default",
             Mapped {
                 inner: match e {
-                    AnOpenEnumSpec::A => L(U8),
-                    AnOpenEnumSpec::B => R(L(U16Le)),
-                    AnOpenEnumSpec::C => R(R(L(U32Le))),
-                    _ => R(R(R(Tail))),
+                    AnOpenEnumSpec::A => L(L(U8)),
+                    AnOpenEnumSpec::B => L(R(U16Le)),
+                    AnOpenEnumSpec::C => R(L(U32Le)),
+                    _ => R(R(Tail)),
                 },
-                mapper: (
-                    |parsed: AChooseWithDefaultInner| -> AChooseWithDefaultSpec
-                        {
-                            match parsed {
-                                L(v) => AChooseWithDefaultSpec::A(v),
-                                R(L(v)) => AChooseWithDefaultSpec::B(v),
-                                R(R(L(v))) => AChooseWithDefaultSpec::C(v),
-                                R(R(R(v))) => AChooseWithDefaultSpec::Default(v),
-                            }
-                        },
-                    |value: AChooseWithDefaultSpec| -> AChooseWithDefaultInner
-                        {
-                            match value {
-                                AChooseWithDefaultSpec::A(v) => L(v),
-                                AChooseWithDefaultSpec::B(v) => R(L(v)),
-                                AChooseWithDefaultSpec::C(v) => R(R(L(v))),
-                                AChooseWithDefaultSpec::Default(v) => R(R(R(v))),
-                            }
-                        },
-                ),
+                mapper: BiMap(AChooseWithDefaultForward, AChooseWithDefaultReverse),
             },
         )
     }
@@ -506,7 +1460,7 @@ pub type ANonDependentChooseFmtSpec = Named<
             Refined<U8, PredFnSpec<u8>>,
             Choice<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
         >,
-        FnSpecMapper<ANonDependentChooseInner, ANonDependentChooseSpec>,
+        BiMap<ANonDependentChooseForward, ANonDependentChooseReverse>,
     >,
 >;
 
@@ -520,24 +1474,7 @@ impl ANonDependentChooseFmt {
                     Refined(U8, |x: u8| x >= 0 && x <= 10),
                     Choice(Refined(U8, |x: u8| x >= 11 && x <= 20), Refined(U8, |x: u8| x >= 21)),
                 ),
-                mapper: (
-                    |parsed: ANonDependentChooseInner| -> ANonDependentChooseSpec
-                        {
-                            match parsed {
-                                L(v) => ANonDependentChooseSpec::Variant1(v),
-                                R(L(v)) => ANonDependentChooseSpec::Variant2(v),
-                                R(R(v)) => ANonDependentChooseSpec::Variant3(v),
-                            }
-                        },
-                    |value: ANonDependentChooseSpec| -> ANonDependentChooseInner
-                        {
-                            match value {
-                                ANonDependentChooseSpec::Variant1(v) => L(v),
-                                ANonDependentChooseSpec::Variant2(v) => R(L(v)),
-                                ANonDependentChooseSpec::Variant3(v) => R(R(v)),
-                            }
-                        },
-                ),
+                mapper: BiMap(ANonDependentChooseForward, ANonDependentChooseReverse),
             },
         )
     }
@@ -550,7 +1487,7 @@ pub struct ATypedClosedEnumFmt;
 pub type ATypedClosedEnumFmtSpec = Named<
     Mapped<
         Refined<U16Le, PredFnSpec<u16>>,
-        FnSpecMapper<ATypedClosedEnumInner, ATypedClosedEnumSpec>,
+        BiMap<ATypedClosedEnumForward, ATypedClosedEnumReverse>,
     >,
 >;
 
@@ -561,25 +1498,7 @@ impl ATypedClosedEnumFmt {
             "a_typed_closed_enum",
             Mapped {
                 inner: Refined(U16Le, |x: u16| ((x == 0) || (x == 1)) || (x == 2)),
-                mapper: (
-                    |parsed: ATypedClosedEnumInner| -> ATypedClosedEnumSpec
-                        {
-                            match parsed {
-                                0 => ATypedClosedEnumSpec::X,
-                                1 => ATypedClosedEnumSpec::Y,
-                                2 => ATypedClosedEnumSpec::Z,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: ATypedClosedEnumSpec| -> ATypedClosedEnumInner
-                        {
-                            match value {
-                                ATypedClosedEnumSpec::X => 0,
-                                ATypedClosedEnumSpec::Y => 1,
-                                ATypedClosedEnumSpec::Z => 2,
-                            }
-                        },
-                ),
+                mapper: BiMap(ATypedClosedEnumForward, ATypedClosedEnumReverse),
             },
         )
     }
@@ -607,7 +1526,7 @@ impl ATypedChooseFmt {
 }
 
 pub type ATypedChooseFmtSpec = Named<
-    Mapped<Sum<U8, Sum<U16Le, U32Le>>, FnSpecMapper<ATypedChooseInner, ATypedChooseSpec>>,
+    Mapped<Sum<U8, Sum<U16Le, U32Le>>, BiMap<ATypedChooseForward, ATypedChooseReverse>>,
 >;
 
 impl ATypedChooseFmt {
@@ -621,24 +1540,7 @@ impl ATypedChooseFmt {
                     ATypedClosedEnumSpec::Y => R(L(U16Le)),
                     ATypedClosedEnumSpec::Z => R(R(U32Le)),
                 },
-                mapper: (
-                    |parsed: ATypedChooseInner| -> ATypedChooseSpec
-                        {
-                            match parsed {
-                                L(v) => ATypedChooseSpec::X(v),
-                                R(L(v)) => ATypedChooseSpec::Y(v),
-                                R(R(v)) => ATypedChooseSpec::Z(v),
-                            }
-                        },
-                    |value: ATypedChooseSpec| -> ATypedChooseInner
-                        {
-                            match value {
-                                ATypedChooseSpec::X(v) => L(v),
-                                ATypedChooseSpec::Y(v) => R(L(v)),
-                                ATypedChooseSpec::Z(v) => R(R(v)),
-                            }
-                        },
-                ),
+                mapper: BiMap(ATypedChooseForward, ATypedChooseReverse),
             },
         )
     }
@@ -651,7 +1553,7 @@ pub struct ATypedOpenEnumFmt;
 pub type ATypedOpenEnumFmtSpec = Named<
     Mapped<
         Choice<Refined<U32Le, PredFnSpec<u32>>, Refined<U32Le, PredFnSpec<u32>>>,
-        FnSpecMapper<ATypedOpenEnumInner, ATypedOpenEnumSpec>,
+        BiMap<ATypedOpenEnumForward, ATypedOpenEnumReverse>,
     >,
 >;
 
@@ -665,29 +1567,7 @@ impl ATypedOpenEnumFmt {
                     Refined(U32Le, |x: u32| ((x == 0) || (x == 1)) || (x == 2)),
                     Refined(U32Le, |x: u32| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
-                mapper: (
-                    |parsed: ATypedOpenEnumInner| -> ATypedOpenEnumSpec
-                        {
-                            match parsed {
-                                L(x) => match x {
-                                    0 => ATypedOpenEnumSpec::P,
-                                    1 => ATypedOpenEnumSpec::Q,
-                                    2 => ATypedOpenEnumSpec::R,
-                                    _ => arbitrary(),
-                                },
-                                R(x) => ATypedOpenEnumSpec::Unknown(x),
-                            }
-                        },
-                    |value: ATypedOpenEnumSpec| -> ATypedOpenEnumInner
-                        {
-                            match value {
-                                ATypedOpenEnumSpec::P => L(0),
-                                ATypedOpenEnumSpec::Q => L(1),
-                                ATypedOpenEnumSpec::R => L(2),
-                                ATypedOpenEnumSpec::Unknown(x) => R(x),
-                            }
-                        },
-                ),
+                mapper: BiMap(ATypedOpenEnumForward, ATypedOpenEnumReverse),
             },
         )
     }
@@ -716,8 +1596,8 @@ impl ATypedChooseWithDefaultFmt {
 
 pub type ATypedChooseWithDefaultFmtSpec = Named<
     Mapped<
-        Sum<U8, Sum<U16Le, Sum<U32Le, Tail>>>,
-        FnSpecMapper<ATypedChooseWithDefaultInner, ATypedChooseWithDefaultSpec>,
+        Sum<Sum<U8, U16Le>, Sum<U32Le, Tail>>,
+        BiMap<ATypedChooseWithDefaultForward, ATypedChooseWithDefaultReverse>,
     >,
 >;
 
@@ -728,31 +1608,12 @@ impl ATypedChooseWithDefaultFmt {
             "a_typed_choose_with_default",
             Mapped {
                 inner: match e {
-                    ATypedOpenEnumSpec::P => L(U8),
-                    ATypedOpenEnumSpec::Q => R(L(U16Le)),
-                    ATypedOpenEnumSpec::R => R(R(L(U32Le))),
-                    _ => R(R(R(Tail))),
+                    ATypedOpenEnumSpec::P => L(L(U8)),
+                    ATypedOpenEnumSpec::Q => L(R(U16Le)),
+                    ATypedOpenEnumSpec::R => R(L(U32Le)),
+                    _ => R(R(Tail)),
                 },
-                mapper: (
-                    |parsed: ATypedChooseWithDefaultInner| -> ATypedChooseWithDefaultSpec
-                        {
-                            match parsed {
-                                L(v) => ATypedChooseWithDefaultSpec::P(v),
-                                R(L(v)) => ATypedChooseWithDefaultSpec::Q(v),
-                                R(R(L(v))) => ATypedChooseWithDefaultSpec::R(v),
-                                R(R(R(v))) => ATypedChooseWithDefaultSpec::Default(v),
-                            }
-                        },
-                    |value: ATypedChooseWithDefaultSpec| -> ATypedChooseWithDefaultInner
-                        {
-                            match value {
-                                ATypedChooseWithDefaultSpec::P(v) => L(v),
-                                ATypedChooseWithDefaultSpec::Q(v) => R(L(v)),
-                                ATypedChooseWithDefaultSpec::R(v) => R(R(L(v))),
-                                ATypedChooseWithDefaultSpec::Default(v) => R(R(R(v))),
-                            }
-                        },
-                ),
+                mapper: BiMap(ATypedChooseWithDefaultForward, ATypedChooseWithDefaultReverse),
             },
         )
     }
@@ -763,7 +1624,7 @@ impl ATypedChooseWithDefaultFmt {
 pub struct AMixedTypedEnumFmt;
 
 pub type AMixedTypedEnumFmtSpec = Named<
-    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<AMixedTypedEnumInner, AMixedTypedEnumSpec>>,
+    Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<AMixedTypedEnumForward, AMixedTypedEnumReverse>>,
 >;
 
 impl AMixedTypedEnumFmt {
@@ -773,25 +1634,7 @@ impl AMixedTypedEnumFmt {
             "a_mixed_typed_enum",
             Mapped {
                 inner: Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
-                mapper: (
-                    |parsed: AMixedTypedEnumInner| -> AMixedTypedEnumSpec
-                        {
-                            match parsed {
-                                0 => AMixedTypedEnumSpec::M,
-                                1 => AMixedTypedEnumSpec::N,
-                                2 => AMixedTypedEnumSpec::O,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: AMixedTypedEnumSpec| -> AMixedTypedEnumInner
-                        {
-                            match value {
-                                AMixedTypedEnumSpec::M => 0,
-                                AMixedTypedEnumSpec::N => 1,
-                                AMixedTypedEnumSpec::O => 2,
-                            }
-                        },
-                ),
+                mapper: BiMap(AMixedTypedEnumForward, AMixedTypedEnumReverse),
             },
         )
     }
@@ -1251,7 +2094,29 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        AClosedEnum::lemma_from_into,
+        AClosedEnum::lemma_into_from,
+        ARegularChooseSpec::lemma_from_into,
+        ARegularChooseSpec::lemma_into_from,
+        AnOpenEnum::lemma_from_into,
+        AnOpenEnum::lemma_into_from,
+        AChooseWithDefaultSpec::lemma_from_into,
+        AChooseWithDefaultSpec::lemma_into_from,
+        ANonDependentChooseSpec::lemma_from_into,
+        ANonDependentChooseSpec::lemma_into_from,
+        ATypedClosedEnum::lemma_from_into,
+        ATypedClosedEnum::lemma_into_from,
+        ATypedChooseSpec::lemma_from_into,
+        ATypedChooseSpec::lemma_into_from,
+        ATypedOpenEnum::lemma_from_into,
+        ATypedOpenEnum::lemma_into_from,
+        ATypedChooseWithDefaultSpec::lemma_from_into,
+        ATypedChooseWithDefaultSpec::lemma_into_from,
+        AMixedTypedEnum::lemma_from_into,
+        AMixedTypedEnum::lemma_into_from,
+    };
 
     impl SafeParser for AClosedEnumFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -1278,6 +2143,11 @@ mod derived_proofs {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: AClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AClosedEnum::structural_valid(input));
+                AClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1286,6 +2156,11 @@ mod derived_proofs {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<AClosedEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: AClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AClosedEnum::structural_valid(input));
+                AClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1325,6 +2200,10 @@ mod derived_proofs {
             reveal(<AClosedEnumFmt as Consistency>::consistent);
             reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: AClosedEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AClosedEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1334,6 +2213,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: AClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AClosedEnum::structural_valid(input));
+                AClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1384,6 +2268,10 @@ mod derived_proofs {
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
             reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ARegularChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ARegularChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1392,6 +2280,10 @@ mod derived_proofs {
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
             reveal(<ARegularChooseFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ARegularChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ARegularChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1431,6 +2323,10 @@ mod derived_proofs {
             reveal(<ARegularChooseFmt as Consistency>::consistent);
             reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|output: ARegularChooseSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ARegularChooseSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1440,6 +2336,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ARegularChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ARegularChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1490,6 +2390,11 @@ mod derived_proofs {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: AnOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AnOpenEnum::structural_valid(input));
+                AnOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1498,6 +2403,11 @@ mod derived_proofs {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<AnOpenEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: AnOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AnOpenEnum::structural_valid(input));
+                AnOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1537,6 +2447,10 @@ mod derived_proofs {
             reveal(<AnOpenEnumFmt as Consistency>::consistent);
             reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: AnOpenEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AnOpenEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1546,6 +2460,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: AnOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AnOpenEnum::structural_valid(input));
+                AnOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1596,6 +2515,10 @@ mod derived_proofs {
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: AChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1604,6 +2527,10 @@ mod derived_proofs {
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<AChooseWithDefaultFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: AChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1626,6 +2553,10 @@ mod derived_proofs {
             reveal(<AChooseWithDefaultFmt as Consistency>::consistent);
             reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|output: AChooseWithDefaultSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AChooseWithDefaultSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1635,6 +2566,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: AChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1675,6 +2610,10 @@ mod derived_proofs {
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
             reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ANonDependentChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ANonDependentChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1683,6 +2622,10 @@ mod derived_proofs {
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
             reveal(<ANonDependentChooseFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ANonDependentChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ANonDependentChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1722,6 +2665,10 @@ mod derived_proofs {
             reveal(<ANonDependentChooseFmt as Consistency>::consistent);
             reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ANonDependentChooseSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ANonDependentChooseSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1731,6 +2678,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ANonDependentChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ANonDependentChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1781,6 +2732,11 @@ mod derived_proofs {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedClosedEnum::structural_valid(input));
+                ATypedClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1789,6 +2745,11 @@ mod derived_proofs {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedClosedEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedClosedEnum::structural_valid(input));
+                ATypedClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1828,6 +2789,10 @@ mod derived_proofs {
             reveal(<ATypedClosedEnumFmt as Consistency>::consistent);
             reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ATypedClosedEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ATypedClosedEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1837,6 +2802,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedClosedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedClosedEnum::structural_valid(input));
+                ATypedClosedEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1887,6 +2857,10 @@ mod derived_proofs {
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1895,6 +2869,10 @@ mod derived_proofs {
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1934,6 +2912,10 @@ mod derived_proofs {
             reveal(<ATypedChooseFmt as Consistency>::consistent);
             reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|output: ATypedChooseSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ATypedChooseSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1943,6 +2925,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1993,6 +2979,11 @@ mod derived_proofs {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedOpenEnum::structural_valid(input));
+                ATypedOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2001,6 +2992,11 @@ mod derived_proofs {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedOpenEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedOpenEnum::structural_valid(input));
+                ATypedOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2040,6 +3036,10 @@ mod derived_proofs {
             reveal(<ATypedOpenEnumFmt as Consistency>::consistent);
             reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ATypedOpenEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ATypedOpenEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2049,6 +3049,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ATypedOpenEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ATypedOpenEnum::structural_valid(input));
+                ATypedOpenEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2099,6 +3104,10 @@ mod derived_proofs {
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2107,6 +3116,10 @@ mod derived_proofs {
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseWithDefaultFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2129,6 +3142,10 @@ mod derived_proofs {
             reveal(<ATypedChooseWithDefaultFmt as Consistency>::consistent);
             reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|output: ATypedChooseWithDefaultSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ATypedChooseWithDefaultSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2138,6 +3155,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.e_spec());
+            assert forall|input: ATypedChooseWithDefaultInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ATypedChooseWithDefaultSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2178,6 +3199,11 @@ mod derived_proofs {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: AMixedTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AMixedTypedEnum::structural_valid(input));
+                AMixedTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2186,6 +3212,11 @@ mod derived_proofs {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<AMixedTypedEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: AMixedTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AMixedTypedEnum::structural_valid(input));
+                AMixedTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2225,6 +3256,10 @@ mod derived_proofs {
             reveal(<AMixedTypedEnumFmt as Consistency>::consistent);
             reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: AMixedTypedEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AMixedTypedEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2234,6 +3269,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: AMixedTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(AMixedTypedEnum::structural_valid(input));
+                AMixedTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2272,6 +3312,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
+            reveal(<AClosedEnum as DeepView>::deep_view);
+            reveal(AClosedEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2291,6 +3333,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &AClosedEnum, obuf: &mut Output) {
             reveal(<AClosedEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AClosedEnum as DeepView>::deep_view);
+            reveal(AClosedEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2307,6 +3351,8 @@ mod exec_impls {
     impl<'i> Prepare<AClosedEnum> for AClosedEnumFmt {
         fn prepare(&self, v: &AClosedEnum) -> Result<usize, PreSerializeError> {
             reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AClosedEnum as DeepView>::deep_view);
+            reveal(AClosedEnum::into_structural);
             let tag = match *v {
                 AClosedEnum::A => 0,
                 AClosedEnum::B => 1,
@@ -2322,11 +3368,18 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
+            reveal(<ARegularChoose as DeepView>::deep_view);
+            reveal(ARegularChooseSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             let (n, v) = match self.e {
@@ -2352,11 +3405,18 @@ mod exec_impls {
         fn serialize_into(&self, v: &ARegularChoose, obuf: &mut Output) {
             reveal(<ARegularChooseFmt as SpecSerializer>::spec_serialize);
             reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ARegularChoose as DeepView>::deep_view);
+            reveal(ARegularChooseSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
+
+            proof {
+                self.e.lemma_deep_view();
+            }
 
             match (self.e, v) {
                 (AClosedEnum::A, ARegularChoose::A(v)) => {
@@ -2378,8 +3438,15 @@ mod exec_impls {
     impl<'i> Prepare<ARegularChoose> for ARegularChooseFmt {
         fn prepare(&self, v: &ARegularChoose) -> Result<usize, PreSerializeError> {
             reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ARegularChoose as DeepView>::deep_view);
+            reveal(ARegularChooseSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             match (self.e, v) {
@@ -2396,6 +3463,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
+            reveal(<AnOpenEnum as DeepView>::deep_view);
+            reveal(AnOpenEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2415,6 +3484,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &AnOpenEnum, obuf: &mut Output) {
             reveal(<AnOpenEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AnOpenEnum as DeepView>::deep_view);
+            reveal(AnOpenEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2432,6 +3503,8 @@ mod exec_impls {
     impl<'i> Prepare<AnOpenEnum> for AnOpenEnumFmt {
         fn prepare(&self, v: &AnOpenEnum) -> Result<usize, PreSerializeError> {
             reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AnOpenEnum as DeepView>::deep_view);
+            reveal(AnOpenEnum::into_structural);
             let tag = match *v {
                 AnOpenEnum::A => 0,
                 AnOpenEnum::B => 1,
@@ -2448,11 +3521,18 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
+            reveal(<AChooseWithDefault as DeepView>::deep_view);
+            reveal(AChooseWithDefaultSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             let (n, v) = match self.e {
@@ -2485,11 +3565,18 @@ mod exec_impls {
         fn serialize_into(&self, v: &AChooseWithDefault<'i>, obuf: &mut Output) {
             reveal(<AChooseWithDefaultFmt as SpecSerializer>::spec_serialize);
             reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            reveal(<AChooseWithDefault as DeepView>::deep_view);
+            reveal(AChooseWithDefaultSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
+
+            proof {
+                self.e.lemma_deep_view();
+            }
 
             match (self.e, v) {
                 (AnOpenEnum::A, AChooseWithDefault::A(v)) => {
@@ -2514,8 +3601,15 @@ mod exec_impls {
     impl<'i> Prepare<AChooseWithDefault<'i>> for AChooseWithDefaultFmt {
         fn prepare(&self, v: &AChooseWithDefault<'i>) -> Result<usize, PreSerializeError> {
             reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            reveal(<AChooseWithDefault as DeepView>::deep_view);
+            reveal(AChooseWithDefaultSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             match (self.e, v) {
@@ -2534,6 +3628,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
+            reveal(<ANonDependentChoose as DeepView>::deep_view);
+            reveal(ANonDependentChooseSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2559,6 +3655,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ANonDependentChoose, obuf: &mut Output) {
             reveal(<ANonDependentChooseFmt as SpecSerializer>::spec_serialize);
             reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ANonDependentChoose as DeepView>::deep_view);
+            reveal(ANonDependentChooseSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             match v {
@@ -2580,6 +3678,8 @@ mod exec_impls {
     impl<'i> Prepare<ANonDependentChoose> for ANonDependentChooseFmt {
         fn prepare(&self, v: &ANonDependentChoose) -> Result<usize, PreSerializeError> {
             reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ANonDependentChoose as DeepView>::deep_view);
+            reveal(ANonDependentChooseSpec::into_structural);
             match v {
                 ANonDependentChoose::Variant1(v) => {
                     if !(*v >= 0 && *v <= 10) {
@@ -2611,6 +3711,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
+            reveal(<ATypedClosedEnum as DeepView>::deep_view);
+            reveal(ATypedClosedEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2630,6 +3732,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ATypedClosedEnum, obuf: &mut Output) {
             reveal(<ATypedClosedEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedClosedEnum as DeepView>::deep_view);
+            reveal(ATypedClosedEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2646,6 +3750,8 @@ mod exec_impls {
     impl<'i> Prepare<ATypedClosedEnum> for ATypedClosedEnumFmt {
         fn prepare(&self, v: &ATypedClosedEnum) -> Result<usize, PreSerializeError> {
             reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedClosedEnum as DeepView>::deep_view);
+            reveal(ATypedClosedEnum::into_structural);
             let tag = match *v {
                 ATypedClosedEnum::X => 0,
                 ATypedClosedEnum::Y => 1,
@@ -2661,11 +3767,18 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
+            reveal(<ATypedChoose as DeepView>::deep_view);
+            reveal(ATypedChooseSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             let (n, v) = match self.e {
@@ -2691,11 +3804,18 @@ mod exec_impls {
         fn serialize_into(&self, v: &ATypedChoose, obuf: &mut Output) {
             reveal(<ATypedChooseFmt as SpecSerializer>::spec_serialize);
             reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedChoose as DeepView>::deep_view);
+            reveal(ATypedChooseSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
+
+            proof {
+                self.e.lemma_deep_view();
+            }
 
             match (self.e, v) {
                 (ATypedClosedEnum::X, ATypedChoose::X(v)) => {
@@ -2717,8 +3837,15 @@ mod exec_impls {
     impl<'i> Prepare<ATypedChoose> for ATypedChooseFmt {
         fn prepare(&self, v: &ATypedChoose) -> Result<usize, PreSerializeError> {
             reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedChoose as DeepView>::deep_view);
+            reveal(ATypedChooseSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             match (self.e, v) {
@@ -2735,6 +3862,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
+            reveal(<ATypedOpenEnum as DeepView>::deep_view);
+            reveal(ATypedOpenEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2754,6 +3883,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ATypedOpenEnum, obuf: &mut Output) {
             reveal(<ATypedOpenEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedOpenEnum as DeepView>::deep_view);
+            reveal(ATypedOpenEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2771,6 +3902,8 @@ mod exec_impls {
     impl<'i> Prepare<ATypedOpenEnum> for ATypedOpenEnumFmt {
         fn prepare(&self, v: &ATypedOpenEnum) -> Result<usize, PreSerializeError> {
             reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedOpenEnum as DeepView>::deep_view);
+            reveal(ATypedOpenEnum::into_structural);
             let tag = match *v {
                 ATypedOpenEnum::P => 0,
                 ATypedOpenEnum::Q => 1,
@@ -2787,11 +3920,18 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
+            reveal(<ATypedChooseWithDefault as DeepView>::deep_view);
+            reveal(ATypedChooseWithDefaultSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             let (n, v) = match self.e {
@@ -2824,11 +3964,18 @@ mod exec_impls {
         fn serialize_into(&self, v: &ATypedChooseWithDefault<'i>, obuf: &mut Output) {
             reveal(<ATypedChooseWithDefaultFmt as SpecSerializer>::spec_serialize);
             reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedChooseWithDefault as DeepView>::deep_view);
+            reveal(ATypedChooseWithDefaultSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
+
+            proof {
+                self.e.lemma_deep_view();
+            }
 
             match (self.e, v) {
                 (ATypedOpenEnum::P, ATypedChooseWithDefault::P(v)) => {
@@ -2853,8 +4000,15 @@ mod exec_impls {
     impl<'i> Prepare<ATypedChooseWithDefault<'i>> for ATypedChooseWithDefaultFmt {
         fn prepare(&self, v: &ATypedChooseWithDefault<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
+            reveal(<ATypedChooseWithDefault as DeepView>::deep_view);
+            reveal(ATypedChooseWithDefaultSpec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.e.lemma_deep_view();
+            }
+
+            proof {
+                self.e.lemma_deep_view();
             }
 
             match (self.e, v) {
@@ -2873,6 +4027,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
+            reveal(<AMixedTypedEnum as DeepView>::deep_view);
+            reveal(AMixedTypedEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2892,6 +4048,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &AMixedTypedEnum, obuf: &mut Output) {
             reveal(<AMixedTypedEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AMixedTypedEnum as DeepView>::deep_view);
+            reveal(AMixedTypedEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -2908,6 +4066,8 @@ mod exec_impls {
     impl<'i> Prepare<AMixedTypedEnum> for AMixedTypedEnumFmt {
         fn prepare(&self, v: &AMixedTypedEnum) -> Result<usize, PreSerializeError> {
             reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<AMixedTypedEnum as DeepView>::deep_view);
+            reveal(AMixedTypedEnum::into_structural);
             let tag = match *v {
                 AMixedTypedEnum::M => 0,
                 AMixedTypedEnum::N => 1,

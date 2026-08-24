@@ -34,10 +34,10 @@ pub struct MsgD {
 }
 
 # [verifier::ext_equal]
-pub struct MsgDSpec {
-    pub f1: Seq<u8>,
-    pub f2: u16,
-    pub c: Seq<u8>,
+pub struct MsgDSpec<T0 = Seq<u8>, T1 = u16, T2 = Seq<u8>> {
+    pub f1: T0,
+    pub f2: T1,
+    pub c: T2,
 }
 
 pub type MsgDInner = (Seq<u8>, (u16, Seq<u8>));
@@ -45,8 +45,87 @@ pub type MsgDInner = (Seq<u8>, (u16, Seq<u8>));
 impl DeepView for MsgD {
     type V = MsgDSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MsgDSpec { f1: self.f1.deep_view(), f2: self.f2.deep_view(), c: self.c.deep_view() }
+    }
+}
+
+impl MsgD {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().f1 == self.f1.deep_view(),
+            self.deep_view().f2 == self.f2.deep_view(),
+            self.deep_view().c == self.c.deep_view(),
+    {
+        reveal(<MsgD as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> MsgDSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (f1, (f2, c)) = input;
+        Self { f1, f2, c }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { f1, f2, c } = self;
+        (f1, (f2, c))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MsgDSpec::from_structural);
+        reveal(MsgDSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MsgDSpec::from_structural);
+        reveal(MsgDSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { f1, f2, c } => (f1, (f2, c)),
+            },
+    {
+        reveal(MsgDSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgDForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgDReverse;
+
+impl SpecMap for MsgDForward {
+    type Input = MsgDInner;
+
+    type Output = MsgDSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MsgDSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MsgDReverse {
+    type Input = MsgDSpec;
+
+    type Output = MsgDInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -57,8 +136,8 @@ pub struct MsgB {
 }
 
 # [verifier::ext_equal]
-pub struct MsgBSpec {
-    pub f1: MsgDSpec,
+pub struct MsgBSpec<T0 = MsgDSpec> {
+    pub f1: T0,
 }
 
 pub type MsgBInner = MsgDSpec;
@@ -66,8 +145,85 @@ pub type MsgBInner = MsgDSpec;
 impl DeepView for MsgB {
     type V = MsgBSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MsgBSpec { f1: self.f1.deep_view() }
+    }
+}
+
+impl MsgB {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().f1 == self.f1.deep_view(),
+    {
+        reveal(<MsgB as DeepView>::deep_view);
+    }
+}
+
+impl<T0> MsgBSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let f1 = input;
+        Self { f1 }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { f1 } = self;
+        f1
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MsgBSpec::from_structural);
+        reveal(MsgBSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MsgBSpec::from_structural);
+        reveal(MsgBSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { f1 } => f1,
+            },
+    {
+        reveal(MsgBSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgBForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgBReverse;
+
+impl SpecMap for MsgBForward {
+    type Input = MsgBInner;
+
+    type Output = MsgBSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MsgBSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MsgBReverse {
+    type Input = MsgBSpec;
+
+    type Output = MsgBInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -79,9 +235,9 @@ pub struct MsgA<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct MsgASpec {
-    pub f1: MsgBSpec,
-    pub f2: Seq<u8>,
+pub struct MsgASpec<T0 = MsgBSpec, T1 = Seq<u8>> {
+    pub f1: T0,
+    pub f2: T1,
 }
 
 pub type MsgAInner = (MsgBSpec, Seq<u8>);
@@ -89,8 +245,86 @@ pub type MsgAInner = (MsgBSpec, Seq<u8>);
 impl<'i> DeepView for MsgA<'i> {
     type V = MsgASpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MsgASpec { f1: self.f1.deep_view(), f2: self.f2.deep_view() }
+    }
+}
+
+impl<'i> MsgA<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().f1 == self.f1.deep_view(),
+            self.deep_view().f2 == self.f2.deep_view(),
+    {
+        reveal(<MsgA as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> MsgASpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (f1, f2) = input;
+        Self { f1, f2 }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { f1, f2 } = self;
+        (f1, f2)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MsgASpec::from_structural);
+        reveal(MsgASpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MsgASpec::from_structural);
+        reveal(MsgASpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { f1, f2 } => (f1, f2),
+            },
+    {
+        reveal(MsgASpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgAForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgAReverse;
+
+impl SpecMap for MsgAForward {
+    type Input = MsgAInner;
+
+    type Output = MsgASpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MsgASpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MsgAReverse {
+    type Input = MsgASpec;
+
+    type Output = MsgAInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -111,8 +345,111 @@ pub type ContentTypeInner = Sum<u8, u8>;
 impl DeepView for ContentType {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl ContentType {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<ContentType as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: ContentTypeInner) -> bool {
+        match input {
+            L(x) => x == 0 || x == 1 || x == 2,
+            R(x) => true,
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: ContentTypeInner) -> Self {
+        match input {
+            L(x) => match x {
+                0 => Self::C0,
+                1 => Self::C1,
+                2 => Self::C2,
+                _ => arbitrary(),
+            },
+            R(x) => Self::Unknown(x),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> ContentTypeInner {
+        match self {
+            Self::C0 => L(0),
+            Self::C1 => L(1),
+            Self::C2 => L(2),
+            Self::Unknown(x) => R(x),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ContentType::from_structural);
+        reveal(ContentType::into_structural);
+        match self {
+            Self::C0 => {},
+            Self::C1 => {},
+            Self::C2 => {},
+            Self::Unknown(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: ContentTypeInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ContentType::from_structural);
+        reveal(ContentType::into_structural);
+        match input {
+            L(x) => match x {
+                0 => {},
+                1 => {},
+                2 => {},
+                _ => {
+                    assert(false);
+                },
+            },
+            R(_) => {},
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ContentTypeForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ContentTypeReverse;
+
+impl SpecMap for ContentTypeForward {
+    type Input = ContentTypeInner;
+
+    type Output = ContentTypeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ContentType::from_structural(input)
+    }
+}
+
+impl SpecMap for ContentTypeReverse {
+    type Input = ContentTypeSpec;
+
+    type Output = ContentTypeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -130,10 +467,10 @@ pub struct MsgC<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct MsgCSpec {
-    pub f2: ContentTypeSpec,
-    pub f3: u32,
-    pub f4: MsgCF4Spec,
+pub struct MsgCSpec<T0 = ContentTypeSpec, T1 = u32, T2 = MsgCF4Spec> {
+    pub f2: T0,
+    pub f3: T1,
+    pub f4: T2,
 }
 
 pub type MsgCInner = (ContentTypeSpec, (u32, MsgCF4Spec));
@@ -141,8 +478,87 @@ pub type MsgCInner = (ContentTypeSpec, (u32, MsgCF4Spec));
 impl<'i> DeepView for MsgC<'i> {
     type V = MsgCSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MsgCSpec { f2: self.f2.deep_view(), f3: self.f3.deep_view(), f4: self.f4.deep_view() }
+    }
+}
+
+impl<'i> MsgC<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().f2 == self.f2.deep_view(),
+            self.deep_view().f3 == self.f3.deep_view(),
+            self.deep_view().f4 == self.f4.deep_view(),
+    {
+        reveal(<MsgC as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> MsgCSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (f2, (f3, f4)) = input;
+        Self { f2, f3, f4 }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { f2, f3, f4 } = self;
+        (f2, (f3, f4))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MsgCSpec::from_structural);
+        reveal(MsgCSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MsgCSpec::from_structural);
+        reveal(MsgCSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { f2, f3, f4 } => (f2, (f3, f4)),
+            },
+    {
+        reveal(MsgCSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgCForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgCReverse;
+
+impl SpecMap for MsgCForward {
+    type Input = MsgCInner;
+
+    type Output = MsgCSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MsgCSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MsgCReverse {
+    type Input = MsgCSpec;
+
+    type Output = MsgCInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -161,18 +577,19 @@ pub enum MsgCF4<'i> {
 }
 
 # [verifier::ext_equal]
-pub enum MsgCF4Spec {
-    C0(Content0Spec),
-    C1(u16),
-    C2(u32),
-    Default(Seq<u8>),
+pub enum MsgCF4Spec<T0 = Content0Spec, T1 = u16, T2 = u32, T3 = Seq<u8>> {
+    C0(T0),
+    C1(T1),
+    C2(T2),
+    Default(T3),
 }
 
-pub type MsgCF4Inner = Sum<Content0Spec, Sum<u16, Sum<u32, Seq<u8>>>>;
+pub type MsgCF4Inner = Sum<Sum<Content0Spec, u16>, Sum<u32, Seq<u8>>>;
 
 impl<'i> DeepView for MsgCF4<'i> {
     type V = MsgCF4Spec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             MsgCF4::C0(v) => MsgCF4Spec::C0(v.deep_view()),
@@ -180,6 +597,110 @@ impl<'i> DeepView for MsgCF4<'i> {
             MsgCF4::C2(v) => MsgCF4Spec::C2(v.deep_view()),
             MsgCF4::Default(v) => MsgCF4Spec::Default(v.deep_view()),
         }
+    }
+}
+
+impl<'i> MsgCF4<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                MsgCF4::C0(v) => MsgCF4Spec::C0(v.deep_view()),
+                MsgCF4::C1(v) => MsgCF4Spec::C1(v.deep_view()),
+                MsgCF4::C2(v) => MsgCF4Spec::C2(v.deep_view()),
+                MsgCF4::Default(v) => MsgCF4Spec::Default(v.deep_view()),
+            },
+    {
+        reveal(<MsgCF4 as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> MsgCF4Spec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<T2, T3>>) -> Self {
+        match input {
+            L(L(value)) => Self::C0(value),
+            L(R(value)) => Self::C1(value),
+            R(L(value)) => Self::C2(value),
+            R(R(value)) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<T2, T3>> {
+        match self {
+            Self::C0(value) => L(L(value)),
+            Self::C1(value) => L(R(value)),
+            Self::C2(value) => R(L(value)),
+            Self::Default(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MsgCF4Spec::from_structural);
+        reveal(MsgCF4Spec::into_structural);
+        match self {
+            Self::C0(_) => {},
+            Self::C1(_) => {},
+            Self::C2(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<Sum<T0, T1>, Sum<T2, T3>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MsgCF4Spec::from_structural);
+        reveal(MsgCF4Spec::into_structural);
+        match input {
+            L(L(_)) => {},
+            L(R(_)) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::C0(value) => L(L(value)),
+                Self::C1(value) => L(R(value)),
+                Self::C2(value) => R(L(value)),
+                Self::Default(value) => R(R(value)),
+            },
+    {
+        reveal(MsgCF4Spec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgCF4Forward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MsgCF4Reverse;
+
+impl SpecMap for MsgCF4Forward {
+    type Input = MsgCF4Inner;
+
+    type Output = MsgCF4Spec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MsgCF4Spec::from_structural(input)
+    }
+}
+
+impl SpecMap for MsgCF4Reverse {
+    type Input = MsgCF4Spec;
+
+    type Output = MsgCF4Inner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -194,7 +715,7 @@ pub struct MsgDFmt;
 pub type MsgDFmtSpec = Named<
     Mapped<
         Pair<Const<Fixed<4>, [u8; 4]>, Pair<Const<U16Be, u16>, Const<Fixed<5>, [u8; 5]>>>,
-        FnSpecMapper<MsgDInner, MsgDSpec>,
+        BiMap<MsgDForward, MsgDReverse>,
     >,
 >;
 
@@ -211,18 +732,7 @@ impl MsgDFmt {
                         Const(Fixed::<5>, [0x01u8, 0x01u8, 0x01u8, 0x01u8, 0x01u8]),
                     ),
                 ),
-                mapper: (
-                    |parsed: MsgDInner| -> MsgDSpec
-                        {
-                            let (f1, (f2, c)) = parsed;
-                            MsgDSpec { f1, f2, c }
-                        },
-                    |value: MsgDSpec| -> MsgDInner
-                        {
-                            let MsgDSpec { f1, f2, c } = value;
-                            (f1, (f2, c))
-                        },
-                ),
+                mapper: BiMap(MsgDForward, MsgDReverse),
             },
         )
     }
@@ -232,29 +742,12 @@ impl MsgDFmt {
 # [derive (Clone, Copy)]
 pub struct MsgBFmt;
 
-pub type MsgBFmtSpec = Named<Mapped<MsgDFmt, FnSpecMapper<MsgBInner, MsgBSpec>>>;
+pub type MsgBFmtSpec = Named<Mapped<MsgDFmt, BiMap<MsgBForward, MsgBReverse>>>;
 
 impl MsgBFmt {
     # [doc = "specification constructor for `msg_b`."]
     pub open spec fn spec_inner() -> MsgBFmtSpec {
-        Named(
-            "msg_b",
-            Mapped {
-                inner: MsgDFmt,
-                mapper: (
-                    |parsed: MsgBInner| -> MsgBSpec
-                        {
-                            let f1 = parsed;
-                            MsgBSpec { f1 }
-                        },
-                    |value: MsgBSpec| -> MsgBInner
-                        {
-                            let MsgBSpec { f1 } = value;
-                            f1
-                        },
-                ),
-            },
-        )
+        Named("msg_b", Mapped { inner: MsgDFmt, mapper: BiMap(MsgBForward, MsgBReverse) })
     }
 }
 
@@ -262,28 +755,14 @@ impl MsgBFmt {
 # [derive (Clone, Copy)]
 pub struct MsgAFmt;
 
-pub type MsgAFmtSpec = Named<Mapped<Pair<MsgBFmt, Tail>, FnSpecMapper<MsgAInner, MsgASpec>>>;
+pub type MsgAFmtSpec = Named<Mapped<Pair<MsgBFmt, Tail>, BiMap<MsgAForward, MsgAReverse>>>;
 
 impl MsgAFmt {
     # [doc = "specification constructor for `msg_a`."]
     pub open spec fn spec_inner() -> MsgAFmtSpec {
         Named(
             "msg_a",
-            Mapped {
-                inner: Pair(MsgBFmt, Tail),
-                mapper: (
-                    |parsed: MsgAInner| -> MsgASpec
-                        {
-                            let (f1, f2) = parsed;
-                            MsgASpec { f1, f2 }
-                        },
-                    |value: MsgASpec| -> MsgAInner
-                        {
-                            let MsgASpec { f1, f2 } = value;
-                            (f1, f2)
-                        },
-                ),
-            },
+            Mapped { inner: Pair(MsgBFmt, Tail), mapper: BiMap(MsgAForward, MsgAReverse) },
         )
     }
 }
@@ -295,7 +774,7 @@ pub struct ContentTypeFmt;
 pub type ContentTypeFmtSpec = Named<
     Mapped<
         Choice<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
-        FnSpecMapper<ContentTypeInner, ContentTypeSpec>,
+        BiMap<ContentTypeForward, ContentTypeReverse>,
     >,
 >;
 
@@ -309,29 +788,7 @@ impl ContentTypeFmt {
                     Refined(U8, |x: u8| ((x == 0) || (x == 1)) || (x == 2)),
                     Refined(U8, |x: u8| ((x != 0) && (x != 1)) && (x != 2)),
                 ),
-                mapper: (
-                    |parsed: ContentTypeInner| -> ContentTypeSpec
-                        {
-                            match parsed {
-                                L(x) => match x {
-                                    0 => ContentTypeSpec::C0,
-                                    1 => ContentTypeSpec::C1,
-                                    2 => ContentTypeSpec::C2,
-                                    _ => arbitrary(),
-                                },
-                                R(x) => ContentTypeSpec::Unknown(x),
-                            }
-                        },
-                    |value: ContentTypeSpec| -> ContentTypeInner
-                        {
-                            match value {
-                                ContentTypeSpec::C0 => L(0),
-                                ContentTypeSpec::C1 => L(1),
-                                ContentTypeSpec::C2 => L(2),
-                                ContentTypeSpec::Unknown(x) => R(x),
-                            }
-                        },
-                ),
+                mapper: BiMap(ContentTypeForward, ContentTypeReverse),
             },
         )
     }
@@ -347,7 +804,7 @@ pub type MsgCFmtSpec = Named<
             ContentTypeFmt,
             spec_fn(ContentTypeSpec) -> Bind<U24Be, spec_fn(u32) -> ExactLen<MsgCF4Fmt, u32>>,
         >,
-        FnSpecMapper<MsgCInner, MsgCSpec>,
+        BiMap<MsgCForward, MsgCReverse>,
     >,
 >;
 
@@ -362,18 +819,7 @@ impl MsgCFmt {
                     |f2: ContentTypeSpec|
                         Bind(U24Be, |f3: u32| ExactLen(f3, MsgCF4Fmt::spec(f2, f3))),
                 ),
-                mapper: (
-                    |parsed: MsgCInner| -> MsgCSpec
-                        {
-                            let (f2, (f3, f4)) = parsed;
-                            MsgCSpec { f2, f3, f4 }
-                        },
-                    |value: MsgCSpec| -> MsgCInner
-                        {
-                            let MsgCSpec { f2, f3, f4 } = value;
-                            (f2, (f3, f4))
-                        },
-                ),
+                mapper: BiMap(MsgCForward, MsgCReverse),
             },
         )
     }
@@ -436,7 +882,7 @@ impl MsgCF4Fmt {
 }
 
 pub type MsgCF4FmtSpec = Named<
-    Mapped<Sum<Content0Fmt, Sum<U16Be, Sum<U32Be, Tail>>>, FnSpecMapper<MsgCF4Inner, MsgCF4Spec>>,
+    Mapped<Sum<Sum<Content0Fmt, U16Be>, Sum<U32Be, Tail>>, BiMap<MsgCF4Forward, MsgCF4Reverse>>,
 >;
 
 impl MsgCF4Fmt {
@@ -446,31 +892,12 @@ impl MsgCF4Fmt {
             "msg_c_f4",
             Mapped {
                 inner: match f2 {
-                    ContentTypeSpec::C0 => L(Content0Fmt::spec(f3)),
-                    ContentTypeSpec::C1 => R(L(U16Be)),
-                    ContentTypeSpec::C2 => R(R(L(U32Be))),
-                    _ => R(R(R(Tail))),
+                    ContentTypeSpec::C0 => L(L(Content0Fmt::spec(f3))),
+                    ContentTypeSpec::C1 => L(R(U16Be)),
+                    ContentTypeSpec::C2 => R(L(U32Be)),
+                    _ => R(R(Tail)),
                 },
-                mapper: (
-                    |parsed: MsgCF4Inner| -> MsgCF4Spec
-                        {
-                            match parsed {
-                                L(v) => MsgCF4Spec::C0(v),
-                                R(L(v)) => MsgCF4Spec::C1(v),
-                                R(R(L(v))) => MsgCF4Spec::C2(v),
-                                R(R(R(v))) => MsgCF4Spec::Default(v),
-                            }
-                        },
-                    |value: MsgCF4Spec| -> MsgCF4Inner
-                        {
-                            match value {
-                                MsgCF4Spec::C0(v) => L(v),
-                                MsgCF4Spec::C1(v) => R(L(v)),
-                                MsgCF4Spec::C2(v) => R(R(L(v))),
-                                MsgCF4Spec::Default(v) => R(R(R(v))),
-                            }
-                        },
-                ),
+                mapper: BiMap(MsgCF4Forward, MsgCF4Reverse),
             },
         )
     }
@@ -799,7 +1226,21 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        MsgDSpec::lemma_from_into,
+        MsgDSpec::lemma_into_from,
+        MsgBSpec::lemma_from_into,
+        MsgBSpec::lemma_into_from,
+        MsgASpec::lemma_from_into,
+        MsgASpec::lemma_into_from,
+        ContentType::lemma_from_into,
+        ContentType::lemma_into_from,
+        MsgCSpec::lemma_from_into,
+        MsgCSpec::lemma_into_from,
+        MsgCF4Spec::lemma_from_into,
+        MsgCF4Spec::lemma_into_from,
+    };
     // TODO(proofs): emit const-format proof wrappers for F5
 
     impl SafeParser for MsgDFmt {
@@ -827,6 +1268,10 @@ mod derived_proofs {
             reveal(<MsgDFmt as SpecParser>::spec_parse);
             reveal(<MsgDFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgDInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgDSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -835,6 +1280,10 @@ mod derived_proofs {
             reveal(<MsgDFmt as SpecParser>::spec_parse);
             reveal(<MsgDFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgDInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgDSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -874,6 +1323,10 @@ mod derived_proofs {
             reveal(<MsgDFmt as Consistency>::consistent);
             reveal(<MsgDFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MsgDSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MsgDSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -883,6 +1336,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MsgDFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgDInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgDSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -933,6 +1390,10 @@ mod derived_proofs {
             reveal(<MsgBFmt as SpecParser>::spec_parse);
             reveal(<MsgBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgBInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgBSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -941,6 +1402,10 @@ mod derived_proofs {
             reveal(<MsgBFmt as SpecParser>::spec_parse);
             reveal(<MsgBFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgBInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgBSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -980,6 +1445,10 @@ mod derived_proofs {
             reveal(<MsgBFmt as Consistency>::consistent);
             reveal(<MsgBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MsgBSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MsgBSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -989,6 +1458,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MsgBFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgBInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgBSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1039,6 +1512,10 @@ mod derived_proofs {
             reveal(<MsgAFmt as SpecParser>::spec_parse);
             reveal(<MsgAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgAInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgASpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1047,6 +1524,10 @@ mod derived_proofs {
             reveal(<MsgAFmt as SpecParser>::spec_parse);
             reveal(<MsgAFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgAInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgASpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1069,6 +1550,10 @@ mod derived_proofs {
             reveal(<MsgAFmt as Consistency>::consistent);
             reveal(<MsgAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MsgASpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MsgASpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1078,6 +1563,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MsgAFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgAInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgASpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1118,6 +1607,11 @@ mod derived_proofs {
             reveal(<ContentTypeFmt as SpecParser>::spec_parse);
             reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ContentTypeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ContentType::structural_valid(input));
+                ContentType::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1126,6 +1620,11 @@ mod derived_proofs {
             reveal(<ContentTypeFmt as SpecParser>::spec_parse);
             reveal(<ContentTypeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ContentTypeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ContentType::structural_valid(input));
+                ContentType::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1165,6 +1664,10 @@ mod derived_proofs {
             reveal(<ContentTypeFmt as Consistency>::consistent);
             reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ContentTypeSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ContentType::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1174,6 +1677,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ContentTypeFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ContentTypeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ContentType::structural_valid(input));
+                ContentType::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1224,6 +1732,10 @@ mod derived_proofs {
             reveal(<MsgCFmt as SpecParser>::spec_parse);
             reveal(<MsgCFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgCInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1232,6 +1744,10 @@ mod derived_proofs {
             reveal(<MsgCFmt as SpecParser>::spec_parse);
             reveal(<MsgCFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgCInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1271,6 +1787,10 @@ mod derived_proofs {
             reveal(<MsgCFmt as Consistency>::consistent);
             reveal(<MsgCFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MsgCSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MsgCSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1280,6 +1800,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MsgCFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MsgCInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1436,6 +1960,10 @@ mod derived_proofs {
             reveal(<MsgCF4Fmt as SpecParser>::spec_parse);
             reveal(<MsgCF4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.f2_spec(), self.f3_spec());
+            assert forall|input: MsgCF4Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCF4Spec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1444,6 +1972,10 @@ mod derived_proofs {
             reveal(<MsgCF4Fmt as SpecParser>::spec_parse);
             reveal(<MsgCF4Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.f2_spec(), self.f3_spec());
+            assert forall|input: MsgCF4Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCF4Spec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1466,6 +1998,10 @@ mod derived_proofs {
             reveal(<MsgCF4Fmt as Consistency>::consistent);
             reveal(<MsgCF4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.f2_spec(), self.f3_spec());
+            assert forall|output: MsgCF4Spec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MsgCF4Spec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1475,6 +2011,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MsgCF4Fmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.f2_spec(), self.f3_spec());
+            assert forall|input: MsgCF4Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MsgCF4Spec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1507,6 +2047,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgDFmt as SpecParser>::spec_parse);
+            reveal(<MsgD as DeepView>::deep_view);
+            reveal(MsgDSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1529,6 +2071,8 @@ mod exec_impls {
 
             reveal(<MsgDFmt as SpecSerializer>::spec_serialize);
             reveal(<MsgDFmt as SpecByteLen>::byte_len);
+            reveal(<MsgD as DeepView>::deep_view);
+            reveal(MsgDSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let MsgD { f1, f2, c } = v;
@@ -1543,6 +2087,8 @@ mod exec_impls {
     impl<'i> Prepare<MsgD> for MsgDFmt {
         fn prepare(&self, v: &MsgD) -> Result<usize, PreSerializeError> {
             reveal(<MsgDFmt as SpecByteLen>::byte_len);
+            reveal(<MsgD as DeepView>::deep_view);
+            reveal(MsgDSpec::into_structural);
             let MsgD { f1, f2, c } = v;
             let l1 = (Const(Fixed::<4>, [0x01, 0x02, 0x03, 0x04])).prepare(f1)?;
             let l2 = (Const(U16Be, 4660)).prepare(f2)?;
@@ -1562,6 +2108,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgBFmt as SpecParser>::spec_parse);
+            reveal(<MsgB as DeepView>::deep_view);
+            reveal(MsgBSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1580,6 +2128,8 @@ mod exec_impls {
 
             reveal(<MsgBFmt as SpecSerializer>::spec_serialize);
             reveal(<MsgBFmt as SpecByteLen>::byte_len);
+            reveal(<MsgB as DeepView>::deep_view);
+            reveal(MsgBSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let MsgB { f1 } = v;
@@ -1592,6 +2142,8 @@ mod exec_impls {
     impl<'i> Prepare<MsgB> for MsgBFmt {
         fn prepare(&self, v: &MsgB) -> Result<usize, PreSerializeError> {
             reveal(<MsgBFmt as SpecByteLen>::byte_len);
+            reveal(<MsgB as DeepView>::deep_view);
+            reveal(MsgBSpec::into_structural);
             let MsgB { f1 } = v;
             let l1 = (Named("msg_d", MsgDFmt)).prepare(f1)?;
             let total_len = l1;
@@ -1607,6 +2159,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgAFmt as SpecParser>::spec_parse);
+            reveal(<MsgA as DeepView>::deep_view);
+            reveal(MsgASpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1627,6 +2181,8 @@ mod exec_impls {
 
             reveal(<MsgAFmt as SpecSerializer>::spec_serialize);
             reveal(<MsgAFmt as SpecByteLen>::byte_len);
+            reveal(<MsgA as DeepView>::deep_view);
+            reveal(MsgASpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let MsgA { f1, f2 } = v;
@@ -1640,6 +2196,8 @@ mod exec_impls {
     impl<'i> Prepare<MsgA<'i>> for MsgAFmt {
         fn prepare(&self, v: &MsgA<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgAFmt as SpecByteLen>::byte_len);
+            reveal(<MsgA as DeepView>::deep_view);
+            reveal(MsgASpec::into_structural);
             let MsgA { f1, f2 } = v;
             let l1 = (Named("msg_b", MsgBFmt)).prepare(f1)?;
             let l2 = (Tail).prepare(f2)?;
@@ -1653,6 +2211,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ContentTypeFmt as SpecParser>::spec_parse);
+            reveal(<ContentType as DeepView>::deep_view);
+            reveal(ContentType::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1672,6 +2232,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ContentType, obuf: &mut Output) {
             reveal(<ContentTypeFmt as SpecSerializer>::spec_serialize);
             reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
+            reveal(<ContentType as DeepView>::deep_view);
+            reveal(ContentType::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -1689,6 +2251,8 @@ mod exec_impls {
     impl<'i> Prepare<ContentType> for ContentTypeFmt {
         fn prepare(&self, v: &ContentType) -> Result<usize, PreSerializeError> {
             reveal(<ContentTypeFmt as SpecByteLen>::byte_len);
+            reveal(<ContentType as DeepView>::deep_view);
+            reveal(ContentType::into_structural);
             let tag = match *v {
                 ContentType::C0 => 0,
                 ContentType::C1 => 1,
@@ -1708,13 +2272,22 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgCFmt as SpecParser>::spec_parse);
+            reveal(<MsgC as DeepView>::deep_view);
+            reveal(MsgCSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, f2) = (Named("content_type", ContentTypeFmt)).parse(&rest)?;
+            proof {
+                f2.lemma_deep_view();
+            }
             let rest = rest.skip(n1);
             let (n2, f3) = (U24Be).parse(&rest)?;
             let rest = rest.skip(n2);
+            proof {
+                f2.lemma_deep_view();
+            }
+
             let (n3, f4) = (ExactLen(f3, Named("msg_c_f4", MsgCF4Fmt { f2: f2, f3: f3 }))).parse(
                 &rest,
             )?;
@@ -1732,9 +2305,15 @@ mod exec_impls {
 
             reveal(<MsgCFmt as SpecSerializer>::spec_serialize);
             reveal(<MsgCFmt as SpecByteLen>::byte_len);
+            reveal(<MsgC as DeepView>::deep_view);
+            reveal(MsgCSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let MsgC { f2, f3, f4 } = v;
+            proof {
+                f2.lemma_deep_view();
+            }
+
             ContentTypeFmt.serialize_into(f2, obuf);
             U24Be.serialize_into(f3, obuf);
             ExactLen(*f3, MsgCF4Fmt { f2: *f2, f3: *f3 }).serialize_into(f4, obuf);
@@ -1746,7 +2325,13 @@ mod exec_impls {
     impl<'i> Prepare<MsgC<'i>> for MsgCFmt {
         fn prepare(&self, v: &MsgC<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgCFmt as SpecByteLen>::byte_len);
+            reveal(<MsgC as DeepView>::deep_view);
+            reveal(MsgCSpec::into_structural);
             let MsgC { f2, f3, f4 } = v;
+            proof {
+                f2.lemma_deep_view();
+            }
+
             let l1 = (Named("content_type", ContentTypeFmt)).prepare(f2)?;
             let l2 = (U24Be).prepare(f3)?;
             let l3 = (ExactLen(*f3, Named("msg_c_f4", MsgCF4Fmt { f2: *f2, f3: *f3 }))).prepare(
@@ -1809,11 +2394,18 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<MsgCF4Fmt as SpecParser>::spec_parse);
+            reveal(<MsgCF4 as DeepView>::deep_view);
+            reveal(MsgCF4Spec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+                self.f2.lemma_deep_view();
+            }
+
+            proof {
+                self.f2.lemma_deep_view();
             }
 
             let (n, v) = match self.f2 {
@@ -1843,11 +2435,18 @@ mod exec_impls {
         fn serialize_into(&self, v: &MsgCF4<'i>, obuf: &mut Output) {
             reveal(<MsgCF4Fmt as SpecSerializer>::spec_serialize);
             reveal(<MsgCF4Fmt as SpecByteLen>::byte_len);
+            reveal(<MsgCF4 as DeepView>::deep_view);
+            reveal(MsgCF4Spec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.f2.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
+
+            proof {
+                self.f2.lemma_deep_view();
+            }
 
             match (self.f2, v) {
                 (ContentType::C0, MsgCF4::C0(v)) => {
@@ -1872,8 +2471,15 @@ mod exec_impls {
     impl<'i> Prepare<MsgCF4<'i>> for MsgCF4Fmt {
         fn prepare(&self, v: &MsgCF4<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MsgCF4Fmt as SpecByteLen>::byte_len);
+            reveal(<MsgCF4 as DeepView>::deep_view);
+            reveal(MsgCF4Spec::into_structural);
             proof {
                 use_type_invariant(self);
+                self.f2.lemma_deep_view();
+            }
+
+            proof {
+                self.f2.lemma_deep_view();
             }
 
             match (self.f2, v) {

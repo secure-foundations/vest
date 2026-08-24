@@ -28,9 +28,9 @@ pub struct OpaqueU16<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct OpaqueU16Spec {
-    pub l: u16,
-    pub data: Seq<u8>,
+pub struct OpaqueU16Spec<T0 = u16, T1 = Seq<u8>> {
+    pub l: T0,
+    pub data: T1,
 }
 
 pub type OpaqueU16Inner = (u16, Seq<u8>);
@@ -38,8 +38,86 @@ pub type OpaqueU16Inner = (u16, Seq<u8>);
 impl<'i> DeepView for OpaqueU16<'i> {
     type V = OpaqueU16Spec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         OpaqueU16Spec { l: self.l.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> OpaqueU16<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<OpaqueU16 as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> OpaqueU16Spec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, data) = input;
+        Self { l, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, data } = self;
+        (l, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(OpaqueU16Spec::from_structural);
+        reveal(OpaqueU16Spec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(OpaqueU16Spec::from_structural);
+        reveal(OpaqueU16Spec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, data } => (l, data),
+            },
+    {
+        reveal(OpaqueU16Spec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OpaqueU16Forward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OpaqueU16Reverse;
+
+impl SpecMap for OpaqueU16Forward {
+    type Input = OpaqueU16Inner;
+
+    type Output = OpaqueU16Spec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        OpaqueU16Spec::from_structural(input)
+    }
+}
+
+impl SpecMap for OpaqueU16Reverse {
+    type Input = OpaqueU16Spec;
+
+    type Output = OpaqueU16Inner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -56,9 +134,9 @@ pub struct ResponderIdList<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ResponderIdListSpec {
-    pub l: u16,
-    pub list: Seq<ResponderIdSpec>,
+pub struct ResponderIdListSpec<T0 = u16, T1 = Seq<ResponderIdSpec>> {
+    pub l: T0,
+    pub list: T1,
 }
 
 pub type ResponderIdListInner = (u16, Seq<ResponderIdSpec>);
@@ -66,8 +144,86 @@ pub type ResponderIdListInner = (u16, Seq<ResponderIdSpec>);
 impl<'i> DeepView for ResponderIdList<'i> {
     type V = ResponderIdListSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ResponderIdListSpec { l: self.l.deep_view(), list: self.list.deep_view() }
+    }
+}
+
+impl<'i> ResponderIdList<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().list == self.list.deep_view(),
+    {
+        reveal(<ResponderIdList as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> ResponderIdListSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, list) = input;
+        Self { l, list }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, list } = self;
+        (l, list)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ResponderIdListSpec::from_structural);
+        reveal(ResponderIdListSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ResponderIdListSpec::from_structural);
+        reveal(ResponderIdListSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, list } => (l, list),
+            },
+    {
+        reveal(ResponderIdListSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ResponderIdListForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ResponderIdListReverse;
+
+impl SpecMap for ResponderIdListForward {
+    type Input = ResponderIdListInner;
+
+    type Output = ResponderIdListSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ResponderIdListSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ResponderIdListReverse {
+    type Input = ResponderIdListSpec;
+
+    type Output = ResponderIdListInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -84,9 +240,9 @@ pub struct RepeatDyn<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct RepeatDynSpec {
-    pub l: u64,
-    pub data: Seq<ResponderIdListSpec>,
+pub struct RepeatDynSpec<T0 = u64, T1 = Seq<ResponderIdListSpec>> {
+    pub l: T0,
+    pub data: T1,
 }
 
 pub type RepeatDynInner = (u64, Seq<ResponderIdListSpec>);
@@ -94,8 +250,86 @@ pub type RepeatDynInner = (u64, Seq<ResponderIdListSpec>);
 impl<'i> DeepView for RepeatDyn<'i> {
     type V = RepeatDynSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         RepeatDynSpec { l: self.l.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> RepeatDyn<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<RepeatDyn as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> RepeatDynSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, data) = input;
+        Self { l, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, data } = self;
+        (l, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(RepeatDynSpec::from_structural);
+        reveal(RepeatDynSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(RepeatDynSpec::from_structural);
+        reveal(RepeatDynSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, data } => (l, data),
+            },
+    {
+        reveal(RepeatDynSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct RepeatDynForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct RepeatDynReverse;
+
+impl SpecMap for RepeatDynForward {
+    type Input = RepeatDynInner;
+
+    type Output = RepeatDynSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        RepeatDynSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for RepeatDynReverse {
+    type Input = RepeatDynSpec;
+
+    type Output = RepeatDynInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -109,7 +343,7 @@ pub struct OpaqueU16Fmt;
 pub type OpaqueU16FmtSpec = Named<
     Mapped<
         Bind<Refined<U16Le, PredFnSpec<u16>>, spec_fn(u16) -> Varied<u16>>,
-        FnSpecMapper<OpaqueU16Inner, OpaqueU16Spec>,
+        BiMap<OpaqueU16Forward, OpaqueU16Reverse>,
     >,
 >;
 
@@ -120,18 +354,7 @@ impl OpaqueU16Fmt {
             "opaque_u16",
             Mapped {
                 inner: Bind(Refined(U16Le, |x: u16| x >= 1 && x <= 65535), |l: u16| Varied(l)),
-                mapper: (
-                    |parsed: OpaqueU16Inner| -> OpaqueU16Spec
-                        {
-                            let (l, data) = parsed;
-                            OpaqueU16Spec { l, data }
-                        },
-                    |value: OpaqueU16Spec| -> OpaqueU16Inner
-                        {
-                            let OpaqueU16Spec { l, data } = value;
-                            (l, data)
-                        },
-                ),
+                mapper: BiMap(OpaqueU16Forward, OpaqueU16Reverse),
             },
         )
     }
@@ -160,7 +383,7 @@ pub type ResponderIdListFmtSpec = Named<
             Refined<U16Le, PredFnSpec<u16>>,
             spec_fn(u16) -> ExactLen<RepeatTillEnd<ResponderIdFmt>, u16>,
         >,
-        FnSpecMapper<ResponderIdListInner, ResponderIdListSpec>,
+        BiMap<ResponderIdListForward, ResponderIdListReverse>,
     >,
 >;
 
@@ -174,18 +397,7 @@ impl ResponderIdListFmt {
                     Refined(U16Le, |x: u16| x >= 0 && x <= 65535),
                     |l: u16| ExactLen(l, RepeatTillEnd(ResponderIdFmt)),
                 ),
-                mapper: (
-                    |parsed: ResponderIdListInner| -> ResponderIdListSpec
-                        {
-                            let (l, list) = parsed;
-                            ResponderIdListSpec { l, list }
-                        },
-                    |value: ResponderIdListSpec| -> ResponderIdListInner
-                        {
-                            let ResponderIdListSpec { l, list } = value;
-                            (l, list)
-                        },
-                ),
+                mapper: BiMap(ResponderIdListForward, ResponderIdListReverse),
             },
         )
     }
@@ -211,7 +423,7 @@ pub struct RepeatDynFmt;
 pub type RepeatDynFmtSpec = Named<
     Mapped<
         Bind<VarInt<true>, spec_fn(u64) -> RepeatN<ResponderIdListFmt, u64>>,
-        FnSpecMapper<RepeatDynInner, RepeatDynSpec>,
+        BiMap<RepeatDynForward, RepeatDynReverse>,
     >,
 >;
 
@@ -222,18 +434,7 @@ impl RepeatDynFmt {
             "repeat_dyn",
             Mapped {
                 inner: Bind(VarInt::<true>, |l: u64| RepeatN(l, ResponderIdListFmt)),
-                mapper: (
-                    |parsed: RepeatDynInner| -> RepeatDynSpec
-                        {
-                            let (l, data) = parsed;
-                            RepeatDynSpec { l, data }
-                        },
-                    |value: RepeatDynSpec| -> RepeatDynInner
-                        {
-                            let RepeatDynSpec { l, data } = value;
-                            (l, data)
-                        },
-                ),
+                mapper: BiMap(RepeatDynForward, RepeatDynReverse),
             },
         )
     }
@@ -473,7 +674,15 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        OpaqueU16Spec::lemma_from_into,
+        OpaqueU16Spec::lemma_into_from,
+        ResponderIdListSpec::lemma_from_into,
+        ResponderIdListSpec::lemma_into_from,
+        RepeatDynSpec::lemma_from_into,
+        RepeatDynSpec::lemma_into_from,
+    };
 
     impl SafeParser for OpaqueU16Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -500,6 +709,10 @@ mod derived_proofs {
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: OpaqueU16Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OpaqueU16Spec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -508,6 +721,10 @@ mod derived_proofs {
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: OpaqueU16Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OpaqueU16Spec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -547,6 +764,10 @@ mod derived_proofs {
             reveal(<OpaqueU16Fmt as Consistency>::consistent);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: OpaqueU16Spec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                OpaqueU16Spec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -556,6 +777,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: OpaqueU16Inner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OpaqueU16Spec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -712,6 +937,10 @@ mod derived_proofs {
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ResponderIdListInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ResponderIdListSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -720,6 +949,10 @@ mod derived_proofs {
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdListFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ResponderIdListInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ResponderIdListSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -759,6 +992,10 @@ mod derived_proofs {
             reveal(<ResponderIdListFmt as Consistency>::consistent);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ResponderIdListSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ResponderIdListSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -768,6 +1005,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ResponderIdListInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ResponderIdListSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -924,6 +1165,10 @@ mod derived_proofs {
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: RepeatDynInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RepeatDynSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -932,6 +1177,10 @@ mod derived_proofs {
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDynFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: RepeatDynInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RepeatDynSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -971,6 +1220,10 @@ mod derived_proofs {
             reveal(<RepeatDynFmt as Consistency>::consistent);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: RepeatDynSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                RepeatDynSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -980,6 +1233,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: RepeatDynInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RepeatDynSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1021,6 +1278,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
+            reveal(<OpaqueU16 as DeepView>::deep_view);
+            reveal(OpaqueU16Spec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1044,6 +1303,8 @@ mod exec_impls {
 
             reveal(<OpaqueU16Fmt as SpecSerializer>::spec_serialize);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
+            reveal(<OpaqueU16 as DeepView>::deep_view);
+            reveal(OpaqueU16Spec::into_structural);
             let ghost old_obuf = obuf@;
 
             let OpaqueU16 { l, data } = v;
@@ -1057,6 +1318,8 @@ mod exec_impls {
     impl<'i> Prepare<OpaqueU16<'i>> for OpaqueU16Fmt {
         fn prepare(&self, v: &OpaqueU16<'i>) -> Result<usize, PreSerializeError> {
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
+            reveal(<OpaqueU16 as DeepView>::deep_view);
+            reveal(OpaqueU16Spec::into_structural);
             let OpaqueU16 { l, data } = v;
             let l1 = {
                 if !(*l >= 1 && *l <= 65535) {
@@ -1112,6 +1375,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
+            reveal(<ResponderIdList as DeepView>::deep_view);
+            reveal(ResponderIdListSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1135,6 +1400,8 @@ mod exec_impls {
 
             reveal(<ResponderIdListFmt as SpecSerializer>::spec_serialize);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
+            reveal(<ResponderIdList as DeepView>::deep_view);
+            reveal(ResponderIdListSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let ResponderIdList { l, list } = v;
@@ -1148,6 +1415,8 @@ mod exec_impls {
     impl<'i> Prepare<ResponderIdList<'i>> for ResponderIdListFmt {
         fn prepare(&self, v: &ResponderIdList<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
+            reveal(<ResponderIdList as DeepView>::deep_view);
+            reveal(ResponderIdListSpec::into_structural);
             let ResponderIdList { l, list } = v;
             let l1 = {
                 if !(*l >= 0 && *l <= 65535) {
@@ -1203,6 +1472,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
+            reveal(<RepeatDyn as DeepView>::deep_view);
+            reveal(RepeatDynSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1223,6 +1494,8 @@ mod exec_impls {
 
             reveal(<RepeatDynFmt as SpecSerializer>::spec_serialize);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
+            reveal(<RepeatDyn as DeepView>::deep_view);
+            reveal(RepeatDynSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let RepeatDyn { l, data } = v;
@@ -1236,6 +1509,8 @@ mod exec_impls {
     impl<'i> Prepare<RepeatDyn<'i>> for RepeatDynFmt {
         fn prepare(&self, v: &RepeatDyn<'i>) -> Result<usize, PreSerializeError> {
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
+            reveal(<RepeatDyn as DeepView>::deep_view);
+            reveal(RepeatDynSpec::into_structural);
             let RepeatDyn { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (RepeatN(*l, ResponderIdListFmt)).prepare(data)?;

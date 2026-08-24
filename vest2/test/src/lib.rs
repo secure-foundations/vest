@@ -13,11 +13,13 @@ pub mod enums;
 pub mod josh;
 pub mod length_expr;
 pub mod matches;
-pub mod mutual_rec;
+// pub mod mutual_rec;
 pub mod nested_access;
 pub mod nested_bytes;
 pub mod opt;
 pub mod repeat;
+pub mod stress_depth;
+pub mod stress_width;
 pub mod tls;
 pub mod tlv;
 

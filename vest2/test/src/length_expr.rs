@@ -22,21 +22,102 @@ verus! {
 // ============================================================
 # [doc = "data type for `header`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct Header {
     pub len: u16,
     pub flags: u8,
 }
 
-pub type HeaderSpec = Header;
+# [verifier::ext_equal]
+pub struct HeaderSpec<T0 = u16, T1 = u8> {
+    pub len: T0,
+    pub flags: T1,
+}
 
 pub type HeaderInner = (u16, u8);
 
 impl DeepView for Header {
-    type V = Self;
+    type V = HeaderSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        HeaderSpec { len: self.len.deep_view(), flags: self.flags.deep_view() }
+    }
+}
+
+impl Header {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().len == self.len.deep_view(),
+            self.deep_view().flags == self.flags.deep_view(),
+    {
+        reveal(<Header as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> HeaderSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (len, flags) = input;
+        Self { len, flags }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { len, flags } = self;
+        (len, flags)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(HeaderSpec::from_structural);
+        reveal(HeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(HeaderSpec::from_structural);
+        reveal(HeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { len, flags } => (len, flags),
+            },
+    {
+        reveal(HeaderSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct HeaderForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct HeaderReverse;
+
+impl SpecMap for HeaderForward {
+    type Input = HeaderInner;
+
+    type Output = HeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        HeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for HeaderReverse {
+    type Input = HeaderSpec;
+
+    type Output = HeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -48,9 +129,9 @@ pub struct PrimitiveSizes<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct PrimitiveSizesSpec {
-    pub byte: Seq<u8>,
-    pub word: Seq<u8>,
+pub struct PrimitiveSizesSpec<T0 = Seq<u8>, T1 = Seq<u8>> {
+    pub byte: T0,
+    pub word: T1,
 }
 
 pub type PrimitiveSizesInner = (Seq<u8>, Seq<u8>);
@@ -58,8 +139,86 @@ pub type PrimitiveSizesInner = (Seq<u8>, Seq<u8>);
 impl<'i> DeepView for PrimitiveSizes<'i> {
     type V = PrimitiveSizesSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         PrimitiveSizesSpec { byte: self.byte.deep_view(), word: self.word.deep_view() }
+    }
+}
+
+impl<'i> PrimitiveSizes<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().byte == self.byte.deep_view(),
+            self.deep_view().word == self.word.deep_view(),
+    {
+        reveal(<PrimitiveSizes as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> PrimitiveSizesSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (byte, word) = input;
+        Self { byte, word }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { byte, word } = self;
+        (byte, word)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(PrimitiveSizesSpec::from_structural);
+        reveal(PrimitiveSizesSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(PrimitiveSizesSpec::from_structural);
+        reveal(PrimitiveSizesSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { byte, word } => (byte, word),
+            },
+    {
+        reveal(PrimitiveSizesSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PrimitiveSizesForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PrimitiveSizesReverse;
+
+impl SpecMap for PrimitiveSizesForward {
+    type Input = PrimitiveSizesInner;
+
+    type Output = PrimitiveSizesSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        PrimitiveSizesSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for PrimitiveSizesReverse {
+    type Input = PrimitiveSizesSpec;
+
+    type Output = PrimitiveSizesInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -70,8 +229,8 @@ pub struct NamedSize<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct NamedSizeSpec {
-    pub bytes: Seq<u8>,
+pub struct NamedSizeSpec<T0 = Seq<u8>> {
+    pub bytes: T0,
 }
 
 pub type NamedSizeInner = Seq<u8>;
@@ -79,8 +238,85 @@ pub type NamedSizeInner = Seq<u8>;
 impl<'i> DeepView for NamedSize<'i> {
     type V = NamedSizeSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NamedSizeSpec { bytes: self.bytes.deep_view() }
+    }
+}
+
+impl<'i> NamedSize<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().bytes == self.bytes.deep_view(),
+    {
+        reveal(<NamedSize as DeepView>::deep_view);
+    }
+}
+
+impl<T0> NamedSizeSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let bytes = input;
+        Self { bytes }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { bytes } = self;
+        bytes
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NamedSizeSpec::from_structural);
+        reveal(NamedSizeSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NamedSizeSpec::from_structural);
+        reveal(NamedSizeSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { bytes } => bytes,
+            },
+    {
+        reveal(NamedSizeSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NamedSizeForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NamedSizeReverse;
+
+impl SpecMap for NamedSizeForward {
+    type Input = NamedSizeInner;
+
+    type Output = NamedSizeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NamedSizeSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NamedSizeReverse {
+    type Input = NamedSizeSpec;
+
+    type Output = NamedSizeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -96,8 +332,8 @@ pub struct AliasSize<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct AliasSizeSpec {
-    pub bytes: Seq<u8>,
+pub struct AliasSizeSpec<T0 = Seq<u8>> {
+    pub bytes: T0,
 }
 
 pub type AliasSizeInner = Seq<u8>;
@@ -105,28 +341,204 @@ pub type AliasSizeInner = Seq<u8>;
 impl<'i> DeepView for AliasSize<'i> {
     type V = AliasSizeSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         AliasSizeSpec { bytes: self.bytes.deep_view() }
     }
 }
 
+impl<'i> AliasSize<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().bytes == self.bytes.deep_view(),
+    {
+        reveal(<AliasSize as DeepView>::deep_view);
+    }
+}
+
+impl<T0> AliasSizeSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let bytes = input;
+        Self { bytes }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { bytes } = self;
+        bytes
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AliasSizeSpec::from_structural);
+        reveal(AliasSizeSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AliasSizeSpec::from_structural);
+        reveal(AliasSizeSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { bytes } => bytes,
+            },
+    {
+        reveal(AliasSizeSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AliasSizeForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AliasSizeReverse;
+
+impl SpecMap for AliasSizeForward {
+    type Input = AliasSizeInner;
+
+    type Output = AliasSizeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AliasSizeSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for AliasSizeReverse {
+    type Input = AliasSizeSpec;
+
+    type Output = AliasSizeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `fixed_choice`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum FixedChoice {
     Variant1(u16),
     Default(u16),
 }
 
-pub type FixedChoiceSpec = FixedChoice;
+# [verifier::ext_equal]
+pub enum FixedChoiceSpec<T0 = u16, T1 = u16> {
+    Variant1(T0),
+    Default(T1),
+}
 
 pub type FixedChoiceInner = Sum<u16, u16>;
 
 impl DeepView for FixedChoice {
-    type V = Self;
+    type V = FixedChoiceSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            FixedChoice::Variant1(v) => FixedChoiceSpec::Variant1(v.deep_view()),
+            FixedChoice::Default(v) => FixedChoiceSpec::Default(v.deep_view()),
+        }
+    }
+}
+
+impl FixedChoice {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                FixedChoice::Variant1(v) => FixedChoiceSpec::Variant1(v.deep_view()),
+                FixedChoice::Default(v) => FixedChoiceSpec::Default(v.deep_view()),
+            },
+    {
+        reveal(<FixedChoice as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> FixedChoiceSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(FixedChoiceSpec::from_structural);
+        reveal(FixedChoiceSpec::into_structural);
+        match self {
+            Self::Variant1(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(FixedChoiceSpec::from_structural);
+        reveal(FixedChoiceSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::Variant1(value) => L(value),
+                Self::Default(value) => R(value),
+            },
+    {
+        reveal(FixedChoiceSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct FixedChoiceForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct FixedChoiceReverse;
+
+impl SpecMap for FixedChoiceForward {
+    type Input = FixedChoiceInner;
+
+    type Output = FixedChoiceSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        FixedChoiceSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for FixedChoiceReverse {
+    type Input = FixedChoiceSpec;
+
+    type Output = FixedChoiceInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -137,8 +549,8 @@ pub struct ChoiceFormatSize<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ChoiceFormatSizeSpec {
-    pub bytes: Seq<u8>,
+pub struct ChoiceFormatSizeSpec<T0 = Seq<u8>> {
+    pub bytes: T0,
 }
 
 pub type ChoiceFormatSizeInner = Seq<u8>;
@@ -146,8 +558,85 @@ pub type ChoiceFormatSizeInner = Seq<u8>;
 impl<'i> DeepView for ChoiceFormatSize<'i> {
     type V = ChoiceFormatSizeSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ChoiceFormatSizeSpec { bytes: self.bytes.deep_view() }
+    }
+}
+
+impl<'i> ChoiceFormatSize<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().bytes == self.bytes.deep_view(),
+    {
+        reveal(<ChoiceFormatSize as DeepView>::deep_view);
+    }
+}
+
+impl<T0> ChoiceFormatSizeSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let bytes = input;
+        Self { bytes }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { bytes } = self;
+        bytes
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ChoiceFormatSizeSpec::from_structural);
+        reveal(ChoiceFormatSizeSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ChoiceFormatSizeSpec::from_structural);
+        reveal(ChoiceFormatSizeSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { bytes } => bytes,
+            },
+    {
+        reveal(ChoiceFormatSizeSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceFormatSizeForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceFormatSizeReverse;
+
+impl SpecMap for ChoiceFormatSizeForward {
+    type Input = ChoiceFormatSizeInner;
+
+    type Output = ChoiceFormatSizeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ChoiceFormatSizeSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ChoiceFormatSizeReverse {
+    type Input = ChoiceFormatSizeSpec;
+
+    type Output = ChoiceFormatSizeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -164,9 +653,9 @@ pub struct ChoiceArraysFolded<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ChoiceArraysFoldedSpec {
-    pub tag: ChoiceTagSpec,
-    pub body: ChoiceArraysFoldedBodySpec,
+pub struct ChoiceArraysFoldedSpec<T0 = ChoiceTagSpec, T1 = ChoiceArraysFoldedBodySpec> {
+    pub tag: T0,
+    pub body: T1,
 }
 
 pub type ChoiceArraysFoldedInner = (ChoiceTagSpec, ChoiceArraysFoldedBodySpec);
@@ -174,8 +663,86 @@ pub type ChoiceArraysFoldedInner = (ChoiceTagSpec, ChoiceArraysFoldedBodySpec);
 impl<'i> DeepView for ChoiceArraysFolded<'i> {
     type V = ChoiceArraysFoldedSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ChoiceArraysFoldedSpec { tag: self.tag.deep_view(), body: self.body.deep_view() }
+    }
+}
+
+impl<'i> ChoiceArraysFolded<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().tag == self.tag.deep_view(),
+            self.deep_view().body == self.body.deep_view(),
+    {
+        reveal(<ChoiceArraysFolded as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> ChoiceArraysFoldedSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (tag, body) = input;
+        Self { tag, body }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { tag, body } = self;
+        (tag, body)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ChoiceArraysFoldedSpec::from_structural);
+        reveal(ChoiceArraysFoldedSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ChoiceArraysFoldedSpec::from_structural);
+        reveal(ChoiceArraysFoldedSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { tag, body } => (tag, body),
+            },
+    {
+        reveal(ChoiceArraysFoldedSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceArraysFoldedForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceArraysFoldedReverse;
+
+impl SpecMap for ChoiceArraysFoldedForward {
+    type Input = ChoiceArraysFoldedInner;
+
+    type Output = ChoiceArraysFoldedSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ChoiceArraysFoldedSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ChoiceArraysFoldedReverse {
+    type Input = ChoiceArraysFoldedSpec;
+
+    type Output = ChoiceArraysFoldedInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -186,8 +753,8 @@ pub struct SizeArith<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct SizeArithSpec {
-    pub bytes: Seq<u8>,
+pub struct SizeArithSpec<T0 = Seq<u8>> {
+    pub bytes: T0,
 }
 
 pub type SizeArithInner = Seq<u8>;
@@ -195,8 +762,85 @@ pub type SizeArithInner = Seq<u8>;
 impl<'i> DeepView for SizeArith<'i> {
     type V = SizeArithSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         SizeArithSpec { bytes: self.bytes.deep_view() }
+    }
+}
+
+impl<'i> SizeArith<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().bytes == self.bytes.deep_view(),
+    {
+        reveal(<SizeArith as DeepView>::deep_view);
+    }
+}
+
+impl<T0> SizeArithSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let bytes = input;
+        Self { bytes }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { bytes } = self;
+        bytes
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(SizeArithSpec::from_structural);
+        reveal(SizeArithSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(SizeArithSpec::from_structural);
+        reveal(SizeArithSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { bytes } => bytes,
+            },
+    {
+        reveal(SizeArithSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct SizeArithForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct SizeArithReverse;
+
+impl SpecMap for SizeArithForward {
+    type Input = SizeArithInner;
+
+    type Output = SizeArithSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        SizeArithSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for SizeArithReverse {
+    type Input = SizeArithSpec;
+
+    type Output = SizeArithInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -207,8 +851,8 @@ pub struct SimpleSub<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct SimpleSubSpec {
-    pub data: Seq<u8>,
+pub struct SimpleSubSpec<T0 = Seq<u8>> {
+    pub data: T0,
 }
 
 pub type SimpleSubInner = Seq<u8>;
@@ -216,8 +860,85 @@ pub type SimpleSubInner = Seq<u8>;
 impl<'i> DeepView for SimpleSub<'i> {
     type V = SimpleSubSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         SimpleSubSpec { data: self.data.deep_view() }
+    }
+}
+
+impl<'i> SimpleSub<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<SimpleSub as DeepView>::deep_view);
+    }
+}
+
+impl<T0> SimpleSubSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let data = input;
+        Self { data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { data } = self;
+        data
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(SimpleSubSpec::from_structural);
+        reveal(SimpleSubSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(SimpleSubSpec::from_structural);
+        reveal(SimpleSubSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { data } => data,
+            },
+    {
+        reveal(SimpleSubSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct SimpleSubForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct SimpleSubReverse;
+
+impl SpecMap for SimpleSubForward {
+    type Input = SimpleSubInner;
+
+    type Output = SimpleSubSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        SimpleSubSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for SimpleSubReverse {
+    type Input = SimpleSubSpec;
+
+    type Output = SimpleSubInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -228,8 +949,8 @@ pub struct MultiArith<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct MultiArithSpec {
-    pub body: Seq<u8>,
+pub struct MultiArithSpec<T0 = Seq<u8>> {
+    pub body: T0,
 }
 
 pub type MultiArithInner = Seq<u8>;
@@ -237,8 +958,85 @@ pub type MultiArithInner = Seq<u8>;
 impl<'i> DeepView for MultiArith<'i> {
     type V = MultiArithSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MultiArithSpec { body: self.body.deep_view() }
+    }
+}
+
+impl<'i> MultiArith<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().body == self.body.deep_view(),
+    {
+        reveal(<MultiArith as DeepView>::deep_view);
+    }
+}
+
+impl<T0> MultiArithSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let body = input;
+        Self { body }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { body } = self;
+        body
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MultiArithSpec::from_structural);
+        reveal(MultiArithSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MultiArithSpec::from_structural);
+        reveal(MultiArithSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { body } => body,
+            },
+    {
+        reveal(MultiArithSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MultiArithForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MultiArithReverse;
+
+impl SpecMap for MultiArithForward {
+    type Input = MultiArithInner;
+
+    type Output = MultiArithSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MultiArithSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MultiArithReverse {
+    type Input = MultiArithSpec;
+
+    type Output = MultiArithInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -249,8 +1047,8 @@ pub struct ParenExpr<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ParenExprSpec {
-    pub data: Seq<u8>,
+pub struct ParenExprSpec<T0 = Seq<u8>> {
+    pub data: T0,
 }
 
 pub type ParenExprInner = Seq<u8>;
@@ -258,8 +1056,85 @@ pub type ParenExprInner = Seq<u8>;
 impl<'i> DeepView for ParenExpr<'i> {
     type V = ParenExprSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ParenExprSpec { data: self.data.deep_view() }
+    }
+}
+
+impl<'i> ParenExpr<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<ParenExpr as DeepView>::deep_view);
+    }
+}
+
+impl<T0> ParenExprSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let data = input;
+        Self { data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { data } = self;
+        data
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ParenExprSpec::from_structural);
+        reveal(ParenExprSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ParenExprSpec::from_structural);
+        reveal(ParenExprSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { data } => data,
+            },
+    {
+        reveal(ParenExprSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ParenExprForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ParenExprReverse;
+
+impl SpecMap for ParenExprForward {
+    type Input = ParenExprInner;
+
+    type Output = ParenExprSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ParenExprSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ParenExprReverse {
+    type Input = ParenExprSpec;
+
+    type Output = ParenExprInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -270,8 +1145,8 @@ pub struct MixedConst<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct MixedConstSpec {
-    pub data: Seq<u8>,
+pub struct MixedConstSpec<T0 = Seq<u8>> {
+    pub data: T0,
 }
 
 pub type MixedConstInner = Seq<u8>;
@@ -279,8 +1154,85 @@ pub type MixedConstInner = Seq<u8>;
 impl<'i> DeepView for MixedConst<'i> {
     type V = MixedConstSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MixedConstSpec { data: self.data.deep_view() }
+    }
+}
+
+impl<'i> MixedConst<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<MixedConst as DeepView>::deep_view);
+    }
+}
+
+impl<T0> MixedConstSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let data = input;
+        Self { data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { data } = self;
+        data
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MixedConstSpec::from_structural);
+        reveal(MixedConstSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MixedConstSpec::from_structural);
+        reveal(MixedConstSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { data } => data,
+            },
+    {
+        reveal(MixedConstSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MixedConstForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MixedConstReverse;
+
+impl SpecMap for MixedConstForward {
+    type Input = MixedConstInner;
+
+    type Output = MixedConstSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MixedConstSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MixedConstReverse {
+    type Input = MixedConstSpec;
+
+    type Output = MixedConstInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -291,8 +1243,8 @@ pub struct PayloadWithHeader<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct PayloadWithHeaderSpec {
-    pub data: Seq<u8>,
+pub struct PayloadWithHeaderSpec<T0 = Seq<u8>> {
+    pub data: T0,
 }
 
 pub type PayloadWithHeaderInner = Seq<u8>;
@@ -300,29 +1252,225 @@ pub type PayloadWithHeaderInner = Seq<u8>;
 impl<'i> DeepView for PayloadWithHeader<'i> {
     type V = PayloadWithHeaderSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         PayloadWithHeaderSpec { data: self.data.deep_view() }
     }
 }
 
+impl<'i> PayloadWithHeader<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<PayloadWithHeader as DeepView>::deep_view);
+    }
+}
+
+impl<T0> PayloadWithHeaderSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let data = input;
+        Self { data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { data } = self;
+        data
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(PayloadWithHeaderSpec::from_structural);
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(PayloadWithHeaderSpec::from_structural);
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { data } => data,
+            },
+    {
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PayloadWithHeaderForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PayloadWithHeaderReverse;
+
+impl SpecMap for PayloadWithHeaderForward {
+    type Input = PayloadWithHeaderInner;
+
+    type Output = PayloadWithHeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        PayloadWithHeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for PayloadWithHeaderReverse {
+    type Input = PayloadWithHeaderSpec;
+
+    type Output = PayloadWithHeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `choice_arrays_folded_body`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum ChoiceArraysFoldedBody {
     Variant1(u8),
     Variant2(u16),
     Default(u16),
 }
 
-pub type ChoiceArraysFoldedBodySpec = ChoiceArraysFoldedBody;
+# [verifier::ext_equal]
+pub enum ChoiceArraysFoldedBodySpec<T0 = u8, T1 = u16, T2 = u16> {
+    Variant1(T0),
+    Variant2(T1),
+    Default(T2),
+}
 
 pub type ChoiceArraysFoldedBodyInner = Sum<u8, Sum<u16, u16>>;
 
 impl DeepView for ChoiceArraysFoldedBody {
-    type V = Self;
+    type V = ChoiceArraysFoldedBodySpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            ChoiceArraysFoldedBody::Variant1(v) => ChoiceArraysFoldedBodySpec::Variant1(
+                v.deep_view(),
+            ),
+            ChoiceArraysFoldedBody::Variant2(v) => ChoiceArraysFoldedBodySpec::Variant2(
+                v.deep_view(),
+            ),
+            ChoiceArraysFoldedBody::Default(v) => ChoiceArraysFoldedBodySpec::Default(
+                v.deep_view(),
+            ),
+        }
+    }
+}
+
+impl ChoiceArraysFoldedBody {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                ChoiceArraysFoldedBody::Variant1(v) => ChoiceArraysFoldedBodySpec::Variant1(
+                    v.deep_view(),
+                ),
+                ChoiceArraysFoldedBody::Variant2(v) => ChoiceArraysFoldedBodySpec::Variant2(
+                    v.deep_view(),
+                ),
+                ChoiceArraysFoldedBody::Default(v) => ChoiceArraysFoldedBodySpec::Default(
+                    v.deep_view(),
+                ),
+            },
+    {
+        reveal(<ChoiceArraysFoldedBody as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> ChoiceArraysFoldedBodySpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, Sum<T1, T2>>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(L(value)) => Self::Variant2(value),
+            R(R(value)) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, Sum<T1, T2>> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Variant2(value) => R(L(value)),
+            Self::Default(value) => R(R(value)),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ChoiceArraysFoldedBodySpec::from_structural);
+        reveal(ChoiceArraysFoldedBodySpec::into_structural);
+        match self {
+            Self::Variant1(_) => {},
+            Self::Variant2(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, Sum<T1, T2>>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ChoiceArraysFoldedBodySpec::from_structural);
+        reveal(ChoiceArraysFoldedBodySpec::into_structural);
+        match input {
+            L(_) => {},
+            R(L(_)) => {},
+            R(R(_)) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::Variant1(value) => L(value),
+                Self::Variant2(value) => R(L(value)),
+                Self::Default(value) => R(R(value)),
+            },
+    {
+        reveal(ChoiceArraysFoldedBodySpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceArraysFoldedBodyForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ChoiceArraysFoldedBodyReverse;
+
+impl SpecMap for ChoiceArraysFoldedBodyForward {
+    type Input = ChoiceArraysFoldedBodyInner;
+
+    type Output = ChoiceArraysFoldedBodySpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ChoiceArraysFoldedBodySpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ChoiceArraysFoldedBodyReverse {
+    type Input = ChoiceArraysFoldedBodySpec;
+
+    type Output = ChoiceArraysFoldedBodyInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -336,7 +1484,7 @@ pub struct HeaderFmt;
 pub type HeaderFmtSpec = Named<
     Mapped<
         Bind<Refined<U16Le, PredFnSpec<u16>>, spec_fn(u16) -> U8>,
-        FnSpecMapper<HeaderInner, HeaderSpec>,
+        BiMap<HeaderForward, HeaderReverse>,
     >,
 >;
 
@@ -347,18 +1495,7 @@ impl HeaderFmt {
             "header",
             Mapped {
                 inner: Bind(Refined(U16Le, |x: u16| x >= 3 && x <= 65535), |len: u16| U8),
-                mapper: (
-                    |parsed: HeaderInner| -> HeaderSpec
-                        {
-                            let (len, flags) = parsed;
-                            HeaderSpec { len, flags }
-                        },
-                    |value: HeaderSpec| -> HeaderInner
-                        {
-                            let HeaderSpec { len, flags } = value;
-                            (len, flags)
-                        },
-                ),
+                mapper: BiMap(HeaderForward, HeaderReverse),
             },
         )
     }
@@ -369,7 +1506,7 @@ impl HeaderFmt {
 pub struct PrimitiveSizesFmt;
 
 pub type PrimitiveSizesFmtSpec = Named<
-    Mapped<Pair<Fixed<1>, Fixed<2>>, FnSpecMapper<PrimitiveSizesInner, PrimitiveSizesSpec>>,
+    Mapped<Pair<Fixed<1>, Fixed<2>>, BiMap<PrimitiveSizesForward, PrimitiveSizesReverse>>,
 >;
 
 impl PrimitiveSizesFmt {
@@ -379,18 +1516,7 @@ impl PrimitiveSizesFmt {
             "primitive_sizes",
             Mapped {
                 inner: Pair(Fixed::<1>, Fixed::<2>),
-                mapper: (
-                    |parsed: PrimitiveSizesInner| -> PrimitiveSizesSpec
-                        {
-                            let (byte, word) = parsed;
-                            PrimitiveSizesSpec { byte, word }
-                        },
-                    |value: PrimitiveSizesSpec| -> PrimitiveSizesInner
-                        {
-                            let PrimitiveSizesSpec { byte, word } = value;
-                            (byte, word)
-                        },
-                ),
+                mapper: BiMap(PrimitiveSizesForward, PrimitiveSizesReverse),
             },
         )
     }
@@ -400,28 +1526,14 @@ impl PrimitiveSizesFmt {
 # [derive (Clone, Copy)]
 pub struct NamedSizeFmt;
 
-pub type NamedSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<NamedSizeInner, NamedSizeSpec>>>;
+pub type NamedSizeFmtSpec = Named<Mapped<Fixed<3>, BiMap<NamedSizeForward, NamedSizeReverse>>>;
 
 impl NamedSizeFmt {
     # [doc = "specification constructor for `named_size`."]
     pub open spec fn spec_inner() -> NamedSizeFmtSpec {
         Named(
             "named_size",
-            Mapped {
-                inner: Fixed::<3>,
-                mapper: (
-                    |parsed: NamedSizeInner| -> NamedSizeSpec
-                        {
-                            let bytes = parsed;
-                            NamedSizeSpec { bytes }
-                        },
-                    |value: NamedSizeSpec| -> NamedSizeInner
-                        {
-                            let NamedSizeSpec { bytes } = value;
-                            bytes
-                        },
-                ),
-            },
+            Mapped { inner: Fixed::<3>, mapper: BiMap(NamedSizeForward, NamedSizeReverse) },
         )
     }
 }
@@ -443,28 +1555,14 @@ impl HeaderAliasFmt {
 # [derive (Clone, Copy)]
 pub struct AliasSizeFmt;
 
-pub type AliasSizeFmtSpec = Named<Mapped<Fixed<3>, FnSpecMapper<AliasSizeInner, AliasSizeSpec>>>;
+pub type AliasSizeFmtSpec = Named<Mapped<Fixed<3>, BiMap<AliasSizeForward, AliasSizeReverse>>>;
 
 impl AliasSizeFmt {
     # [doc = "specification constructor for `alias_size`."]
     pub open spec fn spec_inner() -> AliasSizeFmtSpec {
         Named(
             "alias_size",
-            Mapped {
-                inner: Fixed::<3>,
-                mapper: (
-                    |parsed: AliasSizeInner| -> AliasSizeSpec
-                        {
-                            let bytes = parsed;
-                            AliasSizeSpec { bytes }
-                        },
-                    |value: AliasSizeSpec| -> AliasSizeInner
-                        {
-                            let AliasSizeSpec { bytes } = value;
-                            bytes
-                        },
-                ),
-            },
+            Mapped { inner: Fixed::<3>, mapper: BiMap(AliasSizeForward, AliasSizeReverse) },
         )
     }
 }
@@ -491,7 +1589,7 @@ impl FixedChoiceFmt {
 }
 
 pub type FixedChoiceFmtSpec = Named<
-    Mapped<Sum<U16Le, U16Le>, FnSpecMapper<FixedChoiceInner, FixedChoiceSpec>>,
+    Mapped<Sum<U16Le, U16Le>, BiMap<FixedChoiceForward, FixedChoiceReverse>>,
 >;
 
 impl FixedChoiceFmt {
@@ -504,22 +1602,7 @@ impl FixedChoiceFmt {
                     0 => L(U16Le),
                     _ => R(U16Le),
                 },
-                mapper: (
-                    |parsed: FixedChoiceInner| -> FixedChoiceSpec
-                        {
-                            match parsed {
-                                L(v) => FixedChoiceSpec::Variant1(v),
-                                R(v) => FixedChoiceSpec::Default(v),
-                            }
-                        },
-                    |value: FixedChoiceSpec| -> FixedChoiceInner
-                        {
-                            match value {
-                                FixedChoiceSpec::Variant1(v) => L(v),
-                                FixedChoiceSpec::Default(v) => R(v),
-                            }
-                        },
-                ),
+                mapper: BiMap(FixedChoiceForward, FixedChoiceReverse),
             },
         )
     }
@@ -530,7 +1613,7 @@ impl FixedChoiceFmt {
 pub struct ChoiceFormatSizeFmt;
 
 pub type ChoiceFormatSizeFmtSpec = Named<
-    Mapped<Fixed<2>, FnSpecMapper<ChoiceFormatSizeInner, ChoiceFormatSizeSpec>>,
+    Mapped<Fixed<2>, BiMap<ChoiceFormatSizeForward, ChoiceFormatSizeReverse>>,
 >;
 
 impl ChoiceFormatSizeFmt {
@@ -540,18 +1623,7 @@ impl ChoiceFormatSizeFmt {
             "choice_format_size",
             Mapped {
                 inner: Fixed::<2>,
-                mapper: (
-                    |parsed: ChoiceFormatSizeInner| -> ChoiceFormatSizeSpec
-                        {
-                            let bytes = parsed;
-                            ChoiceFormatSizeSpec { bytes }
-                        },
-                    |value: ChoiceFormatSizeSpec| -> ChoiceFormatSizeInner
-                        {
-                            let ChoiceFormatSizeSpec { bytes } = value;
-                            bytes
-                        },
-                ),
+                mapper: BiMap(ChoiceFormatSizeForward, ChoiceFormatSizeReverse),
             },
         )
     }
@@ -577,7 +1649,7 @@ pub struct ChoiceArraysFoldedFmt;
 pub type ChoiceArraysFoldedFmtSpec = Named<
     Mapped<
         Bind<ChoiceTagFmt, spec_fn(ChoiceTagSpec) -> ChoiceArraysFoldedBodyFmtSpec>,
-        FnSpecMapper<ChoiceArraysFoldedInner, ChoiceArraysFoldedSpec>,
+        BiMap<ChoiceArraysFoldedForward, ChoiceArraysFoldedReverse>,
     >,
 >;
 
@@ -591,18 +1663,7 @@ impl ChoiceArraysFoldedFmt {
                     ChoiceTagFmt,
                     |tag: ChoiceTagSpec| ChoiceArraysFoldedBodyFmt::spec_inner(tag),
                 ),
-                mapper: (
-                    |parsed: ChoiceArraysFoldedInner| -> ChoiceArraysFoldedSpec
-                        {
-                            let (tag, body) = parsed;
-                            ChoiceArraysFoldedSpec { tag, body }
-                        },
-                    |value: ChoiceArraysFoldedSpec| -> ChoiceArraysFoldedInner
-                        {
-                            let ChoiceArraysFoldedSpec { tag, body } = value;
-                            (tag, body)
-                        },
-                ),
+                mapper: BiMap(ChoiceArraysFoldedForward, ChoiceArraysFoldedReverse),
             },
         )
     }
@@ -612,28 +1673,14 @@ impl ChoiceArraysFoldedFmt {
 # [derive (Clone, Copy)]
 pub struct SizeArithFmt;
 
-pub type SizeArithFmtSpec = Named<Mapped<Fixed<4>, FnSpecMapper<SizeArithInner, SizeArithSpec>>>;
+pub type SizeArithFmtSpec = Named<Mapped<Fixed<4>, BiMap<SizeArithForward, SizeArithReverse>>>;
 
 impl SizeArithFmt {
     # [doc = "specification constructor for `size_arith`."]
     pub open spec fn spec_inner() -> SizeArithFmtSpec {
         Named(
             "size_arith",
-            Mapped {
-                inner: Fixed::<4>,
-                mapper: (
-                    |parsed: SizeArithInner| -> SizeArithSpec
-                        {
-                            let bytes = parsed;
-                            SizeArithSpec { bytes }
-                        },
-                    |value: SizeArithSpec| -> SizeArithInner
-                        {
-                            let SizeArithSpec { bytes } = value;
-                            bytes
-                        },
-                ),
-            },
+            Mapped { inner: Fixed::<4>, mapper: BiMap(SizeArithForward, SizeArithReverse) },
         )
     }
 }
@@ -659,7 +1706,7 @@ impl SimpleSubFmt {
     }
 }
 
-pub type SimpleSubFmtSpec = Named<Mapped<Varied<u16>, FnSpecMapper<SimpleSubInner, SimpleSubSpec>>>;
+pub type SimpleSubFmtSpec = Named<Mapped<Varied<u16>, BiMap<SimpleSubForward, SimpleSubReverse>>>;
 
 impl SimpleSubFmt {
     # [doc = "specification constructor for `simple_sub`."]
@@ -668,18 +1715,7 @@ impl SimpleSubFmt {
             "simple_sub",
             Mapped {
                 inner: Varied(((((len - 3) as u16) - 1) as u16)),
-                mapper: (
-                    |parsed: SimpleSubInner| -> SimpleSubSpec
-                        {
-                            let data = parsed;
-                            SimpleSubSpec { data }
-                        },
-                    |value: SimpleSubSpec| -> SimpleSubInner
-                        {
-                            let SimpleSubSpec { data } = value;
-                            data
-                        },
-                ),
+                mapper: BiMap(SimpleSubForward, SimpleSubReverse),
             },
         )
     }
@@ -712,7 +1748,7 @@ impl MultiArithFmt {
 }
 
 pub type MultiArithFmtSpec = Named<
-    Mapped<Varied<u16>, FnSpecMapper<MultiArithInner, MultiArithSpec>>,
+    Mapped<Varied<u16>, BiMap<MultiArithForward, MultiArithReverse>>,
 >;
 
 impl MultiArithFmt {
@@ -722,18 +1758,7 @@ impl MultiArithFmt {
             "multi_arith",
             Mapped {
                 inner: Varied(((((total - hdr_len) as u16) - 8) as u16)),
-                mapper: (
-                    |parsed: MultiArithInner| -> MultiArithSpec
-                        {
-                            let body = parsed;
-                            MultiArithSpec { body }
-                        },
-                    |value: MultiArithSpec| -> MultiArithInner
-                        {
-                            let MultiArithSpec { body } = value;
-                            body
-                        },
-                ),
+                mapper: BiMap(MultiArithForward, MultiArithReverse),
             },
         )
     }
@@ -770,7 +1795,7 @@ impl ParenExprFmt {
     }
 }
 
-pub type ParenExprFmtSpec = Named<Mapped<Varied<u16>, FnSpecMapper<ParenExprInner, ParenExprSpec>>>;
+pub type ParenExprFmtSpec = Named<Mapped<Varied<u16>, BiMap<ParenExprForward, ParenExprReverse>>>;
 
 impl ParenExprFmt {
     # [doc = "specification constructor for `paren_expr`."]
@@ -779,18 +1804,7 @@ impl ParenExprFmt {
             "paren_expr",
             Mapped {
                 inner: Varied(((((a - b) as u16) + c) as u16)),
-                mapper: (
-                    |parsed: ParenExprInner| -> ParenExprSpec
-                        {
-                            let data = parsed;
-                            ParenExprSpec { data }
-                        },
-                    |value: ParenExprSpec| -> ParenExprInner
-                        {
-                            let ParenExprSpec { data } = value;
-                            data
-                        },
-                ),
+                mapper: BiMap(ParenExprForward, ParenExprReverse),
             },
         )
     }
@@ -818,7 +1832,7 @@ impl MixedConstFmt {
 }
 
 pub type MixedConstFmtSpec = Named<
-    Mapped<Varied<u16>, FnSpecMapper<MixedConstInner, MixedConstSpec>>,
+    Mapped<Varied<u16>, BiMap<MixedConstForward, MixedConstReverse>>,
 >;
 
 impl MixedConstFmt {
@@ -828,18 +1842,7 @@ impl MixedConstFmt {
             "mixed_const",
             Mapped {
                 inner: Varied(((((len - 4) as u16) + 2) as u16)),
-                mapper: (
-                    |parsed: MixedConstInner| -> MixedConstSpec
-                        {
-                            let data = parsed;
-                            MixedConstSpec { data }
-                        },
-                    |value: MixedConstSpec| -> MixedConstInner
-                        {
-                            let MixedConstSpec { data } = value;
-                            data
-                        },
-                ),
+                mapper: BiMap(MixedConstForward, MixedConstReverse),
             },
         )
     }
@@ -867,7 +1870,7 @@ impl PayloadWithHeaderFmt {
 }
 
 pub type PayloadWithHeaderFmtSpec = Named<
-    Mapped<Varied<u16>, FnSpecMapper<PayloadWithHeaderInner, PayloadWithHeaderSpec>>,
+    Mapped<Varied<u16>, BiMap<PayloadWithHeaderForward, PayloadWithHeaderReverse>>,
 >;
 
 impl PayloadWithHeaderFmt {
@@ -877,18 +1880,7 @@ impl PayloadWithHeaderFmt {
             "payload_with_header",
             Mapped {
                 inner: Varied(((hdr.len - 3) as u16)),
-                mapper: (
-                    |parsed: PayloadWithHeaderInner| -> PayloadWithHeaderSpec
-                        {
-                            let data = parsed;
-                            PayloadWithHeaderSpec { data }
-                        },
-                    |value: PayloadWithHeaderSpec| -> PayloadWithHeaderInner
-                        {
-                            let PayloadWithHeaderSpec { data } = value;
-                            data
-                        },
-                ),
+                mapper: BiMap(PayloadWithHeaderForward, PayloadWithHeaderReverse),
             },
         )
     }
@@ -918,7 +1910,7 @@ impl<'i> ChoiceArraysFoldedBodyFmt<'i> {
 pub type ChoiceArraysFoldedBodyFmtSpec = Named<
     Mapped<
         Sum<U8, Sum<U16Le, U16Le>>,
-        FnSpecMapper<ChoiceArraysFoldedBodyInner, ChoiceArraysFoldedBodySpec>,
+        BiMap<ChoiceArraysFoldedBodyForward, ChoiceArraysFoldedBodyReverse>,
     >,
 >;
 
@@ -933,24 +1925,7 @@ impl<'i> ChoiceArraysFoldedBodyFmt<'i> {
                     x if x == [0x01u8, 0x01u8].deep_view() => R(L(U16Le)),
                     _ => R(R(U16Le)),
                 },
-                mapper: (
-                    |parsed: ChoiceArraysFoldedBodyInner| -> ChoiceArraysFoldedBodySpec
-                        {
-                            match parsed {
-                                L(v) => ChoiceArraysFoldedBodySpec::Variant1(v),
-                                R(L(v)) => ChoiceArraysFoldedBodySpec::Variant2(v),
-                                R(R(v)) => ChoiceArraysFoldedBodySpec::Default(v),
-                            }
-                        },
-                    |value: ChoiceArraysFoldedBodySpec| -> ChoiceArraysFoldedBodyInner
-                        {
-                            match value {
-                                ChoiceArraysFoldedBodySpec::Variant1(v) => L(v),
-                                ChoiceArraysFoldedBodySpec::Variant2(v) => R(L(v)),
-                                ChoiceArraysFoldedBodySpec::Default(v) => R(R(v)),
-                            }
-                        },
-                ),
+                mapper: BiMap(ChoiceArraysFoldedBodyForward, ChoiceArraysFoldedBodyReverse),
             },
         )
     }
@@ -1673,7 +2648,37 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        HeaderSpec::lemma_from_into,
+        HeaderSpec::lemma_into_from,
+        PrimitiveSizesSpec::lemma_from_into,
+        PrimitiveSizesSpec::lemma_into_from,
+        NamedSizeSpec::lemma_from_into,
+        NamedSizeSpec::lemma_into_from,
+        AliasSizeSpec::lemma_from_into,
+        AliasSizeSpec::lemma_into_from,
+        FixedChoiceSpec::lemma_from_into,
+        FixedChoiceSpec::lemma_into_from,
+        ChoiceFormatSizeSpec::lemma_from_into,
+        ChoiceFormatSizeSpec::lemma_into_from,
+        ChoiceArraysFoldedSpec::lemma_from_into,
+        ChoiceArraysFoldedSpec::lemma_into_from,
+        SizeArithSpec::lemma_from_into,
+        SizeArithSpec::lemma_into_from,
+        SimpleSubSpec::lemma_from_into,
+        SimpleSubSpec::lemma_into_from,
+        MultiArithSpec::lemma_from_into,
+        MultiArithSpec::lemma_into_from,
+        ParenExprSpec::lemma_from_into,
+        ParenExprSpec::lemma_into_from,
+        MixedConstSpec::lemma_from_into,
+        MixedConstSpec::lemma_into_from,
+        PayloadWithHeaderSpec::lemma_from_into,
+        PayloadWithHeaderSpec::lemma_into_from,
+        ChoiceArraysFoldedBodySpec::lemma_from_into,
+        ChoiceArraysFoldedBodySpec::lemma_into_from,
+    };
 
     impl SafeParser for HeaderFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -1700,6 +2705,10 @@ mod derived_proofs {
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: HeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                HeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1708,6 +2717,10 @@ mod derived_proofs {
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             reveal(<HeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: HeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                HeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1747,6 +2760,10 @@ mod derived_proofs {
             reveal(<HeaderFmt as Consistency>::consistent);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: HeaderSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                HeaderSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1756,6 +2773,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: HeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                HeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1806,6 +2827,10 @@ mod derived_proofs {
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: PrimitiveSizesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PrimitiveSizesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1814,6 +2839,10 @@ mod derived_proofs {
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             reveal(<PrimitiveSizesFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: PrimitiveSizesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PrimitiveSizesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1853,6 +2882,10 @@ mod derived_proofs {
             reveal(<PrimitiveSizesFmt as Consistency>::consistent);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: PrimitiveSizesSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                PrimitiveSizesSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1862,6 +2895,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: PrimitiveSizesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PrimitiveSizesSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1912,6 +2949,10 @@ mod derived_proofs {
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: NamedSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NamedSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1920,6 +2961,10 @@ mod derived_proofs {
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             reveal(<NamedSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: NamedSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NamedSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1959,6 +3004,10 @@ mod derived_proofs {
             reveal(<NamedSizeFmt as Consistency>::consistent);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: NamedSizeSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                NamedSizeSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1968,6 +3017,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: NamedSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NamedSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2124,6 +3177,10 @@ mod derived_proofs {
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: AliasSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AliasSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2132,6 +3189,10 @@ mod derived_proofs {
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             reveal(<AliasSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: AliasSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AliasSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2171,6 +3232,10 @@ mod derived_proofs {
             reveal(<AliasSizeFmt as Consistency>::consistent);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: AliasSizeSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AliasSizeSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2180,6 +3245,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: AliasSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AliasSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2230,6 +3299,10 @@ mod derived_proofs {
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: FixedChoiceInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2238,6 +3311,10 @@ mod derived_proofs {
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             reveal(<FixedChoiceFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: FixedChoiceInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2277,6 +3354,10 @@ mod derived_proofs {
             reveal(<FixedChoiceFmt as Consistency>::consistent);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|output: FixedChoiceSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                FixedChoiceSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2286,6 +3367,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: FixedChoiceInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2336,6 +3421,10 @@ mod derived_proofs {
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceFormatSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceFormatSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2344,6 +3433,10 @@ mod derived_proofs {
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             reveal(<ChoiceFormatSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceFormatSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceFormatSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2383,6 +3476,10 @@ mod derived_proofs {
             reveal(<ChoiceFormatSizeFmt as Consistency>::consistent);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ChoiceFormatSizeSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ChoiceFormatSizeSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2392,6 +3489,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceFormatSizeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceFormatSizeSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2548,6 +3649,10 @@ mod derived_proofs {
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceArraysFoldedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2556,6 +3661,10 @@ mod derived_proofs {
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             reveal(<ChoiceArraysFoldedFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceArraysFoldedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2595,6 +3704,10 @@ mod derived_proofs {
             reveal(<ChoiceArraysFoldedFmt as Consistency>::consistent);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ChoiceArraysFoldedSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ChoiceArraysFoldedSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2604,6 +3717,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ChoiceArraysFoldedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2654,6 +3771,10 @@ mod derived_proofs {
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: SizeArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SizeArithSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2662,6 +3783,10 @@ mod derived_proofs {
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             reveal(<SizeArithFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: SizeArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SizeArithSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2701,6 +3826,10 @@ mod derived_proofs {
             reveal(<SizeArithFmt as Consistency>::consistent);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: SizeArithSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                SizeArithSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2710,6 +3839,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: SizeArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SizeArithSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2760,6 +3893,10 @@ mod derived_proofs {
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: SimpleSubInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SimpleSubSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2768,6 +3905,10 @@ mod derived_proofs {
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             reveal(<SimpleSubFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: SimpleSubInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SimpleSubSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2807,6 +3948,10 @@ mod derived_proofs {
             reveal(<SimpleSubFmt as Consistency>::consistent);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|output: SimpleSubSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                SimpleSubSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2816,6 +3961,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: SimpleSubInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SimpleSubSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2866,6 +4015,10 @@ mod derived_proofs {
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
+            assert forall|input: MultiArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MultiArithSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2874,6 +4027,10 @@ mod derived_proofs {
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             reveal(<MultiArithFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
+            assert forall|input: MultiArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MultiArithSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2913,6 +4070,10 @@ mod derived_proofs {
             reveal(<MultiArithFmt as Consistency>::consistent);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
+            assert forall|output: MultiArithSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MultiArithSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2922,6 +4083,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
+            assert forall|input: MultiArithInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MultiArithSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2972,6 +4137,10 @@ mod derived_proofs {
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
+            assert forall|input: ParenExprInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ParenExprSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2980,6 +4149,10 @@ mod derived_proofs {
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             reveal(<ParenExprFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
+            assert forall|input: ParenExprInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ParenExprSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -3019,6 +4192,10 @@ mod derived_proofs {
             reveal(<ParenExprFmt as Consistency>::consistent);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
+            assert forall|output: ParenExprSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ParenExprSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -3028,6 +4205,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
+            assert forall|input: ParenExprInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ParenExprSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -3078,6 +4259,10 @@ mod derived_proofs {
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: MixedConstInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MixedConstSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -3086,6 +4271,10 @@ mod derived_proofs {
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             reveal(<MixedConstFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: MixedConstInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MixedConstSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -3125,6 +4314,10 @@ mod derived_proofs {
             reveal(<MixedConstFmt as Consistency>::consistent);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|output: MixedConstSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MixedConstSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -3134,6 +4327,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.len_spec());
+            assert forall|input: MixedConstInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MixedConstSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -3184,6 +4381,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -3192,6 +4393,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.hdr_spec());
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -3231,6 +4436,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
+            assert forall|output: PayloadWithHeaderSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                PayloadWithHeaderSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -3240,6 +4449,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.hdr_spec());
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -3286,12 +4499,20 @@ mod derived_proofs {
     impl<'i> SoundParser for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: ChoiceArraysFoldedBodyInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedBodySpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: ChoiceArraysFoldedBodyInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedBodySpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -3322,6 +4543,10 @@ mod derived_proofs {
     impl<'i> SPRoundTripDps for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|output: ChoiceArraysFoldedBodySpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ChoiceArraysFoldedBodySpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -3330,6 +4555,10 @@ mod derived_proofs {
     impl<'i> NonMalleable for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             let fmt = Self::spec_inner(self.tag_spec());
+            assert forall|input: ChoiceArraysFoldedBodyInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ChoiceArraysFoldedBodySpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -3367,6 +4596,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<HeaderFmt as SpecParser>::spec_parse);
+            reveal(<Header as DeepView>::deep_view);
+            reveal(HeaderSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3390,6 +4621,8 @@ mod exec_impls {
 
             reveal(<HeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
+            reveal(<Header as DeepView>::deep_view);
+            reveal(HeaderSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Header { len, flags } = v;
@@ -3403,6 +4636,8 @@ mod exec_impls {
     impl<'i> Prepare<Header> for HeaderFmt {
         fn prepare(&self, v: &Header) -> Result<usize, PreSerializeError> {
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
+            reveal(<Header as DeepView>::deep_view);
+            reveal(HeaderSpec::into_structural);
             let Header { len, flags } = v;
             let l1 = {
                 if !(*len >= 3 && *len <= 65535) {
@@ -3425,6 +4660,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
+            reveal(<PrimitiveSizes as DeepView>::deep_view);
+            reveal(PrimitiveSizesSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3445,6 +4682,8 @@ mod exec_impls {
 
             reveal(<PrimitiveSizesFmt as SpecSerializer>::spec_serialize);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
+            reveal(<PrimitiveSizes as DeepView>::deep_view);
+            reveal(PrimitiveSizesSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let PrimitiveSizes { byte, word } = v;
@@ -3458,6 +4697,8 @@ mod exec_impls {
     impl<'i> Prepare<PrimitiveSizes<'i>> for PrimitiveSizesFmt {
         fn prepare(&self, v: &PrimitiveSizes<'i>) -> Result<usize, PreSerializeError> {
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
+            reveal(<PrimitiveSizes as DeepView>::deep_view);
+            reveal(PrimitiveSizesSpec::into_structural);
             let PrimitiveSizes { byte, word } = v;
             let l1 = (Fixed::<1>).prepare(byte)?;
             let l2 = (Fixed::<2>).prepare(word)?;
@@ -3474,6 +4715,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
+            reveal(<NamedSize as DeepView>::deep_view);
+            reveal(NamedSizeSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3492,6 +4735,8 @@ mod exec_impls {
 
             reveal(<NamedSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
+            reveal(<NamedSize as DeepView>::deep_view);
+            reveal(NamedSizeSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let NamedSize { bytes } = v;
@@ -3504,6 +4749,8 @@ mod exec_impls {
     impl<'i> Prepare<NamedSize<'i>> for NamedSizeFmt {
         fn prepare(&self, v: &NamedSize<'i>) -> Result<usize, PreSerializeError> {
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
+            reveal(<NamedSize as DeepView>::deep_view);
+            reveal(NamedSizeSpec::into_structural);
             let NamedSize { bytes } = v;
             let l1 = (Fixed::<3>).prepare(bytes)?;
             let total_len = l1;
@@ -3552,6 +4799,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
+            reveal(<AliasSize as DeepView>::deep_view);
+            reveal(AliasSizeSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3570,6 +4819,8 @@ mod exec_impls {
 
             reveal(<AliasSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
+            reveal(<AliasSize as DeepView>::deep_view);
+            reveal(AliasSizeSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let AliasSize { bytes } = v;
@@ -3582,6 +4833,8 @@ mod exec_impls {
     impl<'i> Prepare<AliasSize<'i>> for AliasSizeFmt {
         fn prepare(&self, v: &AliasSize<'i>) -> Result<usize, PreSerializeError> {
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
+            reveal(<AliasSize as DeepView>::deep_view);
+            reveal(AliasSizeSpec::into_structural);
             let AliasSize { bytes } = v;
             let l1 = (Fixed::<3>).prepare(bytes)?;
             let total_len = l1;
@@ -3594,6 +4847,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3620,6 +4875,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &FixedChoice, obuf: &mut Output) {
             reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3643,6 +4900,8 @@ mod exec_impls {
     impl<'i> Prepare<FixedChoice> for FixedChoiceFmt {
         fn prepare(&self, v: &FixedChoice) -> Result<usize, PreSerializeError> {
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3663,6 +4922,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
+            reveal(<ChoiceFormatSize as DeepView>::deep_view);
+            reveal(ChoiceFormatSizeSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3681,6 +4942,8 @@ mod exec_impls {
 
             reveal(<ChoiceFormatSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceFormatSize as DeepView>::deep_view);
+            reveal(ChoiceFormatSizeSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let ChoiceFormatSize { bytes } = v;
@@ -3693,6 +4956,8 @@ mod exec_impls {
     impl<'i> Prepare<ChoiceFormatSize<'i>> for ChoiceFormatSizeFmt {
         fn prepare(&self, v: &ChoiceFormatSize<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceFormatSize as DeepView>::deep_view);
+            reveal(ChoiceFormatSizeSpec::into_structural);
             let ChoiceFormatSize { bytes } = v;
             let l1 = (Fixed::<2>).prepare(bytes)?;
             let total_len = l1;
@@ -3741,6 +5006,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
+            reveal(<ChoiceArraysFolded as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3767,6 +5034,8 @@ mod exec_impls {
 
             reveal(<ChoiceArraysFoldedFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceArraysFolded as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let ChoiceArraysFolded { tag, body } = v;
@@ -3780,6 +5049,8 @@ mod exec_impls {
     impl<'i> Prepare<ChoiceArraysFolded<'i>> for ChoiceArraysFoldedFmt {
         fn prepare(&self, v: &ChoiceArraysFolded<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceArraysFolded as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedSpec::into_structural);
             let ChoiceArraysFolded { tag, body } = v;
             let l1 = (Named("choice_tag", ChoiceTagFmt)).prepare(tag)?;
             let l2 = (Named(
@@ -3799,6 +5070,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
+            reveal(<SizeArith as DeepView>::deep_view);
+            reveal(SizeArithSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3817,6 +5090,8 @@ mod exec_impls {
 
             reveal(<SizeArithFmt as SpecSerializer>::spec_serialize);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
+            reveal(<SizeArith as DeepView>::deep_view);
+            reveal(SizeArithSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let SizeArith { bytes } = v;
@@ -3829,6 +5104,8 @@ mod exec_impls {
     impl<'i> Prepare<SizeArith<'i>> for SizeArithFmt {
         fn prepare(&self, v: &SizeArith<'i>) -> Result<usize, PreSerializeError> {
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
+            reveal(<SizeArith as DeepView>::deep_view);
+            reveal(SizeArithSpec::into_structural);
             let SizeArith { bytes } = v;
             let l1 = (Fixed::<4>).prepare(bytes)?;
             let total_len = l1;
@@ -3844,6 +5121,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
+            reveal(<SimpleSub as DeepView>::deep_view);
+            reveal(SimpleSubSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3866,6 +5145,8 @@ mod exec_impls {
 
             reveal(<SimpleSubFmt as SpecSerializer>::spec_serialize);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
+            reveal(<SimpleSub as DeepView>::deep_view);
+            reveal(SimpleSubSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3882,6 +5163,8 @@ mod exec_impls {
     impl<'i> Prepare<SimpleSub<'i>> for SimpleSubFmt {
         fn prepare(&self, v: &SimpleSub<'i>) -> Result<usize, PreSerializeError> {
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
+            reveal(<SimpleSub as DeepView>::deep_view);
+            reveal(SimpleSubSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3901,6 +5184,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
+            reveal(<MultiArith as DeepView>::deep_view);
+            reveal(MultiArithSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3923,6 +5208,8 @@ mod exec_impls {
 
             reveal(<MultiArithFmt as SpecSerializer>::spec_serialize);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
+            reveal(<MultiArith as DeepView>::deep_view);
+            reveal(MultiArithSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3939,6 +5226,8 @@ mod exec_impls {
     impl<'i> Prepare<MultiArith<'i>> for MultiArithFmt {
         fn prepare(&self, v: &MultiArith<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
+            reveal(<MultiArith as DeepView>::deep_view);
+            reveal(MultiArithSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3958,6 +5247,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
+            reveal(<ParenExpr as DeepView>::deep_view);
+            reveal(ParenExprSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3980,6 +5271,8 @@ mod exec_impls {
 
             reveal(<ParenExprFmt as SpecSerializer>::spec_serialize);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
+            reveal(<ParenExpr as DeepView>::deep_view);
+            reveal(ParenExprSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3996,6 +5289,8 @@ mod exec_impls {
     impl<'i> Prepare<ParenExpr<'i>> for ParenExprFmt {
         fn prepare(&self, v: &ParenExpr<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
+            reveal(<ParenExpr as DeepView>::deep_view);
+            reveal(ParenExprSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -4015,6 +5310,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
+            reveal(<MixedConst as DeepView>::deep_view);
+            reveal(MixedConstSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -4037,6 +5334,8 @@ mod exec_impls {
 
             reveal(<MixedConstFmt as SpecSerializer>::spec_serialize);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
+            reveal(<MixedConst as DeepView>::deep_view);
+            reveal(MixedConstSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -4053,6 +5352,8 @@ mod exec_impls {
     impl<'i> Prepare<MixedConst<'i>> for MixedConstFmt {
         fn prepare(&self, v: &MixedConst<'i>) -> Result<usize, PreSerializeError> {
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
+            reveal(<MixedConst as DeepView>::deep_view);
+            reveal(MixedConstSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -4072,11 +5373,18 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             proof {
                 use_type_invariant(self);
+            }
+
+            proof {
+                self.hdr.lemma_deep_view_fields();
+                self.hdr.deep_view().lemma_into_structural_fields();
             }
 
             let (n1, data) = (Varied((self.hdr.len - 3))).parse(&rest)?;
@@ -4094,6 +5402,8 @@ mod exec_impls {
 
             reveal(<PayloadWithHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -4101,6 +5411,11 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { data } = v;
+            proof {
+                self.hdr.lemma_deep_view_fields();
+                self.hdr.deep_view().lemma_into_structural_fields();
+            }
+
             Varied((self.hdr.len - 3)).serialize_into(*data, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -4110,11 +5425,18 @@ mod exec_impls {
     impl<'i> Prepare<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
         fn prepare(&self, v: &PayloadWithHeader<'i>) -> Result<usize, PreSerializeError> {
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
             let PayloadWithHeader { data } = v;
+            proof {
+                self.hdr.lemma_deep_view_fields();
+                self.hdr.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = (Varied((self.hdr.len - 3))).prepare(data)?;
             let total_len = l1;
             Ok(total_len)
@@ -4126,6 +5448,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ChoiceArraysFoldedBodyFmt as SpecParser>::spec_parse);
+            reveal(<ChoiceArraysFoldedBody as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedBodySpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -4159,6 +5483,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ChoiceArraysFoldedBody, obuf: &mut Output) {
             reveal(<ChoiceArraysFoldedBodyFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceArraysFoldedBodyFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceArraysFoldedBody as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -4185,6 +5511,8 @@ mod exec_impls {
     impl<'i> Prepare<ChoiceArraysFoldedBody> for ChoiceArraysFoldedBodyFmt<'i> {
         fn prepare(&self, v: &ChoiceArraysFoldedBody) -> Result<usize, PreSerializeError> {
             reveal(<ChoiceArraysFoldedBodyFmt as SpecByteLen>::byte_len);
+            reveal(<ChoiceArraysFoldedBody as DeepView>::deep_view);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             proof {
                 use_type_invariant(self);
             }

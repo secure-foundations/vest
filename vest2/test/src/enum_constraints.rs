@@ -36,8 +36,103 @@ pub type MyEnumInner = u8;
 impl DeepView for MyEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl MyEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<MyEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: MyEnumInner) -> bool {
+        {
+            let x = input;
+            x == 1 || x == 2 || x == 3
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: MyEnumInner) -> Self {
+        match input {
+            1 => Self::A,
+            2 => Self::B,
+            3 => Self::C,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> MyEnumInner {
+        match self {
+            Self::A => 1,
+            Self::B => 2,
+            Self::C => 3,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MyEnum::from_structural);
+        reveal(MyEnum::into_structural);
+        match self {
+            Self::A => {},
+            Self::B => {},
+            Self::C => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: MyEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MyEnum::from_structural);
+        reveal(MyEnum::into_structural);
+        match input {
+            1 => {},
+            2 => {},
+            3 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MyEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MyEnumReverse;
+
+impl SpecMap for MyEnumForward {
+    type Input = MyEnumInner;
+
+    type Output = MyEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MyEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for MyEnumReverse {
+    type Input = MyEnumSpec;
+
+    type Output = MyEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -48,7 +143,6 @@ unsafe impl Structural for MyEnum {
 
 # [doc = "data type for `enum_constraints`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct EnumConstraints {
     pub foo: MyEnum,
     pub bar: MyEnum,
@@ -56,15 +150,106 @@ pub struct EnumConstraints {
     pub tag: MyEnum,
 }
 
-pub type EnumConstraintsSpec = EnumConstraints;
+# [verifier::ext_equal]
+pub struct EnumConstraintsSpec<T0 = MyEnumSpec, T1 = MyEnumSpec, T2 = MyEnumSpec, T3 = MyEnumSpec> {
+    pub foo: T0,
+    pub bar: T1,
+    pub baz: T2,
+    pub tag: T3,
+}
 
 pub type EnumConstraintsInner = (MyEnumSpec, (MyEnumSpec, (MyEnumSpec, MyEnumSpec)));
 
 impl DeepView for EnumConstraints {
-    type V = Self;
+    type V = EnumConstraintsSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        EnumConstraintsSpec {
+            foo: self.foo.deep_view(),
+            bar: self.bar.deep_view(),
+            baz: self.baz.deep_view(),
+            tag: self.tag.deep_view(),
+        }
+    }
+}
+
+impl EnumConstraints {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().foo == self.foo.deep_view(),
+            self.deep_view().bar == self.bar.deep_view(),
+            self.deep_view().baz == self.baz.deep_view(),
+            self.deep_view().tag == self.tag.deep_view(),
+    {
+        reveal(<EnumConstraints as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> EnumConstraintsSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, T3)))) -> Self {
+        let (foo, (bar, (baz, tag))) = input;
+        Self { foo, bar, baz, tag }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, T3))) {
+        let Self { foo, bar, baz, tag } = self;
+        (foo, (bar, (baz, tag)))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(EnumConstraintsSpec::from_structural);
+        reveal(EnumConstraintsSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, T3))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(EnumConstraintsSpec::from_structural);
+        reveal(EnumConstraintsSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { foo, bar, baz, tag } => (foo, (bar, (baz, tag))),
+            },
+    {
+        reveal(EnumConstraintsSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct EnumConstraintsForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct EnumConstraintsReverse;
+
+impl SpecMap for EnumConstraintsForward {
+    type Input = EnumConstraintsInner;
+
+    type Output = EnumConstraintsSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        EnumConstraintsSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for EnumConstraintsReverse {
+    type Input = EnumConstraintsSpec;
+
+    type Output = EnumConstraintsInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -84,8 +269,103 @@ pub type MyTypedEnumInner = u16;
 impl DeepView for MyTypedEnum {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl MyTypedEnum {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<MyTypedEnum as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: MyTypedEnumInner) -> bool {
+        {
+            let x = input;
+            x == 1 || x == 2 || x == 3
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: MyTypedEnumInner) -> Self {
+        match input {
+            1 => Self::X,
+            2 => Self::Y,
+            3 => Self::Z,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> MyTypedEnumInner {
+        match self {
+            Self::X => 1,
+            Self::Y => 2,
+            Self::Z => 3,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MyTypedEnum::from_structural);
+        reveal(MyTypedEnum::into_structural);
+        match self {
+            Self::X => {},
+            Self::Y => {},
+            Self::Z => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: MyTypedEnumInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MyTypedEnum::from_structural);
+        reveal(MyTypedEnum::into_structural);
+        match input {
+            1 => {},
+            2 => {},
+            3 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MyTypedEnumForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct MyTypedEnumReverse;
+
+impl SpecMap for MyTypedEnumForward {
+    type Input = MyTypedEnumInner;
+
+    type Output = MyTypedEnumSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MyTypedEnum::from_structural(input)
+    }
+}
+
+impl SpecMap for MyTypedEnumReverse {
+    type Input = MyTypedEnumSpec;
+
+    type Output = MyTypedEnumInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -96,7 +376,6 @@ unsafe impl Structural for MyTypedEnum {
 
 # [doc = "data type for `typed_enum_constraints`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct TypedEnumConstraints {
     pub foo: MyTypedEnum,
     pub bar: MyTypedEnum,
@@ -104,7 +383,18 @@ pub struct TypedEnumConstraints {
     pub tag: MyTypedEnum,
 }
 
-pub type TypedEnumConstraintsSpec = TypedEnumConstraints;
+# [verifier::ext_equal]
+pub struct TypedEnumConstraintsSpec<
+    T0 = MyTypedEnumSpec,
+    T1 = MyTypedEnumSpec,
+    T2 = MyTypedEnumSpec,
+    T3 = MyTypedEnumSpec,
+> {
+    pub foo: T0,
+    pub bar: T1,
+    pub baz: T2,
+    pub tag: T3,
+}
 
 pub type TypedEnumConstraintsInner = (
     MyTypedEnumSpec,
@@ -112,10 +402,95 @@ pub type TypedEnumConstraintsInner = (
 );
 
 impl DeepView for TypedEnumConstraints {
-    type V = Self;
+    type V = TypedEnumConstraintsSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        TypedEnumConstraintsSpec {
+            foo: self.foo.deep_view(),
+            bar: self.bar.deep_view(),
+            baz: self.baz.deep_view(),
+            tag: self.tag.deep_view(),
+        }
+    }
+}
+
+impl TypedEnumConstraints {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().foo == self.foo.deep_view(),
+            self.deep_view().bar == self.bar.deep_view(),
+            self.deep_view().baz == self.baz.deep_view(),
+            self.deep_view().tag == self.tag.deep_view(),
+    {
+        reveal(<TypedEnumConstraints as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> TypedEnumConstraintsSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, T3)))) -> Self {
+        let (foo, (bar, (baz, tag))) = input;
+        Self { foo, bar, baz, tag }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, T3))) {
+        let Self { foo, bar, baz, tag } = self;
+        (foo, (bar, (baz, tag)))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TypedEnumConstraintsSpec::from_structural);
+        reveal(TypedEnumConstraintsSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, T3))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TypedEnumConstraintsSpec::from_structural);
+        reveal(TypedEnumConstraintsSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { foo, bar, baz, tag } => (foo, (bar, (baz, tag))),
+            },
+    {
+        reveal(TypedEnumConstraintsSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TypedEnumConstraintsForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TypedEnumConstraintsReverse;
+
+impl SpecMap for TypedEnumConstraintsForward {
+    type Input = TypedEnumConstraintsInner;
+
+    type Output = TypedEnumConstraintsSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TypedEnumConstraintsSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TypedEnumConstraintsReverse {
+    type Input = TypedEnumConstraintsSpec;
+
+    type Output = TypedEnumConstraintsInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -127,7 +502,7 @@ impl DeepView for TypedEnumConstraints {
 pub struct MyEnumFmt;
 
 pub type MyEnumFmtSpec = Named<
-    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<MyEnumInner, MyEnumSpec>>,
+    Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<MyEnumForward, MyEnumReverse>>,
 >;
 
 impl MyEnumFmt {
@@ -137,25 +512,7 @@ impl MyEnumFmt {
             "my_enum",
             Mapped {
                 inner: Refined(U8, |x: u8| ((x == 1) || (x == 2)) || (x == 3)),
-                mapper: (
-                    |parsed: MyEnumInner| -> MyEnumSpec
-                        {
-                            match parsed {
-                                1 => MyEnumSpec::A,
-                                2 => MyEnumSpec::B,
-                                3 => MyEnumSpec::C,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: MyEnumSpec| -> MyEnumInner
-                        {
-                            match value {
-                                MyEnumSpec::A => 1,
-                                MyEnumSpec::B => 2,
-                                MyEnumSpec::C => 3,
-                            }
-                        },
-                ),
+                mapper: BiMap(MyEnumForward, MyEnumReverse),
             },
         )
     }
@@ -174,7 +531,7 @@ pub type EnumConstraintsFmtSpec = Named<
                 Pair<Refined<MyEnumFmt, PredFnSpec<MyEnumSpec>>, Const<MyEnumFmt, MyEnumSpec>>,
             >,
         >,
-        FnSpecMapper<EnumConstraintsInner, EnumConstraintsSpec>,
+        BiMap<EnumConstraintsForward, EnumConstraintsReverse>,
     >,
 >;
 
@@ -197,18 +554,7 @@ impl EnumConstraintsFmt {
                         ),
                     ),
                 ),
-                mapper: (
-                    |parsed: EnumConstraintsInner| -> EnumConstraintsSpec
-                        {
-                            let (foo, (bar, (baz, tag))) = parsed;
-                            EnumConstraintsSpec { foo, bar, baz, tag }
-                        },
-                    |value: EnumConstraintsSpec| -> EnumConstraintsInner
-                        {
-                            let EnumConstraintsSpec { foo, bar, baz, tag } = value;
-                            (foo, (bar, (baz, tag)))
-                        },
-                ),
+                mapper: BiMap(EnumConstraintsForward, EnumConstraintsReverse),
             },
         )
     }
@@ -219,7 +565,7 @@ impl EnumConstraintsFmt {
 pub struct MyTypedEnumFmt;
 
 pub type MyTypedEnumFmtSpec = Named<
-    Mapped<Refined<U16Le, PredFnSpec<u16>>, FnSpecMapper<MyTypedEnumInner, MyTypedEnumSpec>>,
+    Mapped<Refined<U16Le, PredFnSpec<u16>>, BiMap<MyTypedEnumForward, MyTypedEnumReverse>>,
 >;
 
 impl MyTypedEnumFmt {
@@ -229,25 +575,7 @@ impl MyTypedEnumFmt {
             "my_typed_enum",
             Mapped {
                 inner: Refined(U16Le, |x: u16| ((x == 1) || (x == 2)) || (x == 3)),
-                mapper: (
-                    |parsed: MyTypedEnumInner| -> MyTypedEnumSpec
-                        {
-                            match parsed {
-                                1 => MyTypedEnumSpec::X,
-                                2 => MyTypedEnumSpec::Y,
-                                3 => MyTypedEnumSpec::Z,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: MyTypedEnumSpec| -> MyTypedEnumInner
-                        {
-                            match value {
-                                MyTypedEnumSpec::X => 1,
-                                MyTypedEnumSpec::Y => 2,
-                                MyTypedEnumSpec::Z => 3,
-                            }
-                        },
-                ),
+                mapper: BiMap(MyTypedEnumForward, MyTypedEnumReverse),
             },
         )
     }
@@ -269,7 +597,7 @@ pub type TypedEnumConstraintsFmtSpec = Named<
                 >,
             >,
         >,
-        FnSpecMapper<TypedEnumConstraintsInner, TypedEnumConstraintsSpec>,
+        BiMap<TypedEnumConstraintsForward, TypedEnumConstraintsReverse>,
     >,
 >;
 
@@ -293,18 +621,7 @@ impl TypedEnumConstraintsFmt {
                         ),
                     ),
                 ),
-                mapper: (
-                    |parsed: TypedEnumConstraintsInner| -> TypedEnumConstraintsSpec
-                        {
-                            let (foo, (bar, (baz, tag))) = parsed;
-                            TypedEnumConstraintsSpec { foo, bar, baz, tag }
-                        },
-                    |value: TypedEnumConstraintsSpec| -> TypedEnumConstraintsInner
-                        {
-                            let TypedEnumConstraintsSpec { foo, bar, baz, tag } = value;
-                            (foo, (bar, (baz, tag)))
-                        },
-                ),
+                mapper: BiMap(TypedEnumConstraintsForward, TypedEnumConstraintsReverse),
             },
         )
     }
@@ -500,7 +817,17 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        MyEnum::lemma_from_into,
+        MyEnum::lemma_into_from,
+        EnumConstraintsSpec::lemma_from_into,
+        EnumConstraintsSpec::lemma_into_from,
+        MyTypedEnum::lemma_from_into,
+        MyTypedEnum::lemma_into_from,
+        TypedEnumConstraintsSpec::lemma_from_into,
+        TypedEnumConstraintsSpec::lemma_into_from,
+    };
 
     impl SafeParser for MyEnumFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -527,6 +854,11 @@ mod derived_proofs {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MyEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyEnum::structural_valid(input));
+                MyEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -535,6 +867,11 @@ mod derived_proofs {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MyEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyEnum::structural_valid(input));
+                MyEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -574,6 +911,10 @@ mod derived_proofs {
             reveal(<MyEnumFmt as Consistency>::consistent);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MyEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MyEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -583,6 +924,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MyEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyEnum::structural_valid(input));
+                MyEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -633,6 +979,10 @@ mod derived_proofs {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: EnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -641,6 +991,10 @@ mod derived_proofs {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraintsFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: EnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -680,6 +1034,10 @@ mod derived_proofs {
             reveal(<EnumConstraintsFmt as Consistency>::consistent);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: EnumConstraintsSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                EnumConstraintsSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -689,6 +1047,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: EnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -739,6 +1101,11 @@ mod derived_proofs {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: MyTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyTypedEnum::structural_valid(input));
+                MyTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -747,6 +1114,11 @@ mod derived_proofs {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: MyTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyTypedEnum::structural_valid(input));
+                MyTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -786,6 +1158,10 @@ mod derived_proofs {
             reveal(<MyTypedEnumFmt as Consistency>::consistent);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: MyTypedEnumSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MyTypedEnum::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -795,6 +1171,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: MyTypedEnumInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(MyTypedEnum::structural_valid(input));
+                MyTypedEnum::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -845,6 +1226,10 @@ mod derived_proofs {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TypedEnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TypedEnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -853,6 +1238,10 @@ mod derived_proofs {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraintsFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TypedEnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TypedEnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -892,6 +1281,10 @@ mod derived_proofs {
             reveal(<TypedEnumConstraintsFmt as Consistency>::consistent);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TypedEnumConstraintsSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TypedEnumConstraintsSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -901,6 +1294,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TypedEnumConstraintsInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TypedEnumConstraintsSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -939,6 +1336,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
+            reveal(<MyEnum as DeepView>::deep_view);
+            reveal(MyEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -958,6 +1357,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &MyEnum, obuf: &mut Output) {
             reveal(<MyEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
+            reveal(<MyEnum as DeepView>::deep_view);
+            reveal(MyEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -974,6 +1375,8 @@ mod exec_impls {
     impl<'i> Prepare<MyEnum> for MyEnumFmt {
         fn prepare(&self, v: &MyEnum) -> Result<usize, PreSerializeError> {
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
+            reveal(<MyEnum as DeepView>::deep_view);
+            reveal(MyEnum::into_structural);
             let tag = match *v {
                 MyEnum::A => 1,
                 MyEnum::B => 2,
@@ -992,25 +1395,39 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
+            reveal(<EnumConstraints as DeepView>::deep_view);
+            reveal(EnumConstraintsSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, foo) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
+            proof {
+                foo.lemma_deep_view();
+            }
             if !(foo == MyEnum::A) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
             let (n2, bar) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
+            proof {
+                bar.lemma_deep_view();
+            }
             if !(!(bar == MyEnum::B)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
             let (n3, baz) = (Named("my_enum", MyEnumFmt)).parse(&rest)?;
+            proof {
+                baz.lemma_deep_view();
+            }
             if !(baz == MyEnum::A || baz == MyEnum::C) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
             let (n4, tag) = MyEnumFmt.parse(&rest)?;
+            proof {
+                tag.lemma_deep_view();
+            }
             if !(tag == MyEnum::A) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1028,9 +1445,20 @@ mod exec_impls {
 
             reveal(<EnumConstraintsFmt as SpecSerializer>::spec_serialize);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
+            reveal(<EnumConstraints as DeepView>::deep_view);
+            reveal(EnumConstraintsSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let EnumConstraints { foo, bar, baz, tag } = v;
+            proof {
+                tag.lemma_deep_view();
+            }
+            proof {
+                foo.lemma_deep_view();
+                bar.lemma_deep_view();
+                baz.lemma_deep_view();
+            }
+
             MyEnumFmt.serialize_into(foo, obuf);
             MyEnumFmt.serialize_into(bar, obuf);
             MyEnumFmt.serialize_into(baz, obuf);
@@ -1043,7 +1471,18 @@ mod exec_impls {
     impl<'i> Prepare<EnumConstraints> for EnumConstraintsFmt {
         fn prepare(&self, v: &EnumConstraints) -> Result<usize, PreSerializeError> {
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
+            reveal(<EnumConstraints as DeepView>::deep_view);
+            reveal(EnumConstraintsSpec::into_structural);
             let EnumConstraints { foo, bar, baz, tag } = v;
+            proof {
+                tag.lemma_deep_view();
+            }
+            proof {
+                foo.lemma_deep_view();
+                bar.lemma_deep_view();
+                baz.lemma_deep_view();
+            }
+
             let l1 = {
                 if !(*foo == MyEnum::A) {
                     Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
@@ -1086,6 +1525,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
+            reveal(<MyTypedEnum as DeepView>::deep_view);
+            reveal(MyTypedEnum::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1105,6 +1546,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &MyTypedEnum, obuf: &mut Output) {
             reveal(<MyTypedEnumFmt as SpecSerializer>::spec_serialize);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<MyTypedEnum as DeepView>::deep_view);
+            reveal(MyTypedEnum::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -1121,6 +1564,8 @@ mod exec_impls {
     impl<'i> Prepare<MyTypedEnum> for MyTypedEnumFmt {
         fn prepare(&self, v: &MyTypedEnum) -> Result<usize, PreSerializeError> {
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
+            reveal(<MyTypedEnum as DeepView>::deep_view);
+            reveal(MyTypedEnum::into_structural);
             let tag = match *v {
                 MyTypedEnum::X => 1,
                 MyTypedEnum::Y => 2,
@@ -1139,25 +1584,39 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
+            reveal(<TypedEnumConstraints as DeepView>::deep_view);
+            reveal(TypedEnumConstraintsSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, foo) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
+            proof {
+                foo.lemma_deep_view();
+            }
             if !(foo == MyTypedEnum::X) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n1);
             let (n2, bar) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
+            proof {
+                bar.lemma_deep_view();
+            }
             if !(!(bar == MyTypedEnum::Y)) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n2);
             let (n3, baz) = (Named("my_typed_enum", MyTypedEnumFmt)).parse(&rest)?;
+            proof {
+                baz.lemma_deep_view();
+            }
             if !(baz == MyTypedEnum::X || baz == MyTypedEnum::Z) {
                 return Err(ParseError::predicate_failed());
             }
             let rest = rest.skip(n3);
             let (n4, tag) = MyTypedEnumFmt.parse(&rest)?;
+            proof {
+                tag.lemma_deep_view();
+            }
             if !(tag == MyTypedEnum::X) {
                 return Err(ParseError::predicate_failed());
             }
@@ -1178,9 +1637,20 @@ mod exec_impls {
 
             reveal(<TypedEnumConstraintsFmt as SpecSerializer>::spec_serialize);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
+            reveal(<TypedEnumConstraints as DeepView>::deep_view);
+            reveal(TypedEnumConstraintsSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let TypedEnumConstraints { foo, bar, baz, tag } = v;
+            proof {
+                tag.lemma_deep_view();
+            }
+            proof {
+                foo.lemma_deep_view();
+                bar.lemma_deep_view();
+                baz.lemma_deep_view();
+            }
+
             MyTypedEnumFmt.serialize_into(foo, obuf);
             MyTypedEnumFmt.serialize_into(bar, obuf);
             MyTypedEnumFmt.serialize_into(baz, obuf);
@@ -1193,7 +1663,18 @@ mod exec_impls {
     impl<'i> Prepare<TypedEnumConstraints> for TypedEnumConstraintsFmt {
         fn prepare(&self, v: &TypedEnumConstraints) -> Result<usize, PreSerializeError> {
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
+            reveal(<TypedEnumConstraints as DeepView>::deep_view);
+            reveal(TypedEnumConstraintsSpec::into_structural);
             let TypedEnumConstraints { foo, bar, baz, tag } = v;
+            proof {
+                tag.lemma_deep_view();
+            }
+            proof {
+                foo.lemma_deep_view();
+                bar.lemma_deep_view();
+                baz.lemma_deep_view();
+            }
+
             let l1 = {
                 if !(*foo == MyTypedEnum::X) {
                     Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))

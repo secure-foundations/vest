@@ -403,8 +403,10 @@ impl<'a> Analysis<'a> {
         for (def_idx, def) in defs.iter().enumerate() {
             if let Definition::RecursiveScc(scc) = def {
                 let ptr = scc as *const RecursiveScc;
-                if !scc_source_order.contains_key(&ptr) {
-                    scc_source_order.insert(ptr, scc_counter);
+                if let std::collections::hash_map::Entry::Vacant(entry) =
+                    scc_source_order.entry(ptr)
+                {
+                    entry.insert(scc_counter);
                     scc_def_index.insert(ptr, def_idx);
                     scc_counter += 1;
                 }
@@ -538,9 +540,7 @@ impl<'a> Analysis<'a> {
                 if members.contains(&inv.func) {
                     false // in-SCC: lifetime shared; don't count it as a source here
                 } else {
-                    self.infos
-                        .get(&inv.func)
-                        .map_or(false, |i| i.needs_lifetime)
+                    self.infos.get(&inv.func).is_some_and(|i| i.needs_lifetime)
                 }
             }
             Combinator::AndThen(_, rhs) => self.combinator_needs_lifetime_scc(rhs, members),
@@ -854,9 +854,11 @@ impl<'a> Analysis<'a> {
         match branch_types {
             [] => quote! { () },
             [only] => only.clone(),
-            [first, rest @ ..] => {
-                let rest = self.render_choice_sum_type(rest);
-                quote! { Sum<#first, #rest> }
+            branches => {
+                let middle = branches.len() / 2;
+                let left = self.render_choice_sum_type(&branches[..middle]);
+                let right = self.render_choice_sum_type(&branches[middle..]);
+                quote! { Sum<#left, #right> }
             }
         }
     }
@@ -1412,14 +1414,11 @@ impl<'a> Analysis<'a> {
     }
 
     fn combinator_non_tail_at(&self, combinator: &Combinator, tail_position: bool) -> bool {
-        match combinator {
-            Combinator::AndThen(lhs, rhs) => {
-                return match self.ctx.resolve_alias(lhs) {
-                    Combinator::Bytes(_) => true,
-                    _ => self.combinator_non_tail_at(rhs, tail_position),
-                };
-            }
-            _ => {}
+        if let Combinator::AndThen(lhs, rhs) = combinator {
+            return match self.ctx.resolve_alias(lhs) {
+                Combinator::Bytes(_) => true,
+                _ => self.combinator_non_tail_at(rhs, tail_position),
+            };
         }
         match self.ctx.resolve_alias(combinator) {
             Combinator::Tail(_) => false,
@@ -1499,9 +1498,8 @@ impl<'a> Analysis<'a> {
     }
 
     fn combinator_non_malleable(&self, combinator: &Combinator) -> bool {
-        match combinator {
-            Combinator::AndThen(_, rhs) => return self.combinator_non_malleable(rhs),
-            _ => {}
+        if let Combinator::AndThen(_, rhs) = combinator {
+            return self.combinator_non_malleable(rhs);
         }
         match self.ctx.resolve_alias(combinator) {
             Combinator::ConstraintInt(_)
@@ -1603,22 +1601,12 @@ impl<'a> Analysis<'a> {
     pub(crate) fn is_selfview(&self, name: &str) -> bool {
         let def = self.defs.iter().find(|d| d.name() == Some(name));
         match def {
-            Some(Definition::StructDef { combinator, .. }) => {
-                combinator.0.iter().all(|field| match field {
-                    StructField::Const { combinator, .. } => {
-                        self.const_combinator_is_selfview(combinator)
-                    }
-                    StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } => {
-                        self.combinator_is_selfview(combinator)
-                    }
-                })
-            }
+            // Generated structs and choices deliberately use distinct, generic spec datatypes.
+            // This keeps a child's concrete datatype definition behind its nominal format
+            // boundary instead of recursively expanding it in enclosing mapper obligations.
+            Some(Definition::StructDef { .. }) => false,
             Some(Definition::BitsDef { .. }) => true,
-            Some(Definition::ChoiceDef { combinator, .. }) => combinator
-                .choices
-                .iter()
-                .all(|(_, comb)| self.combinator_is_selfview(comb)),
+            Some(Definition::ChoiceDef { .. }) => false,
             Some(Definition::EnumDef { .. }) => true,
             Some(Definition::CombinatorDef { combinator, .. }) => {
                 self.combinator_is_selfview(combinator)
@@ -1855,18 +1843,18 @@ pub(crate) fn int_literal(value: i128, combinator: &vestir::IntCombinator) -> To
 }
 
 pub(crate) fn sum_pattern(idx: usize, total: usize, leaf_pat: TokenStream) -> TokenStream {
-    if idx == total - 1 {
-        let mut t = leaf_pat;
-        for _ in 0..idx {
-            t = quote! { R(#t) };
-        }
-        t
+    assert!(idx < total, "sum branch index must be in bounds");
+    if total == 1 {
+        leaf_pat
     } else {
-        let mut t = quote! { L(#leaf_pat) };
-        for _ in 0..idx {
-            t = quote! { R(#t) };
+        let middle = total / 2;
+        if idx < middle {
+            let nested = sum_pattern(idx, middle, leaf_pat);
+            quote! { L(#nested) }
+        } else {
+            let nested = sum_pattern(idx - middle, total - middle, leaf_pat);
+            quote! { R(#nested) }
         }
-        t
     }
 }
 

@@ -1,8 +1,7 @@
 use super::common::{
     bits_tuple_expr_from_idents, bits_tuple_expr_tokens, bits_tuple_pattern_tokens,
-    bits_tuple_type_tokens, int_literal, nested_tuple_pattern_idents,
-    nested_tuple_value_expr_idents, sum_pattern, syn_usize, tuple_index_expr, Analysis,
-    FormatNames, TypeMode,
+    bits_tuple_type_tokens, int_literal, syn_usize, tuple_index_expr, Analysis, FormatNames,
+    TypeMode,
 };
 use super::writer::{render_ts, CodeWriter};
 use crate::vestir::{
@@ -358,7 +357,6 @@ impl<'a> Analysis<'a> {
         let spec_params = self.spec_param_list(param_defns);
         let ctor_doc = format!("specification constructor for `{}`.", name);
         let wrapper_generics = self.wrapper_generics(param_defns);
-
         let mut out = CodeWriter::new();
         out.push_multiline(render_ts(quote! { pub type #fmt_spec_ident = #named_ty; }));
         out.blank_line();
@@ -917,39 +915,15 @@ impl<'a> Analysis<'a> {
         let raw = self.render_struct_fields(&struct_comb.0);
 
         let spec_ident = format_ident!("{}", info.names.spec);
-        let inner_ident = format_ident!("{}", info.names.inner);
-        let labels = struct_comb
-            .0
-            .iter()
-            .map(|field| match field {
-                StructField::Const { label, .. }
-                | StructField::Dependent { label, .. }
-                | StructField::Ordinary { label, .. } => label.clone(),
-            })
-            .collect::<Vec<_>>();
-        let struct_fields_expr = struct_init_fields_expr(&labels);
-        let label_idents = labels
-            .iter()
-            .map(|label| format_ident!("{}", label))
-            .collect::<Vec<_>>();
-        let tuple_pat = nested_tuple_pattern_idents(&label_idents);
-        let reverse_tuple_expr = nested_tuple_value_expr_idents(&label_idents);
+        let forward_ident = format_ident!("{}Forward", info.names.exec);
+        let reverse_ident = format_ident!("{}Reverse", info.names.exec);
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
-        let ty = quote! { Mapped<#raw_ty, FnSpecMapper<#inner_ident, #spec_ident>> };
+        let ty = quote! { Mapped<#raw_ty, BiMap<#forward_ident, #reverse_ident>> };
         let expr = quote! {
             Mapped {
                 inner: #raw_expr,
-                mapper: (
-                    |parsed: #inner_ident| -> #spec_ident {
-                        let #tuple_pat = parsed;
-                        #spec_ident { #struct_fields_expr }
-                    },
-                    |value: #spec_ident| -> #inner_ident {
-                        let #spec_ident { #(#label_idents),* } = value;
-                        #reverse_tuple_expr
-                    }
-                )
+                mapper: BiMap(#forward_ident, #reverse_ident),
             }
         };
         RenderedSpec {
@@ -1363,38 +1337,16 @@ impl<'a> Analysis<'a> {
     fn render_choice_top_level(&self, name: &str, choice_comb: &ChoiceCombinator) -> RenderedSpec {
         let info = self.info(name);
         let spec_ident = format_ident!("{}", info.names.spec);
-        let inner_ident = format_ident!("{}", info.names.inner);
-        // let raw = self.render_choice_raw(choice_comb, Some(name));
         let raw = self.render_choice_raw(choice_comb, Some(name));
-        let variant_names = self.choice_variant_names(choice_comb);
-        let forward_arms = variant_names.iter().enumerate().map(|(idx, variant)| {
-            let pat = sum_pattern(idx, variant_names.len(), quote! { v });
-            let ident = format_ident!("{}", variant);
-            quote! { #pat => #spec_ident::#ident(v), }
-        });
-        let reverse_arms = variant_names.iter().enumerate().map(|(idx, variant)| {
-            let expr = sum_injection(idx, variant_names.len(), quote! { v });
-            let ident = format_ident!("{}", variant);
-            quote! { #spec_ident::#ident(v) => #expr, }
-        });
+        let forward_ident = format_ident!("{}Forward", info.names.exec);
+        let reverse_ident = format_ident!("{}Reverse", info.names.exec);
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
-        let ty = quote! { Mapped<#raw_ty, FnSpecMapper<#inner_ident, #spec_ident>> };
+        let ty = quote! { Mapped<#raw_ty, BiMap<#forward_ident, #reverse_ident>> };
         let expr = quote! {
             Mapped {
                 inner: #raw_expr,
-                mapper: (
-                    |parsed: #inner_ident| -> #spec_ident {
-                        match parsed {
-                            #(#forward_arms)*
-                        }
-                    },
-                    |value: #spec_ident| -> #inner_ident {
-                        match value {
-                            #(#reverse_arms)*
-                        }
-                    }
-                )
+                mapper: BiMap(#forward_ident, #reverse_ident),
             }
         };
         RenderedSpec {
@@ -1592,6 +1544,8 @@ impl<'a> Analysis<'a> {
         let info = self.info(name);
         let spec_ident = format_ident!("{}", info.names.spec);
         let inner_ident = format_ident!("{}", info.names.inner);
+        let forward_ident = format_ident!("{}Forward", info.names.exec);
+        let reverse_ident = format_ident!("{}Reverse", info.names.exec);
         let (variants, exhaustive, inferred) = match enum_comb {
             EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
             EnumCombinator::NonExhaustive { enums, inferred } => {
@@ -1639,68 +1593,13 @@ impl<'a> Analysis<'a> {
             )
         };
 
-        let exhaustive_forward_arms = variants.iter().map(|variant| {
-            let value = int_literal(variant.value, inferred);
-            let ident = format_ident!("{}", variant.name);
-            quote! { #value => #spec_ident::#ident, }
-        });
-        let exhaustive_reverse_arms = variants.iter().map(|variant| {
-            let value = int_literal(variant.value, inferred);
-            let ident = format_ident!("{}", variant.name);
-            if exhaustive {
-                quote! { #spec_ident::#ident => #value, }
-            } else {
-                quote! { #spec_ident::#ident => L(#value), }
-            }
-        });
-
-        let forward_expr = if exhaustive {
-            quote! {
-                match parsed {
-                    #(#exhaustive_forward_arms)*
-                    _ => arbitrary(),
-                }
-            }
-        } else {
-            quote! {
-                match parsed {
-                    L(x) => match x {
-                        #(#exhaustive_forward_arms)*
-                        _ => arbitrary(),
-                    },
-                    R(x) => #spec_ident::Unknown(x),
-                }
-            }
-        };
-        let reverse_expr = if exhaustive {
-            quote! {
-                match value {
-                    #(#exhaustive_reverse_arms)*
-                }
-            }
-        } else {
-            quote! {
-                match value {
-                    #(#exhaustive_reverse_arms)*
-                    #spec_ident::Unknown(x) => R(x),
-                }
-            }
-        };
-
         let raw_ty = &raw.ty;
         let raw_expr = &raw.expr;
-        let ty = quote! { Mapped<#raw_ty, FnSpecMapper<#inner_ident, #spec_ident>> };
+        let ty = quote! { Mapped<#raw_ty, BiMap<#forward_ident, #reverse_ident>> };
         let expr = quote! {
             Mapped {
                 inner: #raw_expr,
-                mapper: (
-                    |parsed: #inner_ident| -> #spec_ident {
-                        #forward_expr
-                    },
-                    |value: #spec_ident| -> #inner_ident {
-                        #reverse_expr
-                    }
-                )
+                mapper: BiMap(#forward_ident, #reverse_ident),
             }
         };
         RenderedSpec {
@@ -1870,7 +1769,7 @@ impl<'a> Analysis<'a> {
                             quote! { self.#field_ident },
                         )),
                         Combinator::Invocation(invocation) => {
-                            let rendered = self.render_invocation_spec(&invocation);
+                            let rendered = self.render_invocation_spec(invocation);
                             let expr = rendered.expr;
                             Some(quote! { #expr.consistent(self.#field_ident.deep_view()) })
                         }
@@ -1950,18 +1849,19 @@ fn fold_choice(mut branches: Vec<RenderedSpec>) -> RenderedSpec {
     if branches.len() == 1 {
         return branches.remove(0);
     }
-    let first = branches.remove(0);
-    let rest = fold_choice(branches);
-    let first_ty = &first.ty;
-    let first_expr = &first.expr;
-    let first_value_ty = &first.value_ty;
-    let rest_ty = &rest.ty;
-    let rest_expr = &rest.expr;
-    let rest_value_ty = &rest.value_ty;
+    let right = branches.split_off(branches.len() / 2);
+    let left = fold_choice(branches);
+    let right = fold_choice(right);
+    let left_ty = &left.ty;
+    let left_expr = &left.expr;
+    let left_value_ty = &left.value_ty;
+    let right_ty = &right.ty;
+    let right_expr = &right.expr;
+    let right_value_ty = &right.value_ty;
     RenderedSpec {
-        ty: quote! { Choice<#first_ty, #rest_ty> },
-        expr: quote! { Choice(#first_expr, #rest_expr) },
-        value_ty: quote! { Sum<#first_value_ty, #rest_value_ty> },
+        ty: quote! { Choice<#left_ty, #right_ty> },
+        expr: quote! { Choice(#left_expr, #right_expr) },
+        value_ty: quote! { Sum<#left_value_ty, #right_value_ty> },
         has_value: true,
     }
 }
@@ -1984,18 +1884,6 @@ fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
     terms
         .into_iter()
         .fold(first, |acc, term| quote! { (#acc) && (#term) })
-}
-
-fn struct_init_fields_expr(labels: &[String]) -> TokenStream {
-    let idents = labels
-        .iter()
-        .map(|label| format_ident!("{}", label))
-        .collect::<Vec<_>>();
-    let fields = idents
-        .iter()
-        .map(|ident| quote! { #ident })
-        .collect::<Vec<_>>();
-    quote! { #(#fields),* }
 }
 
 fn shouty_snake_case(s: &str) -> String {
@@ -2034,14 +1922,17 @@ fn bit_mask_literal(mask: u64, int_ty: &vestir::IntCombinator) -> TokenStream {
 }
 
 fn sum_injection(idx: usize, total: usize, leaf_expr: TokenStream) -> TokenStream {
+    assert!(idx < total, "sum branch index must be in bounds");
     if total == 1 {
         return leaf_expr;
     }
-    if idx == 0 {
-        quote! { L(#leaf_expr) }
+    let middle = total / 2;
+    if idx < middle {
+        let nested = sum_injection(idx, middle, leaf_expr);
+        quote! { L(#nested) }
     } else {
-        let rest = sum_injection(idx - 1, total - 1, leaf_expr);
-        quote! { R(#rest) }
+        let nested = sum_injection(idx - middle, total - middle, leaf_expr);
+        quote! { R(#nested) }
     }
 }
 

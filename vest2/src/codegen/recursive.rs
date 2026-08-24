@@ -721,14 +721,14 @@ impl<'a> Analysis<'a> {
         let member_dep_map: std::collections::HashMap<String, (String, Option<String>)> = member
             .param_defns
             .iter()
-            .filter_map(|p| match p {
+            .map(|p| match p {
                 crate::vestir::ParamDefn::Dependent { name, combinator } => {
                     let (field, enum_ty) = match combinator {
                         Combinator::Invocation(inv) => (inv.func.clone(), Some(inv.func.clone())),
                         Combinator::ConstraintInt(_) => (name.clone(), None),
                         _ => (name.clone(), None),
                     };
-                    Some((name.clone(), (field, enum_ty)))
+                    (name.clone(), (field, enum_ty))
                 }
             })
             .collect();
@@ -1064,16 +1064,34 @@ impl<'a> Analysis<'a> {
         let opaque = false;
         let safe =
             self.gen_safe_parser_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
-        let sound =
-            self.gen_sound_parser_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
+        let sound = self.gen_sound_parser_impl(
+            &fmt_id,
+            &impl_generics,
+            &type_generics,
+            &inner,
+            opaque,
+            &TokenStream::new(),
+        );
         let non_tail =
             self.gen_non_tail_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
         let good =
             self.gen_good_serializer_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
-        let roundtrip =
-            self.gen_sp_roundtrip_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
-        let non_malleable =
-            self.gen_non_malleable_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
+        let roundtrip = self.gen_sp_roundtrip_impl(
+            &fmt_id,
+            &impl_generics,
+            &type_generics,
+            &inner,
+            opaque,
+            &TokenStream::new(),
+        );
+        let non_malleable = self.gen_non_malleable_impl(
+            &fmt_id,
+            &impl_generics,
+            &type_generics,
+            &inner,
+            opaque,
+            &TokenStream::new(),
+        );
         let equiv_general =
             self.gen_equiv_general_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
         let equiv = self.gen_equiv_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);
@@ -1135,7 +1153,6 @@ impl<'a> Analysis<'a> {
                 }
             })
             .collect();
-
         let hides: Vec<_> = rb_idents
             .iter()
             .map(|rb| quote! { hide(<#rb as SpecRecBody>::spec_body); })
@@ -1499,23 +1516,44 @@ impl<'a> Analysis<'a> {
     fn gen_recursive_exec_wrappers(&self, member: &SccMember) -> String {
         let fmt_ident = format_ident!("{}", self.info(&member.name).names.fmt);
         let exec_ty = self.render_nominal_type(&member.name, TypeMode::Exec);
+        let view_certificates = member
+            .param_defns
+            .iter()
+            .filter_map(|param| match param {
+                crate::vestir::ParamDefn::Dependent { name, combinator }
+                    if self.has_identity_view_certificate(combinator) =>
+                {
+                    let field = format_ident!("{}", scc_param_field_name(name, combinator));
+                    Some(quote! { self.#field.lemma_deep_view(); })
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let view_proof = if view_certificates.is_empty() {
+            quote! {}
+        } else {
+            quote! { proof { #(#view_certificates)* } }
+        };
         render_ts(quote! {
             impl<'i, const LIMIT: usize> Parser<&'i [u8]> for #fmt_ident<LIMIT> {
                 type PT = #exec_ty;
 
                 fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+                    #view_proof
                     self.parse_gas(LIMIT, ibuf)
                 }
             }
 
             impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, #exec_ty> for #fmt_ident<LIMIT> {
                 fn serialize_into(&self, v: &#exec_ty, obuf: &mut Output) {
+                    #view_proof
                     self.serialize_gas(LIMIT, v, obuf);
                 }
             }
 
             impl<'i, const LIMIT: usize> Prepare<#exec_ty> for #fmt_ident<LIMIT> {
                 fn prepare(&self, v: &#exec_ty) -> Result<usize, PreSerializeError> {
+                    #view_proof
                     self.prepare_gas(LIMIT, v)
                 }
             }

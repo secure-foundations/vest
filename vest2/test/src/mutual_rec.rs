@@ -35,8 +35,99 @@ pub type ExprKindInner = u8;
 impl DeepView for ExprKind {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl ExprKind {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<ExprKind as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: ExprKindInner) -> bool {
+        {
+            let x = input;
+            x == 16 || x == 17
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: ExprKindInner) -> Self {
+        match input {
+            16 => Self::Num,
+            17 => Self::Group,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> ExprKindInner {
+        match self {
+            Self::Num => 16,
+            Self::Group => 17,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ExprKind::from_structural);
+        reveal(ExprKind::into_structural);
+        match self {
+            Self::Num => {},
+            Self::Group => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: ExprKindInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ExprKind::from_structural);
+        reveal(ExprKind::into_structural);
+        match input {
+            16 => {},
+            17 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ExprKindForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ExprKindReverse;
+
+impl SpecMap for ExprKindForward {
+    type Input = ExprKindInner;
+
+    type Output = ExprKindSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ExprKind::from_structural(input)
+    }
+}
+
+impl SpecMap for ExprKindReverse {
+    type Input = ExprKindSpec;
+
+    type Output = ExprKindInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -60,8 +151,99 @@ pub type ListKindInner = u8;
 impl DeepView for ListKind {
     type V = Self;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
+    }
+}
+
+impl ListKind {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<ListKind as DeepView>::deep_view);
+    }
+
+    pub open spec fn structural_valid(input: ListKindInner) -> bool {
+        {
+            let x = input;
+            x == 32 || x == 33
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: ListKindInner) -> Self {
+        match input {
+            32 => Self::Nil,
+            33 => Self::Cons,
+            _ => arbitrary(),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> ListKindInner {
+        match self {
+            Self::Nil => 32,
+            Self::Cons => 33,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ListKind::from_structural);
+        reveal(ListKind::into_structural);
+        match self {
+            Self::Nil => {},
+            Self::Cons => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: ListKindInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ListKind::from_structural);
+        reveal(ListKind::into_structural);
+        match input {
+            32 => {},
+            33 => {},
+            _ => {
+                assert(false);
+            },
+        }
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ListKindForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ListKindReverse;
+
+impl SpecMap for ListKindForward {
+    type Input = ListKindInner;
+
+    type Output = ListKindSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ListKind::from_structural(input)
+    }
+}
+
+impl SpecMap for ListKindReverse {
+    type Input = ListKindSpec;
+
+    type Output = ListKindInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -449,7 +631,7 @@ impl DeepView for SCC2Param {
 pub struct ExprKindFmt;
 
 pub type ExprKindFmtSpec = Named<
-    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<ExprKindInner, ExprKindSpec>>,
+    Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<ExprKindForward, ExprKindReverse>>,
 >;
 
 impl ExprKindFmt {
@@ -459,23 +641,7 @@ impl ExprKindFmt {
             "expr_kind",
             Mapped {
                 inner: Refined(U8, |x: u8| (x == 16) || (x == 17)),
-                mapper: (
-                    |parsed: ExprKindInner| -> ExprKindSpec
-                        {
-                            match parsed {
-                                16 => ExprKindSpec::Num,
-                                17 => ExprKindSpec::Group,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: ExprKindSpec| -> ExprKindInner
-                        {
-                            match value {
-                                ExprKindSpec::Num => 16,
-                                ExprKindSpec::Group => 17,
-                            }
-                        },
-                ),
+                mapper: BiMap(ExprKindForward, ExprKindReverse),
             },
         )
     }
@@ -486,7 +652,7 @@ impl ExprKindFmt {
 pub struct ListKindFmt;
 
 pub type ListKindFmtSpec = Named<
-    Mapped<Refined<U8, PredFnSpec<u8>>, FnSpecMapper<ListKindInner, ListKindSpec>>,
+    Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<ListKindForward, ListKindReverse>>,
 >;
 
 impl ListKindFmt {
@@ -496,23 +662,7 @@ impl ListKindFmt {
             "list_kind",
             Mapped {
                 inner: Refined(U8, |x: u8| (x == 32) || (x == 33)),
-                mapper: (
-                    |parsed: ListKindInner| -> ListKindSpec
-                        {
-                            match parsed {
-                                32 => ListKindSpec::Nil,
-                                33 => ListKindSpec::Cons,
-                                _ => arbitrary(),
-                            }
-                        },
-                    |value: ListKindSpec| -> ListKindInner
-                        {
-                            match value {
-                                ListKindSpec::Nil => 32,
-                                ListKindSpec::Cons => 33,
-                            }
-                        },
-                ),
+                mapper: BiMap(ListKindForward, ListKindReverse),
             },
         )
     }
@@ -2519,7 +2669,13 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        ExprKind::lemma_from_into,
+        ExprKind::lemma_into_from,
+        ListKind::lemma_from_into,
+        ListKind::lemma_into_from,
+    };
 
     impl SafeParser for ExprKindFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -2546,6 +2702,11 @@ mod derived_proofs {
             reveal(<ExprKindFmt as SpecParser>::spec_parse);
             reveal(<ExprKindFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ExprKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ExprKind::structural_valid(input));
+                ExprKind::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2554,6 +2715,11 @@ mod derived_proofs {
             reveal(<ExprKindFmt as SpecParser>::spec_parse);
             reveal(<ExprKindFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ExprKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ExprKind::structural_valid(input));
+                ExprKind::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2593,6 +2759,10 @@ mod derived_proofs {
             reveal(<ExprKindFmt as Consistency>::consistent);
             reveal(<ExprKindFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ExprKindSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ExprKind::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2602,6 +2772,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ExprKindFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ExprKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ExprKind::structural_valid(input));
+                ExprKind::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2652,6 +2827,11 @@ mod derived_proofs {
             reveal(<ListKindFmt as SpecParser>::spec_parse);
             reveal(<ListKindFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ListKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ListKind::structural_valid(input));
+                ListKind::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2660,6 +2840,11 @@ mod derived_proofs {
             reveal(<ListKindFmt as SpecParser>::spec_parse);
             reveal(<ListKindFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ListKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ListKind::structural_valid(input));
+                ListKind::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2699,6 +2884,10 @@ mod derived_proofs {
             reveal(<ListKindFmt as Consistency>::consistent);
             reveal(<ListKindFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ListKindSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ListKind::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2708,6 +2897,11 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ListKindFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ListKindInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(ListKind::structural_valid(input));
+                ListKind::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -3704,6 +3898,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ExprKindFmt as SpecParser>::spec_parse);
+            reveal(<ExprKind as DeepView>::deep_view);
+            reveal(ExprKind::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3722,6 +3918,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ExprKind, obuf: &mut Output) {
             reveal(<ExprKindFmt as SpecSerializer>::spec_serialize);
             reveal(<ExprKindFmt as SpecByteLen>::byte_len);
+            reveal(<ExprKind as DeepView>::deep_view);
+            reveal(ExprKind::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -3737,6 +3935,8 @@ mod exec_impls {
     impl<'i> Prepare<ExprKind> for ExprKindFmt {
         fn prepare(&self, v: &ExprKind) -> Result<usize, PreSerializeError> {
             reveal(<ExprKindFmt as SpecByteLen>::byte_len);
+            reveal(<ExprKind as DeepView>::deep_view);
+            reveal(ExprKind::into_structural);
             let tag = match *v {
                 ExprKind::Num => 16,
                 ExprKind::Group => 17,
@@ -3751,6 +3951,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ListKindFmt as SpecParser>::spec_parse);
+            reveal(<ListKind as DeepView>::deep_view);
+            reveal(ListKind::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3769,6 +3971,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &ListKind, obuf: &mut Output) {
             reveal(<ListKindFmt as SpecSerializer>::spec_serialize);
             reveal(<ListKindFmt as SpecByteLen>::byte_len);
+            reveal(<ListKind as DeepView>::deep_view);
+            reveal(ListKind::into_structural);
             let ghost old_obuf = obuf@;
 
             let tag = match *v {
@@ -3784,6 +3988,8 @@ mod exec_impls {
     impl<'i> Prepare<ListKind> for ListKindFmt {
         fn prepare(&self, v: &ListKind) -> Result<usize, PreSerializeError> {
             reveal(<ListKindFmt as SpecByteLen>::byte_len);
+            reveal(<ListKind as DeepView>::deep_view);
+            reveal(ListKind::into_structural);
             let tag = match *v {
                 ListKind::Nil => 32,
                 ListKind::Cons => 33,
@@ -3841,6 +4047,9 @@ mod exec_impls {
         type PT = ExprV<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
             self.parse_gas(LIMIT, ibuf)
         }
     }
@@ -3849,12 +4058,18 @@ mod exec_impls {
         LIMIT,
     > {
         fn serialize_into(&self, v: &ExprV<'i>, obuf: &mut Output) {
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
 
     impl<'i, const LIMIT: usize> Prepare<ExprV<'i>> for ExprVFmt<LIMIT> {
         fn prepare(&self, v: &ExprV<'i>) -> Result<usize, PreSerializeError> {
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
             self.prepare_gas(LIMIT, v)
         }
     }
@@ -3886,6 +4101,9 @@ mod exec_impls {
         type PT = ListV<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
             self.parse_gas(LIMIT, ibuf)
         }
     }
@@ -3894,12 +4112,18 @@ mod exec_impls {
         LIMIT,
     > {
         fn serialize_into(&self, v: &ListV<'i>, obuf: &mut Output) {
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
             self.serialize_gas(LIMIT, v, obuf);
         }
     }
 
     impl<'i, const LIMIT: usize> Prepare<ListV<'i>> for ListVFmt<LIMIT> {
         fn prepare(&self, v: &ListV<'i>) -> Result<usize, PreSerializeError> {
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
             self.prepare_gas(LIMIT, v)
         }
     }
@@ -3921,7 +4145,14 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, t) = (ExprKindFmt).parse(&rest)?;
+            proof {
+                t.lemma_deep_view();
+            }
             let rest = rest.skip(n1);
+            proof {
+                t.lemma_deep_view();
+            }
+
             if gas == 0 {
                 return Err(ParseError::recursion_limit_exceeded());
             }
@@ -3956,6 +4187,10 @@ mod exec_impls {
             broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
 
             let Expr { t, v } = v;
+            proof {
+                t.lemma_deep_view();
+            }
+
             (ExprKindFmt).serialize_into(t, obuf);
             (ExprVFmt::<LIMIT> { expr_kind: *t }).serialize_gas(gas - 1, v, obuf);
         }
@@ -3976,6 +4211,10 @@ mod exec_impls {
             decreases gas,
         {
             let Expr { t, v } = v;
+            proof {
+                t.lemma_deep_view();
+            }
+
             let l1 = (ExprKindFmt).prepare(t)?;
             if gas == 0 {
                 return Err(
@@ -4005,7 +4244,14 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, t) = (ListKindFmt).parse(&rest)?;
+            proof {
+                t.lemma_deep_view();
+            }
             let rest = rest.skip(n1);
+            proof {
+                t.lemma_deep_view();
+            }
+
             if gas == 0 {
                 return Err(ParseError::recursion_limit_exceeded());
             }
@@ -4040,6 +4286,10 @@ mod exec_impls {
             broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
 
             let List { t, v } = v;
+            proof {
+                t.lemma_deep_view();
+            }
+
             (ListKindFmt).serialize_into(t, obuf);
             (ListVFmt::<LIMIT> { list_kind: *t }).serialize_gas(gas - 1, v, obuf);
         }
@@ -4060,6 +4310,10 @@ mod exec_impls {
             decreases gas,
         {
             let List { t, v } = v;
+            proof {
+                t.lemma_deep_view();
+            }
+
             let l1 = (ListKindFmt).prepare(t)?;
             if gas == 0 {
                 return Err(
@@ -4097,6 +4351,10 @@ mod exec_impls {
                 ibuf@,
             );
             let rest = *ibuf;
+
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
 
             let (n, v) = match self.expr_kind {
                 ExprKind::Num => {
@@ -4152,6 +4410,10 @@ mod exec_impls {
         {
             broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
 
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
+
             match (self.expr_kind, v) {
                 (ExprKind::Num, ExprV::Num(v)) => {
                     (U8).serialize_into(v, obuf);
@@ -4184,6 +4446,10 @@ mod exec_impls {
                 },
             decreases gas,
         {
+            proof {
+                self.expr_kind.lemma_deep_view();
+            }
+
             match (self.expr_kind, v) {
                 (ExprKind::Num, ExprV::Num(v)) => (U8).prepare(v),
                 (ExprKind::Group, ExprV::Group(v)) => {
@@ -4328,6 +4594,10 @@ mod exec_impls {
             );
             let rest = *ibuf;
 
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
+
             let (n, v) = match self.list_kind {
                 ListKind::Nil => {
                     let (n, inner) = (Fixed::<0>).parse(ibuf)?;
@@ -4382,6 +4652,10 @@ mod exec_impls {
         {
             broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
 
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
+
             match (self.list_kind, v) {
                 (ListKind::Nil, ListV::Nil(v)) => {
                     (Fixed::<0>).serialize_into(*v, obuf);
@@ -4414,6 +4688,10 @@ mod exec_impls {
                 },
             decreases gas,
         {
+            proof {
+                self.list_kind.lemma_deep_view();
+            }
+
             match (self.list_kind, v) {
                 (ListKind::Nil, ListV::Nil(v)) => (Fixed::<0>).prepare(v),
                 (ListKind::Cons, ListV::Cons(v)) => {

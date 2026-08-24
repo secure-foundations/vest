@@ -2111,7 +2111,7 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
         }
         Rule::const_id => ConstCombinator::ConstCombinatorInvocation {
             name: build_id(rule),
-            span: span.clone(),
+            span,
         },
         _ => unreachable!(),
     }

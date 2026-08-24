@@ -569,7 +569,7 @@ pub fn check<'ast>(
                             .with_message(format!("duplicate format definition `{}`", name))
                             .with_label(
                                 Label::new((source.0, span_as_range(span)))
-                                    .with_message(format!("This format is defined twice"))
+                                    .with_message("This format is defined twice")
                                     .with_color(Color::Red),
                             )
                             .with_label(
@@ -626,7 +626,7 @@ pub fn check<'ast>(
                             .with_message(format!("duplicate const format definition `{}`", name))
                             .with_label(
                                 Label::new((source.0, span_as_range(span)))
-                                    .with_message(format!("This const format is defined twice"))
+                                    .with_message("This const format is defined twice")
                                     .with_color(Color::Red),
                             )
                             .with_label(
@@ -1589,8 +1589,8 @@ fn resolve_dependent_id_path<'ast>(
     resolve_path(root_comb, path, global_ctx)
 }
 
-fn resolve_dependent_identifier<'a, 'ast>(
-    depend_id: &'a Identifier<'ast>,
+fn resolve_dependent_identifier<'ast>(
+    depend_id: &Identifier<'ast>,
     param_defns: &'ast [ParamDefn<'ast>],
     local_ctx: &LocalCtx<'ast>,
     global_ctx: &'ast GlobalCtx<'ast>,
@@ -1833,11 +1833,7 @@ fn check_choice_combinator<'ast>(
     global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    fn report_missing_wildcard<'ast>(
-        span: &Span,
-        source: (&str, &Source),
-        kind: &str,
-    ) -> VestError {
+    fn report_missing_wildcard(span: &Span, source: (&str, &Source), kind: &str) -> VestError {
         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
             .with_message("non-exhaustive dependent choice")
             .with_label(
@@ -1854,7 +1850,7 @@ fn check_choice_combinator<'ast>(
         VestError::TypeError
     }
 
-    fn report_invalid_wildcard_position<'ast>(
+    fn report_invalid_wildcard_position(
         wildcard_span: &Span,
         span: &Span,
         source: (&str, &Source),
@@ -1981,7 +1977,7 @@ fn check_choice_combinator<'ast>(
                                     Label::new((source.0, span_as_range(&variant.span)))
                                         .with_message(format!(
                                             "Enum variant `{}` is undefined",
-                                            &variant.name
+                                            variant.name
                                         ))
                                         .with_color(Color::Red),
                                 )
@@ -1991,10 +1987,7 @@ fn check_choice_combinator<'ast>(
                                             "This choice should only contain variants {}",
                                             enum_variants
                                                 .iter()
-                                                .map(|Enum { name, .. }| format!(
-                                                    "`{}`",
-                                                    &name.name
-                                                ))
+                                                .map(|Enum { name, .. }| format!("`{}`", name.name))
                                                 .collect::<Vec<_>>()
                                                 .join(", ")
                                         ))
@@ -2014,7 +2007,7 @@ fn check_choice_combinator<'ast>(
                                 }))
                                 .with_label(
                                     Label::new((source.0, span_as_range(&variant.span)))
-                                        .with_message(format!("Duplicate variant",))
+                                        .with_message("Duplicate variant")
                                         .with_color(Color::Red),
                                 )
                                 .with_label(

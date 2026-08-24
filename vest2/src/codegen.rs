@@ -30,6 +30,25 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
     let execs = render_fragments(&analysis, &defs, |analysis, def| {
         analysis.gen_execs_fragment(def)
     });
+    let mut proof_broadcasts =
+        vec!["vest_lib2::combinators::disjoint::disjointness_lemmas".to_string()];
+    for definition in &defs {
+        if let Definition::StructDef { name, .. }
+        | Definition::ChoiceDef { name, .. }
+        | Definition::EnumDef { name, .. } = definition
+        {
+            let ty = match definition {
+                Definition::EnumDef { .. } => &analysis.info(name).names.exec,
+                _ => &analysis.info(name).names.spec,
+            };
+            proof_broadcasts.push(format!("{}::lemma_from_into", ty));
+            proof_broadcasts.push(format!("{}::lemma_into_from", ty));
+        }
+    }
+    let proof_imports = format!(
+        "use super::*;\nbroadcast use {{\n    {},\n}};\n",
+        proof_broadcasts.join(",\n    ")
+    );
 
     let mut body = CodeWriter::new();
     body.push_multiline(render_section("Data Types", &data_types));
@@ -46,11 +65,10 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
     body.push_multiline(render_nested_section(
         "Proven Format Properties",
         "derived_proofs",
-        "use super::*;\nbroadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;\n",
+        &proof_imports,
         &proofs,
     ));
     body.blank_line();
-    // body.push_multiline(render_section("Executable Implementations", &execs));
     body.push_multiline(render_nested_section(
         "Executable Implementations",
         "exec_impls",
@@ -66,7 +84,7 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
     out.finish()
 }
 
-fn non_endian_defs<'a>(defs: &'a [Definition]) -> Vec<&'a Definition> {
+fn non_endian_defs(defs: &[Definition]) -> Vec<&Definition> {
     defs.iter()
         .filter(|def| !matches!(def, Definition::Endianess(_)))
         .collect()
@@ -213,13 +231,13 @@ impl<'a> Analysis<'a> {
             }
             | Definition::ChoiceDef {
                 name, param_defns, ..
-            } => self.gen_top_level_proofs_section(name, param_defns),
+            } => self.gen_proofs_section(name, param_defns),
             Definition::EnumDef { combinator, .. } if self.enum_is_bit_sized(combinator) => {
                 String::new()
             }
             Definition::EnumDef {
                 name, param_defns, ..
-            } => self.gen_top_level_proofs_section(name, param_defns),
+            } => self.gen_proofs_section(name, param_defns),
             Definition::BitsDef {
                 name, param_defns, ..
             } => self.gen_bits_proofs_section(name, param_defns),

@@ -1,0 +1,67 @@
+depth0 = {
+    value: u8,
+}
+
+depth1 = {
+    value: depth0,
+}
+
+depth2 = {
+    value: depth1,
+}
+
+depth3 = {
+    value: depth2,
+}
+
+depth4 = {
+    value: depth3,
+}
+
+depth5 = {
+    value: depth4,
+}
+
+depth6 = {
+    value: depth5,
+}
+
+depth7 = {
+    value: depth6,
+}
+
+depth8 = {
+    value: depth7,
+}
+
+depth9 = {
+    value: depth8,
+}
+
+depth10 = {
+    value: depth9,
+}
+
+depth11 = {
+    value: depth10,
+}
+
+depth12 = {
+    value: depth11,
+}
+
+depth13 = {
+    value: depth12,
+}
+
+depth14 = {
+    value: depth13,
+}
+
+depth15 = {
+    value: depth14,
+}
+
+depth16 = {
+    value: depth15,
+}

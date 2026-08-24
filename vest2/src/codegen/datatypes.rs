@@ -1,4 +1,7 @@
-use super::common::{int_literal, type_needs_exec_lifetime, Analysis, TypeMode};
+use super::common::{
+    int_literal, nested_tuple_pattern_idents, nested_tuple_value_expr_idents, sum_pattern,
+    type_needs_exec_lifetime, Analysis, TypeMode,
+};
 use super::writer::{render_ts, CodeWriter};
 use crate::codegen::common::{syn_usize, tuple_chain};
 use crate::vestir::{
@@ -76,6 +79,10 @@ impl<'a> Analysis<'a> {
         struct_comb: &StructCombinator,
         scc_members: &[String],
     ) -> String {
+        if !scc_members.is_empty() {
+            return self.gen_recursive_struct_value_types(name, struct_comb, scc_members);
+        }
+
         let info = self.info(name);
         let exec_ident = format_ident!("{}", info.names.exec);
         let spec_ident = format_ident!("{}", info.names.spec);
@@ -85,63 +92,83 @@ impl<'a> Analysis<'a> {
         let exec_fields: Vec<_> = struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
+            .map(|field| match field {
                 StructField::Const { label, combinator } => {
-                    if scc_members.is_empty() {
-                        let id = format_ident!("{}", label);
-                        let ty = self.render_const_value_type(combinator, TypeMode::Exec);
-                        Some(quote! { pub #id: #ty })
-                    } else {
-                        None
-                    }
+                    let id = format_ident!("{}", label);
+                    let ty = self.render_const_value_type(combinator, TypeMode::Exec);
+                    quote! { pub #id: #ty }
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let id = format_ident!("{}", label);
                     let ty = self.render_value_type_scc(combinator, TypeMode::Exec, scc_members);
-                    Some(quote! { pub #id: #ty })
+                    quote! { pub #id: #ty }
                 }
             })
             .collect();
 
-        let spec_fields: Vec<_> = struct_comb
+        let spec_field_info: Vec<_> = struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
+            .map(|field| match field {
                 StructField::Const { label, combinator } => {
-                    if scc_members.is_empty() {
-                        let id = format_ident!("{}", label);
-                        let ty = self.render_const_value_type(combinator, TypeMode::Spec);
-                        Some(quote! { pub #id: #ty })
-                    } else {
-                        None
-                    }
+                    let id = format_ident!("{}", label);
+                    let ty = self.render_const_value_type(combinator, TypeMode::Spec);
+                    (id, ty)
                 }
                 StructField::Dependent { label, combinator }
                 | StructField::Ordinary { label, combinator } => {
                     let id = format_ident!("{}", label);
                     let ty = self.render_value_type_scc(combinator, TypeMode::Spec, scc_members);
-                    Some(quote! { pub #id: #ty })
+                    (id, ty)
                 }
             })
             .collect();
+        let spec_field_idents = spec_field_info
+            .iter()
+            .map(|(ident, _)| ident.clone())
+            .collect::<Vec<_>>();
+        let spec_field_types = spec_field_info
+            .iter()
+            .map(|(_, ty)| ty.clone())
+            .collect::<Vec<_>>();
+        let type_params = (0..spec_field_info.len())
+            .map(|idx| format_ident!("T{}", idx))
+            .collect::<Vec<_>>();
+        let generic_defaults = type_params
+            .iter()
+            .zip(spec_field_types.iter())
+            .map(|(param, ty)| quote! { #param = #ty })
+            .collect::<Vec<_>>();
+        let spec_decl_generics = if generic_defaults.is_empty() {
+            quote! {}
+        } else {
+            quote! { <#(#generic_defaults),*> }
+        };
+        let spec_impl_generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            quote! { <#(#type_params),*> }
+        };
+        let generic_spec_fields = spec_field_idents
+            .iter()
+            .zip(type_params.iter())
+            .map(|(ident, ty)| quote! { pub #ident: #ty })
+            .collect::<Vec<_>>();
 
-        let mut retained = Vec::new();
-        for field in &struct_comb.0 {
-            match field {
+        let retained = struct_comb
+            .0
+            .iter()
+            .map(|field| match field {
                 StructField::Const { combinator, .. } => {
-                    retained.push(self.render_const_value_type(combinator, TypeMode::Spec));
+                    self.render_const_value_type(combinator, TypeMode::Spec)
                 }
                 StructField::Dependent { combinator, .. }
                 | StructField::Ordinary { combinator, .. } => {
-                    retained.push(self.render_value_type_scc(
-                        combinator,
-                        TypeMode::Spec,
-                        scc_members,
-                    ));
+                    self.render_value_type_scc(combinator, TypeMode::Spec, scc_members)
                 }
-            }
-        }
+            })
+            .collect::<Vec<_>>();
         let inner_ty = tuple_chain(&retained);
 
         let exec_lifetime = if info.needs_lifetime {
@@ -149,102 +176,131 @@ impl<'a> Analysis<'a> {
         } else {
             quote! {}
         };
-        let derives = if !scc_members.is_empty() {
-            quote! { #[derive(Debug, PartialEq, Eq)] }
-        } else if self.is_copyable(name) {
+        let derives = if self.is_copyable(name) {
             quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
-        let self_view = scc_members.is_empty() && self.is_selfview(name);
-        let spec_derive = if self_view {
-            quote! { #[verifier::ext_equal] }
-        } else {
-            quote! {}
-        };
         let exec_struct = quote! {
             #derives
-            #spec_derive
             pub struct #exec_ident #exec_lifetime {
                 #(#exec_fields,)*
             }
         };
-        let spec_struct = if self_view {
-            quote! {
-                pub type #spec_ident = #exec_ident;
-            }
-        } else {
-            quote! {
-                #[verifier::ext_equal]
-                pub struct #spec_ident {
-                    #(#spec_fields,)*
-                }
+        let spec_struct = quote! {
+            #[verifier::ext_equal]
+            pub struct #spec_ident #spec_decl_generics {
+                #(#generic_spec_fields,)*
             }
         };
 
-        let self_or_x = if !scc_members.is_empty() {
-            quote! { x }
-        } else {
-            quote! { self }
-        };
         let deep_view_fields: Vec<_> = struct_comb
             .0
             .iter()
-            .filter_map(|field| match field {
-                StructField::Const { label, .. } => {
-                    if scc_members.is_empty() {
-                        let id = format_ident!("{}", label);
-                        Some(quote! { #id: #self_or_x.#id.deep_view() })
-                    } else {
-                        None
-                    }
-                }
-                StructField::Dependent { label, combinator }
-                | StructField::Ordinary { label, combinator } => {
-                    let id = format_ident!("{}", label);
-                    let expr = if !scc_members.is_empty()
-                        && super::common::is_combinator_in_scc(combinator, scc_members)
-                    {
-                        let vfn = format_ident!(
-                            "{}_view",
-                            super::common::get_invocation_name(combinator)
-                        );
-                        quote! { Box::new(#vfn(&*#self_or_x.#id)) }
-                    } else {
-                        quote! { #self_or_x.#id.deep_view() }
-                    };
-                    Some(quote! { #id: #expr })
-                }
+            .map(|field| {
+                let label = match field {
+                    StructField::Const { label, .. }
+                    | StructField::Dependent { label, .. }
+                    | StructField::Ordinary { label, .. } => label,
+                };
+                let id = format_ident!("{}", label);
+                quote! { #id: self.#id.deep_view() }
             })
             .collect();
+        let deep_view_field_ensures = spec_field_idents
+            .iter()
+            .map(|ident| quote! { self.deep_view().#ident == self.#ident.deep_view() })
+            .collect::<Vec<_>>();
 
-        let deep_view_impl = if self_view {
-            quote! {
-                impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
-                    type V = Self;
-                    open spec fn deep_view(&self) -> Self::V {
-                        *self
-                    }
-                }
-            }
-        } else if !scc_members.is_empty() {
-            let view_fn = format_ident!("{}_view", info.names.dsl);
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
+        let deep_view_impl = quote! {
+            impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
+                type V = #spec_ident;
+                #[verifier::opaque]
+                open spec fn deep_view(&self) -> Self::V {
                     #spec_ident { #(#deep_view_fields,)* }
                 }
-                impl<'i> DeepView for #exec_ident<'i> {
-                    type V = #spec_ident;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+            }
+
+            impl #exec_lifetime #exec_ident #exec_lifetime {
+                pub proof fn lemma_deep_view_fields(&self)
+                    ensures
+                        #(#deep_view_field_ensures,)*
+                {
+                    reveal(<#exec_ident as DeepView>::deep_view);
                 }
             }
-        } else {
-            quote! {
-                impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
-                    type V = #spec_ident;
-                    open spec fn deep_view(&self) -> Self::V {
-                        #spec_ident { #(#deep_view_fields,)* }
-                    }
+        };
+
+        let structural_ty = tuple_chain(
+            &type_params
+                .iter()
+                .map(|x| quote! { #x })
+                .collect::<Vec<_>>(),
+        );
+        let structural_pattern = nested_tuple_pattern_idents(&spec_field_idents);
+        let structural_expr = nested_tuple_value_expr_idents(&spec_field_idents);
+        let forward_ident = format_ident!("{}Forward", info.names.exec);
+        let reverse_ident = format_ident!("{}Reverse", info.names.exec);
+        let conversions = quote! {
+            impl #spec_impl_generics #spec_ident #spec_impl_generics {
+                #[verifier::opaque]
+                pub open spec fn from_structural(input: #structural_ty) -> Self {
+                    let #structural_pattern = input;
+                    Self { #(#spec_field_idents),* }
+                }
+
+                #[verifier::opaque]
+                pub open spec fn into_structural(self) -> #structural_ty {
+                    let Self { #(#spec_field_idents),* } = self;
+                    #structural_expr
+                }
+
+                pub broadcast proof fn lemma_from_into(self)
+                    ensures #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+                {
+                    reveal(#spec_ident::from_structural);
+                    reveal(#spec_ident::into_structural);
+                }
+
+                pub broadcast proof fn lemma_into_from(input: #structural_ty)
+                    ensures #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+                {
+                    reveal(#spec_ident::from_structural);
+                    reveal(#spec_ident::into_structural);
+                }
+
+                pub proof fn lemma_into_structural_fields(self)
+                    ensures
+                        Self::into_structural(self) == match self {
+                            Self { #(#spec_field_idents),* } => #structural_expr,
+                        },
+                {
+                    reveal(#spec_ident::into_structural);
+                }
+            }
+
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #forward_ident;
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #reverse_ident;
+
+            impl SpecMap for #forward_ident {
+                type Input = #inner_ident;
+                type Output = #spec_ident;
+
+                open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+                    #spec_ident::from_structural(input)
+                }
+            }
+
+            impl SpecMap for #reverse_ident {
+                type Input = #spec_ident;
+                type Output = #inner_ident;
+
+                open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+                    value.into_structural()
                 }
             }
         };
@@ -255,6 +311,89 @@ impl<'a> Analysis<'a> {
             #spec_struct
             pub type #inner_ident = #inner_ty;
             #deep_view_impl
+            #conversions
+        })
+    }
+
+    fn gen_recursive_struct_value_types(
+        &self,
+        name: &str,
+        struct_comb: &StructCombinator,
+        scc_members: &[String],
+    ) -> String {
+        let info = self.info(name);
+        let exec_ident = format_ident!("{}", info.names.exec);
+        let spec_ident = format_ident!("{}", info.names.spec);
+        let inner_ident = format_ident!("{}", info.names.inner);
+        let doc = Self::type_doc(name);
+
+        let exec_fields = struct_comb.0.iter().filter_map(|field| match field {
+            StructField::Const { .. } => None,
+            StructField::Dependent { label, combinator }
+            | StructField::Ordinary { label, combinator } => {
+                let id = format_ident!("{}", label);
+                let ty = self.render_value_type_scc(combinator, TypeMode::Exec, scc_members);
+                Some(quote! { pub #id: #ty })
+            }
+        });
+        let spec_fields = struct_comb.0.iter().filter_map(|field| match field {
+            StructField::Const { .. } => None,
+            StructField::Dependent { label, combinator }
+            | StructField::Ordinary { label, combinator } => {
+                let id = format_ident!("{}", label);
+                let ty = self.render_value_type_scc(combinator, TypeMode::Spec, scc_members);
+                Some(quote! { pub #id: #ty })
+            }
+        });
+        let retained = struct_comb
+            .0
+            .iter()
+            .map(|field| match field {
+                StructField::Const { combinator, .. } => {
+                    self.render_const_value_type(combinator, TypeMode::Spec)
+                }
+                StructField::Dependent { combinator, .. }
+                | StructField::Ordinary { combinator, .. } => {
+                    self.render_value_type_scc(combinator, TypeMode::Spec, scc_members)
+                }
+            })
+            .collect::<Vec<_>>();
+        let inner_ty = tuple_chain(&retained);
+        let deep_view_fields = struct_comb.0.iter().filter_map(|field| match field {
+            StructField::Const { .. } => None,
+            StructField::Dependent { label, combinator }
+            | StructField::Ordinary { label, combinator } => {
+                let id = format_ident!("{}", label);
+                let expr = if super::common::is_combinator_in_scc(combinator, scc_members) {
+                    let vfn =
+                        format_ident!("{}_view", super::common::get_invocation_name(combinator));
+                    quote! { Box::new(#vfn(&*x.#id)) }
+                } else {
+                    quote! { x.#id.deep_view() }
+                };
+                Some(quote! { #id: #expr })
+            }
+        });
+        let view_fn = format_ident!("{}_view", info.names.dsl);
+
+        render_ts(quote! {
+            #[doc = #doc]
+            #[derive(Debug, PartialEq, Eq)]
+            pub struct #exec_ident<'i> {
+                #(#exec_fields,)*
+            }
+            #[verifier::ext_equal]
+            pub struct #spec_ident {
+                #(#spec_fields,)*
+            }
+            pub type #inner_ident = #inner_ty;
+            pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
+                #spec_ident { #(#deep_view_fields,)* }
+            }
+            impl<'i> DeepView for #exec_ident<'i> {
+                type V = #spec_ident;
+                open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+            }
         })
     }
 
@@ -292,8 +431,16 @@ impl<'a> Analysis<'a> {
         let deep_view_impl = quote! {
             impl DeepView for #exec_ident {
                 type V = Self;
+                #[verifier::opaque]
                 open spec fn deep_view(&self) -> Self::V {
                     *self
+                }
+            }
+            impl #exec_ident {
+                pub proof fn lemma_deep_view(&self)
+                    ensures self.deep_view() == *self,
+                {
+                    reveal(<#exec_ident as DeepView>::deep_view);
                 }
             }
         };
@@ -312,6 +459,10 @@ impl<'a> Analysis<'a> {
         choice_comb: &ChoiceCombinator,
         scc_members: &[String],
     ) -> String {
+        if !scc_members.is_empty() {
+            return self.gen_recursive_choice_value_types(name, choice_comb, scc_members);
+        }
+
         let names = &self.info(name).names;
         let exec_ident = format_ident!("{}", names.exec);
         let spec_ident = format_ident!("{}", names.spec);
@@ -341,94 +492,173 @@ impl<'a> Analysis<'a> {
                 let ident = format_ident!("{}", name);
                 quote! { #ident(#ty) }
             });
-        let spec_variants = variant_names
+        let type_params = (0..branch_spec_types.len())
+            .map(|idx| format_ident!("T{}", idx))
+            .collect::<Vec<_>>();
+        let generic_defaults = type_params
             .iter()
             .zip(branch_spec_types.iter())
+            .map(|(param, ty)| quote! { #param = #ty })
+            .collect::<Vec<_>>();
+        let spec_decl_generics = if generic_defaults.is_empty() {
+            quote! {}
+        } else {
+            quote! { <#(#generic_defaults),*> }
+        };
+        let spec_impl_generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            quote! { <#(#type_params),*> }
+        };
+        let spec_variants = variant_names
+            .iter()
+            .zip(type_params.iter())
             .map(|(name, ty)| {
                 let ident = format_ident!("{}", name);
                 quote! { #ident(#ty) }
             });
         let doc = format!("data type for `{}`.", names.dsl);
-        let derives = if !scc_members.is_empty() {
-            quote! { #[derive(Debug, PartialEq, Eq)] }
-        } else if self.is_copyable(name) {
+        let derives = if self.is_copyable(name) {
             quote! { #[derive(Debug, PartialEq, Eq, Clone, Copy)] }
         } else {
             quote! { #[derive(Debug, PartialEq, Eq, Clone)] }
         };
-        let self_view = scc_members.is_empty() && self.is_selfview(name);
-        let spec_derive = if self_view {
-            quote! { #[verifier::ext_equal] }
-        } else {
-            quote! {}
-        };
         let exec_enum = quote! {
             #derives
-            #spec_derive
             pub enum #exec_ident #exec_lifetime {
                 #(#exec_variants,)*
             }
         };
-        let spec_enum = if self_view {
-            quote! {
-                pub type #spec_ident = #exec_ident;
+        let spec_enum = quote! {
+            #[verifier::ext_equal]
+            pub enum #spec_ident #spec_decl_generics {
+                #(#spec_variants,)*
             }
-        } else {
-            quote! {
-                #[verifier::ext_equal]
-                pub enum #spec_ident {
-                    #(#spec_variants,)*
+        };
+
+        let deep_view_arms = variant_names
+            .iter()
+            .zip(&choice_comb.choices)
+            .map(|(vn, _)| {
+                let ident = format_ident!("{}", vn);
+                let expr = quote! { v.deep_view() };
+                quote! { #exec_ident::#ident(v) => #spec_ident::#ident(#expr), }
+            })
+            .collect::<Vec<_>>();
+
+        let deep_view_impl = quote! {
+            impl #exec_generics DeepView for #exec_ident #exec_generics {
+                type V = #spec_ident;
+                #[verifier::opaque]
+                open spec fn deep_view(&self) -> Self::V {
+                    match self {
+                        #(#deep_view_arms)*
+                    }
+                }
+            }
+
+            impl #exec_generics #exec_ident #exec_generics {
+                pub proof fn lemma_deep_view_fields(&self)
+                    ensures
+                        self.deep_view() == match self {
+                            #(#deep_view_arms)*
+                        },
+                {
+                    reveal(<#exec_ident as DeepView>::deep_view);
                 }
             }
         };
 
-        let deep_view_arms =
-            variant_names
+        let generic_sum_ty = self.render_choice_sum_type(
+            &type_params
                 .iter()
-                .zip(&choice_comb.choices)
-                .map(|(vn, (_, comb))| {
-                    let ident = format_ident!("{}", vn);
-                    let expr = if !scc_members.is_empty()
-                        && super::common::is_combinator_in_scc(comb, scc_members)
-                    {
-                        let vfn =
-                            format_ident!("{}_view", super::common::get_invocation_name(comb));
-                        quote! { Box::new(#vfn(&**v)) }
-                    } else {
-                        quote! { v.deep_view() }
-                    };
-                    quote! { #exec_ident::#ident(v) => #spec_ident::#ident(#expr), }
-                });
+                .map(|ty| quote! { #ty })
+                .collect::<Vec<_>>(),
+        );
+        let from_arms = variant_names.iter().enumerate().map(|(idx, variant)| {
+            let pattern = sum_pattern(idx, variant_names.len(), quote! { value });
+            let variant = format_ident!("{}", variant);
+            quote! { #pattern => Self::#variant(value), }
+        });
+        let into_arms = variant_names
+            .iter()
+            .enumerate()
+            .map(|(idx, variant)| {
+                let value = sum_pattern(idx, variant_names.len(), quote! { value });
+                let variant = format_ident!("{}", variant);
+                quote! { Self::#variant(value) => #value, }
+            })
+            .collect::<Vec<_>>();
+        let self_proof_arms = variant_names.iter().map(|variant| {
+            let variant = format_ident!("{}", variant);
+            quote! { Self::#variant(_) => {}, }
+        });
+        let input_proof_arms = variant_names.iter().enumerate().map(|(idx, _)| {
+            let pattern = sum_pattern(idx, variant_names.len(), quote! { _ });
+            quote! { #pattern => {}, }
+        });
+        let forward_ident = format_ident!("{}Forward", names.exec);
+        let reverse_ident = format_ident!("{}Reverse", names.exec);
+        let conversions = quote! {
+            impl #spec_impl_generics #spec_ident #spec_impl_generics {
+                #[verifier::opaque]
+                pub open spec fn from_structural(input: #generic_sum_ty) -> Self {
+                    match input { #(#from_arms)* }
+                }
 
-        let deep_view_impl = if self_view {
-            quote! {
-                impl #exec_generics DeepView for #exec_ident #exec_generics {
-                    type V = Self;
-                    open spec fn deep_view(&self) -> Self::V {
-                        *self
-                    }
+                #[verifier::opaque]
+                pub open spec fn into_structural(self) -> #generic_sum_ty {
+                    match self { #(#into_arms)* }
+                }
+
+                pub broadcast proof fn lemma_from_into(self)
+                    ensures #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+                {
+                    reveal(#spec_ident::from_structural);
+                    reveal(#spec_ident::into_structural);
+                    match self { #(#self_proof_arms)* }
+                }
+
+                pub broadcast proof fn lemma_into_from(input: #generic_sum_ty)
+                    ensures #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+                {
+                    reveal(#spec_ident::from_structural);
+                    reveal(#spec_ident::into_structural);
+                    match input { #(#input_proof_arms)* }
+                }
+
+                pub proof fn lemma_into_structural_variant(self)
+                    ensures
+                        Self::into_structural(self) == match self {
+                            #(#into_arms)*
+                        },
+                {
+                    reveal(#spec_ident::into_structural);
                 }
             }
-        } else if !scc_members.is_empty() {
-            let view_fn = format_ident!("{}_view", names.dsl);
-            quote! {
-                pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
-                    match x { #(#deep_view_arms)* }
-                }
-                impl #exec_generics DeepView for #exec_ident #exec_generics {
-                    type V = #spec_ident;
-                    open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #forward_ident;
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #reverse_ident;
+
+            impl SpecMap for #forward_ident {
+                type Input = #inner_ident;
+                type Output = #spec_ident;
+
+                open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+                    #spec_ident::from_structural(input)
                 }
             }
-        } else {
-            quote! {
-                impl #exec_generics DeepView for #exec_ident #exec_generics {
-                    type V = #spec_ident;
-                    open spec fn deep_view(&self) -> Self::V {
-                        match self {
-                            #(#deep_view_arms)*
-                        }
-                    }
+
+            impl SpecMap for #reverse_ident {
+                type Input = #spec_ident;
+                type Output = #inner_ident;
+
+                open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+                    value.into_structural()
                 }
             }
         };
@@ -438,6 +668,84 @@ impl<'a> Analysis<'a> {
             #spec_enum
             pub type #inner_ident = #inner_ty;
             #deep_view_impl
+            #conversions
+        })
+    }
+
+    fn gen_recursive_choice_value_types(
+        &self,
+        name: &str,
+        choice_comb: &ChoiceCombinator,
+        scc_members: &[String],
+    ) -> String {
+        let names = &self.info(name).names;
+        let exec_ident = format_ident!("{}", names.exec);
+        let spec_ident = format_ident!("{}", names.spec);
+        let inner_ident = format_ident!("{}", names.inner);
+        let variant_names = self.choice_variant_names(choice_comb);
+        let branch_exec_types = choice_comb
+            .choices
+            .iter()
+            .map(|(_, comb)| self.render_value_type_scc(comb, TypeMode::Exec, scc_members))
+            .collect::<Vec<_>>();
+        let branch_spec_types = choice_comb
+            .choices
+            .iter()
+            .map(|(_, comb)| self.render_value_type_scc(comb, TypeMode::Spec, scc_members))
+            .collect::<Vec<_>>();
+        let inner_ty = self.render_choice_sum_type(&branch_spec_types);
+        let exec_variants = variant_names
+            .iter()
+            .zip(branch_exec_types.iter())
+            .map(|(name, ty)| {
+                let ident = format_ident!("{}", name);
+                quote! { #ident(#ty) }
+            });
+        let spec_variants = variant_names
+            .iter()
+            .zip(branch_spec_types.iter())
+            .map(|(name, ty)| {
+                let ident = format_ident!("{}", name);
+                quote! { #ident(#ty) }
+            });
+        let deep_view_arms =
+            variant_names
+                .iter()
+                .zip(&choice_comb.choices)
+                .map(|(variant, (_, combinator))| {
+                    let variant = format_ident!("{}", variant);
+                    let value = if super::common::is_combinator_in_scc(combinator, scc_members) {
+                        let view_fn = format_ident!(
+                            "{}_view",
+                            super::common::get_invocation_name(combinator)
+                        );
+                        quote! { Box::new(#view_fn(&**v)) }
+                    } else {
+                        quote! { v.deep_view() }
+                    };
+                    quote! { #exec_ident::#variant(v) => #spec_ident::#variant(#value), }
+                });
+        let view_fn = format_ident!("{}_view", names.dsl);
+        let doc = format!("data type for `{}`.", names.dsl);
+
+        render_ts(quote! {
+            #[doc = #doc]
+            #[derive(Debug, PartialEq, Eq)]
+            pub enum #exec_ident<'i> {
+                #(#exec_variants,)*
+            }
+            #[verifier::ext_equal]
+            pub enum #spec_ident {
+                #(#spec_variants,)*
+            }
+            pub type #inner_ident = #inner_ty;
+            pub open spec fn #view_fn(x: &#exec_ident) -> #spec_ident decreases *x, {
+                match x { #(#deep_view_arms)* }
+            }
+            impl<'i> DeepView for #exec_ident<'i> {
+                type V = #spec_ident;
+                open spec fn deep_view(&self) -> Self::V { #view_fn(self) }
+            }
         })
     }
 
@@ -467,6 +775,104 @@ impl<'a> Analysis<'a> {
         } else {
             quote! { Unknown(#repr_ty), }
         };
+        let forward_ident = format_ident!("{}Forward", names.exec);
+        let reverse_ident = format_ident!("{}Reverse", names.exec);
+        let known_from_arms = variants
+            .iter()
+            .map(|variant| {
+                let ident = format_ident!("{}", variant.name);
+                let value = int_literal(variant.value, inferred);
+                quote! { #value => Self::#ident, }
+            })
+            .collect::<Vec<_>>();
+        let known_into_arms = variants
+            .iter()
+            .map(|variant| {
+                let ident = format_ident!("{}", variant.name);
+                let value = int_literal(variant.value, inferred);
+                if exhaustive {
+                    quote! { Self::#ident => #value, }
+                } else {
+                    quote! { Self::#ident => L(#value), }
+                }
+            })
+            .collect::<Vec<_>>();
+        let known_input_proof_arms = variants
+            .iter()
+            .map(|variant| {
+                let value = int_literal(variant.value, inferred);
+                quote! { #value => {}, }
+            })
+            .collect::<Vec<_>>();
+        let valid_terms = variants
+            .iter()
+            .map(|variant| {
+                let value = int_literal(variant.value, inferred);
+                quote! { x == #value }
+            })
+            .collect::<Vec<_>>();
+        let valid_known = valid_terms
+            .into_iter()
+            .reduce(|left, right| quote! { #left || #right })
+            .unwrap_or_else(|| quote! { false });
+        let (from_body, into_body, valid_body, from_into_arms, into_from_body) = if exhaustive {
+            (
+                quote! {
+                    match input {
+                        #(#known_from_arms)*
+                        _ => arbitrary(),
+                    }
+                },
+                quote! { match self { #(#known_into_arms)* } },
+                quote! { { let x = input; #valid_known } },
+                variants
+                    .iter()
+                    .map(|variant| {
+                        let ident = format_ident!("{}", variant.name);
+                        quote! { Self::#ident => {}, }
+                    })
+                    .collect::<Vec<_>>(),
+                quote! { match input { #(#known_input_proof_arms)* _ => { assert(false); } } },
+            )
+        } else {
+            (
+                quote! {
+                    match input {
+                        L(x) => match x {
+                            #(#known_from_arms)*
+                            _ => arbitrary(),
+                        },
+                        R(x) => Self::Unknown(x),
+                    }
+                },
+                quote! {
+                    match self {
+                        #(#known_into_arms)*
+                        Self::Unknown(x) => R(x),
+                    }
+                },
+                quote! {
+                    match input {
+                        L(x) => #valid_known,
+                        R(x) => true,
+                    }
+                },
+                variants
+                    .iter()
+                    .map(|variant| {
+                        let ident = format_ident!("{}", variant.name);
+                        quote! { Self::#ident => {}, }
+                    })
+                    .chain(core::iter::once(quote! { Self::Unknown(_) => {}, }))
+                    .collect::<Vec<_>>(),
+                quote! {
+                    match input {
+                        L(x) => match x { #(#known_input_proof_arms)* _ => { assert(false); } },
+                        R(_) => {},
+                    }
+                },
+            )
+        };
         let doc = format!("data type for `{}`.", names.dsl);
         render_ts(quote! {
             #[doc = #doc]
@@ -480,8 +886,73 @@ impl<'a> Analysis<'a> {
             pub type #inner_ident = #inner_ty;
             impl DeepView for #exec_ident {
                 type V = Self;
+                #[verifier::opaque]
                 open spec fn deep_view(&self) -> Self::V {
                     *self
+                }
+            }
+
+            impl #exec_ident {
+                pub proof fn lemma_deep_view(&self)
+                    ensures self.deep_view() == *self,
+                {
+                    reveal(<#exec_ident as DeepView>::deep_view);
+                }
+
+                pub open spec fn structural_valid(input: #inner_ident) -> bool {
+                    #valid_body
+                }
+
+                #[verifier::opaque]
+                pub open spec fn from_structural(input: #inner_ident) -> Self {
+                    #from_body
+                }
+
+                #[verifier::opaque]
+                pub open spec fn into_structural(self) -> #inner_ident {
+                    #into_body
+                }
+
+                pub broadcast proof fn lemma_from_into(self)
+                    ensures #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+                {
+                    reveal(#exec_ident::from_structural);
+                    reveal(#exec_ident::into_structural);
+                    match self { #(#from_into_arms)* }
+                }
+
+                pub broadcast proof fn lemma_into_from(input: #inner_ident)
+                    requires Self::structural_valid(input),
+                    ensures #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+                {
+                    reveal(#exec_ident::from_structural);
+                    reveal(#exec_ident::into_structural);
+                    #into_from_body
+                }
+            }
+
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #forward_ident;
+            #[derive(Clone, Copy)]
+            #[doc(hidden)]
+            pub struct #reverse_ident;
+
+            impl SpecMap for #forward_ident {
+                type Input = #inner_ident;
+                type Output = #spec_ident;
+
+                open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+                    #exec_ident::from_structural(input)
+                }
+            }
+
+            impl SpecMap for #reverse_ident {
+                type Input = #spec_ident;
+                type Output = #inner_ident;
+
+                open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+                    value.into_structural()
                 }
             }
             #[cfg(not(verus_keep_ghost))]

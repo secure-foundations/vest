@@ -88,7 +88,7 @@ pub fn scc_is_recursive(scc: &[String], graph: &HashMap<String, Vec<String>>) ->
         return true;
     }
     let name = &scc[0];
-    graph.get(name).map_or(false, |deps| deps.contains(name))
+    graph.get(name).is_some_and(|deps| deps.contains(name))
 }
 
 #[cfg(test)]

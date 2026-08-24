@@ -22,22 +22,112 @@ verus! {
 // ============================================================
 # [doc = "data type for `generic_header`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct GenericHeader {
     pub next_type: u8,
     pub reserved: u8,
     pub payload_length: u32,
 }
 
-pub type GenericHeaderSpec = GenericHeader;
+# [verifier::ext_equal]
+pub struct GenericHeaderSpec<T0 = u8, T1 = u8, T2 = u32> {
+    pub next_type: T0,
+    pub reserved: T1,
+    pub payload_length: T2,
+}
 
 pub type GenericHeaderInner = (u8, (u8, u32));
 
 impl DeepView for GenericHeader {
-    type V = Self;
+    type V = GenericHeaderSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        GenericHeaderSpec {
+            next_type: self.next_type.deep_view(),
+            reserved: self.reserved.deep_view(),
+            payload_length: self.payload_length.deep_view(),
+        }
+    }
+}
+
+impl GenericHeader {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().next_type == self.next_type.deep_view(),
+            self.deep_view().reserved == self.reserved.deep_view(),
+            self.deep_view().payload_length == self.payload_length.deep_view(),
+    {
+        reveal(<GenericHeader as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> GenericHeaderSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (next_type, (reserved, payload_length)) = input;
+        Self { next_type, reserved, payload_length }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { next_type, reserved, payload_length } = self;
+        (next_type, (reserved, payload_length))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(GenericHeaderSpec::from_structural);
+        reveal(GenericHeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(GenericHeaderSpec::from_structural);
+        reveal(GenericHeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { next_type, reserved, payload_length } => (
+                    next_type,
+                    (reserved, payload_length),
+                ),
+            },
+    {
+        reveal(GenericHeaderSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct GenericHeaderForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct GenericHeaderReverse;
+
+impl SpecMap for GenericHeaderForward {
+    type Input = GenericHeaderInner;
+
+    type Output = GenericHeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        GenericHeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for GenericHeaderReverse {
+    type Input = GenericHeaderSpec;
+
+    type Output = GenericHeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -49,9 +139,9 @@ pub struct PayloadWithHeader<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct PayloadWithHeaderSpec {
-    pub hdr: GenericHeaderSpec,
-    pub body: Seq<u8>,
+pub struct PayloadWithHeaderSpec<T0 = GenericHeaderSpec, T1 = Seq<u8>> {
+    pub hdr: T0,
+    pub body: T1,
 }
 
 pub type PayloadWithHeaderInner = (GenericHeaderSpec, Seq<u8>);
@@ -59,28 +149,187 @@ pub type PayloadWithHeaderInner = (GenericHeaderSpec, Seq<u8>);
 impl<'i> DeepView for PayloadWithHeader<'i> {
     type V = PayloadWithHeaderSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         PayloadWithHeaderSpec { hdr: self.hdr.deep_view(), body: self.body.deep_view() }
     }
 }
 
+impl<'i> PayloadWithHeader<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().hdr == self.hdr.deep_view(),
+            self.deep_view().body == self.body.deep_view(),
+    {
+        reveal(<PayloadWithHeader as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> PayloadWithHeaderSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (hdr, body) = input;
+        Self { hdr, body }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { hdr, body } = self;
+        (hdr, body)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(PayloadWithHeaderSpec::from_structural);
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(PayloadWithHeaderSpec::from_structural);
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { hdr, body } => (hdr, body),
+            },
+    {
+        reveal(PayloadWithHeaderSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PayloadWithHeaderForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct PayloadWithHeaderReverse;
+
+impl SpecMap for PayloadWithHeaderForward {
+    type Input = PayloadWithHeaderInner;
+
+    type Output = PayloadWithHeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        PayloadWithHeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for PayloadWithHeaderReverse {
+    type Input = PayloadWithHeaderSpec;
+
+    type Output = PayloadWithHeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `outer_header`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct OuterHeader {
     pub magic: u32,
     pub inner: GenericHeader,
 }
 
-pub type OuterHeaderSpec = OuterHeader;
+# [verifier::ext_equal]
+pub struct OuterHeaderSpec<T0 = u32, T1 = GenericHeaderSpec> {
+    pub magic: T0,
+    pub inner: T1,
+}
 
 pub type OuterHeaderInner = (u32, GenericHeaderSpec);
 
 impl DeepView for OuterHeader {
-    type V = Self;
+    type V = OuterHeaderSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        OuterHeaderSpec { magic: self.magic.deep_view(), inner: self.inner.deep_view() }
+    }
+}
+
+impl OuterHeader {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().magic == self.magic.deep_view(),
+            self.deep_view().inner == self.inner.deep_view(),
+    {
+        reveal(<OuterHeader as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> OuterHeaderSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (magic, inner) = input;
+        Self { magic, inner }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { magic, inner } = self;
+        (magic, inner)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(OuterHeaderSpec::from_structural);
+        reveal(OuterHeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(OuterHeaderSpec::from_structural);
+        reveal(OuterHeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { magic, inner } => (magic, inner),
+            },
+    {
+        reveal(OuterHeaderSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OuterHeaderForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OuterHeaderReverse;
+
+impl SpecMap for OuterHeaderForward {
+    type Input = OuterHeaderInner;
+
+    type Output = OuterHeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        OuterHeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for OuterHeaderReverse {
+    type Input = OuterHeaderSpec;
+
+    type Output = OuterHeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -92,9 +341,9 @@ pub struct DeepNested<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct DeepNestedSpec {
-    pub outer: OuterHeaderSpec,
-    pub data: Seq<u8>,
+pub struct DeepNestedSpec<T0 = OuterHeaderSpec, T1 = Seq<u8>> {
+    pub outer: T0,
+    pub data: T1,
 }
 
 pub type DeepNestedInner = (OuterHeaderSpec, Seq<u8>);
@@ -102,8 +351,86 @@ pub type DeepNestedInner = (OuterHeaderSpec, Seq<u8>);
 impl<'i> DeepView for DeepNested<'i> {
     type V = DeepNestedSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         DeepNestedSpec { outer: self.outer.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> DeepNested<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().outer == self.outer.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<DeepNested as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> DeepNestedSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (outer, data) = input;
+        Self { outer, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { outer, data } = self;
+        (outer, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(DeepNestedSpec::from_structural);
+        reveal(DeepNestedSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(DeepNestedSpec::from_structural);
+        reveal(DeepNestedSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { outer, data } => (outer, data),
+            },
+    {
+        reveal(DeepNestedSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct DeepNestedForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct DeepNestedReverse;
+
+impl SpecMap for DeepNestedForward {
+    type Input = DeepNestedInner;
+
+    type Output = DeepNestedSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        DeepNestedSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for DeepNestedReverse {
+    type Input = DeepNestedSpec;
+
+    type Output = DeepNestedInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -115,9 +442,9 @@ pub struct NestedComplex<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct NestedComplexSpec {
-    pub flag: u32,
-    pub data: Seq<u8>,
+pub struct NestedComplexSpec<T0 = u32, T1 = Seq<u8>> {
+    pub flag: T0,
+    pub data: T1,
 }
 
 pub type NestedComplexInner = (u32, Seq<u8>);
@@ -125,8 +452,86 @@ pub type NestedComplexInner = (u32, Seq<u8>);
 impl<'i> DeepView for NestedComplex<'i> {
     type V = NestedComplexSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedComplexSpec { flag: self.flag.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> NestedComplex<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().flag == self.flag.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<NestedComplex as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> NestedComplexSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (flag, data) = input;
+        Self { flag, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { flag, data } = self;
+        (flag, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedComplexSpec::from_structural);
+        reveal(NestedComplexSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedComplexSpec::from_structural);
+        reveal(NestedComplexSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { flag, data } => (flag, data),
+            },
+    {
+        reveal(NestedComplexSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedComplexForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedComplexReverse;
+
+impl SpecMap for NestedComplexForward {
+    type Input = NestedComplexInner;
+
+    type Output = NestedComplexSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedComplexSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedComplexReverse {
+    type Input = NestedComplexSpec;
+
+    type Output = NestedComplexInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -138,9 +543,9 @@ pub struct CombinedExample<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct CombinedExampleSpec {
-    pub header: GenericHeaderSpec,
-    pub body: Seq<u8>,
+pub struct CombinedExampleSpec<T0 = GenericHeaderSpec, T1 = Seq<u8>> {
+    pub header: T0,
+    pub body: T1,
 }
 
 pub type CombinedExampleInner = (GenericHeaderSpec, Seq<u8>);
@@ -148,8 +553,86 @@ pub type CombinedExampleInner = (GenericHeaderSpec, Seq<u8>);
 impl<'i> DeepView for CombinedExample<'i> {
     type V = CombinedExampleSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CombinedExampleSpec { header: self.header.deep_view(), body: self.body.deep_view() }
+    }
+}
+
+impl<'i> CombinedExample<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().header == self.header.deep_view(),
+            self.deep_view().body == self.body.deep_view(),
+    {
+        reveal(<CombinedExample as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> CombinedExampleSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (header, body) = input;
+        Self { header, body }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { header, body } = self;
+        (header, body)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CombinedExampleSpec::from_structural);
+        reveal(CombinedExampleSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CombinedExampleSpec::from_structural);
+        reveal(CombinedExampleSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { header, body } => (header, body),
+            },
+    {
+        reveal(CombinedExampleSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct CombinedExampleForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct CombinedExampleReverse;
+
+impl SpecMap for CombinedExampleForward {
+    type Input = CombinedExampleInner;
+
+    type Output = CombinedExampleSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CombinedExampleSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CombinedExampleReverse {
+    type Input = CombinedExampleSpec;
+
+    type Output = CombinedExampleInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -163,11 +646,16 @@ pub struct FinalMsg<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct FinalMsgSpec {
-    pub total_len: u32,
-    pub body: CombinedExampleSpec,
-    pub hdr_payload: PayloadWithHeaderSpec,
-    pub nested: NestedComplexSpec,
+pub struct FinalMsgSpec<
+    T0 = u32,
+    T1 = CombinedExampleSpec,
+    T2 = PayloadWithHeaderSpec,
+    T3 = NestedComplexSpec,
+> {
+    pub total_len: T0,
+    pub body: T1,
+    pub hdr_payload: T2,
+    pub nested: T3,
 }
 
 pub type FinalMsgInner = (u32, (CombinedExampleSpec, (PayloadWithHeaderSpec, NestedComplexSpec)));
@@ -175,6 +663,7 @@ pub type FinalMsgInner = (u32, (CombinedExampleSpec, (PayloadWithHeaderSpec, Nes
 impl<'i> DeepView for FinalMsg<'i> {
     type V = FinalMsgSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         FinalMsgSpec {
             total_len: self.total_len.deep_view(),
@@ -182,6 +671,88 @@ impl<'i> DeepView for FinalMsg<'i> {
             hdr_payload: self.hdr_payload.deep_view(),
             nested: self.nested.deep_view(),
         }
+    }
+}
+
+impl<'i> FinalMsg<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().total_len == self.total_len.deep_view(),
+            self.deep_view().body == self.body.deep_view(),
+            self.deep_view().hdr_payload == self.hdr_payload.deep_view(),
+            self.deep_view().nested == self.nested.deep_view(),
+    {
+        reveal(<FinalMsg as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> FinalMsgSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, T3)))) -> Self {
+        let (total_len, (body, (hdr_payload, nested))) = input;
+        Self { total_len, body, hdr_payload, nested }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, T3))) {
+        let Self { total_len, body, hdr_payload, nested } = self;
+        (total_len, (body, (hdr_payload, nested)))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(FinalMsgSpec::from_structural);
+        reveal(FinalMsgSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, T3))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(FinalMsgSpec::from_structural);
+        reveal(FinalMsgSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { total_len, body, hdr_payload, nested } => (
+                    total_len,
+                    (body, (hdr_payload, nested)),
+                ),
+            },
+    {
+        reveal(FinalMsgSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct FinalMsgForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct FinalMsgReverse;
+
+impl SpecMap for FinalMsgForward {
+    type Input = FinalMsgInner;
+
+    type Output = FinalMsgSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        FinalMsgSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for FinalMsgReverse {
+    type Input = FinalMsgSpec;
+
+    type Output = FinalMsgInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -195,7 +766,7 @@ pub struct GenericHeaderFmt;
 pub type GenericHeaderFmtSpec = Named<
     Mapped<
         Pair<U8, Pair<U8, Refined<U32Le, PredFnSpec<u32>>>>,
-        FnSpecMapper<GenericHeaderInner, GenericHeaderSpec>,
+        BiMap<GenericHeaderForward, GenericHeaderReverse>,
     >,
 >;
 
@@ -206,18 +777,7 @@ impl GenericHeaderFmt {
             "generic_header",
             Mapped {
                 inner: Pair(U8, Pair(U8, Refined(U32Le, |x: u32| x >= 8 && x <= 65535))),
-                mapper: (
-                    |parsed: GenericHeaderInner| -> GenericHeaderSpec
-                        {
-                            let (next_type, (reserved, payload_length)) = parsed;
-                            GenericHeaderSpec { next_type, reserved, payload_length }
-                        },
-                    |value: GenericHeaderSpec| -> GenericHeaderInner
-                        {
-                            let GenericHeaderSpec { next_type, reserved, payload_length } = value;
-                            (next_type, (reserved, payload_length))
-                        },
-                ),
+                mapper: BiMap(GenericHeaderForward, GenericHeaderReverse),
             },
         )
     }
@@ -230,7 +790,7 @@ pub struct PayloadWithHeaderFmt;
 pub type PayloadWithHeaderFmtSpec = Named<
     Mapped<
         Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<u32>>,
-        FnSpecMapper<PayloadWithHeaderInner, PayloadWithHeaderSpec>,
+        BiMap<PayloadWithHeaderForward, PayloadWithHeaderReverse>,
     >,
 >;
 
@@ -244,18 +804,7 @@ impl PayloadWithHeaderFmt {
                     GenericHeaderFmt,
                     |hdr: GenericHeaderSpec| Varied(((hdr.payload_length - 4) as u32)),
                 ),
-                mapper: (
-                    |parsed: PayloadWithHeaderInner| -> PayloadWithHeaderSpec
-                        {
-                            let (hdr, body) = parsed;
-                            PayloadWithHeaderSpec { hdr, body }
-                        },
-                    |value: PayloadWithHeaderSpec| -> PayloadWithHeaderInner
-                        {
-                            let PayloadWithHeaderSpec { hdr, body } = value;
-                            (hdr, body)
-                        },
-                ),
+                mapper: BiMap(PayloadWithHeaderForward, PayloadWithHeaderReverse),
             },
         )
     }
@@ -266,7 +815,7 @@ impl PayloadWithHeaderFmt {
 pub struct OuterHeaderFmt;
 
 pub type OuterHeaderFmtSpec = Named<
-    Mapped<Pair<U32Le, GenericHeaderFmt>, FnSpecMapper<OuterHeaderInner, OuterHeaderSpec>>,
+    Mapped<Pair<U32Le, GenericHeaderFmt>, BiMap<OuterHeaderForward, OuterHeaderReverse>>,
 >;
 
 impl OuterHeaderFmt {
@@ -276,18 +825,7 @@ impl OuterHeaderFmt {
             "outer_header",
             Mapped {
                 inner: Pair(U32Le, GenericHeaderFmt),
-                mapper: (
-                    |parsed: OuterHeaderInner| -> OuterHeaderSpec
-                        {
-                            let (magic, inner) = parsed;
-                            OuterHeaderSpec { magic, inner }
-                        },
-                    |value: OuterHeaderSpec| -> OuterHeaderInner
-                        {
-                            let OuterHeaderSpec { magic, inner } = value;
-                            (magic, inner)
-                        },
-                ),
+                mapper: BiMap(OuterHeaderForward, OuterHeaderReverse),
             },
         )
     }
@@ -300,7 +838,7 @@ pub struct DeepNestedFmt;
 pub type DeepNestedFmtSpec = Named<
     Mapped<
         Bind<OuterHeaderFmt, spec_fn(OuterHeaderSpec) -> Varied<u32>>,
-        FnSpecMapper<DeepNestedInner, DeepNestedSpec>,
+        BiMap<DeepNestedForward, DeepNestedReverse>,
     >,
 >;
 
@@ -314,18 +852,7 @@ impl DeepNestedFmt {
                     OuterHeaderFmt,
                     |outer: OuterHeaderSpec| Varied(((outer.inner.payload_length - 8) as u32)),
                 ),
-                mapper: (
-                    |parsed: DeepNestedInner| -> DeepNestedSpec
-                        {
-                            let (outer, data) = parsed;
-                            DeepNestedSpec { outer, data }
-                        },
-                    |value: DeepNestedSpec| -> DeepNestedInner
-                        {
-                            let DeepNestedSpec { outer, data } = value;
-                            (outer, data)
-                        },
-                ),
+                mapper: BiMap(DeepNestedForward, DeepNestedReverse),
             },
         )
     }
@@ -353,10 +880,7 @@ impl<'i> NestedComplexFmt<'i> {
 }
 
 pub type NestedComplexFmtSpec = Named<
-    Mapped<
-        Pair<Const<U32Le, u32>, Varied<u32>>,
-        FnSpecMapper<NestedComplexInner, NestedComplexSpec>,
-    >,
+    Mapped<Pair<Const<U32Le, u32>, Varied<u32>>, BiMap<NestedComplexForward, NestedComplexReverse>>,
 >;
 
 impl<'i> NestedComplexFmt<'i> {
@@ -366,18 +890,7 @@ impl<'i> NestedComplexFmt<'i> {
             "nested_complex",
             Mapped {
                 inner: Pair(Const(U32Le, 0), Varied(((hdr_payload.hdr.payload_length - 8) as u32))),
-                mapper: (
-                    |parsed: NestedComplexInner| -> NestedComplexSpec
-                        {
-                            let (flag, data) = parsed;
-                            NestedComplexSpec { flag, data }
-                        },
-                    |value: NestedComplexSpec| -> NestedComplexInner
-                        {
-                            let NestedComplexSpec { flag, data } = value;
-                            (flag, data)
-                        },
-                ),
+                mapper: BiMap(NestedComplexForward, NestedComplexReverse),
             },
         )
     }
@@ -407,7 +920,7 @@ impl CombinedExampleFmt {
 pub type CombinedExampleFmtSpec = Named<
     Mapped<
         Bind<GenericHeaderFmt, spec_fn(GenericHeaderSpec) -> Varied<u32>>,
-        FnSpecMapper<CombinedExampleInner, CombinedExampleSpec>,
+        BiMap<CombinedExampleForward, CombinedExampleReverse>,
     >,
 >;
 
@@ -422,18 +935,7 @@ impl CombinedExampleFmt {
                     |header: GenericHeaderSpec|
                         Varied(((total_len - header.payload_length) as u32)),
                 ),
-                mapper: (
-                    |parsed: CombinedExampleInner| -> CombinedExampleSpec
-                        {
-                            let (header, body) = parsed;
-                            CombinedExampleSpec { header, body }
-                        },
-                    |value: CombinedExampleSpec| -> CombinedExampleInner
-                        {
-                            let CombinedExampleSpec { header, body } = value;
-                            (header, body)
-                        },
-                ),
+                mapper: BiMap(CombinedExampleForward, CombinedExampleReverse),
             },
         )
     }
@@ -452,7 +954,7 @@ pub type FinalMsgFmtSpec = Named<
                 Bind<PayloadWithHeaderFmt, spec_fn(PayloadWithHeaderSpec) -> NestedComplexFmtSpec>,
             >,
         >,
-        FnSpecMapper<FinalMsgInner, FinalMsgSpec>,
+        BiMap<FinalMsgForward, FinalMsgReverse>,
     >,
 >;
 
@@ -474,18 +976,7 @@ impl FinalMsgFmt {
                             ),
                         ),
                 ),
-                mapper: (
-                    |parsed: FinalMsgInner| -> FinalMsgSpec
-                        {
-                            let (total_len, (body, (hdr_payload, nested))) = parsed;
-                            FinalMsgSpec { total_len, body, hdr_payload, nested }
-                        },
-                    |value: FinalMsgSpec| -> FinalMsgInner
-                        {
-                            let FinalMsgSpec { total_len, body, hdr_payload, nested } = value;
-                            (total_len, (body, (hdr_payload, nested)))
-                        },
-                ),
+                mapper: BiMap(FinalMsgForward, FinalMsgReverse),
             },
         )
     }
@@ -809,7 +1300,23 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        GenericHeaderSpec::lemma_from_into,
+        GenericHeaderSpec::lemma_into_from,
+        PayloadWithHeaderSpec::lemma_from_into,
+        PayloadWithHeaderSpec::lemma_into_from,
+        OuterHeaderSpec::lemma_from_into,
+        OuterHeaderSpec::lemma_into_from,
+        DeepNestedSpec::lemma_from_into,
+        DeepNestedSpec::lemma_into_from,
+        NestedComplexSpec::lemma_from_into,
+        NestedComplexSpec::lemma_into_from,
+        CombinedExampleSpec::lemma_from_into,
+        CombinedExampleSpec::lemma_into_from,
+        FinalMsgSpec::lemma_from_into,
+        FinalMsgSpec::lemma_into_from,
+    };
 
     impl SafeParser for GenericHeaderFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -836,6 +1343,10 @@ mod derived_proofs {
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
             reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: GenericHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                GenericHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -844,6 +1355,10 @@ mod derived_proofs {
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
             reveal(<GenericHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: GenericHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                GenericHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -883,6 +1398,10 @@ mod derived_proofs {
             reveal(<GenericHeaderFmt as Consistency>::consistent);
             reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: GenericHeaderSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                GenericHeaderSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -892,6 +1411,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: GenericHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                GenericHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -942,6 +1465,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -950,6 +1477,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -989,6 +1520,10 @@ mod derived_proofs {
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: PayloadWithHeaderSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                PayloadWithHeaderSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -998,6 +1533,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: PayloadWithHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                PayloadWithHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1048,6 +1587,10 @@ mod derived_proofs {
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: OuterHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OuterHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1056,6 +1599,10 @@ mod derived_proofs {
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
             reveal(<OuterHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: OuterHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OuterHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1095,6 +1642,10 @@ mod derived_proofs {
             reveal(<OuterHeaderFmt as Consistency>::consistent);
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: OuterHeaderSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                OuterHeaderSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1104,6 +1655,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: OuterHeaderInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OuterHeaderSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1154,6 +1709,10 @@ mod derived_proofs {
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: DeepNestedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                DeepNestedSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1162,6 +1721,10 @@ mod derived_proofs {
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
             reveal(<DeepNestedFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: DeepNestedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                DeepNestedSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1201,6 +1764,10 @@ mod derived_proofs {
             reveal(<DeepNestedFmt as Consistency>::consistent);
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: DeepNestedSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                DeepNestedSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1210,6 +1777,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: DeepNestedInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                DeepNestedSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1256,12 +1827,20 @@ mod derived_proofs {
     impl<'i> SoundParser for NestedComplexFmt<'i> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.hdr_payload_spec());
+            assert forall|input: NestedComplexInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedComplexSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.hdr_payload_spec());
+            assert forall|input: NestedComplexInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedComplexSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1292,6 +1871,10 @@ mod derived_proofs {
     impl<'i> SPRoundTripDps for NestedComplexFmt<'i> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.hdr_payload_spec());
+            assert forall|output: NestedComplexSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                NestedComplexSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1300,6 +1883,10 @@ mod derived_proofs {
     impl<'i> NonMalleable for NestedComplexFmt<'i> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             let fmt = Self::spec_inner(self.hdr_payload_spec());
+            assert forall|input: NestedComplexInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedComplexSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1346,6 +1933,10 @@ mod derived_proofs {
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
             reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_len_spec());
+            assert forall|input: CombinedExampleInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                CombinedExampleSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1354,6 +1945,10 @@ mod derived_proofs {
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
             reveal(<CombinedExampleFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.total_len_spec());
+            assert forall|input: CombinedExampleInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                CombinedExampleSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1393,6 +1988,10 @@ mod derived_proofs {
             reveal(<CombinedExampleFmt as Consistency>::consistent);
             reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_len_spec());
+            assert forall|output: CombinedExampleSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                CombinedExampleSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1402,6 +2001,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.total_len_spec());
+            assert forall|input: CombinedExampleInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                CombinedExampleSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1452,6 +2055,10 @@ mod derived_proofs {
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
             reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: FinalMsgInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FinalMsgSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1460,6 +2067,10 @@ mod derived_proofs {
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
             reveal(<FinalMsgFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: FinalMsgInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FinalMsgSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1499,6 +2110,10 @@ mod derived_proofs {
             reveal(<FinalMsgFmt as Consistency>::consistent);
             reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: FinalMsgSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                FinalMsgSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1508,6 +2123,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: FinalMsgInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FinalMsgSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1549,6 +2168,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
+            reveal(<GenericHeader as DeepView>::deep_view);
+            reveal(GenericHeaderSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1574,6 +2195,8 @@ mod exec_impls {
 
             reveal(<GenericHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<GenericHeader as DeepView>::deep_view);
+            reveal(GenericHeaderSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let GenericHeader { next_type, reserved, payload_length } = v;
@@ -1588,6 +2211,8 @@ mod exec_impls {
     impl<'i> Prepare<GenericHeader> for GenericHeaderFmt {
         fn prepare(&self, v: &GenericHeader) -> Result<usize, PreSerializeError> {
             reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<GenericHeader as DeepView>::deep_view);
+            reveal(GenericHeaderSpec::into_structural);
             let GenericHeader { next_type, reserved, payload_length } = v;
             let l1 = (U8).prepare(next_type)?;
             let l2 = (U8).prepare(reserved)?;
@@ -1613,11 +2238,18 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
+            proof {
+                hdr.lemma_deep_view_fields();
+                hdr.deep_view().lemma_into_structural_fields();
+            }
+
             let (n2, body) = (Varied((hdr.payload_length - 4))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -1633,9 +2265,16 @@ mod exec_impls {
 
             reveal(<PayloadWithHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let PayloadWithHeader { hdr, body } = v;
+            proof {
+                hdr.lemma_deep_view_fields();
+                hdr.deep_view().lemma_into_structural_fields();
+            }
+
             GenericHeaderFmt.serialize_into(hdr, obuf);
             Varied((hdr.payload_length - 4)).serialize_into(*body, obuf);
 
@@ -1646,7 +2285,14 @@ mod exec_impls {
     impl<'i> Prepare<PayloadWithHeader<'i>> for PayloadWithHeaderFmt {
         fn prepare(&self, v: &PayloadWithHeader<'i>) -> Result<usize, PreSerializeError> {
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<PayloadWithHeader as DeepView>::deep_view);
+            reveal(PayloadWithHeaderSpec::into_structural);
             let PayloadWithHeader { hdr, body } = v;
+            proof {
+                hdr.lemma_deep_view_fields();
+                hdr.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = (Named("generic_header", GenericHeaderFmt)).prepare(hdr)?;
             let l2 = (Varied((hdr.payload_length - 4))).prepare(body)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -1662,6 +2308,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
+            reveal(<OuterHeader as DeepView>::deep_view);
+            reveal(OuterHeaderSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1682,6 +2330,8 @@ mod exec_impls {
 
             reveal(<OuterHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<OuterHeader as DeepView>::deep_view);
+            reveal(OuterHeaderSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let OuterHeader { magic, inner } = v;
@@ -1695,6 +2345,8 @@ mod exec_impls {
     impl<'i> Prepare<OuterHeader> for OuterHeaderFmt {
         fn prepare(&self, v: &OuterHeader) -> Result<usize, PreSerializeError> {
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<OuterHeader as DeepView>::deep_view);
+            reveal(OuterHeaderSpec::into_structural);
             let OuterHeader { magic, inner } = v;
             let l1 = (U32Le).prepare(magic)?;
             let l2 = (Named("generic_header", GenericHeaderFmt)).prepare(inner)?;
@@ -1711,11 +2363,20 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
+            reveal(<DeepNested as DeepView>::deep_view);
+            reveal(DeepNestedSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, outer) = (Named("outer_header", OuterHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
+            proof {
+                outer.lemma_deep_view_fields();
+                outer.deep_view().lemma_into_structural_fields();
+                outer.inner.lemma_deep_view_fields();
+                outer.inner.deep_view().lemma_into_structural_fields();
+            }
+
             let (n2, data) = (Varied((outer.inner.payload_length - 8))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -1731,9 +2392,18 @@ mod exec_impls {
 
             reveal(<DeepNestedFmt as SpecSerializer>::spec_serialize);
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
+            reveal(<DeepNested as DeepView>::deep_view);
+            reveal(DeepNestedSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let DeepNested { outer, data } = v;
+            proof {
+                outer.lemma_deep_view_fields();
+                outer.deep_view().lemma_into_structural_fields();
+                outer.inner.lemma_deep_view_fields();
+                outer.inner.deep_view().lemma_into_structural_fields();
+            }
+
             OuterHeaderFmt.serialize_into(outer, obuf);
             Varied((outer.inner.payload_length - 8)).serialize_into(*data, obuf);
 
@@ -1744,7 +2414,16 @@ mod exec_impls {
     impl<'i> Prepare<DeepNested<'i>> for DeepNestedFmt {
         fn prepare(&self, v: &DeepNested<'i>) -> Result<usize, PreSerializeError> {
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
+            reveal(<DeepNested as DeepView>::deep_view);
+            reveal(DeepNestedSpec::into_structural);
             let DeepNested { outer, data } = v;
+            proof {
+                outer.lemma_deep_view_fields();
+                outer.deep_view().lemma_into_structural_fields();
+                outer.inner.lemma_deep_view_fields();
+                outer.inner.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = (Named("outer_header", OuterHeaderFmt)).prepare(outer)?;
             let l2 = (Varied((outer.inner.payload_length - 8))).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -1760,6 +2439,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedComplexFmt as SpecParser>::spec_parse);
+            reveal(<NestedComplex as DeepView>::deep_view);
+            reveal(NestedComplexSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1769,6 +2450,13 @@ mod exec_impls {
 
             let (n1, flag) = Const(U32Le, 0).parse(&rest)?;
             let rest = rest.skip(n1);
+            proof {
+                self.hdr_payload.lemma_deep_view_fields();
+                self.hdr_payload.deep_view().lemma_into_structural_fields();
+                self.hdr_payload.hdr.lemma_deep_view_fields();
+                self.hdr_payload.hdr.deep_view().lemma_into_structural_fields();
+            }
+
             let (n2, data) = (Varied((self.hdr_payload.hdr.payload_length - 8))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -1784,6 +2472,8 @@ mod exec_impls {
 
             reveal(<NestedComplexFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedComplexFmt as SpecByteLen>::byte_len);
+            reveal(<NestedComplex as DeepView>::deep_view);
+            reveal(NestedComplexSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -1791,6 +2481,13 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedComplex { flag, data } = v;
+            proof {
+                self.hdr_payload.lemma_deep_view_fields();
+                self.hdr_payload.deep_view().lemma_into_structural_fields();
+                self.hdr_payload.hdr.lemma_deep_view_fields();
+                self.hdr_payload.hdr.deep_view().lemma_into_structural_fields();
+            }
+
             U32Le.serialize_into(flag, obuf);
             Varied((self.hdr_payload.hdr.payload_length - 8)).serialize_into(*data, obuf);
 
@@ -1801,11 +2498,20 @@ mod exec_impls {
     impl<'i> Prepare<NestedComplex<'i>> for NestedComplexFmt<'i> {
         fn prepare(&self, v: &NestedComplex<'i>) -> Result<usize, PreSerializeError> {
             reveal(<NestedComplexFmt as SpecByteLen>::byte_len);
+            reveal(<NestedComplex as DeepView>::deep_view);
+            reveal(NestedComplexSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
             let NestedComplex { flag, data } = v;
+            proof {
+                self.hdr_payload.lemma_deep_view_fields();
+                self.hdr_payload.deep_view().lemma_into_structural_fields();
+                self.hdr_payload.hdr.lemma_deep_view_fields();
+                self.hdr_payload.hdr.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = (Const(U32Le, 0)).prepare(flag)?;
             let l2 = (Varied((self.hdr_payload.hdr.payload_length - 8))).prepare(data)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -1821,6 +2527,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
+            reveal(<CombinedExample as DeepView>::deep_view);
+            reveal(CombinedExampleSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1830,6 +2538,11 @@ mod exec_impls {
 
             let (n1, header) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
+            proof {
+                header.lemma_deep_view_fields();
+                header.deep_view().lemma_into_structural_fields();
+            }
+
             let (n2, body) = (Varied((self.total_len - header.payload_length))).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -1845,6 +2558,8 @@ mod exec_impls {
 
             reveal(<CombinedExampleFmt as SpecSerializer>::spec_serialize);
             reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
+            reveal(<CombinedExample as DeepView>::deep_view);
+            reveal(CombinedExampleSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -1852,6 +2567,11 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CombinedExample { header, body } = v;
+            proof {
+                header.lemma_deep_view_fields();
+                header.deep_view().lemma_into_structural_fields();
+            }
+
             GenericHeaderFmt.serialize_into(header, obuf);
             Varied((self.total_len - header.payload_length)).serialize_into(*body, obuf);
 
@@ -1862,11 +2582,18 @@ mod exec_impls {
     impl<'i> Prepare<CombinedExample<'i>> for CombinedExampleFmt {
         fn prepare(&self, v: &CombinedExample<'i>) -> Result<usize, PreSerializeError> {
             reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
+            reveal(<CombinedExample as DeepView>::deep_view);
+            reveal(CombinedExampleSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
             let CombinedExample { header, body } = v;
+            proof {
+                header.lemma_deep_view_fields();
+                header.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = (Named("generic_header", GenericHeaderFmt)).prepare(header)?;
             let l2 = (Varied((self.total_len - header.payload_length))).prepare(body)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -1882,6 +2609,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
+            reveal(<FinalMsg as DeepView>::deep_view);
+            reveal(FinalMsgSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1899,6 +2628,11 @@ mod exec_impls {
                 &rest,
             )?;
             let rest = rest.skip(n3);
+            proof {
+                hdr_payload.lemma_deep_view_fields();
+                hdr_payload.deep_view().lemma_into_structural_fields();
+            }
+
             let (n4, nested) = (Named(
                 "nested_complex",
                 NestedComplexFmt { hdr_payload: hdr_payload },
@@ -1917,9 +2651,16 @@ mod exec_impls {
 
             reveal(<FinalMsgFmt as SpecSerializer>::spec_serialize);
             reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
+            reveal(<FinalMsg as DeepView>::deep_view);
+            reveal(FinalMsgSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let FinalMsg { total_len, body, hdr_payload, nested } = v;
+            proof {
+                hdr_payload.lemma_deep_view_fields();
+                hdr_payload.deep_view().lemma_into_structural_fields();
+            }
+
             U32Le.serialize_into(total_len, obuf);
             CombinedExampleFmt { total_len: *total_len }.serialize_into(body, obuf);
             PayloadWithHeaderFmt.serialize_into(hdr_payload, obuf);
@@ -1932,7 +2673,14 @@ mod exec_impls {
     impl<'i> Prepare<FinalMsg<'i>> for FinalMsgFmt {
         fn prepare(&self, v: &FinalMsg<'i>) -> Result<usize, PreSerializeError> {
             reveal(<FinalMsgFmt as SpecByteLen>::byte_len);
+            reveal(<FinalMsg as DeepView>::deep_view);
+            reveal(FinalMsgSpec::into_structural);
             let FinalMsg { total_len, body, hdr_payload, nested } = v;
+            proof {
+                hdr_payload.lemma_deep_view_fields();
+                hdr_payload.deep_view().lemma_into_structural_fields();
+            }
+
             let l1 = {
                 if !(*total_len >= 16777215 && *total_len <= 4294967295) {
                     Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))

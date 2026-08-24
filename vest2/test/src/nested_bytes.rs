@@ -22,20 +22,99 @@ verus! {
 // ============================================================
 # [doc = "data type for `anything`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub struct Anything {
     pub x: u8,
 }
 
-pub type AnythingSpec = Anything;
+# [verifier::ext_equal]
+pub struct AnythingSpec<T0 = u8> {
+    pub x: T0,
+}
 
 pub type AnythingInner = u8;
 
 impl DeepView for Anything {
-    type V = Self;
+    type V = AnythingSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        AnythingSpec { x: self.x.deep_view() }
+    }
+}
+
+impl Anything {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().x == self.x.deep_view(),
+    {
+        reveal(<Anything as DeepView>::deep_view);
+    }
+}
+
+impl<T0> AnythingSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let x = input;
+        Self { x }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { x } = self;
+        x
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AnythingSpec::from_structural);
+        reveal(AnythingSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AnythingSpec::from_structural);
+        reveal(AnythingSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { x } => x,
+            },
+    {
+        reveal(AnythingSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AnythingForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct AnythingReverse;
+
+impl SpecMap for AnythingForward {
+    type Input = AnythingInner;
+
+    type Output = AnythingSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AnythingSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for AnythingReverse {
+    type Input = AnythingSpec;
+
+    type Output = AnythingInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -48,10 +127,10 @@ pub struct NestedDynamicBytes<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct NestedDynamicBytesSpec {
-    pub num: u16,
-    pub num_inner: u16,
-    pub xs: Seq<Seq<u8>>,
+pub struct NestedDynamicBytesSpec<T0 = u16, T1 = u16, T2 = Seq<Seq<u8>>> {
+    pub num: T0,
+    pub num_inner: T1,
+    pub xs: T2,
 }
 
 pub type NestedDynamicBytesInner = (u16, (u16, Seq<Seq<u8>>));
@@ -59,12 +138,91 @@ pub type NestedDynamicBytesInner = (u16, (u16, Seq<Seq<u8>>));
 impl<'i> DeepView for NestedDynamicBytes<'i> {
     type V = NestedDynamicBytesSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedDynamicBytesSpec {
             num: self.num.deep_view(),
             num_inner: self.num_inner.deep_view(),
             xs: self.xs.deep_view(),
         }
+    }
+}
+
+impl<'i> NestedDynamicBytes<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().num == self.num.deep_view(),
+            self.deep_view().num_inner == self.num_inner.deep_view(),
+            self.deep_view().xs == self.xs.deep_view(),
+    {
+        reveal(<NestedDynamicBytes as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> NestedDynamicBytesSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (num, (num_inner, xs)) = input;
+        Self { num, num_inner, xs }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { num, num_inner, xs } = self;
+        (num, (num_inner, xs))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedDynamicBytesSpec::from_structural);
+        reveal(NestedDynamicBytesSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedDynamicBytesSpec::from_structural);
+        reveal(NestedDynamicBytesSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { num, num_inner, xs } => (num, (num_inner, xs)),
+            },
+    {
+        reveal(NestedDynamicBytesSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedDynamicBytesForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedDynamicBytesReverse;
+
+impl SpecMap for NestedDynamicBytesForward {
+    type Input = NestedDynamicBytesInner;
+
+    type Output = NestedDynamicBytesSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedDynamicBytesSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedDynamicBytesReverse {
+    type Input = NestedDynamicBytesSpec;
+
+    type Output = NestedDynamicBytesInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -76,9 +234,9 @@ pub struct NestedFixedBytes<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct NestedFixedBytesSpec {
-    pub num: u16,
-    pub xs: Seq<Seq<u8>>,
+pub struct NestedFixedBytesSpec<T0 = u16, T1 = Seq<Seq<u8>>> {
+    pub num: T0,
+    pub xs: T1,
 }
 
 pub type NestedFixedBytesInner = (u16, Seq<Seq<u8>>);
@@ -86,8 +244,86 @@ pub type NestedFixedBytesInner = (u16, Seq<Seq<u8>>);
 impl<'i> DeepView for NestedFixedBytes<'i> {
     type V = NestedFixedBytesSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedFixedBytesSpec { num: self.num.deep_view(), xs: self.xs.deep_view() }
+    }
+}
+
+impl<'i> NestedFixedBytes<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().num == self.num.deep_view(),
+            self.deep_view().xs == self.xs.deep_view(),
+    {
+        reveal(<NestedFixedBytes as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> NestedFixedBytesSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (num, xs) = input;
+        Self { num, xs }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { num, xs } = self;
+        (num, xs)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedFixedBytesSpec::from_structural);
+        reveal(NestedFixedBytesSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedFixedBytesSpec::from_structural);
+        reveal(NestedFixedBytesSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { num, xs } => (num, xs),
+            },
+    {
+        reveal(NestedFixedBytesSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedFixedBytesForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct NestedFixedBytesReverse;
+
+impl SpecMap for NestedFixedBytesForward {
+    type Input = NestedFixedBytesInner;
+
+    type Output = NestedFixedBytesSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedFixedBytesSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedFixedBytesReverse {
+    type Input = NestedFixedBytesSpec;
+
+    type Output = NestedFixedBytesInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -113,8 +349,8 @@ pub struct TailVec {
 }
 
 # [verifier::ext_equal]
-pub struct TailVecSpec {
-    pub xs: Seq<AnythingSpec>,
+pub struct TailVecSpec<T0 = Seq<AnythingSpec>> {
+    pub xs: T0,
 }
 
 pub type TailVecInner = Seq<AnythingSpec>;
@@ -122,8 +358,85 @@ pub type TailVecInner = Seq<AnythingSpec>;
 impl DeepView for TailVec {
     type V = TailVecSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TailVecSpec { xs: self.xs.deep_view() }
+    }
+}
+
+impl TailVec {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().xs == self.xs.deep_view(),
+    {
+        reveal(<TailVec as DeepView>::deep_view);
+    }
+}
+
+impl<T0> TailVecSpec<T0> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let xs = input;
+        Self { xs }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { xs } = self;
+        xs
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TailVecSpec::from_structural);
+        reveal(TailVecSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TailVecSpec::from_structural);
+        reveal(TailVecSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { xs } => xs,
+            },
+    {
+        reveal(TailVecSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TailVecForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TailVecReverse;
+
+impl SpecMap for TailVecForward {
+    type Input = TailVecInner;
+
+    type Output = TailVecSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TailVecSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TailVecReverse {
+    type Input = TailVecSpec;
+
+    type Output = TailVecInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -134,29 +447,12 @@ impl DeepView for TailVec {
 # [derive (Clone, Copy)]
 pub struct AnythingFmt;
 
-pub type AnythingFmtSpec = Named<Mapped<U8, FnSpecMapper<AnythingInner, AnythingSpec>>>;
+pub type AnythingFmtSpec = Named<Mapped<U8, BiMap<AnythingForward, AnythingReverse>>>;
 
 impl AnythingFmt {
     # [doc = "specification constructor for `anything`."]
     pub open spec fn spec_inner() -> AnythingFmtSpec {
-        Named(
-            "anything",
-            Mapped {
-                inner: U8,
-                mapper: (
-                    |parsed: AnythingInner| -> AnythingSpec
-                        {
-                            let x = parsed;
-                            AnythingSpec { x }
-                        },
-                    |value: AnythingSpec| -> AnythingInner
-                        {
-                            let AnythingSpec { x } = value;
-                            x
-                        },
-                ),
-            },
-        )
+        Named("anything", Mapped { inner: U8, mapper: BiMap(AnythingForward, AnythingReverse) })
     }
 }
 
@@ -167,7 +463,7 @@ pub struct NestedDynamicBytesFmt;
 pub type NestedDynamicBytesFmtSpec = Named<
     Mapped<
         Bind<U16Le, spec_fn(u16) -> Bind<U16Le, spec_fn(u16) -> RepeatN<Varied<u16>, u16>>>,
-        FnSpecMapper<NestedDynamicBytesInner, NestedDynamicBytesSpec>,
+        BiMap<NestedDynamicBytesForward, NestedDynamicBytesReverse>,
     >,
 >;
 
@@ -181,18 +477,7 @@ impl NestedDynamicBytesFmt {
                     U16Le,
                     |num: u16| Bind(U16Le, |num_inner: u16| RepeatN(num, Varied(num_inner))),
                 ),
-                mapper: (
-                    |parsed: NestedDynamicBytesInner| -> NestedDynamicBytesSpec
-                        {
-                            let (num, (num_inner, xs)) = parsed;
-                            NestedDynamicBytesSpec { num, num_inner, xs }
-                        },
-                    |value: NestedDynamicBytesSpec| -> NestedDynamicBytesInner
-                        {
-                            let NestedDynamicBytesSpec { num, num_inner, xs } = value;
-                            (num, (num_inner, xs))
-                        },
-                ),
+                mapper: BiMap(NestedDynamicBytesForward, NestedDynamicBytesReverse),
             },
         )
     }
@@ -205,7 +490,7 @@ pub struct NestedFixedBytesFmt;
 pub type NestedFixedBytesFmtSpec = Named<
     Mapped<
         Bind<U16Le, spec_fn(u16) -> RepeatN<Fixed<10>, u16>>,
-        FnSpecMapper<NestedFixedBytesInner, NestedFixedBytesSpec>,
+        BiMap<NestedFixedBytesForward, NestedFixedBytesReverse>,
     >,
 >;
 
@@ -216,18 +501,7 @@ impl NestedFixedBytesFmt {
             "nested_fixed_bytes",
             Mapped {
                 inner: Bind(U16Le, |num: u16| RepeatN(num, Fixed::<10>)),
-                mapper: (
-                    |parsed: NestedFixedBytesInner| -> NestedFixedBytesSpec
-                        {
-                            let (num, xs) = parsed;
-                            NestedFixedBytesSpec { num, xs }
-                        },
-                    |value: NestedFixedBytesSpec| -> NestedFixedBytesInner
-                        {
-                            let NestedFixedBytesSpec { num, xs } = value;
-                            (num, xs)
-                        },
-                ),
+                mapper: BiMap(NestedFixedBytesForward, NestedFixedBytesReverse),
             },
         )
     }
@@ -277,7 +551,7 @@ impl OptionalBytesFmt {
 pub struct TailVecFmt;
 
 pub type TailVecFmtSpec = Named<
-    Mapped<AndThen<Tail, RepeatTillEnd<AnythingFmt>>, FnSpecMapper<TailVecInner, TailVecSpec>>,
+    Mapped<AndThen<Tail, RepeatTillEnd<AnythingFmt>>, BiMap<TailVecForward, TailVecReverse>>,
 >;
 
 impl TailVecFmt {
@@ -287,18 +561,7 @@ impl TailVecFmt {
             "tail_vec",
             Mapped {
                 inner: AndThen(Tail, RepeatTillEnd(AnythingFmt)),
-                mapper: (
-                    |parsed: TailVecInner| -> TailVecSpec
-                        {
-                            let xs = parsed;
-                            TailVecSpec { xs }
-                        },
-                    |value: TailVecSpec| -> TailVecInner
-                        {
-                            let TailVecSpec { xs } = value;
-                            xs
-                        },
-                ),
+                mapper: BiMap(TailVecForward, TailVecReverse),
             },
         )
     }
@@ -626,7 +889,17 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        AnythingSpec::lemma_from_into,
+        AnythingSpec::lemma_into_from,
+        NestedDynamicBytesSpec::lemma_from_into,
+        NestedDynamicBytesSpec::lemma_into_from,
+        NestedFixedBytesSpec::lemma_from_into,
+        NestedFixedBytesSpec::lemma_into_from,
+        TailVecSpec::lemma_from_into,
+        TailVecSpec::lemma_into_from,
+    };
 
     impl SafeParser for AnythingFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -653,6 +926,10 @@ mod derived_proofs {
             reveal(<AnythingFmt as SpecParser>::spec_parse);
             reveal(<AnythingFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: AnythingInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AnythingSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -661,6 +938,10 @@ mod derived_proofs {
             reveal(<AnythingFmt as SpecParser>::spec_parse);
             reveal(<AnythingFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: AnythingInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AnythingSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -700,6 +981,10 @@ mod derived_proofs {
             reveal(<AnythingFmt as Consistency>::consistent);
             reveal(<AnythingFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: AnythingSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                AnythingSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -709,6 +994,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AnythingFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: AnythingInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                AnythingSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -759,6 +1048,10 @@ mod derived_proofs {
             reveal(<NestedDynamicBytesFmt as SpecParser>::spec_parse);
             reveal(<NestedDynamicBytesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedDynamicBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedDynamicBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -767,6 +1060,10 @@ mod derived_proofs {
             reveal(<NestedDynamicBytesFmt as SpecParser>::spec_parse);
             reveal(<NestedDynamicBytesFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedDynamicBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedDynamicBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -806,6 +1103,10 @@ mod derived_proofs {
             reveal(<NestedDynamicBytesFmt as Consistency>::consistent);
             reveal(<NestedDynamicBytesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: NestedDynamicBytesSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                NestedDynamicBytesSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -815,6 +1116,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedDynamicBytesFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedDynamicBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedDynamicBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -865,6 +1170,10 @@ mod derived_proofs {
             reveal(<NestedFixedBytesFmt as SpecParser>::spec_parse);
             reveal(<NestedFixedBytesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedFixedBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedFixedBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -873,6 +1182,10 @@ mod derived_proofs {
             reveal(<NestedFixedBytesFmt as SpecParser>::spec_parse);
             reveal(<NestedFixedBytesFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedFixedBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedFixedBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -912,6 +1225,10 @@ mod derived_proofs {
             reveal(<NestedFixedBytesFmt as Consistency>::consistent);
             reveal(<NestedFixedBytesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: NestedFixedBytesSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                NestedFixedBytesSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -921,6 +1238,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedFixedBytesFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: NestedFixedBytesInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                NestedFixedBytesSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1235,6 +1556,10 @@ mod derived_proofs {
             reveal(<TailVecFmt as SpecParser>::spec_parse);
             reveal(<TailVecFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TailVecInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TailVecSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1243,6 +1568,10 @@ mod derived_proofs {
             reveal(<TailVecFmt as SpecParser>::spec_parse);
             reveal(<TailVecFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TailVecInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TailVecSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1265,6 +1594,10 @@ mod derived_proofs {
             reveal(<TailVecFmt as Consistency>::consistent);
             reveal(<TailVecFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TailVecSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TailVecSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1274,6 +1607,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TailVecFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TailVecInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TailVecSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1305,6 +1642,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<AnythingFmt as SpecParser>::spec_parse);
+            reveal(<Anything as DeepView>::deep_view);
+            reveal(AnythingSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1323,6 +1662,8 @@ mod exec_impls {
 
             reveal(<AnythingFmt as SpecSerializer>::spec_serialize);
             reveal(<AnythingFmt as SpecByteLen>::byte_len);
+            reveal(<Anything as DeepView>::deep_view);
+            reveal(AnythingSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Anything { x } = v;
@@ -1335,6 +1676,8 @@ mod exec_impls {
     impl<'i> Prepare<Anything> for AnythingFmt {
         fn prepare(&self, v: &Anything) -> Result<usize, PreSerializeError> {
             reveal(<AnythingFmt as SpecByteLen>::byte_len);
+            reveal(<Anything as DeepView>::deep_view);
+            reveal(AnythingSpec::into_structural);
             let Anything { x } = v;
             let l1 = (U8).prepare(x)?;
             let total_len = l1;
@@ -1350,6 +1693,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedDynamicBytesFmt as SpecParser>::spec_parse);
+            reveal(<NestedDynamicBytes as DeepView>::deep_view);
+            reveal(NestedDynamicBytesSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1375,6 +1720,8 @@ mod exec_impls {
 
             reveal(<NestedDynamicBytesFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedDynamicBytesFmt as SpecByteLen>::byte_len);
+            reveal(<NestedDynamicBytes as DeepView>::deep_view);
+            reveal(NestedDynamicBytesSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let NestedDynamicBytes { num, num_inner, xs } = v;
@@ -1389,6 +1736,8 @@ mod exec_impls {
     impl<'i> Prepare<NestedDynamicBytes<'i>> for NestedDynamicBytesFmt {
         fn prepare(&self, v: &NestedDynamicBytes<'i>) -> Result<usize, PreSerializeError> {
             reveal(<NestedDynamicBytesFmt as SpecByteLen>::byte_len);
+            reveal(<NestedDynamicBytes as DeepView>::deep_view);
+            reveal(NestedDynamicBytesSpec::into_structural);
             let NestedDynamicBytes { num, num_inner, xs } = v;
             let l1 = (U16Le).prepare(num)?;
             let l2 = (U16Le).prepare(num_inner)?;
@@ -1408,6 +1757,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedFixedBytesFmt as SpecParser>::spec_parse);
+            reveal(<NestedFixedBytes as DeepView>::deep_view);
+            reveal(NestedFixedBytesSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1428,6 +1779,8 @@ mod exec_impls {
 
             reveal(<NestedFixedBytesFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedFixedBytesFmt as SpecByteLen>::byte_len);
+            reveal(<NestedFixedBytes as DeepView>::deep_view);
+            reveal(NestedFixedBytesSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let NestedFixedBytes { num, xs } = v;
@@ -1441,6 +1794,8 @@ mod exec_impls {
     impl<'i> Prepare<NestedFixedBytes<'i>> for NestedFixedBytesFmt {
         fn prepare(&self, v: &NestedFixedBytes<'i>) -> Result<usize, PreSerializeError> {
             reveal(<NestedFixedBytesFmt as SpecByteLen>::byte_len);
+            reveal(<NestedFixedBytes as DeepView>::deep_view);
+            reveal(NestedFixedBytesSpec::into_structural);
             let NestedFixedBytes { num, xs } = v;
             let l1 = (U16Le).prepare(num)?;
             let l2 = (RepeatN(*num, Fixed::<10>)).prepare(xs)?;
@@ -1564,6 +1919,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TailVecFmt as SpecParser>::spec_parse);
+            reveal(<TailVec as DeepView>::deep_view);
+            reveal(TailVecSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1582,6 +1939,8 @@ mod exec_impls {
 
             reveal(<TailVecFmt as SpecSerializer>::spec_serialize);
             reveal(<TailVecFmt as SpecByteLen>::byte_len);
+            reveal(<TailVec as DeepView>::deep_view);
+            reveal(TailVecSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let TailVec { xs } = v;
@@ -1596,6 +1955,8 @@ mod exec_impls {
             broadcast use vest_lib2::combinators::bytes::spec::tail_and_then_lemmas;
 
             reveal(<TailVecFmt as SpecByteLen>::byte_len);
+            reveal(<TailVec as DeepView>::deep_view);
+            reveal(TailVecSpec::into_structural);
             let TailVec { xs } = v;
             let l1 = (AndThen(Tail, Star(AnythingFmt))).prepare(xs)?;
             let total_len = l1;

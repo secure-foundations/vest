@@ -34,15 +34,24 @@ pub struct Block<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct BlockSpec {
-    pub version: u32,
-    pub prev_block: Seq<u8>,
-    pub merkle_root: Seq<u8>,
-    pub timestamp: u32,
-    pub bits: u32,
-    pub nonce: u32,
-    pub tx_count: u64,
-    pub txs: Seq<TxSpec>,
+pub struct BlockSpec<
+    T0 = u32,
+    T1 = Seq<u8>,
+    T2 = Seq<u8>,
+    T3 = u32,
+    T4 = u32,
+    T5 = u32,
+    T6 = u64,
+    T7 = Seq<TxSpec>,
+> {
+    pub version: T0,
+    pub prev_block: T1,
+    pub merkle_root: T2,
+    pub timestamp: T3,
+    pub bits: T4,
+    pub nonce: T5,
+    pub tx_count: T6,
+    pub txs: T7,
 }
 
 pub type BlockInner = (u32, (Seq<u8>, (Seq<u8>, (u32, (u32, (u32, (u64, Seq<TxSpec>)))))));
@@ -50,6 +59,7 @@ pub type BlockInner = (u32, (Seq<u8>, (Seq<u8>, (u32, (u32, (u32, (u64, Seq<TxSp
 impl<'i> DeepView for Block<'i> {
     type V = BlockSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         BlockSpec {
             version: self.version.deep_view(),
@@ -64,6 +74,102 @@ impl<'i> DeepView for Block<'i> {
     }
 }
 
+impl<'i> Block<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().version == self.version.deep_view(),
+            self.deep_view().prev_block == self.prev_block.deep_view(),
+            self.deep_view().merkle_root == self.merkle_root.deep_view(),
+            self.deep_view().timestamp == self.timestamp.deep_view(),
+            self.deep_view().bits == self.bits.deep_view(),
+            self.deep_view().nonce == self.nonce.deep_view(),
+            self.deep_view().tx_count == self.tx_count.deep_view(),
+            self.deep_view().txs == self.txs.deep_view(),
+    {
+        reveal(<Block as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3, T4, T5, T6, T7> BlockSpec<T0, T1, T2, T3, T4, T5, T6, T7> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7)))))))) -> Self {
+        let (version, (prev_block, (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs))))))) =
+            input;
+        Self { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7))))))) {
+        let Self { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } = self;
+        (version, (prev_block, (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs)))))))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(BlockSpec::from_structural);
+        reveal(BlockSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7))))))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(BlockSpec::from_structural);
+        reveal(BlockSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self {
+                    version,
+                    prev_block,
+                    merkle_root,
+                    timestamp,
+                    bits,
+                    nonce,
+                    tx_count,
+                    txs,
+                } => (
+                    version,
+                    (prev_block, (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs)))))),
+                ),
+            },
+    {
+        reveal(BlockSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct BlockForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct BlockReverse;
+
+impl SpecMap for BlockForward {
+    type Input = BlockInner;
+
+    type Output = BlockSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        BlockSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for BlockReverse {
+    type Input = BlockSpec;
+
+    type Output = BlockInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `tx`."]
 # [derive (Debug, PartialEq, Eq, Clone)]
 pub struct Tx<'i> {
@@ -73,10 +179,10 @@ pub struct Tx<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct TxSpec {
-    pub version: u32,
-    pub txin_count: u64,
-    pub rem: TxRemSpec,
+pub struct TxSpec<T0 = u32, T1 = u64, T2 = TxRemSpec> {
+    pub version: T0,
+    pub txin_count: T1,
+    pub rem: T2,
 }
 
 pub type TxInner = (u32, (u64, TxRemSpec));
@@ -84,12 +190,91 @@ pub type TxInner = (u32, (u64, TxRemSpec));
 impl<'i> DeepView for Tx<'i> {
     type V = TxSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxSpec {
             version: self.version.deep_view(),
             txin_count: self.txin_count.deep_view(),
             rem: self.rem.deep_view(),
         }
+    }
+}
+
+impl<'i> Tx<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().version == self.version.deep_view(),
+            self.deep_view().txin_count == self.txin_count.deep_view(),
+            self.deep_view().rem == self.rem.deep_view(),
+    {
+        reveal(<Tx as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> TxSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (version, (txin_count, rem)) = input;
+        Self { version, txin_count, rem }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { version, txin_count, rem } = self;
+        (version, (txin_count, rem))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxSpec::from_structural);
+        reveal(TxSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxSpec::from_structural);
+        reveal(TxSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { version, txin_count, rem } => (version, (txin_count, rem)),
+            },
+    {
+        reveal(TxSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxReverse;
+
+impl SpecMap for TxForward {
+    type Input = TxInner;
+
+    type Output = TxSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxReverse {
+    type Input = TxSpec;
+
+    type Output = TxInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -106,14 +291,22 @@ pub struct TxSegwit<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct TxSegwitSpec {
-    pub flag: u8,
-    pub txin_count: u64,
-    pub txins: Seq<TxinSpec>,
-    pub txout_count: u64,
-    pub txouts: Seq<TxoutSpec>,
-    pub witness: Seq<WitnessSpec>,
-    pub lock_time: LockTimeSpec,
+pub struct TxSegwitSpec<
+    T0 = u8,
+    T1 = u64,
+    T2 = Seq<TxinSpec>,
+    T3 = u64,
+    T4 = Seq<TxoutSpec>,
+    T5 = Seq<WitnessSpec>,
+    T6 = LockTimeSpec,
+> {
+    pub flag: T0,
+    pub txin_count: T1,
+    pub txins: T2,
+    pub txout_count: T3,
+    pub txouts: T4,
+    pub witness: T5,
+    pub lock_time: T6,
 }
 
 pub type TxSegwitInner = (
@@ -124,6 +317,7 @@ pub type TxSegwitInner = (
 impl<'i> DeepView for TxSegwit<'i> {
     type V = TxSegwitSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxSegwitSpec {
             flag: self.flag.deep_view(),
@@ -137,6 +331,91 @@ impl<'i> DeepView for TxSegwit<'i> {
     }
 }
 
+impl<'i> TxSegwit<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().flag == self.flag.deep_view(),
+            self.deep_view().txin_count == self.txin_count.deep_view(),
+            self.deep_view().txins == self.txins.deep_view(),
+            self.deep_view().txout_count == self.txout_count.deep_view(),
+            self.deep_view().txouts == self.txouts.deep_view(),
+            self.deep_view().witness == self.witness.deep_view(),
+            self.deep_view().lock_time == self.lock_time.deep_view(),
+    {
+        reveal(<TxSegwit as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3, T4, T5, T6> TxSegwitSpec<T0, T1, T2, T3, T4, T5, T6> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, (T5, T6))))))) -> Self {
+        let (flag, (txin_count, (txins, (txout_count, (txouts, (witness, lock_time)))))) = input;
+        Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, (T5, T6)))))) {
+        let Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = self;
+        (flag, (txin_count, (txins, (txout_count, (txouts, (witness, lock_time))))))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxSegwitSpec::from_structural);
+        reveal(TxSegwitSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, (T5, T6)))))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxSegwitSpec::from_structural);
+        reveal(TxSegwitSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time } => (
+                    flag,
+                    (txin_count, (txins, (txout_count, (txouts, (witness, lock_time))))),
+                ),
+            },
+    {
+        reveal(TxSegwitSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxSegwitForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxSegwitReverse;
+
+impl SpecMap for TxSegwitForward {
+    type Input = TxSegwitInner;
+
+    type Output = TxSegwitSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxSegwitSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxSegwitReverse {
+    type Input = TxSegwitSpec;
+
+    type Output = TxSegwitInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `witness`."]
 # [derive (Debug, PartialEq, Eq, Clone)]
 pub struct Witness<'i> {
@@ -145,9 +424,9 @@ pub struct Witness<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct WitnessSpec {
-    pub count: u64,
-    pub data: Seq<WitnessComponentSpec>,
+pub struct WitnessSpec<T0 = u64, T1 = Seq<WitnessComponentSpec>> {
+    pub count: T0,
+    pub data: T1,
 }
 
 pub type WitnessInner = (u64, Seq<WitnessComponentSpec>);
@@ -155,8 +434,86 @@ pub type WitnessInner = (u64, Seq<WitnessComponentSpec>);
 impl<'i> DeepView for Witness<'i> {
     type V = WitnessSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         WitnessSpec { count: self.count.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> Witness<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().count == self.count.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<Witness as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> WitnessSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (count, data) = input;
+        Self { count, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { count, data } = self;
+        (count, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(WitnessSpec::from_structural);
+        reveal(WitnessSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(WitnessSpec::from_structural);
+        reveal(WitnessSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { count, data } => (count, data),
+            },
+    {
+        reveal(WitnessSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct WitnessForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct WitnessReverse;
+
+impl SpecMap for WitnessForward {
+    type Input = WitnessInner;
+
+    type Output = WitnessSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        WitnessSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for WitnessReverse {
+    type Input = WitnessSpec;
+
+    type Output = WitnessInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -168,9 +525,9 @@ pub struct WitnessComponent<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct WitnessComponentSpec {
-    pub l: u64,
-    pub data: Seq<u8>,
+pub struct WitnessComponentSpec<T0 = u64, T1 = Seq<u8>> {
+    pub l: T0,
+    pub data: T1,
 }
 
 pub type WitnessComponentInner = (u64, Seq<u8>);
@@ -178,8 +535,86 @@ pub type WitnessComponentInner = (u64, Seq<u8>);
 impl<'i> DeepView for WitnessComponent<'i> {
     type V = WitnessComponentSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         WitnessComponentSpec { l: self.l.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> WitnessComponent<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<WitnessComponent as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> WitnessComponentSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, data) = input;
+        Self { l, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, data } = self;
+        (l, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(WitnessComponentSpec::from_structural);
+        reveal(WitnessComponentSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(WitnessComponentSpec::from_structural);
+        reveal(WitnessComponentSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, data } => (l, data),
+            },
+    {
+        reveal(WitnessComponentSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct WitnessComponentForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct WitnessComponentReverse;
+
+impl SpecMap for WitnessComponentForward {
+    type Input = WitnessComponentInner;
+
+    type Output = WitnessComponentSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        WitnessComponentSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for WitnessComponentReverse {
+    type Input = WitnessComponentSpec;
+
+    type Output = WitnessComponentInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -193,11 +628,11 @@ pub struct TxNonsegwit<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct TxNonsegwitSpec {
-    pub txins: Seq<TxinSpec>,
-    pub txout_count: u64,
-    pub txouts: Seq<TxoutSpec>,
-    pub lock_time: LockTimeSpec,
+pub struct TxNonsegwitSpec<T0 = Seq<TxinSpec>, T1 = u64, T2 = Seq<TxoutSpec>, T3 = LockTimeSpec> {
+    pub txins: T0,
+    pub txout_count: T1,
+    pub txouts: T2,
+    pub lock_time: T3,
 }
 
 pub type TxNonsegwitInner = (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>, LockTimeSpec)));
@@ -205,6 +640,7 @@ pub type TxNonsegwitInner = (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>, LockTimeSpec)
 impl<'i> DeepView for TxNonsegwit<'i> {
     type V = TxNonsegwitSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxNonsegwitSpec {
             txins: self.txins.deep_view(),
@@ -215,23 +651,204 @@ impl<'i> DeepView for TxNonsegwit<'i> {
     }
 }
 
+impl<'i> TxNonsegwit<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().txins == self.txins.deep_view(),
+            self.deep_view().txout_count == self.txout_count.deep_view(),
+            self.deep_view().txouts == self.txouts.deep_view(),
+            self.deep_view().lock_time == self.lock_time.deep_view(),
+    {
+        reveal(<TxNonsegwit as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2, T3> TxNonsegwitSpec<T0, T1, T2, T3> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, (T2, T3)))) -> Self {
+        let (txins, (txout_count, (txouts, lock_time))) = input;
+        Self { txins, txout_count, txouts, lock_time }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, T3))) {
+        let Self { txins, txout_count, txouts, lock_time } = self;
+        (txins, (txout_count, (txouts, lock_time)))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxNonsegwitSpec::from_structural);
+        reveal(TxNonsegwitSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, T3))))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxNonsegwitSpec::from_structural);
+        reveal(TxNonsegwitSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { txins, txout_count, txouts, lock_time } => (
+                    txins,
+                    (txout_count, (txouts, lock_time)),
+                ),
+            },
+    {
+        reveal(TxNonsegwitSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxNonsegwitForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxNonsegwitReverse;
+
+impl SpecMap for TxNonsegwitForward {
+    type Input = TxNonsegwitInner;
+
+    type Output = TxNonsegwitSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxNonsegwitSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxNonsegwitReverse {
+    type Input = TxNonsegwitSpec;
+
+    type Output = TxNonsegwitInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 # [doc = "data type for `lock_time`."]
 # [derive (Debug, PartialEq, Eq, Clone, Copy)]
-# [verifier::ext_equal]
 pub enum LockTime {
     BlockNo(u32),
     Timestamp(u32),
 }
 
-pub type LockTimeSpec = LockTime;
+# [verifier::ext_equal]
+pub enum LockTimeSpec<T0 = u32, T1 = u32> {
+    BlockNo(T0),
+    Timestamp(T1),
+}
 
 pub type LockTimeInner = Sum<u32, u32>;
 
 impl DeepView for LockTime {
-    type V = Self;
+    type V = LockTimeSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        *self
+        match self {
+            LockTime::BlockNo(v) => LockTimeSpec::BlockNo(v.deep_view()),
+            LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
+        }
+    }
+}
+
+impl LockTime {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                LockTime::BlockNo(v) => LockTimeSpec::BlockNo(v.deep_view()),
+                LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
+            },
+    {
+        reveal(<LockTime as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> LockTimeSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::BlockNo(value),
+            R(value) => Self::Timestamp(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::BlockNo(value) => L(value),
+            Self::Timestamp(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(LockTimeSpec::from_structural);
+        reveal(LockTimeSpec::into_structural);
+        match self {
+            Self::BlockNo(_) => {},
+            Self::Timestamp(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(LockTimeSpec::from_structural);
+        reveal(LockTimeSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::BlockNo(value) => L(value),
+                Self::Timestamp(value) => R(value),
+            },
+    {
+        reveal(LockTimeSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct LockTimeForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct LockTimeReverse;
+
+impl SpecMap for LockTimeForward {
+    type Input = LockTimeInner;
+
+    type Output = LockTimeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        LockTimeSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for LockTimeReverse {
+    type Input = LockTimeSpec;
+
+    type Output = LockTimeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -243,9 +860,9 @@ pub struct Txout<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct TxoutSpec {
-    pub value: u64,
-    pub script_pubkey: ScriptSpec,
+pub struct TxoutSpec<T0 = u64, T1 = ScriptSpec> {
+    pub value: T0,
+    pub script_pubkey: T1,
 }
 
 pub type TxoutInner = (u64, ScriptSpec);
@@ -253,8 +870,86 @@ pub type TxoutInner = (u64, ScriptSpec);
 impl<'i> DeepView for Txout<'i> {
     type V = TxoutSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxoutSpec { value: self.value.deep_view(), script_pubkey: self.script_pubkey.deep_view() }
+    }
+}
+
+impl<'i> Txout<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().value == self.value.deep_view(),
+            self.deep_view().script_pubkey == self.script_pubkey.deep_view(),
+    {
+        reveal(<Txout as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> TxoutSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (value, script_pubkey) = input;
+        Self { value, script_pubkey }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { value, script_pubkey } = self;
+        (value, script_pubkey)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxoutSpec::from_structural);
+        reveal(TxoutSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxoutSpec::from_structural);
+        reveal(TxoutSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { value, script_pubkey } => (value, script_pubkey),
+            },
+    {
+        reveal(TxoutSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxoutForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxoutReverse;
+
+impl SpecMap for TxoutForward {
+    type Input = TxoutInner;
+
+    type Output = TxoutSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxoutSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxoutReverse {
+    type Input = TxoutSpec;
+
+    type Output = TxoutInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -266,9 +961,9 @@ pub struct Script<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ScriptSpec {
-    pub l: u64,
-    pub data: Seq<u8>,
+pub struct ScriptSpec<T0 = u64, T1 = Seq<u8>> {
+    pub l: T0,
+    pub data: T1,
 }
 
 pub type ScriptInner = (u64, Seq<u8>);
@@ -276,8 +971,86 @@ pub type ScriptInner = (u64, Seq<u8>);
 impl<'i> DeepView for Script<'i> {
     type V = ScriptSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ScriptSpec { l: self.l.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> Script<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<Script as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> ScriptSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, data) = input;
+        Self { l, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, data } = self;
+        (l, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ScriptSpec::from_structural);
+        reveal(ScriptSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ScriptSpec::from_structural);
+        reveal(ScriptSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, data } => (l, data),
+            },
+    {
+        reveal(ScriptSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ScriptForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ScriptReverse;
+
+impl SpecMap for ScriptForward {
+    type Input = ScriptInner;
+
+    type Output = ScriptSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ScriptSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ScriptReverse {
+    type Input = ScriptSpec;
+
+    type Output = ScriptInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -290,10 +1063,10 @@ pub struct Txin<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct TxinSpec {
-    pub previous_output: OutpointSpec,
-    pub script_sig: ScriptSigSpec,
-    pub sequence: u32,
+pub struct TxinSpec<T0 = OutpointSpec, T1 = ScriptSigSpec, T2 = u32> {
+    pub previous_output: T0,
+    pub script_sig: T1,
+    pub sequence: T2,
 }
 
 pub type TxinInner = (OutpointSpec, (ScriptSigSpec, u32));
@@ -301,12 +1074,94 @@ pub type TxinInner = (OutpointSpec, (ScriptSigSpec, u32));
 impl<'i> DeepView for Txin<'i> {
     type V = TxinSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxinSpec {
             previous_output: self.previous_output.deep_view(),
             script_sig: self.script_sig.deep_view(),
             sequence: self.sequence.deep_view(),
         }
+    }
+}
+
+impl<'i> Txin<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().previous_output == self.previous_output.deep_view(),
+            self.deep_view().script_sig == self.script_sig.deep_view(),
+            self.deep_view().sequence == self.sequence.deep_view(),
+    {
+        reveal(<Txin as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1, T2> TxinSpec<T0, T1, T2> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (previous_output, (script_sig, sequence)) = input;
+        Self { previous_output, script_sig, sequence }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { previous_output, script_sig, sequence } = self;
+        (previous_output, (script_sig, sequence))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxinSpec::from_structural);
+        reveal(TxinSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxinSpec::from_structural);
+        reveal(TxinSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { previous_output, script_sig, sequence } => (
+                    previous_output,
+                    (script_sig, sequence),
+                ),
+            },
+    {
+        reveal(TxinSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxinForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxinReverse;
+
+impl SpecMap for TxinForward {
+    type Input = TxinInner;
+
+    type Output = TxinSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxinSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxinReverse {
+    type Input = TxinSpec;
+
+    type Output = TxinInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -318,9 +1173,9 @@ pub struct Outpoint<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct OutpointSpec {
-    pub hash: Seq<u8>,
-    pub index: u32,
+pub struct OutpointSpec<T0 = Seq<u8>, T1 = u32> {
+    pub hash: T0,
+    pub index: T1,
 }
 
 pub type OutpointInner = (Seq<u8>, u32);
@@ -328,8 +1183,86 @@ pub type OutpointInner = (Seq<u8>, u32);
 impl<'i> DeepView for Outpoint<'i> {
     type V = OutpointSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         OutpointSpec { hash: self.hash.deep_view(), index: self.index.deep_view() }
+    }
+}
+
+impl<'i> Outpoint<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().hash == self.hash.deep_view(),
+            self.deep_view().index == self.index.deep_view(),
+    {
+        reveal(<Outpoint as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> OutpointSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (hash, index) = input;
+        Self { hash, index }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { hash, index } = self;
+        (hash, index)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(OutpointSpec::from_structural);
+        reveal(OutpointSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(OutpointSpec::from_structural);
+        reveal(OutpointSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { hash, index } => (hash, index),
+            },
+    {
+        reveal(OutpointSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OutpointForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct OutpointReverse;
+
+impl SpecMap for OutpointForward {
+    type Input = OutpointInner;
+
+    type Output = OutpointSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        OutpointSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for OutpointReverse {
+    type Input = OutpointSpec;
+
+    type Output = OutpointInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -341,9 +1274,9 @@ pub struct ScriptSig<'i> {
 }
 
 # [verifier::ext_equal]
-pub struct ScriptSigSpec {
-    pub l: u64,
-    pub data: Seq<u8>,
+pub struct ScriptSigSpec<T0 = u64, T1 = Seq<u8>> {
+    pub l: T0,
+    pub data: T1,
 }
 
 pub type ScriptSigInner = (u64, Seq<u8>);
@@ -351,8 +1284,86 @@ pub type ScriptSigInner = (u64, Seq<u8>);
 impl<'i> DeepView for ScriptSig<'i> {
     type V = ScriptSigSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ScriptSigSpec { l: self.l.deep_view(), data: self.data.deep_view() }
+    }
+}
+
+impl<'i> ScriptSig<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().l == self.l.deep_view(),
+            self.deep_view().data == self.data.deep_view(),
+    {
+        reveal(<ScriptSig as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> ScriptSigSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (l, data) = input;
+        Self { l, data }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { l, data } = self;
+        (l, data)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ScriptSigSpec::from_structural);
+        reveal(ScriptSigSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ScriptSigSpec::from_structural);
+        reveal(ScriptSigSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self { l, data } => (l, data),
+            },
+    {
+        reveal(ScriptSigSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ScriptSigForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct ScriptSigReverse;
+
+impl SpecMap for ScriptSigForward {
+    type Input = ScriptSigInner;
+
+    type Output = ScriptSigSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ScriptSigSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ScriptSigReverse {
+    type Input = ScriptSigSpec;
+
+    type Output = ScriptSigInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -364,9 +1375,9 @@ pub enum TxRem<'i> {
 }
 
 # [verifier::ext_equal]
-pub enum TxRemSpec {
-    Variant1(TxSegwitSpec),
-    Default(TxNonsegwitSpec),
+pub enum TxRemSpec<T0 = TxSegwitSpec, T1 = TxNonsegwitSpec> {
+    Variant1(T0),
+    Default(T1),
 }
 
 pub type TxRemInner = Sum<TxSegwitSpec, TxNonsegwitSpec>;
@@ -374,11 +1385,104 @@ pub type TxRemInner = Sum<TxSegwitSpec, TxNonsegwitSpec>;
 impl<'i> DeepView for TxRem<'i> {
     type V = TxRemSpec;
 
+    # [verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             TxRem::Variant1(v) => TxRemSpec::Variant1(v.deep_view()),
             TxRem::Default(v) => TxRemSpec::Default(v.deep_view()),
         }
+    }
+}
+
+impl<'i> TxRem<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view() == match self {
+                TxRem::Variant1(v) => TxRemSpec::Variant1(v.deep_view()),
+                TxRem::Default(v) => TxRemSpec::Default(v.deep_view()),
+            },
+    {
+        reveal(<TxRem as DeepView>::deep_view);
+    }
+}
+
+impl<T0, T1> TxRemSpec<T0, T1> {
+    # [verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    # [verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TxRemSpec::from_structural);
+        reveal(TxRemSpec::into_structural);
+        match self {
+            Self::Variant1(_) => {},
+            Self::Default(_) => {},
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TxRemSpec::from_structural);
+        reveal(TxRemSpec::into_structural);
+        match input {
+            L(_) => {},
+            R(_) => {},
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self) == match self {
+                Self::Variant1(value) => L(value),
+                Self::Default(value) => R(value),
+            },
+    {
+        reveal(TxRemSpec::into_structural);
+    }
+}
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxRemForward;
+
+# [derive (Clone, Copy)]
+# [doc (hidden)]
+pub struct TxRemReverse;
+
+impl SpecMap for TxRemForward {
+    type Input = TxRemInner;
+
+    type Output = TxRemSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TxRemSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TxRemReverse {
+    type Input = TxRemSpec;
+
+    type Output = TxRemInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
     }
 }
 
@@ -407,7 +1511,7 @@ pub type BlockFmtSpec = Named<
                 >,
             >,
         >,
-        FnSpecMapper<BlockInner, BlockSpec>,
+        BiMap<BlockForward, BlockReverse>,
     >,
 >;
 
@@ -439,48 +1543,7 @@ impl BlockFmt {
                         ),
                     ),
                 ),
-                mapper: (
-                    |parsed: BlockInner| -> BlockSpec
-                        {
-                            let (
-                                version,
-                                (
-                                    prev_block,
-                                    (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs))))),
-                                ),
-                            ) = parsed;
-                            BlockSpec {
-                                version,
-                                prev_block,
-                                merkle_root,
-                                timestamp,
-                                bits,
-                                nonce,
-                                tx_count,
-                                txs,
-                            }
-                        },
-                    |value: BlockSpec| -> BlockInner
-                        {
-                            let BlockSpec {
-                                version,
-                                prev_block,
-                                merkle_root,
-                                timestamp,
-                                bits,
-                                nonce,
-                                tx_count,
-                                txs,
-                            } = value;
-                            (
-                                version,
-                                (
-                                    prev_block,
-                                    (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs))))),
-                                ),
-                            )
-                        },
-                ),
+                mapper: BiMap(BlockForward, BlockReverse),
             },
         )
     }
@@ -491,10 +1554,7 @@ impl BlockFmt {
 pub struct TxFmt;
 
 pub type TxFmtSpec = Named<
-    Mapped<
-        Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> TxRemFmt>>,
-        FnSpecMapper<TxInner, TxSpec>,
-    >,
+    Mapped<Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> TxRemFmt>>, BiMap<TxForward, TxReverse>>,
 >;
 
 impl TxFmt {
@@ -507,18 +1567,7 @@ impl TxFmt {
                     U32Le,
                     Bind(VarInt::<true>, |txin_count: u64| TxRemFmt::spec(txin_count)),
                 ),
-                mapper: (
-                    |parsed: TxInner| -> TxSpec
-                        {
-                            let (version, (txin_count, rem)) = parsed;
-                            TxSpec { version, txin_count, rem }
-                        },
-                    |value: TxSpec| -> TxInner
-                        {
-                            let TxSpec { version, txin_count, rem } = value;
-                            (version, (txin_count, rem))
-                        },
-                ),
+                mapper: BiMap(TxForward, TxReverse),
             },
         )
     }
@@ -546,7 +1595,7 @@ pub type TxSegwitFmtSpec = Named<
                 >,
             >,
         >,
-        FnSpecMapper<TxSegwitInner, TxSegwitSpec>,
+        BiMap<TxSegwitForward, TxSegwitReverse>,
     >,
 >;
 
@@ -574,46 +1623,7 @@ impl TxSegwitFmt {
                             ),
                     ),
                 ),
-                mapper: (
-                    |parsed: TxSegwitInner| -> TxSegwitSpec
-                        {
-                            let (
-                                flag,
-                                (
-                                    txin_count,
-                                    (txins, (txout_count, (txouts, (witness, lock_time)))),
-                                ),
-                            ) = parsed;
-                            TxSegwitSpec {
-                                flag,
-                                txin_count,
-                                txins,
-                                txout_count,
-                                txouts,
-                                witness,
-                                lock_time,
-                            }
-                        },
-                    |value: TxSegwitSpec| -> TxSegwitInner
-                        {
-                            let TxSegwitSpec {
-                                flag,
-                                txin_count,
-                                txins,
-                                txout_count,
-                                txouts,
-                                witness,
-                                lock_time,
-                            } = value;
-                            (
-                                flag,
-                                (
-                                    txin_count,
-                                    (txins, (txout_count, (txouts, (witness, lock_time)))),
-                                ),
-                            )
-                        },
-                ),
+                mapper: BiMap(TxSegwitForward, TxSegwitReverse),
             },
         )
     }
@@ -626,7 +1636,7 @@ pub struct WitnessFmt;
 pub type WitnessFmtSpec = Named<
     Mapped<
         Bind<VarInt<true>, spec_fn(u64) -> RepeatN<WitnessComponentFmt, u64>>,
-        FnSpecMapper<WitnessInner, WitnessSpec>,
+        BiMap<WitnessForward, WitnessReverse>,
     >,
 >;
 
@@ -637,18 +1647,7 @@ impl WitnessFmt {
             "witness",
             Mapped {
                 inner: Bind(VarInt::<true>, |count: u64| RepeatN(count, WitnessComponentFmt)),
-                mapper: (
-                    |parsed: WitnessInner| -> WitnessSpec
-                        {
-                            let (count, data) = parsed;
-                            WitnessSpec { count, data }
-                        },
-                    |value: WitnessSpec| -> WitnessInner
-                        {
-                            let WitnessSpec { count, data } = value;
-                            (count, data)
-                        },
-                ),
+                mapper: BiMap(WitnessForward, WitnessReverse),
             },
         )
     }
@@ -661,7 +1660,7 @@ pub struct WitnessComponentFmt;
 pub type WitnessComponentFmtSpec = Named<
     Mapped<
         Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
-        FnSpecMapper<WitnessComponentInner, WitnessComponentSpec>,
+        BiMap<WitnessComponentForward, WitnessComponentReverse>,
     >,
 >;
 
@@ -672,18 +1671,7 @@ impl WitnessComponentFmt {
             "witness_component",
             Mapped {
                 inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
-                mapper: (
-                    |parsed: WitnessComponentInner| -> WitnessComponentSpec
-                        {
-                            let (l, data) = parsed;
-                            WitnessComponentSpec { l, data }
-                        },
-                    |value: WitnessComponentSpec| -> WitnessComponentInner
-                        {
-                            let WitnessComponentSpec { l, data } = value;
-                            (l, data)
-                        },
-                ),
+                mapper: BiMap(WitnessComponentForward, WitnessComponentReverse),
             },
         )
     }
@@ -716,7 +1704,7 @@ pub type TxNonsegwitFmtSpec = Named<
             RepeatN<TxinFmt, u64>,
             Bind<VarInt<true>, spec_fn(u64) -> Pair<RepeatN<TxoutFmt, u64>, LockTimeFmt>>,
         >,
-        FnSpecMapper<TxNonsegwitInner, TxNonsegwitSpec>,
+        BiMap<TxNonsegwitForward, TxNonsegwitReverse>,
     >,
 >;
 
@@ -733,18 +1721,7 @@ impl TxNonsegwitFmt {
                         |txout_count: u64| Pair(RepeatN(txout_count, TxoutFmt), LockTimeFmt),
                     ),
                 ),
-                mapper: (
-                    |parsed: TxNonsegwitInner| -> TxNonsegwitSpec
-                        {
-                            let (txins, (txout_count, (txouts, lock_time))) = parsed;
-                            TxNonsegwitSpec { txins, txout_count, txouts, lock_time }
-                        },
-                    |value: TxNonsegwitSpec| -> TxNonsegwitInner
-                        {
-                            let TxNonsegwitSpec { txins, txout_count, txouts, lock_time } = value;
-                            (txins, (txout_count, (txouts, lock_time)))
-                        },
-                ),
+                mapper: BiMap(TxNonsegwitForward, TxNonsegwitReverse),
             },
         )
     }
@@ -757,7 +1734,7 @@ pub struct LockTimeFmt;
 pub type LockTimeFmtSpec = Named<
     Mapped<
         Choice<Refined<U32Le, PredFnSpec<u32>>, Refined<U32Le, PredFnSpec<u32>>>,
-        FnSpecMapper<LockTimeInner, LockTimeSpec>,
+        BiMap<LockTimeForward, LockTimeReverse>,
     >,
 >;
 
@@ -771,22 +1748,7 @@ impl LockTimeFmt {
                     Refined(U32Le, |x: u32| x >= 0 && x <= 499999999),
                     Refined(U32Le, |x: u32| x >= 500000000),
                 ),
-                mapper: (
-                    |parsed: LockTimeInner| -> LockTimeSpec
-                        {
-                            match parsed {
-                                L(v) => LockTimeSpec::BlockNo(v),
-                                R(v) => LockTimeSpec::Timestamp(v),
-                            }
-                        },
-                    |value: LockTimeSpec| -> LockTimeInner
-                        {
-                            match value {
-                                LockTimeSpec::BlockNo(v) => L(v),
-                                LockTimeSpec::Timestamp(v) => R(v),
-                            }
-                        },
-                ),
+                mapper: BiMap(LockTimeForward, LockTimeReverse),
             },
         )
     }
@@ -796,28 +1758,14 @@ impl LockTimeFmt {
 # [derive (Clone, Copy)]
 pub struct TxoutFmt;
 
-pub type TxoutFmtSpec = Named<Mapped<Pair<U64Le, ScriptFmt>, FnSpecMapper<TxoutInner, TxoutSpec>>>;
+pub type TxoutFmtSpec = Named<Mapped<Pair<U64Le, ScriptFmt>, BiMap<TxoutForward, TxoutReverse>>>;
 
 impl TxoutFmt {
     # [doc = "specification constructor for `txout`."]
     pub open spec fn spec_inner() -> TxoutFmtSpec {
         Named(
             "txout",
-            Mapped {
-                inner: Pair(U64Le, ScriptFmt),
-                mapper: (
-                    |parsed: TxoutInner| -> TxoutSpec
-                        {
-                            let (value, script_pubkey) = parsed;
-                            TxoutSpec { value, script_pubkey }
-                        },
-                    |value: TxoutSpec| -> TxoutInner
-                        {
-                            let TxoutSpec { value, script_pubkey } = value;
-                            (value, script_pubkey)
-                        },
-                ),
-            },
+            Mapped { inner: Pair(U64Le, ScriptFmt), mapper: BiMap(TxoutForward, TxoutReverse) },
         )
     }
 }
@@ -827,7 +1775,7 @@ impl TxoutFmt {
 pub struct ScriptFmt;
 
 pub type ScriptFmtSpec = Named<
-    Mapped<Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>, FnSpecMapper<ScriptInner, ScriptSpec>>,
+    Mapped<Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>, BiMap<ScriptForward, ScriptReverse>>,
 >;
 
 impl ScriptFmt {
@@ -837,18 +1785,7 @@ impl ScriptFmt {
             "script",
             Mapped {
                 inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
-                mapper: (
-                    |parsed: ScriptInner| -> ScriptSpec
-                        {
-                            let (l, data) = parsed;
-                            ScriptSpec { l, data }
-                        },
-                    |value: ScriptSpec| -> ScriptInner
-                        {
-                            let ScriptSpec { l, data } = value;
-                            (l, data)
-                        },
-                ),
+                mapper: BiMap(ScriptForward, ScriptReverse),
             },
         )
     }
@@ -859,7 +1796,7 @@ impl ScriptFmt {
 pub struct TxinFmt;
 
 pub type TxinFmtSpec = Named<
-    Mapped<Pair<OutpointFmt, Pair<ScriptSigFmt, U32Le>>, FnSpecMapper<TxinInner, TxinSpec>>,
+    Mapped<Pair<OutpointFmt, Pair<ScriptSigFmt, U32Le>>, BiMap<TxinForward, TxinReverse>>,
 >;
 
 impl TxinFmt {
@@ -869,18 +1806,7 @@ impl TxinFmt {
             "txin",
             Mapped {
                 inner: Pair(OutpointFmt, Pair(ScriptSigFmt, U32Le)),
-                mapper: (
-                    |parsed: TxinInner| -> TxinSpec
-                        {
-                            let (previous_output, (script_sig, sequence)) = parsed;
-                            TxinSpec { previous_output, script_sig, sequence }
-                        },
-                    |value: TxinSpec| -> TxinInner
-                        {
-                            let TxinSpec { previous_output, script_sig, sequence } = value;
-                            (previous_output, (script_sig, sequence))
-                        },
-                ),
+                mapper: BiMap(TxinForward, TxinReverse),
             },
         )
     }
@@ -891,7 +1817,7 @@ impl TxinFmt {
 pub struct OutpointFmt;
 
 pub type OutpointFmtSpec = Named<
-    Mapped<Pair<Fixed<32>, U32Le>, FnSpecMapper<OutpointInner, OutpointSpec>>,
+    Mapped<Pair<Fixed<32>, U32Le>, BiMap<OutpointForward, OutpointReverse>>,
 >;
 
 impl OutpointFmt {
@@ -901,18 +1827,7 @@ impl OutpointFmt {
             "outpoint",
             Mapped {
                 inner: Pair(Fixed::<32>, U32Le),
-                mapper: (
-                    |parsed: OutpointInner| -> OutpointSpec
-                        {
-                            let (hash, index) = parsed;
-                            OutpointSpec { hash, index }
-                        },
-                    |value: OutpointSpec| -> OutpointInner
-                        {
-                            let OutpointSpec { hash, index } = value;
-                            (hash, index)
-                        },
-                ),
+                mapper: BiMap(OutpointForward, OutpointReverse),
             },
         )
     }
@@ -925,7 +1840,7 @@ pub struct ScriptSigFmt;
 pub type ScriptSigFmtSpec = Named<
     Mapped<
         Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
-        FnSpecMapper<ScriptSigInner, ScriptSigSpec>,
+        BiMap<ScriptSigForward, ScriptSigReverse>,
     >,
 >;
 
@@ -936,18 +1851,7 @@ impl ScriptSigFmt {
             "script_sig",
             Mapped {
                 inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
-                mapper: (
-                    |parsed: ScriptSigInner| -> ScriptSigSpec
-                        {
-                            let (l, data) = parsed;
-                            ScriptSigSpec { l, data }
-                        },
-                    |value: ScriptSigSpec| -> ScriptSigInner
-                        {
-                            let ScriptSigSpec { l, data } = value;
-                            (l, data)
-                        },
-                ),
+                mapper: BiMap(ScriptSigForward, ScriptSigReverse),
             },
         )
     }
@@ -975,7 +1879,7 @@ impl TxRemFmt {
 }
 
 pub type TxRemFmtSpec = Named<
-    Mapped<Sum<TxSegwitFmt, TxNonsegwitFmt>, FnSpecMapper<TxRemInner, TxRemSpec>>,
+    Mapped<Sum<TxSegwitFmt, TxNonsegwitFmt>, BiMap<TxRemForward, TxRemReverse>>,
 >;
 
 impl TxRemFmt {
@@ -988,22 +1892,7 @@ impl TxRemFmt {
                     0 => L(TxSegwitFmt),
                     _ => R(TxNonsegwitFmt::spec(txin_count)),
                 },
-                mapper: (
-                    |parsed: TxRemInner| -> TxRemSpec
-                        {
-                            match parsed {
-                                L(v) => TxRemSpec::Variant1(v),
-                                R(v) => TxRemSpec::Default(v),
-                            }
-                        },
-                    |value: TxRemSpec| -> TxRemInner
-                        {
-                            match value {
-                                TxRemSpec::Variant1(v) => L(v),
-                                TxRemSpec::Default(v) => R(v),
-                            }
-                        },
-                ),
+                mapper: BiMap(TxRemForward, TxRemReverse),
             },
         )
     }
@@ -1595,7 +2484,35 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+    broadcast use {
+        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        BlockSpec::lemma_from_into,
+        BlockSpec::lemma_into_from,
+        TxSpec::lemma_from_into,
+        TxSpec::lemma_into_from,
+        TxSegwitSpec::lemma_from_into,
+        TxSegwitSpec::lemma_into_from,
+        WitnessSpec::lemma_from_into,
+        WitnessSpec::lemma_into_from,
+        WitnessComponentSpec::lemma_from_into,
+        WitnessComponentSpec::lemma_into_from,
+        TxNonsegwitSpec::lemma_from_into,
+        TxNonsegwitSpec::lemma_into_from,
+        LockTimeSpec::lemma_from_into,
+        LockTimeSpec::lemma_into_from,
+        TxoutSpec::lemma_from_into,
+        TxoutSpec::lemma_into_from,
+        ScriptSpec::lemma_from_into,
+        ScriptSpec::lemma_into_from,
+        TxinSpec::lemma_from_into,
+        TxinSpec::lemma_into_from,
+        OutpointSpec::lemma_from_into,
+        OutpointSpec::lemma_into_from,
+        ScriptSigSpec::lemma_from_into,
+        ScriptSigSpec::lemma_into_from,
+        TxRemSpec::lemma_from_into,
+        TxRemSpec::lemma_into_from,
+    };
 
     impl SafeParser for BlockFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -1622,6 +2539,10 @@ mod derived_proofs {
             reveal(<BlockFmt as SpecParser>::spec_parse);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: BlockInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1630,6 +2551,10 @@ mod derived_proofs {
             reveal(<BlockFmt as SpecParser>::spec_parse);
             reveal(<BlockFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: BlockInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1669,6 +2594,10 @@ mod derived_proofs {
             reveal(<BlockFmt as Consistency>::consistent);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: BlockSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                BlockSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1678,6 +2607,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<BlockFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: BlockInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1728,6 +2661,10 @@ mod derived_proofs {
             reveal(<TxFmt as SpecParser>::spec_parse);
             reveal(<TxFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TxInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1736,6 +2673,10 @@ mod derived_proofs {
             reveal(<TxFmt as SpecParser>::spec_parse);
             reveal(<TxFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TxInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1775,6 +2716,10 @@ mod derived_proofs {
             reveal(<TxFmt as Consistency>::consistent);
             reveal(<TxFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TxSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1784,6 +2729,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TxInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1834,6 +2783,10 @@ mod derived_proofs {
             reveal(<TxSegwitFmt as SpecParser>::spec_parse);
             reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TxSegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1842,6 +2795,10 @@ mod derived_proofs {
             reveal(<TxSegwitFmt as SpecParser>::spec_parse);
             reveal(<TxSegwitFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TxSegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1881,6 +2838,10 @@ mod derived_proofs {
             reveal(<TxSegwitFmt as Consistency>::consistent);
             reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TxSegwitSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxSegwitSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1890,6 +2851,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxSegwitFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TxSegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxSegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -1940,6 +2905,10 @@ mod derived_proofs {
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -1948,6 +2917,10 @@ mod derived_proofs {
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             reveal(<WitnessFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -1987,6 +2960,10 @@ mod derived_proofs {
             reveal(<WitnessFmt as Consistency>::consistent);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: WitnessSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                WitnessSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -1996,6 +2973,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2046,6 +3027,10 @@ mod derived_proofs {
             reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
             reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessComponentInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessComponentSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2054,6 +3039,10 @@ mod derived_proofs {
             reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
             reveal(<WitnessComponentFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessComponentInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessComponentSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2093,6 +3082,10 @@ mod derived_proofs {
             reveal(<WitnessComponentFmt as Consistency>::consistent);
             reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: WitnessComponentSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                WitnessComponentSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2102,6 +3095,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: WitnessComponentInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessComponentSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2152,6 +3149,10 @@ mod derived_proofs {
             reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
             reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxNonsegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxNonsegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2160,6 +3161,10 @@ mod derived_proofs {
             reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
             reveal(<TxNonsegwitFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxNonsegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxNonsegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2199,6 +3204,10 @@ mod derived_proofs {
             reveal(<TxNonsegwitFmt as Consistency>::consistent);
             reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|output: TxNonsegwitSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxNonsegwitSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2208,6 +3217,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxNonsegwitInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxNonsegwitSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2258,6 +3271,10 @@ mod derived_proofs {
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: LockTimeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                LockTimeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2266,6 +3283,10 @@ mod derived_proofs {
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTimeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: LockTimeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                LockTimeSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2305,6 +3326,10 @@ mod derived_proofs {
             reveal(<LockTimeFmt as Consistency>::consistent);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: LockTimeSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                LockTimeSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2314,6 +3339,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: LockTimeInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                LockTimeSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2364,6 +3393,10 @@ mod derived_proofs {
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TxoutInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxoutSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2372,6 +3405,10 @@ mod derived_proofs {
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             reveal(<TxoutFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TxoutInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxoutSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2411,6 +3448,10 @@ mod derived_proofs {
             reveal(<TxoutFmt as Consistency>::consistent);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TxoutSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxoutSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2420,6 +3461,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TxoutInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxoutSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2470,6 +3515,10 @@ mod derived_proofs {
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2478,6 +3527,10 @@ mod derived_proofs {
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             reveal(<ScriptFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2517,6 +3570,10 @@ mod derived_proofs {
             reveal(<ScriptFmt as Consistency>::consistent);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ScriptSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ScriptSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2526,6 +3583,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2576,6 +3637,10 @@ mod derived_proofs {
             reveal(<TxinFmt as SpecParser>::spec_parse);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: TxinInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxinSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2584,6 +3649,10 @@ mod derived_proofs {
             reveal(<TxinFmt as SpecParser>::spec_parse);
             reveal(<TxinFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: TxinInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxinSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2623,6 +3692,10 @@ mod derived_proofs {
             reveal(<TxinFmt as Consistency>::consistent);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: TxinSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxinSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2632,6 +3705,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxinFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: TxinInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxinSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2682,6 +3759,10 @@ mod derived_proofs {
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: OutpointInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OutpointSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2690,6 +3771,10 @@ mod derived_proofs {
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             reveal(<OutpointFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: OutpointInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OutpointSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2729,6 +3814,10 @@ mod derived_proofs {
             reveal(<OutpointFmt as Consistency>::consistent);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: OutpointSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                OutpointSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2738,6 +3827,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: OutpointInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                OutpointSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2788,6 +3881,10 @@ mod derived_proofs {
             reveal(<ScriptSigFmt as SpecParser>::spec_parse);
             reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptSigInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSigSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2796,6 +3893,10 @@ mod derived_proofs {
             reveal(<ScriptSigFmt as SpecParser>::spec_parse);
             reveal(<ScriptSigFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptSigInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSigSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2835,6 +3936,10 @@ mod derived_proofs {
             reveal(<ScriptSigFmt as Consistency>::consistent);
             reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
+            assert forall|output: ScriptSigSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                ScriptSigSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2844,6 +3949,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<ScriptSigFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
+            assert forall|input: ScriptSigInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                ScriptSigSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2894,6 +4003,10 @@ mod derived_proofs {
             reveal(<TxRemFmt as SpecParser>::spec_parse);
             reveal(<TxRemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxRemInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxRemSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
@@ -2902,6 +4015,10 @@ mod derived_proofs {
             reveal(<TxRemFmt as SpecParser>::spec_parse);
             reveal(<TxRemFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxRemInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxRemSpec::lemma_into_from(input);
+            }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
@@ -2941,6 +4058,10 @@ mod derived_proofs {
             reveal(<TxRemFmt as Consistency>::consistent);
             reveal(<TxRemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|output: TxRemSpec| # [trigger]
+                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxRemSpec::lemma_from_into(output);
+            }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -2950,6 +4071,10 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<TxRemFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.txin_count_spec());
+            assert forall|input: TxRemInner| # [trigger]
+                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxRemSpec::lemma_into_from(input);
+            }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
@@ -2991,6 +4116,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<BlockFmt as SpecParser>::spec_parse);
+            reveal(<Block as DeepView>::deep_view);
+            reveal(BlockSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3032,6 +4159,8 @@ mod exec_impls {
 
             reveal(<BlockFmt as SpecSerializer>::spec_serialize);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
+            reveal(<Block as DeepView>::deep_view);
+            reveal(BlockSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Block { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } =
@@ -3052,6 +4181,8 @@ mod exec_impls {
     impl<'i> Prepare<Block<'i>> for BlockFmt {
         fn prepare(&self, v: &Block<'i>) -> Result<usize, PreSerializeError> {
             reveal(<BlockFmt as SpecByteLen>::byte_len);
+            reveal(<Block as DeepView>::deep_view);
+            reveal(BlockSpec::into_structural);
             let Block { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } =
                 v;
             let l1 = (U32Le).prepare(version)?;
@@ -3083,6 +4214,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TxFmt as SpecParser>::spec_parse);
+            reveal(<Tx as DeepView>::deep_view);
+            reveal(TxSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3105,6 +4238,8 @@ mod exec_impls {
 
             reveal(<TxFmt as SpecSerializer>::spec_serialize);
             reveal(<TxFmt as SpecByteLen>::byte_len);
+            reveal(<Tx as DeepView>::deep_view);
+            reveal(TxSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Tx { version, txin_count, rem } = v;
@@ -3119,6 +4254,8 @@ mod exec_impls {
     impl<'i> Prepare<Tx<'i>> for TxFmt {
         fn prepare(&self, v: &Tx<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxFmt as SpecByteLen>::byte_len);
+            reveal(<Tx as DeepView>::deep_view);
+            reveal(TxSpec::into_structural);
             let Tx { version, txin_count, rem } = v;
             let l1 = (U32Le).prepare(version)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
@@ -3138,6 +4275,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TxSegwitFmt as SpecParser>::spec_parse);
+            reveal(<TxSegwit as DeepView>::deep_view);
+            reveal(TxSegwitSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3176,6 +4315,8 @@ mod exec_impls {
 
             reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
             reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxSegwit as DeepView>::deep_view);
+            reveal(TxSegwitSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
@@ -3194,6 +4335,8 @@ mod exec_impls {
     impl<'i> Prepare<TxSegwit<'i>> for TxSegwitFmt {
         fn prepare(&self, v: &TxSegwit<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxSegwit as DeepView>::deep_view);
+            reveal(TxSegwitSpec::into_structural);
             let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
             let l1 = (Const(U8, 1)).prepare(flag)?;
             let l2 = (VarInt::<true>).prepare(txin_count)?;
@@ -3221,6 +4364,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<WitnessFmt as SpecParser>::spec_parse);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3241,6 +4386,8 @@ mod exec_impls {
 
             reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Witness { count, data } = v;
@@ -3254,6 +4401,8 @@ mod exec_impls {
     impl<'i> Prepare<Witness<'i>> for WitnessFmt {
         fn prepare(&self, v: &Witness<'i>) -> Result<usize, PreSerializeError> {
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::into_structural);
             let Witness { count, data } = v;
             let l1 = (VarInt::<true>).prepare(count)?;
             let l2 = (RepeatN(*count, WitnessComponentFmt)).prepare(data)?;
@@ -3270,6 +4419,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
+            reveal(<WitnessComponent as DeepView>::deep_view);
+            reveal(WitnessComponentSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3290,6 +4441,8 @@ mod exec_impls {
 
             reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
             reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
+            reveal(<WitnessComponent as DeepView>::deep_view);
+            reveal(WitnessComponentSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let WitnessComponent { l, data } = v;
@@ -3303,6 +4456,8 @@ mod exec_impls {
     impl<'i> Prepare<WitnessComponent<'i>> for WitnessComponentFmt {
         fn prepare(&self, v: &WitnessComponent<'i>) -> Result<usize, PreSerializeError> {
             reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
+            reveal(<WitnessComponent as DeepView>::deep_view);
+            reveal(WitnessComponentSpec::into_structural);
             let WitnessComponent { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(*l)).prepare(data)?;
@@ -3319,6 +4474,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
+            reveal(<TxNonsegwit as DeepView>::deep_view);
+            reveal(TxNonsegwitSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3347,6 +4504,8 @@ mod exec_impls {
 
             reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
             reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxNonsegwit as DeepView>::deep_view);
+            reveal(TxNonsegwitSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3366,6 +4525,8 @@ mod exec_impls {
     impl<'i> Prepare<TxNonsegwit<'i>> for TxNonsegwitFmt {
         fn prepare(&self, v: &TxNonsegwit<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxNonsegwit as DeepView>::deep_view);
+            reveal(TxNonsegwitSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3389,6 +4550,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
+            reveal(<LockTime as DeepView>::deep_view);
+            reveal(LockTimeSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3408,6 +4571,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &LockTime, obuf: &mut Output) {
             reveal(<LockTimeFmt as SpecSerializer>::spec_serialize);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
+            reveal(<LockTime as DeepView>::deep_view);
+            reveal(LockTimeSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             match v {
@@ -3426,6 +4591,8 @@ mod exec_impls {
     impl<'i> Prepare<LockTime> for LockTimeFmt {
         fn prepare(&self, v: &LockTime) -> Result<usize, PreSerializeError> {
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
+            reveal(<LockTime as DeepView>::deep_view);
+            reveal(LockTimeSpec::into_structural);
             match v {
                 LockTime::BlockNo(v) => {
                     if !(*v >= 0 && *v <= 499999999) {
@@ -3453,6 +4620,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TxoutFmt as SpecParser>::spec_parse);
+            reveal(<Txout as DeepView>::deep_view);
+            reveal(TxoutSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3473,6 +4642,8 @@ mod exec_impls {
 
             reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
+            reveal(<Txout as DeepView>::deep_view);
+            reveal(TxoutSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Txout { value, script_pubkey } = v;
@@ -3486,6 +4657,8 @@ mod exec_impls {
     impl<'i> Prepare<Txout<'i>> for TxoutFmt {
         fn prepare(&self, v: &Txout<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
+            reveal(<Txout as DeepView>::deep_view);
+            reveal(TxoutSpec::into_structural);
             let Txout { value, script_pubkey } = v;
             let l1 = (U64Le).prepare(value)?;
             let l2 = (Named("script", ScriptFmt)).prepare(script_pubkey)?;
@@ -3502,6 +4675,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ScriptFmt as SpecParser>::spec_parse);
+            reveal(<Script as DeepView>::deep_view);
+            reveal(ScriptSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3522,6 +4697,8 @@ mod exec_impls {
 
             reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            reveal(<Script as DeepView>::deep_view);
+            reveal(ScriptSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Script { l, data } = v;
@@ -3535,6 +4712,8 @@ mod exec_impls {
     impl<'i> Prepare<Script<'i>> for ScriptFmt {
         fn prepare(&self, v: &Script<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            reveal(<Script as DeepView>::deep_view);
+            reveal(ScriptSpec::into_structural);
             let Script { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(*l)).prepare(data)?;
@@ -3551,6 +4730,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TxinFmt as SpecParser>::spec_parse);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3573,6 +4754,8 @@ mod exec_impls {
 
             reveal(<TxinFmt as SpecSerializer>::spec_serialize);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Txin { previous_output, script_sig, sequence } = v;
@@ -3587,6 +4770,8 @@ mod exec_impls {
     impl<'i> Prepare<Txin<'i>> for TxinFmt {
         fn prepare(&self, v: &Txin<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxinFmt as SpecByteLen>::byte_len);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::into_structural);
             let Txin { previous_output, script_sig, sequence } = v;
             let l1 = (Named("outpoint", OutpointFmt)).prepare(previous_output)?;
             let l2 = (Named("script_sig", ScriptSigFmt)).prepare(script_sig)?;
@@ -3606,6 +4791,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<OutpointFmt as SpecParser>::spec_parse);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3626,6 +4813,8 @@ mod exec_impls {
 
             reveal(<OutpointFmt as SpecSerializer>::spec_serialize);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let Outpoint { hash, index } = v;
@@ -3639,6 +4828,8 @@ mod exec_impls {
     impl<'i> Prepare<Outpoint<'i>> for OutpointFmt {
         fn prepare(&self, v: &Outpoint<'i>) -> Result<usize, PreSerializeError> {
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::into_structural);
             let Outpoint { hash, index } = v;
             let l1 = (Fixed::<32>).prepare(hash)?;
             let l2 = (U32Le).prepare(index)?;
@@ -3655,6 +4846,8 @@ mod exec_impls {
             broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ScriptSigFmt as SpecParser>::spec_parse);
+            reveal(<ScriptSig as DeepView>::deep_view);
+            reveal(ScriptSigSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3675,6 +4868,8 @@ mod exec_impls {
 
             reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
             reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<ScriptSig as DeepView>::deep_view);
+            reveal(ScriptSigSpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let ScriptSig { l, data } = v;
@@ -3688,6 +4883,8 @@ mod exec_impls {
     impl<'i> Prepare<ScriptSig<'i>> for ScriptSigFmt {
         fn prepare(&self, v: &ScriptSig<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<ScriptSig as DeepView>::deep_view);
+            reveal(ScriptSigSpec::into_structural);
             let ScriptSig { l, data } = v;
             let l1 = (VarInt::<true>).prepare(l)?;
             let l2 = (Varied(*l)).prepare(data)?;
@@ -3701,6 +4898,8 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<TxRemFmt as SpecParser>::spec_parse);
+            reveal(<TxRem as DeepView>::deep_view);
+            reveal(TxRemSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3730,6 +4929,8 @@ mod exec_impls {
         fn serialize_into(&self, v: &TxRem<'i>, obuf: &mut Output) {
             reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
             reveal(<TxRemFmt as SpecByteLen>::byte_len);
+            reveal(<TxRem as DeepView>::deep_view);
+            reveal(TxRemSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
@@ -3753,6 +4954,8 @@ mod exec_impls {
     impl<'i> Prepare<TxRem<'i>> for TxRemFmt {
         fn prepare(&self, v: &TxRem<'i>) -> Result<usize, PreSerializeError> {
             reveal(<TxRemFmt as SpecByteLen>::byte_len);
+            reveal(<TxRem as DeepView>::deep_view);
+            reveal(TxRemSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
