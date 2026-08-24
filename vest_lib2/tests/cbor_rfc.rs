@@ -1,4 +1,4 @@
-//! RFC 8949 conformance tests for [`vest_lib2::cbor`].
+//! RFC 8949 conformance tests for [`vest_lib2::cbor`], assisted by Claude Opus 5.
 //!
 //! Vectors are taken verbatim from RFC 8949 Appendix A (encoded data item
 //! examples), Appendix F.1 (data items that are *not* well-formed), and the
