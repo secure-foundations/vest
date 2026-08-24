@@ -6,7 +6,9 @@
 
 use vest_lib2::asn1::*;
 use vest_lib2::asn1::der_ord::{DerOrd, DerState};
-use vest_lib2::asn1::disjoint::HasAsn1Start;
+#[cfg(verus_only)]
+use vest_lib2::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib2::asn1::tag::tag_num_from_uint;
 use vest_lib2::asn1::modifiers::{implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, OPTIONAL, REQUIRED};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib2::combinators::*;
@@ -26,13 +28,10 @@ verus! {
 pub type Version = i8;
 pub type VersionSpec = i8;
 
-pub type VersionDer = i8;
-pub type VersionDerSpec = i8;
-
 /// Value type for ASN.1 `Shared`.
-pub struct Shared {
+pub struct Shared<'a> {
     pub version: Version,
-    pub payload: Vec<u8>,
+    pub payload: &'a [u8],
 }
 
 #[verifier::ext_equal]
@@ -41,7 +40,7 @@ pub struct SharedSpec<T0 = VersionSpec, T1 = Seq<u8>> {
     pub payload: T1,
 }
 
-impl DeepView for Shared {
+impl<'a> DeepView for Shared<'a> {
     type V = SharedSpec;
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
@@ -52,31 +51,8 @@ impl DeepView for Shared {
     }
 }
 
-/// Value type for ASN.1 `Shared-der`.
-pub struct SharedDer<'a> {
-    pub version: VersionDer,
-    pub payload: &'a [u8],
-}
-
-#[verifier::ext_equal]
-pub struct SharedDerSpec<T0 = VersionDerSpec, T1 = Seq<u8>> {
-    pub version: T0,
-    pub payload: T1,
-}
-
-impl<'a> DeepView for SharedDer<'a> {
-    type V = SharedDerSpec;
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        SharedDerSpec {
-            version: self.version.deep_view(),
-            payload: self.payload.deep_view(),
-        }
-    }
-}
-
-pub type Canonical<'a> = Vec<SharedDer<'a>>;
-pub type CanonicalSpec = Seq<SharedDerSpec>;
+pub type Canonical<'a> = Vec<Shared<'a>>;
+pub type CanonicalSpec = Seq<SharedSpec>;
 
 /// Value type for ASN.1 `Ordered`.
 pub struct Ordered<'a> {
@@ -103,7 +79,7 @@ impl<'a> DeepView for Ordered<'a> {
 
 /// Value type for ASN.1 `Outer`.
 pub struct Outer<'a> {
-    pub shared: Shared,
+    pub shared: Shared<'a>,
     pub canonical: Canonical<'a>,
     pub ordered: Ordered<'a>,
     pub trailing: Option<vest_lib2::asn1::AnyOwned>,
@@ -187,9 +163,9 @@ impl SpecMap for SharedReverse {
     }
 }
 
-impl Map<(Version, (Vec<u8>, ()))> for SharedForward {
-    type O = Shared;
-    fn map(&self, input: (Version, (Vec<u8>, ()))) -> (value: Self::O) {
+impl<'a> Map<(Version, (&'a [u8], ()))> for SharedForward {
+    type O = Shared<'a>;
+    fn map(&self, input: (Version, (&'a [u8], ()))) -> (value: Self::O) {
         proof {
             reveal(<Shared as DeepView>::deep_view);
             reveal(SharedSpec::from_structural);
@@ -202,91 +178,18 @@ impl Map<(Version, (Vec<u8>, ()))> for SharedForward {
     }
 }
 
-impl<'x> Map<&'x Shared> for SharedReverse {
-    type O = (Version, (&'x Vec<u8>, ()));
-    fn map(&self, value: &'x Shared) -> (output: Self::O) {
+impl<'a, 'x> Map<&'x Shared<'a>> for SharedReverse {
+    type O = (Version, (&'x &'a [u8], ()));
+    fn map(&self, value: &'x Shared<'a>) -> (output: Self::O) {
         proof {
             reveal(<Shared as DeepView>::deep_view);
             reveal(SharedSpec::into_structural);
         }
-        (value.version, (&value.payload, ()))
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct SharedDerForward;
-#[derive(Clone, Copy)]
-pub struct SharedDerReverse;
-
-impl<T0, T1> SharedDerSpec<T0, T1> {
-    #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
-        let (version, (payload, _end)) = input;
-        Self {
-            version,
-            payload,
-        }
-    }
-
-    #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
-        (self.version, (self.payload, ()))
-    }
-
-    pub proof fn lemma_from_into(self)
-        ensures Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(SharedDerSpec::from_structural);
-        reveal(SharedDerSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_from(input: (T0, (T1, ())))
-        ensures Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(SharedDerSpec::from_structural);
-        reveal(SharedDerSpec::into_structural);
-    }
-}
-
-impl SpecMap for SharedDerForward {
-    type Input = (VersionDerSpec, (Seq<u8>, ()));
-    type Output = SharedDerSpec;
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        SharedDerSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for SharedDerReverse {
-    type Input = SharedDerSpec;
-    type Output = (VersionDerSpec, (Seq<u8>, ()));
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-impl<'a> Map<(VersionDer, (&'a [u8], ()))> for SharedDerForward {
-    type O = SharedDer<'a>;
-    fn map(&self, input: (VersionDer, (&'a [u8], ()))) -> (value: Self::O) {
+        let result = (value.version, (&value.payload, ()));
         proof {
-            reveal(<SharedDer as DeepView>::deep_view);
-            reveal(SharedDerSpec::from_structural);
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
-        let (version, (payload, _end)) = input;
-        SharedDer {
-            version,
-            payload,
-        }
-    }
-}
-
-impl<'a, 'x> Map<&'x SharedDer<'a>> for SharedDerReverse {
-    type O = (VersionDer, (&'x &'a [u8], ()));
-    fn map(&self, value: &'x SharedDer<'a>) -> (output: Self::O) {
-        proof {
-            reveal(<SharedDer as DeepView>::deep_view);
-            reveal(SharedDerSpec::into_structural);
-        }
-        (value.version, (&value.payload, ()))
+        result
     }
 }
 
@@ -363,7 +266,11 @@ impl<'a, 'x> Map<&'x Ordered<'a>> for OrderedReverse {
             reveal(<Ordered as DeepView>::deep_view);
             reveal(OrderedSpec::into_structural);
         }
-        (&value.first, (value.second.as_ref(), ()))
+        let result = (&value.first, (value.second.as_ref(), ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -420,9 +327,9 @@ impl SpecMap for OuterReverse {
     }
 }
 
-impl<'a> Map<(Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))> for OuterForward {
+impl<'a> Map<(Shared<'a>, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))> for OuterForward {
     type O = Outer<'a>;
-    fn map(&self, input: (Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))) -> (value: Self::O) {
+    fn map(&self, input: (Shared<'a>, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::AnyOwned>, ()))))) -> (value: Self::O) {
         proof {
             reveal(<Outer as DeepView>::deep_view);
             reveal(OuterSpec::from_structural);
@@ -438,18 +345,22 @@ impl<'a> Map<(Shared, (Canonical<'a>, (Ordered<'a>, (Option<vest_lib2::asn1::Any
 }
 
 impl<'a, 'x> Map<&'x Outer<'a>> for OuterReverse {
-    type O = (&'x Shared, (&'x Canonical<'a>, (&'x Ordered<'a>, (Option<&'x vest_lib2::asn1::AnyOwned>, ()))));
+    type O = (&'x Shared<'a>, (&'x Canonical<'a>, (&'x Ordered<'a>, (Option<&'x vest_lib2::asn1::AnyOwned>, ()))));
     fn map(&self, value: &'x Outer<'a>) -> (output: Self::O) {
         proof {
             reveal(<Outer as DeepView>::deep_view);
             reveal(OuterSpec::into_structural);
         }
-        (&value.shared, (&value.canonical, (&value.ordered, (value.trailing.as_ref(), ()))))
+        let result = (&value.shared, (&value.canonical, (&value.ordered, (value.trailing.as_ref(), ()))));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
-/// BER format for ASN.1 `Version`.
-type VERSION__ = Refined<vest_lib2::asn1::ber::Integer8TlvFmt, IntegerRange<true, 0, true, 1>>;
+/// DER format for ASN.1 `Version`.
+type VERSION__ = Refined<vest_lib2::asn1::der::Integer8TlvFmt, IntegerRange<true, 0, true, 1>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct VERSION(pub Class, pub u64);
@@ -460,27 +371,6 @@ impl VERSION {
     pub const fn schema() -> VERSION__
         returns
             ({
-                use vest_lib2::asn1::ber::INTEGER8;
-                Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
-            }),
-    {
-        use vest_lib2::asn1::ber::INTEGER8;
-        Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
-    }
-}
-
-/// DER format for ASN.1 `Version-der`.
-type VERSION_DER__ = Refined<vest_lib2::asn1::der::Integer8TlvFmt, IntegerRange<true, 0, true, 1>>;
-#[derive(Clone, Copy)]
-#[verifier::ext_equal]
-pub struct VERSION_DER(pub Class, pub u64);
-impl VERSION_DER {
-    pub const Fmt: Self = Self(Class::Universal, 2u64);
-
-    #[verifier::allow_in_spec]
-    pub const fn schema() -> VERSION_DER__
-        returns
-            ({
                 use vest_lib2::asn1::der::INTEGER8;
                 Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
             }),
@@ -488,10 +378,23 @@ impl VERSION_DER {
         use vest_lib2::asn1::der::INTEGER8;
         Refined(INTEGER8, IntegerRange::<true, 0, true, 1>)
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(VERSION::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
-/// BER format for ASN.1 `Shared`.
-type SHARED__ = Mapped<vest_lib2::asn1::ber::SequenceFmt<vest_lib2::asn1::ber::DefaultFmt<VERSION, i8, Pair<Ref<vest_lib2::asn1::ber::OctetStringTlvFmt>, vest_lib2::asn1::ber::BerEndFmt>>>, BiMap<SharedForward, SharedReverse>>;
+/// DER format for ASN.1 `Shared`.
+type SHARED__ = Mapped<vest_lib2::asn1::der::SequenceFmt<vest_lib2::asn1::der::DefaultFmt<VERSION, i8, Pair<Ref<vest_lib2::asn1::der::OctetStringTlvFmt>, Eof>>>, BiMap<SharedForward, SharedReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SHARED(pub Class, pub u64);
@@ -502,52 +405,15 @@ impl SHARED {
     pub const fn schema() -> SHARED__
         returns
             ({
-                use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
+                use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             DEFAULT(VERSION::Fmt, 0i8,
                             REQUIRED(Ref(OCTET_STRING),
-                            BER_END)),
-                        ),
-                    mapper: BiMap(SharedForward, SharedReverse),
-                }
-            }),
-    {
-        use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};
-        Mapped {
-            inner:
-                SEQUENCE(
-                    DEFAULT(VERSION::Fmt, 0i8,
-                    REQUIRED(Ref(OCTET_STRING),
-                    BER_END)),
-                ),
-            mapper: BiMap(SharedForward, SharedReverse),
-        }
-    }
-}
-
-/// DER format for ASN.1 `Shared-der`.
-type SHARED_DER__ = Mapped<vest_lib2::asn1::der::SequenceFmt<vest_lib2::asn1::der::DefaultFmt<VERSION_DER, i8, Pair<Ref<vest_lib2::asn1::der::OctetStringTlvFmt>, Eof>>>, BiMap<SharedDerForward, SharedDerReverse>>;
-#[derive(Clone, Copy)]
-#[verifier::ext_equal]
-pub struct SHARED_DER(pub Class, pub u64);
-impl SHARED_DER {
-    pub const Fmt: Self = Self(Class::Universal, 16u64);
-
-    #[verifier::allow_in_spec]
-    pub const fn schema() -> SHARED_DER__
-        returns
-            ({
-                use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};
-                Mapped {
-                    inner:
-                        SEQUENCE(
-                            DEFAULT(VERSION_DER::Fmt, 0i8,
-                            REQUIRED(Ref(OCTET_STRING),
                             Eof)),
                         ),
-                    mapper: BiMap(SharedDerForward, SharedDerReverse),
+                    mapper: BiMap(SharedForward, SharedReverse),
                 }
             }),
     {
@@ -555,17 +421,55 @@ impl SHARED_DER {
         Mapped {
             inner:
                 SEQUENCE(
-                    DEFAULT(VERSION_DER::Fmt, 0i8,
+                    DEFAULT(VERSION::Fmt, 0i8,
                     REQUIRED(Ref(OCTET_STRING),
                     Eof)),
                 ),
-            mapper: BiMap(SharedDerForward, SharedDerReverse),
+            mapper: BiMap(SharedForward, SharedReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_starts_disjoint);
+        reveal(SHARED::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            VERSION::Fmt;
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 2u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 2u64) == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            REQUIRED(Ref(vest_lib2::asn1::der::OCTET_STRING),
+            Eof);
+        let __asn1_fmt_2 =
+            Ref(vest_lib2::asn1::der::OCTET_STRING);
+        let __asn1_fmt_3 =
+            vest_lib2::asn1::der::OCTET_STRING;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 4u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 4u64) == asn1_start_mask(false, 0x0000000000000010u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 4u64));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 4u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000010u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <SharedForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                SharedSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
 /// DER format for ASN.1 `Canonical`.
-type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;
+type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct CANONICAL(pub Class, pub u64);
@@ -577,11 +481,24 @@ impl CANONICAL {
         returns
             ({
                 use vest_lib2::asn1::der::SET_OF;
-                SET_OF(SHARED_DER::Fmt)
+                SET_OF(SHARED::Fmt)
             }),
     {
         use vest_lib2::asn1::der::SET_OF;
-        SET_OF(SHARED_DER::Fmt)
+        SET_OF(SHARED::Fmt)
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CANONICAL::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -619,6 +536,37 @@ impl ORDERED {
                 ),
             mapper: BiMap(OrderedForward, OrderedReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
+        reveal(asn1_starts_disjoint);
+        reveal(ORDERED::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(1u64, Ref(vest_lib2::asn1::der::INTEGER));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 1u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            Eof;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <OrderedForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                OrderedSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -661,6 +609,41 @@ impl OUTER {
             mapper: BiMap(OuterForward, OuterReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_any_non_eoc);
+        reveal(asn1_starts_disjoint);
+        reveal(OUTER::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            Ref(vest_lib2::asn1::ber::ANY);
+        let __asn1_fmt_1 =
+            vest_lib2::asn1::ber::ANY;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        let __asn1_fmt_2 =
+            vest_lib2::asn1::ber::BER_END;
+        reveal(asn1_start_ber_boundary);
+        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_ber_boundary());
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_2.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_2);
+        assert forall|output: <OuterForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                OuterSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `NumericLabel`.
@@ -681,6 +664,19 @@ impl NUMERIC_LABEL {
     {
         use vest_lib2::asn1::ber::NUMERIC_STRING;
         Refined(NUMERIC_STRING, Size::<true, 1, true, 16>)
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0004000000040000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(NUMERIC_LABEL::spec_inner);
+        lemma_asn1_start_identity_uint(self.0, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0004000000040000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -703,6 +699,19 @@ impl UNIVERSAL_LABEL {
         use vest_lib2::asn1::ber::UNIVERSAL_STRING;
         Refined(UNIVERSAL_STRING, Size::<true, 1, true, 16>)
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x1000000010000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(UNIVERSAL_LABEL::spec_inner);
+        lemma_asn1_start_identity_uint(self.0, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x1000000010000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 
@@ -711,53 +720,41 @@ impl UNIVERSAL_LABEL {
 mod __impl_version {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(false), owned, VERSION, VERSION__, VersionSpec, Version);
-}
-
-mod __impl_version_der {
-    use super::*;
-
-    vest_lib2::impl_der!(tagged(false), owned, VERSION_DER, VERSION_DER__, VersionDerSpec, VersionDer);
+    vest_lib2::impl_der!(tagged_exact(false), owned, VERSION, VERSION__, VersionSpec, Version);
 }
 
 mod __impl_shared {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SHARED, SHARED__, SharedSpec, Shared, SharedForward, SharedReverse);
-}
-
-mod __impl_shared_der {
-    use super::*;
-
-    vest_lib2::impl_der!(tagged(true), borrowed, SHARED_DER, SHARED_DER__, SharedDerSpec, SharedDer, SharedDerForward, SharedDerReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, SHARED, SHARED__, SharedSpec, Shared, SharedForward, SharedReverse);
 }
 
 mod __impl_canonical {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
 }
 
 mod __impl_ordered {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered, OrderedForward, OrderedReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered, OrderedForward, OrderedReverse);
 }
 
 mod __impl_outer {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), borrowed, OUTER, OUTER__, OuterSpec, Outer, OuterForward, OuterReverse);
+    vest_lib2::impl_ber!(tagged_exact(true), borrowed, OUTER, OUTER__, OuterSpec, Outer, OuterForward, OuterReverse);
 }
 
 mod __impl_numeric_label {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
+    vest_lib2::impl_ber!(tagged_identity(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
 }
 
 mod __impl_universal_label {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
+    vest_lib2::impl_ber!(tagged_identity(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
 }

@@ -67,8 +67,9 @@ pub fn generate_with_options(
 }
 
 /// Generate one nominal-format module with selected definitions forced to a
-/// different encoding rule. Non-overridden references inherit the caller's
-/// rule; a shared definition is emitted once per rule when both are needed.
+/// different encoding rule. An override colors its transitive dependencies,
+/// while parents retain their independently selected rule. Each ASN.1
+/// definition is emitted exactly once.
 pub fn generate_with_rule_overrides(
     schema: &SchemaModule,
     options: CodegenOptions,
@@ -110,7 +111,7 @@ impl<'a> Generator<'a> {
         }
 
         let normalized = normalize_definitions(module)?;
-        let (definitions, rules, values) = expand_rule_variants(
+        let (definitions, rules, values) = assign_definition_rules(
             normalized,
             &schema.values,
             options.encoding_rules,
@@ -206,7 +207,11 @@ impl<'a> Generator<'a> {
         output.line(format_args!(
             "use vest_lib2::asn1::der_ord::{{DerOrd, DerState}};"
         ));
-        output.line(format_args!("use vest_lib2::asn1::disjoint::HasAsn1Start;"));
+        output.line(format_args!("#[cfg(verus_only)]"));
+        output.line(format_args!(
+            "use vest_lib2::asn1::disjoint::{{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start}};"
+        ));
+        output.line(format_args!("use vest_lib2::asn1::tag::tag_num_from_uint;"));
         if self.mixed_rules {
             output.line(format_args!(
                 "use vest_lib2::asn1::modifiers::{{\
@@ -299,8 +304,16 @@ impl<'a> Generator<'a> {
         let names = &self.names[&definition.name];
         let rule = self.rules[&definition.name];
         let kind = match self.nominal_kind(definition)? {
-            NominalKind::Tagged { constructed } => format!("tagged({constructed})"),
-            NominalKind::UntaggedStart => "untagged_start".to_string(),
+            NominalKind::TaggedExact { constructed } => {
+                format!("tagged_exact({constructed})")
+            }
+            NominalKind::TaggedIdentity { constructed } => {
+                format!("tagged_identity({constructed})")
+            }
+            NominalKind::UntaggedFinite(tags) => {
+                format!("untagged_mask({})", render_start_domain(&tags))
+            }
+            NominalKind::UntaggedAny => "untagged_any".to_string(),
             NominalKind::Untagged => "untagged".to_string(),
         };
         let ownership = if self.borrows[&definition.name] {
@@ -330,4 +343,27 @@ impl<'a> Generator<'a> {
         output.line(format_args!("}}"));
         Ok(())
     }
+}
+
+fn render_start_domain(tags: &[WireTag]) -> String {
+    render_start_certificate(&StartCertificate {
+        accepts_empty: false,
+        tags: Some(tags.iter().cloned().collect()),
+    })
+}
+
+fn render_start_certificate(domain: &StartCertificate) -> String {
+    let Some(tags) = &domain.tags else {
+        panic!("open ASN.1 start domains cannot be emitted as finite certificates");
+    };
+    let mut words = [0u64; 4];
+    for tag in tags {
+        let low = u64::from(tag.number).min(31);
+        let index = low + if tag.constructed { 32 } else { 0 };
+        words[usize::from(tag.class)] |= 1u64 << index;
+    }
+    format!(
+        "asn1_start_mask({}, {:#018x}u64, {:#018x}u64, {:#018x}u64, {:#018x}u64)",
+        domain.accepts_empty, words[0], words[1], words[2], words[3],
+    )
 }

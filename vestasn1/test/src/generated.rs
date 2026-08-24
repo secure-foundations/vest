@@ -6,7 +6,9 @@
 
 use vest_lib2::asn1::*;
 use vest_lib2::asn1::der_ord::{DerOrd, DerState};
-use vest_lib2::asn1::disjoint::HasAsn1Start;
+#[cfg(verus_only)]
+use vest_lib2::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib2::asn1::tag::tag_num_from_uint;
 use vest_lib2::asn1::der::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
 use vest_lib2::asn1::der::{SetFmt, SET};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
@@ -444,7 +446,11 @@ impl<'a, 'x> Map<&'x Header<'a>> for HeaderReverse {
             reveal(<Header as DeepView>::deep_view);
             reveal(HeaderSpec::into_structural);
         }
-        (&value.flag, (&value.count, ()))
+        let result = (&value.flag, (&value.count, ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -521,7 +527,11 @@ impl<'a, 'x> Map<&'x Envelope<'a>> for EnvelopeReverse {
             reveal(<Envelope as DeepView>::deep_view);
             reveal(EnvelopeSpec::into_structural);
         }
-        (&value.header, (value.payload.as_ref(), ()))
+        let result = (&value.header, (value.payload.as_ref(), ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -598,7 +608,11 @@ impl<'x> Map<&'x Features> for FeaturesReverse {
             reveal(<Features as DeepView>::deep_view);
             reveal(FeaturesSpec::into_structural);
         }
-        (value.enabled, (value.visible, ()))
+        let result = (value.enabled, (value.visible, ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -684,10 +698,14 @@ impl<'a, 'x> Map<&'x Selection<'a>> for SelectionReverse {
             reveal(<Selection as DeepView>::deep_view);
             reveal(SelectionSpec::into_structural);
         }
-        match value {
+        let result = match value {
             Selection::Flag(value) => L(value),
             Selection::Payload(value) => R(value),
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -762,7 +780,11 @@ impl<'a, 'x> Map<&'x ChoiceEnvelope<'a>> for ChoiceEnvelopeReverse {
             reveal(<ChoiceEnvelope as DeepView>::deep_view);
             reveal(ChoiceEnvelopeSpec::into_structural);
         }
-        (value.selection.as_ref(), ())
+        let result = (value.selection.as_ref(), ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -944,7 +966,11 @@ impl<'x> Map<&'x BmpContainer> for BmpContainerReverse {
             reveal(<BmpContainer as DeepView>::deep_view);
             reveal(BmpContainerSpec::into_structural);
         }
-        (&value.name, ())
+        let result = (&value.name, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1025,7 +1051,11 @@ impl<'a, 'x> Map<&'x Metadata<'a>> for MetadataReverse {
             reveal(<Metadata as DeepView>::deep_view);
             reveal(MetadataSpec::into_structural);
         }
-        (value.color, (&value.identifier, (&value.measurement, (&value.open, ()))))
+        let result = (value.color, (&value.identifier, (&value.measurement, (&value.open, ()))));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1100,7 +1130,11 @@ impl<'a, 'x> Map<&'x InlineRecordNested<'a>> for InlineRecordNestedReverse {
             reveal(<InlineRecordNested as DeepView>::deep_view);
             reveal(InlineRecordNestedSpec::into_structural);
         }
-        (&value.payload, ())
+        let result = (&value.payload, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1186,10 +1220,14 @@ impl<'x> Map<&'x InlineRecordSelected> for InlineRecordSelectedReverse {
             reveal(<InlineRecordSelected as DeepView>::deep_view);
             reveal(InlineRecordSelectedSpec::into_structural);
         }
-        match value {
+        let result = match value {
             InlineRecordSelected::Flag(value) => L(value),
             InlineRecordSelected::Identifier(value) => R(value),
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1266,7 +1304,11 @@ impl<'a, 'x> Map<&'x InlineRecord<'a>> for InlineRecordReverse {
             reveal(<InlineRecord as DeepView>::deep_view);
             reveal(InlineRecordSpec::into_structural);
         }
-        (&value.nested, (&value.selected, ()))
+        let result = (&value.nested, (&value.selected, ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1372,14 +1414,18 @@ impl<'a, 'x> Map<&'x AutomationChoice<'a>> for AutomationChoiceReverse {
             reveal(<AutomationChoice as DeepView>::deep_view);
             reveal(AutomationChoiceSpec::into_structural);
         }
-        match value {
+        let result = match value {
             AutomationChoice::BooleanValue(value) => L(L(value)),
             AutomationChoice::IntegerValue(value) => L(R(value)),
             AutomationChoice::OctetsValue(value) => R(L(L(value))),
             AutomationChoice::NullValue(value) => R(L(R(value))),
             AutomationChoice::TextValue(value) => R(R(L(value))),
             AutomationChoice::OidValue(value) => R(R(R(value))),
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1462,7 +1508,11 @@ impl<'a, 'x> Map<&'x AutomationSequence<'a>> for AutomationSequenceReverse {
             reveal(<AutomationSequence as DeepView>::deep_view);
             reveal(AutomationSequenceSpec::into_structural);
         }
-        (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))))
+        let result = (value.prefix.as_ref(), (value.enabled, (value.payload.as_ref(), (&value.marker, (value.selected.as_ref(), ())))));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1483,6 +1533,19 @@ impl FLAG {
     {
         BOOLEAN
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(FLAG::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Count`.
@@ -1501,6 +1564,19 @@ impl COUNT {
             ),
     {
         INTEGER
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(COUNT::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1521,6 +1597,19 @@ impl TAGGED_COUNT {
     {
         IMPLICIT(4u64, COUNT::Fmt)
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000010u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(TAGGED_COUNT::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000010u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `RetaggedCount`.
@@ -1540,6 +1629,19 @@ impl RETAGGED_COUNT {
     {
         IMPLICIT(5u64, TAGGED_COUNT::Fmt)
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000020u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(RETAGGED_COUNT::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000020u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Payload`.
@@ -1558,6 +1660,19 @@ impl PAYLOAD {
             ),
     {
         Refined(OCTET_STRING, Size::<true, 2, true, 4>)
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000010u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(PAYLOAD::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000010u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1594,6 +1709,25 @@ impl HEADER {
             mapper: BiMap(HeaderForward, HeaderReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(HEADER::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <HeaderForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                HeaderSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Envelope`.
@@ -1629,6 +1763,37 @@ impl ENVELOPE {
             mapper: BiMap(EnvelopeForward, EnvelopeReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
+        reveal(asn1_starts_disjoint);
+        reveal(ENVELOPE::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(0u64, Ref(PAYLOAD::Fmt));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 0u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            Eof;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <EnvelopeForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                EnvelopeSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Envelopes`.
@@ -1647,6 +1812,19 @@ impl ENVELOPES {
             ),
     {
         SEQUENCE_OF(ENVELOPE::Fmt)
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(ENVELOPES::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1683,6 +1861,50 @@ impl FEATURES {
             mapper: BiMap(FeaturesForward, FeaturesReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
+        reveal(asn1_start_union);
+        reveal(asn1_starts_disjoint);
+        reveal(FEATURES::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(0u64, FLAG::Fmt);
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 0u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            DEFAULT(IMPLICIT(1u64, BOOLEAN), false,
+            Eof);
+        let __asn1_fmt_2 =
+            IMPLICIT(1u64, BOOLEAN);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 1u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_3 =
+            Eof;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <FeaturesForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                FeaturesSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Selection`.
@@ -1713,6 +1935,46 @@ impl SELECTION {
                     EXPLICIT(2u64, Ref(PAYLOAD::Fmt))),
             mapper: BiMap(SelectionForward, SelectionReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_union);
+        reveal(asn1_starts_disjoint);
+        reveal(SELECTION::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            CHOICE(
+                IMPLICIT(1u64, Ref(FLAG::Fmt)),
+                EXPLICIT(2u64, Ref(PAYLOAD::Fmt)));
+        let __asn1_fmt_2 =
+            IMPLICIT(1u64, Ref(FLAG::Fmt));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 1u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_3 =
+            EXPLICIT(2u64, Ref(PAYLOAD::Fmt));
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 2u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000002u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64));
+        assert forall|output: <SelectionForward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                SelectionSpec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1747,6 +2009,37 @@ impl CHOICE_ENVELOPE {
             mapper: BiMap(ChoiceEnvelopeForward, ChoiceEnvelopeReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
+        reveal(asn1_starts_disjoint);
+        reveal(CHOICE_ENVELOPE::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            EXPLICIT(3u64, Ref(SELECTION::Fmt));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 3u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            Eof;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <ChoiceEnvelopeForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                ChoiceEnvelopeSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Color`.
@@ -1765,6 +2058,25 @@ impl COLOR {
             ),
     {
         Mapped { inner: Refined(ENUMERATED16, ColorPredicate), mapper: BiMap(ColorForward, ColorReverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000400u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(COLOR::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert forall|output: <ColorForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                ColorSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000400u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1785,6 +2097,19 @@ impl IDENTIFIER {
     {
         OBJECT_IDENTIFIER
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000040u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(IDENTIFIER::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000040u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Measurement`.
@@ -1803,6 +2128,19 @@ impl MEASUREMENT {
             ),
     {
         REAL
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000200u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(MEASUREMENT::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000200u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1823,6 +2161,21 @@ impl OPEN_VALUE {
     {
         ANY
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64),
+    {
+        reveal(asn1_start_any_non_eoc);
+        reveal(OPEN_VALUE::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `BmpName`.
@@ -1841,6 +2194,19 @@ impl BMP_NAME {
             ),
     {
         Refined(BMP_STRING, Size::<true, 1, true, 4>)
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000040000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(BMP_NAME::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000040000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1874,6 +2240,25 @@ impl BMP_CONTAINER {
                 ),
             mapper: BiMap(BmpContainerForward, BmpContainerReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(BMP_CONTAINER::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <BmpContainerForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                BmpContainerSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -1914,6 +2299,46 @@ impl METADATA {
             mapper: BiMap(MetadataForward, MetadataReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_starts_disjoint);
+        reveal(METADATA::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(0u64, COLOR::Fmt);
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 0u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            REQUIRED(Ref(IDENTIFIER::Fmt),
+            REQUIRED(Ref(MEASUREMENT::Fmt),
+            REQUIRED(EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt)),
+            Eof)));
+        let __asn1_fmt_2 =
+            Ref(IDENTIFIER::Fmt);
+        let __asn1_fmt_3 =
+            IDENTIFIER::Fmt;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 6u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 6u64) == asn1_start_mask(false, 0x0000000000000040u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 6u64));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 6u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000040u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <MetadataForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                MetadataSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `InlineRecord-nested`.
@@ -1947,6 +2372,25 @@ impl INLINE_RECORD_NESTED {
             mapper: BiMap(InlineRecordNestedForward, InlineRecordNestedReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(INLINE_RECORD_NESTED::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <InlineRecordNestedForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                InlineRecordNestedSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `InlineRecord-selected`.
@@ -1977,6 +2421,46 @@ impl INLINE_RECORD_SELECTED {
                     IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER))),
             mapper: BiMap(InlineRecordSelectedForward, InlineRecordSelectedReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_union);
+        reveal(asn1_starts_disjoint);
+        reveal(INLINE_RECORD_SELECTED::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            CHOICE(
+                IMPLICIT(2u64, Ref(BOOLEAN)),
+                IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)));
+        let __asn1_fmt_2 =
+            IMPLICIT(2u64, Ref(BOOLEAN));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 2u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 2u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000004u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_3 =
+            IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER));
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 3u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 3u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000008u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000004u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000008u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000004u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000008u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64));
+        assert forall|output: <InlineRecordSelectedForward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                InlineRecordSelectedSpec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -2012,6 +2496,25 @@ impl INLINE_RECORD {
                 ),
             mapper: BiMap(InlineRecordForward, InlineRecordReverse),
         }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(INLINE_RECORD::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <InlineRecordForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                InlineRecordSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -2060,6 +2563,110 @@ impl AUTOMATION_CHOICE {
             mapper: BiMap(AutomationChoiceForward, AutomationChoiceReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_union);
+        reveal(asn1_starts_disjoint);
+        reveal(AUTOMATION_CHOICE::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            CHOICE(
+                CHOICE(
+                    IMPLICIT(10u64, Ref(BOOLEAN)),
+                    IMPLICIT(11u64, Ref(INTEGER))),
+                CHOICE(
+                    CHOICE(
+                        IMPLICIT(12u64, Ref(OCTET_STRING)),
+                        IMPLICIT(13u64, Ref(NULL))),
+                    CHOICE(
+                        EXPLICIT(14u64, Ref(UTF8_STRING)),
+                        EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)))));
+        let __asn1_fmt_2 =
+            CHOICE(
+                IMPLICIT(10u64, Ref(BOOLEAN)),
+                IMPLICIT(11u64, Ref(INTEGER)));
+        let __asn1_fmt_3 =
+            IMPLICIT(10u64, Ref(BOOLEAN));
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 10u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 10u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000400u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_4 =
+            IMPLICIT(11u64, Ref(INTEGER));
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 11u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 11u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000800u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000400u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000800u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_3.asn1_start(), __asn1_fmt_4.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_3, __asn1_fmt_4);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000400u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000800u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000c00u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000c00u64, 0x0000000000000000u64));
+        let __asn1_fmt_5 =
+            CHOICE(
+                CHOICE(
+                    IMPLICIT(12u64, Ref(OCTET_STRING)),
+                    IMPLICIT(13u64, Ref(NULL))),
+                CHOICE(
+                    EXPLICIT(14u64, Ref(UTF8_STRING)),
+                    EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER))));
+        let __asn1_fmt_6 =
+            CHOICE(
+                IMPLICIT(12u64, Ref(OCTET_STRING)),
+                IMPLICIT(13u64, Ref(NULL)));
+        let __asn1_fmt_7 =
+            IMPLICIT(12u64, Ref(OCTET_STRING));
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 12u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 12u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000001000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_8 =
+            IMPLICIT(13u64, Ref(NULL));
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 13u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 13u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000002000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000001000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000002000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_7.asn1_start(), __asn1_fmt_8.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_7, __asn1_fmt_8);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000001000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000002000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000003000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000003000u64, 0x0000000000000000u64));
+        let __asn1_fmt_9 =
+            CHOICE(
+                EXPLICIT(14u64, Ref(UTF8_STRING)),
+                EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)));
+        let __asn1_fmt_10 =
+            EXPLICIT(14u64, Ref(UTF8_STRING));
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 14u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 14u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_11 =
+            EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER));
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 15u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 15u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_10.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_10, __asn1_fmt_11);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000003000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_9.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_9);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000003000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000c00u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_5);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000c00u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64));
+        assert forall|output: <AutomationChoiceForward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                AutomationChoiceSpec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `AutomationSequence`.
@@ -2101,6 +2708,83 @@ impl AUTOMATION_SEQUENCE {
             mapper: BiMap(AutomationSequenceForward, AutomationSequenceReverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
+        reveal(asn1_start_union);
+        reveal(asn1_starts_disjoint);
+        reveal(AUTOMATION_SEQUENCE::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(20u64, Ref(BOOLEAN));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 20u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 20u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000100000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            DEFAULT(IMPLICIT(21u64, BOOLEAN), true,
+            OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+            REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+            OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+            Eof))));
+        let __asn1_fmt_2 =
+            IMPLICIT(21u64, BOOLEAN);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 21u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 21u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000200000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_3 =
+            OPTIONAL(EXPLICIT(22u64, Ref(OCTET_STRING)),
+            REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+            OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+            Eof)));
+        let __asn1_fmt_4 =
+            EXPLICIT(22u64, Ref(OCTET_STRING));
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 22u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 22u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_5 =
+            REQUIRED(IMPLICIT(23u64, Ref(NULL)),
+            OPTIONAL(EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt)),
+            Eof));
+        let __asn1_fmt_6 =
+            IMPLICIT(23u64, Ref(NULL));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 23u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 23u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000800000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_7 =
+            EXPLICIT(24u64, Ref(AUTOMATION_CHOICE::Fmt));
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 24u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 24u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0100000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_8 =
+            Eof;
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0100000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_7.asn1_start(), __asn1_fmt_8.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_7, __asn1_fmt_8);
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 23u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000800000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000800000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000800000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000800000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000200000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000800000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000200000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000800000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000a00000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000a00000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000100000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0040000000a00000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        assert forall|output: <AutomationSequenceForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                AutomationSequenceSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// DER format for ASN.1 `Headers`.
@@ -2120,6 +2804,19 @@ impl HEADERS {
     {
         SET_OF(HEADER::Fmt)
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(HEADERS::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 pub const FEATURE_ENABLED: Flag = true;
@@ -2131,143 +2828,143 @@ pub const DEFAULT_COLOR: Color = Color::Green;
 mod __impl_flag {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), owned, FLAG, FLAG__, FlagSpec, Flag);
+    vest_lib2::impl_der!(tagged_exact(false), owned, FLAG, FLAG__, FlagSpec, Flag);
 }
 
 mod __impl_count {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), borrowed, COUNT, COUNT__, CountSpec, Count);
+    vest_lib2::impl_der!(tagged_exact(false), borrowed, COUNT, COUNT__, CountSpec, Count);
 }
 
 mod __impl_tagged_count {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
+    vest_lib2::impl_der!(tagged_exact(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
 }
 
 mod __impl_retagged_count {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
+    vest_lib2::impl_der!(tagged_exact(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
 }
 
 mod __impl_payload {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+    vest_lib2::impl_der!(tagged_exact(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
 }
 
 mod __impl_header {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, HEADER, HEADER__, HeaderSpec, Header, HeaderForward, HeaderReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, HEADER, HEADER__, HeaderSpec, Header, HeaderForward, HeaderReverse);
 }
 
 mod __impl_envelope {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope, EnvelopeForward, EnvelopeReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope, EnvelopeForward, EnvelopeReverse);
 }
 
 mod __impl_envelopes {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
 }
 
 mod __impl_features {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features, FeaturesForward, FeaturesReverse);
+    vest_lib2::impl_der!(tagged_exact(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features, FeaturesForward, FeaturesReverse);
 }
 
 mod __impl_selection {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, borrowed, SELECTION, SELECTION__, SelectionSpec, Selection, SelectionForward, SelectionReverse);
+    vest_lib2::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64)), borrowed, SELECTION, SELECTION__, SelectionSpec, Selection, SelectionForward, SelectionReverse);
 }
 
 mod __impl_choice_envelope {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope, ChoiceEnvelopeForward, ChoiceEnvelopeReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope, ChoiceEnvelopeForward, ChoiceEnvelopeReverse);
 }
 
 mod __impl_color {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), owned, COLOR, COLOR__, ColorSpec, Color, ColorForward, ColorReverse);
+    vest_lib2::impl_der!(tagged_exact(false), owned, COLOR, COLOR__, ColorSpec, Color, ColorForward, ColorReverse);
 }
 
 mod __impl_identifier {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
+    vest_lib2::impl_der!(tagged_exact(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
 }
 
 mod __impl_measurement {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
+    vest_lib2::impl_der!(tagged_exact(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
 }
 
 mod __impl_open_value {
     use super::*;
 
-    vest_lib2::impl_der!(untagged_start, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+    vest_lib2::impl_der!(untagged_any, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
 }
 
 mod __impl_bmp_name {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
+    vest_lib2::impl_der!(tagged_exact(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
 }
 
 mod __impl_bmp_container {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer, BmpContainerForward, BmpContainerReverse);
+    vest_lib2::impl_der!(tagged_exact(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer, BmpContainerForward, BmpContainerReverse);
 }
 
 mod __impl_metadata {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata, MetadataForward, MetadataReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata, MetadataForward, MetadataReverse);
 }
 
 mod __impl_inline_record_nested {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested, InlineRecordNestedForward, InlineRecordNestedReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested, InlineRecordNestedForward, InlineRecordNestedReverse);
 }
 
 mod __impl_inline_record_selected {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected, InlineRecordSelectedForward, InlineRecordSelectedReverse);
+    vest_lib2::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64)), owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected, InlineRecordSelectedForward, InlineRecordSelectedReverse);
 }
 
 mod __impl_inline_record {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord, InlineRecordForward, InlineRecordReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord, InlineRecordForward, InlineRecordReverse);
 }
 
 mod __impl_automation_choice {
     use super::*;
 
-    vest_lib2::impl_der!(untagged, borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
+    vest_lib2::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64)), borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
 }
 
 mod __impl_automation_sequence {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
 }
 
 mod __impl_headers {
     use super::*;
 
-    vest_lib2::impl_der!(tagged(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
+    vest_lib2::impl_der!(tagged_exact(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
 }

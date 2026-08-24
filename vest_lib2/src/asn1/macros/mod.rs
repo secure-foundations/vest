@@ -8,6 +8,18 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __impl_asn1_nominal_inner {
+    (tagged_exact($constructed:expr), $fmt:ident, $inner:ty) => {
+        $crate::__impl_asn1_nominal_inner!(tagged($constructed), $fmt, $inner);
+    };
+    (tagged_identity($constructed:expr), $fmt:ident, $inner:ty) => {
+        $crate::__impl_asn1_nominal_inner!(tagged($constructed), $fmt, $inner);
+    };
+    (untagged_mask($domain:expr), $fmt:ident, $inner:ty) => {
+        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
+    };
+    (untagged_any, $fmt:ident, $inner:ty) => {
+        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
+    };
     (tagged($constructed:expr), $fmt:ident, $inner:ty) => {
         verus! {
 
@@ -60,7 +72,7 @@ macro_rules! __impl_asn1_nominal_inner {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __impl_asn1_nominal_specs_and_proofs {
-    ($fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+    ($fmt:ident, $spec:ty) => {
         verus! {
 
         impl SpecParser for $fmt {
@@ -147,21 +159,11 @@ macro_rules! __impl_asn1_nominal_specs_and_proofs {
 
         impl SPRoundTripDps for $fmt {
             proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-                $(
-                    assert forall|output: <$forward as $crate::combinators::mapped::spec::SpecMap>::Output| #[trigger]
-                        self.spec_inner().consistent(output) implies
-                            self.spec_inner().mapper.sound(output) by {
-                        if self.spec_inner().consistent(output) {
-                            <$spec>::lemma_from_into(output);
-                        }
-                    }
-                )?
                 reveal(<$fmt as SpecParser>::spec_parse);
                 reveal(<$fmt as Consistency>::consistent);
                 reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
                 reveal(<$fmt as SpecByteLen>::byte_len);
-                broadcast use $crate::combinators::disjoint::disjointness_lemmas;
-                broadcast use $crate::asn1::disjoint::asn1_disjointness_lemmas;
+                self.lemma_schema_unambiguous();
                 self.spec_inner().theorem_serialize_dps_parse_roundtrip(value, obuf);
             }
         }
@@ -299,6 +301,40 @@ macro_rules! __impl_asn1_nominal_exec_owned {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __impl_asn1_nominal_has_start {
+    (exact($constructed:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
+            $crate::asn1::disjoint::asn1_start_exact_uint(_this.0, $constructed, _this.1));
+    };
+    (identity, $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
+            $crate::asn1::disjoint::asn1_start_identity_uint(_this.0, _this.1));
+    };
+    (mask($domain:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this, $domain);
+    };
+    (any, $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
+            $crate::asn1::disjoint::asn1_start_any_non_eoc());
+    };
+    (@certified $fmt:ident, $this:ident, $domain:expr) => {
+        verus! {
+
+        impl $crate::asn1::disjoint::HasAsn1Start for $fmt {
+            #[verifier::inline]
+            open spec fn asn1_start(&self) -> $crate::asn1::disjoint::Asn1StartDomain {
+                let $this = self;
+                $domain
+            }
+
+            proof fn lemma_parse_implies_asn1_start(&self, input: Seq<u8>) {
+                self.lemma_schema_unambiguous();
+                reveal(<$fmt as SpecParser>::spec_parse);
+                self.spec_inner().lemma_parse_implies_asn1_start(input);
+            }
+        }
+
+        } // verus!
+    };
     ($fmt:ident) => {
         verus! {
 
@@ -310,7 +346,6 @@ macro_rules! __impl_asn1_nominal_has_start {
 
             proof fn lemma_parse_implies_asn1_start(&self, input: Seq<u8>) {
                 reveal(<$fmt as SpecParser>::spec_parse);
-                reveal($fmt::spec_inner);
                 self.spec_inner().lemma_parse_implies_asn1_start(input);
             }
         }
@@ -323,8 +358,6 @@ macro_rules! __impl_asn1_nominal_has_start {
 #[macro_export]
 macro_rules! __impl_asn1_nominal_tagged {
     ($fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!($fmt);
-
         verus! {
 
         impl Retaggable for $fmt {
@@ -379,7 +412,6 @@ macro_rules! __impl_asn1_nominal_der_tagged_proofs {
             proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
                 reveal(<$fmt as SpecParser>::spec_parse);
                 reveal(<$fmt as SpecByteLen>::byte_len);
-                broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
                 if self.spec_parse(ibuf) is Some {
                     self.lemma_successful_parse_inner_invariants(ibuf);
                     self.spec_inner().lemma_parse_sound_consumption(ibuf);
@@ -389,7 +421,6 @@ macro_rules! __impl_asn1_nominal_der_tagged_proofs {
             proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
                 reveal(<$fmt as SpecParser>::spec_parse);
                 reveal(<$fmt as Consistency>::consistent);
-                broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
                 if self.spec_parse(ibuf) is Some {
                     self.lemma_successful_parse_inner_invariants(ibuf);
                     self.spec_inner().lemma_parse_sound_value(ibuf);
@@ -400,7 +431,6 @@ macro_rules! __impl_asn1_nominal_der_tagged_proofs {
         impl NonMalleable for $fmt {
             proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
                 reveal(<$fmt as SpecParser>::spec_parse);
-                broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
                 if self.spec_parse(buf1) is Some && self.spec_parse(buf2) is Some {
                     self.lemma_successful_parse_inner_invariants(buf1);
                     self.spec_inner().lemma_parse_non_malleable(buf1, buf2);
@@ -611,21 +641,40 @@ macro_rules! __impl_asn1_nominal_der_ord_owned {
 macro_rules! impl_der {
     ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
-        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value);
         $crate::__impl_asn1_nominal_der_ord_borrowed!($fmt, $inner, $spec, $value $(, $forward, $reverse)?);
-        $crate::impl_der!(@kind $kind, $fmt, $spec $(, $forward, $reverse)?);
+        $crate::impl_der!(@kind $kind $(($constructed))?, $fmt, $spec $(, $forward, $reverse)?);
     };
     ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
-        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_owned!($fmt, $value);
         $crate::__impl_asn1_nominal_der_ord_owned!($fmt, $inner, $spec, $value $(, $forward, $reverse)?);
-        $crate::impl_der!(@kind $kind, $fmt, $spec $(, $forward, $reverse)?);
+        $crate::impl_der!(@kind $kind $(($constructed))?, $fmt, $spec $(, $forward, $reverse)?);
     };
-    (@kind tagged, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+    (@kind tagged($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+        $crate::__impl_asn1_nominal_has_start!($fmt);
         $crate::__impl_asn1_nominal_tagged!($fmt);
         $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
+    };
+    (@kind tagged_exact($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+        $crate::__impl_asn1_nominal_has_start!(exact($constructed), $fmt);
+        $crate::__impl_asn1_nominal_tagged!($fmt);
+        $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
+    };
+    (@kind tagged_identity($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+        $crate::__impl_asn1_nominal_has_start!(identity, $fmt);
+        $crate::__impl_asn1_nominal_tagged!($fmt);
+        $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
+    };
+    (@kind untagged_mask($domain:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+        $crate::__impl_asn1_nominal_has_start!(mask($domain), $fmt);
+        $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
+    };
+    (@kind untagged_any, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
+        $crate::__impl_asn1_nominal_has_start!(any, $fmt);
+        $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
     };
     (@kind untagged_start, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_has_start!($fmt);
@@ -643,18 +692,33 @@ macro_rules! impl_der {
 macro_rules! impl_ber {
     ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
-        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value);
-        $crate::impl_ber!(@kind $kind, $fmt);
+        $crate::impl_ber!(@kind $kind $(($constructed))?, $fmt);
     };
     ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
-        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
         $crate::__impl_asn1_nominal_exec_owned!($fmt, $value);
-        $crate::impl_ber!(@kind $kind, $fmt);
+        $crate::impl_ber!(@kind $kind $(($constructed))?, $fmt);
     };
-    (@kind tagged, $fmt:ident) => {
+    (@kind tagged($constructed:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!($fmt);
         $crate::__impl_asn1_nominal_tagged!($fmt);
+    };
+    (@kind tagged_exact($constructed:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(exact($constructed), $fmt);
+        $crate::__impl_asn1_nominal_tagged!($fmt);
+    };
+    (@kind tagged_identity($constructed:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(identity, $fmt);
+        $crate::__impl_asn1_nominal_tagged!($fmt);
+    };
+    (@kind untagged_mask($domain:expr), $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(mask($domain), $fmt);
+    };
+    (@kind untagged_any, $fmt:ident) => {
+        $crate::__impl_asn1_nominal_has_start!(any, $fmt);
     };
     (@kind untagged_start, $fmt:ident) => {
         $crate::__impl_asn1_nominal_has_start!($fmt);

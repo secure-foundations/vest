@@ -169,8 +169,7 @@ mod derived_proofs {
 
     impl<C: SpecCombinator + SafeParser + Productive> Productive for BerSequenceFmt<C> {
         open spec fn productive_inv(&self) -> bool {
-            &&& self.1.safe_inv()
-            &&& self.1.productive_inv()
+            self.1.safe_inv()
         }
 
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {

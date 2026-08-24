@@ -2,6 +2,299 @@
 
 use super::*;
 
+struct UnambiguityEmitter<'a> {
+    names: &'a Names,
+    lines: Vec<String>,
+    next_id: usize,
+    bridged_start_domains: BTreeSet<StartCertificate>,
+    reveal_exact_uint: bool,
+    reveal_any_non_eoc: bool,
+    reveal_empty: bool,
+    reveal_union: bool,
+    reveal_disjoint: bool,
+}
+
+struct EmittedUnambiguity {
+    code: String,
+    reveal_exact_uint: bool,
+    reveal_any_non_eoc: bool,
+    reveal_empty: bool,
+    reveal_union: bool,
+    reveal_disjoint: bool,
+}
+
+impl<'a> UnambiguityEmitter<'a> {
+    fn new(names: &'a Names) -> Self {
+        Self {
+            names,
+            lines: Vec::new(),
+            next_id: 0,
+            bridged_start_domains: BTreeSet::new(),
+            reveal_exact_uint: false,
+            reveal_any_non_eoc: false,
+            reveal_empty: false,
+            reveal_union: false,
+            reveal_disjoint: false,
+        }
+    }
+
+    fn emit_start_equality(
+        &mut self,
+        format: &str,
+        domain: &StartCertificate,
+    ) -> Result<(), CodegenError> {
+        finite_start_certificate(domain)?;
+        let tags = domain
+            .tags
+            .as_ref()
+            .expect("finite certificate checked above");
+        let tags = tags.iter().collect::<Vec<_>>();
+        let bridged = if !domain.accepts_empty && tags.len() == 1 {
+            self.reveal_exact_uint = true;
+            let tag = tags[0];
+            let class = match tag.class {
+                0 => "Class::Universal",
+                1 => "Class::Application",
+                2 => "Class::ContextSpecific",
+                3 => "Class::Private",
+                _ => unreachable!("wire tag classes are normalized by the frontend"),
+            };
+            self.lines.push(format!(
+                "assert({format}.asn1_start() == asn1_start_exact_uint({class}, {}, {}u64));",
+                tag.constructed, tag.number,
+            ));
+            if self.bridged_start_domains.insert(domain.clone()) {
+                self.lines.push(format!(
+                    "assert(asn1_start_exact_uint({class}, {}, {}u64) == {}) by (bit_vector);",
+                    tag.constructed,
+                    tag.number,
+                    render_start_certificate(domain),
+                ));
+            }
+            true
+        } else if !domain.accepts_empty && tags.len() == 2 {
+            let first = tags[0];
+            let second = tags[1];
+            if first.class == second.class
+                && first.number == second.number
+                && first.constructed != second.constructed
+            {
+                self.reveal_exact_uint = true;
+                let class = match first.class {
+                    0 => "Class::Universal",
+                    1 => "Class::Application",
+                    2 => "Class::ContextSpecific",
+                    3 => "Class::Private",
+                    _ => unreachable!("wire tag classes are normalized by the frontend"),
+                };
+                if self.bridged_start_domains.insert(domain.clone()) {
+                    self.lines.push(format!(
+                        "lemma_asn1_start_identity_uint({class}, {}u64);",
+                        first.number,
+                    ));
+                    self.lines.push(format!(
+                        "assert(asn1_start_identity_uint({class}, {}u64) == {}) by (bit_vector);",
+                        first.number,
+                        render_start_certificate(domain),
+                    ));
+                }
+                self.lines.push(format!(
+                    "assert({format}.asn1_start() == asn1_start_identity_uint({class}, {}u64));",
+                    first.number,
+                ));
+                true
+            } else {
+                false
+            }
+        } else if domain.accepts_empty
+            && tags.len() == 1
+            && tags[0].class == 0
+            && tags[0].number == 0
+            && !tags[0].constructed
+        {
+            if self.bridged_start_domains.insert(domain.clone()) {
+                self.lines
+                    .push("reveal(asn1_start_ber_boundary);".to_string());
+                self.lines.push(format!(
+                    "assert(asn1_start_ber_boundary() == {}) by (bit_vector);",
+                    render_start_certificate(domain),
+                ));
+            }
+            self.lines.push(format!(
+                "assert({format}.asn1_start() == asn1_start_ber_boundary());"
+            ));
+            true
+        } else {
+            false
+        };
+        if !bridged {
+            if domain == &StartCertificate::any_non_eoc() {
+                self.reveal_any_non_eoc = true;
+            } else if domain.accepts_empty && tags.is_empty() {
+                self.reveal_empty = true;
+            }
+            self.lines.push(format!(
+                "assert({format}.asn1_start() == {});",
+                render_start_certificate(domain),
+            ));
+        }
+        Ok(())
+    }
+
+    fn emit(
+        mut self,
+        plan: &UnambiguityPlan,
+        needs_certificate: bool,
+    ) -> Result<EmittedUnambiguity, CodegenError> {
+        self.emit_plan(plan, needs_certificate)?;
+        Ok(EmittedUnambiguity {
+            code: self.lines.join("\n"),
+            reveal_exact_uint: self.reveal_exact_uint,
+            reveal_any_non_eoc: self.reveal_any_non_eoc,
+            reveal_empty: self.reveal_empty,
+            reveal_union: self.reveal_union,
+            reveal_disjoint: self.reveal_disjoint,
+        })
+    }
+
+    fn emit_plan(
+        &mut self,
+        plan: &UnambiguityPlan,
+        needs_certificate: bool,
+    ) -> Result<String, CodegenError> {
+        let needs_binding = needs_certificate;
+        let name = if needs_binding {
+            let name = format!("__asn1_fmt_{}", self.next_id);
+            self.next_id += 1;
+            self.lines.push(format!(
+                "let {name} =\n    {};",
+                indent_continuation(&plan.expr, 4)
+            ));
+            name
+        } else {
+            plan.expr.clone()
+        };
+
+        let mut is_union = false;
+        match &plan.kind {
+            UnambiguityKind::Leaf => {}
+            // Nominal formats expose trivial public proof invariants and a sealed FIRST
+            // certificate through their macro-generated trait implementations. Their private
+            // schema proof is therefore not an obligation of an enclosing format.
+            UnambiguityKind::Nominal => {}
+            UnambiguityKind::Transparent(child) | UnambiguityKind::Mapped(child) => {
+                self.emit_plan(child, needs_certificate)?;
+            }
+            UnambiguityKind::Retagged(child) => {
+                self.emit_plan(child, false)?;
+            }
+            UnambiguityKind::Pair(left, right) => {
+                self.emit_plan(left, needs_certificate)?;
+                self.emit_plan(right, false)?;
+            }
+            UnambiguityKind::BerSequenceOf(child) => {
+                self.reveal_disjoint = true;
+                let child_name = self.emit_plan(child, true)?;
+                let child_domain = finite_start_certificate(&child.start)?;
+                let eoc_domain = StartCertificate {
+                    accepts_empty: false,
+                    tags: Some(BTreeSet::from([WireTag {
+                        class: 0,
+                        number: 0,
+                        constructed: false,
+                    }])),
+                };
+                let eoc_name = format!("__asn1_fmt_{}", self.next_id);
+                self.next_id += 1;
+                self.lines.push(format!("let {eoc_name} = EOC;"));
+                self.emit_start_equality(&eoc_name, &eoc_domain)?;
+                self.lines.push(format!(
+                    "assert(asn1_starts_disjoint({}, {})) by (bit_vector);",
+                    render_start_certificate(child_domain),
+                    render_start_certificate(&eoc_domain),
+                ));
+                self.lines.push(format!(
+                    "assert(asn1_starts_disjoint({child_name}.asn1_start(), {eoc_name}.asn1_start()));"
+                ));
+                self.lines.push(format!(
+                    "lemma_disjoint_asn1_starts({child_name}, {eoc_name});"
+                ));
+            }
+            UnambiguityKind::Choice(left, right)
+            | UnambiguityKind::Optional(left, right)
+            | UnambiguityKind::Defaulted(left, right) => {
+                self.reveal_disjoint = true;
+                let left_name = self.emit_plan(left, true)?;
+                let right_name = self.emit_plan(right, true)?;
+                let left_domain = finite_start_certificate(&left.start)?;
+                let right_domain = finite_start_certificate(&right.start)?;
+                self.lines.push(format!(
+                    "assert(asn1_starts_disjoint({}, {})) by (bit_vector);",
+                    render_start_certificate(left_domain),
+                    render_start_certificate(right_domain),
+                ));
+                self.lines.push(format!(
+                    "assert(asn1_starts_disjoint({left_name}.asn1_start(), {right_name}.asn1_start()));"
+                ));
+                self.lines.push(format!(
+                    "lemma_disjoint_asn1_starts({left_name}, {right_name});"
+                ));
+                is_union = true;
+            }
+        }
+
+        if matches!(plan.kind, UnambiguityKind::Mapped(_)) {
+            self.lines.push(format!(
+                "assert forall|output: <{} as SpecMap>::Output| #[trigger]\n    {name}.consistent(output) implies {name}.mapper.sound(output) by {{\n    if {name}.consistent(output) {{\n        {}::lemma_from_into(output);\n    }}\n}}",
+                self.names.forward, self.names.spec,
+            ));
+        }
+        if is_union {
+            let left = match &plan.kind {
+                UnambiguityKind::Choice(left, _)
+                | UnambiguityKind::Optional(left, _)
+                | UnambiguityKind::Defaulted(left, _) => &left.start,
+                _ => unreachable!("union children are recorded only for union formats"),
+            };
+            let right = match &plan.kind {
+                UnambiguityKind::Choice(_, right)
+                | UnambiguityKind::Optional(_, right)
+                | UnambiguityKind::Defaulted(_, right) => &right.start,
+                _ => unreachable!("union children are recorded only for union formats"),
+            };
+            if needs_certificate {
+                self.reveal_union = true;
+                self.lines.push(format!(
+                    "assert(asn1_start_union({}, {}) == {}) by (bit_vector);",
+                    render_start_certificate(left),
+                    render_start_certificate(right),
+                    render_start_certificate(&plan.start),
+                ));
+                self.lines.push(format!(
+                    "assert({name}.asn1_start() == {});",
+                    render_start_certificate(&plan.start),
+                ));
+            }
+        } else if needs_certificate && plan.start.tags.is_some() {
+            self.emit_start_equality(&name, &plan.start)?;
+        }
+        Ok(name)
+    }
+}
+
+fn finite_start_certificate(
+    certificate: &StartCertificate,
+) -> Result<&StartCertificate, CodegenError> {
+    if certificate.tags.is_some() {
+        Ok(certificate)
+    } else {
+        Err(CodegenError::new(
+            "internal",
+            "an open ASN.1 start domain reached a generated disjointness obligation",
+        ))
+    }
+}
+
 impl<'a> Generator<'a> {
     pub(super) fn render_format_declaration(
         &self,
@@ -10,17 +303,25 @@ impl<'a> Generator<'a> {
     ) -> Result<(), CodegenError> {
         let names = &self.names[&definition.name];
         let rule = self.rules[&definition.name];
-        let rendered = match &definition.ty {
+        let mut rendered = match &definition.ty {
             Type::Sequence(fields) => {
                 let sequence = match rule {
                     EncodingRules::Der => {
                         let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
+                        let expr =
+                            render_list_combinator(&self.backend_item(rule, "SEQUENCE"), &raw.expr);
                         Rendered {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
-                            expr: render_list_combinator(
-                                &self.backend_item(rule, "SEQUENCE"),
-                                &raw.expr,
-                            ),
+                            proof: UnambiguityPlan {
+                                expr: expr.clone(),
+                                start: StartCertificate::finite(BTreeSet::from([WireTag {
+                                    class: 0,
+                                    number: 16,
+                                    constructed: true,
+                                }])),
+                                kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
+                            },
+                            expr,
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
@@ -34,12 +335,20 @@ impl<'a> Generator<'a> {
                             &end_expr,
                             rule,
                         )?;
+                        let expr =
+                            render_list_combinator(&self.backend_item(rule, "SEQUENCE"), &raw.expr);
                         Rendered {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
-                            expr: render_list_combinator(
-                                &self.backend_item(rule, "SEQUENCE"),
-                                &raw.expr,
-                            ),
+                            proof: UnambiguityPlan {
+                                expr: expr.clone(),
+                                start: StartCertificate::finite(BTreeSet::from([WireTag {
+                                    class: 0,
+                                    number: 16,
+                                    constructed: true,
+                                }])),
+                                kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
+                            },
+                            expr,
                             shape: TagShape::Tlv { constructed: true },
                         }
                     }
@@ -49,9 +358,19 @@ impl<'a> Generator<'a> {
             Type::Set(fields) => {
                 debug_assert_eq!(rule, EncodingRules::Der);
                 let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
+                let expr = render_list_combinator(&self.backend_item(rule, "SET"), &raw.expr);
                 let set = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SetFmt"), raw.ty),
-                    expr: render_list_combinator(&self.backend_item(rule, "SET"), &raw.expr),
+                    proof: UnambiguityPlan {
+                        expr: expr.clone(),
+                        start: StartCertificate::finite(BTreeSet::from([WireTag {
+                            class: 0,
+                            number: 17,
+                            constructed: true,
+                        }])),
+                        kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
+                    },
+                    expr,
                     shape: TagShape::Tlv { constructed: true },
                 };
                 map_with_bimap(set, &names.forward, &names.reverse)
@@ -65,12 +384,15 @@ impl<'a> Generator<'a> {
                     ty: self.backend_item(rule, "Enumerated16TlvFmt"),
                     expr: self.backend_item(rule, "ENUMERATED16"),
                     shape: TagShape::Tlv { constructed: false },
+                    proof: UnambiguityPlan::leaf(self.backend_item(rule, "ENUMERATED16")),
                 };
                 let refined = refine(wire, names.predicate.clone(), names.predicate.clone());
                 map_with_bimap(refined, &names.forward, &names.reverse)
             }
             ty => self.render_type(ty, rule)?,
         };
+        rendered.proof.start =
+            self.start_certificate(&definition.ty, &mut BTreeSet::new(), rule)?;
         let (rendered_expr, local_items) = if self.mixed_rules {
             localize_rule_items(&rendered.expr, rule)
         } else {
@@ -89,7 +411,7 @@ impl<'a> Generator<'a> {
         output.line(format_args!("#[derive(Clone, Copy)]"));
         output.line(format_args!("#[verifier::ext_equal]"));
         match self.nominal_kind(definition)? {
-            NominalKind::Tagged { .. } => {
+            NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. } => {
                 let (class, number) = self.nominal_tag(definition)?;
                 output.line(format_args!(
                     "pub struct {}(pub Class, pub u64);",
@@ -100,7 +422,7 @@ impl<'a> Generator<'a> {
                     "    pub const Fmt: Self = Self({class}, {number}u64);"
                 ));
             }
-            NominalKind::UntaggedStart | NominalKind::Untagged => {
+            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny | NominalKind::Untagged => {
                 output.line(format_args!("pub struct {};", names.format));
                 output.line(format_args!("impl {} {{", names.format));
                 output.line(format_args!("    pub const Fmt: Self = Self;"));
@@ -138,6 +460,90 @@ impl<'a> Generator<'a> {
             indent_continuation(&rendered_expr, 8)
         ));
         output.line(format_args!("    }}"));
+        let nominal_kind = self.nominal_kind(definition)?;
+        let mut proof_plan = rendered.proof.clone();
+        proof_plan.expr = "self.spec_inner()".to_string();
+        if matches!(
+            nominal_kind,
+            NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. }
+        ) {
+            // `self` is retaggable, so only `Self::Fmt` has the schema's concrete start mask.
+            // The arbitrary receiver's start is related to `spec_inner` symbolically below.
+            proof_plan.start = StartCertificate::open();
+        }
+        let certify_root = matches!(
+            nominal_kind,
+            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny
+        );
+        let proof = UnambiguityEmitter::new(names).emit(&proof_plan, certify_root)?;
+        output.blank_line();
+        output.line(format_args!("    proof fn lemma_schema_unambiguous(&self)"));
+        output.line(format_args!("        ensures"));
+        output.line(format_args!("            self.spec_inner().unambiguous(),"));
+        let has_start = !matches!(&nominal_kind, NominalKind::Untagged);
+        if has_start {
+            output.line(format_args!(
+                "            self.spec_inner().asn1_start() == self.asn1_start(),"
+            ));
+            output.line(format_args!(
+                "            Self::Fmt.asn1_start() == {},",
+                render_start_certificate(&rendered.proof.start)
+            ));
+        }
+        output.line(format_args!("    {{"));
+        if proof.reveal_exact_uint
+            || matches!(
+                &nominal_kind,
+                NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. }
+            )
+        {
+            output.line(format_args!("        reveal(asn1_start_exact_uint);"));
+        }
+        if proof.reveal_any_non_eoc {
+            output.line(format_args!("        reveal(asn1_start_any_non_eoc);"));
+        }
+        if proof.reveal_empty {
+            output.line(format_args!("        reveal(asn1_start_empty);"));
+        }
+        if proof.reveal_union {
+            output.line(format_args!("        reveal(asn1_start_union);"));
+        }
+        if proof.reveal_disjoint {
+            output.line(format_args!("        reveal(asn1_starts_disjoint);"));
+        }
+        output.line(format_args!(
+            "        reveal({}::spec_inner);",
+            names.format
+        ));
+        match nominal_kind {
+            NominalKind::TaggedExact { constructed } => {
+                output.line(format_args!(
+                    "        lemma_asn1_start_exact_uint(self.0, {constructed}, self.1);"
+                ));
+            }
+            NominalKind::TaggedIdentity { .. } => {
+                output.line(format_args!(
+                    "        lemma_asn1_start_identity_uint(self.0, self.1);"
+                ));
+            }
+            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny | NominalKind::Untagged => {}
+        }
+        if !proof.code.is_empty() {
+            output.line(format_args!(
+                "        {}",
+                indent_continuation(&proof.code, 8)
+            ));
+        }
+        if has_start {
+            output.line(format_args!(
+                "        assert(self.spec_inner().asn1_start() == self.asn1_start());"
+            ));
+            output.line(format_args!(
+                "        assert(Self::Fmt.asn1_start() == {}) by (bit_vector);",
+                render_start_certificate(&rendered.proof.start)
+            ));
+        }
+        output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
 "
@@ -157,12 +563,23 @@ impl<'a> Generator<'a> {
                 constructed,
             )
         };
-        Ok(match ty {
+        let mut rendered = match ty {
             Type::SequenceOf(inner, constraint) => {
                 let inner = self.render_type(inner, rule)?;
+                let expr = format!("{}({})", self.backend_item(rule, "SEQUENCE_OF"), inner.expr);
+                let proof = if rule == EncodingRules::Ber {
+                    UnambiguityPlan {
+                        expr: expr.clone(),
+                        start: inner.proof.start.clone(),
+                        kind: UnambiguityKind::BerSequenceOf(Box::new(inner.proof)),
+                    }
+                } else {
+                    UnambiguityPlan::transparent(expr.clone(), inner.proof)
+                };
                 let sequence_of = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SequenceOfFmt"), inner.ty),
-                    expr: format!("{}({})", self.backend_item(rule, "SEQUENCE_OF"), inner.expr),
+                    proof,
+                    expr,
                     shape: TagShape::Tlv { constructed: true },
                 };
                 if let Some(constraint) = constraint {
@@ -175,9 +592,20 @@ impl<'a> Generator<'a> {
             }
             Type::SetOf(inner, constraint) => {
                 let inner = self.render_type(inner, rule)?;
+                let expr = format!("{}({})", self.backend_item(rule, "SET_OF"), inner.expr);
+                let proof = if rule == EncodingRules::Ber {
+                    UnambiguityPlan {
+                        expr: expr.clone(),
+                        start: inner.proof.start.clone(),
+                        kind: UnambiguityKind::BerSequenceOf(Box::new(inner.proof)),
+                    }
+                } else {
+                    UnambiguityPlan::transparent(expr.clone(), inner.proof)
+                };
                 let set_of = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SetOfTlvFmt"), inner.ty),
-                    expr: format!("{}({})", self.backend_item(rule, "SET_OF"), inner.expr),
+                    proof,
+                    expr,
                     shape: TagShape::Tlv { constructed: true },
                 };
                 if let Some(constraint) = constraint {
@@ -190,10 +618,16 @@ impl<'a> Generator<'a> {
             }
             Type::TypeRef(name) => {
                 let names = &self.names[name];
+                let expr = format!("{}::Fmt", names.format);
                 Rendered {
                     ty: names.format.clone(),
-                    expr: format!("{}::Fmt", names.format),
+                    expr: expr.clone(),
                     shape: self.tag_shape(ty, &mut BTreeSet::new(), self.rules[name])?,
+                    proof: UnambiguityPlan {
+                        expr,
+                        start: StartCertificate::open(),
+                        kind: UnambiguityKind::Nominal,
+                    },
                 }
             }
             Type::Integer(_, _) => backend_primitive("IntegerTlvFmt", "INTEGER", false),
@@ -255,6 +689,7 @@ impl<'a> Generator<'a> {
                 ty: self.backend_item(rule, "AnyTlvFmt"),
                 expr: self.backend_item(rule, "ANY"),
                 shape: TagShape::Untagged,
+                proof: UnambiguityPlan::leaf(self.backend_item(rule, "ANY")),
             },
             Type::Tagged { tag, inner } => self.render_tagged(tag, inner, rule)?,
             Type::Constrained {
@@ -319,6 +754,42 @@ impl<'a> Generator<'a> {
                     "unsupported or unlowered inline ASN.1 type reached format rendering",
                 ));
             }
+        };
+        rendered.proof.start = self.start_certificate(ty, &mut BTreeSet::new(), rule)?;
+        Ok(rendered)
+    }
+
+    fn start_certificate(
+        &self,
+        ty: &Type,
+        visiting: &mut BTreeSet<String>,
+        rule: EncodingRules,
+    ) -> Result<StartCertificate, CodegenError> {
+        Ok(match ty {
+            Type::Any | Type::AnyDefinedBy(_) => StartCertificate::any_non_eoc(),
+            Type::Choice(variants) => {
+                let mut result = StartCertificate::finite(BTreeSet::new());
+                for variant in variants {
+                    result = result.union(&self.start_certificate(&variant.ty, visiting, rule)?);
+                }
+                result
+            }
+            Type::TypeRef(name) => {
+                if !visiting.insert(name.clone()) {
+                    return Err(CodegenError::new(
+                        name,
+                        "recursive type while resolving ASN.1 start certificate",
+                    ));
+                }
+                let result =
+                    self.start_certificate(&self.definition(name)?.ty, visiting, self.rules[name])?;
+                visiting.remove(name);
+                result
+            }
+            Type::Constrained { base_type, .. } => {
+                self.start_certificate(base_type, visiting, rule)?
+            }
+            _ => StartCertificate::from_tag_domain(&self.tag_domain(ty, visiting, rule)?),
         })
     }
 
@@ -339,10 +810,27 @@ impl<'a> Generator<'a> {
         end_expr: &str,
         rule: EncodingRules,
     ) -> Result<Rendered, CodegenError> {
+        let end_start = if end_expr.ends_with("BER_END") {
+            StartCertificate {
+                accepts_empty: true,
+                tags: Some(BTreeSet::from([WireTag {
+                    class: 0,
+                    number: 0,
+                    constructed: false,
+                }])),
+            }
+        } else {
+            StartCertificate::eof()
+        };
         let mut result = Rendered {
             ty: end_ty.to_string(),
             expr: end_expr.to_string(),
             shape: TagShape::Untagged,
+            proof: UnambiguityPlan {
+                expr: end_expr.to_string(),
+                start: end_start,
+                kind: UnambiguityKind::Leaf,
+            },
         };
 
         for field in fields.iter().rev() {
@@ -350,6 +838,14 @@ impl<'a> Generator<'a> {
                 let field_rendered = self.render_type(&field.ty, rule)?;
                 let default =
                     self.render_default(&field.ty, default, &format!("{path}.{}", field.name))?;
+                let expr = format!(
+                    "{}({}, {},\n{})",
+                    self.backend_item(rule, "DEFAULT"),
+                    field_rendered.expr,
+                    default.expr,
+                    result.expr
+                );
+                let start = field_rendered.proof.start.union(&result.proof.start);
                 Rendered {
                     ty: format!(
                         "{}<{}, {}, {}>",
@@ -358,13 +854,15 @@ impl<'a> Generator<'a> {
                         default.ty,
                         result.ty
                     ),
-                    expr: format!(
-                        "{}({}, {},\n{})",
-                        self.backend_item(rule, "DEFAULT"),
-                        field_rendered.expr,
-                        default.expr,
-                        result.expr
-                    ),
+                    proof: UnambiguityPlan {
+                        expr: expr.clone(),
+                        start,
+                        kind: UnambiguityKind::Defaulted(
+                            Box::new(field_rendered.proof),
+                            Box::new(result.proof),
+                        ),
+                    },
+                    expr,
                     shape: TagShape::Untagged,
                 }
             } else {
@@ -374,12 +872,35 @@ impl<'a> Generator<'a> {
                 } else {
                     ("Pair", "REQUIRED")
                 };
+                let expr = format!(
+                    "{expr_constructor}({},\n{})",
+                    field_rendered.expr, result.expr
+                );
+                let (start, kind) = if field.optional {
+                    (
+                        field_rendered.proof.start.union(&result.proof.start),
+                        UnambiguityKind::Optional(
+                            Box::new(field_rendered.proof),
+                            Box::new(result.proof),
+                        ),
+                    )
+                } else {
+                    (
+                        field_rendered.proof.start.clone(),
+                        UnambiguityKind::Pair(
+                            Box::new(field_rendered.proof),
+                            Box::new(result.proof),
+                        ),
+                    )
+                };
                 Rendered {
                     ty: format!("{ty_constructor}<{}, {}>", field_rendered.ty, result.ty),
-                    expr: format!(
-                        "{expr_constructor}({},\n{})",
-                        field_rendered.expr, result.expr
-                    ),
+                    proof: UnambiguityPlan {
+                        expr: expr.clone(),
+                        start,
+                        kind,
+                    },
+                    expr,
                     shape: TagShape::Untagged,
                 }
             };
@@ -401,9 +922,16 @@ impl<'a> Generator<'a> {
             let middle = choice_split(rendered.len());
             let left = combine(&rendered[..middle]);
             let right = combine(&rendered[middle..]);
+            let expr = render_choice_combinator(&left.expr, &right.expr);
+            let start = left.proof.start.union(&right.proof.start);
             Rendered {
                 ty: format!("Choice<{}, {}>", left.ty, right.ty),
-                expr: render_choice_combinator(&left.expr, &right.expr),
+                proof: UnambiguityPlan {
+                    expr: expr.clone(),
+                    start,
+                    kind: UnambiguityKind::Choice(Box::new(left.proof), Box::new(right.proof)),
+                },
+                expr,
                 shape: TagShape::Untagged,
             }
         }
@@ -435,7 +963,9 @@ impl<'a> Generator<'a> {
         match ty {
             Type::Tagged { tag, inner } => {
                 let inner = self.render_type_by_ref(inner, rule)?;
-                Ok(self.apply_tag(tag, inner, rule))
+                let mut rendered = self.apply_tag(tag, inner, rule);
+                rendered.proof.start = self.start_certificate(ty, &mut BTreeSet::new(), rule)?;
+                Ok(rendered)
             }
             _ => self.render_type(ty, rule).map(wrap_ref),
         }
@@ -448,26 +978,27 @@ impl<'a> Generator<'a> {
         rule: EncodingRules,
     ) -> Rendered {
         match (tag.tagging.clone(), inner.shape) {
-            (Tagging::Explicit, TagShape::Untagged) => Rendered {
-                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
-                shape: TagShape::Tlv { constructed: true },
-            },
-            (Tagging::Explicit, TagShape::Tlv { .. }) => Rendered {
-                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
-                shape: TagShape::Tlv { constructed: true },
-            },
-            (Tagging::Implicit, TagShape::Untagged) => Rendered {
-                ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
-                expr: render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule)),
-                shape: TagShape::Tlv { constructed: true },
-            },
-            (Tagging::Implicit, TagShape::Tlv { constructed }) => Rendered {
-                ty: format!("ImplicitFmt<{}>", inner.ty),
-                expr: render_retag_helper(tag, false, &inner.expr, None),
-                shape: TagShape::Tlv { constructed },
-            },
+            (Tagging::Explicit, TagShape::Untagged)
+            | (Tagging::Explicit, TagShape::Tlv { .. })
+            | (Tagging::Implicit, TagShape::Untagged) => {
+                let expr =
+                    render_retag_helper(tag, true, &inner.expr, self.mixed_rules.then_some(rule));
+                Rendered {
+                    ty: format!("{}<{}>", self.backend_item(rule, "ExplicitFmt"), inner.ty),
+                    proof: UnambiguityPlan::retagged(expr.clone(), inner.proof),
+                    expr,
+                    shape: TagShape::Tlv { constructed: true },
+                }
+            }
+            (Tagging::Implicit, TagShape::Tlv { constructed }) => {
+                let expr = render_retag_helper(tag, false, &inner.expr, None);
+                Rendered {
+                    ty: format!("ImplicitFmt<{}>", inner.ty),
+                    proof: UnambiguityPlan::retagged(expr.clone(), inner.proof),
+                    expr,
+                    shape: TagShape::Tlv { constructed },
+                }
+            }
         }
     }
 
@@ -512,40 +1043,72 @@ impl<'a> Generator<'a> {
     ) -> Result<NominalKind, CodegenError> {
         let rule = self.rules[&definition.name];
         match self.tag_shape(&definition.ty, &mut BTreeSet::new(), rule)? {
-            TagShape::Tlv { constructed } => Ok(NominalKind::Tagged { constructed }),
-            TagShape::Untagged
-                if self.untagged_has_asn1_start(&definition.ty, &mut BTreeSet::new())? =>
+            TagShape::Tlv { constructed }
+                if self.accepts_primitive_and_constructed(
+                    &definition.ty,
+                    &mut BTreeSet::new(),
+                    rule,
+                )? =>
             {
-                Ok(NominalKind::UntaggedStart)
+                Ok(NominalKind::TaggedIdentity { constructed })
             }
-            TagShape::Untagged => Ok(NominalKind::Untagged),
+            TagShape::Tlv { constructed } => Ok(NominalKind::TaggedExact { constructed }),
+            TagShape::Untagged => {
+                match self.tag_domain(&definition.ty, &mut BTreeSet::new(), rule)? {
+                    TagDomain::Finite(tags) if !tags.is_empty() => Ok(NominalKind::UntaggedFinite(
+                        self.start_atoms(&definition.ty, &mut BTreeSet::new(), rule)?,
+                    )),
+                    TagDomain::Open => Ok(NominalKind::UntaggedAny),
+                    TagDomain::Finite(_) => Ok(NominalKind::Untagged),
+                }
+            }
         }
     }
 
-    pub(super) fn untagged_has_asn1_start(
+    pub(super) fn start_atoms(
         &self,
         ty: &Type,
         visiting: &mut BTreeSet<String>,
-    ) -> Result<bool, CodegenError> {
-        Ok(match ty {
-            Type::Any => true,
-            Type::Constrained { base_type, .. } => {
-                self.untagged_has_asn1_start(base_type, visiting)?
+        rule: EncodingRules,
+    ) -> Result<Vec<WireTag>, CodegenError> {
+        match ty {
+            Type::Choice(variants) => {
+                let mut atoms = Vec::new();
+                for variant in variants {
+                    for atom in self.start_atoms(&variant.ty, visiting, rule)? {
+                        if !atoms.contains(&atom) {
+                            atoms.push(atom);
+                        }
+                    }
+                }
+                Ok(atoms)
             }
+            Type::Constrained { base_type, .. } => self.start_atoms(base_type, visiting, rule),
             Type::TypeRef(name) => {
                 if !visiting.insert(name.clone()) {
                     return Err(CodegenError::new(
                         name,
-                        "recursive type while resolving ASN.1 starts",
+                        "recursive type while resolving ASN.1 start atoms",
                     ));
                 }
-                let has_start =
-                    self.untagged_has_asn1_start(&self.definition(name)?.ty, visiting)?;
+                let definition = self.definition(name)?;
+                let referenced_rule = self.rules[name];
+                let atoms = self.start_atoms(&definition.ty, visiting, referenced_rule)?;
                 visiting.remove(name);
-                has_start
+                Ok(atoms)
             }
-            _ => false,
-        })
+            _ if self.accepts_primitive_and_constructed(ty, &mut BTreeSet::new(), rule)? => {
+                let TagDomain::Finite(tags) = self.tag_domain(ty, &mut BTreeSet::new(), rule)?
+                else {
+                    return Ok(Vec::new());
+                };
+                Ok(tags.into_iter().collect())
+            }
+            _ => match self.tag_domain(ty, visiting, rule)? {
+                TagDomain::Finite(tags) => Ok(tags.into_iter().collect()),
+                TagDomain::Open => Ok(Vec::new()),
+            },
+        }
     }
 
     pub(super) fn nominal_tag(

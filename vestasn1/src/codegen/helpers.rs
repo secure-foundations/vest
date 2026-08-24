@@ -30,10 +30,12 @@ pub(super) enum TagShape {
     Untagged,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum NominalKind {
-    Tagged { constructed: bool },
-    UntaggedStart,
+    TaggedExact { constructed: bool },
+    TaggedIdentity { constructed: bool },
+    UntaggedFinite(Vec<WireTag>),
+    UntaggedAny,
     Untagged,
 }
 
@@ -50,6 +52,126 @@ pub(super) struct Rendered {
     pub(super) ty: String,
     pub(super) expr: String,
     pub(super) shape: TagShape,
+    pub(super) proof: UnambiguityPlan,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) struct StartCertificate {
+    pub(super) accepts_empty: bool,
+    pub(super) tags: Option<BTreeSet<WireTag>>,
+}
+
+impl StartCertificate {
+    pub(super) fn finite(tags: BTreeSet<WireTag>) -> Self {
+        Self {
+            accepts_empty: false,
+            tags: Some(tags),
+        }
+    }
+
+    pub(super) fn eof() -> Self {
+        Self {
+            accepts_empty: true,
+            tags: Some(BTreeSet::new()),
+        }
+    }
+
+    pub(super) fn open() -> Self {
+        Self {
+            accepts_empty: false,
+            tags: None,
+        }
+    }
+
+    pub(super) fn any_non_eoc() -> Self {
+        let mut tags = BTreeSet::new();
+        for class in 0u8..4 {
+            for constructed in [false, true] {
+                for number in 0u32..32 {
+                    if !(class == 0 && !constructed && number == 0) {
+                        tags.insert(WireTag {
+                            class,
+                            number,
+                            constructed,
+                        });
+                    }
+                }
+            }
+        }
+        Self {
+            accepts_empty: false,
+            tags: Some(tags),
+        }
+    }
+
+    pub(super) fn from_tag_domain(domain: &TagDomain) -> Self {
+        match domain {
+            TagDomain::Finite(tags) => Self::finite(tags.clone()),
+            TagDomain::Open => Self::open(),
+        }
+    }
+
+    pub(super) fn union(&self, other: &Self) -> Self {
+        let tags = match (&self.tags, &other.tags) {
+            (Some(left), Some(right)) => {
+                let mut result = left.clone();
+                result.extend(right.iter().cloned());
+                Some(result)
+            }
+            _ => None,
+        };
+        Self {
+            accepts_empty: self.accepts_empty || other.accepts_empty,
+            tags,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct UnambiguityPlan {
+    pub(super) expr: String,
+    pub(super) start: StartCertificate,
+    pub(super) kind: UnambiguityKind,
+}
+
+#[derive(Clone, Debug)]
+pub(super) enum UnambiguityKind {
+    Leaf,
+    Nominal,
+    Transparent(Box<UnambiguityPlan>),
+    Retagged(Box<UnambiguityPlan>),
+    Pair(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
+    Choice(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
+    Optional(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
+    Defaulted(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
+    BerSequenceOf(Box<UnambiguityPlan>),
+    Mapped(Box<UnambiguityPlan>),
+}
+
+impl UnambiguityPlan {
+    pub(super) fn leaf(expr: impl Into<String>) -> Self {
+        Self {
+            expr: expr.into(),
+            start: StartCertificate::open(),
+            kind: UnambiguityKind::Leaf,
+        }
+    }
+
+    pub(super) fn transparent(expr: String, child: UnambiguityPlan) -> Self {
+        Self {
+            expr,
+            start: child.start.clone(),
+            kind: UnambiguityKind::Transparent(Box::new(child)),
+        }
+    }
+
+    pub(super) fn retagged(expr: String, child: UnambiguityPlan) -> Self {
+        Self {
+            expr,
+            start: child.start.clone(),
+            kind: UnambiguityKind::Retagged(Box::new(child)),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -304,13 +426,16 @@ pub(super) fn primitive(ty: &str, expr: &str, constructed: bool) -> Rendered {
         ty: ty.to_string(),
         expr: expr.to_string(),
         shape: TagShape::Tlv { constructed },
+        proof: UnambiguityPlan::leaf(expr),
     }
 }
 
 pub(super) fn wrap_ref(rendered: Rendered) -> Rendered {
+    let expr = format!("Ref({})", rendered.expr);
     Rendered {
         ty: format!("Ref<{}>", rendered.ty),
-        expr: format!("Ref({})", rendered.expr),
+        proof: UnambiguityPlan::transparent(expr.clone(), rendered.proof),
+        expr,
         shape: rendered.shape,
     }
 }
@@ -320,9 +445,11 @@ pub(super) fn refine(
     predicate_type: String,
     predicate_expr: String,
 ) -> Rendered {
+    let expr = format!("Refined({}, {predicate_expr})", rendered.expr);
     Rendered {
         ty: format!("Refined<{}, {predicate_type}>", rendered.ty),
-        expr: format!("Refined({}, {predicate_expr})", rendered.expr),
+        proof: UnambiguityPlan::transparent(expr.clone(), rendered.proof),
+        expr,
         shape: rendered.shape,
     }
 }
@@ -341,6 +468,11 @@ pub(super) fn map_with_bimap(rendered: Rendered, forward: &str, reverse: &str) -
     };
     Rendered {
         ty: format!("Mapped<{}, BiMap<{forward}, {reverse}>>", rendered.ty),
+        proof: UnambiguityPlan {
+            expr: expr.clone(),
+            start: rendered.proof.start.clone(),
+            kind: UnambiguityKind::Mapped(Box::new(rendered.proof)),
+        },
         expr,
         shape: rendered.shape,
     }

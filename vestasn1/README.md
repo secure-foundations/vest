@@ -11,8 +11,9 @@ cargo run -- --rules ber schema.asn1 -o generated_ber.rs
 ```
 
 Individual definitions can use a rule different from the module default. The
-selected rule propagates through references, and a shared definition is emitted
-once per rule when both variants are required:
+selected rule propagates through transitive child references without changing
+parent definitions. Each ASN.1 definition has one global rule and is emitted
+exactly once:
 
 ```console
 cargo run -- --rules ber \
@@ -20,6 +21,11 @@ cargo run -- --rules ber \
   --der-definition CertificateSet \
   schema.asn1 -o generated_mixed.rs
 ```
+
+A BER definition may contain a DER child because every DER encoding is valid
+BER. The reverse would violate recursive DER canonicality, so the compiler
+rejects a DER definition that depends on a BER definition. Conflicting
+transitive overrides must be resolved with an explicit rule boundary.
 
 ## Generated API
 
@@ -104,6 +110,14 @@ RELATIVE-OID, GeneralString, VisibleString, ANY DEFINED BY, and general
 constraint combinations are not yet supported. Recursive schema definitions
 are rejected until nominal recursive formats are generated with a fixpoint
 backend.
+
+Generated disjointness certificates use the ASN.1 identifier's 256 possible
+leading octets as a four-word bitmap. Tag numbers 0 through 30 are represented
+exactly. All high-tag-number forms (numbers 31 and above) with the same class
+and constructed bit share the leading-octet bit for value 31. Therefore the
+current proof automation cannot certify two such high tags as disjoint even
+when their subsequent base-128 tag-number octets differ; an exact high-tag
+fallback is intentionally not implemented yet.
 
 The checked `parse` and `compile` entry points reject extension markers,
 extension-addition groups, `WITH COMPONENTS`, imports, and AUTOMATIC TAGS when

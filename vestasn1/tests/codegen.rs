@@ -13,12 +13,16 @@ fn compile_ber(source: &str) -> Result<String, Error> {
     )
 }
 
-fn assert_uses_broadcast_disjointness_only(generated: &str) {
+fn assert_uses_local_start_certificates(generated: &str) {
     assert!(!generated.contains("assert(disjoint_domains"));
-    assert!(!generated.contains("lemma_disjoint_"));
+    assert!(!generated.contains("broadcast use vest_lib2::asn1::disjoint"));
     assert!(!generated
         .lines()
         .any(|line| line.contains(".inner") && line.contains(".unambiguous()")));
+    assert!(generated.contains("proof fn lemma_schema_unambiguous"));
+    assert!(generated.contains("asn1_start_mask("));
+    assert!(generated.contains("lemma_disjoint_asn1_starts"));
+    assert!(!generated.contains("::Fmt.lemma_schema_unambiguous();"));
     assert!(generated.contains("vest_lib2::impl_"));
     assert!(!generated.contains("format_spec_invariants"));
 }
@@ -51,11 +55,11 @@ fn generates_vest_der_formats() {
     assert!(generated.contains("type MESSAGES__ = SequenceOfFmt<MESSAGE>;"));
     assert!(generated.contains("Choice<ImplicitFmt<Ref<FLAG>>, ExplicitFmt<Ref<PAYLOAD>>>"));
     assert!(generated.contains("IMPLICIT(0u64, Ref(FLAG::Fmt))"));
-    assert_uses_broadcast_disjointness_only(&generated);
+    assert_uses_local_start_certificates(&generated);
 }
 
 #[test]
-fn relies_on_broadcast_disjointness_for_multiway_choice() {
+fn emits_local_start_certificates_for_multiway_choice() {
     let generated = compile(
         r#"
 Choices DEFINITIONS ::= BEGIN
@@ -72,8 +76,9 @@ END
     )
     .unwrap();
 
-    assert_uses_broadcast_disjointness_only(&generated);
-    assert!(generated.contains("impl_der!(untagged, borrowed, VALUE"));
+    assert_uses_local_start_certificates(&generated);
+    assert!(generated.contains("impl_der!(untagged_mask("));
+    assert!(generated.contains("borrowed, VALUE"));
     assert!(generated.contains("mod __impl_value {\n    use super::*;"));
     assert!(generated.contains("use Sum::Inl as L;"));
     assert!(generated.contains("use Sum::Inr as R;"));
@@ -83,12 +88,36 @@ END
 }
 
 #[test]
+fn canonicalizes_choice_starts_into_one_bitmap() {
+    let generated = compile(
+        "ChoiceOrder DEFINITIONS ::= BEGIN
+         DirectoryString ::= CHOICE {
+             teletexString TeletexString,
+             printableString PrintableString,
+             universalString UniversalString,
+             utf8String UTF8String,
+             bmpString BMPString
+         }
+         END",
+    )
+    .unwrap();
+    assert!(generated.contains(
+        "asn1_start_mask(false, 0x0000000050181000u64, 0x0000000000000000u64, \
+         0x0000000000000000u64, 0x0000000000000000u64)"
+    ));
+}
+
+#[test]
 fn generates_verified_octet_string_size_constraint() {
     let generated =
         compile("Example DEFINITIONS ::= BEGIN Payload ::= OCTET STRING (SIZE (1..32)) END")
             .unwrap();
     assert!(generated.contains("Refined<OctetStringTlvFmt, Size<true, 1, true, 32>>"));
     assert!(generated.contains("Refined(OCTET_STRING, Size::<true, 1, true, 32>)"));
+    assert!(!generated.contains("reveal(asn1_start_any_non_eoc)"));
+    assert!(!generated.contains("reveal(asn1_start_empty)"));
+    assert!(!generated.contains("reveal(asn1_start_union)"));
+    assert!(!generated.contains("reveal(asn1_starts_disjoint)"));
 }
 
 #[test]
@@ -419,7 +448,7 @@ fn emits_numeric_and_universal_strings_for_der_and_ber() {
 }
 
 #[test]
-fn mixed_rules_propagate_and_duplicate_shared_definitions() {
+fn mixed_rules_assign_one_transitive_rule_per_definition() {
     let mut overrides = BTreeMap::new();
     overrides.insert("Canonical".to_string(), EncodingRules::Der);
     overrides.insert("Ordered".to_string(), EncodingRules::Der);
@@ -432,19 +461,65 @@ fn mixed_rules_propagate_and_duplicate_shared_definitions() {
     )
     .unwrap();
 
-    assert!(generated.contains("pub struct Shared {"));
-    assert!(generated.contains("pub struct SharedDer<'a> {"));
-    assert!(generated.contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED_DER>;"));
-    assert!(
-        generated.contains("use vest_lib2::asn1::ber::{BER_END, DEFAULT, OCTET_STRING, SEQUENCE};")
-    );
+    assert!(generated.contains("pub struct Shared<'a> {"));
+    assert!(!generated.contains("SharedDer"));
+    assert!(generated.contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED>;"));
+    assert!(generated.contains("use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};"));
     assert!(generated.contains("use vest_lib2::asn1::der::SET_OF;"));
-    assert!(generated.contains("SET_OF(SHARED_DER::Fmt)"));
-    assert!(!generated.contains("vest_lib2::asn1::ber::SEQUENCE("));
+    assert!(generated.contains("SET_OF(SHARED::Fmt)"));
+    assert!(generated.contains("REQUIRED(Ref(SHARED::Fmt),"));
     assert!(!generated.contains("vest_lib2::asn1::der::SET_OF("));
     assert!(generated.contains("type ORDERED__ = Mapped<vest_lib2::asn1::der::SetFmt<"));
     assert!(generated.contains("pub type Version = i8;"));
-    assert!(generated.contains("pub type VersionDer = i8;"));
+    assert!(!generated.contains("VersionDer"));
+    assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SHARED"));
+    assert!(generated.contains("impl_ber!(tagged_exact(true), borrowed, OUTER"));
+}
+
+#[test]
+fn rejects_conflicting_transitive_rule_overrides() {
+    let overrides = [
+        ("Canonical".to_string(), EncodingRules::Der),
+        ("Permissive".to_string(), EncodingRules::Ber),
+    ]
+    .into_iter()
+    .collect();
+    let error = compile_with_rule_overrides(
+        "Conflicting DEFINITIONS ::= BEGIN
+         Shared ::= INTEGER
+         Canonical ::= SEQUENCE { value Shared }
+         Permissive ::= SEQUENCE { value Shared }
+         END",
+        CodegenOptions {
+            encoding_rules: EncodingRules::Ber,
+        },
+        &overrides,
+    )
+    .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("conflicting transitive encoding rules"));
+}
+
+#[test]
+fn rejects_der_parent_with_explicit_ber_child() {
+    let overrides = [("Child".to_string(), EncodingRules::Ber)]
+        .into_iter()
+        .collect();
+    let error = compile_with_rule_overrides(
+        "InvalidMixed DEFINITIONS ::= BEGIN
+         Child ::= INTEGER
+         Parent ::= SEQUENCE { child Child }
+         END",
+        CodegenOptions {
+            encoding_rules: EncodingRules::Der,
+        },
+        &overrides,
+    )
+    .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("DER definition depends on BER definition `Child`"));
 }
 
 #[test]
@@ -482,7 +557,6 @@ fn emits_explicit_notation_for_untagged_choice_and_any() {
     let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
     assert!(generated.contains("EXPLICIT(3u64, Ref(SELECTION::Fmt))"));
     assert!(generated.contains("EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt))"));
-    assert!(!generated.contains("Tag { class: Class::ContextSpecific"));
 }
 
 #[test]
@@ -536,11 +610,11 @@ fn generates_ber_formats_with_owned_flattened_values() {
     assert!(generated.contains("pub type Bits = vest_lib2::asn1::BitStringOwned;"));
     assert!(generated.contains("pub type Label = String;"));
     assert!(generated.contains("pub type OpenValue = vest_lib2::asn1::AnyOwned;"));
-    assert!(!generated.contains("impl_der!(tagged(true), owned, ITEM"));
-    assert!(generated.contains("impl_ber!(tagged(true), owned, ITEM"));
+    assert!(!generated.contains("impl_der!(tagged_exact(true), owned, ITEM"));
+    assert!(generated.contains("impl_ber!(tagged_exact(true), owned, ITEM"));
     assert!(generated.contains("BerEndFmt"));
     assert!(generated.contains("BER_END"));
-    assert_uses_broadcast_disjointness_only(&generated);
+    assert_uses_local_start_certificates(&generated);
 }
 
 #[test]
@@ -548,7 +622,7 @@ fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
     let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
     assert!(generated.contains("pub type Measurement<'a> = vest_lib2::asn1::Real<'a, BER>;"));
     assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
-    assert!(generated.contains("impl_ber!(tagged(false), borrowed, MEASUREMENT"));
+    assert!(generated.contains("impl_ber!(tagged_exact(false), borrowed, MEASUREMENT"));
 }
 
 #[test]
@@ -610,9 +684,10 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     );
     assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib2::asn1::der::"));
     assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib2::asn1::ber::"));
-    assert!(generated.contains("type ALGORITHM_IDENTIFIER_DER__"));
-    assert!(generated.contains("impl_der!(tagged(true), borrowed, SIGNED_ATTRIBUTES"));
-    assert!(generated.contains("impl_ber!(tagged(true), owned, CONTENT_INFO"));
+    assert!(generated.contains("type ALGORITHM_IDENTIFIER__"));
+    assert!(!generated.contains("ALGORITHM_IDENTIFIER_DER"));
+    assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SIGNED_ATTRIBUTES"));
+    assert!(generated.contains("impl_ber!(tagged_exact(true), owned, CONTENT_INFO"));
 }
 
 #[test]

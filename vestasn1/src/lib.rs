@@ -36,9 +36,10 @@ pub fn compile_with_options(source: &str, options: CodegenOptions) -> Result<Str
     Ok(generate_with_options(&module, options)?)
 }
 
-/// Parse an ASN.1 module and generate it with per-definition encoding-rule
-/// overrides. Definitions without an override inherit the rule of their use
-/// site; shared definitions are emitted once per required rule.
+/// Parse an ASN.1 module and generate it with definition-global encoding-rule
+/// overrides. An override applies to the named definition and its transitive
+/// dependencies; parent definitions retain the module default. Each ASN.1
+/// definition is emitted exactly once.
 pub fn compile_with_rule_overrides(
     source: &str,
     options: CodegenOptions,
