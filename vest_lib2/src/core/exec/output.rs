@@ -145,6 +145,20 @@ impl OutputBuf for OutputSlice<'_> {
         self.obuf[self.pos] = byte;
         self.pos += 1;
     }
+
+    fn write_bytes(&mut self, bytes: &[u8]) {
+        let ghost old_view = self@;
+        let old_pos = self.pos;
+        let len = bytes.len();
+        assert(old_pos + len <= self.obuf.len());
+        {
+            let (_prefix, rest) = self.obuf.split_at_mut(old_pos);
+            let (destination, _suffix) = rest.split_at_mut(len);
+            destination.copy_from_slice(bytes);
+        }
+        self.pos = old_pos + len;
+        assert(self@ == old_view + bytes@);
+    }
 }
 
 #[cfg(feature = "alloc")]
