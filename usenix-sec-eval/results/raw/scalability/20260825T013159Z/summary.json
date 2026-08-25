@@ -1,0 +1,14 @@
+[
+  {
+    "system": "vest",
+    "kind": "choice",
+    "size": 64,
+    "generated_sloc": 2367,
+    "codegen_wall_seconds": 0.3664363329298794,
+    "codegen_exit_code": 0,
+    "verify_wall_seconds": 208.90308337495662,
+    "verify_exit_code": 101,
+    "threads": 10,
+    "timeout_seconds": 300
+  }
+]

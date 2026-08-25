@@ -1,0 +1,10 @@
+    Checking vps-scalability-case v0.0.0 (/Users/yicai/Research/repos/vest/usenix-sec-eval/results/raw/scalability/20260825T011418Z/vps/depth-4/crate)
+note: verifying module generated
+
+note: verifying module generated::derived_proofs
+
+note: verifying module generated::derived_specs
+
+note: verifying module generated::exec_impls
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.16s

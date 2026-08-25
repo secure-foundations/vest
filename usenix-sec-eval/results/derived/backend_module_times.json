@@ -1,0 +1,38 @@
+[
+  {
+    "area": "core",
+    "verified_modules": 11,
+    "verification_cpu_seconds": 3.934,
+    "smt_cpu_seconds": 0.526785
+  },
+  {
+    "area": "combinators",
+    "verified_modules": 78,
+    "verification_cpu_seconds": 55.784,
+    "smt_cpu_seconds": 24.786931000000017
+  },
+  {
+    "area": "primitives",
+    "verified_modules": 10,
+    "verification_cpu_seconds": 6.97,
+    "smt_cpu_seconds": 3.0109320000000004
+  },
+  {
+    "area": "asn1",
+    "verified_modules": 91,
+    "verification_cpu_seconds": 72.737,
+    "smt_cpu_seconds": 29.591220000000007
+  },
+  {
+    "area": "cbor",
+    "verified_modules": 11,
+    "verification_cpu_seconds": 21.856,
+    "smt_cpu_seconds": 14.740174
+  },
+  {
+    "area": "library_root",
+    "verified_modules": 0,
+    "verification_cpu_seconds": 0.0,
+    "smt_cpu_seconds": 0.0
+  }
+]

@@ -1,0 +1,32 @@
+test cms_corpus/pkits/parse/VPS ... bench:     1575572 ns/iter (+/- 44854)
+test cms_corpus/pkits/parse/rasn-cms ... bench:     2162055 ns/iter (+/- 563109)
+test cms_corpus/pkits/parse/RustCrypto-cms ... bench:     2038021 ns/iter (+/- 29652)
+
+test cms_corpus/dss-cades/parse/VPS ... bench:     1036780 ns/iter (+/- 14910)
+test cms_corpus/dss-cades/parse/rasn-cms ... bench:     2159172 ns/iter (+/- 34638)
+test cms_corpus/dss-cades/parse/RustCrypto-cms ... bench:     2141196 ns/iter (+/- 38644)
+
+test cms_corpus/rfc4134/parse/VPS ... bench:       15419 ns/iter (+/- 724)
+test cms_corpus/rfc4134/parse/rasn-cms ... bench:       19428 ns/iter (+/- 619)
+test cms_corpus/rfc4134/parse/RustCrypto-cms ... bench:       19823 ns/iter (+/- 190)
+
+test cms_corpus/combined/parse/VPS ... bench:     2643073 ns/iter (+/- 31296)
+test cms_corpus/combined/parse/rasn-cms ... bench:     4337498 ns/iter (+/- 52069)
+test cms_corpus/combined/parse/RustCrypto-cms ... bench:     4204406 ns/iter (+/- 68491)
+
+test cms_corpus/pkits/serialize/VPS ... bench:      992199 ns/iter (+/- 16597)
+test cms_corpus/pkits/serialize/rasn-cms ... bench:     4534329 ns/iter (+/- 117775)
+test cms_corpus/pkits/serialize/RustCrypto-cms ... bench:      964146 ns/iter (+/- 21215)
+
+test cms_corpus/dss-cades/serialize/VPS ... bench:      979874 ns/iter (+/- 16799)
+test cms_corpus/dss-cades/serialize/rasn-cms ... bench:     4771854 ns/iter (+/- 111807)
+test cms_corpus/dss-cades/serialize/RustCrypto-cms ... bench:     1044077 ns/iter (+/- 32056)
+
+test cms_corpus/rfc4134/serialize/VPS ... bench:        9233 ns/iter (+/- 122)
+test cms_corpus/rfc4134/serialize/rasn-cms ... bench:       38701 ns/iter (+/- 563)
+test cms_corpus/rfc4134/serialize/RustCrypto-cms ... bench:        8278 ns/iter (+/- 700)
+
+test cms_corpus/combined/serialize/VPS ... bench:     1977924 ns/iter (+/- 44527)
+test cms_corpus/combined/serialize/rasn-cms ... bench:     8971965 ns/iter (+/- 211963)
+test cms_corpus/combined/serialize/RustCrypto-cms ... bench:     1975058 ns/iter (+/- 64092)
+

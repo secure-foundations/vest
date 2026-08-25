@@ -1,0 +1,5 @@
+operation,system,nanoseconds,deviation_nanoseconds,values,bytes,mib_per_second,relative_to_vps
+parse,VPS,8938,129,49,3997,426.47530126155533,1.0
+parse,ciborium,24707,374,49,3997,154.28163041550093,0.361759825150767
+serialize,VPS,2760,35,49,3997,1381.1000879260077,1.0
+serialize,ciborium,3925,75,49,3997,971.1684694715367,0.7031847133757961

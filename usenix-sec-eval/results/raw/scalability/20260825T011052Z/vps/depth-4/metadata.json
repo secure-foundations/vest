@@ -1,0 +1,12 @@
+{
+  "system": "vps",
+  "kind": "depth",
+  "size": 4,
+  "generated_sloc": 1608,
+  "codegen_wall_seconds": 0.4882674589753151,
+  "codegen_exit_code": 0,
+  "verify_wall_seconds": 1.6010997910052538,
+  "verify_exit_code": 0,
+  "threads": 10,
+  "timeout_seconds": 300
+}

@@ -1,0 +1,6 @@
+struct_width4 = {
+    field0: u8,
+    field1: u8,
+    field2: u8,
+    field3: u8,
+}

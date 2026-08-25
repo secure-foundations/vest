@@ -1,0 +1,27 @@
+{
+  "label": "vps-tls-isolated",
+  "crate": "/Users/yicai/Research/repos/vest/usenix-sec-eval/harnesses/vps-tls-verify",
+  "module": "tls",
+  "threads": 10,
+  "command": [
+    "cargo",
+    "verus",
+    "verify",
+    "--fwd-verus-args-to",
+    "roots",
+    "--lib",
+    "--",
+    "--time-expanded",
+    "--output-json",
+    "--num-threads",
+    "10",
+    "--verify-module",
+    "tls"
+  ],
+  "started_utc": "2026-08-25T02:57:49.125030+00:00",
+  "host": "Yis-MacBook-Pro-47.local",
+  "revision": "ab3060750300e1dcc9791ed55ee391cbf56e40e1",
+  "wall_seconds": 119.78842424997129,
+  "exit_code": 0,
+  "finished_utc": "2026-08-25T02:59:48.929834+00:00"
+}

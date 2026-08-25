@@ -1,0 +1,7 @@
+revision=401e5bbcf32127408883fe7acf51c288d0f56329
+started_utc=2026-08-25T16:21:58Z
+command=cargo bench --bench cms_real_signed_data -- --noplot --output-format bencher
+d184ae83a1a3b4e59b96547b2b7a0ca9bbab3580ff32f5746eed721ebfa22d0d  /Users/yicai/Research/repos/vest/usenix-sec-eval/corpora/cms/dss/MANIFEST.tsv
+bbb244bfbe4b29b52ee6a7e82046dd9c22f234a7deee74b7c493c3c0ce35745f  /Users/yicai/Research/repos/vest/usenix-sec-eval/corpora/cms/pkits/MANIFEST.tsv
+1537c21e271d7c47b23282eaa94076a5f5adf402686f4f1a2ccae14f2d5fed3d  /Users/yicai/Research/repos/vest/usenix-sec-eval/corpora/cms/rfc4134/MANIFEST.tsv
+finished_utc=2026-08-25T16:25:32Z

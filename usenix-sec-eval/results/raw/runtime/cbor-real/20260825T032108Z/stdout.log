@@ -1,0 +1,6 @@
+test real_cose_cbor/parse/VPS ... bench:        8938 ns/iter (+/- 129)
+test real_cose_cbor/parse/ciborium ... bench:       24707 ns/iter (+/- 374)
+
+test real_cose_cbor/serialize/VPS ... bench:        2760 ns/iter (+/- 35)
+test real_cose_cbor/serialize/ciborium ... bench:        3925 ns/iter (+/- 75)
+

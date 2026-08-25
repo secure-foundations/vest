@@ -1,0 +1,22 @@
+    Checking test v0.1.0 (/Users/yicai/Research/repos/vest/vest2/test)
+note: verifying module tls
+
+note: verifying module tls::derived_proofs
+
+note: verifying module tls::derived_specs
+
+note: verifying module tls::exec_impls
+
+note: verifying module tls::exec_impls, function test::tls::ClientHelloExtensionExtensionDataFmt::parse
+
+note: verifying module tls::exec_impls, function test::tls::ClientHelloExtensionExtensionDataFmt::serialize_into
+
+note: verifying module tls::exec_impls, function test::tls::ClientHelloExtensionExtensionDataFmt::prepare
+
+note: verifying module tls::exec_impls, function test::tls::SeverHelloExtensionExtensionDataFmt::parse
+
+note: verifying module tls::exec_impls, function test::tls::SeverHelloExtensionExtensionDataFmt::serialize_into
+
+note: verifying module tls::exec_impls, function test::tls::SeverHelloExtensionExtensionDataFmt::prepare
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 22s

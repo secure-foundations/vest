@@ -1,0 +1,12 @@
+{
+  "system": "vest",
+  "kind": "depth",
+  "size": 4,
+  "generated_sloc": 900,
+  "codegen_wall_seconds": 0.7079315830487758,
+  "codegen_exit_code": 0,
+  "verify_wall_seconds": 1.5828121250960976,
+  "verify_exit_code": 0,
+  "threads": 10,
+  "timeout_seconds": 300
+}

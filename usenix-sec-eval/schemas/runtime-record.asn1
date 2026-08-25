@@ -1,0 +1,9 @@
+VpsRuntimeEval DEFINITIONS EXPLICIT TAGS ::= BEGIN
+    EvalRecord ::= SEQUENCE {
+        enabled BOOLEAN,
+        counter INTEGER,
+        payload OCTET STRING,
+        label UTF8String,
+        values SEQUENCE OF INTEGER
+    }
+END

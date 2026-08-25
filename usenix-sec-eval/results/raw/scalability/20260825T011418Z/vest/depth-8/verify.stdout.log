@@ -1,0 +1,3642 @@
+{
+  "func-details": {
+    "vest_lib::regular::uints::impl&%8::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::OptionAdditionalFns::arrow_0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%23::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers_for_sized_types": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%50::spec_as_u32": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::function::axiom_fn_mut_call_ensures": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%35::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::arithmetic::power2::is_pow2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%25::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%32::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::pervasive::cloned": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%15::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%32::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%1::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_index_same": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth6": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::len%returns_clause_autospec": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_spec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%44::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth8": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_index2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_nonzero": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::string::impl&%5::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::clone::impl&%0::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth5": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%49::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%48::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%9::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%3::spec_new": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth5": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth0_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth3": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%0::spec_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::boxed::impl&%15::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_empty": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_new_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%19::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%17::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "verus_builtin::impl&%7::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::option::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%39::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoFn::spec_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%35::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%34::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%3::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%45::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::spec_add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth6": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%41::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::lemma_array_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%25::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth7": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoProof::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::Clone::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::spec_unwrap": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::spec_slice_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%38::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth5": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth2_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%38::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::Continuation::ensures": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth4_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%27::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%5::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::skip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth4": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::axiom_array_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::subrange": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::new": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::add_empty_left": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::is_some": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%33::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::add_empty_right": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%44::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_decreases_to_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers_for_unsized_types": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_ext_equal_deep": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%7::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::ptrs_mut_eq": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%22::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth7_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%17::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::impl&%3::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%24::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoProof::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%3::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth8_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%40::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%29::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%31::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%8::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%49::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%3::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%18::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%43::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::function::axiom_fn_mut_call_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth6_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%14::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%27::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_index_different": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_index1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%37::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_index_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth1_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "verus_builtin::impl&%9::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::is_none": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::impl&%0::arrow_0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth4": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%10::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::axiom_array_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%31::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::string::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%40::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::vec_clone_deep_view_proof": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_slice_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::view_reverse_for_eq": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_spec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::seq_splice": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoFn::spec_rev_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::string::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::impl&%0::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%11::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::empty": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_slice_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%9::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%11::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_primitives": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%21::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::VecAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth7": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth3": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%9::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%13::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth3::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%37::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%29::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%42::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::View::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::array_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%0::spec_rev_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_index_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::SliceAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%21::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth5_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%26::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%20::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%46::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::Continuation::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth8": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%28::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth7": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::push_distributes_over_add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::push": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_new_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::array_len_matches_n": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::From::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_two_subranges_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth6": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%41::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7%default%requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth4Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::ptrs_mut_eq_sized": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::spec_vec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%16::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%19::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%43::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth3": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9%default%ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::pervasive::strictly_cloned": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_properties": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::take": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth3": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth4": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%47::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%33::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth1Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth2Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%30::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth8::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth5": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth8": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::size_of_as_usize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth7": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::depth3_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%41::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_unit_tuple": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::array::impl&%20::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth6": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth2Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth1Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth6Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%39::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::vec_clone_trigger": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth8": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::ArrayAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%4::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth6Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::view_reverse_for_eq_sized": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_of": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth5Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth5Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth7Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth8::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::vec::impl&%12::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth7Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7%default%wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth0Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%34::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%15::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::SpecFrom::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::DeepView::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_depth1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%23::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_depth4": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth0Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%36::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::Depth4Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%36::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_depth1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecDepth3Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::size_of": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    }
+  },
+  "verification-results": {
+    "encountered-error": false,
+    "encountered-vir-error": false,
+    "verified": 153,
+    "errors": 0,
+    "is-verifying-entire-crate": false
+  },
+  "times-ms": {
+    "verus-build": {
+      "profile": "release",
+      "version": "0.2026.07.27.31579f0"
+    },
+    "num-threads": 1,
+    "total": 1727,
+    "estimated-cpu-time": 1727,
+    "rust": {
+      "total": 242,
+      "init-and-types": 85,
+      "trait-conflicts": 34,
+      "compile": 122
+    },
+    "verification": {
+      "total": 1452,
+      "vir": {
+        "total": 250,
+        "hir": 39,
+        "import": 106,
+        "rust-to-vir": 46
+      }
+    },
+    "total-verify": 1161,
+    "total-verify-module-times": [
+      {
+        "module": "generated",
+        "time": 1161
+      }
+    ],
+    "air": {
+      "total": 278,
+      "module-times": [
+        {
+          "module": "generated",
+          "time": 278
+        }
+      ]
+    },
+    "smt": {
+      "total": 776,
+      "smt-init": 2,
+      "rlimit-init": 13881,
+      "smt-init-module-times": [
+        {
+          "module": "generated",
+          "time": 2,
+          "time-micros": 2883,
+          "rlimit": 13881
+        }
+      ],
+      "smt-run": 774,
+      "rlimit-run": 3914683,
+      "smt-run-module-times": [
+        {
+          "module": "generated",
+          "time": 774,
+          "time-micros": 774363,
+          "rlimit": 3914683,
+          "function-breakdown": [
+            {
+              "function": "vps_scalability_case::generated::Depth7Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 4,
+              "time-micros": 4011,
+              "rlimit": 18568,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth5Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2025,
+              "rlimit": 17720,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1114,
+              "rlimit": 9258,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 4,
+              "time-micros": 4437,
+              "rlimit": 18983,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 0,
+              "time-micros": 913,
+              "rlimit": 8425,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth6Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2066,
+              "rlimit": 17759,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 28,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 7,
+              "time-micros": 7061,
+              "rlimit": 28551,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth3Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2715,
+              "rlimit": 20384,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 26,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4585,
+              "rlimit": 21855,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1Combinator::length",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2238,
+              "rlimit": 16078,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4Combinator::serialize",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5415,
+              "rlimit": 36710,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1Combinator::serialize",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3163,
+              "rlimit": 24297,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 960,
+              "rlimit": 7971,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth0Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1507,
+              "rlimit": 11935,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3Combinator::length",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3246,
+              "rlimit": 22600,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth1Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2251,
+              "rlimit": 15367,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1491,
+              "rlimit": 11273,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4Combinator::parse",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4746,
+              "rlimit": 29378,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth6Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 4,
+              "time-micros": 4635,
+              "rlimit": 30465,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5Combinator::parse",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5795,
+              "rlimit": 34197,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0Combinator::serialize",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4243,
+              "rlimit": 38843,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 0,
+              "time-micros": 985,
+              "rlimit": 9221,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6Combinator::length",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7752,
+              "rlimit": 35916,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 29,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 7,
+              "time-micros": 7525,
+              "rlimit": 27783,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 27,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8Combinator::length",
+              "mode:": "exec",
+              "time": 22,
+              "time-micros": 22084,
+              "rlimit": 59697,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth0",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2315,
+              "rlimit": 15805,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth6",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4195,
+              "rlimit": 29701,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth8Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3800,
+              "rlimit": 27790,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0Combinator::parse",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3953,
+              "rlimit": 25764,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4Combinator::length",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5267,
+              "rlimit": 31361,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 0,
+              "time-micros": 831,
+              "rlimit": 7845,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1729,
+              "rlimit": 11516,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 26,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 24,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 24,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth2",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2829,
+              "rlimit": 20321,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth7",
+              "mode:": "exec",
+              "time": 16,
+              "time-micros": 16400,
+              "rlimit": 57873,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth5",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8594,
+              "rlimit": 50235,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth6",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10145,
+              "rlimit": 45644,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth4Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2151,
+              "rlimit": 16451,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2505,
+              "rlimit": 14855,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth3",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4891,
+              "rlimit": 29502,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1303,
+              "rlimit": 8839,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth0Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1150,
+              "rlimit": 10577,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3Combinator::parse",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3828,
+              "rlimit": 25917,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth8",
+              "mode:": "exec",
+              "time": 35,
+              "time-micros": 35229,
+              "rlimit": 79563,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6Combinator::parse",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8526,
+              "rlimit": 39701,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth4Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2468,
+              "rlimit": 19977,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth7Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3050,
+              "rlimit": 20359,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth5",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3974,
+              "rlimit": 27123,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 37,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth7Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 6,
+              "time-micros": 6302,
+              "rlimit": 36027,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1910,
+              "rlimit": 12755,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth7Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3187,
+              "rlimit": 26056,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2284,
+              "rlimit": 13032,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth2Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1924,
+              "rlimit": 14988,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth2Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2740,
+              "rlimit": 19020,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5Combinator::serialize",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7374,
+              "rlimit": 43212,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth1Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2625,
+              "rlimit": 15587,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2Combinator::length",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3211,
+              "rlimit": 21774,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth6Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3038,
+              "rlimit": 21763,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth8",
+              "mode:": "exec",
+              "time": 32,
+              "time-micros": 32021,
+              "rlimit": 97469,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 18,
+              "time-micros": 18607,
+              "rlimit": 53459,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth3",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5677,
+              "rlimit": 38996,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth5_len",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7513,
+              "rlimit": 38738,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth5Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 4,
+              "time-micros": 4205,
+              "rlimit": 27605,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth4Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3520,
+              "rlimit": 24243,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth2Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1991,
+              "rlimit": 15921,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth8_len",
+              "mode:": "exec",
+              "time": 20,
+              "time-micros": 20381,
+              "rlimit": 60218,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1332,
+              "rlimit": 9982,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6Combinator::serialize",
+              "mode:": "exec",
+              "time": 9,
+              "time-micros": 9806,
+              "rlimit": 51992,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth1Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1662,
+              "rlimit": 13274,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth4_len",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6303,
+              "rlimit": 32881,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1Combinator::parse",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2581,
+              "rlimit": 19484,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth8",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5217,
+              "rlimit": 34134,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 0,
+              "time-micros": 991,
+              "rlimit": 8460,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5::ex_from",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2695,
+              "rlimit": 15174,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth8Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2368,
+              "rlimit": 19714,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth6_len",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10248,
+              "rlimit": 48233,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth4Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3107,
+              "rlimit": 22926,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0Combinator::length",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2272,
+              "rlimit": 16845,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth6Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 6,
+              "time-micros": 6092,
+              "rlimit": 32023,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2Combinator::parse",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3016,
+              "rlimit": 22321,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1565,
+              "rlimit": 11887,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth3",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2903,
+              "rlimit": 22461,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth4Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1547,
+              "rlimit": 11200,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth7",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4605,
+              "rlimit": 31783,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth0",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3330,
+              "rlimit": 26887,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth8Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 10,
+              "time-micros": 10272,
+              "rlimit": 45212,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth1",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3323,
+              "rlimit": 23508,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1352,
+              "rlimit": 9767,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth1::ex_from",
+              "mode:": "exec",
+              "time": 1,
+              "time-micros": 1027,
+              "rlimit": 8650,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth2Combinator::serialize",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3536,
+              "rlimit": 27716,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth4Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2507,
+              "rlimit": 18425,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2718,
+              "rlimit": 15474,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth8Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3234,
+              "rlimit": 24872,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth2_len",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3351,
+              "rlimit": 24519,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth6",
+              "mode:": "exec",
+              "time": 11,
+              "time-micros": 11955,
+              "rlimit": 59091,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1162,
+              "rlimit": 10183,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth5Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2995,
+              "rlimit": 21988,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth3Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2961,
+              "rlimit": 21365,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth3Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2105,
+              "rlimit": 16658,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5Combinator::length",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5913,
+              "rlimit": 34840,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2102,
+              "rlimit": 12720,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth0Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1968,
+              "rlimit": 13673,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth0_len",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2262,
+              "rlimit": 17298,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth2",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4116,
+              "rlimit": 26289,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth3_len",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4377,
+              "rlimit": 28322,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth7",
+              "mode:": "exec",
+              "time": 16,
+              "time-micros": 16579,
+              "rlimit": 73907,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth0",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3054,
+              "rlimit": 20542,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth6Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3227,
+              "rlimit": 24034,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6::ex_from",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4746,
+              "rlimit": 21277,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth1",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3896,
+              "rlimit": 29660,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7::ex_from",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7796,
+              "rlimit": 26536,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth6Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2779,
+              "rlimit": 15070,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth2",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4737,
+              "rlimit": 35326,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth3Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2653,
+              "rlimit": 17957,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7Combinator::parse",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10785,
+              "rlimit": 47910,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth5",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7069,
+              "rlimit": 38539,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth2Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1587,
+              "rlimit": 13854,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth3Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1671,
+              "rlimit": 14465,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3Combinator::serialize",
+              "mode:": "exec",
+              "time": 4,
+              "time-micros": 4688,
+              "rlimit": 32002,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth3Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1102,
+              "rlimit": 10148,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_depth4",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6564,
+              "rlimit": 44221,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8Combinator::parse",
+              "mode:": "exec",
+              "time": 22,
+              "time-micros": 22903,
+              "rlimit": 61414,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth2Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2608,
+              "rlimit": 17565,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth8Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 12,
+              "time-micros": 12557,
+              "rlimit": 48108,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1181,
+              "rlimit": 8784,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth0::ex_from",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 970,
+              "rlimit": 7780,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth7Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 7,
+              "time-micros": 7259,
+              "rlimit": 38267,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth1Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1582,
+              "rlimit": 11998,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth5Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2111,
+              "rlimit": 12597,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7Combinator::serialize",
+              "mode:": "exec",
+              "time": 15,
+              "time-micros": 15970,
+              "rlimit": 66002,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7941,
+              "rlimit": 26721,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth0Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1951,
+              "rlimit": 12520,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth5Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2604,
+              "rlimit": 20095,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_depth4",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5430,
+              "rlimit": 33379,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 25,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth1Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1980,
+              "rlimit": 13910,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth7Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2932,
+              "rlimit": 23504,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8Combinator::serialize",
+              "mode:": "exec",
+              "time": 27,
+              "time-micros": 27850,
+              "rlimit": 90529,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth8::ex_from",
+              "mode:": "exec",
+              "time": 16,
+              "time-micros": 16393,
+              "rlimit": 46985,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::Depth7Combinator::length",
+              "mode:": "exec",
+              "time": 16,
+              "time-micros": 16360,
+              "rlimit": 62568,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth0Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1454,
+              "rlimit": 11529,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth4",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3833,
+              "rlimit": 24801,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth1_len",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2805,
+              "rlimit": 21292,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth1",
+              "mode:": "exec",
+              "time": 2,
+              "time-micros": 2198,
+              "rlimit": 17773,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecDepth5Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3728,
+              "rlimit": 24455,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::depth7_len",
+              "mode:": "exec",
+              "time": 17,
+              "time-micros": 17028,
+              "rlimit": 63594,
+              "success": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "verus": {
+    "profile": "release",
+    "version": "0.2026.07.27.31579f0",
+    "platform": {
+      "os": "macos",
+      "arch": "aarch64"
+    },
+    "toolchain": "1.97.1-aarch64-apple-darwin",
+    "commit": "31579f0b8542a8a9ae4ae5604c16107ccde23ef2"
+  }
+}

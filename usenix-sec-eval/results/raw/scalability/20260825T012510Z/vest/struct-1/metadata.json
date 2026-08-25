@@ -1,0 +1,18 @@
+{
+  "system": "vest",
+  "kind": "struct",
+  "size": 1,
+  "generated_sloc": 208,
+  "codegen_wall_seconds": 0.7780754161067307,
+  "codegen_exit_code": 0,
+  "verify_wall_seconds": 1.2863865830004215,
+  "verify_exit_code": 0,
+  "threads": 10,
+  "timeout_seconds": 300,
+  "verified_vcs": 17,
+  "verus_total_seconds": 0.486,
+  "rust_seconds": 0.108,
+  "verification_wall_seconds": 0.368,
+  "verification_cpu_seconds": 0.164,
+  "smt_cpu_seconds": 0.029
+}

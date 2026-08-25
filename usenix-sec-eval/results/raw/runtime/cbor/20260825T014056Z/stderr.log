@@ -1,0 +1,29 @@
+warning: unnecessary braces around assigned value
+  --> /Users/yicai/Research/repos/vest/vest_lib2/src/combinators/length.rs:63:1
+   |
+63 | global size_of usize == 8;
+   | ^^^^^^
+   |
+   = note: `#[warn(unused_braces)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n`
+    --> /Users/yicai/Research/repos/vest/vest_lib2/src/asn1/tag.rs:1040:10
+     |
+1040 |     let (n, v) = const_u16_fmt.parse(buf)?;
+     |          ^ help: if this is intentional, prefix it with an underscore: `_n`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n`
+    --> /Users/yicai/Research/repos/vest/vest_lib2/src/asn1/tag.rs:1057:10
+     |
+1057 |     let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
+     |          ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: `vest_lib2` (lib) generated 3 warnings (run `cargo fix --lib -p vest_lib2` to apply 2 suggestions)
+    Finished `bench` profile [optimized] target(s) in 0.04s
+     Running benches/generic_cbor.rs (target/release/deps/generic_cbor-028ce832832dc8f5)
+CBOR corpus: 1536 values, 62726 bytes
+real 88.56
+user 80.01
+sys 0.52

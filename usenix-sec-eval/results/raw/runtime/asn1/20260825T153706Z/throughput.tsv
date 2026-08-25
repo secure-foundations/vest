@@ -1,0 +1,7 @@
+group	bytes
+asn1_ber_common/parse	186321
+asn1_ber_comprehensive/parse	187285
+asn1_ber/parse	184335
+asn1_ber/serialize	183774
+asn1_der/parse	183774
+asn1_der/serialize	183774

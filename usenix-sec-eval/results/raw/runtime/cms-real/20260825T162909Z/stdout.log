@@ -1,0 +1,24 @@
+test cms_corpus/pkits/parse/VPS ... bench:     1561589 ns/iter (+/- 16299)
+test cms_corpus/pkits/parse/rasn-cms ... bench:     2130693 ns/iter (+/- 20484)
+test cms_corpus/pkits/parse/RustCrypto-cms ... bench:     1987857 ns/iter (+/- 13383)
+
+test cms_corpus/dss-cades/parse/VPS ... bench:     1025973 ns/iter (+/- 31307)
+test cms_corpus/dss-cades/parse/rasn-cms ... bench:     2157292 ns/iter (+/- 185761)
+test cms_corpus/dss-cades/parse/RustCrypto-cms ... bench:     2188259 ns/iter (+/- 157206)
+
+test cms_corpus/rfc4134/parse/VPS ... bench:       15521 ns/iter (+/- 541)
+test cms_corpus/rfc4134/parse/rasn-cms ... bench:       19344 ns/iter (+/- 354)
+test cms_corpus/rfc4134/parse/RustCrypto-cms ... bench:       19995 ns/iter (+/- 310)
+
+test cms_corpus/pkits/serialize/VPS ... bench:      959299 ns/iter (+/- 12241)
+test cms_corpus/pkits/serialize/rasn-cms ... bench:     4552453 ns/iter (+/- 72875)
+test cms_corpus/pkits/serialize/RustCrypto-cms ... bench:      944415 ns/iter (+/- 12006)
+
+test cms_corpus/dss-cades/serialize/VPS ... bench:      989377 ns/iter (+/- 24315)
+test cms_corpus/dss-cades/serialize/rasn-cms ... bench:     4878340 ns/iter (+/- 132593)
+test cms_corpus/dss-cades/serialize/RustCrypto-cms ... bench:     1047542 ns/iter (+/- 27370)
+
+test cms_corpus/rfc4134/serialize/VPS ... bench:        9061 ns/iter (+/- 249)
+test cms_corpus/rfc4134/serialize/rasn-cms ... bench:       38533 ns/iter (+/- 540)
+test cms_corpus/rfc4134/serialize/RustCrypto-cms ... bench:        8035 ns/iter (+/- 148)
+

@@ -1,0 +1,10 @@
+test generic_cbor/parse/VPS ... bench:      177581 ns/iter (+/- 6499)
+test generic_cbor/parse/ciborium ... bench:      454567 ns/iter (+/- 9877)
+test generic_cbor/parse/cbor4ii ... bench:      185771 ns/iter (+/- 10825)
+test generic_cbor/parse/minicbor-serde ... bench:      212239 ns/iter (+/- 14817)
+
+test generic_cbor/serialize/VPS ... bench:       66259 ns/iter (+/- 1401)
+test generic_cbor/serialize/ciborium ... bench:       84369 ns/iter (+/- 1305)
+test generic_cbor/serialize/cbor4ii ... bench:       60904 ns/iter (+/- 1595)
+test generic_cbor/serialize/minicbor-serde ... bench:       52532 ns/iter (+/- 1402)
+

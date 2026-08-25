@@ -1,0 +1,11 @@
+[package]
+name = "vps-scalability-case"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+vstd = "=0.0.0-2026-07-27-0206"
+vest_lib = { path = "../../../../../../../../vest" }
+
+[package.metadata.verus]
+verify = true

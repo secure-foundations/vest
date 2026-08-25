@@ -1,0 +1,10 @@
+test cms_content_info/parse/VPS ... bench:       90885 ns/iter (+/- 1182)
+test cms_content_info/parse/rasn-cms ... bench:      104096 ns/iter (+/- 1483)
+test cms_content_info/parse/RustCrypto-cms ... bench:       91048 ns/iter (+/- 1061)
+test cms_content_info/parse/cryptographic-message-syntax ... bench:       87662 ns/iter (+/- 1438)
+
+test cms_content_info/serialize/VPS ... bench:       40859 ns/iter (+/- 1680)
+test cms_content_info/serialize/rasn-cms ... bench:      216059 ns/iter (+/- 97623)
+test cms_content_info/serialize/RustCrypto-cms ... bench:       40257 ns/iter (+/- 861)
+test cms_content_info/serialize/cryptographic-message-syntax ... bench:       12325 ns/iter (+/- 367)
+

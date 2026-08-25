@@ -1,0 +1,7 @@
+area,verified_modules,verification_cpu_seconds,smt_cpu_seconds
+core,11,3.934,0.526785
+combinators,78,55.784,24.786931000000017
+primitives,10,6.97,3.0109320000000004
+asn1,91,72.737,29.591220000000007
+cbor,11,21.856,14.740174
+library_root,0,0.0,0.0

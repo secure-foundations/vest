@@ -1,0 +1,72 @@
+[
+  {
+    "label": "VPS backend",
+    "verified_vcs": 3184,
+    "errors": 0,
+    "wall_seconds": 37.59,
+    "verus_total_seconds": 36.592,
+    "rust_seconds": 4.62,
+    "verification_wall_seconds": 30.917,
+    "verification_cpu_seconds": 161.382,
+    "smt_cpu_seconds": 73.232,
+    "threads": 10,
+    "verus_version": "0.2026.07.27.31579f0",
+    "log": "results/raw/backend-verify/20260825T032814Z/stdout.log"
+  },
+  {
+    "label": "Vest Bitcoin",
+    "verified_vcs": 251,
+    "errors": 0,
+    "wall_seconds": 9.472711250185966,
+    "verus_total_seconds": 9.137,
+    "rust_seconds": 0.429,
+    "verification_wall_seconds": 8.325,
+    "verification_cpu_seconds": 7.578,
+    "smt_cpu_seconds": 6.813,
+    "threads": 1,
+    "verus_version": "0.2026.07.27.31579f0",
+    "log": "raw/verification/vest-bitcoin/20260825T010058Z/stdout.log"
+  },
+  {
+    "label": "VPS Bitcoin",
+    "verified_vcs": 286,
+    "errors": 0,
+    "wall_seconds": 7.381549250101671,
+    "verus_total_seconds": 6.994,
+    "rust_seconds": 0.514,
+    "verification_wall_seconds": 6.39,
+    "verification_cpu_seconds": 7.723,
+    "smt_cpu_seconds": 6.111,
+    "threads": 4,
+    "verus_version": "0.2026.07.27.31579f0",
+    "log": "raw/verification/vps-bitcoin-isolated/20260825T025727Z/stdout.log"
+  },
+  {
+    "label": "Vest TLS",
+    "verified_vcs": 2555,
+    "errors": 0,
+    "wall_seconds": 156.3534263749607,
+    "verus_total_seconds": 155.605,
+    "rust_seconds": 3.44,
+    "verification_wall_seconds": 151.002,
+    "verification_cpu_seconds": 149.334,
+    "smt_cpu_seconds": 137.106,
+    "threads": 10,
+    "verus_version": "0.2026.07.27.31579f0",
+    "log": "raw/verification/vest-tls/20260825T010212Z/stdout.log"
+  },
+  {
+    "label": "VPS TLS",
+    "verified_vcs": 2478,
+    "errors": 0,
+    "wall_seconds": 94.65991358296014,
+    "verus_total_seconds": 57.629,
+    "rust_seconds": 3.784,
+    "verification_wall_seconds": 53.097,
+    "verification_cpu_seconds": 97.443,
+    "smt_cpu_seconds": 78.473,
+    "threads": 10,
+    "verus_version": "0.2026.07.27.31579f0",
+    "log": "raw/verification/vps-tls-isolated/20260825T030521Z/stdout.log"
+  }
+]

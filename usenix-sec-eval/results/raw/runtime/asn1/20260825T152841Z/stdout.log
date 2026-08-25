@@ -1,0 +1,18 @@
+test asn1_der/parse/VPS ... bench:      210283 ns/iter (+/- 4874)
+test asn1_der/parse/rasn ... bench:      232989 ns/iter (+/- 3087)
+test asn1_der/parse/RustCrypto-der ... bench:      359951 ns/iter (+/- 6481)
+
+test asn1_der/serialize/VPS ... bench:      136263 ns/iter (+/- 3262)
+test asn1_der/serialize/rasn ... bench:      421426 ns/iter (+/- 7935)
+test asn1_der/serialize/RustCrypto-der ... bench:      233845 ns/iter (+/- 3248)
+
+test asn1_ber_common/parse/VPS ... bench:      285349 ns/iter (+/- 16585)
+test asn1_ber_common/parse/rasn ... bench:      263466 ns/iter (+/- 3331)
+test asn1_ber_common/parse/RustCrypto-ber ... bench:      463813 ns/iter (+/- 22605)
+
+test asn1_ber_comprehensive/parse/VPS ... bench:      298665 ns/iter (+/- 4320)
+test asn1_ber_comprehensive/parse/rasn ... bench:      279311 ns/iter (+/- 17109)
+
+test asn1_ber/serialize/VPS ... bench:      134911 ns/iter (+/- 5353)
+test asn1_ber/serialize/rasn ... bench:      426814 ns/iter (+/- 28572)
+

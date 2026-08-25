@@ -1,0 +1,27 @@
+{
+  "label": "vest-bitcoin",
+  "crate": "/Users/yicai/Research/repos/vest/vest-dsl/bitcoin",
+  "module": "vest_bitcoin",
+  "threads": 10,
+  "command": [
+    "cargo",
+    "verus",
+    "verify",
+    "--fwd-verus-args-to",
+    "roots",
+    "--lib",
+    "--",
+    "--time-expanded",
+    "--output-json",
+    "--num-threads",
+    "10",
+    "--verify-module",
+    "vest_bitcoin"
+  ],
+  "started_utc": "2026-08-25T01:00:58.694893+00:00",
+  "host": "Yis-MacBook-Pro-47.local",
+  "revision": "ab3060750300e1dcc9791ed55ee391cbf56e40e1",
+  "wall_seconds": 9.472711250185966,
+  "exit_code": 0,
+  "finished_utc": "2026-08-25T01:01:08.180277+00:00"
+}

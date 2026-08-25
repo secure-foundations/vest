@@ -1,0 +1,18 @@
+{
+  "system": "vps",
+  "kind": "choice",
+  "size": 2,
+  "generated_sloc": 422,
+  "codegen_wall_seconds": 0.4035948340315372,
+  "codegen_exit_code": 0,
+  "verify_wall_seconds": 1.2305601669941097,
+  "verify_exit_code": 0,
+  "threads": 10,
+  "timeout_seconds": 300,
+  "verified_vcs": 22,
+  "verus_total_seconds": 0.601,
+  "rust_seconds": 0.108,
+  "verification_wall_seconds": 0.481,
+  "verification_cpu_seconds": 0.378,
+  "smt_cpu_seconds": 0.047
+}

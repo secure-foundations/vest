@@ -1,0 +1,4 @@
+**/target/
+results/.cache/
+results/.matplotlib/
+results/raw/scalability/*/crate/Cargo.lock

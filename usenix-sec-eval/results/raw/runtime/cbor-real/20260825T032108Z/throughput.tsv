@@ -1,0 +1,3 @@
+group	bytes
+real_cose_cbor/parse	3997
+real_cose_cbor/serialize	3997

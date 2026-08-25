@@ -1,0 +1,2254 @@
+{
+  "func-details": {
+    "vps_scalability_case::generated::StructWidth16Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%33::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%34::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%31::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%35::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%38::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator2::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_properties": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::pervasive::cloned": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%25::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Mapper::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator6::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_index2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%9::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%18::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator5::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%7::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::vec_clone_deep_view_proof": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%32::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%34::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_spec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%43::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator2::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Mapper::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_index_different": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%41::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::view_reverse_for_eq": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator14::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%39::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%20::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator14::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%5::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::string::impl&%5::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%41::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%30::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_new_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator10::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator5::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator7::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator7::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::arithmetic::power2::is_pow2": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%17::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::spec_add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator10::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%40::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%35::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%11::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_ext_equal_deep": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator10::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::parse_struct_width16": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator13::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Inner::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::size_of": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator5::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%42::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Mapper::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::spec_slice_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%22::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers_for_sized_types": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::string::impl&%4::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%38::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::ptrs_mut_eq": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator11::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%3::spec_new": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator3::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%4::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator12::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%13::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator5::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_unit_tuple": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoProof::spec_iso_rev": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::View::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%17::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::push": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::boxed::impl&%15::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::struct_width16": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%29::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "verus_builtin::impl&%7::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%33::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_spec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_nonzero": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::axiom_array_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator4::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::struct_width16_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator7::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::array::impl&%20::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%21::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%37::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::add_empty_right": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator11::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoFn::spec_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator7::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator6::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator2::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator11::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator12::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator15::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "verus_builtin::impl&%9::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator3::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator10::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%10::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%47::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_slice_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator3::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%49::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_index_same": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator8::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%43::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator15::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%19::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_push_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::align_of": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%16::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::option::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator6::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%11::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%48::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%40::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::vec_clone_trigger": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator4::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::pervasive::strictly_cloned": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%46::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%36::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_subrange_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::push_distributes_over_add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9%default%ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%15::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::OptionAdditionalFns::arrow_0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::VecAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::spec_vec_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::array_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::subrange": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_primitives": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%2::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator13::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%27::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator1::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator15::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::seq_splice": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::function::axiom_fn_mut_call_ensures": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%23::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq_lib::impl&%0::add_empty_left": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator13::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::Continuation::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%36::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator14::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator3::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%0::spec_rev_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%3::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%39::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator9::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::skip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator13::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::len%returns_clause_autospec": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoFn::spec_rev_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::SpecFrom::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator4::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%9::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator14::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7%default%requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%27::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator3::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator11::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator13::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::Continuation::ensures": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%49::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%24::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%0::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%44::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%3::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_empty": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16InnerRef::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator8::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::array_len_matches_n": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%44::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_decreases_to_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator5::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::size_of_as_usize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator1::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator1::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::impl&%2::take": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::ptrs_mut_eq_sized": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::is_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator11::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator8::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%1::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%0::spec_apply": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::is_none": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%50::spec_as_u32": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%28::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%29::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_new_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%0::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator9::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::function::axiom_fn_mut_call_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::bitcoin::varint::impl&%9::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%8::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%8::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::serialize_struct_width16": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::DeepView::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::impl&%2::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::spec_struct_width16": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%6::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator9::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%15::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::axiom_slice_has_resolved": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%1::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%28::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%41::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::layout::layout_of_references_and_pointers_for_unsized_types": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%37::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%8::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%3::requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::vec::impl&%12::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::impl&%0::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_index1": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SecureSpecCombinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::From::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::view_reverse_for_eq_sized": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::lemma_array_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%32::spec_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%4::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%10::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%31::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::SpecIsoProof::spec_iso": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator12::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator8::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::new": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%7::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::Clone::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%0::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%2::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::ArrayAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::add": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator12::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator10::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7%default%wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator7::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "alloc::string::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%30::spec_to_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::slice::SliceAdditionalSpecFns::spec_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::raw_ptr::impl&%3::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%31::spec_from_le_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator6::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::SpecCombinator::wf": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::clone::impl&%0::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%3::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::Seq::empty": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%19::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_two_subranges_index": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%9::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::spec_parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator12::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator14::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%6::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_parse_length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator15::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%23::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::utils::impl&%3::ex_from": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_add_len": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator15::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%5::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::is_some": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator1::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::is_prefix_secure": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "core::clone::impls::impl&%29::clone": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::Combinator::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::impl&%0::arrow_0": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator8::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator1::parse": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%21::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::array::axiom_array_ext_equal": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%9::length": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator9::ex_requires": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator4::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::option::spec_unwrap": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%26::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%25::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator2::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::FromToBytes::spec_from_be_bytes": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%5::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::std_specs::vec::axiom_vec_index_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::modifier::impl&%4::lemma_parse_productive": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::properties::impl&%1::theorem_parse_serialize_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::seq::lemma_seq_index_decreases": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::sequence::impl&%1::theorem_serialize_parse_roundtrip": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%45::deep_view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vest_lib::regular::uints::impl&%7::spec_serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vps_scalability_case::generated::StructWidth16Combinator9::serialize": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    },
+    "vstd::view::impl&%14::view": {
+      "obligation_proof_notes": [],
+      "failed_proof_notes": []
+    }
+  },
+  "verification-results": {
+    "encountered-error": false,
+    "encountered-vir-error": false,
+    "verified": 62,
+    "errors": 0,
+    "is-verifying-entire-crate": false
+  },
+  "times-ms": {
+    "verus-build": {
+      "profile": "release",
+      "version": "0.2026.07.27.31579f0"
+    },
+    "num-threads": 1,
+    "total": 5155,
+    "estimated-cpu-time": 5155,
+    "rust": {
+      "total": 285,
+      "init-and-types": 46,
+      "trait-conflicts": 40,
+      "compile": 198
+    },
+    "verification": {
+      "total": 4813,
+      "vir": {
+        "total": 332,
+        "hir": 109,
+        "import": 102,
+        "rust-to-vir": 72
+      }
+    },
+    "total-verify": 4447,
+    "total-verify-module-times": [
+      {
+        "module": "generated",
+        "time": 4447
+      }
+    ],
+    "air": {
+      "total": 220,
+      "module-times": [
+        {
+          "module": "generated",
+          "time": 220
+        }
+      ]
+    },
+    "smt": {
+      "total": 788,
+      "smt-init": 1,
+      "rlimit-init": 9598,
+      "smt-init-module-times": [
+        {
+          "module": "generated",
+          "time": 1,
+          "time-micros": 1254,
+          "rlimit": 9598
+        }
+      ],
+      "smt-run": 787,
+      "rlimit-run": 10594460,
+      "smt-run-module-times": [
+        {
+          "module": "generated",
+          "time": 787,
+          "time-micros": 787127,
+          "rlimit": 10594460,
+          "function-breakdown": [
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator::length",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10904,
+              "rlimit": 99930,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_parse_productive",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2357,
+              "rlimit": 15099,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator11::length",
+              "mode:": "exec",
+              "time": 17,
+              "time-micros": 17242,
+              "rlimit": 195554,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator15::length",
+              "mode:": "exec",
+              "time": 23,
+              "time-micros": 23063,
+              "rlimit": 283164,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::serialize_struct_width16",
+              "mode:": "exec",
+              "time": 17,
+              "time-micros": 17225,
+              "rlimit": 462748,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator8::length",
+              "mode:": "exec",
+              "time": 14,
+              "time-micros": 14350,
+              "rlimit": 142755,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator9::serialize",
+              "mode:": "exec",
+              "time": 20,
+              "time-micros": 20011,
+              "rlimit": 356576,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator2::serialize",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8768,
+              "rlimit": 91579,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator6::parse",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7878,
+              "rlimit": 52195,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator7::length",
+              "mode:": "exec",
+              "time": 12,
+              "time-micros": 12647,
+              "rlimit": 119013,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::parse_struct_width16",
+              "mode:": "exec",
+              "time": 5,
+              "time-micros": 5983,
+              "rlimit": 38409,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator10::parse",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8309,
+              "rlimit": 56486,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator12::serialize",
+              "mode:": "exec",
+              "time": 32,
+              "time-micros": 32269,
+              "rlimit": 665708,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator9::length",
+              "mode:": "exec",
+              "time": 14,
+              "time-micros": 14684,
+              "rlimit": 159005,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator14::serialize",
+              "mode:": "exec",
+              "time": 36,
+              "time-micros": 36307,
+              "rlimit": 701598,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator3::serialize",
+              "mode:": "exec",
+              "time": 11,
+              "time-micros": 11576,
+              "rlimit": 116214,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecStructWidth16Combinator::theorem_parse_serialize_roundtrip",
+              "mode:": "proof",
+              "time": 8,
+              "time-micros": 8878,
+              "rlimit": 58732,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator1::length",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6632,
+              "rlimit": 50599,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::struct_width16_len",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8737,
+              "rlimit": 84254,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator1::serialize",
+              "mode:": "exec",
+              "time": 8,
+              "time-micros": 8331,
+              "rlimit": 79025,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator4::serialize",
+              "mode:": "exec",
+              "time": 13,
+              "time-micros": 13629,
+              "rlimit": 162396,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator3::length",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7727,
+              "rlimit": 66488,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_prefix_secure",
+              "mode:": "proof",
+              "time": 3,
+              "time-micros": 3004,
+              "rlimit": 19154,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator7::parse",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7772,
+              "rlimit": 53124,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator5::serialize",
+              "mode:": "exec",
+              "time": 15,
+              "time-micros": 15560,
+              "rlimit": 190335,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecStructWidth16Combinator::lemma_parse_length",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2842,
+              "rlimit": 15874,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator13::parse",
+              "mode:": "exec",
+              "time": 9,
+              "time-micros": 9835,
+              "rlimit": 62263,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator9::parse",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7859,
+              "rlimit": 55270,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator8::serialize",
+              "mode:": "exec",
+              "time": 21,
+              "time-micros": 21710,
+              "rlimit": 366103,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator6::length",
+              "mode:": "exec",
+              "time": 11,
+              "time-micros": 11100,
+              "rlimit": 103951,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator2::length",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7280,
+              "rlimit": 59275,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator10::length",
+              "mode:": "exec",
+              "time": 15,
+              "time-micros": 15618,
+              "rlimit": 173868,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator2::parse",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6985,
+              "rlimit": 51851,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator13::serialize",
+              "mode:": "exec",
+              "time": 32,
+              "time-micros": 32022,
+              "rlimit": 816112,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::SpecStructWidth16Combinator::theorem_serialize_parse_roundtrip",
+              "mode:": "proof",
+              "time": 7,
+              "time-micros": 7861,
+              "rlimit": 62015,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator14::parse",
+              "mode:": "exec",
+              "time": 9,
+              "time-micros": 9473,
+              "rlimit": 60221,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator::serialize",
+              "mode:": "exec",
+              "time": 16,
+              "time-micros": 16279,
+              "rlimit": 308451,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator15::serialize",
+              "mode:": "exec",
+              "time": 42,
+              "time-micros": 42101,
+              "rlimit": 1001206,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator::parse",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7054,
+              "rlimit": 46373,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16::clone",
+              "mode:": "exec",
+              "time": 0,
+              "time-micros": 44,
+              "rlimit": 2,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::struct_width16",
+              "mode:": "exec",
+              "time": 18,
+              "time-micros": 18695,
+              "rlimit": 124590,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator5::parse",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6608,
+              "rlimit": 51138,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Mapper::spec_iso_rev",
+              "mode:": "proof",
+              "time": 1,
+              "time-micros": 1679,
+              "rlimit": 12403,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator4::length",
+              "mode:": "exec",
+              "time": 9,
+              "time-micros": 9178,
+              "rlimit": 77790,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator10::serialize",
+              "mode:": "exec",
+              "time": 26,
+              "time-micros": 26048,
+              "rlimit": 494356,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator12::parse",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10374,
+              "rlimit": 58993,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator5::length",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10335,
+              "rlimit": 90402,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator13::length",
+              "mode:": "exec",
+              "time": 20,
+              "time-micros": 20738,
+              "rlimit": 245839,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16::ex_from",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3194,
+              "rlimit": 21305,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator8::parse",
+              "mode:": "exec",
+              "time": 7,
+              "time-micros": 7832,
+              "rlimit": 54221,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16InnerRef::ex_from",
+              "mode:": "exec",
+              "time": 3,
+              "time-micros": 3122,
+              "rlimit": 22194,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Mapper::spec_iso",
+              "mode:": "proof",
+              "time": 2,
+              "time-micros": 2370,
+              "rlimit": 15676,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator7::serialize",
+              "mode:": "exec",
+              "time": 18,
+              "time-micros": 18146,
+              "rlimit": 283494,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator4::parse",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6452,
+              "rlimit": 50364,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator6::serialize",
+              "mode:": "exec",
+              "time": 17,
+              "time-micros": 17532,
+              "rlimit": 219373,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator15::parse",
+              "mode:": "exec",
+              "time": 10,
+              "time-micros": 10272,
+              "rlimit": 59890,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator12::length",
+              "mode:": "exec",
+              "time": 18,
+              "time-micros": 18826,
+              "rlimit": 217996,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator1::parse",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6352,
+              "rlimit": 49817,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator14::length",
+              "mode:": "exec",
+              "time": 24,
+              "time-micros": 24515,
+              "rlimit": 284390,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator11::serialize",
+              "mode:": "exec",
+              "time": 27,
+              "time-micros": 27267,
+              "rlimit": 549931,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator11::parse",
+              "mode:": "exec",
+              "time": 9,
+              "time-micros": 9280,
+              "rlimit": 57665,
+              "success": true
+            },
+            {
+              "function": "vps_scalability_case::generated::StructWidth16Combinator3::parse",
+              "mode:": "exec",
+              "time": 6,
+              "time-micros": 6381,
+              "rlimit": 49658,
+              "success": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "verus": {
+    "profile": "release",
+    "version": "0.2026.07.27.31579f0",
+    "platform": {
+      "os": "macos",
+      "arch": "aarch64"
+    },
+    "toolchain": "1.97.1-aarch64-apple-darwin",
+    "commit": "31579f0b8542a8a9ae4ae5604c16107ccde23ef2"
+  }
+}

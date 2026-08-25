@@ -1,0 +1,59 @@
+{
+  "func-details": {},
+  "verification-results": {
+    "encountered-error": true,
+    "encountered-vir-error": false,
+    "verified": 0,
+    "errors": 0,
+    "is-verifying-entire-crate": false
+  },
+  "times-ms": {
+    "verus-build": {
+      "profile": "release",
+      "version": "0.2026.07.27.31579f0"
+    },
+    "num-threads": 1,
+    "total": 58853,
+    "estimated-cpu-time": 58853,
+    "rust": {
+      "total": 339,
+      "init-and-types": 339,
+      "trait-conflicts": 0,
+      "compile": 0
+    },
+    "verification": {
+      "total": 101,
+      "vir": {
+        "total": 101,
+        "hir": 0,
+        "import": 101,
+        "rust-to-vir": 0
+      }
+    },
+    "total-verify": 0,
+    "total-verify-module-times": [],
+    "air": {
+      "total": 0,
+      "module-times": []
+    },
+    "smt": {
+      "total": 0,
+      "smt-init": 0,
+      "rlimit-init": 0,
+      "smt-init-module-times": [],
+      "smt-run": 0,
+      "rlimit-run": 0,
+      "smt-run-module-times": []
+    }
+  },
+  "verus": {
+    "profile": "release",
+    "version": "0.2026.07.27.31579f0",
+    "platform": {
+      "os": "macos",
+      "arch": "aarch64"
+    },
+    "toolchain": "1.97.1-aarch64-apple-darwin",
+    "commit": "31579f0b8542a8a9ae4ae5604c16107ccde23ef2"
+  }
+}

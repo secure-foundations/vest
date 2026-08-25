@@ -1,0 +1,10 @@
+choice_width8 = choose {
+    Variant0(u8 | 0),
+    Variant1(u8 | 1),
+    Variant2(u8 | 2),
+    Variant3(u8 | 3),
+    Variant4(u8 | 4),
+    Variant5(u8 | 5),
+    Variant6(u8 | 6),
+    Variant7(u8 | 7..),
+}

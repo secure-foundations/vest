@@ -1,0 +1,18 @@
+{
+  "system": "vest",
+  "kind": "choice",
+  "size": 32,
+  "generated_sloc": 1279,
+  "codegen_wall_seconds": 0.36387600004673004,
+  "codegen_exit_code": 0,
+  "verify_wall_seconds": 25.857168999966234,
+  "verify_exit_code": 0,
+  "threads": 10,
+  "timeout_seconds": 300,
+  "verified_vcs": 142,
+  "verus_total_seconds": 25.218,
+  "rust_seconds": 4.959,
+  "verification_wall_seconds": 19.55,
+  "verification_cpu_seconds": 13.379,
+  "smt_cpu_seconds": 10.533
+}

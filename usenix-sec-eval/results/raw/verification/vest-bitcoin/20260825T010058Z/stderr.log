@@ -1,0 +1,109 @@
+    Checking vestbitcoin v0.1.0 (/Users/yicai/Research/repos/vest/vest-dsl/bitcoin)
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+  --> src/vest_bitcoin.rs:58:17
+   |
+58 | #[derive(Debug, Clone, PartialEq, Eq)]
+   |                 ^^^^^
+   |
+   = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/vest_bitcoin.rs:304:17
+    |
+304 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/vest_bitcoin.rs:511:17
+    |
+511 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/vest_bitcoin.rs:718:17
+    |
+718 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/vest_bitcoin.rs:965:17
+    |
+965 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:1183:17
+     |
+1183 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:1429:17
+     |
+1429 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: autoderive Clone impl does not take the form Verus expects; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:1685:17
+     |
+1685 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:1940:17
+     |
+1940 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:2247:17
+     |
+2247 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: autoderive Clone impl does not take the form Verus expects; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:2514:17
+     |
+2514 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:2727:17
+     |
+2727 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/vest_bitcoin.rs:2981:17
+     |
+2981 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+note: verifying module vest_bitcoin
+
+warning: `vestbitcoin` (lib) generated 13 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.40s

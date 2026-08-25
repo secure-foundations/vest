@@ -1,0 +1,14 @@
+test vest_vps/bitcoin/parse/Vest ... bench:   197256374 ns/iter (+/- 1983829)
+test vest_vps/bitcoin/parse/VPS ... bench:   180011187 ns/iter (+/- 1874456)
+
+test vest_vps/bitcoin/serialize/Vest ... bench:   153739833 ns/iter (+/- 3586054)
+test vest_vps/bitcoin/serialize/VPS ... bench:    82872250 ns/iter (+/- 12417435)
+test vest_vps/bitcoin/serialize/VPS-Vec ... bench:    94083104 ns/iter (+/- 18569060)
+
+test vest_vps/tls/parse/Vest ... bench:       97630 ns/iter (+/- 1323)
+test vest_vps/tls/parse/VPS ... bench:       89575 ns/iter (+/- 7274)
+
+test vest_vps/tls/serialize/Vest ... bench:       17058 ns/iter (+/- 271)
+test vest_vps/tls/serialize/VPS ... bench:       22179 ns/iter (+/- 382)
+test vest_vps/tls/serialize/VPS-Vec ... bench:       19255 ns/iter (+/- 406)
+

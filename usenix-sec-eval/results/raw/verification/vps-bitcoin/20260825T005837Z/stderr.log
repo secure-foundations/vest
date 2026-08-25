@@ -1,0 +1,11 @@
+    Checking vest_lib2 v0.1.0 (/Users/yicai/Research/repos/vest/vest_lib2)
+    Checking test v0.1.0 (/Users/yicai/Research/repos/vest/vest2/test)
+note: verifying module bitcoin
+
+note: verifying module bitcoin::derived_proofs
+
+note: verifying module bitcoin::derived_specs
+
+note: verifying module bitcoin::exec_impls
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 13s

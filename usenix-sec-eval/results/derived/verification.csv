@@ -1,0 +1,6 @@
+label,verified_vcs,errors,wall_seconds,verus_total_seconds,rust_seconds,verification_wall_seconds,verification_cpu_seconds,smt_cpu_seconds,threads,verus_version,log
+VPS backend,3184,0,37.59,36.592,4.62,30.917,161.382,73.232,10,0.2026.07.27.31579f0,results/raw/backend-verify/20260825T032814Z/stdout.log
+Vest Bitcoin,251,0,9.472711250185966,9.137,0.429,8.325,7.578,6.813,1,0.2026.07.27.31579f0,raw/verification/vest-bitcoin/20260825T010058Z/stdout.log
+VPS Bitcoin,286,0,7.381549250101671,6.994,0.514,6.39,7.723,6.111,4,0.2026.07.27.31579f0,raw/verification/vps-bitcoin-isolated/20260825T025727Z/stdout.log
+Vest TLS,2555,0,156.3534263749607,155.605,3.44,151.002,149.334,137.106,10,0.2026.07.27.31579f0,raw/verification/vest-tls/20260825T010212Z/stdout.log
+VPS TLS,2478,0,94.65991358296014,57.629,3.784,53.097,97.443,78.473,10,0.2026.07.27.31579f0,raw/verification/vps-tls-isolated/20260825T030521Z/stdout.log

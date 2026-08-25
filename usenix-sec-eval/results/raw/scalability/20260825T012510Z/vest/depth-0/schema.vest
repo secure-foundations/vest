@@ -1,0 +1,3 @@
+depth0 = {
+    value: u8,
+}

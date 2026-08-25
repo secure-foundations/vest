@@ -1,0 +1,3 @@
+group	bytes
+generic_cbor/parse	108864
+generic_cbor/serialize	62726

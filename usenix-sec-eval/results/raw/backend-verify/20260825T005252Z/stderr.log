@@ -1,0 +1,5 @@
+    Checking vest_lib2 v0.1.0 (/Users/yicai/Research/repos/vest/vest_lib2)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.15s
+real 36.23
+user 143.98
+sys 7.45

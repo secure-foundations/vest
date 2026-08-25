@@ -1,0 +1,6 @@
+revision=ab3060750300e1dcc9791ed55ee391cbf56e40e1
+started_utc=2026-08-25T03:15:17Z
+command=cargo bench --bench cms_real_signed_data -- --noplot --output-format bencher
+fd6019bdc75fbae80e6c1b30c5246d8a3077b83e8d21dae376772dcc1ceb58bd  /Users/yicai/Research/repos/vest/usenix-sec-eval/corpora/cms/pkits.p7b
+9e146d8832d747985150e7f1fe7b57cc705688fb450416b3375fb932e7b38ade  /Users/yicai/Research/repos/vest/usenix-sec-eval/corpora/cms/pkits_ee.p7b
+finished_utc=2026-08-25T03:16:23Z

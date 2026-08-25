@@ -1,0 +1,9 @@
+corpus	operation	bytes
+combined	parse	12363328
+combined	serialize	12362531
+dss-cades	parse	11400481
+dss-cades	serialize	11399694
+pkits	parse	954515
+pkits	serialize	954515
+rfc4134	parse	8332
+rfc4134	serialize	8322

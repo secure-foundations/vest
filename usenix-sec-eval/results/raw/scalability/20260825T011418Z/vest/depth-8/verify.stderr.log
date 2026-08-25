@@ -1,0 +1,77 @@
+    Checking vps-scalability-case v0.0.0 (/Users/yicai/Research/repos/vest/usenix-sec-eval/results/raw/scalability/20260825T011418Z/vest/depth-8/crate)
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+  --> src/generated.rs:57:17
+   |
+57 | #[derive(Debug, Clone, PartialEq, Eq)]
+   |                 ^^^^^
+   |
+   = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:254:17
+    |
+254 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:451:17
+    |
+451 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:648:17
+    |
+648 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:845:17
+    |
+845 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/generated.rs:1042:17
+     |
+1042 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/generated.rs:1239:17
+     |
+1239 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/generated.rs:1436:17
+     |
+1436 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+    --> src/generated.rs:1633:17
+     |
+1633 | #[derive(Debug, Clone, PartialEq, Eq)]
+     |                 ^^^^^
+     |
+     = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+note: verifying module generated
+
+warning: `vps-scalability-case` (lib) generated 9 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.92s
