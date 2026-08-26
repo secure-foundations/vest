@@ -149,3 +149,58 @@ pub fn compile_to(input_file: &str, output_file: &str) -> Result<(), Box<dyn Err
     verus.write_all(code.as_bytes())?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::compile;
+    use std::process::Command;
+
+    #[test]
+    fn serialize_dependent_invocation_dereferences_only_bare_bindings() {
+        let source = include_str!("../test/src/projected_argument_deref.vest");
+
+        let generated = compile("projected-argument-deref.vest", source.to_string()).unwrap();
+
+        // Parsing uses the projected value once; serialization and preparation reuse it twice.
+        assert_eq!(
+            generated.matches("t: h.t").count(),
+            3,
+            "projected tag arguments should not be dereferenced"
+        );
+        assert!(!generated.contains("t: * h.t"));
+        assert_eq!(
+            generated.matches("len: h.len").count(),
+            3,
+            "projected length arguments should not be dereferenced"
+        );
+        assert!(!generated.contains("len: * h.len"));
+    }
+
+    #[test]
+    fn generated_projected_argument_module_type_checks() {
+        let source = include_str!("../test/src/projected_argument_deref.vest");
+        let generated = compile("projected-argument-deref.vest", source.to_string()).unwrap();
+        assert_eq!(
+            generated,
+            include_str!("../test/src/projected_argument_deref.rs")
+        );
+
+        let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+        let output = Command::new(cargo)
+            .args([
+                "check",
+                "--manifest-path",
+                "test/Cargo.toml",
+                "--features",
+                "projected-argument-deref-regression",
+            ])
+            .output()
+            .expect("cargo check should run");
+
+        assert!(
+            output.status.success(),
+            "generated code must type-check:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}

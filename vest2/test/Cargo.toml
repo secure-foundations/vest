@@ -8,6 +8,9 @@ vstd = "=0.0.0-2026-07-27-0206"
 
 vest_lib2 = { path = "../../vest_lib2" }
 
+[features]
+projected-argument-deref-regression = []
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 base64 = "0.22.1"

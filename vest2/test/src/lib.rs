@@ -17,6 +17,8 @@ pub mod mutual_rec;
 pub mod nested_access;
 pub mod nested_bytes;
 pub mod opt;
+#[cfg(feature = "projected-argument-deref-regression")]
+pub mod projected_argument_deref;
 pub mod repeat;
 pub mod tls;
 pub mod tlv;

@@ -1,0 +1,32 @@
+tag = enum {
+    A = 0u8,
+    B = 1,
+    ...
+}
+
+header = {
+    t: tag,
+}
+
+body(@t: tag) = choose(@t) {
+    A => u8,
+    _ => u16,
+}
+
+length_header = {
+    len: u8,
+}
+
+sized_body(@len: u8) = {
+    bytes: [u8; @len],
+}
+
+dotted = {
+    @h: header,
+    b: body(@h.t),
+}
+
+dotted_length = {
+    @h: length_header,
+    b: sized_body(@h.len),
+}
