@@ -1869,7 +1869,7 @@ mod exec_impls {
             } = v;
             HeaderFmt.serialize_into(h, obuf);
             BodyFmt {
-                t: * h.t
+                t: h.t
             }
             .serialize_into(b, obuf);
 
@@ -1886,7 +1886,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("header", HeaderFmt)).prepare (h) ?;
             let l2 = (Named ("body", BodyFmt {
-                t: * h.t
+                t: h.t
             }
             )).prepare (b) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
@@ -1937,7 +1937,7 @@ mod exec_impls {
             } = v;
             LengthHeaderFmt.serialize_into(h, obuf);
             SizedBodyFmt {
-                len: * h.len
+                len: h.len
             }
             .serialize_into(b, obuf);
 
@@ -1954,7 +1954,7 @@ mod exec_impls {
             } = v;
             let l1 = (Named ("length_header", LengthHeaderFmt)).prepare (h) ?;
             let l2 = (Named ("sized_body", SizedBodyFmt {
-                len: * h.len
+                len: h.len
             }
             )).prepare (b) ?;
             let total_len = l1.checked_add (l2).ok_or (PreSerializeError::length_too_large()) ?;
