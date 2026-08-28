@@ -1,0 +1,25 @@
+[package]
+name = "vps-lib"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Verified parser and serializer combinators for VPS"
+keywords = ["vps", "verus", "verification", "parsing", "combinators"]
+categories = ["development-tools", "parsing"]
+
+[features]
+default = ["std"]
+std = ["alloc", "vstd/std"]
+alloc = ["vstd/alloc"]
+
+[dependencies]
+vstd = { version = "=0.0.0-2026-07-27-0206", default-features = false }
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", 'cfg(verus_keep_ghost)'] }

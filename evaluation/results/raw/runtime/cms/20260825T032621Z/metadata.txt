@@ -1,0 +1,3 @@
+started_utc=2026-08-25T03:26:21Z
+command=cargo bench --bench cms_content_info -- --noplot --output-format bencher
+finished_utc=2026-08-25T03:28:09Z

@@ -1,8 +1,0 @@
-test cms_real_signed_data/parse/VPS ... bench:        4282 ns/iter (+/- 104)
-test cms_real_signed_data/parse/rasn-cms ... bench:        5922 ns/iter (+/- 74)
-test cms_real_signed_data/parse/RustCrypto-cms ... bench:        5879 ns/iter (+/- 143)
-
-test cms_real_signed_data/serialize/VPS ... bench:        2643 ns/iter (+/- 47)
-test cms_real_signed_data/serialize/rasn-cms ... bench:       12315 ns/iter (+/- 167)
-test cms_real_signed_data/serialize/RustCrypto-cms ... bench:        2465 ns/iter (+/- 47)
-

@@ -36,3 +36,8 @@ Cargo.lock
 # Benchmarks
 **/bench_data/
 **/benches/data/
+
+# Small, redistributable TLS fixture required to compile the artifact benches.
+!vest-dsl-vps/test/bench_data/
+!vest-dsl-vps/test/bench_data/tls/
+!vest-dsl-vps/test/bench_data/tls/tranco_handshakes.rs

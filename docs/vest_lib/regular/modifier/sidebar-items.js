@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AndThen","Cond","Mapped","Refined","TryMap"],"trait":["Iso","IsoFn","PartialIso","PartialIsoFn","Pred","SpecIso","SpecIsoFn","SpecIsoProof","SpecPartialIso","SpecPartialIsoFn","SpecPartialIsoProof","SpecPred"]};

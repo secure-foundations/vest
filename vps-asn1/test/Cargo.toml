@@ -1,0 +1,18 @@
+[package]
+name = "vps-asn1-generated-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vstd = "=0.0.0-2026-07-27-0206"
+
+vps_lib = { package = "vps-lib", path = "../../vps-lib" }
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", "cfg(verus_keep_ghost)"] }

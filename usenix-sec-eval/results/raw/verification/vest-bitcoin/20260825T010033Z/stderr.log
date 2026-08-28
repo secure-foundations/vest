@@ -1,5 +1,0 @@
-error: unexpected argument '--fwd-verus-args-to' found
-
-Usage: cargo check --lib
-
-For more information, try '--help'.

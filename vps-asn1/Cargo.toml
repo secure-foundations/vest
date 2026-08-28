@@ -1,0 +1,16 @@
+[package]
+name = "vps-asn1"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Generate verified VPS parsers and serializers from ASN.1 schemas"
+
+[dependencies]
+synta-codegen = { path = "vendor/synta-codegen" }
+
+[[bin]]
+name = "vps-asn1"
+path = "src/main.rs"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", "cfg(verus_keep_ghost)"] }

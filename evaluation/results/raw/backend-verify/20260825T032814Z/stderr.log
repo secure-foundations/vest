@@ -1,0 +1,5 @@
+    Checking vps_lib v0.1.0 (<ARTIFACT_ROOT>/vps-lib)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 37.50s
+real 37.59
+user 144.07
+sys 7.83

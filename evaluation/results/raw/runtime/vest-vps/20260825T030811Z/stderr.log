@@ -1,0 +1,509 @@
+warning: unused import: `vstd::assert_seqs_equal`
+ --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:4:5
+  |
+4 | use vstd::assert_seqs_equal;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `uint_size`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:27:16
+   |
+27 | pub(super) use uint_size;
+   |                ^^^^^^^^^
+
+warning: unused import: `is_high_8_bit_set`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:35:16
+   |
+35 | pub(crate) use is_high_8_bit_set;
+   |                ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `take_low_7_bits`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:43:16
+   |
+43 | pub(crate) use take_low_7_bits;
+   |                ^^^^^^^^^^^^^^^
+
+warning: unused import: `set_high_8_bit`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:53:16
+   |
+53 | pub(super) use set_high_8_bit;
+   |                ^^^^^^^^^^^^^^
+
+warning: unused import: `n_bit_max_unsigned`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/leb128.rs:61:16
+   |
+61 | pub(super) use n_bit_max_unsigned;
+   |                ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `vstd::seq_lib::*`
+ --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:6:5
+  |
+6 | use vstd::seq_lib::*;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:13:1
+   |
+13 | global size_of u8 == 1;
+   | ^^^^^^
+   |
+   = note: `#[warn(unused_braces)]` (part of `#[warn(unused)]`) on by default
+
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:15:1
+   |
+15 | global size_of u16 == 2;
+   | ^^^^^^
+
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:17:1
+   |
+17 | global size_of u32 == 4;
+   | ^^^^^^
+
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:19:1
+   |
+19 | global size_of u64 == 8;
+   | ^^^^^^
+
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:21:1
+   |
+21 | global size_of usize == 8;
+   | ^^^^^^
+
+warning: unexpected `cfg` condition name: `verus_keep_ghost`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/errors.rs:40:7
+   |
+40 | #[cfg(verus_keep_ghost)]
+   |       ^^^^^^^^^^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(verus_keep_ghost)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(verus_keep_ghost)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `verus_keep_ghost`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/errors.rs:51:7
+   |
+51 | #[cfg(verus_keep_ghost)]
+   |       ^^^^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(verus_keep_ghost)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(verus_keep_ghost)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/bytes.rs:100:22
+    |
+100 |     fn length(&self, v: Self::SType) -> usize {
+    |                      ^ help: if this is intentional, prefix it with an underscore: `_v`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/bytes.rs:197:22
+    |
+197 |     fn length(&self, v: Self::SType) -> usize {
+    |                      ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `i`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/repetition.rs:382:13
+    |
+382 |         for i in 0..self.1
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `data`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/success.rs:68:42
+   |
+68 |     fn serialize(&self, _v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
+   |                                          ^^^^ help: if this is intentional, prefix it with an underscore: `_data`
+
+warning: unused variable: `pos`
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/success.rs:68:56
+   |
+68 |     fn serialize(&self, _v: Self::SType, data: &mut O, pos: usize) -> (res: Result<
+   |                                                        ^^^ help: if this is intentional, prefix it with an underscore: `_pos`
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+178 | impl_combinator_for_uint_tag!(U8, u8);
+    | ------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+178 | impl_combinator_for_uint_tag!(U8, u8);
+    | ------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+178 | impl_combinator_for_uint_tag!(U8, u8);
+    | ------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+178 | impl_combinator_for_uint_tag!(U8, u8);
+    | ------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+180 | impl_combinator_for_uint_tag!(U16Le, u16);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+180 | impl_combinator_for_uint_tag!(U16Le, u16);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+180 | impl_combinator_for_uint_tag!(U16Le, u16);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+180 | impl_combinator_for_uint_tag!(U16Le, u16);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+183 | impl_combinator_for_uint_tag!(U32Le, u32);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+183 | impl_combinator_for_uint_tag!(U32Le, u32);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+183 | impl_combinator_for_uint_tag!(U32Le, u32);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+183 | impl_combinator_for_uint_tag!(U32Le, u32);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+185 | impl_combinator_for_uint_tag!(U64Le, u64);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+185 | impl_combinator_for_uint_tag!(U64Le, u64);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+185 | impl_combinator_for_uint_tag!(U64Le, u64);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+185 | impl_combinator_for_uint_tag!(U64Le, u64);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+187 | impl_combinator_for_uint_tag!(U16Be, u16);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+187 | impl_combinator_for_uint_tag!(U16Be, u16);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+187 | impl_combinator_for_uint_tag!(U16Be, u16);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+187 | impl_combinator_for_uint_tag!(U16Be, u16);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+190 | impl_combinator_for_uint_tag!(U32Be, u32);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+190 | impl_combinator_for_uint_tag!(U32Be, u32);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+190 | impl_combinator_for_uint_tag!(U32Be, u32);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+190 | impl_combinator_for_uint_tag!(U32Be, u32);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+192 | impl_combinator_for_uint_tag!(U64Be, u64);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+192 | impl_combinator_for_uint_tag!(U64Be, u64);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+192 | impl_combinator_for_uint_tag!(U64Be, u64);
+    | ----------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+192 | impl_combinator_for_uint_tag!(U64Be, u64);
+    | ----------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+194 | impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
+    | --------------------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:157:34
+    |
+157 |                 fn length(&self, v: Self::SType) -> usize {
+    |                                  ^
+...
+194 | impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
+    | --------------------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+194 | impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
+    | --------------------------------------------------- in this macro invocation
+    |
+help: `v` is captured in macro and introduced a unused variable
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:170:37
+    |
+170 |                 fn serialize(&self, v: Self::SType, data: &mut O, pos: usize) -> Result<usize, SerializeError> {
+    |                                     ^
+...
+194 | impl_combinator_for_uint_tag!(UnsignedLEB128, UInt);
+    | --------------------------------------------------- in this macro invocation
+    = note: this warning originates in the macro `impl_combinator_for_uint_tag` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `v`
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/tag.rs:217:25
+    |
+217 |     fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> Result<
+    |                         ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `v`
+    --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:1090:22
+     |
+1090 |     fn length(&self, v: Self::SType) -> usize {
+     |                      ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: unused variable: `v`
+    --> <ARTIFACT_ROOT>/baselines/vest-lib/src/regular/uints.rs:1193:22
+     |
+1193 |     fn length(&self, v: Self::SType) -> usize {
+     |                      ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: type alias `SpecBtcVarintInner` is never used
+  --> <ARTIFACT_ROOT>/baselines/vest-lib/src/bitcoin/varint.rs:96:6
+   |
+96 | type SpecBtcVarintInner = TryMap<SpecPair<U8, VarintChoice>, VarIntMapper>;
+   |      ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vest_lib` (lib) generated 39 warnings (run `cargo fix --lib -p vest_lib` to apply 15 suggestions)
+   Compiling vps_lib v0.1.0 (<ARTIFACT_ROOT>/vps-lib)
+warning: unnecessary braces around assigned value
+  --> <ARTIFACT_ROOT>/vps-lib/src/combinators/length.rs:63:1
+   |
+63 | global size_of usize == 8;
+   | ^^^^^^
+   |
+   = note: `#[warn(unused_braces)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n`
+    --> <ARTIFACT_ROOT>/vps-lib/src/asn1/tag.rs:1040:10
+     |
+1040 |     let (n, v) = const_u16_fmt.parse(buf)?;
+     |          ^ help: if this is intentional, prefix it with an underscore: `_n`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n`
+    --> <ARTIFACT_ROOT>/vps-lib/src/asn1/tag.rs:1057:10
+     |
+1057 |     let (n, tag) = asn_bool_tag_fmt.parse(buf)?;
+     |          ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+   Compiling test v0.1.0 (<ARTIFACT_ROOT>/baselines/vest-dsl-vps/test)
+warning: `vps_lib` (lib) generated 3 warnings (run `cargo fix --lib -p vps_lib` to apply 2 suggestions)
+   Compiling vest-vps-runtime-eval v0.1.0 (<ARTIFACT_ROOT>/evaluation/harnesses/vest-vps-runtime)
+    Finished `bench` profile [optimized] target(s) in 23.66s
+     Running benches/vest_vps.rs (target/release/deps/vest_vps-cc3de051f815fa04)
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 19.8s, or reduce sample count to 20.
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 18.0s, or reduce sample count to 20.
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 17.2s, or reduce sample count to 20.
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 10.0s, or reduce sample count to 50.
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 11.2s, or reduce sample count to 40.
+TLS common corpus: 204 messages, 74915 bytes
+real 184.99
+user 173.32
+sys 5.06

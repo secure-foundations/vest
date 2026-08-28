@@ -1,4 +1,0 @@
-revision=401e5bbcf32127408883fe7acf51c288d0f56329
-started_utc=2026-08-25T15:32:16Z
-command=cargo bench --bench asn1_record -- --noplot --output-format bencher
-finished_utc=2026-08-25T15:34:40Z

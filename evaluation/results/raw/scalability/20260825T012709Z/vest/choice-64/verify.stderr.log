@@ -1,0 +1,55 @@
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/vest/choice-64/crate)
+error[E0275]: overflow evaluating the requirement `vest_lib::regular::uints::U8: vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+    --> src/generated.rs:2457:7
+     |
+2457 |     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`vps_scalability_case`)
+     = note: required for `Refined<U8, Predicate3507748065990518294>` to implement `vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+     = note: 64 redundant requirements hidden
+     = note: required for `Mapped<ChoiceWidth64Combinator63, ChoiceWidth64Mapper>` to implement `vest_lib::properties::Combinator<'a, &'a [u8], std::vec::Vec<u8>>`
+     = note: the full name for the type has been written to '<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/target/vest/debug/deps/vps_scalability_case-3b4cb025dc9e87a6.long-type-1443470005484623375.txt'
+     = note: consider using `--verbose` to print the full type name to the console
+
+error[E0275]: overflow evaluating the requirement `vest_lib::regular::uints::U8: vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+    --> src/generated.rs:2459:7
+     |
+2459 |     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::ex_requires(&self.0) }
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`vps_scalability_case`)
+     = note: required for `Refined<U8, Predicate3507748065990518294>` to implement `vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+     = note: 64 redundant requirements hidden
+     = note: required for `Mapped<ChoiceWidth64Combinator63, ChoiceWidth64Mapper>` to implement `vest_lib::properties::Combinator<'a, &'a [u8], std::vec::Vec<u8>>`
+     = note: the full name for the type has been written to '<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/target/vest/debug/deps/vps_scalability_case-3b4cb025dc9e87a6.long-type-1443470005484623375.txt'
+     = note: consider using `--verbose` to print the full type name to the console
+
+error[E0275]: overflow evaluating the requirement `vest_lib::regular::uints::U8: vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+    --> src/generated.rs:2461:7
+     |
+2461 |     { <_ as Combinator<'a, &'a [u8],Vec<u8>>>::parse(&self.0, s) }
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`vps_scalability_case`)
+     = note: required for `Refined<U8, Predicate3507748065990518294>` to implement `vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+     = note: 64 redundant requirements hidden
+     = note: required for `Mapped<ChoiceWidth64Combinator63, ChoiceWidth64Mapper>` to implement `vest_lib::properties::Combinator<'a, &'a [u8], std::vec::Vec<u8>>`
+     = note: the full name for the type has been written to '<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/target/vest/debug/deps/vps_scalability_case-3b4cb025dc9e87a6.long-type-1443470005484623375.txt'
+     = note: consider using `--verbose` to print the full type name to the console
+
+error[E0275]: overflow evaluating the requirement `vest_lib::regular::uints::U8: vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+    --> src/generated.rs:2463:7
+     |
+2463 |     { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`vps_scalability_case`)
+     = note: required for `Refined<U8, Predicate3507748065990518294>` to implement `vest_lib::properties::Combinator<'_, &'a [u8], std::vec::Vec<u8>>`
+     = note: 64 redundant requirements hidden
+     = note: required for `Mapped<ChoiceWidth64Combinator63, ChoiceWidth64Mapper>` to implement `vest_lib::properties::Combinator<'a, &'a [u8], std::vec::Vec<u8>>`
+     = note: the full name for the type has been written to '<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/target/vest/debug/deps/vps_scalability_case-3b4cb025dc9e87a6.long-type-1443470005484623375.txt'
+     = note: consider using `--verbose` to print the full type name to the console
+
+For more information about this error, try `rustc --explain E0275`.
+error: could not compile `vps-scalability-case` (lib) due to 4 previous errors

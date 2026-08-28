@@ -1,0 +1,21 @@
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T011418Z/vest/depth-1/crate)
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+  --> src/generated.rs:57:17
+   |
+57 | #[derive(Debug, Clone, PartialEq, Eq)]
+   |                 ^^^^^
+   |
+   = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:254:17
+    |
+254 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+note: verifying module generated
+
+warning: `vps-scalability-case` (lib) generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.78s

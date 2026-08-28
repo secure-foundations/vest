@@ -1,0 +1,29 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling autocfg v1.5.1
+   Compiling verus_prettyplease v0.0.0-2026-07-27-0206
+   Compiling hashbrown v0.12.3
+   Compiling convert_case v0.4.0
+   Compiling vstd v0.0.0-2026-07-27-0206
+    Checking verus_builtin v0.0.0-2026-07-27-0206
+   Compiling indexmap v1.9.3
+   Compiling verus_syn v0.0.0-2026-07-27-0206
+   Compiling syn v2.0.119
+   Compiling synstructure v0.13.2
+   Compiling verus_state_machines_macros v0.0.0-2026-07-27-0206
+   Compiling verus_builtin_macros v0.0.0-2026-07-27-0206
+    Checking vest_lib v0.0.5 (<ARTIFACT_ROOT>/baselines/vest-lib)
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012709Z/vest/depth-0/crate)
+warning: Verus does not (yet) support autoderive Clone impl when the clone is not a copy; continuing, but without adding a specification for the derived Clone impl
+  --> src/generated.rs:57:17
+   |
+57 | #[derive(Debug, Clone, PartialEq, Eq)]
+   |                 ^^^^^
+   |
+   = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+note: verifying module generated
+
+warning: `vps-scalability-case` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 27.36s

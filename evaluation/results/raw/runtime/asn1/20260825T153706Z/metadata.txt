@@ -1,0 +1,3 @@
+started_utc=2026-08-25T15:37:06Z
+command=cargo bench --bench asn1_record -- --noplot --output-format bencher
+finished_utc=2026-08-25T15:39:30Z

@@ -1,4 +1,0 @@
-revision=ab3060750300e1dcc9791ed55ee391cbf56e40e1
-started_utc=2026-08-25T01:54:57Z
-command=cargo bench --bench cms_content_info -- --noplot --output-format bencher
-finished_utc=2026-08-25T01:56:20Z

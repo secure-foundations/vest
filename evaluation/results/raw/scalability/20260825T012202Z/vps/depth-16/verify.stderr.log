@@ -1,0 +1,10 @@
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012202Z/vps/depth-16/crate)
+note: verifying module generated
+
+note: verifying module generated::derived_proofs
+
+note: verifying module generated::derived_specs
+
+note: verifying module generated::exec_impls
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 50s

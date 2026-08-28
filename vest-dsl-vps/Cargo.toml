@@ -1,0 +1,26 @@
+[package]
+name = "vest-dsl-vps"
+version = "0.1.5"
+edition = "2021"
+license = "MIT"
+description = "A Vest DSL frontend with a VPS combinator code-generation backend"
+readme = "../README.md"
+keywords = ["vps", "verus", "verification", "parsing", "combinators"]
+categories = ["development-tools", "parsing"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pest = "2.7"
+pest_derive = { version = "2.7", features = ["grammar-extras"] }
+itertools = "0.11.0"
+clap = { version = "4.4.7", features = ["derive"] }
+paste = "1.0.14"
+ariadne = { version = "0.5.1", features = ["auto-color"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+heck = "0.5"
+
+[[bin]]
+name = "vest-vps"
+path = "src/main.rs"

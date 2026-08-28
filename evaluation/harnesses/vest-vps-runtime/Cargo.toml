@@ -1,0 +1,23 @@
+[package]
+name = "vest-vps-runtime-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+vest_lib = { path = "../../../baselines/vest-lib" }
+vps_lib = { package = "vps-lib", path = "../../../vps-lib" }
+vest_tls = { package = "tls", path = "../../../baselines/vest-dsl/tls" }
+vest_bitcoin = { package = "vestbitcoin", path = "../../../baselines/vest-dsl/bitcoin" }
+vps_generated = { package = "vps-generated-tests", path = "../../../vest-dsl-vps/test" }
+base64 = "0.22.1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "vest_vps"
+harness = false
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1

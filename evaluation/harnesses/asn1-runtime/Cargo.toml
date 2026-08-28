@@ -1,0 +1,33 @@
+[package]
+name = "vps-asn1-runtime-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+vps_lib = { package = "vps-lib", path = "../../../vps-lib" }
+vstd = "=0.0.0-2026-07-27-0206"
+rasn = "0.28.14"
+der = { version = "0.8.1", features = ["alloc", "ber", "derive"] }
+criterion = "0.5"
+rasn-cms = "0.28.14"
+rustcrypto-cms = { package = "cms", version = "0.3.0-pre.2" }
+cryptographic-message-syntax = { version = "0.28.0", default-features = false }
+bcder = "0.7.7"
+
+[[bench]]
+name = "asn1_record"
+harness = false
+
+[[bench]]
+name = "cms_content_info"
+harness = false
+
+[[bench]]
+name = "cms_real_signed_data"
+harness = false
+
+[profile.bench]
+lto = "fat"
+opt-level = 3
+codegen-units = 1

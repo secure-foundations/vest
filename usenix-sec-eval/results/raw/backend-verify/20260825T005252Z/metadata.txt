@@ -1,5 +1,0 @@
-command=cargo verus verify --fwd-verus-args-to roots -- --time-expanded --output-json --num-threads 10
-threads=10
-revision=ab3060750300e1dcc9791ed55ee391cbf56e40e1
-started_utc=2026-08-25T00:52:52Z
-finished_utc=2026-08-25T00:53:28Z

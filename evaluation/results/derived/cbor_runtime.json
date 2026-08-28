@@ -1,0 +1,82 @@
+[
+  {
+    "operation": "parse",
+    "system": "VPS",
+    "nanoseconds": 252594,
+    "std_dev_nanoseconds": 3545,
+    "values": 1536,
+    "bytes": 108864,
+    "mib_per_second": 411.0184754240006,
+    "relative_to_vps": 1.0
+  },
+  {
+    "operation": "parse",
+    "system": "ciborium",
+    "nanoseconds": 637649,
+    "std_dev_nanoseconds": 29382,
+    "values": 1536,
+    "bytes": 108864,
+    "mib_per_second": 162.81810334721766,
+    "relative_to_vps": 0.396133295904173
+  },
+  {
+    "operation": "parse",
+    "system": "cbor4ii",
+    "nanoseconds": 239369,
+    "std_dev_nanoseconds": 7802,
+    "values": 1536,
+    "bytes": 108864,
+    "mib_per_second": 433.72701052036814,
+    "relative_to_vps": 1.055249426617482
+  },
+  {
+    "operation": "parse",
+    "system": "minicbor-serde",
+    "nanoseconds": 276022,
+    "std_dev_nanoseconds": 10335,
+    "values": 1536,
+    "bytes": 108864,
+    "mib_per_second": 376.13234010785374,
+    "relative_to_vps": 0.9151227076102629
+  },
+  {
+    "operation": "serialize",
+    "system": "VPS",
+    "nanoseconds": 66856,
+    "std_dev_nanoseconds": 5108,
+    "values": 1536,
+    "bytes": 62726,
+    "mib_per_second": 894.7615048895901,
+    "relative_to_vps": 1.0
+  },
+  {
+    "operation": "serialize",
+    "system": "ciborium",
+    "nanoseconds": 86161,
+    "std_dev_nanoseconds": 2592,
+    "values": 1536,
+    "bytes": 62726,
+    "mib_per_second": 694.2836686075885,
+    "relative_to_vps": 0.7759427118998155
+  },
+  {
+    "operation": "serialize",
+    "system": "cbor4ii",
+    "nanoseconds": 61086,
+    "std_dev_nanoseconds": 3172,
+    "values": 1536,
+    "bytes": 62726,
+    "mib_per_second": 979.2779879333797,
+    "relative_to_vps": 1.0944569950561502
+  },
+  {
+    "operation": "serialize",
+    "system": "minicbor-serde",
+    "nanoseconds": 52398,
+    "std_dev_nanoseconds": 1282,
+    "values": 1536,
+    "bytes": 62726,
+    "mib_per_second": 1141.6499708175586,
+    "relative_to_vps": 1.2759265620825222
+  }
+]

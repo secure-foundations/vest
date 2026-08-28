@@ -1,0 +1,4 @@
+started_utc=2026-08-25T03:21:08Z
+source=cose-wg/Examples@53c9d634333bb4f529d78f5980fffa2667ee2c12
+command=cargo bench --bench real_cose -- --noplot --output-format bencher
+finished_utc=2026-08-25T03:21:46Z

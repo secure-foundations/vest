@@ -1,0 +1,26 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling autocfg v1.5.1
+   Compiling verus_prettyplease v0.0.0-2026-07-27-0206
+   Compiling hashbrown v0.12.3
+   Compiling convert_case v0.4.0
+   Compiling vstd v0.0.0-2026-07-27-0206
+    Checking verus_builtin v0.0.0-2026-07-27-0206
+   Compiling indexmap v1.9.3
+   Compiling verus_syn v0.0.0-2026-07-27-0206
+   Compiling syn v2.0.119
+   Compiling synstructure v0.13.2
+   Compiling verus_state_machines_macros v0.0.0-2026-07-27-0206
+   Compiling verus_builtin_macros v0.0.0-2026-07-27-0206
+    Checking vps_lib v0.1.0 (<ARTIFACT_ROOT>/vps-lib)
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T012202Z/vps/depth-0/crate)
+note: verifying module generated
+
+note: verifying module generated::derived_proofs
+
+note: verifying module generated::derived_specs
+
+note: verifying module generated::exec_impls
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 59.76s

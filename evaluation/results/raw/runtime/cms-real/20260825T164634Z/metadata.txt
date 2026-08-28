@@ -1,0 +1,6 @@
+started_utc=2026-08-25T16:46:34Z
+command=cargo bench --bench cms_real_signed_data -- --noplot --output-format bencher
+c8eda003d980ccdfde0e0e810fe7a6b93823e8a0c1da9b698806a09757f3e253  <ARTIFACT_ROOT>/evaluation/corpora/cms/dss/MANIFEST.tsv
+bbb244bfbe4b29b52ee6a7e82046dd9c22f234a7deee74b7c493c3c0ce35745f  <ARTIFACT_ROOT>/evaluation/corpora/cms/pkits/MANIFEST.tsv
+f579c29f866bcf0ddd78fe5ce92848cbd11474ff5ff1bd62e32b940f31b5af80  <ARTIFACT_ROOT>/evaluation/corpora/cms/rfc4134/MANIFEST.tsv
+finished_utc=2026-08-25T16:51:00Z

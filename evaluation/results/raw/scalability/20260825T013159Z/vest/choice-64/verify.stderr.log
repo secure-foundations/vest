@@ -1,0 +1,622 @@
+    Checking vps-scalability-case v0.0.0 (<ARTIFACT_ROOT>/evaluation/results/raw/scalability/20260825T013159Z/vest/choice-64/crate)
+warning: autoderive Clone impl does not take the form Verus expects; continuing, but without adding a specification for the derived Clone impl
+   --> src/generated.rs:254:17
+    |
+254 | #[derive(Debug, Clone, PartialEq, Eq)]
+    |                 ^^^^^
+    |
+    = help: to suppress this warning, use `#[verifier::allow(autoderive_clone_without_spec)]` on the surrounding function, datatype, or module or `#![verifier::allow(autoderive_clone_without_spec)]` in the module or crate
+
+note: verifying module generated
+
+error: postcondition not satisfied
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:216:13
+    |
+216 |             len == self@.spec_serialize(v@).len(),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ failed this postcondition
+    |
+   ::: src/generated.rs:25:19
+    |
+ 25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+    |                   ------------------------------------------------------------ at the end of the function body
+
+error: postcondition not satisfied
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:249:25
+    |
+249 |             res matches Ok((n, v)) ==> self@.spec_parse(s@) == Some((n as int, v@)),
+    |                         ^^^^^^^^^^ failed this postcondition
+    |
+   ::: src/generated.rs:29:19
+    |
+ 29 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+    |                   ----------------------------------------------------------- at the end of the function body
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2389 | impl_wrapper_combinator!(ChoiceWidth64Combinator55, ChoiceWidth64CombinatorAlias55);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: postcondition not satisfied
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:250:13
+    |
+250 | /             self@.spec_parse(s@) matches Some((n, v)) ==> res matches Ok((m, u)) && m == n && v
+251 | |                 == u@,
+    | |_____________________^ failed this postcondition
+    |
+   ::: src/generated.rs:29:19
+    |
+ 29 |                   { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::parse(&self.0, s) }
+    |                     ----------------------------------------------------------- at the end of the function body
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2389 | impl_wrapper_combinator!(ChoiceWidth64Combinator55, ChoiceWidth64CombinatorAlias55);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: postcondition not satisfied
+   --> <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:285:25
+    |
+285 |             res matches Ok(n) ==> {
+    |                         ^^^^^ failed this postcondition
+    |
+   ::: src/generated.rs:31:19
+    |
+ 31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+    |                   -------------------------------------------------------------------------------- at the end of the function body
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2389 | impl_wrapper_combinator!(ChoiceWidth64Combinator55, ChoiceWidth64CombinatorAlias55);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2396 | impl_wrapper_combinator!(ChoiceWidth64Combinator56, ChoiceWidth64CombinatorAlias56);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2396 | impl_wrapper_combinator!(ChoiceWidth64Combinator56, ChoiceWidth64CombinatorAlias56);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2396 | impl_wrapper_combinator!(ChoiceWidth64Combinator56, ChoiceWidth64CombinatorAlias56);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2396 | impl_wrapper_combinator!(ChoiceWidth64Combinator56, ChoiceWidth64CombinatorAlias56);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2396 | impl_wrapper_combinator!(ChoiceWidth64Combinator56, ChoiceWidth64CombinatorAlias56);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2403 | impl_wrapper_combinator!(ChoiceWidth64Combinator57, ChoiceWidth64CombinatorAlias57);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2403 | impl_wrapper_combinator!(ChoiceWidth64Combinator57, ChoiceWidth64CombinatorAlias57);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2403 | impl_wrapper_combinator!(ChoiceWidth64Combinator57, ChoiceWidth64CombinatorAlias57);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2403 | impl_wrapper_combinator!(ChoiceWidth64Combinator57, ChoiceWidth64CombinatorAlias57);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2403 | impl_wrapper_combinator!(ChoiceWidth64Combinator57, ChoiceWidth64CombinatorAlias57);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2410 | impl_wrapper_combinator!(ChoiceWidth64Combinator58, ChoiceWidth64CombinatorAlias58);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2410 | impl_wrapper_combinator!(ChoiceWidth64Combinator58, ChoiceWidth64CombinatorAlias58);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2410 | impl_wrapper_combinator!(ChoiceWidth64Combinator58, ChoiceWidth64CombinatorAlias58);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2410 | impl_wrapper_combinator!(ChoiceWidth64Combinator58, ChoiceWidth64CombinatorAlias58);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2410 | impl_wrapper_combinator!(ChoiceWidth64Combinator58, ChoiceWidth64CombinatorAlias58);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2417 | impl_wrapper_combinator!(ChoiceWidth64Combinator59, ChoiceWidth64CombinatorAlias59);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2417 | impl_wrapper_combinator!(ChoiceWidth64Combinator59, ChoiceWidth64CombinatorAlias59);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2417 | impl_wrapper_combinator!(ChoiceWidth64Combinator59, ChoiceWidth64CombinatorAlias59);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2417 | impl_wrapper_combinator!(ChoiceWidth64Combinator59, ChoiceWidth64CombinatorAlias59);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2417 | impl_wrapper_combinator!(ChoiceWidth64Combinator59, ChoiceWidth64CombinatorAlias59);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2424 | impl_wrapper_combinator!(ChoiceWidth64Combinator60, ChoiceWidth64CombinatorAlias60);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2424 | impl_wrapper_combinator!(ChoiceWidth64Combinator60, ChoiceWidth64CombinatorAlias60);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2424 | impl_wrapper_combinator!(ChoiceWidth64Combinator60, ChoiceWidth64CombinatorAlias60);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2424 | impl_wrapper_combinator!(ChoiceWidth64Combinator60, ChoiceWidth64CombinatorAlias60);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2424 | impl_wrapper_combinator!(ChoiceWidth64Combinator60, ChoiceWidth64CombinatorAlias60);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2431 | impl_wrapper_combinator!(ChoiceWidth64Combinator61, ChoiceWidth64CombinatorAlias61);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2431 | impl_wrapper_combinator!(ChoiceWidth64Combinator61, ChoiceWidth64CombinatorAlias61);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2431 | impl_wrapper_combinator!(ChoiceWidth64Combinator61, ChoiceWidth64CombinatorAlias61);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2431 | impl_wrapper_combinator!(ChoiceWidth64Combinator61, ChoiceWidth64CombinatorAlias61);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2431 | impl_wrapper_combinator!(ChoiceWidth64Combinator61, ChoiceWidth64CombinatorAlias61);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2438 | impl_wrapper_combinator!(ChoiceWidth64Combinator62, ChoiceWidth64CombinatorAlias62);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2438 | impl_wrapper_combinator!(ChoiceWidth64Combinator62, ChoiceWidth64CombinatorAlias62);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2438 | impl_wrapper_combinator!(ChoiceWidth64Combinator62, ChoiceWidth64CombinatorAlias62);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2438 | impl_wrapper_combinator!(ChoiceWidth64Combinator62, ChoiceWidth64CombinatorAlias62);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2438 | impl_wrapper_combinator!(ChoiceWidth64Combinator62, ChoiceWidth64CombinatorAlias62);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:24:17
+     |
+  24 |                 fn length(&self, v: Self::SType) -> usize
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2445 | impl_wrapper_combinator!(ChoiceWidth64Combinator63, ChoiceWidth64CombinatorAlias63);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:25:19
+     |
+  25 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::length(&self.0, v) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2445 | impl_wrapper_combinator!(ChoiceWidth64Combinator63, ChoiceWidth64CombinatorAlias63);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:213:13
+     |
+ 213 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:28:17
+     |
+  28 |                 fn parse(&self, s: &'a [u8]) -> (res: Result<(usize, Self::Type), ParseError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2445 | impl_wrapper_combinator!(ChoiceWidth64Combinator63, ChoiceWidth64CombinatorAlias63);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: function body check: not all errors may have been reported; rerun with a higher value for --multiple-errors to find other potential errors in this function
+    --> src/generated.rs:30:17
+     |
+  30 |                 fn serialize(&self, v: Self::SType, data: &mut Vec<u8>, pos: usize) -> (o: Result<usize, SerializeError>)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2445 | impl_wrapper_combinator!(ChoiceWidth64Combinator63, ChoiceWidth64CombinatorAlias63);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+     = note: this note originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: precondition not satisfied
+    --> src/generated.rs:31:19
+     |
+  31 |                 { <_ as Combinator<'a, &'a [u8], Vec<u8>>>::serialize(&self.0, v, &mut *data, pos) }
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2445 | impl_wrapper_combinator!(ChoiceWidth64Combinator63, ChoiceWidth64CombinatorAlias63);
+     | ----------------------------------------------------------------------------------- in this macro invocation
+     |
+    ::: <ARTIFACT_ROOT>/baselines/vest-lib/src/properties.rs:282:13
+     |
+ 282 |             self@.wf(v@),
+     |             ------------ failed precondition
+     |
+     = note: this error originates in the macro `impl_wrapper_combinator` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: function body check: Resource limit (rlimit) exceeded; consider rerunning with --profile for more details
+    --> src/generated.rs:2473:1
+     |
+2473 | pub fn choice_width64<'a>() -> (o: ChoiceWidth64Combinator)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `vps-scalability-case` (lib) generated 1 warning
+error: could not compile `vps-scalability-case` (lib) due to 61 previous errors; 1 warning emitted
