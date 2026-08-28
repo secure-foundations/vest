@@ -7,7 +7,7 @@ repository contains the implementation and evaluation material for the paper.
 
 | Paper section | Source code |
 |---|---|
-| Design: malleability | Spec and proof modules under [`combinators/`](vps-lib/src/combinators/) (the `Alt` combinator is defined in `choice`; the `Mapped` combinator is defined in `mapped`) |
+| Design: malleability | [`combinators/choice`](vps-lib/src/combinators/choice) and [`combinators/mapped`](vps-lib/src/combinators/mapped) |
 | Design: recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/) |
 | Formalization and trait system | [`core/`](vps-lib/src/core/) and [`combinators/`](vps-lib/src/combinators/) |
 | Efficient parser and serializer APIs | [`core/exec/`](vps-lib/src/core/exec/) |
