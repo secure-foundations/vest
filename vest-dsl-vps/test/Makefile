@@ -4,8 +4,7 @@ CARGO        := cargo
 ROOT_MANIFEST := ../Cargo.toml
 VEST_VPS     := ../target/debug/vest-vps
 # selected .vest files in the src directory
-VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/bits.vest ./src/bits_little.vest ./src/tlv.vest ./src/tls.vest ./src/bitcoin.vest ./src/anonymous_nested.vest ./src/nested_access.vest ./src/mutual_rec.vest ./src/nested_bytes.vest ./src/stress_depth.vest ./src/stress_width.vest
-# ./src/ikev2.vest
+VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/bits.vest ./src/bits_little.vest ./src/tlv.vest ./src/tls.vest ./src/bitcoin.vest ./src/anonymous_nested.vest ./src/nested_access.vest ./src/mutual_rec.vest ./src/nested_bytes.vest ./src/stress_depth.vest ./src/stress_width.vest
 # all files in ./bad/
 BAD_VEST_FILES := $(wildcard ./bad/*.vest)
 

@@ -10,7 +10,6 @@ pub mod codegen;
 pub mod elab;
 pub mod enum_constraints;
 pub mod enums;
-pub mod josh;
 pub mod length_expr;
 pub mod matches;
 // pub mod mutual_rec;
