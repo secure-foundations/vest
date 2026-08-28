@@ -1,8 +1,8 @@
 # Bitcoin runtime corpus
 
-The full runtime corpus is not bundled because its 897 MiB text file exceeds
-the anonymous host's 8 MiB per-file limit. It contains one base64-encoded
-Bitcoin block per line and was used identically by Vest and VPS.
+The full runtime corpus is not bundled because it is an 897 MiB text file. It
+contains one base64-encoded Bitcoin block per line and was used identically by
+Vest and VPS.
 
 - file name: `sampled_blocks.txt`
 - SHA-256: `b60ec4397a73b539b8f6ec358a9584c76ee74150a073baaea40aaa9d5b0e244f`

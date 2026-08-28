@@ -1,5 +1,5 @@
 timestamp_utc=2026-08-25T02:01:13Z
-uname=Darwin Yis-MacBook-Pro-47.local 25.5.0 Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:06 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6030 arm64
+uname=Darwin <HOST> 25.5.0 Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:06 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6030 arm64
 cpu=
 logical_cpus=
 memory_bytes=

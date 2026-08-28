@@ -22,11 +22,11 @@
   {
     "category": "combinators",
     "modules": 79,
-    "total_sloc": 21396,
+    "total_sloc": 21395,
     "spec_sloc": 7334,
-    "proof_sloc": 9980,
+    "proof_sloc": 9979,
     "exec_sloc": 4082,
-    "shared_sloc": 6473,
+    "shared_sloc": 6472,
     "spec_fns": 1164,
     "proof_fns": 1176,
     "exec_fns": 311,
@@ -37,7 +37,7 @@
     "direct_spec_sloc": 5176,
     "direct_proof_sloc": 7822,
     "direct_exec_sloc": 1925,
-    "proof_to_code": 4.241548260656541
+    "proof_to_code": 4.241303282704557
   },
   {
     "category": "primitives",
@@ -122,11 +122,11 @@
   {
     "category": "FRAMEWORK",
     "modules": 96,
-    "total_sloc": 25814,
-    "spec_sloc": 8470,
+    "total_sloc": 25813,
+    "spec_sloc": 8469,
     "proof_sloc": 12090,
     "exec_sloc": 5254,
-    "shared_sloc": 7510,
+    "shared_sloc": 7509,
     "spec_fns": 1282,
     "proof_fns": 1411,
     "exec_fns": 409,
@@ -137,7 +137,7 @@
     "direct_spec_sloc": 5966,
     "direct_proof_sloc": 9587,
     "direct_exec_sloc": 2751,
-    "proof_to_code": 3.913208983631519
+    "proof_to_code": 3.913018652455272
   },
   {
     "category": "CASE_STUDIES",
@@ -162,11 +162,11 @@
   {
     "category": "TOTAL",
     "modules": 138,
-    "total_sloc": 47143,
+    "total_sloc": 47142,
     "spec_sloc": 15240,
-    "proof_sloc": 18553,
+    "proof_sloc": 18552,
     "exec_sloc": 13350,
-    "shared_sloc": 14084,
+    "shared_sloc": 14083,
     "spec_fns": 1975,
     "proof_fns": 2009,
     "exec_fns": 978,
@@ -177,6 +177,6 @@
     "direct_spec_sloc": 10545,
     "direct_proof_sloc": 13858,
     "direct_exec_sloc": 8656,
-    "proof_to_code": 2.531310861423221
+    "proof_to_code": 2.5312359550561796
   }
 ]

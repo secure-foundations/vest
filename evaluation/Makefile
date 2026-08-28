@@ -1,7 +1,7 @@
 PYTHON ?= python3
 THREADS ?= 10
 
-.PHONY: stats plots machine-info manifest verify-backend verify-cases runtime-smoke runtime cbor-runtime cbor-real-runtime asn1-runtime cms-runtime cms-real-runtime
+.PHONY: stats plots paper-figure machine-info manifest verify-backend verify-cases runtime-smoke runtime cbor-runtime cbor-real-runtime asn1-runtime cms-runtime cms-real-runtime
 
 stats:
 	$(PYTHON) scripts/loc_stats.py
@@ -14,6 +14,9 @@ stats:
 
 plots: stats
 	$(PYTHON) scripts/plot_runtime.py
+
+paper-figure: stats
+	$(PYTHON) scripts/generate_eval_plots.py
 
 machine-info:
 	scripts/machine_info.sh

@@ -1,33 +1,32 @@
-# VPS anonymous artifact
+# VPS
 
-This repository is the anonymized artifact for the VPS paper. VPS is a
-verified parser/serializer framework implemented in Rust and Verus. The
-artifact contains the verified backend, the ASN.1 frontend and case studies,
-the Vest DSL port used to generate VPS combinators, the original Vest baseline,
-and the scripts and raw data supporting the evaluation.
+VPS builds verified binary parsers and serializers in Rust and Verus. This
+repository contains the implementation and evaluation material for the paper.
 
-The Vest DSL is not a contribution of this work. `vest-dsl-vps/` ports the
-existing Vest DSL by implementing a custom code-generation backend that emits
-VPS combinators. We retain the `.vest` extension and Vest terminology in that
-frontend. “VPS” refers to the new verified backend and generated codecs.
+## Paper-to-code guide
 
-## Repository layout
+| Paper section | Source code |
+|---|---|
+| Design: controlling malleability | [`core/spec.rs`](vps-lib/src/core/spec.rs), [`core/proof.rs`](vps-lib/src/core/proof.rs), and proof modules under [`combinators/`](vps-lib/src/combinators/) |
+| Design: bounded recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/) |
+| Formalization and trait system | [`core/`](vps-lib/src/core/) and [`combinators/`](vps-lib/src/combinators/) |
+| Efficient parser and serializer APIs | [`core/exec/`](vps-lib/src/core/exec/) |
+| Loop implementations for recursive formats | [`ASN.1 BER`](vps-lib/src/asn1/ber/) and [`CBOR`](vps-lib/src/cbor/) |
+| ASN.1 BER, DER, and CMS case study | [`asn1/`](vps-lib/src/asn1/), [`vps-asn1/`](vps-asn1/), and the [`CMS schema`](vps-asn1/rfcs/CMS-RFC5652-Curated.asn1) |
+| CBOR case study | [`cbor/`](vps-lib/src/cbor/) |
+| Evaluation | [`evaluation/README.md`](evaluation/README.md), [`RESULTS.md`](evaluation/RESULTS.md), and [`generate_eval_plots.py`](evaluation/scripts/generate_eval_plots.py) |
 
-- `vps-lib/`: verified VPS core, combinators, primitives, ASN.1, and CBOR.
-- `vest-dsl-vps/`: Vest DSL frontend with the VPS backend (`vest-vps`).
-- `vps-asn1/`: ASN.1 frontend and curated schemas, including CMS.
-- `evaluation/`: harnesses, scripts, corpora, raw logs, and derived results.
-- `baselines/`: the original Vest library and DSL implementation used for the
-  apple-to-apple comparison.
+The TLS and Bitcoin case studies use the existing Vest language. The compiler
+in `vest-dsl-vps/` ports that language to a backend that emits VPS combinators;
+the language itself is not a contribution. `baselines/` contains the original
+Vest implementation used in the paper's direct comparison.
 
-## Build and verify
+## Test and verify
 
-The artifact expects the Verus-enabled Cargo command used by the paper’s
-evaluation (`cargo verus`) and the pinned `vstd` version in each manifest.
-From the repository root:
+The project uses `cargo verus` and the `vstd` version pinned in each manifest.
 
 ```sh
-cargo check --manifest-path vps-lib/Cargo.toml
+cargo test --manifest-path vps-lib/Cargo.toml
 cargo test --manifest-path vest-dsl-vps/Cargo.toml
 cargo test --manifest-path vps-asn1/Cargo.toml
 
@@ -35,42 +34,12 @@ cd vps-lib
 cargo verus verify -- --expand-errors
 ```
 
-To regenerate and verify the Vest DSL fixtures:
+Generated-code suites can be rebuilt and verified with `make generate` and
+`make verify` in `vest-dsl-vps/test/` and `vps-asn1/test/`.
 
-```sh
-cd vest-dsl-vps/test
-make generate
-make verify
-```
+## Reproduce the evaluation
 
-To regenerate and verify the ASN.1 fixtures:
-
-```sh
-cd vps-asn1/test
-make generate
-make verify
-```
-
-## Evaluation
-
-See [`evaluation/README.md`](evaluation/README.md) for the methodology,
-reproduction commands, fairness controls, corpus provenance, and organization
-of raw and derived results. A quick non-mutating anonymity check is available
-as:
-
-```sh
-scripts/audit-anonymity.sh
-```
-
-The full Bitcoin runtime corpus is intentionally not duplicated in the
-anonymous snapshot because it exceeds the hosting service’s per-file limit.
-Its expected SHA-256 digest and setup instructions are documented in the
-evaluation directory; the bundled fixtures still support build, verification,
-and smoke testing.
-
-## Anonymity note
-
-The historical system name “Vest” intentionally remains where it identifies
-the published baseline or the source DSL. First-party author identities,
-institutional links, local paths, repository history identifiers, and hostnames
-are excluded from this branch.
+See [`evaluation/README.md`](evaluation/README.md) for the short reproduction
+commands. The large Bitcoin runtime input is not stored here; its checksum and
+setup instructions are in
+[`evaluation/corpora/bitcoin/README.md`](evaluation/corpora/bitcoin/README.md).
