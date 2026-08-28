@@ -7,12 +7,12 @@ repository contains the implementation and evaluation material for the paper.
 
 | Paper section | Source code |
 |---|---|
-| Design: malleability | [`combinators/choice`](vps-lib/src/combinators/choice) and [`combinators/mapped`](vps-lib/src/combinators/mapped) |
-| Design: recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/) |
-| Formalization and trait system | [`core/`](vps-lib/src/core/) and [`combinators/`](vps-lib/src/combinators/) |
-| Efficient parser and serializer APIs | [`core/exec/`](vps-lib/src/core/exec/) |
-| ASN.1 BER, DER, and CMS case study | [`asn1/`](vps-lib/src/asn1/), [`vps-asn1/`](vps-asn1/), and the [`CMS schema`](vps-asn1/rfcs/CMS-RFC5652-Curated.asn1) |
-| CBOR case study | [`cbor/`](vps-lib/src/cbor/) |
+| Design: malleability | [`combinators/choice`](vps-lib/src/combinators/choice/mod.rs) and [`combinators/mapped`](vps-lib/src/combinators/mapped/mod.rs) |
+| Design: recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/mod.rs) |
+| Formalization and trait system | [`core/spec.rs`](vps-lib/src/core/spec.rs), [`core/proof.rs`](vps-lib/src/core/proof.rs) and [`combinators/`](vps-lib/src/combinators/mod.rs) |
+| Efficient parser and serializer APIs | [`core/exec/`](vps-lib/src/core/exec/mod.rs) |
+| ASN.1 BER, DER, and CMS case study | [`asn1/`](vps-lib/src/asn1/mod.rs), [`vps-asn1/`](vps-asn1/README.md), and the [`CMS schema`](vps-asn1/rfcs/CMS-RFC5652-Curated.asn1) |
+| CBOR case study | [`cbor/`](vps-lib/src/cbor/mod.rs) |
 | Evaluation | [`evaluation/README.md`](evaluation/README.md), [`RESULTS.md`](evaluation/RESULTS.md), and [`generate_eval_plots.py`](evaluation/scripts/generate_eval_plots.py) |
 
 The TLS and Bitcoin case studies use the existing Vest language. The compiler
