@@ -7,11 +7,10 @@ repository contains the implementation and evaluation material for the paper.
 
 | Paper section | Source code |
 |---|---|
-| Design: controlling malleability | [`core/spec.rs`](vps-lib/src/core/spec.rs), [`core/proof.rs`](vps-lib/src/core/proof.rs), and proof modules under [`combinators/`](vps-lib/src/combinators/) |
-| Design: bounded recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/) |
+| Design: malleability | Spec and proof modules under [`combinators/`](vps-lib/src/combinators/) (the `Alt` combinator is defined in `choice`; the `Mapped` combinator is defined in `mapped`) |
+| Design: recursion | [`combinators/recursive/`](vps-lib/src/combinators/recursive/) |
 | Formalization and trait system | [`core/`](vps-lib/src/core/) and [`combinators/`](vps-lib/src/combinators/) |
 | Efficient parser and serializer APIs | [`core/exec/`](vps-lib/src/core/exec/) |
-| Loop implementations for recursive formats | [`ASN.1 BER`](vps-lib/src/asn1/ber/) and [`CBOR`](vps-lib/src/cbor/) |
 | ASN.1 BER, DER, and CMS case study | [`asn1/`](vps-lib/src/asn1/), [`vps-asn1/`](vps-asn1/), and the [`CMS schema`](vps-asn1/rfcs/CMS-RFC5652-Curated.asn1) |
 | CBOR case study | [`cbor/`](vps-lib/src/cbor/) |
 | Evaluation | [`evaluation/README.md`](evaluation/README.md), [`RESULTS.md`](evaluation/RESULTS.md), and [`generate_eval_plots.py`](evaluation/scripts/generate_eval_plots.py) |
