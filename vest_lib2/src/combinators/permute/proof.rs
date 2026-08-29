@@ -128,6 +128,7 @@ impl<A: SafeParser, B: SafeParser, C: SafeParser> SafeParser for super::Permute3
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         Alt::<_, _, false>(
             Pair(self.0, super::Permute2(self.1, self.2)),
             Alt::<_, _, false>(
@@ -152,6 +153,7 @@ impl<A: Productive, B: Productive, C: Productive> Productive for super::Permute3
     }
 
     proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         Alt::<_, _, false>(
             Pair(self.0, super::Permute2(self.1, self.2)),
             Alt::<_, _, false>(
@@ -176,6 +178,7 @@ impl<A: SoundParser, B: SoundParser, C: SoundParser> SoundParser for super::Perm
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         let b0 = Pair(self.0, super::Permute2(self.1, self.2));
         let b1 = Pair(self.1, super::Permute2(self.0, self.2));
         let b2 = Pair(self.2, super::Permute2(self.0, self.1));
@@ -195,6 +198,7 @@ impl<A: SoundParser, B: SoundParser, C: SoundParser> SoundParser for super::Perm
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         let b0 = Pair(self.0, super::Permute2(self.1, self.2));
         let b1 = Pair(self.1, super::Permute2(self.0, self.2));
         let b2 = Pair(self.2, super::Permute2(self.0, self.1));
@@ -228,6 +232,7 @@ impl<A, B, C> SPRoundTripDps for super::Permute3<A, B, C> where
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute2(self.1, self.2)).theorem_serialize_dps_parse_roundtrip(
             v,
             obuf,
@@ -247,6 +252,7 @@ impl<A, B, C> EquivSerializersGeneral for super::Permute3<A, B, C> where
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_equiv(v, obuf);
     }
 }
@@ -263,6 +269,7 @@ impl<A, B, C> EquivSerializers for super::Permute3<A, B, C> where
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute2(self.1, self.2)).lemma_serialize_equiv_on_empty(v);
     }
 }
@@ -284,6 +291,7 @@ impl<A: SafeParser, B: SafeParser, C: SafeParser, D: SafeParser> SafeParser for 
     }
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         Alt::<_, _, false>(
             Pair(self.0, super::Permute3(self.1, self.2, self.3)),
             Alt::<_, _, false>(
@@ -320,6 +328,7 @@ impl<A: Productive, B: Productive, C: Productive, D: Productive> Productive for 
     }
 
     proof fn lemma_productive(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         Alt::<_, _, false>(
             Pair(self.0, super::Permute3(self.1, self.2, self.3)),
             Alt::<_, _, false>(
@@ -356,6 +365,7 @@ impl<
     }
 
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         let b0 = Pair(self.0, super::Permute3(self.1, self.2, self.3));
         let b1 = Pair(self.1, super::Permute3(self.0, self.2, self.3));
         let b2 = Pair(self.2, super::Permute3(self.0, self.1, self.3));
@@ -382,6 +392,7 @@ impl<
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         let b0 = Pair(self.0, super::Permute3(self.1, self.2, self.3));
         let b1 = Pair(self.1, super::Permute3(self.0, self.2, self.3));
         let b2 = Pair(self.2, super::Permute3(self.0, self.1, self.3));
@@ -425,6 +436,7 @@ impl<A, B, C, D> SPRoundTripDps for super::Permute4<A, B, C, D> where
     }
 
     proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).theorem_serialize_dps_parse_roundtrip(
             v,
             obuf,
@@ -446,6 +458,7 @@ impl<A, B, C, D> EquivSerializersGeneral for super::Permute4<A, B, C, D> where
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_equiv(v, obuf);
     }
 }
@@ -464,6 +477,7 @@ impl<A, B, C, D> EquivSerializers for super::Permute4<A, B, C, D> where
     }
 
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
         Pair(self.0, super::Permute3(self.1, self.2, self.3)).lemma_serialize_equiv_on_empty(v);
     }
 }

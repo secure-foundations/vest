@@ -98,6 +98,7 @@ impl<I, A, B, C> Parser<I> for super::Permute3<A, B, C> where
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        reveal(<super::Permute3<_, _, _> as crate::core::spec::SpecParser>::spec_parse);
         match Pair(&self.0, super::Permute2(&self.1, &self.2)).parse(ibuf) {
             Ok((n, v)) => Ok((n, v)),
             Err(_) => match Pair(&self.1, super::Permute2(&self.0, &self.2)).parse(ibuf) {
@@ -175,6 +176,13 @@ impl<I, A, B, C, D> Parser<I> for super::Permute4<A, B, C, D> where
     }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        reveal(<super::Permute4<_, _, _, _> as crate::core::spec::SpecParser>::spec_parse);
+        proof {
+            super::spec::lemma_permute3_spec_parse_ref(self.1, self.2, self.3);
+            super::spec::lemma_permute3_spec_parse_ref(self.0, self.2, self.3);
+            super::spec::lemma_permute3_spec_parse_ref(self.0, self.1, self.3);
+            super::spec::lemma_permute3_spec_parse_ref(self.0, self.1, self.2);
+        }
         match Pair(&self.0, super::Permute3(&self.1, &self.2, &self.3)).parse(ibuf) {
             Ok((n, v)) => Ok((n, v)),
             Err(_) => match Pair(&self.1, super::Permute3(&self.0, &self.2, &self.3)).parse(ibuf) {
@@ -317,8 +325,14 @@ impl<I, A, B, C, D, E> Parser<I> for super::Permute5<A, B, C, D, E> where
         &&& self.4.safe_inv()
     }
 
-    #[verifier::rlimit(30)]
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
+        proof {
+            super::spec::lemma_permute4_spec_parse_ref(self.1, self.2, self.3, self.4);
+            super::spec::lemma_permute4_spec_parse_ref(self.0, self.2, self.3, self.4);
+            super::spec::lemma_permute4_spec_parse_ref(self.0, self.1, self.3, self.4);
+            super::spec::lemma_permute4_spec_parse_ref(self.0, self.1, self.2, self.4);
+            super::spec::lemma_permute4_spec_parse_ref(self.0, self.1, self.2, self.3);
+        }
         match Pair(&self.0, super::Permute4(&self.1, &self.2, &self.3, &self.4)).parse(ibuf) {
             Ok((n, v)) => Ok((n, v)),
             Err(_) => match Pair(&self.1, super::Permute4(&self.0, &self.2, &self.3, &self.4)).parse(ibuf) {

@@ -9,7 +9,7 @@ std = ["alloc", "vstd/std"]
 alloc = ["vstd/alloc"]
 
 [dependencies]
-vstd = { version = "=0.0.0-2026-07-27-0206", default-features = false }
+vstd = { version = "=0.0.0-2026-08-23-0033", default-features = false }
 
 [package.metadata.verus]
 verify = true

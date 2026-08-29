@@ -137,6 +137,9 @@ impl<A, B, C> SpecParser for super::Permute3<A, B, C> where
  {
     type PVal = (A::PVal, (B::PVal, C::PVal));
 
+    // Opaque for the same reason as `Permute4::spec_parse`: it keeps each `Permute*` proof
+    // obligation proportional to that level's branch count instead of the factorial expansion.
+    #[verifier::opaque]
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt::<_, _, false>(
             Pair(self.0, super::Permute2(self.1, self.2)),
@@ -301,6 +304,9 @@ impl<A, B, C, D> SpecParser for super::Permute4<A, B, C, D> where
  {
     type PVal = (A::PVal, (B::PVal, (C::PVal, D::PVal)));
 
+    // Opaque so that `Permute5`'s obligations stop unfolding here. Without this the `Permute5`
+    // proofs expand the whole 5*4*3*2 = 120-path `Alt` tree into a single query.
+    #[verifier::opaque]
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         let inner = Alt::<_, _, false>(
             Pair(self.0, super::Permute3(self.1, self.2, self.3)),
@@ -692,6 +698,58 @@ impl<
         self.3.lemma_static_len_matches_byte_len(v.1.1.1.0);
         self.4.lemma_static_len_matches_byte_len(v.1.1.1.1);
     }
+}
+
+// ============== reference bridging ==============
+// The executable `parse` methods build their sub-parsers from borrows (`Permute3(&a, &b, &c)`)
+// while the specs above are written over owned components (`Permute3(a, b, c)`). Those are
+// distinct types, so with `spec_parse` opaque the two denotations are no longer related by
+// unfolding. Each lemma below re-establishes the link for exactly one level, treating the level
+// underneath it as an atom, which keeps every query linear in that level's branch count rather
+// than re-expanding the whole factorial tree at each use site.
+//
+// The equality has to hold at *every* input, not just the caller's: `Pair` runs its second
+// component on a suffix (`ibuf.skip(n)`), so a pointwise fact about the caller's `ibuf` alone
+// would never apply to the nested occurrences.
+
+/// `Permute3` denotes the same parser whether its components are owned or borrowed.
+pub proof fn lemma_permute3_spec_parse_ref<A: SpecParser, B: SpecParser, C: SpecParser>(
+    a: A,
+    b: B,
+    c: C,
+)
+    ensures
+        forall|ibuf: Seq<u8>|
+            #[trigger] super::Permute3(&a, &b, &c).spec_parse(ibuf) == super::Permute3(
+                a,
+                b,
+                c,
+            ).spec_parse(ibuf),
+{
+    reveal(<super::Permute3<_, _, _> as SpecParser>::spec_parse);
+}
+
+/// `Permute4` denotes the same parser whether its components are owned or borrowed.
+pub proof fn lemma_permute4_spec_parse_ref<
+    A: SpecParser,
+    B: SpecParser,
+    C: SpecParser,
+    D: SpecParser,
+>(a: A, b: B, c: C, d: D)
+    ensures
+        forall|ibuf: Seq<u8>|
+            #[trigger] super::Permute4(&a, &b, &c, &d).spec_parse(ibuf) == super::Permute4(
+                a,
+                b,
+                c,
+                d,
+            ).spec_parse(ibuf),
+{
+    reveal(<super::Permute4<_, _, _, _> as SpecParser>::spec_parse);
+    lemma_permute3_spec_parse_ref(b, c, d);
+    lemma_permute3_spec_parse_ref(a, c, d);
+    lemma_permute3_spec_parse_ref(a, b, d);
+    lemma_permute3_spec_parse_ref(a, b, c);
 }
 
 } // verus!

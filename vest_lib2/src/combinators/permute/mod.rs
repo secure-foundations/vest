@@ -12,8 +12,6 @@
 pub mod exec;
 /// Proofs of the security and correctness properties for this combinator.
 pub mod proof;
-/// Prototype of the `N`-ary, non-allocating alternative to `Permute*`, at `N = 3`.
-pub mod set3;
 /// Specification trait implementations for this combinator.
 pub mod spec;
 
