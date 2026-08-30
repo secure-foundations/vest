@@ -1045,20 +1045,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "vest_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "vest_dev"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "vest_derive",
  "vest_lib",
  "vstd",
 ]

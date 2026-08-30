@@ -12,7 +12,6 @@ alloc = ["vstd/alloc", "vest_lib/alloc"]
 [dependencies]
 vstd.workspace = true
 vest_lib.workspace = true
-vest_derive.workspace = true
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

@@ -33,9 +33,9 @@ jobs:
           key: linux-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: linux-cargo-
       - name: Formatting
-        run: cargo fmt -p vest -p vest_asn1 -p vest_derive -- --check
+        run: cargo fmt -p vest -p vest_asn1 -- --check
       - name: Clippy
-        run: cargo clippy -p vest -p vest_asn1 -p vest_derive --all-targets
+        run: cargo clippy -p vest -p vest_asn1 --all-targets
       - name: Workspace tests
         run: cargo test --workspace
       - name: vest_lib core-only check

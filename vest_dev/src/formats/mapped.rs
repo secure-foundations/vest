@@ -8,7 +8,6 @@ use crate::core::exec::parser::Parser;
 use crate::core::exec::serializer::Serializer;
 
 use crate::core::{proof::*, spec::*};
-use vest_derive::DeepView;
 use vstd::prelude::*;
 
 verus! {
@@ -118,11 +117,24 @@ spec fn test() -> () {
     ()
 }
 
-#[derive(DeepView)]
 pub struct Triple<'i> {
     pub a: u8,
     pub b: u8,
     pub c: &'i [u8],
+}
+
+pub struct TripleSpec {
+    pub a: u8,
+    pub b: u8,
+    pub c: Seq<u8>,
+}
+
+impl<'i> DeepView for Triple<'i> {
+    type V = TripleSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        TripleSpec { a: self.a, b: self.b, c: self.c.deep_view() }
+    }
 }
 
 pub struct TripleOwned {

@@ -12,7 +12,6 @@ use crate::core::exec::serializer::*;
 use crate::core::exec::ParseError;
 use crate::core::proof::*;
 use crate::core::spec::*;
-use vest_derive::DeepView;
 use vstd::prelude::*;
 
 verus! {
@@ -23,12 +22,36 @@ broadcast use crate::combinators::disjoint::disjointness_lemmas;
 */
 
 /// Example recursive value type: nested braces `{...}` or empty `\0`.
-#[derive(Debug, DeepView)]
+#[derive(Debug)]
 pub enum NestedBracesT {
     /// A brace-wrapped recursive value: `'{' inner '}'`.
     Brace(Box<NestedBracesT>),
     /// The empty (base case) value: `'\0'`.
     Eps,
+}
+
+pub enum NestedBracesTSpec {
+    Brace(Box<NestedBracesTSpec>),
+    Eps,
+}
+
+pub open spec fn nested_braces_t_deep_view(v: &NestedBracesT) -> NestedBracesTSpec
+    decreases v,
+{
+    match v {
+        NestedBracesT::Brace(inner) => {
+            NestedBracesTSpec::Brace(Box::new(nested_braces_t_deep_view(&**inner)))
+        },
+        NestedBracesT::Eps => NestedBracesTSpec::Eps,
+    }
+}
+
+impl DeepView for NestedBracesT {
+    type V = NestedBracesTSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        nested_braces_t_deep_view(self)
+    }
 }
 
 /// One level of the nested-braces format: `'{' rec '}' | '\0'`.
@@ -117,7 +140,11 @@ impl SpecRecBody for NestedBracesBody {
 
     type Body = NestedBracesBodyComb<BundledSpecs<Self::T>>;
 
-    open spec fn spec_body(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) -> Self::Body {
+    open spec fn spec_body(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
         nested_braces_body(rec(()))
     }
 }
@@ -169,6 +196,7 @@ impl<Output: OutputBuf> SerializerRecBody<Output, NestedBracesT> for NestedBrace
         obuf: &mut Output,
     ) where Exec: Fn(&(), &NestedBracesT, &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             NestedBracesT::Eps => {
                 U8.serialize_into(&0x00u8, obuf);
@@ -209,13 +237,21 @@ impl PrepareRecBody<NestedBracesT> for NestedBracesBody {
 }
 
 impl StrictRecBody for NestedBracesBody {
-    proof fn lemma_body_all_inv_preservation(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
         reveal(disjoint_domains);
     }
 }
 
 impl NoLookAheadRecBody for NestedBracesBody {
-    proof fn lemma_body_no_lookahead_inv_preservation(&self, _param: (), rec: ParamRecSpecs<Self::Param, Self::T>) {
+    proof fn lemma_body_no_lookahead_inv_preservation(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
         reveal(disjoint_domains);
     }
 }
@@ -256,10 +292,34 @@ proof fn nested_braces_sound_parser() {
 * Example parameterized recursive parser: tag-threaded chain
 */
 
-#[derive(Debug, DeepView)]
+#[derive(Debug)]
 pub enum TaggedChainT {
     End,
     Step(u8, Box<TaggedChainT>),
+}
+
+pub enum TaggedChainTSpec {
+    End,
+    Step(u8, Box<TaggedChainTSpec>),
+}
+
+pub open spec fn tagged_chain_t_deep_view(v: &TaggedChainT) -> TaggedChainTSpec
+    decreases v,
+{
+    match v {
+        TaggedChainT::End => TaggedChainTSpec::End,
+        TaggedChainT::Step(tag, tail) => {
+            TaggedChainTSpec::Step(*tag, Box::new(tagged_chain_t_deep_view(&**tail)))
+        },
+    }
+}
+
+impl DeepView for TaggedChainT {
+    type V = TaggedChainTSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        tagged_chain_t_deep_view(self)
+    }
 }
 
 type TaggedChainBodyComb<Rec> = Mapped<
@@ -360,6 +420,7 @@ impl<Output: OutputBuf> SerializerRecBody<Output, TaggedChainT> for TaggedChainB
         obuf: &mut Output,
     ) where Exec: Fn(&u8, &TaggedChainT, &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             TaggedChainT::End => {
                 U8.serialize_into(&0x00u8, obuf);

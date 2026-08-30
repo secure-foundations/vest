@@ -6,7 +6,6 @@ members = [
     "vest_asn1/vendor/synta-codegen",
     "vest_tests",
     "vest_asn1_tests",
-    "vest_derive",
     "vest_dev",
 ]
 default-members = ["vest", "vest_lib", "vest_asn1"]
@@ -20,7 +19,6 @@ repository = "https://github.com/secure-foundations/vest"
 [workspace.dependencies]
 vstd = { version = "=0.0.0-2026-08-23-0033", default-features = false }
 vest_lib = { path = "vest_lib", default-features = false }
-vest_derive = { path = "vest_derive" }
 
 [profile.bench]
 lto = "fat"

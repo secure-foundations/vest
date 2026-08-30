@@ -23,9 +23,8 @@ proofs.
 - [`vest_lib/`](vest_lib/) — verified parser and serializer combinators;
 - [`vest_asn1/`](vest_asn1/) — an ASN.1 frontend targeting the same backend;
 - [`vest_tests/`](vest_tests/) — DSL fixtures, including TLS and Bitcoin;
-- [`vest_asn1_tests/`](vest_asn1_tests/) — generated DER, BER, and mixed-rule fixtures;
-- [`vest_dev/`](vest_dev/) — handwritten formats and development examples; and
-- [`vest_derive/`](vest_derive/) — supporting derive macros.
+- [`vest_asn1_tests/`](vest_asn1_tests/) — generated DER, BER, and mixed-rule fixtures; and
+- [`vest_dev/`](vest_dev/) — handwritten formats and development examples.
 
 `vest_lib` includes primitive integer and byte formats, dependent and recursive
 combinators, bitfields, a modular ASN.1 DER/BER backend, and a generic CBOR
