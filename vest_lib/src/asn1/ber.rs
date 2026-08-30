@@ -229,6 +229,8 @@ pub const fn DEFAULT<Field, Rest>(field: Field, default: Field::T, cont: Rest) -
 } // verus!
 #[cfg(all(test, feature = "alloc"))]
 mod tests {
+    use alloc::{string::String, vec::Vec};
+
     use super::*;
     use crate::asn1::{BmpString, Integer8Fmt};
     use crate::combinators::Pair;

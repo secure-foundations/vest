@@ -255,9 +255,7 @@ impl<'a> Generator<'a> {
         output.line(format_args!(
             "use vest_lib::core::exec::fns::{{Map, Pred}};"
         ));
-        output.line(format_args!(
-            "use vest_lib::core::exec::output::OutputBuf;"
-        ));
+        output.line(format_args!("use vest_lib::core::exec::output::OutputBuf;"));
         output.line(format_args!(
             "use vest_lib::core::exec::parser::{{PResult, Parser}};"
         ));

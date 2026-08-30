@@ -598,7 +598,10 @@ fn checked_in_verified_fixture_is_fresh() {
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated.rs"));
+    assert_eq!(
+        generated,
+        include_str!("../../vest_asn1_tests/src/generated.rs")
+    );
 }
 
 #[test]
@@ -631,7 +634,10 @@ fn checked_in_verified_ber_fixture_is_fresh() {
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated_ber.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated_ber.rs"));
+    assert_eq!(
+        generated,
+        include_str!("../../vest_asn1_tests/src/generated_ber.rs")
+    );
 }
 
 #[test]
@@ -650,7 +656,10 @@ fn checked_in_verified_mixed_fixture_is_fresh() {
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated_mixed.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated_mixed.rs"));
+    assert_eq!(
+        generated,
+        include_str!("../../vest_asn1_tests/src/generated_mixed.rs")
+    );
 }
 
 #[test]

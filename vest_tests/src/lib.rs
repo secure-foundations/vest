@@ -5,7 +5,6 @@ pub mod anonymous_nested;
 pub mod bitcoin;
 pub mod bits;
 pub mod bits_little;
-// pub mod cbor;
 pub mod codegen;
 pub mod elab;
 pub mod enum_constraints;
@@ -13,6 +12,8 @@ pub mod enums;
 pub mod josh;
 pub mod length_expr;
 pub mod matches;
+// Mutual-recursion code generation remains experimental; this fixture is not
+// part of the default compiled and verified regression corpus yet.
 // pub mod mutual_rec;
 pub mod nested_access;
 pub mod nested_bytes;

@@ -1,10 +1,11 @@
 [package]
 name = "vest_asn1"
 version = "0.1.0"
-edition = "2021"
-license = "MIT"
+edition.workspace = true
+license.workspace = true
+publish = false
 description = "Generate verified Vest parsers and serializers from ASN.1 schemas"
-repository = "https://github.com/secure-foundations/vest"
+repository.workspace = true
 
 [dependencies]
 synta-codegen = { path = "vendor/synta-codegen" }

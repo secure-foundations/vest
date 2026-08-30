@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -14,190 +16,121 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-verify:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            verus-release: verus-x86-linux
-          - os: macos-latest
-            verus-release: verus-arm64-macos
-
-    defaults:
-      run:
-        shell: bash
-
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download Verus
-        id: verus
-        env:
-          VERUS_RELEASE: ${{ matrix.verus-release }}
-        run: |
-          set -euo pipefail
-          release_base="https://github.com/verus-lang/verus/releases"
-          latest_base="${release_base}/latest/download"
-          asset_suffix="${VERUS_RELEASE#verus-}"
-
-          curl_retry() {
-            curl -fL --retry 5 --retry-delay 2 --retry-all-errors "$@"
-          }
-
-          release_tag="$(
-            {
-              curl -fsSI --retry 5 --retry-delay 2 --retry-all-errors "${latest_base}/placeholder" \
-                | tr -d '\r' \
-                | sed -nE 's#^[Ll]ocation: https://github.com/verus-lang/verus/releases/download/(.+)/placeholder$#\1#p' \
-                | head -n1
-            } || true
-          )"
-
-          urls=()
-          if [ -n "$release_tag" ]; then
-            urls+=("${release_base}/download/${release_tag}/verus-${release_tag##*/}-${asset_suffix}.zip")
-          fi
-          urls+=("${latest_base}/${VERUS_RELEASE}.zip")
-          urls+=("${latest_base}/verus-${asset_suffix}.zip")
-
-          tmp_dir="$(mktemp -d)"
-          trap 'rm -rf "$tmp_dir"' EXIT
-
-          downloaded_url=""
-          for url in "${urls[@]}"; do
-            echo "Trying Verus URL: $url"
-            if curl_retry -o "$tmp_dir/verus.zip" "$url"; then
-              downloaded_url="$url"
-              break
-            fi
-          done
-
-          if [ -z "$downloaded_url" ]; then
-            echo "::error::Unable to download Verus archive for '${VERUS_RELEASE}'."
-            exit 1
-          fi
-
-          unzip -q "$tmp_dir/verus.zip" -d "$tmp_dir/unpack"
-          set -- "$tmp_dir"/unpack/*
-          if [ "$#" -ne 1 ] || [ ! -d "$1" ]; then
-            echo "::error::Expected one top-level directory in Verus archive."
-            find "$tmp_dir/unpack" -mindepth 1 -maxdepth 1 -print
-            exit 1
-          fi
-
-          rm -rf verus
-          mv "$1" verus
-
-          rust_toolchain=""
-          if [ -f verus/version.json ]; then
-            rust_toolchain="$(python3 -c 'import json; print(json.load(open("verus/version.json")).get("verus", {}).get("toolchain", ""))' 2>/dev/null || true)"
-          fi
-          if [ -z "$rust_toolchain" ]; then
-            rust_toolchain="$(./verus/verus 2>&1 | grep -oE 'nightly-[0-9]{4}-[0-9]{2}-[0-9]{2}|1\.[0-9]+\.[0-9]+-[a-z0-9_-]+' | head -n1 || true)"
-          fi
-          if [ -z "$rust_toolchain" ]; then
-            echo "::error::Could not detect Verus Rust toolchain."
-            exit 1
-          fi
-
-          echo "Using Verus URL: $downloaded_url"
-          echo "Using Verus Rust toolchain: $rust_toolchain"
-          echo "rust_toolchain=$rust_toolchain" >> "$GITHUB_OUTPUT"
-
-      - name: Setup Verus (macOS)
-        if: runner.os == 'macOS'
-        working-directory: ./verus
-        run: bash macos_allow_gatekeeper.sh || true
-
-      - name: Setup Rust (Verus toolchain)
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ steps.verus.outputs.rust_toolchain }}
-
-      - name: Add tool paths
-        run: |
-          echo "${{ github.workspace }}/verus" >> "$GITHUB_PATH"
-          echo "${{ github.workspace }}/vest/target/release" >> "$GITHUB_PATH"
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
+          components: clippy, rustfmt
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            vest/target
-            vest_lib/target
-            vest_asn1/target
-            vest_asn1_tests/target
-            vest_dev/target
-            vest_derive/target
-          key: ${{ runner.os }}-${{ matrix.verus-release }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.verus-release }}-cargo-
-            ${{ runner.os }}-cargo-
+            target
+          key: linux-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: linux-cargo-
+      - name: Formatting
+        run: cargo fmt -p vest -p vest_asn1 -p vest_derive -- --check
+      - name: Clippy
+        run: cargo clippy -p vest -p vest_asn1 -p vest_derive --all-targets
+      - name: Workspace tests
+        run: cargo test --workspace
+      - name: vest_lib core-only check
+        run: cargo check -p vest_lib --no-default-features --all-targets
+      - name: vest_lib alloc-only check
+        run: cargo check -p vest_lib --no-default-features --features alloc --all-targets
+      - name: Compile benchmarks with the workspace profile
+        run: |
+          output="$(cargo bench --no-run -p vest_tests -p vest_dev 2>&1)"
+          echo "$output"
+          ! grep -qi "profile.*non root package.*ignored" <<<"$output"
 
-      - name: DSL compiler tests
-        working-directory: ./vest
-        run: cargo test
-
-      - name: ASN.1 frontend tests
-        working-directory: ./vest_asn1
-        run: cargo test
-
-      - name: Derive tests
-        working-directory: ./vest_derive
-        run: cargo test
-
-      - name: Regenerate checked-in Vest output
-        working-directory: ./vest_tests
+  regeneration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/verusfmt
+            target
+          key: linux-regen-${{ hashFiles('Cargo.lock') }}-verusfmt-0.7.2
+          restore-keys: linux-regen-
+      - name: Install verusfmt
+        run: command -v verusfmt >/dev/null || cargo install verusfmt --version 0.7.2 --locked
+      - name: Regenerate Vest fixtures
+        working-directory: vest_tests
         run: make vest
-
-      - name: Regenerate checked-in ASN.1 output
-        working-directory: ./vest_asn1_tests
+      - name: Regenerate ASN.1 fixtures
+        working-directory: vest_asn1_tests
         run: make generate
-
-      - name: Generated output is current
+      - name: Generated files are current
         run: git diff --exit-code
 
-      - name: vest_lib - cargo check (core only)
-        working-directory: ./vest_lib
-        run: cargo check --no-default-features --all-targets
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: vest_lib-core
+            cargo_args: -p vest_lib --no-default-features
+          - name: vest_lib-alloc
+            cargo_args: -p vest_lib --no-default-features --features alloc
+          - name: vest_lib-std
+            cargo_args: -p vest_lib
+          - name: vest-tests
+            cargo_args: -p vest_tests
+          - name: vest-asn1-tests
+            cargo_args: -p vest_asn1_tests
+          - name: vest-dev
+            cargo_args: -p vest_dev
+    name: Verify ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .verus
+          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus-version.txt') }}
+      - name: Install pinned Verus and Rust toolchain
+        run: scripts/install-verus.sh
+      - name: Add Verus to PATH
+        run: echo "${{ github.workspace }}/.verus" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: linux-verus-${{ matrix.name }}-${{ hashFiles('Cargo.lock', 'verus-version.txt') }}
+          restore-keys: |
+            linux-verus-${{ matrix.name }}-
+            linux-verus-
+      - run: cargo verus verify ${{ matrix.cargo_args }} -- --expand-errors
 
-      - name: vest_lib - cargo check (alloc only)
-        working-directory: ./vest_lib
-        run: cargo check --no-default-features --features alloc --all-targets
-
-      - name: vest_lib - cargo test (std)
-        working-directory: ./vest_lib
-        run: cargo test
-
-      - name: vest_lib - cargo verus verify (core only)
-        working-directory: ./vest_lib
-        run: cargo verus verify --no-default-features -- --expand-errors
-
-      - name: vest_lib - cargo verus verify (alloc only)
-        working-directory: ./vest_lib
-        run: cargo verus verify --no-default-features --features alloc -- --expand-errors
-
-      - name: vest_lib - cargo verus verify (std)
-        working-directory: ./vest_lib
-        run: cargo verus verify -- --expand-errors
-
-      - name: Vest generated regression corpus - verify
-        working-directory: ./vest_tests
-        run: cargo verus verify -- --expand-errors
-
-      - name: ASN.1 generated regression corpus - verify
-        working-directory: ./vest_asn1_tests
-        run: cargo verus verify -- --expand-errors
-
-      - name: Development formats - verify
-        working-directory: ./vest_dev
-        run: cargo verus verify -- --expand-errors
-
-      - name: Compile benchmarks
-        run: |
-          cargo bench --manifest-path vest_tests/Cargo.toml --no-run
-          cargo bench --manifest-path vest_dev/Cargo.toml --no-run
+  verify-macos:
+    if: github.event_name == 'schedule'
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .verus
+          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus-version.txt') }}
+      - name: Install pinned Verus and Rust toolchain
+        run: scripts/install-verus.sh
+      - name: Add Verus to PATH
+        run: echo "${{ github.workspace }}/.verus" >> "$GITHUB_PATH"
+      - run: cargo verus verify -p vest_lib -- --expand-errors
+      - run: cargo verus verify -p vest_tests -- --expand-errors
+      - run: cargo verus verify -p vest_asn1_tests -- --expand-errors
+      - run: cargo verus verify -p vest_dev -- --expand-errors

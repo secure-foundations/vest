@@ -464,16 +464,20 @@ fn expand_struct_body(
                 .iter()
                 .map(|field| field.ident.clone().expect("named field"))
                 .collect();
-            let field_exprs = fields.named.iter().zip(bindings.iter()).map(|(field, binding)| {
-                let name = field.ident.as_ref().expect("named field");
-                let expr = field_deep_view_expr(
-                    &quote!(#binding),
-                    &field.ty,
-                    runtime_name,
-                    helper_name,
-                );
-                quote!(#name: #expr)
-            });
+            let field_exprs = fields
+                .named
+                .iter()
+                .zip(bindings.iter())
+                .map(|(field, binding)| {
+                    let name = field.ident.as_ref().expect("named field");
+                    let expr = field_deep_view_expr(
+                        &quote!(#binding),
+                        &field.ty,
+                        runtime_name,
+                        helper_name,
+                    );
+                    quote!(#name: #expr)
+                });
             Ok(quote! {
                 match v {
                     #runtime_name { #(#bindings),* } => #spec_name {
@@ -521,17 +525,20 @@ fn expand_enum_body(
                         .iter()
                         .map(|field| field.ident.clone().expect("named field"))
                         .collect();
-                    let deep_fields = fields.named.iter().zip(bindings.iter()).map(
-                        |(field, binding)| {
-                            let expr = field_deep_view_expr(
-                                &quote!(#binding),
-                                &field.ty,
-                                runtime_name,
-                                helper_name,
-                            );
-                            quote!(#binding: #expr)
-                        },
-                    );
+                    let deep_fields =
+                        fields
+                            .named
+                            .iter()
+                            .zip(bindings.iter())
+                            .map(|(field, binding)| {
+                                let expr = field_deep_view_expr(
+                                    &quote!(#binding),
+                                    &field.ty,
+                                    runtime_name,
+                                    helper_name,
+                                );
+                                quote!(#binding: #expr)
+                            });
                     Ok(quote! {
                         #runtime_name::#variant_name { #(#bindings),* } => {
                             #spec_name::#variant_name { #(#deep_fields),* }
@@ -542,18 +549,19 @@ fn expand_enum_body(
                     let bindings: Vec<_> = (0..fields.unnamed.len())
                         .map(|index| Ident::new(&format!("field_{index}"), variant.span()))
                         .collect();
-                    let deep_fields = fields
-                        .unnamed
-                        .iter()
-                        .zip(bindings.iter())
-                        .map(|(field, binding)| {
-                            field_deep_view_expr(
-                                &quote!(#binding),
-                                &field.ty,
-                                runtime_name,
-                                helper_name,
-                            )
-                        });
+                    let deep_fields =
+                        fields
+                            .unnamed
+                            .iter()
+                            .zip(bindings.iter())
+                            .map(|(field, binding)| {
+                                field_deep_view_expr(
+                                    &quote!(#binding),
+                                    &field.ty,
+                                    runtime_name,
+                                    helper_name,
+                                )
+                            });
                     Ok(quote! {
                         #runtime_name::#variant_name(#(#bindings),*) => {
                             #spec_name::#variant_name(#(#deep_fields),*)
@@ -581,8 +589,12 @@ fn field_deep_view_expr(
     helper_name: &Ident,
 ) -> TokenStream2 {
     match ty {
-        Type::Group(group) => field_deep_view_expr(binding_ref, &group.elem, runtime_name, helper_name),
-        Type::Paren(paren) => field_deep_view_expr(binding_ref, &paren.elem, runtime_name, helper_name),
+        Type::Group(group) => {
+            field_deep_view_expr(binding_ref, &group.elem, runtime_name, helper_name)
+        }
+        Type::Paren(paren) => {
+            field_deep_view_expr(binding_ref, &paren.elem, runtime_name, helper_name)
+        }
         Type::Path(type_path) if is_same_runtime_type(type_path, runtime_name) => {
             quote!(#helper_name(#binding_ref))
         }
@@ -590,27 +602,27 @@ fn field_deep_view_expr(
             let last = type_path.path.segments.last().expect("path segment");
             match last.ident.to_string().as_str() {
                 "Box" => {
-                    let inner = generic_type_args(&last.arguments, "Box", 1)
-                        .expect("Box generic args")
-                        [0];
+                    let inner =
+                        generic_type_args(&last.arguments, "Box", 1).expect("Box generic args")[0];
                     let inner_ref = quote!(&**(#binding_ref));
-                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    let inner_expr =
+                        field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
                     quote!(::alloc::boxed::Box::new(#inner_expr))
                 }
                 "Rc" => {
-                    let inner = generic_type_args(&last.arguments, "Rc", 1)
-                        .expect("Rc generic args")
-                        [0];
+                    let inner =
+                        generic_type_args(&last.arguments, "Rc", 1).expect("Rc generic args")[0];
                     let inner_ref = quote!(&**(#binding_ref));
-                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    let inner_expr =
+                        field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
                     quote!(::alloc::rc::Rc::new(#inner_expr))
                 }
                 "Arc" => {
-                    let inner = generic_type_args(&last.arguments, "Arc", 1)
-                        .expect("Arc generic args")
-                        [0];
+                    let inner =
+                        generic_type_args(&last.arguments, "Arc", 1).expect("Arc generic args")[0];
                     let inner_ref = quote!(&**(#binding_ref));
-                    let inner_expr = field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
+                    let inner_expr =
+                        field_deep_view_expr(&inner_ref, inner, runtime_name, helper_name);
                     quote!(::alloc::sync::Arc::new(#inner_expr))
                 }
                 _ => quote!((#binding_ref).deep_view()),

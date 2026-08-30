@@ -1,12 +1,12 @@
 [package]
 name = "vest_tests"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+publish = false
 
 [dependencies]
-vstd = "=0.0.0-2026-08-23-0033"
-
-vest_lib = { path = "../vest_lib" }
+vstd = { workspace = true, features = ["std"] }
+vest_lib = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -17,15 +17,6 @@ rustls = "0.22"
 [[bench]]
 name = "generated_parser_benchmark"
 harness = false
-
-[profile.bench]
-lto = "fat"
-opt-level = 3
-codegen-units = 1
-
-[profile.profiling]
-inherits = "release"
-debug = true
 
 [package.metadata.verus]
 verify = true

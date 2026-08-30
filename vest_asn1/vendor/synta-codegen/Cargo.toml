@@ -2,6 +2,7 @@
 name = "synta-codegen"
 version = "0.3.0"
 edition = "2021"
+publish = false
 authors = ["Synta Contributors"]
 description = "ASN.1 schema parser and Rust code generator for the synta library"
 license = "MIT OR Apache-2.0"

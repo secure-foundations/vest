@@ -1,10 +1,10 @@
 [package]
 name = "vest"
 version = "0.1.5"
-edition = "2021"
-license = "MIT"
+edition.workspace = true
+license.workspace = true
 description = "Vest: A DSL for specifying and generating fast, formally verified parsers and serializers"
-repository = "https://github.com/secure-foundations/vest"
+repository.workspace = true
 readme = "../README.md"
 keywords = ["vest", "verus", "verification", "parsing", "combinators"]
 categories = ["development-tools", "parsing"]

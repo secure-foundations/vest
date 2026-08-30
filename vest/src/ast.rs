@@ -882,7 +882,7 @@ impl Hash for ConstArray<'_> {
                 repeat.hash(state);
                 count.hash(state);
             }
-            ConstArray::Wildcard => ().hash(state),
+            ConstArray::Wildcard => 0_u8.hash(state),
         }
     }
 }

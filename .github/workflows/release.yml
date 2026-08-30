@@ -54,13 +54,11 @@ jobs:
 
       - name: Publish vest (dry run)
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
-        working-directory: ./vest-dsl
-        run: cargo publish --dry-run
+        run: cargo publish -p vest --dry-run
 
       - name: Publish vest
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
-        working-directory: ./vest-dsl
-        run: cargo publish
+        run: cargo publish -p vest
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
 
@@ -97,12 +95,10 @@ jobs:
 
       - name: Publish vest_lib (dry run)
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
-        working-directory: ./vest
-        run: cargo publish --dry-run
+        run: cargo publish -p vest_lib --dry-run
 
       - name: Publish vest_lib
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
-        working-directory: ./vest
-        run: cargo publish
+        run: cargo publish -p vest_lib
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

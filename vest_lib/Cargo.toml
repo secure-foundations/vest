@@ -1,7 +1,7 @@
 [package]
 name = "vest_lib"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [features]
 default = ["std"]
@@ -9,7 +9,7 @@ std = ["alloc", "vstd/std"]
 alloc = ["vstd/alloc"]
 
 [dependencies]
-vstd = { version = "=0.0.0-2026-08-23-0033", default-features = false }
+vstd.workspace = true
 
 [package.metadata.verus]
 verify = true
