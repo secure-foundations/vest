@@ -393,7 +393,7 @@ pub proof fn lemma_utc_time_encode_wf<const DER: bool>(value: UtcTime)
     lemma_utc_time_bytes_layout(value);
 }
 
-#[verifier::rlimit(30)]
+#[verifier::rlimit(100)]
 pub proof fn lemma_der_utc_time_canonical(bytes: Seq<u8>)
     requires
         utc_time_bytes_wf::<true>(bytes),

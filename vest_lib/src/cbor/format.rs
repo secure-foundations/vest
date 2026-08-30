@@ -627,6 +627,7 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
     }
 }
 
+#[verifier::rlimit(50)]
 fn serialize_cbor_with_child<'i, Output, const DET: bool, Exec>(
     Ghost(spec_rec): Ghost<ParamRecSpecs<(), CborValueSpec>>,
     exec_rec: Exec,
