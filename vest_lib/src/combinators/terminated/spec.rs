@@ -1,3 +1,4 @@
+//! Specification for sequential formats discarding their suffix.
 use crate::{
     combinators::{mapped::spec::*, Mapped, Pair, Refined},
     core::{proof::*, spec::*},

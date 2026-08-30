@@ -1,3 +1,4 @@
+//! Executable interfaces for bounded recursive format bodies.
 use super::{ParamRecSpecs, ProductiveRecBody, SafeParserRecBody, SpecRecBody};
 use crate::core::exec::output::*;
 use crate::core::exec::parser::*;

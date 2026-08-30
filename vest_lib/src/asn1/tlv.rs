@@ -1,3 +1,4 @@
+//! Generic ASN.1 tag-length-value wrappers for definite-length contents.
 use crate::asn1::{ASN1Fmt, LengthFmt, Tag, TagFmt};
 use crate::combinators::{
     bytes::ExactLen, length::AsLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, PrefixTagged,

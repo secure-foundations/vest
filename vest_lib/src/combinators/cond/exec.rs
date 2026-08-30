@@ -1,3 +1,4 @@
+//! Executable implementation for boolean-gated formats.
 use crate::core::exec::output::*;
 use crate::core::{
     exec::{

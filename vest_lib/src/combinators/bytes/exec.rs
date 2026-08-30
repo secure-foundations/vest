@@ -1,3 +1,4 @@
+//! Executable implementations for fixed- and variable-length bytes.
 use crate::combinators::{AsLen, Tail};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;

@@ -1,3 +1,4 @@
+//! Correctness proofs for empty and uninhabitable formats.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

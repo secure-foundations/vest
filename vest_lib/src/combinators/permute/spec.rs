@@ -1,3 +1,4 @@
+//! Specifications for formats accepting multiple component orders.
 use crate::combinators::choice::Alt;
 use crate::combinators::tuple::Pair;
 use crate::combinators::Mapped;

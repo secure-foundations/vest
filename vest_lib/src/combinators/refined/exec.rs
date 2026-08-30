@@ -1,3 +1,4 @@
+//! Executable predicates and refined-format implementations.
 use crate::combinators::{Fixed, Preceded, Terminated};
 use crate::core::exec::bytes_eq;
 use crate::core::exec::input::InputBuf;

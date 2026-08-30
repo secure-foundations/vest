@@ -1,3 +1,4 @@
+//! Specifications for optional formats.
 use crate::{
     combinators::Pair,
     core::{proof::*, spec::*},

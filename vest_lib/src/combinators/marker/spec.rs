@@ -1,3 +1,4 @@
+//! Specifications for empty and uninhabitable formats.
 use crate::core::{proof::*, spec::*};
 use crate::Never;
 use vstd::prelude::*;

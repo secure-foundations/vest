@@ -1,3 +1,4 @@
+//! Specifications for sequential composition.
 use crate::combinators::mapped::spec::*;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

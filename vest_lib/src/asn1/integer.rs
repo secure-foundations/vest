@@ -1,3 +1,4 @@
+//! ASN.1 INTEGER values, general contents, and bounded integer formats.
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;
 use crate::core::exec::{

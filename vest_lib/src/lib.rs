@@ -1,49 +1,44 @@
-//! # Vest: The next generation VErified Serialization Toolkit
+//! # `vest_lib`
 //!
-//! Vest provides a library of formally verified (de-)serializer **combinators** built with
-//! [Verus](https://github.com/verus-lang/verus), as well as a domain-specific language (DSL) for defining
-//! complex binary data formats leveraging these formally verified combinators.
+//! `vest_lib` is Vest's formally verified parser and serializer combinator
+//! library for [Verus](https://github.com/verus-lang/verus). A format can
+//! provide three related layers:
 //!
-//! ## Key Properties
+//! - pure parsing, serialization, byte-length, and consistency specifications
+//!   in [`core::spec`];
+//! - executable parsing, preparation, and destination-passing serialization in
+//!   [`core::exec`]; and
+//! - compositional correctness and security theorems in [`core::proof`].
 //!
-//! All Vest combinators are formally proven to satisfy **[Serialize-Parse Roundtrip](core::proof::SPRoundTrip)**:
-//! for any value `v` consistent with a format, serializing `v` and then parsing the result recovers `v`.
-//! Additionally, combinators that are proven to be **[Non-Malleable](core::proof::NonMalleable)** also satisfy
-//! **[Parse-Serialize Roundtrip](core::proof::PSRoundTrip)**: parsing a buffer and then serializing the result
-//! reproduces the consumed prefix of the original buffer.
+//! The executable serializer is intentionally infallible. Call
+//! [`Prepare::prepare`](core::exec::Prepare::prepare) first to validate the
+//! value and obtain its exact byte length, then use
+//! [`SerializerExt::serialize`](core::exec::SerializerExt::serialize) with an
+//! exactly sized caller-provided slice. Parsing returns both the consumed
+//! length and a value, allowing formats that intentionally leave trailing
+//! input.
 //!
-//! ## A Taste of the DSL and Combinators
+//! ## Where to start
 //!
-//! A simple TLV (tag-length-value) message can be expressed as
+//! - [`combinators`] catalogs the primitive and higher-order formats.
+//! - [`core::exec`] documents the runtime API and buffer abstractions.
+//! - [`core::proof`] gives the exact round-trip and security properties.
+//! - [`asn1`] contains modular DER and BER formats.
+//! - [`cbor`] provides generic general and deterministic CBOR when `alloc` is
+//!   enabled.
+//! - [`primitives`] contains reusable variable-width integer formats.
 //!
-//! ```vest
-//! tlv = {
-//!   @t: u8,
-//!   @l: u16,
-//!   v: [u8; @l] >>= choose(@t) {
-//!     0x01 => Vec<msg1>,
-//!     0x02 => msg2,
-//!     0x03 => msg3,
-//!     _ => void, // reject other tag values
-//!   }
-//! };
-//! ```
+//! The [Vest guide](https://secure-foundations.github.io/vest/guide/) contains
+//! tutorials, a plain-language account of the guarantees, and guidance for the
+//! DSL, ASN.1 frontend, and CBOR codec. Most application schemas should use the
+//! DSL or ASN.1 frontend instead of spelling large combinator types manually.
 //!
-//! The same format can be expressed using combinators as
+//! ## Features
 //!
-//! ```text
-//! let tlv =
-//!     Implicit(
-//!     (U8, U16Le),
-//!     TLVOf(
-//!       TVOr(0x01, RepeatUntilEof(Msg1),
-//!       TVOr(0x02, Msg2,
-//!       TVOr(0x03, Msg3,
-//!       Uninhabited()))))
-//! );
-//! ```
-//!
-//! See the [`combinators`] module for the full catalog of available combinators.
+//! The default `std` feature includes allocation-backed formats and detailed
+//! error traces. `alloc` supports owned and recursive values without `std`.
+//! With default features disabled, the remaining library is `core`-only and
+//! still supports caller-provided input and output slices.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]

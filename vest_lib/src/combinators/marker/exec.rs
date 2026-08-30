@@ -1,3 +1,4 @@
+//! Executable implementations for empty and uninhabitable formats.
 use crate::core::exec::output::*;
 use crate::core::exec::ComplianceErrorKind;
 use crate::core::exec::{

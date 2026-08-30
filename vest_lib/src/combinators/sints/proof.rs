@@ -1,3 +1,4 @@
+//! Correctness proofs for fixed-width signed integers.
 use vstd::prelude::*;
 
 verus! {

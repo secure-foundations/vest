@@ -1,3 +1,4 @@
+//! Executable implementations for end-of-input and remaining-input formats.
 use crate::combinators::{Eof, Opt, Optional, Pair, Repeat, Star};
 use crate::core::exec::output::*;
 use crate::core::exec::{

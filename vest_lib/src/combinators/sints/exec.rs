@@ -1,3 +1,4 @@
+//! Executable fixed-width signed integer formats.
 use crate::combinators::sints::spec::*;
 use crate::combinators::Fixed;
 use crate::core::exec::input::InputSlice;

@@ -1,3 +1,4 @@
+//! Specification delegation through named formats.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

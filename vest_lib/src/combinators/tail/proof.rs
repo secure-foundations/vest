@@ -1,3 +1,4 @@
+//! Correctness proofs for tail-position formats.
 use crate::combinators::Pair;
 use crate::{
     combinators::{Optional, Repeat},

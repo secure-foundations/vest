@@ -1,3 +1,4 @@
+//! Big-endian base-128 integer encoding and in-place conversion helpers.
 use super::leb128::*;
 use crate::combinators::disjoint::disjointness_lemmas;
 use crate::core::exec::output::*;

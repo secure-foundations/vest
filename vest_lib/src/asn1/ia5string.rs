@@ -1,3 +1,4 @@
+//! ASN.1 IA5String borrowed and owned values and contents format.
 use super::utf8string::{is_valid_utf8, utf8_from_bytes_unchecked};
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;

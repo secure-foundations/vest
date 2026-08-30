@@ -1,3 +1,4 @@
+//! Shared logical date, time, precision, and time-zone representations.
 use vstd::arithmetic::div_mod::*;
 use vstd::calc;
 use vstd::prelude::*;

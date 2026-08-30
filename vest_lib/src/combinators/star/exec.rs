@@ -1,3 +1,4 @@
+//! Executable zero-or-more repetition.
 use super::spec::*;
 use crate::combinators::length::AsLen;
 use crate::core::exec::output::*;

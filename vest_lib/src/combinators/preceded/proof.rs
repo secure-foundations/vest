@@ -1,3 +1,4 @@
+//! Correctness proofs for sequential formats discarding their prefix.
 use super::spec::*;
 use crate::{
     combinators::{mapped::spec::*, Mapped, Pair, Refined, TryMap},

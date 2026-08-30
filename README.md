@@ -1,131 +1,71 @@
 [![CI](https://github.com/secure-foundations/vest/actions/workflows/ci.yml/badge.svg)](https://github.com/secure-foundations/vest/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-vest__lib-blue)](https://secure-foundations.github.io/vest/vest_lib/)
+[![Guide](https://img.shields.io/badge/docs-guide-blue)](https://secure-foundations.github.io/vest/guide/)
+[![API](https://img.shields.io/badge/docs-vest__lib-blue)](https://secure-foundations.github.io/vest/vest_lib/)
 [![Crates.io - vest](https://img.shields.io/crates/v/vest?label=vest)](https://crates.io/crates/vest)
 [![Crates.io - vest_lib](https://img.shields.io/crates/v/vest_lib?label=vest_lib)](https://crates.io/crates/vest_lib)
 
 # Vest
 
 Vest generates fast, formally verified parsers and serializers for binary data
-formats. It consists of a Verus combinator library and a DSL that compiles
-concise format descriptions into safe Rust implementations, functional
-specifications, and proofs.
+formats. It combines a concise format DSL with a Verus combinator library and
+also provides verified ASN.1 and CBOR support.
 
-Vest proves that generated code is memory-safe, panic-free, terminating, and
-functionally correct. Formats may additionally establish parser soundness,
-completeness, non-malleability, non-extensibility, serializer unambiguity, and
-parser/serializer round trips. These properties are compositional: the library
-proves them once for each combinator, and generated formats assemble those
-proofs.
+Vest proves executable memory safety, panic freedom, termination, and
+functional correctness. Formats can additionally establish round trips,
+soundness, non-malleability, non-extensibility, and serializer unambiguity
+through compositional proof interfaces.
 
-## Repository layout
+## Choose an interface
 
-- [`vest/`](vest/) — the `.vest` DSL compiler;
-- [`vest_lib/`](vest_lib/) — verified parser and serializer combinators;
-- [`vest_asn1/`](vest_asn1/) — an ASN.1 frontend targeting the same backend;
-- [`vest_tests/`](vest_tests/) — DSL fixtures, including TLS and Bitcoin;
-- [`vest_asn1_tests/`](vest_asn1_tests/) — generated DER, BER, and mixed-rule fixtures, including the curated RFC 5652 CMS module; and
-- [`vest_dev/`](vest_dev/) — handwritten formats and development examples.
-
-`vest_lib` includes primitive integer and byte formats, dependent and recursive
-combinators, bitfields, a modular ASN.1 DER/BER backend, and a generic CBOR
-codec. Its serializers write into caller-provided buffers and support
-`core`-only, `alloc`, and `std` configurations.
+| Task | Start here |
+|---|---|
+| Describe a binary protocol | [Vest DSL tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html) |
+| Generate DER or BER from ASN.1 | [ASN.1 frontend](https://secure-foundations.github.io/vest/guide/asn1/) |
+| Compose formats directly in Verus | [`vest_lib` guide](https://secure-foundations.github.io/vest/guide/library/combinators.html) |
+| Parse generic CBOR | [CBOR guide](https://secure-foundations.github.io/vest/guide/cbor.html) |
+| Look up traits and combinators | [`vest_lib` API](https://secure-foundations.github.io/vest/vest_lib/) |
 
 ## A small Vest format
 
 ```vest
-!LITTLE_ENDIAN
+!BIG_ENDIAN
 
-message_type = enum {
-    Request = 1,
-    Response = 2,
-}
-
-message = {
-    @kind: message_type,
+packet = {
     @len: u16,
     payload: [u8; @len],
 }
 ```
 
-The compiler emits Rust value types, executable parsing, preparation, length,
-and serialization implementations, combinator specifications, and their
-proofs. More examples are available beside their generated `.rs` files in
-[`vest_tests/src/`](vest_tests/src/).
+Build the compiler and generate verified Rust:
 
-Build the compiler and generate Rust with:
-
-```sh
-cargo build --release -p vest
-target/release/vest input.vest
+```console
+cargo install vest
+vest packet.vest --output packet.rs
 ```
 
-Run `target/release/vest --help` for output and code-generation options. Vim
-syntax highlighting is available in [`vest/vest.vim`](vest/vest.vim).
+The generated module contains borrowing Rust value types, executable parsing,
+preparation and in-place serialization, pure specifications, and proofs. See
+the [tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html)
+for an end-to-end example.
 
-## ASN.1 and CBOR
+## Components
 
-The `vest_asn1` frontend generates verified nominal codecs from ASN.1 modules.
-DER is the default; BER and per-definition rule overrides are also supported:
+- [`vest`](https://github.com/secure-foundations/vest/tree/main/vest) is the
+  `.vest` compiler published on crates.io.
+- [`vest_lib`](https://github.com/secure-foundations/vest/tree/main/vest_lib)
+  is the verified backend, with `core`-only, `alloc`, and `std` configurations.
+- [`vest_asn1`](https://github.com/secure-foundations/vest/tree/main/vest_asn1)
+  generates nominal DER, BER, and mixed-rule formats.
+- The generic CBOR codec is part of
+  [`vest_lib::cbor`](https://secure-foundations.github.io/vest/vest_lib/cbor/).
 
-```sh
-cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
-cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
-```
+Vest uses a pinned Verus release; the repository's
+[`verus-version.txt`](https://github.com/secure-foundations/vest/blob/main/verus-version.txt)
+and workspace manifest record the compatible toolchain and `vstd` version.
 
-See [`vest_asn1/README.md`](vest_asn1/README.md) for the supported ASN.1 subset
-and current limitations. The CBOR backend lives in
-[`vest_lib/src/cbor/`](vest_lib/src/cbor/) and supports general and
-deterministic CBOR codecs; deterministic map-key ordering is not yet enforced.
-
-## Reproducible development setup
-
-Install Rust, clone the repository, and install the pinned Verus release:
-
-```sh
-git clone --filter=blob:none https://github.com/secure-foundations/vest.git
-cd vest
-./scripts/install-verus.sh
-export PATH="$PWD/.verus:$PATH"
-```
-
-The required Verus version is recorded in [`verus-version.txt`](verus-version.txt),
-and the matching `vstd` version is pinned in the workspace manifest. Useful
-commands include:
-
-```sh
-cargo test --workspace
-cargo check -p vest_lib --no-default-features --all-targets
-cargo check -p vest_lib --no-default-features --features alloc --all-targets
-cargo verus verify -p vest_lib -- --expand-errors
-cargo verus verify -p vest_tests -- --expand-errors
-cargo verus verify -p vest_asn1_tests -- --expand-errors --rlimit 100
-```
-
-Regenerate checked-in fixtures with `make -C vest_tests vest` and
-`make -C vest_asn1_tests generate`. Vest-generated files use a curated
-`verusfmt` list because formatting the deepest stress fixtures can stall.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete development checks and
-[CHANGELOG.md](CHANGELOG.md) for release history. A migration guide from Vest
-1.x is coming soon. The final Vest 1.x source remains available on the
-`vest-1.x` branch, and its published crate versions remain on crates.io.
-
-## Publication
-
-[Vest: Verified, Secure, High-Performance Parsing and Serialization for
-Rust](https://tracycy.com/papers/vest-usenix-security25.pdf). Yi Cai, Pratap
-Singh, Zhengyao Lin, Jay Bosamiya, Joshua Gancher, Milijana Surbatovich, and
-Bryan Parno. USENIX Security, 2025.
-
-```bibtex
-@inproceedings{vest,
-  author    = {Cai, Yi and Singh, Pratap and Lin, Zhengyao and Bosamiya, Jay and Gancher, Joshua and Surbatovich, Milijana and Parno, Bryan},
-  booktitle = {Proceedings of the USENIX Security Symposium},
-  month     = {August},
-  title     = {{Vest}: Verified, Secure, High-Performance Parsing and Serialization for {Rust}},
-  year      = {2025}
-}
-```
+Vest was introduced in
+[“Vest: Verified, Secure, High-Performance Parsing and Serialization for Rust”](https://tracycy.com/papers/vest-usenix-security25.pdf)
+(USENIX Security 2025). Citation information is in the
+[documentation](https://secure-foundations.github.io/vest/guide/citation.html).
 
 Vest is available under the MIT license.

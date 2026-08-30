@@ -1,3 +1,4 @@
+//! Minimal big-endian base-256 integer conversion and formats.
 #[cfg(feature = "alloc")]
 use alloc::{vec, vec::Vec};
 use vstd::arithmetic::{div_mod::*, power::*, power2::*};

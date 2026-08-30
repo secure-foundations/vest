@@ -1,0 +1,689 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Vest Documentation</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-36e2e917.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-203bd9cc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Vest Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/secure-foundations/vest" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="vest-documentation"><a class="header" href="#vest-documentation">Vest documentation</a></h1>
+<p>Vest generates fast, formally verified parsers and serializers for binary data
+formats. You can describe a format with the Vest DSL, generate codecs from an
+ASN.1 schema, or compose the verified library directly.</p>
+<p>Choose the path that matches your task:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>I want to…</th><th>Start here</th></tr>
+</thead>
+<tbody>
+<tr><td>describe a binary protocol concisely</td><td><a href="#vest-dsl-tutorial">Vest DSL tutorial</a></td></tr>
+<tr><td>understand the guarantees</td><td><a href="#what-vest-proves">What Vest proves</a></td></tr>
+<tr><td>build a format directly in Verus</td><td><a href="#using-vest_lib">Using <code>vest_lib</code></a></td></tr>
+<tr><td>generate DER or BER codecs</td><td><a href="#asn1-frontend">ASN.1 frontend</a></td></tr>
+<tr><td>parse generic CBOR values</td><td><a href="#general-and-deterministic-cbor">CBOR guide</a></td></tr>
+<tr><td>look up a trait or combinator</td><td><a href="https://secure-foundations.github.io/vest/vest_lib/"><code>vest_lib</code> API reference</a></td></tr>
+</tbody>
+</table>
+</div>
+<p>The <a href="https://github.com/secure-foundations/vest">project repository</a> contains
+the compiler, verified backend, generated TLS and Bitcoin case studies, ASN.1
+fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="what-vest-proves"><a class="header" href="#what-vest-proves">What Vest proves</a></h1>
+<p>Vest separates a format into three related layers:</p>
+<ol>
+<li>pure specifications for parsing, serialization, byte length, and value
+consistency;</li>
+<li>executable Rust implementations; and</li>
+<li>proofs connecting the implementations to the specifications and composing
+format-level properties.</li>
+</ol>
+<p>Verus checks executable memory safety, panic freedom, termination, and the
+contracts on the parsing, preparation, length, and serialization APIs. The
+following properties describe the wire format itself.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Property</th><th>Vest interface</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td>Safe parsing</td><td><code>SafeParser</code></td><td>A successful specification parse consumes a valid prefix of the input.</td></tr>
+<tr><td>Parser soundness</td><td><code>SoundParser</code></td><td>The parsed value is consistent and the consumed length agrees with its specified byte length.</td></tr>
+<tr><td>Serialize–parse round trip</td><td><code>SPRoundTripDps</code> / <code>SPRoundTrip</code></td><td>Serializing a consistent value and parsing the result recovers that value.</td></tr>
+<tr><td>Parser non-malleability</td><td><code>NonMalleable</code></td><td>Equal parsed values imply equal consumed bytes.</td></tr>
+<tr><td>Parse–serialize round trip</td><td><code>PSRoundTrip</code></td><td>Serializing a successful parse reproduces exactly the consumed input prefix.</td></tr>
+<tr><td>No lookahead</td><td><code>NoLookAhead</code></td><td>Parsing a prefix does not depend on bytes after the consumed region.</td></tr>
+<tr><td>Productivity</td><td><code>Productive</code></td><td>A successful parse consumes at least one byte when its productivity invariant holds.</td></tr>
+<tr><td>Serializer equivalence</td><td><code>EquivSerializers</code></td><td>The ordinary and destination-passing specifications agree.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Serialize–parse round trip also implies that serialization is injective over
+consistent values. Parse–serialize round trip follows compositionally from
+serialize–parse round trip, parser soundness, and non-malleability.</p>
+<p>Not every legal wire format is non-malleable. BER, general CBOR, ordered
+alternatives, and permutation formats deliberately accept multiple byte
+representations in some configurations. Such formats expose the properties
+that genuinely hold rather than claiming canonicality. DER formats and
+deterministic encodings can establish stronger properties when their format
+rules remove those alternatives.</p>
+<p>The exact quantified statements and invariant preconditions are in the
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/proof/"><code>core::proof</code></a>
+and
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/spec/"><code>core::spec</code></a>
+API documentation.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="vest-dsl-tutorial"><a class="header" href="#vest-dsl-tutorial">Vest DSL tutorial</a></h1>
+<p>This tutorial builds a length-prefixed packet whose payload borrows from the
+input.</p>
+<h2 id="install-the-tools"><a class="header" href="#install-the-tools">Install the tools</a></h2>
+<p>Clone Vest and install the pinned Verus release:</p>
+<pre><code class="language-console">git clone --filter=blob:none https://github.com/secure-foundations/vest.git
+cd vest
+./scripts/install-verus.sh
+export PATH="$PWD/.verus:$PATH"
+cargo build --release -p vest
+</code></pre>
+<p>Applications using generated code also depend on the matching <code>vest_lib</code> and
+<code>vstd</code> versions. The workspace manifest is the authoritative compatibility
+record.</p>
+<h2 id="describe-the-wire-format"><a class="header" href="#describe-the-wire-format">Describe the wire format</a></h2>
+<p>Create <code>packet.vest</code>:</p>
+<pre><code class="language-vest">!BIG_ENDIAN
+
+packet = {
+    @len: u16,
+    payload: [u8; @len],
+}
+</code></pre>
+<p>The <code>@len</code> field appears on the wire but is a dependency rather than a field in
+the logical structural suffix. The payload length is checked against it during
+parsing and preparation.</p>
+<p>Generate Rust:</p>
+<pre><code class="language-console">target/release/vest packet.vest --output packet.rs
+</code></pre>
+<p>The generated file contains the executable value type <code>Packet</code>, the nominal
+format <code>PacketFmt</code>, pure specifications, and compositional proofs.</p>
+<h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
+<p>With the generated module in scope, use the backend traits directly:</p>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let input: &amp;[u8] = &amp;[0, 3, b'a', b'b', b'c'];
+let (consumed, packet) = PacketFmt.parse(&amp;input).unwrap();
+assert_eq!(consumed, input.len());
+assert_eq!(packet.payload, b"abc");
+
+let len = PacketFmt.prepare(&amp;packet).unwrap();
+let mut output = vec![0; len];
+PacketFmt.serialize(&amp;packet, output.as_mut_slice());
+assert_eq!(output, input);</code></pre>
+<p><code>prepare</code> validates the value and returns its exact serialized length. The
+in-place <code>serialize</code> API therefore needs no temporary output allocation. Parse
+results include the number of bytes consumed, so callers can decide whether
+trailing input is permitted.</p>
+<p>Continue with the <a href="#vest-language-reference">language reference</a> and the
+<a href="#generated-rust-api">generated API guide</a>. Larger verified examples live in the
+<a href="#examples-and-test-corpus">test corpus</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="vest-language-reference"><a class="header" href="#vest-language-reference">Vest language reference</a></h1>
+<p>Vest source files contain named format definitions, optional parameters,
+constants, macros, and one byte-endianness directive. Definitions are compiled
+to Verus/Rust value types, format wrappers, specifications, proofs, and
+executable implementations.</p>
+<h2 id="primitive-formats"><a class="header" href="#primitive-formats">Primitive formats</a></h2>
+<ul>
+<li><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, <code>u64</code> and their signed counterparts use the file’s
+<code>!BIG_ENDIAN</code> or <code>!LITTLE_ENDIAN</code> directive where byte order applies.</li>
+<li><code>btc_varint</code> is Bitcoin’s variable-width integer and <code>uleb128</code> is unsigned LEB128.</li>
+<li><code>[u8; n]</code> is a byte string of the given length; <code>[fmt; n]</code> is a fixed or
+dependency-sized repetition.</li>
+<li><code>Tail</code> consumes the remaining input. <code>Nothing</code> consumes no bytes, while
+<code>Never("reason")</code> rejects every input.</li>
+</ul>
+<p>Integer formats may be refined with a value, range, set, or complement, such
+as <code>u16 | 1..1024</code> or <code>u8 | !{0, 255}</code>.</p>
+<h2 id="structures-and-dependencies"><a class="header" href="#structures-and-dependencies">Structures and dependencies</a></h2>
+<pre><code class="language-vest">message = {
+    @kind: message_type,
+    @len: u16,
+    body: [u8; @len] &gt;&gt;= choose(@kind) {
+        Request =&gt; request,
+        Response =&gt; response,
+    },
+}
+</code></pre>
+<p>Ordinary fields become fields of the generated value type. A name prefixed by
+<code>@</code> may be referenced by later formats and length expressions. A constant field
+is checked on input and reconstructed during serialization without appearing
+in the logical value.</p>
+<p><code>lhs &gt;&gt;= rhs</code> parses <code>lhs</code>, restricts <code>rhs</code> to the resulting region where
+applicable, and returns the value of <code>rhs</code>. Length expressions support constants,
+dependencies, parentheses, <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>|format|</code> for static width.</p>
+<h2 id="choices-enums-and-collections"><a class="header" href="#choices-enums-and-collections">Choices, enums, and collections</a></h2>
+<ul>
+<li><code>enum { Name = value, ... }</code> defines a typed integer enumeration. A trailing
+<code>...</code> preserves unknown values.</li>
+<li><code>choose { Variant =&gt; fmt, ... }</code> defines an ordered choice with a nominal
+enum value.</li>
+<li><code>choose(@tag) { ... }</code> dispatches using an earlier dependency. <code>_</code> is the
+fallback branch.</li>
+<li><code>Option&lt;fmt&gt;</code> accepts zero or one value and <code>Vec&lt;fmt&gt;</code> accepts zero or more.
+Their placement must leave parsing unambiguous and productive.</li>
+</ul>
+<h2 id="wrapping-bitfields-and-macros"><a class="header" href="#wrapping-bitfields-and-macros">Wrapping, bitfields, and macros</a></h2>
+<p><code>wrap(...)</code> surrounds a value format with fixed integer, enum, or byte
+constants. <code>bits { ... }</code> packs integer fields into a fixed-width carrier; the
+file endianness controls byte order, while fields are laid out from the most
+significant bit of the carrier.</p>
+<p>Format macros use <code>macro name!(...) = ...</code> and are expanded before type
+checking. Named formats may take dependency parameters using
+<code>name(@parameter: format) = ...</code>.</p>
+<h2 id="recursion-and-limitations"><a class="header" href="#recursion-and-limitations">Recursion and limitations</a></h2>
+<p>Vest supports generated bounded recursive formats through the backend’s
+fixpoint combinators. Mutual-recursion code generation remains experimental and
+is not part of the default verified fixture set. The compiler reports syntax,
+type, dependency, productivity, and proof-composition problems rather than
+silently changing the wire format.</p>
+<p>Run <code>vest --help</code> for the current command-line interface. The parser grammar is
+available in
+<a href="https://github.com/secure-foundations/vest/blob/main/vest/src/vest.pest"><code>vest/src/vest.pest</code></a>,
+and the checked-in <code>.vest</code> fixtures are the executable reference for supported
+combinations.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generated-rust-api"><a class="header" href="#generated-rust-api">Generated Rust API</a></h1>
+<p>For a definition named <code>message</code>, Vest normally emits:</p>
+<ul>
+<li><code>Message</code> and <code>MessageSpec</code>, the executable and logical value types;</li>
+<li><code>MessageFmt</code>, the nominal verified format;</li>
+<li>implementations of <code>Parser</code>, <code>Prepare</code>, <code>ByteLen</code>, and <code>Serializer</code>; and</li>
+<li>specification and proof-trait implementations used by enclosing formats.</li>
+</ul>
+<p>Generated structs borrow fixed and variable byte regions from their input when
+the wire format permits zero-copy parsing. Collections and formats that must
+combine fragmented input use owned values and therefore require the <code>alloc</code>
+feature.</p>
+<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
+<p><code>MessageFmt.parse(&amp;input)</code> returns <code>(consumed, value)</code>. Success is proved to
+match the pure <code>spec_parse</code> result. Parsing does not require that the entire
+input be consumed unless the format itself ends with an end-of-input
+combinator.</p>
+<h2 id="preparation-and-serialization"><a class="header" href="#preparation-and-serialization">Preparation and serialization</a></h2>
+<p>Call <code>MessageFmt.prepare(&amp;value)</code> before serializing. It checks constants,
+dependent lengths, predicates, choices, recursion limits, and other consistency
+conditions, then returns the exact output length. Allocate or borrow a slice of
+that length and call <code>MessageFmt.serialize(&amp;value, output)</code>.</p>
+<p>For advanced streaming code, <code>Serializer::serialize_into</code> targets any
+<code>OutputBuf</code>, including a growable <code>Vec&lt;u8&gt;</code> or an <code>OutputSlice</code>. The convenience
+slice API is preferred when the final length is known.</p>
+<h2 id="errors-and-generated-files"><a class="header" href="#errors-and-generated-files">Errors and generated files</a></h2>
+<p>Parsing returns a <code>ParseError</code>; preparation returns a <code>PreSerializeError</code>.
+Named formats preserve a nested format trace when allocation is enabled.
+Generated files are deterministic build artifacts and should be regenerated,
+not edited manually.</p>
+<p>The exact executable contracts are documented under
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/"><code>core::exec</code></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="using-vest_lib"><a class="header" href="#using-vest_lib">Using <code>vest_lib</code></a></h1>
+<p>Most applications should use the Vest DSL or ASN.1 frontend. Use <code>vest_lib</code>
+directly when the format is easier to express as a reusable Verus combinator or
+when implementing a new backend primitive.</p>
+<p>A format typically combines:</p>
+<ul>
+<li>primitive byte and integer formats;</li>
+<li>sequencing with <code>Pair</code>, <code>Preceded</code>, or <code>Terminated</code>;</li>
+<li>alternatives with <code>Choice</code> or deliberately malleable <code>Alt</code>;</li>
+<li>repetition with <code>Array</code>, <code>RepeatN</code>, <code>Star</code>, or <code>RepeatTillEnd</code>;</li>
+<li>semantic transformations with <code>Mapped</code>, <code>TryMap</code>, and <code>Refined</code>;</li>
+<li>dependencies with <code>Bind</code> or <code>Implicit</code>; and</li>
+<li>bounded recursion with <code>FixWith</code>.</li>
+</ul>
+<p>The same value implements separate specification traits for parsing,
+serialization, byte length, and consistency. Proof traits establish properties
+only when the relevant child invariants and side conditions hold. This makes it
+possible to represent both canonical and intentionally malleable formats
+without assigning either one inaccurate guarantees.</p>
+<p>The complete catalog and links to each implementation are in the
+<a href="https://secure-foundations.github.io/vest/vest_lib/combinators/"><code>combinators</code></a>
+module. See <a href="#what-vest-proves">What Vest proves</a> before implementing a new
+combinator proof.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="parsing-and-serialization"><a class="header" href="#parsing-and-serialization">Parsing and serialization</a></h1>
+<p>The executable API follows one lifecycle:</p>
+<ol>
+<li><code>Parser::parse</code> reads an input buffer and returns the consumed length and
+value.</li>
+<li><code>Prepare::prepare</code> checks that a value is serializable and returns its exact
+length.</li>
+<li><code>SerializerExt::serialize</code> writes into an exactly sized caller-provided
+slice.</li>
+</ol>
+<pre><code class="language-rust ignore">use vest_lib::combinators::U16Be;
+use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let input: &amp;[u8] = &amp;[0x12, 0x34];
+let (consumed, value) = U16Be.parse(&amp;input).unwrap();
+assert_eq!((consumed, value), (2, 0x1234));
+
+let len = U16Be.prepare(&amp;value).unwrap();
+let mut output = vec![0; len];
+U16Be.serialize(&amp;value, output.as_mut_slice());
+assert_eq!(output, input);</code></pre>
+<p>Parsers accept any input type implementing the slice-oriented <code>InputBuf</code>
+interface. Serializers target <code>OutputBuf</code>; <code>OutputSlice</code> provides bounded,
+allocation-free output and <code>Vec&lt;u8&gt;</code> provides growable output when <code>alloc</code> is
+enabled. <code>write_bytes</code> copies whole regions directly for both standard output
+implementations.</p>
+<p>Preparation is the fallible boundary. Once it succeeds, the value is proved
+consistent and the returned size agrees with the specification, allowing the
+serializer itself to be infallible.</p>
+<p>See the exact contracts for
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/parser/trait.Parser.html"><code>Parser</code></a>,
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/serializer/trait.Prepare.html"><code>Prepare</code></a>,
+and
+<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/serializer/trait.Serializer.html"><code>Serializer</code></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="feature-configurations"><a class="header" href="#feature-configurations">Feature configurations</a></h1>
+<p><code>vest_lib</code> has three supported configurations:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Cargo configuration</th><th>Available environment</th></tr>
+</thead>
+<tbody>
+<tr><td>default features</td><td><code>std</code>, including allocation-backed errors and formats</td></tr>
+<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code>, and owned recursive values</td></tr>
+<tr><td><code>default-features = false</code></td><td><code>core</code>-only formats and caller-provided buffers</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-toml">[dependencies]
+vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
+</code></pre>
+<p>The generic CBOR value codec and BER formats that flatten constructed strings
+require allocation. Primitive combinators, in-place serialization, and the
+non-owning parts of the ASN.1 backend remain available in smaller
+configurations where their types permit it.</p>
+<p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions recorded by
+the release. The repository pins the complete compatible set.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="asn1-frontend"><a class="header" href="#asn1-frontend">ASN.1 frontend</a></h1>
+<p><code>vest_asn1</code> parses an ASN.1 module and emits nominal verified formats backed by
+<code>vest_lib::asn1</code>. DER is the default; BER and definition-level rule overrides
+are available.</p>
+<pre><code class="language-console">cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
+cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
+</code></pre>
+<p>Each supported ASN.1 definition becomes a user-facing Rust value type and a
+nominal format whose nested combinator implementation is verified once. This
+boundary keeps enclosing schemas from repeatedly expanding large combinator
+types during verification.</p>
+<p>Read <a href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a> before generating mixed-rule
+modules, then see the <a href="#asn1-generated-api">generated API</a> and
+<a href="#supported-asn1-and-limitations">support table</a>. The backend API is documented under
+<a href="https://secure-foundations.github.io/vest/vest_lib/asn1/"><code>vest_lib::asn1</code></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="der-ber-and-rule-overrides"><a class="header" href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a></h1>
+<p><code>--rules der</code> or <code>--rules ber</code> authoritatively selects the module default. A
+definition override changes that definition and the transitive children it
+needs under the selected rule; parents remain under the module default.</p>
+<pre><code class="language-console">cargo run -p vest_asn1 -- --rules ber \
+  --der-definition SignedAttributes \
+  --der-definition CertificateSet \
+  schema.asn1 -o generated_mixed.rs
+</code></pre>
+<p>Every ASN.1 definition is emitted exactly once with one global rule. A BER
+definition may contain a DER child because a DER encoding is valid BER. A DER
+definition cannot depend on a BER definition without violating recursive DER
+canonicality. Conflicting transitive overrides are rejected and require an
+explicit rule boundary.</p>
+<p>DER formats use canonical lengths and applicable primitive encodings. BER
+formats accept the supported alternative encodings, including constructed
+strings and indefinite containers, then serialize to the backend’s normalized
+output form. Consequently BER formats do not claim DER-style
+non-malleability.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="asn1-generated-api"><a class="header" href="#asn1-generated-api">ASN.1 generated API</a></h1>
+<p>An ASN.1 definition such as <code>AlgorithmIdentifier</code> becomes a Rust value type and
+a fully verified nominal format type such as <code>ALGORITHM_IDENTIFIER</code>, used as
+<code>ALGORITHM_IDENTIFIER::Fmt</code>.</p>
+<p><code>SEQUENCE</code> and supported heterogeneous <code>SET</code> definitions become structs;
+<code>CHOICE</code> becomes an enum; and <code>ENUMERATED</code> becomes a closed typed enum.
+Anonymous composites receive deterministic private helper definitions.
+Bidirectional mappers hide nested tuple and <code>Sum</code> representations.</p>
+<p>The nominal format exposes parsing, preparation, byte length, in-place
+serialization, retagging, and the proof traits valid under its encoding rule.
+DER formats also compose through the allocation-free ordering interface needed
+by DER <code>SET OF</code>.</p>
+<p>DER byte and character strings borrow from the input where possible. BER uses
+owned values when constructed encodings must be flattened. This difference is
+visible in generated Rust types and may require the <code>alloc</code> feature.</p>
+<p>IMPLICIT tagging replaces the outer tag. Untagged <code>CHOICE</code> and <code>ANY</code> have no
+single tag to replace, so the generator uses explicit tagging for those cases.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="supported-asn1-and-limitations"><a class="header" href="#supported-asn1-and-limitations">Supported ASN.1 and limitations</a></h1>
+<p>The frontend supports the following current subset:</p>
+<ul>
+<li>BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER, REAL, NULL, and ANY;</li>
+<li>BIT STRING, OCTET STRING, supported character strings, and time strings;</li>
+<li>SEQUENCE, SEQUENCE OF, SET OF, CHOICE, and statically ordered heterogeneous
+DER SET;</li>
+<li>OPTIONAL and supported DEFAULT components;</li>
+<li>local references and EXPLICIT/IMPLICIT tags in the context-specific,
+application, and private classes; and</li>
+<li>fixed, bounded, and one-sided SIZE constraints for supported strings and
+collections, plus INTEGER value and range constraints.</li>
+</ul>
+<p>DER <code>SET OF</code> requires values already sorted by complete DER TLV encoding and
+allows duplicate encodings. Preparation rejects unsorted values without
+allocating. BER <code>SET OF</code> preserves schema order. Heterogeneous BER SET is not
+yet generated.</p>
+<p>DEFAULT values are supported for BOOLEAN, ENUMERATED, and INTEGER types whose
+finite constraint selects the current <code>i8</code> or <code>i16</code> backend.</p>
+<p>Current unsupported or restricted constructs include OBJECT IDENTIFIER and
+REAL value assignments, large ENUMERATED executable values, BIT STRING SIZE
+constraints, RELATIVE-OID, GeneralString, VisibleString, ANY DEFINED BY,
+general constraint combinations, imports, AUTOMATIC TAGS, extension markers,
+extension-addition groups, WITH COMPONENTS, and recursive schema definitions.
+Recognized unsupported syntax is rejected rather than approximated.</p>
+<p>Generated first-tag certificates represent the 256 possible identifier-leading
+octets. Tags numbered 0 through 30 are exact. High-tag numbers with the same
+class and constructed bit share a leading-octet bit, so the current automation
+cannot certify two such tags as disjoint solely from later tag-number octets.</p>
+<p>The checked fixtures under <code>vest_asn1_tests</code> are the executable source of truth
+for combinations supported by the current compiler.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="general-and-deterministic-cbor"><a class="header" href="#general-and-deterministic-cbor">General and deterministic CBOR</a></h1>
+<p><code>vest_lib::cbor::CborFmt&lt;DET&gt;</code> implements the RFC 8949 generic data model. Use
+<code>CborFmt::&lt;false&gt;</code> for general well-formed CBOR and <code>CborFmt::&lt;true&gt;</code> for the
+currently supported deterministic restrictions.</p>
+<pre><code class="language-rust ignore">use vest_lib::cbor::CborFmt;
+use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let input: &amp;[u8] = &amp;[0x82, 0x01, 0x02];
+let (consumed, value) = CborFmt::&lt;false&gt;.parse(&amp;input).unwrap();
+assert_eq!(consumed, input.len());
+
+let len = CborFmt::&lt;false&gt;.prepare(&amp;value).unwrap();
+let mut output = vec![0; len];
+CborFmt::&lt;false&gt;.serialize(&amp;value, output.as_mut_slice());</code></pre>
+<p>Definite byte and text strings borrow directly from the input. Fragmented
+indefinite strings are flattened into owned values. Arrays, maps, tags, and
+other recursive values use allocation and are bounded by the format’s
+recursion limit.</p>
+<p>General CBOR accepts supported non-preferred argument widths and indefinite
+containers; serialization normalizes those values to definite output. The
+deterministic format additionally requires preferred integer, length, and tag
+arguments and rejects indefinite-length items.</p>
+<p>Deterministic map-key ordering and shortest-width floating-point normalization
+are not yet enforced. Floating-point width is retained in the logical value,
+and duplicate map keys are not rejected. Applications requiring those profile
+rules must add a refinement or validation layer.</p>
+<p>See the
+<a href="https://secure-foundations.github.io/vest/vest_lib/cbor/"><code>cbor</code></a> API and the
+RFC 8949 conformance tests under <code>vest_lib/tests/cbor_rfc.rs</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="vest_lib-api-reference"><a class="header" href="#vest_lib-api-reference"><code>vest_lib</code> API reference</a></h1>
+<p>The symbol-level API documentation is generated by Rustdoc and Verusdoc so it
+can display executable signatures together with Verus specifications,
+preconditions, postconditions, and proof interfaces.</p>
+<p><a href="https://secure-foundations.github.io/vest/vest_lib/">Open the <code>vest_lib</code> API reference</a>.</p>
+<p>Return to the <a href="#using-vest_lib">combinator guide</a> for task-oriented
+documentation.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="examples-and-test-corpus"><a class="header" href="#examples-and-test-corpus">Examples and test corpus</a></h1>
+<p>The repository keeps source schemas beside generated, compiled, tested, and
+verified Rust:</p>
+<ul>
+<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_tests/src"><code>vest_tests/src</code></a>
+contains DSL examples, including TLS, Bitcoin, bitfields, nested dependent
+lengths, recursion, and depth/width stress schemas.</li>
+<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_asn1_tests"><code>vest_asn1_tests</code></a>
+contains DER, BER, and mixed-rule ASN.1 fixtures.</li>
+<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_dev/src/formats"><code>vest_dev/src/formats</code></a>
+contains handwritten combinator examples and backend experiments.</li>
+<li><a href="https://github.com/secure-foundations/vest/blob/main/vest_lib/tests/cbor_rfc.rs"><code>vest_lib/tests/cbor_rfc.rs</code></a>
+exercises RFC 8949 examples and documented deterministic-profile gaps.</li>
+</ul>
+<p>These fixtures are preferable to isolated snippets when learning advanced
+format composition because CI checks their generation freshness, Rust behavior,
+and Verus proofs.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="publication-and-citation"><a class="header" href="#publication-and-citation">Publication and citation</a></h1>
+<p>Vest was introduced in:</p>
+<blockquote>
+<p>Yi Cai, Pratap Singh, Zhengyao Lin, Jay Bosamiya, Joshua Gancher, Milijana
+Surbatovich, and Bryan Parno. “Vest: Verified, Secure, High-Performance
+Parsing and Serialization for Rust.” USENIX Security, 2025.</p>
+</blockquote>
+<p><a href="https://tracycy.com/papers/vest-usenix-security25.pdf">Read the paper</a>.</p>
+<pre><code class="language-bibtex">@inproceedings{vest,
+  author    = {Cai, Yi and Singh, Pratap and Lin, Zhengyao and Bosamiya, Jay and Gancher, Joshua and Surbatovich, Milijana and Parno, Bryan},
+  booktitle = {Proceedings of the USENIX Security Symposium},
+  title     = {{Vest}: Verified, Secure, High-Performance Parsing and Serialization for {Rust}},
+  year      = {2025}
+}
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

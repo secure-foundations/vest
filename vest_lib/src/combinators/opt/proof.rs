@@ -1,3 +1,4 @@
+//! Correctness and ambiguity proofs for optional formats.
 use crate::{
     combinators::Pair,
     core::{proof::*, spec::*},

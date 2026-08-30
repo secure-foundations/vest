@@ -1,3 +1,4 @@
+//! Executable error-context propagation for named formats.
 use crate::core::exec::output::*;
 use crate::core::{
     exec::{

@@ -1,3 +1,4 @@
+//! Correctness proofs for fixed- and variable-length bytes.
 use crate::combinators::length::AsLen;
 use crate::combinators::Tail;
 use crate::core::{proof::*, spec::*};

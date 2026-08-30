@@ -1,3 +1,4 @@
+//! ASN.1 BIT STRING contents values and primitive contents format.
 use crate::core::exec::output::*;
 use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::{

@@ -1,3 +1,4 @@
+//! Correctness proofs for sequential formats discarding their suffix.
 use super::spec::*;
 use crate::{
     combinators::Pair,

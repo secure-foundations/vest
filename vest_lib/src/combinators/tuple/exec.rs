@@ -1,3 +1,4 @@
+//! Executable sequential composition.
 use crate::combinators::mapped::spec::SpecMap;
 use crate::core::exec::fns::MapRef;
 use crate::core::exec::output::*;

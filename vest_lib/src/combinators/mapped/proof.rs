@@ -1,3 +1,4 @@
+//! Correctness proofs for total and partial semantic mappings.
 use super::spec::*;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

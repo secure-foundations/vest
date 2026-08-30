@@ -1,3 +1,4 @@
+//! Correctness proofs for boolean-gated formats.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

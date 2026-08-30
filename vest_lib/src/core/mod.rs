@@ -2,6 +2,10 @@
 //!
 //! This module forms the foundation of the Vest combinator framework. It defines:
 //!
+//! For a task-oriented overview, see
+//! [What Vest proves](https://secure-foundations.github.io/vest/guide/guarantees.html)
+//! and the [runtime API guide](https://secure-foundations.github.io/vest/guide/library/runtime.html).
+//!
 //! ## [`spec`] — Specification Family of Traits
 //!
 //! - [`spec::SpecParser`] — parser specification
@@ -29,7 +33,7 @@
 //! - [`proof::EquivSerializers`] / [`proof::EquivSerializersGeneral`] — DPS ↔ non-DPS equivalence
 //!
 //! Following the same philosophy as the specification traits, these proof traits are defined on top of
-//! a *minimal* set of specification traits, and crutially, they are *not* defined/dependent on each other.
+//! a *minimal* set of specification traits, and crucially, they are *not* defined/dependent on each other.
 //! This way, combinators can implement only the proof traits that are relevant to their intended use cases
 //! (e.g., formats that accept non-canonical encodings may not be non-malleable, and thus would not implement
 //!  [`proof::NonMalleable`]).

@@ -1,3 +1,4 @@
+//! Correctness proofs for byte-aligned bitfield formats.
 use crate::combinators::{mapped::spec::*, Mapped, Pair, Refined};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

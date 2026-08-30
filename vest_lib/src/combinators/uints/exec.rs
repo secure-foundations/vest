@@ -1,3 +1,4 @@
+//! Executable fixed-width unsigned integer formats.
 use super::spec::*;
 use crate::combinators::bytes::spec::*;
 use crate::combinators::Fixed;

@@ -1,3 +1,4 @@
+//! ASN.1 BOOLEAN contents under DER and BER rules.
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;
 use crate::core::exec::{

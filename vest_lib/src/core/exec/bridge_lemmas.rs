@@ -1,3 +1,4 @@
+//! Bridges executable invariants through common combinator wrappers.
 use crate::combinators::bytes::{AndThen, ExactLen};
 use crate::combinators::mapped::spec::{BiMap, SpecMap};
 use crate::combinators::named::Named;

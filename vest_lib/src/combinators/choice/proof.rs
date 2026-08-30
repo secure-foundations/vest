@@ -1,3 +1,4 @@
+//! Correctness, disjointness, and malleability proofs for alternatives.
 use super::spec::*;
 use crate::combinators::Sum;
 use crate::core::{proof::*, spec::*};

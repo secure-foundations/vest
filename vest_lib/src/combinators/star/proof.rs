@@ -1,3 +1,4 @@
+//! Correctness, termination, and ambiguity proofs for repetition.
 use crate::combinators::length::AsLen;
 use crate::combinators::Pair;
 use crate::core::{proof::*, spec::*};

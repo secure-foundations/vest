@@ -1,5 +1,12 @@
 //! Combinators for composing binary data formats.
 //!
+//! Each format implements only the specification, proof, and executable traits
+//! that its semantics justify. In particular, deliberately malleable formats
+//! such as [`Alt`] and the permutation combinators do not claim
+//! [`NonMalleable`](crate::core::proof::NonMalleable). See the
+//! [combinator guide](https://secure-foundations.github.io/vest/guide/library/combinators.html)
+//! for the overall construction model.
+//!
 //! # Primitive combinators
 //!
 //! | Combinator | Description |

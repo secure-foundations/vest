@@ -1,3 +1,4 @@
+//! ASN.1 BMPString values and UCS-2 contents format.
 use crate::core::exec::input::{InputBuf, InputSlice};
 use crate::core::exec::output::*;
 use crate::core::exec::{

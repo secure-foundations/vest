@@ -1,3 +1,4 @@
+//! Specification for dependent formats that omit their header value.
 use super::*;
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::length::AsLen;

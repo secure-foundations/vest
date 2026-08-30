@@ -1,3 +1,4 @@
+//! ASN.1 identifier octets, tag classes, and universal tag numbers.
 use crate::combinators::{Bind, Empty, Sum};
 use crate::core::exec::input::*;
 use crate::core::exec::output::*;

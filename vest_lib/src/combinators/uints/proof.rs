@@ -1,3 +1,4 @@
+//! Correctness proofs for fixed-width unsigned integers.
 use super::spec::*;
 use crate::combinators::bytes::spec::*;
 use crate::core::{proof::*, spec::*};

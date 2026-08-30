@@ -1,0 +1,13 @@
+[book]
+authors = ["The Vest authors"]
+language = "en"
+src = "guide/src"
+title = "Vest Documentation"
+
+[build]
+build-dir = "docs/guide"
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/secure-foundations/vest"
+site-url = "/vest/guide/"

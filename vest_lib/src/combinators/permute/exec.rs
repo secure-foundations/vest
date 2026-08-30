@@ -1,3 +1,4 @@
+//! Executable implementations for permutation formats.
 use crate::combinators::tuple::Pair;
 use crate::core::exec::output::OutputBuf;
 use crate::core::exec::parser::{PResult, Parser};

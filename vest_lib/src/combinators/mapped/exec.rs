@@ -1,3 +1,4 @@
+//! Executable mapper interfaces and mapped-format implementations.
 use super::spec::{BiMap, SpecMap};
 use crate::core::exec::fns::Map;
 use crate::core::exec::output::*;

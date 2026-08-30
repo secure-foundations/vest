@@ -1,3 +1,4 @@
+//! Congruence lemmas for parser, serializer, and preparation specifications.
 use crate::combinators::bits::Bits;
 use crate::combinators::bytes::{AndThen, ExactLen, Fixed, Varied};
 use crate::combinators::mapped::spec::{BiMap, BiMapper, FnSpecMapper, SpecMap};

@@ -1,3 +1,4 @@
+//! Specifications for predicates, refinements, and constants.
 use crate::combinators::{Fixed, Preceded, Terminated};
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

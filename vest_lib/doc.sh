@@ -3,7 +3,13 @@ set -euo pipefail
 
 rustdoc_lints=()
 if [[ "${1:-}" == "--strict" ]]; then
-    rustdoc_lints=(-D warnings)
+    # Rust's ordinary style lints do not understand all Verus expressions and
+    # can suggest precedence-changing rewrites. Strict documentation mode is
+    # therefore limited to diagnostics that describe the published docs.
+    rustdoc_lints=(
+        -D rustdoc::broken_intra_doc_links
+        -D rustdoc::invalid_codeblock_attributes
+    )
 fi
 
 if [[ -n "${VERUS_BIN_DIR:-}" ]]; then

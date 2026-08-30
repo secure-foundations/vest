@@ -4,6 +4,10 @@
 //! nominal `vest_lib::asn1` BER or DER formats, so generated parsers and
 //! serializers use Vest's verified combinators directly while enclosing formats
 //! depend on compact, already-proved interfaces.
+//!
+//! The [ASN.1 guide](https://secure-foundations.github.io/vest/guide/asn1/)
+//! documents encoding-rule selection, generated APIs, supported syntax, and
+//! current limitations.
 
 mod codegen;
 mod error;

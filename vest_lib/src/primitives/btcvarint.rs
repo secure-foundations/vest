@@ -1,3 +1,4 @@
+//! Bitcoin CompactSize/VarInt encoding.
 use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::{
     Alt, Bind, Empty, Mapped, PrefixTagged, Refined, Sum, U16Le, U32Le, U64Le, Void, U8,

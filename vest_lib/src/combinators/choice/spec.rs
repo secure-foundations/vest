@@ -1,3 +1,4 @@
+//! Specifications for canonical and deliberately malleable alternatives.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

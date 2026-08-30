@@ -60,17 +60,22 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cargo/bin/verusfmt
+            ~/.cargo/bin/mdbook
             target
-          key: linux-regen-${{ hashFiles('Cargo.lock') }}-verusfmt-0.7.2
+          key: linux-regen-${{ hashFiles('Cargo.lock') }}-verusfmt-0.7.2-mdbook-0.5.4
           restore-keys: linux-regen-
       - name: Install verusfmt
         run: command -v verusfmt >/dev/null || cargo install verusfmt --version 0.7.2 --locked
+      - name: Install mdBook
+        run: test "$(mdbook --version 2>/dev/null)" = "mdbook v0.5.4" || cargo install mdbook --version 0.5.4 --locked
       - name: Regenerate Vest fixtures
         working-directory: vest_tests
         run: make vest
       - name: Regenerate ASN.1 fixtures
         working-directory: vest_asn1_tests
         run: make generate
+      - name: Regenerate documentation guide
+        run: scripts/build-guide.sh && mdbook test
       - name: Generated files are current
         run: git diff --exit-code
 

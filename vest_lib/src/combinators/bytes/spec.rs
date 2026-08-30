@@ -1,3 +1,4 @@
+//! Specifications for fixed- and variable-length bytes.
 use crate::combinators::length::AsLen;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

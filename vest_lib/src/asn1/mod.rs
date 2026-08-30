@@ -1,6 +1,16 @@
 #![allow(non_upper_case_globals)]
 
-//! ASN.1 formats.
+//! Verified ASN.1 contents, tag-length-value wrappers, and schema combinators.
+//!
+//! [`der`] exposes notation-like constants and modifiers for canonical DER.
+//! [`ber`] provides specialized formats for BER alternatives such as
+//! constructed strings and indefinite-length containers. Shared modules define
+//! contents formats, tags, constraints, retagging, disjointness certificates,
+//! and allocation-free DER ordering.
+//!
+//! The [`vest_asn1` frontend guide](https://secure-foundations.github.io/vest/guide/asn1/)
+//! describes schema generation and the supported ASN.1 subset. Direct backend
+//! users should start with [`der`] or [`ber`] rather than assembling raw TLVs.
 
 /// ASN.1 ANY / open-type complete TLV format.
 pub mod any;

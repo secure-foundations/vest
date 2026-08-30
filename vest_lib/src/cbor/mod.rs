@@ -16,6 +16,9 @@
 //! - Map-key ordering is not yet enforced in [`CborFmt<true>`].
 //! - Floating-point widths are retained in [`CborFloat`], so shortest-width
 //! floating-point normalization is likewise not yet imposed.
+//!
+//! See the [CBOR guide](https://secure-foundations.github.io/vest/guide/cbor.html)
+//! for the runtime workflow, ownership model, and deterministic-profile scope.
 mod chunk;
 pub mod format;
 mod head;

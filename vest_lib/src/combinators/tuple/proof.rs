@@ -1,3 +1,4 @@
+//! Correctness and ambiguity proofs for sequential composition.
 use crate::combinators::mapped::spec::SpecMap;
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;

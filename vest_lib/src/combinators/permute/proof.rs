@@ -1,3 +1,4 @@
+//! Correctness and malleability proofs for permutation formats.
 use crate::combinators::choice::Alt;
 use crate::combinators::tuple::Pair;
 use crate::combinators::Mapped;

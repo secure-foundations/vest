@@ -1,3 +1,4 @@
+//! ASN.1 definite and BER indefinite length octets.
 use crate::combinators::{Bind, Empty, Sum, Void};
 use crate::core::exec::input::*;
 use crate::core::exec::output::*;

@@ -1,3 +1,14 @@
+//! Compiler library for the Vest binary-format DSL.
+//!
+//! [`compile`], [`compile_file`], and [`compile_to`] parse and type-check a
+//! `.vest` source file and emit a verified Verus/Rust module. Most users invoke
+//! the `vest` command-line tool; build scripts and other generators can call
+//! these functions directly.
+//!
+//! See the [Vest DSL tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html),
+//! [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html),
+//! and [generated API guide](https://secure-foundations.github.io/vest/guide/dsl/generated-api.html).
+
 use std::error::Error;
 use std::io::Write;
 

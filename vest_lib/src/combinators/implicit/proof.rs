@@ -1,3 +1,4 @@
+//! Correctness proofs for dependent formats that omit their header value.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

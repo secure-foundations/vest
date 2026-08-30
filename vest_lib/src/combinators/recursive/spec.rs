@@ -1,3 +1,4 @@
+//! Fixpoint specifications and recursive-body interfaces.
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 

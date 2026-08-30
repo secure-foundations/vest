@@ -1,3 +1,4 @@
+//! Executable implementation for sequential formats discarding their suffix.
 use crate::core::exec::output::*;
 use crate::{
     combinators::Pair,

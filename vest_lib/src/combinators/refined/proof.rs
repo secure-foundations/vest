@@ -1,3 +1,4 @@
+//! Correctness proofs for predicates, refinements, and constants.
 use super::spec::*;
 use crate::combinators::Fixed;
 use crate::core::{proof::*, spec::*};

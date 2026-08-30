@@ -1,3 +1,4 @@
+//! Specifications for fixed-width signed integers.
 use crate::combinators::bytes::spec::*;
 use crate::combinators::mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper};
 use crate::combinators::uints::spec::*;

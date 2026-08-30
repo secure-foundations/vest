@@ -1,3 +1,4 @@
+//! Executable implementations for ordered alternatives.
 use crate::core::exec::output::*;
 use crate::core::{
     exec::{

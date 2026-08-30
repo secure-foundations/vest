@@ -1,3 +1,4 @@
+//! Unsigned little-endian base-128 (ULEB128) encoding.
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::parser::*;
 use crate::{

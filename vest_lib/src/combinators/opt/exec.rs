@@ -1,3 +1,4 @@
+//! Executable implementations for optional formats.
 use crate::core::exec::output::*;
 use crate::core::{
     exec::{
