@@ -1041,8 +1041,10 @@ pub fn i64_from_be_bytes(bytes: &[u8]) -> (r: i64)
     }
 }
 
-/// Executable big-endian two's-complement encoding from `i64`.
-/// TODO: Optimize this function?
+/// Executable allocation-backed big-endian two's-complement encoding from `i64`.
+///
+/// ASN.1 serializer implementations use their in-place path instead of this
+/// convenience helper.
 #[cfg(feature = "alloc")]
 pub fn i64_to_be_bytes(v: i64) -> (buf: Vec<u8>)
     requires

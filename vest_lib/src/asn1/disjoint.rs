@@ -2,7 +2,7 @@
 //!
 //! Each complete ASN.1 format exposes an over-approximation of
 //! what can occur at the start of an accepted input, and one
-//! generic theorem turns disjoint start domains into [`disjoint_domains`].
+//! generic theorem turns disjoint start domains into `disjoint_domains`.
 //! Adding another ASN.1 format therefore needs one start-domain proof
 //! rather than pairwise proofs against every existing format.
 use super::ber::*;

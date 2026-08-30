@@ -1,4 +1,7 @@
-//! Unsigned integer combinators.
+//! Fixed-width unsigned integer combinators.
+//!
+//! The exported zero-sized formats cover 8-, 16-, 24-, 32-, and 64-bit values
+//! with explicit little- or big-endian order and allocation-free execution.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

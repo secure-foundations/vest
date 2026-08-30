@@ -1,6 +1,6 @@
 //! Implementations for generated nominal ASN.1 format types.
 //!
-//! These macros are exported at the crate root as [`impl_der!`] and [`impl_ber!`]. A generated
+//! These macros are exported at the crate root as [`impl_der!`](crate::impl_der) and [`impl_ber!`](crate::impl_ber). A generated
 //! nominal format supplies a duel spec-exec `schema()` constructor. Tagged formats
 //! additionally store their outer tag class and number in tuple fields `0` and `1`; the macros
 //! apply that effective tag when constructing the inner format.

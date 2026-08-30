@@ -1,4 +1,7 @@
-//! Name-carrying wrapper for runtime parser error reporting.
+//! Name-carrying wrapper for runtime error reporting.
+//!
+//! [`Named`] preserves the child's format semantics and attaches a static name
+//! while parse or preparation errors propagate outward.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

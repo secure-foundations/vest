@@ -1,7 +1,7 @@
 //! ASN.1 ENUMERATED contents.
 //!
 //! X.690 §8.4 specifies that ENUMERATED contents are encoded exactly like the
-//! corresponding INTEGER value. This module therefore delegates to [`super::IntegerFmt`]
+//! corresponding INTEGER value. This module therefore delegates to [`IntegerFmt`](crate::asn1::IntegerFmt)
 //! at every layer while retaining a distinct format marker for the ENUMERATED tag.
 use crate::core::exec::output::OutputBuf;
 use crate::core::exec::{

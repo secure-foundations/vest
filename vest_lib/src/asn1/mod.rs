@@ -261,7 +261,10 @@ pub type DerBitStringFmt = BitStringFmt<true>;
 
 /// ASN.1 OCTET STRING contents format (primitive).
 ///
-/// TODO: support indefinite (constructed) forms:
+/// This content format intentionally handles only primitive bytes. Recursive
+/// constructed BER OCTET STRINGs are provided by
+/// [`ber::BerOctetStringFmt`].
+/// For example, a constructed encoding may have the following shape:
 ///
 /// ### Example
 ///

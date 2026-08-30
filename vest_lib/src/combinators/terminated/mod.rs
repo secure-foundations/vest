@@ -1,4 +1,7 @@
-//! Sequential composition discarding the suffix.
+//! Sequential composition that discards a suffix value.
+//!
+//! [`Terminated`] exposes the first value and uses the second format as framing,
+//! such as an end marker that can be reconstructed during serialization.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

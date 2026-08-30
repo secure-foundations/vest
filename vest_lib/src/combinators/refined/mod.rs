@@ -1,4 +1,6 @@
-//! Value refinement and constant-value combinators.
+//! Predicate refinement and constant-value formats.
+//!
+//! [`Refined`] keeps only values satisfying a predicate. [`Const`] fixes that value and is commonly used for static tags or discriminants.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

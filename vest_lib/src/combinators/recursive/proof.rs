@@ -160,7 +160,7 @@ pub trait NonMalleableRecBody: SafeParserRecBody + SoundParserRecBody where
 }
 
 /// DPS serialize-parse roundtrip preservation for recursive bodies.
-/// Similar to [`Star`], the body must also be [`NonTailFmt`].
+/// Similar to [`Star`](crate::combinators::Star), the body must also be [`NonTailFmt`].
 pub trait SPRoundTripDpsRecBody: NonTailFmtRecBody where Self::Body: SPRoundTripDps + NonTailFmt {
     proof fn lemma_body_sp_roundtrip_dps_inv_preservation(
         &self,

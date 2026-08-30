@@ -93,27 +93,46 @@ impl<T: DeepView + ?Sized, S> SerializerExt<T> for S where
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+/// Why a value does not satisfy a format's specification.
 pub enum ComplianceErrorKind {
+    /// A stored or derived length does not match the corresponding value.
     LengthInconsistent,
+    /// A tag is outside the domain accepted by the format.
     InvalidTag,
+    /// A [`Refined`](crate::combinators::Refined) predicate rejected the value.
     PredicateFailed,
+    /// A conditional combinator is disabled for this value.
     CondRejected,
+    /// A recursive value exceeds the format's configured recursion limit.
     RecursionLimitExceeded,
+    /// No branch of a choice accepts the value.
     InvalidChoice,
+    /// A format-specific consistency error.
     Custom(&'static str),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+/// Top-level reason that preparation failed.
 pub enum PreSerializeErrorKind {
+    /// The exact serialized length cannot be represented by `usize`.
     LengthTooLarge,
+    /// The value is not accepted by the format.
     NotCompliant(ComplianceErrorKind),
 }
 
 #[derive(Debug, PartialEq, Eq)]
+/// Error returned by [`Prepare::prepare`].
+///
+/// `failed_format` identifies the innermost named format that attached
+/// context. With the `alloc` feature, `format_stack` retains the complete
+/// format trace.
 pub struct PreSerializeError {
+    /// The underlying failure category.
     pub kind: PreSerializeErrorKind,
+    /// The innermost named format that reported the failure, if available.
     pub failed_format: Option<&'static str>,
     #[cfg(feature = "alloc")]
+    /// Nested format names collected while propagating the error.
     pub format_stack: Vec<&'static str>,
 }
 
@@ -129,6 +148,7 @@ impl Clone for PreSerializeError {
 }
 
 impl PreSerializeError {
+    /// Creates an error without attached format context.
     pub fn new(kind: PreSerializeErrorKind) -> Self {
         Self {
             kind,
@@ -138,18 +158,22 @@ impl PreSerializeError {
         }
     }
 
+    /// Creates a serialized-length overflow error.
     pub fn length_too_large() -> Self {
         Self::new(PreSerializeErrorKind::LengthTooLarge)
     }
 
+    /// Creates a value-compliance error.
     pub fn not_compliant(kind: ComplianceErrorKind) -> Self {
         Self::new(PreSerializeErrorKind::NotCompliant(kind))
     }
 
+    /// Creates a format-specific value-compliance error.
     pub fn custom(msg: &'static str) -> Self {
         Self::new(PreSerializeErrorKind::NotCompliant(ComplianceErrorKind::Custom(msg)))
     }
 
+    /// Adds a named format to the error's propagation trace.
     pub fn push_format(self, current_format: &'static str) -> Self {
         let mut err = self;
         if err.failed_format.is_none() {
@@ -162,10 +186,12 @@ impl PreSerializeError {
         err
     }
 
+    /// Returns the innermost named format that attached context.
     pub fn failed_format(&self) -> Option<&'static str> {
         self.failed_format
     }
 
+    /// Returns the collected format trace, or an empty slice without `alloc`.
     pub fn format_trace(&self) -> &[&'static str] {
         #[cfg(feature = "alloc")]
         { self.format_stack.as_slice() }
@@ -174,11 +200,17 @@ impl PreSerializeError {
     }
 }
 
+/// Checks that a value can be serialized and computes its exact output length.
+///
+/// Call this before allocating an output or invoking [`SerializerExt::serialize`]
+/// on a value whose consistency has not already been established.
 pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: DeepView + ?Sized {
+    /// Extra invariant required by the executable preparation implementation.
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
+    /// Validates `v` and returns its exact serialized length.
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>)
         requires
             self.exec_inv(),
@@ -190,11 +222,17 @@ pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: D
     ;
 }
 
+/// Computes the exact serialized length of a value already known to fit `usize`.
+///
+/// Unlike [`Prepare`], this operation does not check the format's consistency
+/// predicate. Use `Prepare::prepare` for untrusted or newly constructed values.
 pub trait ByteLen<T> where Self: SpecByteLen<T = T::V>, T: DeepView + ?Sized {
+    /// Extra invariant required by the executable length implementation.
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
+    /// Returns the exact number of bytes produced by serialization.
     fn length(&self, v: &T) -> (len: usize)
         requires
             self.exec_inv(),

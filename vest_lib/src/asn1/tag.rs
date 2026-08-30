@@ -191,7 +191,7 @@ pub const fn tag_num_from_uint(num: u64) -> TagNumber
 
 /// Return the numeric identifier represented by an ASN.1 tag number.
 ///
-/// This is the executable counterpart of [`tag_num_to_uint`].
+/// This is the executable counterpart of the `tag_num_to_uint` specification.
 #[verifier::allow_in_spec]
 pub const fn tag_number_value(number: TagNumber) -> UInt
     returns

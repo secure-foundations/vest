@@ -1,4 +1,7 @@
-//! Type transformation combinator.
+//! Semantic type transformations over structural combinator values.
+//!
+//! [`Mapped`] carries full round trips when its mapper is lossless and sound;
+//! [`TryMap`] also admits a fallible executable conversion.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

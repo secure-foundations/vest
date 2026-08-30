@@ -1,4 +1,7 @@
-//! Fixed- and variable-length byte sequence combinators.
+//! Fixed- and value-dependent byte sequence combinators.
+//!
+//! Use [`Fixed`] for a compile-time length, [`Varied`] for a runtime length,
+//! and [`ExactLen`] to confine another format to a bounded byte region.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

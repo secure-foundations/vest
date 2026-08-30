@@ -1,4 +1,7 @@
-//! Tail-position combinators.
+//! Formats that consume the remaining input.
+//!
+//! [`Tail`] borrows all remaining bytes. [`Eof`] accepts only an empty input
+//! and is used to make complete-consumption requirements explicit.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

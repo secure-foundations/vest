@@ -1,4 +1,7 @@
-//! Optional field combinators.
+//! Optional values selected by whether a child parser matches.
+//!
+//! [`Optional`] maps absence to `None`; its unambiguity and non-malleability
+//! depend on the optional child being distinguishable from what follows.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

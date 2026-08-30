@@ -1,4 +1,7 @@
-//! Sequential composition discarding the prefix.
+//! Sequential composition that discards a prefix value.
+//!
+//! [`Preceded`] has the same wire order as a pair but exposes only the second
+//! semantic value. The prefix must still be reconstructible for serialization.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

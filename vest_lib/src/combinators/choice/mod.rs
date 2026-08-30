@@ -1,4 +1,7 @@
-//! Ordered choice combinators.
+//! Alternative formats and their ambiguity conditions.
+//!
+//! [`Choice`] uses a structural sum and requires disjoint parse domains for
+//! round trips. [`Alt`] is defined over a single value type and is malleable by default.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.
@@ -58,7 +61,7 @@ impl<A: Clone, B: Clone> Clone for Choice<A, B> {
 /// ## Malleability
 ///
 /// This combinator introduces malleability by default.
-/// Non-malleability can be recovered if `A` is [`DisjointFrom`](crate::core::spec::DisjointFrom) `B`.
+/// Non-malleability can be recovered if `A` is disjoint from `B` (see `disjoint_values`).
 #[derive(Copy)]
 pub struct Alt<A, B, const NONDETERMINISTIC: bool = false>(pub A, pub B);
 

@@ -7,8 +7,13 @@ use super::ParseError;
 
 verus! {
 
+/// Result returned by an executable parser.
+///
+/// On success, the `usize` is the number of input bytes consumed and `O` is the
+/// parsed value. A parser may leave a suffix of its input unconsumed.
 pub type PResult<O> = Result<(usize, O), ParseError>;
 
+/// Relates an executable parse result to its pure [`SpecParser`] result.
 pub open spec fn parse_matches_spec<O: DeepView>(
     r: PResult<O>,
     spec_parse: Option<(int, O::V)>,
@@ -18,13 +23,24 @@ pub open spec fn parse_matches_spec<O: DeepView>(
     &&& r matches Ok((n, v)) ==> spec_parse == Some((n as int, v.deep_view()))
 }
 
+/// An executable parser proved equivalent to a pure [`SpecParser`].
+///
+/// `Input` is normally `&[u8]`. Successful parsing returns both the consumed
+/// byte count and a value whose deep view is exactly the value returned by
+/// `SpecParser::spec_parse`.
 pub trait Parser<Input: View<V = Seq<u8>>>: SpecParser {
+    /// Executable value returned by this parser.
     type PT: DeepView<V = Self::PVal>;
 
+    /// Extra invariant required by this parser's executable implementation.
+    ///
+    /// Most formats leave this as `true`; functional and recursive
+    /// parser callbacks use it to connect executable code to their specifications.
     open spec fn exec_inv(&self) -> bool {
         true
     }
 
+    /// Parses a prefix of `ibuf`.
     fn parse(&self, ibuf: &Input) -> (r: PResult<Self::PT>)
         requires
             self.exec_inv(),
@@ -131,62 +147,4 @@ pub proof fn lemma_ref_safe_productive_inv<P>(parser: &P) where P: Productive
 {
 }
 
-// pub trait Parser: SpecParser {
-//     type Ty<'i>: DeepView<V = Self::PVal>;
-//     fn parse<'i, I: InputBuf>(&self, ibuf: &'i I) -> (r: Result<(usize, Self::Ty<'i>), ParseError>)
-//         ensures
-//             r is Ok <==> self.spec_parse(ibuf@) is Some,
-//             r is Err <==> self.spec_parse(ibuf@) is None,
-//             r matches Ok((n, v)) ==> self.spec_parse(ibuf@) == Some((n as int, v.deep_view())),
-//     ;
-// }
-// impl<Input, Ty, Spec, Exec> SpecParser for (Spec, Exec) where
-//     Spec: SpecParser,
-//     Exec: Fn(Input) -> Result<(usize, Ty), ParseError>,
-//  {
-//     type PVal = Spec::PVal;
-//     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-//         let (spec, exec) = self;
-//         spec.spec_parse(ibuf)
-//     }
-// }
-// impl<Input, Ty, Spec, Exec> Parser for (Spec, Exec) where
-//     Spec: SpecParser,
-//     Exec: Fn(Input) -> Result<(usize, Ty), ParseError>,
-//     Ty: DeepView<V = Spec::PVal>,
-//  {
-//     type Ty<'i> = Ty;
-//     fn parse<'i, I: InputBuf>(&self, ibuf: &'i I) -> (r: Result<(usize, Self::Ty<'i>), ParseError>)
-//         ensures
-//             r is Ok <==> self.spec_parse(ibuf@) is Some,
-//             r is Err <==> self.spec_parse(ibuf@) is None,
-//             r matches Ok((n, v)) ==> self.spec_parse(ibuf@) == Some((n as int, v.deep_view())),
-//     {
-//         let (spec, exec) = self;
-//         exec(ibuf)
-//     }
-// }
-// type ParserFnWithSpec<Input, Ty, Spec, Exec> where
-//     Spec: SpecParser,
-//     Exec: Fn(Input) -> Result<(usize, Ty), ParseError>,
-//  = (Spec, Exec);
-// pub trait VerifiedParser where
-//     Self: Parser + SpecParser,
-//     for <'i>Self::Ty<'i>: DeepView<V = Self::PVal>,
-//  {
-//      proof fn exec_spec_equiv<'i, I: InputBuf>(&self, ibuf: &'i I) -> (r: Result<(usize, Self::Ty<'i>), ParseError>)
-//         ensures
-//             r is Ok <==> self.spec_parse(ibuf@) is Some,
-//             r is Err <==> self.spec_parse(ibuf@) is None,
-//             r matches Ok((n, v)) ==> self.spec_parse(ibuf@) == Some((n as int, v.deep_view())),
-//     ;
-// }
-// pub trait Validator {
-//     type Err;
-//     fn validate<'i, I: InputBuf>(&self, ibuf: &'i I) -> Result<usize, ParseError<Self::Err>>;
-// }
-// pub trait Deserializer {
-//     type Ty<'i>: DeepView;
-//     fn deserialize<'i, I: InputBuf>(&self, ibuf: &'i I) -> Self::Ty<'i>;
-// }
 } // verus!

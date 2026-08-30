@@ -89,13 +89,20 @@ impl<C: SPRoundTripDps + GoodSerializer + EquivSerializers> SPRoundTrip for C {
 }
 
 
+/// Serializer unambiguity (injectivity on consistent values).
+///
+/// Two different consistent values cannot serialize to the same bytes. This
+/// rules out ambiguity in the value-to-wire direction and follows
+/// automatically from [`SPRoundTrip`].
 pub trait NonAmbiguous where
     Self: Consistency + SpecSerializer<SVal = Self::Val>
 {
+    /// Side conditions needed by the injectivity proof.
     open spec fn nonamb_inv(&self) -> bool {
         true
     }
 
+    /// Proves that equal serializations imply equal values.
     proof fn lemma_serialize_injective(&self, v1: Self::Val, v2: Self::Val)
         requires
             self.nonamb_inv(),
@@ -105,6 +112,7 @@ pub trait NonAmbiguous where
             self.spec_serialize(v1) == self.spec_serialize(v2) ==> v1 == v2
     ;
 
+    /// Equivalent contrapositive: distinct values have distinct serializations.
     proof fn corollary_serialize_injective_contrapositive(&self, v1: Self::Val, v2: Self::Val)
         requires
             self.nonamb_inv(),
@@ -344,7 +352,7 @@ impl<Body> StrictCombinator for Body where
 /// [U8](crate::combinators::uints::U8)/[U16Le](crate::combinators::uints::U16Le)/[U32Le](crate::combinators::uints::U32Le),
 /// [FixWith](crate::combinators::recursive::FixWith), [Empty](crate::combinators::marker::Empty), and [Void](crate::combinators::marker::Void).
 ///
-/// In addition, any dedrived/composed combinator that is proven to satisfy [`Leaf::leaf_inv`] can also be marked as a leaf combinator.
+/// In addition, any derived/composed combinator proven to satisfy `Leaf::leaf_inv` can also be marked as a leaf combinator.
 pub trait Leaf:
     SafeParser +
     GoodSerializer +

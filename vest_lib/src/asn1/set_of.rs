@@ -1,6 +1,6 @@
 //! ASN.1 DER `SET OF` contents.
 //!
-//! The enclosing universal tag and DER length are supplied by [`super::ASN1Fmt`]. Elements are
+//! The enclosing universal tag and DER length are supplied by [`ASN1Fmt`](crate::asn1::ASN1Fmt). Elements are
 //! ordered by their complete encodings, as required by X.690 section 11.6.
 use super::DerOrd;
 use crate::combinators::{star::spec::*, Star};

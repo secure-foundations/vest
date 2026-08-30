@@ -61,7 +61,7 @@ impl UtcTime {
     }
 }
 
-/// Helper spec function to validate the date and time digit fields of a UTCTime string (YYMMDDhhmm[ss]).
+/// Helper spec function to validate the date and time digit fields of a UTCTime string (`YYMMDDhhmm[ss]`).
 pub open spec fn utc_time_fields_wf(bytes: Seq<u8>, has_seconds: bool) -> bool {
     let second_end = if has_seconds {
         12

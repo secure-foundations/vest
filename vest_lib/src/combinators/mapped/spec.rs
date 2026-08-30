@@ -38,7 +38,7 @@ pub trait SpecMapper {
     }
 }
 
-/// A [`Mapper`] that can be lossy (i.e., malleable).
+/// A [`SpecMapper`] that can be lossy (i.e., malleable).
 pub trait LossyMapper: SpecMapper {
     /// A sound mapper should satisfy `spec_map(spec_map_rev(o)) == o` for all well-formed `o`.
     /// That is, once `Self::Out` values are mapped to `Self::In`, `spec_map` should map them back to the original `Self::Out` values.
@@ -57,7 +57,7 @@ pub trait LossyMapper: SpecMapper {
     ;
 }
 
-/// A [`Mapper`] that is lossless (i.e., non-malleable).
+/// A [`SpecMapper`] that is lossless (i.e., non-malleable).
 pub trait LosslessMapper: LossyMapper {
     /// A lossless mapper should satisfy `spec_map_rev(spec_map(i)) == i` for all well-formed `i`.
     /// That is, `spec_map` should be injective on well-formed `Self::In` values, and `spec_map_rev` should be its inverse.

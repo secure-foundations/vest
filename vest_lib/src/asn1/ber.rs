@@ -1,4 +1,9 @@
-//! BER constructed-value formats and notation-style aliases.
+//! BER constructed-value formats and notation-style constructors.
+//!
+//! Recursive OCTET STRING, BIT STRING, and restricted-string formats accept
+//! definite and indefinite encodings for parsing
+//! and normalize to definite encodings for serialization.
+//! SEQUENCE and SEQUENCE OF similarly accept both length forms for parsing and normalize to definite for serialization.
 use crate::asn1::{
     ASN1Fmt, BmpStringFmt, BoolFmt, Class, EnumeratedFmt, Ia5StringFmt, IntegerFmt, NullFmt,
     NumericStringFmt, ObjectIdentifierFmt, PrintableStringFmt, RealFmt, TagFmt, TeletexStringFmt,

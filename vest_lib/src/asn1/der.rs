@@ -1,4 +1,8 @@
-//! DER universal formats and notation-style aliases.
+//! Canonical DER universal formats and notation-style constructors.
+//!
+//! Constants such as `INTEGER`, `OCTET_STRING`, and `SEQUENCE` combine ASN.1
+//! tags with canonical content formats. DER rejects alternative BER encodings
+//! and therefore supports non-malleability when its children do.
 use super::modifiers::{defaulted, explicit_tag};
 pub use super::modifiers::{
     implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION,

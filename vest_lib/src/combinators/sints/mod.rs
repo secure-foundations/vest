@@ -1,4 +1,7 @@
 //! Fixed-width signed integer combinators.
+//!
+//! These parse and serialize two's-complement integers in explicit little- or
+//! big-endian byte order.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

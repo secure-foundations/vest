@@ -1,4 +1,7 @@
-//! Bounded fixpoint combinator for recursive formats.
+//! Bounded fixpoint combinator for recursive and mutually recursive formats.
+//!
+//! Body proof traits state preservation of
+//! each invariant under the inductive hypothesis.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

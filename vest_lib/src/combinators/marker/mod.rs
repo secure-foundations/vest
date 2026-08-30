@@ -1,4 +1,7 @@
-//! Marker combinators: unit (`Empty`) and uninhabitable (`Void`).
+//! Marker combinators for empty and impossible wire languages.
+//!
+//! [`Empty`] accepts the empty prefix and produces `()`. [`Void`] accepts
+//! nothing and is useful for eliminating impossible choice branches.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

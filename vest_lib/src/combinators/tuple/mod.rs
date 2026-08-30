@@ -1,5 +1,7 @@
-//! Sequential composition for pairs.
-//! N-ary formats are built by nesting: `Pair(A, Pair(B, C))`.
+//! Sequential and dependent composition.
+//!
+//! [`Pair`] parses two formats in order; N-ary formats nest it as
+//! `Pair(A, Pair(B, C))`. [`Bind`] chooses the second format based on the first's value.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

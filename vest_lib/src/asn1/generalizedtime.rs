@@ -107,7 +107,7 @@ impl<'a> GeneralizedTime<'a> {
     }
 }
 
-/// Helper spec function to validate the prefix date-time fields (YYYYMMDDhh[mm[ss]]).
+/// Helper spec function to validate the prefix date-time fields (`YYYYMMDDhh[mm[ss]]`).
 pub open spec fn generalized_fields_wf(bytes: Seq<u8>, main_end: usize) -> bool {
     &&& (main_end == 10 || main_end == 12 || main_end == 14)
     &&& digits(bytes, 0, main_end as int)
@@ -352,7 +352,7 @@ pub fn generalized_zonestart(bytes: &[u8]) -> (zone_start: usize)
     }
 }
 
-/// Spec function identifying the end index of the main date-time prefix (YYYYMMDDhh[mm[ss]]).
+/// Spec function identifying the end index of the main date-time prefix (`YYYYMMDDhh[mm[ss]]`).
 pub open spec fn generalized_main_end(bytes: Seq<u8>, zone_start: usize) -> usize {
     if generalized_candidate_wf::<false>(bytes, 10, zone_start) {
         10

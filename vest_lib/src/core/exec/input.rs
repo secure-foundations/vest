@@ -3,7 +3,9 @@ use vstd::{prelude::*, slice::slice_subrange};
 
 verus! {
 
+/// A byte input whose ordinary and deep views denote the same byte sequence.
 pub trait InputSlice: View<V = Seq<u8>> + DeepView<V = Seq<u8>> {
+    /// Proves that the two logical views of this input agree.
     proof fn deep_view_eq_view(&self)
         ensures
             self.deep_view() == self@,
@@ -71,47 +73,4 @@ impl<'input> InputBuf for &'input [u8] {
     }
 }
 
-// pub trait InputBuf: View<V = Seq<u8>> {
-//     type Slice<'input>: DeepView<V = Seq<u8>> where Self: 'input;
-//     /// The length of the buffer.
-//     fn len(&self) -> (len: usize)
-//         ensures
-//             len == self@.len(),
-//     ;
-//     /// A slice-like view of the range `[i, j)` of the buffer.
-//     fn subrange<'input>(&'input self, i: usize, j: usize) -> (sliced: Self::Slice<'input>)
-//         requires
-//             0 <= i <= j <= self@.len(),
-//         ensures
-//             sliced@ == self@.subrange(i as int, j as int),
-//     ;
-//     /// A view of the first `n` bytes of the buffer.
-//     fn take<'input>(&'input self, n: usize) -> (taken: Self::Slice<'input>)
-//         requires
-//             n <= self@.len(),
-//         ensures
-//             taken@ == self@.take(n as int),
-//     {
-//         self.subrange(0, n)
-//     }
-//     /// A view of the buffer with the first `n` bytes skipped.
-//     fn skip<'input>(&'input self, n: usize) -> (skipped: Self::Slice<'input>)
-//         requires
-//             n <= self@.len(),
-//         ensures
-//             skipped@ == self@.skip(n as int),
-//     {
-//         self.subrange(n, self.len())
-//     }
-// }
-// impl InputBuf for [u8] {
-//     type Slice<'input> = &'input [u8];
-//     fn len(&self) -> (len: usize) {
-//         self.len()
-//     }
-//     #[verifier::external_body]
-//     fn subrange<'input>(&'input self, i: usize, j: usize) -> Self::Slice<'input> {
-//         &self[i..j]
-//     }
-// }
 } // verus!

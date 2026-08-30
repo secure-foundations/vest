@@ -268,7 +268,7 @@ pub proof fn lemma_from_be_bytes_prepend(bytes: Seq<u8>, b: u8)
 }
 
 /// Executable loop-based big-endian base-256 decoding into `usize`.
-/// Verified against [`nat_from_be_bytes`].
+/// Verified against the `nat_from_be_bytes` specification.
 pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
     requires
         bytes.len() <= size_of_usize(),
@@ -313,9 +313,10 @@ pub fn u64_from_be_bytes(bytes: &[u8]) -> (r: u64)
 }
 
 /// Executable big-endian base-256 encoding from `usize`.
-/// Verified against [`nat_to_be_bytes`].
+/// Verified against the `nat_to_be_bytes` specification.
 ///
-/// TODO: Optimize this function?
+/// This allocation-backed compatibility helper builds the result recursively.
+/// Serialization hot paths should prefer [`usize_to_be_bytes_in_place`].
 #[cfg(feature = "alloc")]
 pub fn usize_to_be_bytes_exec(v: usize) -> (buf: Vec<u8>)
     ensures
@@ -391,7 +392,7 @@ pub fn u64_to_be_bytes(v: u64) -> (buf: Vec<u8>)
 }
 
 /// Executable loop-based byte-length computation.
-/// verified against [`nat_to_be_bytes`].
+/// verified against the `nat_to_be_bytes` specification.
 pub fn usize_to_be_bytes_len(v: usize) -> (len: usize)
     ensures
         len == nat_to_be_bytes(v as nat).len(),

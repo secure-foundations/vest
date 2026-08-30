@@ -1,4 +1,4 @@
-//! Broadcast lemmas establishing [`disjoint_domains`](crate::core::spec::disjoint_domains)
+//! Broadcast lemmas establishing `disjoint_domains`
 //! for common combinator compositions.
 use super::mapped::spec::{BiMap, SpecMap, SpecMapper};
 use super::*;
@@ -50,7 +50,7 @@ pub broadcast proof fn lemma_disjoint_const<Inner: SpecParser>(
     reveal(disjoint_domains);
 }
 
-/// Two [`WithPrefixTag`] parsers with the same tag parser but different values are disjoint.
+/// Two [`PrefixTagged`](crate::combinators::PrefixTagged) parsers with the same tag parser but different values are disjoint.
 pub broadcast proof fn lemma_disjoint_prefix_tagged<
     Tg: SpecByteLen + SpecParser<PVal = Tg::T>,
     A: SpecParser,

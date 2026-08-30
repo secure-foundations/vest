@@ -1,4 +1,9 @@
-//! Zero-or-more repetition combinators.
+//! Repetition into vectors/sequences.
+//!
+//! [`Star`] stops when its child no longer matches;
+//! [`RepeatTillEnd`](crate::combinators::RepeatTillEnd) requires a
+//! bounded region to be exhausted. Their child must be productive so every
+//! successful iteration consumes input.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

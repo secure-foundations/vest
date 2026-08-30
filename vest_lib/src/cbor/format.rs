@@ -1,4 +1,8 @@
-//! Recursive generic-CBOR format specifications and implementations.
+//! Recursive generic-CBOR format specifications, proofs, and execution.
+//!
+//! [`CborFmt`] uses [`FixWith`] for its pure
+//! recursive grammar and bounded executable parsing. Its `DET` parameter
+//! selects general or deterministic head and container encodings.
 use alloc::{boxed::Box, string::String, vec::Vec};
 
 use crate::asn1::Utf8StringFmt;

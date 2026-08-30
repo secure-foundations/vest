@@ -1,4 +1,7 @@
-//! Conditional combinator: enabled or disabled by a boolean flag.
+//! Conditional format controlled by a boolean flag.
+//!
+//! A disabled [`Cond`] accepts and serializes no values; an enabled one
+//! delegates its specifications, executable operations, and proofs to its child.
 /// Executable trait implementations for this combinator.
 pub mod exec;
 /// Correctness proofs for this combinator.

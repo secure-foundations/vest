@@ -1,4 +1,7 @@
-//! Dependent sequential combinators that omit the header value from the body and recover it during serialization.
+//! Dependent sequencing that omits a parsed header from the public value.
+//!
+//! [`Implicit`] selects a body from a header like [`Bind`](crate::combinators::Bind),
+//! but reconstructs that header from the body during serialization.
 /// Correctness proofs for this combinator.
 pub mod proof;
 /// Specification trait implementations for this combinator.

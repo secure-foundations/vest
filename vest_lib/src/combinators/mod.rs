@@ -42,11 +42,12 @@
 //! | [`Permute3<A, B, C>`] | Accepts any of the 6 orders of three components (malleable) |
 //! | [`Permute4<A, B, C, D>`] | Accepts any of the 24 orders of four components (malleable) |
 //! | [`Permute5<A, B, C, D, E>`] | Accepts any of the 120 orders of five components (malleable) |
-//! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::Mapper) |
+//! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::SpecMapper) |
 //! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
 //! | [`Const<Inner, T>`] | Matches and returns a specific constant value |
-//! | [`Tagged<T, Of>`] | Same as `WithPrefixTag<T, Of>` (for convenience) |
+//! | [`PrefixTagged<Tg, T, Of>`] | A format preceded by a tag value |
+//! | [`SuffixTagged<Of, Tg, T>`] | A format followed by a tag value |
 //! | [`Cond<Inner>`] | Boolean-gated combinator (most often used in branches of `Choice` / `Alt`) |
 //! | [`Named<Inner>`] | Like `Inner`, but annotates runtime parse errors with a static format name |
 //!
@@ -55,20 +56,6 @@
 //! | Combinator | Description |
 //! |---|---|
 //! | [`Bind<A, B>`] | Like `Pair<A, B>`, but `B` can depend on `A`'s value |
-//! | [`Implicit<A, B>`] | Like `Bind<A, B>`, but omits `A`'s value |
-//!
-//! ## Dependent family of combinators
-//!
-//! Each combinator in this family explicitly declares the value(s) it depends on during parsing, and provides a recovery function
-//! to reconstruct those values during serialization (see [`DepCombinator`] for details).
-//!
-//! | Combinator | Dependency | Description |
-//! |---|---|---|
-//! | [`dependent::VLData<Len>`] | Any value that can be used [as a length parameter](AsLen) | Length-prefixed raw bytes |
-//! | [`dependent::VLDataOf<Len, C>`] | Same as `VLData` | Length-prefixed bytes interpreted by format `C` |
-//! | [`dependent::TVOr<Tag, C, Rest>`] | Any value that can be used as a tag | A chain of tagged unions |
-//! | [`dependent::Uninhabited<Tag>`] | Any value | End of a tagged union chain |
-//! | [`dependent::TLVOf<Tag, Len, Body>`] | A pair of `(Tag, Len)` | A TLV (tag-length-value) format |
 //!
 //! # Tail combinators
 //!
@@ -119,7 +106,11 @@ pub use bits::Bits;
 pub use bytes::{AndThen, ExactLen, Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
-pub use implicit::{DepCombinator, Implicit, KVFormat, TVLeaf, TVOr, VoidTag};
+pub use implicit::Implicit;
+// Not part of the documented public API. These are still reachable because the `vest_dev`
+// experiments depend on them; they are hidden so they do not appear in the published catalog.
+#[doc(hidden)]
+pub use implicit::{DepCombinator, KVFormat, TLVal, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
 pub use mapped::{Mapped, TryMap};
 pub use marker::{exec::ExecNever, Empty, Void};
