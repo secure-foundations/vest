@@ -1,1 +1,0 @@
-const BAR: [u16; 4] = "abcd"

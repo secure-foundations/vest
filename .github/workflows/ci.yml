@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-verify:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 120
     strategy:
       matrix:
         include:
@@ -119,7 +119,7 @@ jobs:
       - name: Add tool paths
         run: |
           echo "${{ github.workspace }}/verus" >> "$GITHUB_PATH"
-          echo "${{ github.workspace }}/vest-dsl/target/release" >> "$GITHUB_PATH"
+          echo "${{ github.workspace }}/vest2/target/release" >> "$GITHUB_PATH"
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -127,14 +127,39 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            vest/target
+            vest2/target
             vest_lib2/target
-            vest-dsl/target
-            vest-examples/target
+            vestasn1/target
+            vestasn1/test/target
+            vest_dev/target
+            vest_derive/target
           key: ${{ runner.os }}-${{ matrix.verus-release }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.verus-release }}-cargo-
             ${{ runner.os }}-cargo-
+
+      - name: DSL compiler tests
+        working-directory: ./vest2
+        run: cargo test
+
+      - name: ASN.1 frontend tests
+        working-directory: ./vestasn1
+        run: cargo test
+
+      - name: Derive tests
+        working-directory: ./vest_derive
+        run: cargo test
+
+      - name: Regenerate checked-in Vest output
+        working-directory: ./vest2/test
+        run: make vest
+
+      - name: Regenerate checked-in ASN.1 output
+        working-directory: ./vestasn1/test
+        run: make generate
+
+      - name: Generated output is current
+        run: git diff --exit-code
 
       - name: vest_lib2 - cargo check (core only)
         working-directory: ./vest_lib2
@@ -160,47 +185,19 @@ jobs:
         working-directory: ./vest_lib2
         run: cargo verus verify -- --expand-errors
 
-      - name: vest - cargo verus build
-        working-directory: ./vest
-        run: cargo verus build -- --expand-errors --rlimit 800000
+      - name: Vest generated regression corpus - verify
+        working-directory: ./vest2/test
+        run: cargo verus verify -- --expand-errors
 
-      - name: vest - cargo build --release
-        working-directory: ./vest
-        run: cargo build --release
+      - name: ASN.1 generated regression corpus - verify
+        working-directory: ./vestasn1/test
+        run: cargo verus verify -- --expand-errors
 
-      - name: vest-dsl - cargo build --release
-        working-directory: ./vest-dsl
-        run: cargo build --release
+      - name: Development formats - verify
+        working-directory: ./vest_dev
+        run: cargo verus verify -- --expand-errors
 
-      - name: vest-dsl - regression tests
-        working-directory: ./vest-dsl/test
-        run: make VEST_DSL=../target/release/vest
-
-      - name: vest-examples - cargo verus verify
-        working-directory: ./vest-examples
-        run: cargo verus verify --workspace --exclude tls_dsl -- --expand-errors --rlimit 800000
-
-      - name: vest-examples - cargo verus verify tls_dsl
-        id: verus_tls_dsl
-        continue-on-error: true
-        working-directory: ./vest-examples
-        run: cargo verus verify --package tls_dsl -- --expand-errors --rlimit 800000
-
-      - name: Warn on tls_dsl failure
-        if: always() && steps.verus_tls_dsl.outcome == 'failure'
-        run: echo "::warning::tls_dsl verification failed (verification stability issue)"
-
-      - name: Download benchmark data
+      - name: Compile benchmarks
         run: |
-          mkdir -p vest-examples/bitcoin_dsl/benches/data
-          curl -fL --retry 5 --retry-delay 2 --retry-all-errors \
-            -o vest-examples/bitcoin_dsl/benches/data/sampled_blocks.txt \
-            https://github.com/y1ca1/vest/releases/download/v0.1.2/sampled_blocks.txt
-
-      - name: vest-examples/tls_dsl - cargo bench
-        working-directory: ./vest-examples/tls_dsl
-        run: cargo bench --no-run
-
-      - name: vest-examples/bitcoin_dsl - cargo bench
-        working-directory: ./vest-examples/bitcoin_dsl
-        run: cargo bench --no-run
+          cargo bench --manifest-path vest2/test/Cargo.toml --no-run
+          cargo bench --manifest-path vest_dev/Cargo.toml --no-run

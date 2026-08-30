@@ -1,4 +1,0 @@
-foo = {
-  @len: u8,
-  payload: [u16; @len] >>= Vec<u64>,
-}

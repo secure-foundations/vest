@@ -1,5 +1,0 @@
-num = u8
-
-bad_constraint = {
-  field: num | A,
-}

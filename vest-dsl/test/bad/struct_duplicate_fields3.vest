@@ -1,4 +1,0 @@
-fmt = {
-  const f1: u8 = 10,
-  const f1: u8 = 20,
-}
