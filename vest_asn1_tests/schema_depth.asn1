@@ -1,4 +1,4 @@
--- Depth stress fixture used by the vestasn1 scalability experiments.
+-- Depth stress fixture used by the vest_asn1 scalability experiments.
 -- Both chains have one nested component per definition.
 Depth18 DEFINITIONS EXPLICIT TAGS ::= BEGIN
     Seq0 ::= BOOLEAN

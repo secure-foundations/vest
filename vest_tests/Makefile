@@ -2,7 +2,7 @@
 
 CARGO        := cargo
 ROOT_MANIFEST := ../vest/Cargo.toml
-VEST_DSL     := ../vest/target/debug/vest2
+VEST_DSL     := ../vest/target/debug/vest
 VERUSFMT     := verusfmt
 # selected .vest files in the src directory
 VEST_FILES   := ./src/codegen.vest ./src/elab.vest ./src/enums.vest ./src/enum_constraints.vest ./src/josh.vest ./src/matches.vest ./src/opt.vest ./src/repeat.vest ./src/length_expr.vest ./src/bits.vest ./src/bits_little.vest ./src/tlv.vest ./src/tls.vest ./src/bitcoin.vest ./src/anonymous_nested.vest ./src/nested_access.vest ./src/mutual_rec.vest ./src/nested_bytes.vest ./src/stress_depth.vest ./src/stress_width.vest
@@ -15,7 +15,7 @@ BAD_VEST_FILES := $(wildcard ./bad/*.vest)
 all: vest bad verus
 
 build-vest:
-	$(CARGO) build --manifest-path $(ROOT_MANIFEST) -p vest2
+	$(CARGO) build --manifest-path $(ROOT_MANIFEST) -p vest
 
 vest: build-vest
 	@for file in $(VEST_FILES); do \

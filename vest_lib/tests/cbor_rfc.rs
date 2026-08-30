@@ -1,4 +1,4 @@
-//! RFC 8949 conformance tests for [`vest_lib2::cbor`], assisted by Claude Opus 5.
+//! RFC 8949 conformance tests for [`vest_lib::cbor`], assisted by Claude Opus 5.
 //!
 //! Vectors are taken verbatim from RFC 8949 Appendix A (encoded data item
 //! examples), Appendix F.1 (data items that are *not* well-formed), and the
@@ -10,8 +10,8 @@
 //! silently.
 #![cfg(feature = "alloc")]
 
-use vest_lib2::cbor::{CborBytes, CborFloat, CborFmt, CborText, CborValue, MAX_RECURSION_DEPTH};
-use vest_lib2::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
+use vest_lib::cbor::{CborBytes, CborFloat, CborFmt, CborText, CborValue, MAX_RECURSION_DEPTH};
+use vest_lib::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
 
 const GENERAL: bool = false;
 const DET: bool = true;

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 fn main() {
     if let Err(error) = run() {
-        eprintln!("vestasn1: {error}");
+        eprintln!("vest_asn1: {error}");
         std::process::exit(1);
     }
 }
@@ -15,7 +15,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut args = env::args_os().skip(1);
     let mut input = None;
     let mut output = None;
-    let mut encoding_rules = vestasn1::EncodingRules::Der;
+    let mut encoding_rules = vest_asn1::EncodingRules::Der;
     let mut definition_rules = BTreeMap::new();
 
     while let Some(arg) = args.next() {
@@ -32,17 +32,17 @@ fn run() -> Result<(), Box<dyn Error>> {
         if arg == "--rules" {
             let value = args.next().ok_or("expected `der` or `ber` after --rules")?;
             encoding_rules = match value.to_str() {
-                Some("der") => vestasn1::EncodingRules::Der,
-                Some("ber") => vestasn1::EncodingRules::Ber,
+                Some("der") => vest_asn1::EncodingRules::Der,
+                Some("ber") => vest_asn1::EncodingRules::Ber,
                 _ => return Err("--rules must be either `der` or `ber`".into()),
             };
             continue;
         }
         if arg == "--der-definition" || arg == "--ber-definition" {
             let rule = if arg == "--der-definition" {
-                vestasn1::EncodingRules::Der
+                vest_asn1::EncodingRules::Der
             } else {
-                vestasn1::EncodingRules::Ber
+                vest_asn1::EncodingRules::Ber
             };
             let name = args
                 .next()
@@ -63,11 +63,11 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let input = input.ok_or("missing ASN.1 input file (try --help)")?;
     let source = fs::read_to_string(&input)?;
-    let options = vestasn1::CodegenOptions { encoding_rules };
+    let options = vest_asn1::CodegenOptions { encoding_rules };
     let generated = if definition_rules.is_empty() {
-        vestasn1::compile_with_options(&source, options)?
+        vest_asn1::compile_with_options(&source, options)?
     } else {
-        vestasn1::compile_with_rule_overrides(&source, options, &definition_rules)?
+        vest_asn1::compile_with_rule_overrides(&source, options, &definition_rules)?
     };
     if let Some(output) = output {
         fs::write(output, generated)?;
@@ -79,8 +79,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 fn print_help() {
     println!(
-        "vestasn1 - generate verified Vest BER or DER formats from ASN.1\n\n\
-         Usage: vestasn1 [OPTIONS] <SCHEMA.asn1>\n\n\
+        "vest_asn1 - generate verified Vest BER or DER formats from ASN.1\n\n\
+         Usage: vest_asn1 [OPTIONS] <SCHEMA.asn1>\n\n\
          Options:\n  -o, --output <FILE>          Write generated Rust to FILE\n      --rules <der|ber>         Select the default rules (default: der)\n      --der-definition <NAME>   Force one definition and its inherited closure to DER\n      --ber-definition <NAME>   Force one definition and its inherited closure to BER\n  -h, --help                   Print help"
     );
 }

@@ -161,27 +161,27 @@ jobs:
       - name: Generated output is current
         run: git diff --exit-code
 
-      - name: vest_lib2 - cargo check (core only)
+      - name: vest_lib - cargo check (core only)
         working-directory: ./vest_lib
         run: cargo check --no-default-features --all-targets
 
-      - name: vest_lib2 - cargo check (alloc only)
+      - name: vest_lib - cargo check (alloc only)
         working-directory: ./vest_lib
         run: cargo check --no-default-features --features alloc --all-targets
 
-      - name: vest_lib2 - cargo test (std)
+      - name: vest_lib - cargo test (std)
         working-directory: ./vest_lib
         run: cargo test
 
-      - name: vest_lib2 - cargo verus verify (core only)
+      - name: vest_lib - cargo verus verify (core only)
         working-directory: ./vest_lib
         run: cargo verus verify --no-default-features -- --expand-errors
 
-      - name: vest_lib2 - cargo verus verify (alloc only)
+      - name: vest_lib - cargo verus verify (alloc only)
         working-directory: ./vest_lib
         run: cargo verus verify --no-default-features --features alloc -- --expand-errors
 
-      - name: vest_lib2 - cargo verus verify (std)
+      - name: vest_lib - cargo verus verify (std)
         working-directory: ./vest_lib
         run: cargo verus verify -- --expand-errors
 

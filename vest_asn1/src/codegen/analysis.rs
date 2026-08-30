@@ -312,13 +312,13 @@ impl<'a> Generator<'a> {
     pub(super) fn unsupported<T>(&self, path: &str, construct: &str) -> Result<T, CodegenError> {
         Err(CodegenError::new(
             path,
-            format!("{construct} has no faithful vest_lib2 ASN.1 backend format yet"),
+            format!("{construct} has no faithful vest_lib ASN.1 backend format yet"),
         ))
     }
 
     pub(super) fn backend_item(&self, rule: EncodingRules, item: &str) -> String {
         if self.mixed_rules {
-            format!("vest_lib2::asn1::{}::{item}", rule.module())
+            format!("vest_lib::asn1::{}::{item}", rule.module())
         } else {
             item.to_string()
         }

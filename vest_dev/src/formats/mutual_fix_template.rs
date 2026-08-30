@@ -2330,7 +2330,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2341,7 +2341,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2352,7 +2352,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2363,7 +2363,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2374,7 +2374,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2385,7 +2385,7 @@ mod derived_spec_proof {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -2402,7 +2402,7 @@ mod derived_spec_proof {
             hide(<ForestBodyRec as SpecRecBody>::spec_body);
             hide(<ListVBodyRec as SpecRecBody>::spec_body);
             hide(<ListVConsBodyRec as SpecRecBody>::spec_body);
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
             ExprBodyRec.lemma_body_all_inv_preservation(param, rec);
             ListBodyRec.lemma_body_all_inv_preservation(param, rec);

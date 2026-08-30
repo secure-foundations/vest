@@ -1,7 +1,7 @@
 //! ASN.1-to-Vest code generation.
 //!
 //! The frontend is Synta's ASN.1 parser and AST. The backend emits concrete
-//! nominal `vest_lib2::asn1` BER or DER formats, so generated parsers and
+//! nominal `vest_lib::asn1` BER or DER formats, so generated parsers and
 //! serializers use Vest's verified combinators directly while enclosing formats
 //! depend on compact, already-proved interfaces.
 

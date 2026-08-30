@@ -1,12 +1,12 @@
 [package]
-name = "vestasn1_generated_test"
+name = "vest_asn1_tests"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 vstd = "=0.0.0-2026-08-23-0033"
 
-vest_lib2 = { path = "../vest_lib" }
+vest_lib = { path = "../vest_lib" }
 
 [package.metadata.verus]
 verify = true

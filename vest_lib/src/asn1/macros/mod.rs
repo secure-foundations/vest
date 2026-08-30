@@ -727,5 +727,5 @@ macro_rules! impl_ber {
 }
 
 // `#[macro_export]` places macros at the crate root. Re-export them here as well so callers can
-// discover and import them through `vest_lib2::asn1::macros`.
+// discover and import them through `vest_lib::asn1::macros`.
 pub use crate::{impl_ber, impl_der};

@@ -1,4 +1,4 @@
--- Width stress fixture used by the vestasn1 scalability experiments.
+-- Width stress fixture used by the vest_asn1 scalability experiments.
 -- Fields cycle through OPTIONAL, DEFAULT, and required components.
 SequenceWidth16 DEFINITIONS EXPLICIT TAGS ::= BEGIN
     AutomationSequence ::= SEQUENCE {

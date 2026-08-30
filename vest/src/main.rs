@@ -1,7 +1,7 @@
 use std::{error::Error, path::PathBuf};
 
 use clap::Parser;
-use vest2::compile_to;
+use vest::compile_to;
 
 /// Vest: A generator for formally verified parsers/serializers in Verus
 #[derive(Parser, Debug)]

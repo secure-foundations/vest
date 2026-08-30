@@ -5,12 +5,12 @@ edition = "2021"
 
 [features]
 default = ["std"]
-std = ["alloc", "vstd/std", "vest_lib2/std"]
-alloc = ["vstd/alloc", "vest_lib2/alloc"]
+std = ["alloc", "vstd/std", "vest_lib/std"]
+alloc = ["vstd/alloc", "vest_lib/alloc"]
 
 [dependencies]
 vstd = "=0.0.0-2026-08-23-0033"
-vest_lib2 = { path = "../vest_lib", default-features = false }
+vest_lib = { path = "../vest_lib", default-features = false }
 vest_derive = { path = "../vest_derive" }
 
 [dev-dependencies]

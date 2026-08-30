@@ -2,11 +2,11 @@
 
 pub mod generated;
 pub mod generated_ber;
-// #[path = "/tmp/vestasn1_generated_cms.rs"]
+// #[path = "/tmp/vest_asn1_generated_cms.rs"]
 // pub mod generated_cms;
 pub mod generated_mixed;
 
-use vest_lib2::core::exec::parser::{PResult, Parser};
+use vest_lib::core::exec::parser::{PResult, Parser};
 use vstd::prelude::*;
 
 verus! {
@@ -28,9 +28,9 @@ pub fn parse_selection<'a>(input: &'a [u8]) -> PResult<
 #[cfg(test)]
 mod tests {
     use super::generated::*;
-    use vest_lib2::asn1::{DerOrd, TagFmt};
-    use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+    use vest_lib::asn1::{DerOrd, TagFmt};
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
     use vstd::prelude::DeepView;
 
     fn assert_der_ord<F, T: DeepView + ?Sized>()
@@ -149,11 +149,11 @@ mod tests {
     fn der_set_of_orders_complete_generated_tlvs_and_allows_duplicates() {
         let first = Header {
             flag: false,
-            count: vest_lib2::asn1::Integer::from_i64(2),
+            count: vest_lib::asn1::Integer::from_i64(2),
         };
         let second = Header {
             flag: true,
-            count: vest_lib2::asn1::Integer::from_i64(1),
+            count: vest_lib::asn1::Integer::from_i64(1),
         };
         let values = vec![first, second];
         let expected = [
@@ -170,11 +170,11 @@ mod tests {
         let unordered = vec![
             Header {
                 flag: true,
-                count: vest_lib2::asn1::Integer::from_i64(1),
+                count: vest_lib::asn1::Integer::from_i64(1),
             },
             Header {
                 flag: false,
-                count: vest_lib2::asn1::Integer::from_i64(2),
+                count: vest_lib::asn1::Integer::from_i64(2),
             },
         ];
         assert!(HEADERS::Fmt.prepare(&unordered).is_err());
@@ -182,11 +182,11 @@ mod tests {
         let duplicate = vec![
             Header {
                 flag: false,
-                count: vest_lib2::asn1::Integer::from_i64(2),
+                count: vest_lib::asn1::Integer::from_i64(2),
             },
             Header {
                 flag: false,
-                count: vest_lib2::asn1::Integer::from_i64(2),
+                count: vest_lib::asn1::Integer::from_i64(2),
             },
         ];
         assert!(HEADERS::Fmt.prepare(&duplicate).is_ok());

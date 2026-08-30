@@ -29,8 +29,8 @@ mod serializer_composition_regressions {
         Anything, NestedDynamicBytes, NestedDynamicBytesFmt, NestedFixedBytes, NestedFixedBytesFmt,
         TailVec, TailVecFmt,
     };
-    use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 
     #[test]
     fn nested_dynamic_bytes_roundtrip_in_place() {
@@ -107,8 +107,8 @@ mod serializer_composition_regressions {
 #[cfg(test)]
 mod bits_endianness_sanity {
     use super::{bits, bits_little};
-    use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 
     #[test]
     fn version_ihl_is_byte_endian_invariant() {
@@ -164,8 +164,8 @@ mod bits_endianness_sanity {
 #[cfg(test)]
 mod named_error_sanity {
     use super::nested_access;
-    use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::Prepare;
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::Prepare;
 
     #[test]
     fn parse_error_carries_named_format_stack() {
@@ -214,9 +214,9 @@ mod named_error_sanity {
 #[cfg(test)]
 mod tls_error_sanity {
     use super::tls;
-    use vest_lib2::combinators::Named;
-    use vest_lib2::core::exec::parser::Parser;
-    use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+    use vest_lib::combinators::Named;
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 
     #[test]
     fn pre_shared_key_extension_parse_error_is_semantic_and_deeply_nested() {
@@ -300,7 +300,7 @@ mod tls_error_sanity {
 #[cfg(test)]
 mod never_error_sanity {
     use super::matches;
-    use vest_lib2::core::exec::parser::Parser;
+    use vest_lib::core::exec::parser::Parser;
 
     #[test]
     fn test_never_error_message() {

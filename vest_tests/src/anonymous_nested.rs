@@ -1,17 +1,17 @@
 #![allow(warnings)]
-use vest_lib2::combinators::mapped::spec::*;
-use vest_lib2::combinators::recursive::*;
-use vest_lib2::combinators::*;
-use vest_lib2::core::exec::bytes_eq;
-use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-use vest_lib2::core::exec::output::OutputBuf;
-use vest_lib2::core::exec::parser::*;
-use vest_lib2::core::exec::serializer::*;
-use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::primitives::btcvarint::VarInt;
-use vest_lib2::primitives::leb128::ULeb128;
-use vest_lib2::Never;
+use vest_lib::combinators::mapped::spec::*;
+use vest_lib::combinators::recursive::*;
+use vest_lib::combinators::*;
+use vest_lib::core::exec::bytes_eq;
+use vest_lib::core::exec::input::{InputBuf, InputSlice};
+use vest_lib::core::exec::output::OutputBuf;
+use vest_lib::core::exec::parser::*;
+use vest_lib::core::exec::serializer::*;
+use vest_lib::core::exec::ParseError;
+use vest_lib::core::{proof::*, spec::*};
+use vest_lib::primitives::btcvarint::VarInt;
+use vest_lib::primitives::leb128::ULeb128;
+use vest_lib::Never;
 use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;
@@ -4058,7 +4058,7 @@ mod derived_proofs {
     use super::*;
 
     broadcast use {
-        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        vest_lib::combinators::disjoint::disjointness_lemmas,
         AOrB::lemma_from_into,
         AOrB::lemma_into_from,
         COrD::lemma_from_into,
@@ -6798,8 +6798,8 @@ mod exec_impls {
         type PT = NestedInnerStruct<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedInnerStructFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStruct as DeepView>::deep_view);
@@ -6823,7 +6823,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerStruct<'i>> for NestedInnerStructFmt {
         fn serialize_into(&self, v: &NestedInnerStruct<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<NestedInnerStructFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
@@ -6859,8 +6859,8 @@ mod exec_impls {
         type PT = NestedInnerChoice;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedInnerChoiceFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoice as DeepView>::deep_view);
@@ -6893,7 +6893,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerChoice> for NestedInnerChoiceFmt {
         fn serialize_into(&self, v: &NestedInnerChoice, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<NestedInnerChoiceFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
@@ -6952,8 +6952,8 @@ mod exec_impls {
         type PT = CaptureOuterAndLocal<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureOuterAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocal as DeepView>::deep_view);
@@ -6986,7 +6986,7 @@ mod exec_impls {
         CaptureOuterAndLocal<'i>,
     > for CaptureOuterAndLocalFmt {
         fn serialize_into(&self, v: &CaptureOuterAndLocal<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureOuterAndLocalFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
@@ -7034,8 +7034,8 @@ mod exec_impls {
         type PT = CaptureLocalInAnonStruct<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureLocalInAnonStructFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStruct as DeepView>::deep_view);
@@ -7060,7 +7060,7 @@ mod exec_impls {
         CaptureLocalInAnonStruct<'i>,
     > for CaptureLocalInAnonStructFmt {
         fn serialize_into(&self, v: &CaptureLocalInAnonStruct<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureLocalInAnonStructFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
@@ -7094,8 +7094,8 @@ mod exec_impls {
         type PT = CaptureParamAndLocal<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureParamAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocal as DeepView>::deep_view);
@@ -7131,7 +7131,7 @@ mod exec_impls {
         CaptureParamAndLocal<'i>,
     > for CaptureParamAndLocalFmt {
         fn serialize_into(&self, v: &CaptureParamAndLocal<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureParamAndLocalFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
@@ -7190,8 +7190,8 @@ mod exec_impls {
         type PT = NestedInnerStructVal<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedInnerStructValFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStructVal as DeepView>::deep_view);
@@ -7215,7 +7215,7 @@ mod exec_impls {
         NestedInnerStructVal<'i>,
     > for NestedInnerStructValFmt {
         fn serialize_into(&self, v: &NestedInnerStructVal<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<NestedInnerStructValFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
@@ -7434,8 +7434,8 @@ mod exec_impls {
         type PT = CaptureOuterAndLocalPayloadBodyChoice1<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1 as DeepView>::deep_view);
@@ -7463,7 +7463,7 @@ mod exec_impls {
             v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>,
             obuf: &mut Output,
         ) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
@@ -7587,8 +7587,8 @@ mod exec_impls {
         type PT = CaptureOuterAndLocalPayload<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayload as DeepView>::deep_view);
@@ -7619,7 +7619,7 @@ mod exec_impls {
         CaptureOuterAndLocalPayload<'i>,
     > for CaptureOuterAndLocalPayloadFmt {
         fn serialize_into(&self, v: &CaptureOuterAndLocalPayload<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
@@ -7666,8 +7666,8 @@ mod exec_impls {
         type PT = CaptureLocalInAnonStructWrapperValueChoice0<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0 as DeepView>::deep_view);
@@ -7695,7 +7695,7 @@ mod exec_impls {
             v: &CaptureLocalInAnonStructWrapperValueChoice0<'i>,
             obuf: &mut Output,
         ) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(
                 <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
@@ -7822,8 +7822,8 @@ mod exec_impls {
         type PT = CaptureLocalInAnonStructWrapper<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapper as DeepView>::deep_view);
@@ -7850,7 +7850,7 @@ mod exec_impls {
         CaptureLocalInAnonStructWrapper<'i>,
     > for CaptureLocalInAnonStructWrapperFmt {
         fn serialize_into(&self, v: &CaptureLocalInAnonStructWrapper<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
@@ -7982,8 +7982,8 @@ mod exec_impls {
         type PT = CaptureParamAndLocalXA<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureParamAndLocalXAFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXA as DeepView>::deep_view);
@@ -8019,7 +8019,7 @@ mod exec_impls {
         CaptureParamAndLocalXA<'i>,
     > for CaptureParamAndLocalXAFmt {
         fn serialize_into(&self, v: &CaptureParamAndLocalXA<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureParamAndLocalXAFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
@@ -8151,8 +8151,8 @@ mod exec_impls {
         type PT = CaptureParamAndLocalXB;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CaptureParamAndLocalXBFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXB as DeepView>::deep_view);
@@ -8179,7 +8179,7 @@ mod exec_impls {
         CaptureParamAndLocalXB,
     > for CaptureParamAndLocalXBFmt {
         fn serialize_into(&self, v: &CaptureParamAndLocalXB, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<CaptureParamAndLocalXBFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);

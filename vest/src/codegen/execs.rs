@@ -67,8 +67,8 @@ impl<'a> Analysis<'a> {
                 }
                 w.block("fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>", |w| {
                     if scaffold.is_struct {
-                        w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
-                        w.line("broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;");
+                        w.line("broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;");
+                        w.line("broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;");
                         w.blank_line();
                     }
                     w.reveal_stmt(&format!("<{} as SpecParser>::spec_parse", reveal_fmt));
@@ -107,7 +107,7 @@ impl<'a> Analysis<'a> {
                         |w| {
                             if scaffold.is_struct {
                                 w.line(
-                                    "broadcast use vest_lib2::core::exec::output::outbuf_lemmas;",
+                                    "broadcast use vest_lib::core::exec::output::outbuf_lemmas;",
                                 );
                             }
                             w.reveal_stmt(&format!(
@@ -154,7 +154,7 @@ impl<'a> Analysis<'a> {
                         ),
                         |w| {
                             if needs_tail_and_then_lemma {
-                                w.line("broadcast use vest_lib2::combinators::bytes::spec::tail_and_then_lemmas;");
+                                w.line("broadcast use vest_lib::combinators::bytes::spec::tail_and_then_lemmas;");
                             }
                             w.reveal_stmt(&format!("<{} as SpecByteLen>::byte_len", reveal_fmt));
                             if scaffold.has_opaque_deep_view {
@@ -2016,7 +2016,7 @@ impl<'a> Analysis<'a> {
                         Combinator::Option(_) | Combinator::Vec(_)
                     )
                 {
-                    w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
+                    w.line("broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;");
                     w.line("let rest = ibuf.skip(n);");
                     w.call_chain_stmt(Some("_"), "Eof", "parse", &["&rest"], Some("?;"));
                 }

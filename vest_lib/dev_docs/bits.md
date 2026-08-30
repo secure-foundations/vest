@@ -4,13 +4,13 @@ This document records the **current** bitfield design in the repository.
 
 It supersedes the older front-end-only plan. The authoritative references are now:
 
-- [`vest_lib2/src/combinators/bits`](../src/combinators/bits)
+- [`vest_lib/src/combinators/bits`](../src/combinators/bits)
 - [`vest_dev/src/formats/bits.rs`](../../vest_dev/src/formats/bits.rs)
 
 The design center is no longer “bitfields as a hypothetical DSL feature lowered to ad hoc mappers”.
 Instead, the core abstraction is a reusable **specification combinator**:
 
-- `Bits<Repr, Tuple, Nominal>` in `vest_lib2`
+- `Bits<Repr, Tuple, Nominal>` in `vest_lib`
 
 and the handwritten formats in `vest_dev/src/formats/bits.rs` show the intended generated shape.
 
@@ -27,11 +27,11 @@ Its job is to package the common structure of bitfield formats:
 5. serialize by destructing the nominal value back to a tuple and re-packing it into the carrier
 
 The executable side is still written manually, in the same style as current generated code in
-`vest2/test/src/*.rs`.
+`vest_tests/src/*.rs`.
 
 That split is deliberate:
 
-- spec/proof composition is factored into `vest_lib2`
+- spec/proof composition is factored into `vest_lib`
 - exec parsing/serialization/prepare stay explicit and easy to inspect
 
 ## Endianness Semantics
@@ -84,7 +84,7 @@ and test it explicitly.
 
 The combinator lives in:
 
-- [`vest_lib2/src/combinators/bits/mod.rs`](../src/combinators/bits/mod.rs)
+- [`vest_lib/src/combinators/bits/mod.rs`](../src/combinators/bits/mod.rs)
 
 Its public shape is:
 
@@ -157,7 +157,7 @@ This is the template the DSL/codegen should target.
 ## Internal Desugaring
 
 The helper function in
-[`vest_lib2/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
+[`vest_lib/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
 shows the exact internal meaning:
 
 ```rust
@@ -190,7 +190,7 @@ stack directly.
 
 Implemented in:
 
-- [`vest_lib2/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
+- [`vest_lib/src/combinators/bits/spec.rs`](../src/combinators/bits/spec.rs)
 
 ### Parsing
 
@@ -246,7 +246,7 @@ This split is intentional:
 
 Implemented in:
 
-- [`vest_lib2/src/combinators/bits/proof.rs`](../src/combinators/bits/proof.rs)
+- [`vest_lib/src/combinators/bits/proof.rs`](../src/combinators/bits/proof.rs)
 
 The proof story is deliberately lightweight:
 
@@ -677,7 +677,7 @@ The current implementation suggests a sharper split:
 
 That means the front-end design should now be understood as:
 
-- parse a `bits { ... }` block in `vest2`
+- parse a `bits { ... }` block in `vest`
 - elaborate/typecheck it into:
   - one representation carrier
   - one tuple layout

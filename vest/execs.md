@@ -1,10 +1,10 @@
 
- # Exec Codegen Plan for vest2/src/codegen/execs.rs
+ # Exec Codegen Plan for vest/src/codegen/execs.rs
 
 ## Summary
 
 Implement generated Parser, Serializer, and Prepare for all named DSL definitions using imperative exec code for sequencing, dependencies,
-nominal mapping, predicates, enums, and dependent choices, while still reusing existing vest_lib2 exec combinators for length-restricted
+nominal mapping, predicates, enums, and dependent choices, while still reusing existing vest_lib exec combinators for length-restricted
 parsing, repetitions, options, and anonymous structural suffixes where they materially simplify correctness.
 
 The generator should stay in a single execs.rs file with a small set of local helpers. Do not introduce new modules for this pass.
@@ -216,9 +216,9 @@ Implement and verify in phases, using the existing generated corpus as milestone
 Checks for each phase:
 
 - regenerate the corresponding .rs files
-- cargo test in vest2
-- cargo verus verify -- --expand-errors --verify-only-module <module> in vest2/test
-- final acceptance: full cargo verus verify -- --expand-errors in vest2/test
+- cargo test in vest
+- cargo verus verify -- --expand-errors --verify-only-module <module> in vest_tests
+- final acceptance: full cargo verus verify -- --expand-errors in vest_tests
 
 Targeted scenarios that must be covered by generated exec code:
 

@@ -1,8 +1,8 @@
-# vestasn1
+# vest_asn1
 
-`vestasn1` parses ASN.1 modules with a vendored, locally patched
+`vest_asn1` parses ASN.1 modules with a vendored, locally patched
 [`synta-codegen`](https://crates.io/crates/synta-codegen) frontend and emits BER
-or DER codecs built directly from `vest_lib2`'s verified ASN.1 primitives and
+or DER codecs built directly from `vest_lib`'s verified ASN.1 primitives and
 combinators. DER is the default.
 
 ```console
@@ -41,8 +41,8 @@ helper definitions. Verified bidirectional mappers hide Vest's nested tuple and
 `Sum`s from users.
 
 The nominal types delegate their specifications and executable operations to
-the private combinator formats. `vest_lib2::impl_der!` and
-`vest_lib2::impl_ber!` expose the proved parser, serializer, prepare, length,
+the private combinator formats. `vest_lib::impl_der!` and
+`vest_lib::impl_ber!` expose the proved parser, serializer, prepare, length,
 tagging, and DER-ordering interfaces without re-expanding the nested format at
 each use site. This boundary is important for scalable verification of larger
 modules such as CMS.

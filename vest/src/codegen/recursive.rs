@@ -1147,7 +1147,7 @@ impl<'a> Analysis<'a> {
                             _param: Self::Param,
                             rec: ParamRecSpecs<Self::Param, Self::T>,
                         ) {
-                            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+                            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
                         }
                     }
                 }
@@ -1170,7 +1170,7 @@ impl<'a> Analysis<'a> {
                     rec: ParamRecSpecs<Self::Param, Self::T>,
                 ) {
                     #(#hides)*
-                    broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+                    broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
                     #(#calls)*
                 }
             }
@@ -1627,7 +1627,7 @@ impl<'a> Analysis<'a> {
                 decreases gas,
         });
         out.block(header, |w| {
-            w.line("broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;");
+            w.line("broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;");
             w.blank_line();
             w.line("let _ = ibuf.len();");
             w.line(render_ts(quote! { let ghost parse_spec = #spec_match; }));
@@ -1677,7 +1677,7 @@ impl<'a> Analysis<'a> {
                 decreases gas,
         });
         out.block(header, |w| {
-            w.line("broadcast use vest_lib2::core::exec::output::outbuf_lemmas;");
+            w.line("broadcast use vest_lib::core::exec::output::outbuf_lemmas;");
             self.emit_recursive_member_body(w, member, ctx, access, Op::Serialize);
         });
     }

@@ -1,17 +1,17 @@
 #![allow(warnings)]
-use vest_lib2::combinators::mapped::spec::*;
-use vest_lib2::combinators::recursive::*;
-use vest_lib2::combinators::*;
-use vest_lib2::core::exec::bytes_eq;
-use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-use vest_lib2::core::exec::output::OutputBuf;
-use vest_lib2::core::exec::parser::*;
-use vest_lib2::core::exec::serializer::*;
-use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::primitives::btcvarint::VarInt;
-use vest_lib2::primitives::leb128::ULeb128;
-use vest_lib2::Never;
+use vest_lib::combinators::mapped::spec::*;
+use vest_lib::combinators::recursive::*;
+use vest_lib::combinators::*;
+use vest_lib::core::exec::bytes_eq;
+use vest_lib::core::exec::input::{InputBuf, InputSlice};
+use vest_lib::core::exec::output::OutputBuf;
+use vest_lib::core::exec::parser::*;
+use vest_lib::core::exec::serializer::*;
+use vest_lib::core::exec::ParseError;
+use vest_lib::core::{proof::*, spec::*};
+use vest_lib::primitives::btcvarint::VarInt;
+use vest_lib::primitives::leb128::ULeb128;
+use vest_lib::Never;
 use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;
@@ -2670,7 +2670,7 @@ mod derived_proofs {
     use super::*;
 
     broadcast use {
-        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        vest_lib::combinators::disjoint::disjointness_lemmas,
         ExprKind::lemma_from_into,
         ExprKind::lemma_into_from,
         ListKind::lemma_from_into,
@@ -3388,7 +3388,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3399,7 +3399,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3410,7 +3410,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3421,7 +3421,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3432,7 +3432,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3448,7 +3448,7 @@ mod derived_proofs {
             hide(<ExprVBodyRec as SpecRecBody>::spec_body);
             hide(<ListVConsBodyRec as SpecRecBody>::spec_body);
             hide(<ListVBodyRec as SpecRecBody>::spec_body);
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
             ExprBodyRec.lemma_body_all_inv_preservation(param, rec);
             ListBodyRec.lemma_body_all_inv_preservation(param, rec);
@@ -3828,7 +3828,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3839,7 +3839,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3850,7 +3850,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3861,7 +3861,7 @@ mod derived_proofs {
             _param: Self::Param,
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
         }
     }
@@ -3876,7 +3876,7 @@ mod derived_proofs {
             hide(<ChainBBodyRec as SpecRecBody>::spec_body);
             hide(<ChainAChoice1BodyRec as SpecRecBody>::spec_body);
             hide(<ChainBChoice1BodyRec as SpecRecBody>::spec_body);
-            broadcast use vest_lib2::combinators::disjoint::disjointness_lemmas;
+            broadcast use vest_lib::combinators::disjoint::disjointness_lemmas;
 
             ChainABodyRec.lemma_body_all_inv_preservation(param, rec);
             ChainBBodyRec.lemma_body_all_inv_preservation(param, rec);
@@ -4138,7 +4138,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = expr_parse_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, ibuf@);
@@ -4184,7 +4184,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             let Expr { t, v } = v;
             proof {
@@ -4237,7 +4237,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = list_parse_spec_gas::<LIMIT>(&SCC1RecBody, gas as nat, ibuf@);
@@ -4283,7 +4283,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             let List { t, v } = v;
             proof {
@@ -4341,7 +4341,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = expr_v_parse_spec_gas::<LIMIT>(
@@ -4408,7 +4408,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             proof {
                 self.expr_kind.lemma_deep_view();
@@ -4478,7 +4478,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = list_v_cons_parse_spec_gas::<LIMIT>(
@@ -4529,7 +4529,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             let ListVCons { head, tail } = v;
             (ExprFmt::<LIMIT> {  }).serialize_gas(gas - 1, head, obuf);
@@ -4583,7 +4583,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = list_v_parse_spec_gas::<LIMIT>(
@@ -4650,7 +4650,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             proof {
                 self.list_kind.lemma_deep_view();
@@ -4815,7 +4815,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = chain_a_parse_spec_gas::<LIMIT>(
@@ -4886,7 +4886,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             match (self.tag, v) {
                 (0, ChainA::Variant1(v)) => {
@@ -4959,7 +4959,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = chain_b_parse_spec_gas::<LIMIT>(
@@ -5030,7 +5030,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             match (self.tag, v) {
                 (0, ChainB::Variant1(v)) => {
@@ -5098,7 +5098,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = chain_a_choice1_parse_spec_gas::<LIMIT>(
@@ -5166,7 +5166,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             let ChainAChoice1 { len, payload, next_tag, tail } = v;
             (U8).serialize_into(len, obuf);
@@ -5223,7 +5223,7 @@ mod exec_impls {
                 r matches Ok((n, _)) ==> n <= ibuf@.len(),
             decreases gas,
         {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
 
             let _ = ibuf.len();
             let ghost parse_spec = chain_b_choice1_parse_spec_gas::<LIMIT>(
@@ -5288,7 +5288,7 @@ mod exec_impls {
                 old(obuf).same_destination(final(obuf)),
             decreases gas,
         {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             let ChainBChoice1 { payload, next_tag, tail } = v;
             (U32Le).serialize_into(payload, obuf);

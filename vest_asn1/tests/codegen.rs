@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use vestasn1::{
+use vest_asn1::{
     compile, compile_with_options, compile_with_rule_overrides, CodegenOptions, EncodingRules,
     Error,
 };
@@ -15,7 +15,7 @@ fn compile_ber(source: &str) -> Result<String, Error> {
 
 fn assert_uses_local_start_certificates(generated: &str) {
     assert!(!generated.contains("assert(disjoint_domains"));
-    assert!(!generated.contains("broadcast use vest_lib2::asn1::disjoint"));
+    assert!(!generated.contains("broadcast use vest_lib::asn1::disjoint"));
     assert!(!generated
         .lines()
         .any(|line| line.contains(".inner") && line.contains(".unambiguous()")));
@@ -23,7 +23,7 @@ fn assert_uses_local_start_certificates(generated: &str) {
     assert!(generated.contains("asn1_start_mask("));
     assert!(generated.contains("lemma_disjoint_asn1_starts"));
     assert!(!generated.contains("::Fmt.lemma_schema_unambiguous();"));
-    assert!(generated.contains("vest_lib2::impl_"));
+    assert!(generated.contains("vest_lib::impl_"));
     assert!(!generated.contains("format_spec_invariants"));
 }
 
@@ -149,7 +149,7 @@ END
     )
     .unwrap();
 
-    assert!(generated.contains("pub type Name = vest_lib2::asn1::BmpString;"));
+    assert!(generated.contains("pub type Name = vest_lib::asn1::BmpString;"));
     assert!(generated.contains("pub struct Container {"));
     assert!(!generated.contains("pub struct Container<'a>"));
 }
@@ -437,12 +437,12 @@ fn emits_numeric_and_universal_strings_for_der_and_ber() {
     let der = compile(schema).unwrap();
     assert!(der.contains("Refined<NumericStringTlvFmt, Size<true, 1, true, 8>>"));
     assert!(der.contains("Refined<UniversalStringTlvFmt, Size<true, 1, true, 8>>"));
-    assert!(der.contains("pub type Digits<'a> = vest_lib2::asn1::NumericString<'a>;"));
-    assert!(der.contains("pub type Wide = vest_lib2::asn1::UniversalString;"));
+    assert!(der.contains("pub type Digits<'a> = vest_lib::asn1::NumericString<'a>;"));
+    assert!(der.contains("pub type Wide = vest_lib::asn1::UniversalString;"));
 
     let ber = compile_ber(schema).unwrap();
-    assert!(ber.contains("pub type Digits = vest_lib2::asn1::NumericStringOwned;"));
-    assert!(ber.contains("pub type Wide = vest_lib2::asn1::UniversalString;"));
+    assert!(ber.contains("pub type Digits = vest_lib::asn1::NumericStringOwned;"));
+    assert!(ber.contains("pub type Wide = vest_lib::asn1::UniversalString;"));
     assert!(ber.contains("Refined(NUMERIC_STRING, Size::<true, 1, true, 8>)"));
     assert!(ber.contains("Refined(UNIVERSAL_STRING, Size::<true, 1, true, 8>)"));
 }
@@ -463,13 +463,13 @@ fn mixed_rules_assign_one_transitive_rule_per_definition() {
 
     assert!(generated.contains("pub struct Shared<'a> {"));
     assert!(!generated.contains("SharedDer"));
-    assert!(generated.contains("type CANONICAL__ = vest_lib2::asn1::der::SetOfTlvFmt<SHARED>;"));
-    assert!(generated.contains("use vest_lib2::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};"));
-    assert!(generated.contains("use vest_lib2::asn1::der::SET_OF;"));
+    assert!(generated.contains("type CANONICAL__ = vest_lib::asn1::der::SetOfTlvFmt<SHARED>;"));
+    assert!(generated.contains("use vest_lib::asn1::der::{DEFAULT, OCTET_STRING, SEQUENCE};"));
+    assert!(generated.contains("use vest_lib::asn1::der::SET_OF;"));
     assert!(generated.contains("SET_OF(SHARED::Fmt)"));
     assert!(generated.contains("REQUIRED(Ref(SHARED::Fmt),"));
-    assert!(!generated.contains("vest_lib2::asn1::der::SET_OF("));
-    assert!(generated.contains("type ORDERED__ = Mapped<vest_lib2::asn1::der::SetFmt<"));
+    assert!(!generated.contains("vest_lib::asn1::der::SET_OF("));
+    assert!(generated.contains("type ORDERED__ = Mapped<vest_lib::asn1::der::SetFmt<"));
     assert!(generated.contains("pub type Version = i8;"));
     assert!(!generated.contains("VersionDer"));
     assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SHARED"));
@@ -605,11 +605,11 @@ fn checked_in_verified_fixture_is_fresh() {
 fn generates_ber_formats_with_owned_flattened_values() {
     let generated = compile_ber(include_str!("../../vest_asn1_tests/fixture_ber.asn1")).unwrap();
     assert!(generated.contains("// Generated formats parse and serialize BER."));
-    assert!(generated.contains("use vest_lib2::asn1::ber::{"));
+    assert!(generated.contains("use vest_lib::asn1::ber::{"));
     assert!(generated.contains("pub type Payload = Vec<u8>;"));
-    assert!(generated.contains("pub type Bits = vest_lib2::asn1::BitStringOwned;"));
+    assert!(generated.contains("pub type Bits = vest_lib::asn1::BitStringOwned;"));
     assert!(generated.contains("pub type Label = String;"));
-    assert!(generated.contains("pub type OpenValue = vest_lib2::asn1::AnyOwned;"));
+    assert!(generated.contains("pub type OpenValue = vest_lib::asn1::AnyOwned;"));
     assert!(!generated.contains("impl_der!(tagged_exact(true), owned, ITEM"));
     assert!(generated.contains("impl_ber!(tagged_exact(true), owned, ITEM"));
     assert!(generated.contains("BerEndFmt"));
@@ -620,7 +620,7 @@ fn generates_ber_formats_with_owned_flattened_values() {
 #[test]
 fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
     let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
-    assert!(generated.contains("pub type Measurement<'a> = vest_lib2::asn1::Real<'a, BER>;"));
+    assert!(generated.contains("pub type Measurement<'a> = vest_lib::asn1::Real<'a, BER>;"));
     assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
     assert!(generated.contains("impl_ber!(tagged_exact(false), borrowed, MEASUREMENT"));
 }
@@ -680,10 +680,10 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     .unwrap();
 
     assert!(
-        generated.contains("type SIGNED_ATTRIBUTES__ = Refined<vest_lib2::asn1::der::SetOfTlvFmt<")
+        generated.contains("type SIGNED_ATTRIBUTES__ = Refined<vest_lib::asn1::der::SetOfTlvFmt<")
     );
-    assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib2::asn1::der::"));
-    assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib2::asn1::ber::"));
+    assert!(generated.contains("type CERTIFICATE__ = Mapped<vest_lib::asn1::der::"));
+    assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::"));
     assert!(generated.contains("type ALGORITHM_IDENTIFIER__"));
     assert!(!generated.contains("ALGORITHM_IDENTIFIER_DER"));
     assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SIGNED_ATTRIBUTES"));
@@ -692,10 +692,10 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
 
 #[test]
 fn parses_the_standalone_curated_cms_rfc5652_module() {
-    use vestasn1::ast::{TagClass, Tagging, TaggingMode};
+    use vest_asn1::ast::{TagClass, Tagging, TaggingMode};
 
-    fn contains_only_lowered_wire_types(ty: &vestasn1::Type) -> bool {
-        use vestasn1::Type;
+    fn contains_only_lowered_wire_types(ty: &vest_asn1::Type) -> bool {
+        use vest_asn1::Type;
 
         match ty {
             Type::Sequence(fields) | Type::Set(fields) => fields
@@ -716,7 +716,7 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
         }
     }
 
-    fn definition<'a>(module: &'a vestasn1::SchemaModule, name: &str) -> &'a vestasn1::Type {
+    fn definition<'a>(module: &'a vest_asn1::SchemaModule, name: &str) -> &'a vest_asn1::Type {
         &module
             .definitions
             .iter()
@@ -725,8 +725,8 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
             .ty
     }
 
-    fn field<'a>(ty: &'a vestasn1::Type, name: &str) -> &'a vestasn1::Type {
-        let vestasn1::Type::Sequence(fields) = ty else {
+    fn field<'a>(ty: &'a vest_asn1::Type, name: &str) -> &'a vest_asn1::Type {
+        let vest_asn1::Type::Sequence(fields) = ty else {
             panic!("expected SEQUENCE containing {name}");
         };
         &fields
@@ -736,7 +736,7 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
             .ty
     }
 
-    let module = vestasn1::parse(include_str!("../rfcs/CMS-RFC5652-Curated.asn1")).unwrap();
+    let module = vest_asn1::parse(include_str!("../rfcs/CMS-RFC5652-Curated.asn1")).unwrap();
 
     assert_eq!(module.name, "VestCmsRfc5652Curated");
     assert_eq!(module.tagging_mode, Some(TaggingMode::Explicit));
@@ -771,7 +771,7 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
         );
     }
 
-    let vestasn1::Type::Tagged { tag, inner } =
+    let vest_asn1::Type::Tagged { tag, inner } =
         field(definition(&module, "ContentInfo"), "content")
     else {
         panic!("ContentInfo.content must remain tagged");
@@ -779,9 +779,9 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
     assert_eq!(tag.class, TagClass::ContextSpecific);
     assert_eq!(tag.number, 0);
     assert_eq!(tag.tagging, Tagging::Explicit);
-    assert!(matches!(inner.as_ref(), vestasn1::Type::Any));
+    assert!(matches!(inner.as_ref(), vest_asn1::Type::Any));
 
-    let vestasn1::Type::Tagged { tag, .. } =
+    let vest_asn1::Type::Tagged { tag, .. } =
         field(definition(&module, "SignedData"), "certificates")
     else {
         panic!("SignedData.certificates must remain tagged");
@@ -790,7 +790,7 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
     assert_eq!(tag.number, 0);
     assert_eq!(tag.tagging, Tagging::Implicit);
 
-    let vestasn1::Type::Choice(general_names) = definition(&module, "GeneralName") else {
+    let vest_asn1::Type::Choice(general_names) = definition(&module, "GeneralName") else {
         panic!("GeneralName must remain a CHOICE");
     };
     let directory_name = &general_names
@@ -798,7 +798,7 @@ fn parses_the_standalone_curated_cms_rfc5652_module() {
         .find(|variant| variant.name == "directoryName")
         .expect("GeneralName.directoryName is missing")
         .ty;
-    let vestasn1::Type::Tagged { tag, .. } = directory_name else {
+    let vest_asn1::Type::Tagged { tag, .. } = directory_name else {
         panic!("GeneralName.directoryName must remain tagged");
     };
     assert_eq!(tag.class, TagClass::ContextSpecific);

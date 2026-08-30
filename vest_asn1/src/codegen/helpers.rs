@@ -500,7 +500,7 @@ pub(super) fn render_choice_combinator(left: &str, right: &str) -> String {
 /// Replace rule-qualified expression items with local names and return the
 /// imports needed to make those names available inside a generated function.
 pub(super) fn localize_rule_items(expression: &str, rule: EncodingRules) -> (String, Vec<String>) {
-    let prefix = format!("vest_lib2::asn1::{}::", rule.module());
+    let prefix = format!("vest_lib::asn1::{}::", rule.module());
     let mut localized = String::with_capacity(expression.len());
     let mut items = BTreeSet::new();
     let mut remaining = expression;
@@ -531,9 +531,9 @@ pub(super) fn localize_rule_items(expression: &str, rule: EncodingRules) -> (Str
 pub(super) fn render_local_rule_import(rule: EncodingRules, items: &[String]) -> Option<String> {
     match items {
         [] => None,
-        [item] => Some(format!("use vest_lib2::asn1::{}::{item};", rule.module(),)),
+        [item] => Some(format!("use vest_lib::asn1::{}::{item};", rule.module(),)),
         _ => Some(format!(
-            "use vest_lib2::asn1::{}::{{{}}};",
+            "use vest_lib::asn1::{}::{{{}}};",
             rule.module(),
             items.join(", "),
         )),
@@ -746,7 +746,7 @@ pub(super) fn render_retag_helper(
     }
     .to_string();
     if let Some(rule) = qualified_explicit_rule {
-        helper = format!("vest_lib2::asn1::{}::{helper}", rule.module());
+        helper = format!("vest_lib::asn1::{}::{helper}", rule.module());
     }
     if matches!(tag.class, TagClass::Universal) {
         return format!("{helper}(Class::Universal, {}u64, {inner})", tag.number);
@@ -903,14 +903,14 @@ mod tests {
         );
 
         let (localized, items) = localize_rule_items(
-            "vest_lib2::asn1::ber::SEQUENCE(vest_lib2::asn1::ber::BER_END)",
+            "vest_lib::asn1::ber::SEQUENCE(vest_lib::asn1::ber::BER_END)",
             EncodingRules::Ber,
         );
         assert_eq!(localized, "SEQUENCE(BER_END)");
         assert_eq!(items, ["BER_END", "SEQUENCE"]);
         assert_eq!(
             render_local_rule_import(EncodingRules::Ber, &items).unwrap(),
-            "use vest_lib2::asn1::ber::{BER_END, SEQUENCE};"
+            "use vest_lib::asn1::ber::{BER_END, SEQUENCE};"
         );
     }
 }

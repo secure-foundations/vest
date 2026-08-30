@@ -1,17 +1,17 @@
 #![allow(warnings)]
-use vest_lib2::combinators::mapped::spec::*;
-use vest_lib2::combinators::recursive::*;
-use vest_lib2::combinators::*;
-use vest_lib2::core::exec::bytes_eq;
-use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-use vest_lib2::core::exec::output::OutputBuf;
-use vest_lib2::core::exec::parser::*;
-use vest_lib2::core::exec::serializer::*;
-use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::primitives::btcvarint::VarInt;
-use vest_lib2::primitives::leb128::ULeb128;
-use vest_lib2::Never;
+use vest_lib::combinators::mapped::spec::*;
+use vest_lib::combinators::recursive::*;
+use vest_lib::combinators::*;
+use vest_lib::core::exec::bytes_eq;
+use vest_lib::core::exec::input::{InputBuf, InputSlice};
+use vest_lib::core::exec::output::OutputBuf;
+use vest_lib::core::exec::parser::*;
+use vest_lib::core::exec::serializer::*;
+use vest_lib::core::exec::ParseError;
+use vest_lib::core::{proof::*, spec::*};
+use vest_lib::primitives::btcvarint::VarInt;
+use vest_lib::primitives::leb128::ULeb128;
+use vest_lib::Never;
 use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;
@@ -675,7 +675,7 @@ mod derived_proofs {
     use super::*;
 
     broadcast use {
-        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        vest_lib::combinators::disjoint::disjointness_lemmas,
         OpaqueU16Spec::lemma_from_into,
         OpaqueU16Spec::lemma_into_from,
         ResponderIdListSpec::lemma_from_into,
@@ -1274,8 +1274,8 @@ mod exec_impls {
         type PT = OpaqueU16<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16 as DeepView>::deep_view);
@@ -1299,7 +1299,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, OpaqueU16<'i>> for OpaqueU16Fmt {
         fn serialize_into(&self, v: &OpaqueU16<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<OpaqueU16Fmt as SpecSerializer>::spec_serialize);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
@@ -1371,8 +1371,8 @@ mod exec_impls {
         type PT = ResponderIdList<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdList as DeepView>::deep_view);
@@ -1396,7 +1396,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, ResponderIdList<'i>> for ResponderIdListFmt {
         fn serialize_into(&self, v: &ResponderIdList<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<ResponderIdListFmt as SpecSerializer>::spec_serialize);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
@@ -1468,8 +1468,8 @@ mod exec_impls {
         type PT = RepeatDyn<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDyn as DeepView>::deep_view);
@@ -1490,7 +1490,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, RepeatDyn<'i>> for RepeatDynFmt {
         fn serialize_into(&self, v: &RepeatDyn<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<RepeatDynFmt as SpecSerializer>::spec_serialize);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);

@@ -4,15 +4,15 @@ The experiments show that Rust type checking is not the bottleneck. Verification
   - Deeply nested nominal formats show exponential SMT growth: depth 15 takes about 42 seconds, and depth 16 exceeds 60 seconds.
   - Wide CHOICE scales better initially, but also becomes nonlinear around 48–64 variants.
 
-  I generated temporary schemas derived from fixture_ber.asn1 under /private/tmp/vestasn1-stress; no experiment changes were made to
+  I generated temporary schemas derived from fixture_ber.asn1 under /private/tmp/vest_asn1-stress; no experiment changes were made to
   the repository.
 
   ## Methodology
 
   Each measurement used:
 
-  - The actual vestasn1 generator.
-  - The workspace vest_lib2.
+  - The actual vest_asn1 generator.
+  - The workspace vest_lib.
   - BER nominal formats with one generated implementation module per format.
   - Warm, offline builds.
   - Default Verus resource limits.
@@ -276,7 +276,7 @@ The experiments show that Rust type checking is not the bottleneck. Verification
 
   ### Deeper stress results
 
-  The schemas were generated through the current vestasn1 codegen rather than constructed manually.
+  The schemas were generated through the current vest_asn1 codegen rather than constructed manually.
 
    Combined depth    Wall time    Aggregate verification    SMT time    Result
   ━━━━━━━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━
@@ -456,7 +456,7 @@ The final design verifies the checked-in DER, BER, and mixed-rule fixtures as we
 curated CMS module. The last proof-emission cleanup reduced the checked-in fixture from 1,316 to
 1,310 verified obligations and the generated CMS module from 3,693 to 3,625 obligations. The CMS
 run completed with 0 errors; its reported generated-crate verification time was about 95 seconds
-on the same 10-worker setup. The full `vest_lib2` backend verified 3,186 obligations with 0 errors.
+on the same 10-worker setup. The full `vest_lib` backend verified 3,186 obligations with 0 errors.
 
 The main lessons are:
 

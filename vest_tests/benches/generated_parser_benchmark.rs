@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-extern crate test as vest2_generated;
+extern crate vest_tests as vest_generated;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -11,11 +11,11 @@ use criterion::Throughput;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use rustls::internal::msgs::message::MessagePayload;
-use vest_lib2::core::exec::parser::Parser;
-use vest_lib2::core::exec::serializer::{Prepare, SerializerExt};
+use vest_lib::core::exec::parser::Parser;
+use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 
-use vest2_generated::bitcoin::BlockFmt;
-use vest2_generated::tls::HandshakeFmt;
+use vest_generated::bitcoin::BlockFmt;
+use vest_generated::tls::HandshakeFmt;
 
 use base64::prelude::*;
 use bitcoin::consensus::{Decodable, Encodable};

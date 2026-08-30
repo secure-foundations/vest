@@ -6,9 +6,9 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub type Never = vest_lib2::Never;
+pub type Never = vest_lib::Never;
 
-pub use vest_lib2::*;
+pub use vest_lib::*;
 
 // #[cfg(verus_only)]
 pub mod formats;

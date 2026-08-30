@@ -992,7 +992,7 @@ impl<'a> Generator<'a> {
                         ));
                     }
                     _ => {
-                        output.line(format_args!("pub const {constant}: {declared_type} = vest_lib2::asn1::Integer::Small {{ v: {integer}i64 }};"
+                        output.line(format_args!("pub const {constant}: {declared_type} = vest_lib::asn1::Integer::Small {{ v: {integer}i64 }};"
                         ));
                     }
                 }

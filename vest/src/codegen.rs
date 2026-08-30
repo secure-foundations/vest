@@ -31,7 +31,7 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
         analysis.gen_execs_fragment(def)
     });
     let mut proof_broadcasts =
-        vec!["vest_lib2::combinators::disjoint::disjointness_lemmas".to_string()];
+        vec!["vest_lib::combinators::disjoint::disjointness_lemmas".to_string()];
     for definition in &defs {
         if let Definition::StructDef { name, .. }
         | Definition::ChoiceDef { name, .. }
@@ -301,21 +301,21 @@ impl<'a> Analysis<'a> {
 pub(crate) fn prelude() -> String {
     render_ts(quote! {
         #![allow(warnings)]
-        use vest_lib2::combinators::mapped::spec::*;
-        use vest_lib2::combinators::*;
-        use vest_lib2::combinators::recursive::*;
+        use vest_lib::combinators::mapped::spec::*;
+        use vest_lib::combinators::*;
+        use vest_lib::combinators::recursive::*;
         use Sum::Inl as L;
         use Sum::Inr as R;
-        use vest_lib2::Never;
-        use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-        use vest_lib2::core::exec::output::OutputBuf;
-        use vest_lib2::core::exec::parser::*;
-        use vest_lib2::core::exec::serializer::*;
-        use vest_lib2::core::exec::ParseError;
-        use vest_lib2::core::exec::bytes_eq;
-        use vest_lib2::core::{proof::*, spec::*};
-        use vest_lib2::primitives::btcvarint::VarInt;
-        use vest_lib2::primitives::leb128::ULeb128;
+        use vest_lib::Never;
+        use vest_lib::core::exec::input::{InputBuf, InputSlice};
+        use vest_lib::core::exec::output::OutputBuf;
+        use vest_lib::core::exec::parser::*;
+        use vest_lib::core::exec::serializer::*;
+        use vest_lib::core::exec::ParseError;
+        use vest_lib::core::exec::bytes_eq;
+        use vest_lib::core::{proof::*, spec::*};
+        use vest_lib::primitives::btcvarint::VarInt;
+        use vest_lib::primitives::leb128::ULeb128;
         use vstd::prelude::*;
     })
 }

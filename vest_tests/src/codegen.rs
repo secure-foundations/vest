@@ -1,17 +1,17 @@
 #![allow(warnings)]
-use vest_lib2::combinators::mapped::spec::*;
-use vest_lib2::combinators::recursive::*;
-use vest_lib2::combinators::*;
-use vest_lib2::core::exec::bytes_eq;
-use vest_lib2::core::exec::input::{InputBuf, InputSlice};
-use vest_lib2::core::exec::output::OutputBuf;
-use vest_lib2::core::exec::parser::*;
-use vest_lib2::core::exec::serializer::*;
-use vest_lib2::core::exec::ParseError;
-use vest_lib2::core::{proof::*, spec::*};
-use vest_lib2::primitives::btcvarint::VarInt;
-use vest_lib2::primitives::leb128::ULeb128;
-use vest_lib2::Never;
+use vest_lib::combinators::mapped::spec::*;
+use vest_lib::combinators::recursive::*;
+use vest_lib::combinators::*;
+use vest_lib::core::exec::bytes_eq;
+use vest_lib::core::exec::input::{InputBuf, InputSlice};
+use vest_lib::core::exec::output::OutputBuf;
+use vest_lib::core::exec::parser::*;
+use vest_lib::core::exec::serializer::*;
+use vest_lib::core::exec::ParseError;
+use vest_lib::core::{proof::*, spec::*};
+use vest_lib::primitives::btcvarint::VarInt;
+use vest_lib::primitives::leb128::ULeb128;
+use vest_lib::Never;
 use vstd::prelude::*;
 use Sum::Inl as L;
 use Sum::Inr as R;
@@ -1011,7 +1011,7 @@ mod derived_proofs {
     use super::*;
 
     broadcast use {
-        vest_lib2::combinators::disjoint::disjointness_lemmas,
+        vest_lib::combinators::disjoint::disjointness_lemmas,
         Msg1Spec::lemma_from_into,
         Msg1Spec::lemma_into_from,
         Msg2Spec::lemma_from_into,
@@ -1728,8 +1728,8 @@ mod exec_impls {
         type PT = Msg1<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg1Fmt as SpecParser>::spec_parse);
             reveal(<Msg1 as DeepView>::deep_view);
@@ -1755,7 +1755,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, Msg1<'i>> for Msg1Fmt {
         fn serialize_into(&self, v: &Msg1<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<Msg1Fmt as SpecSerializer>::spec_serialize);
             reveal(<Msg1Fmt as SpecByteLen>::byte_len);
@@ -1798,8 +1798,8 @@ mod exec_impls {
         type PT = Msg2;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg2Fmt as SpecParser>::spec_parse);
             reveal(<Msg2 as DeepView>::deep_view);
@@ -1822,7 +1822,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, Msg2> for Msg2Fmt {
         fn serialize_into(&self, v: &Msg2, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<Msg2Fmt as SpecSerializer>::spec_serialize);
             reveal(<Msg2Fmt as SpecByteLen>::byte_len);
@@ -1948,8 +1948,8 @@ mod exec_impls {
         type PT = Msg4<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib2::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib2::core::spec::SoundParser::lemma_parse_sound_value;
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg4Fmt as SpecParser>::spec_parse);
             reveal(<Msg4 as DeepView>::deep_view);
@@ -1979,7 +1979,7 @@ mod exec_impls {
 
     impl<Output: OutputBuf, 'i> Serializer<Output, Msg4<'i>> for Msg4Fmt {
         fn serialize_into(&self, v: &Msg4<'i>, obuf: &mut Output) {
-            broadcast use vest_lib2::core::exec::output::outbuf_lemmas;
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
 
             reveal(<Msg4Fmt as SpecSerializer>::spec_serialize);
             reveal(<Msg4Fmt as SpecByteLen>::byte_len);

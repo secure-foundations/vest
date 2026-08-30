@@ -1,5 +1,5 @@
 [package]
-name = "vest2"
+name = "vest"
 version = "0.1.5"
 edition = "2021"
 license = "MIT"

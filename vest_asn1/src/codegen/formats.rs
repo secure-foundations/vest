@@ -1316,7 +1316,7 @@ impl<'a> Generator<'a> {
                     lifetime_application(self.borrows[name], lifetime)
                 )
             }
-            Type::Integer(_, _) => format!("vest_lib2::asn1::Integer<{lifetime}>"),
+            Type::Integer(_, _) => format!("vest_lib::asn1::Integer<{lifetime}>"),
             Type::Boolean => "bool".to_string(),
             Type::OctetString(_) => match rule {
                 EncodingRules::Der => format!("&{lifetime} [u8]"),
@@ -1324,12 +1324,12 @@ impl<'a> Generator<'a> {
             },
             Type::BitString(_) => match rule {
                 EncodingRules::Der => {
-                    format!("vest_lib2::asn1::BitString<{lifetime}, DER>")
+                    format!("vest_lib::asn1::BitString<{lifetime}, DER>")
                 }
-                EncodingRules::Ber => "vest_lib2::asn1::BitStringOwned".to_string(),
+                EncodingRules::Ber => "vest_lib::asn1::BitStringOwned".to_string(),
             },
-            Type::ObjectIdentifier => "vest_lib2::asn1::ObjectIdentifier".to_string(),
-            Type::Real => format!("vest_lib2::asn1::Real<{lifetime}, {}>", rule.display()),
+            Type::ObjectIdentifier => "vest_lib::asn1::ObjectIdentifier".to_string(),
+            Type::Real => format!("vest_lib::asn1::Real<{lifetime}, {}>", rule.display()),
             Type::Null => "()".to_string(),
             Type::Utf8String(_) => match rule {
                 EncodingRules::Der => format!("&{lifetime} str"),
@@ -1337,33 +1337,33 @@ impl<'a> Generator<'a> {
             },
             Type::PrintableString(_) => match rule {
                 EncodingRules::Der => {
-                    format!("vest_lib2::asn1::PrintableString<{lifetime}>")
+                    format!("vest_lib::asn1::PrintableString<{lifetime}>")
                 }
-                EncodingRules::Ber => "vest_lib2::asn1::PrintableStringOwned".to_string(),
+                EncodingRules::Ber => "vest_lib::asn1::PrintableStringOwned".to_string(),
             },
             Type::IA5String(_) => match rule {
-                EncodingRules::Der => format!("vest_lib2::asn1::Ia5String<{lifetime}>"),
-                EncodingRules::Ber => "vest_lib2::asn1::Ia5StringOwned".to_string(),
+                EncodingRules::Der => format!("vest_lib::asn1::Ia5String<{lifetime}>"),
+                EncodingRules::Ber => "vest_lib::asn1::Ia5StringOwned".to_string(),
             },
             Type::TeletexString(_) => match rule {
                 EncodingRules::Der => {
-                    format!("vest_lib2::asn1::TeletexString<{lifetime}>")
+                    format!("vest_lib::asn1::TeletexString<{lifetime}>")
                 }
-                EncodingRules::Ber => "vest_lib2::asn1::TeletexStringOwned".to_string(),
+                EncodingRules::Ber => "vest_lib::asn1::TeletexStringOwned".to_string(),
             },
-            Type::BmpString(_) => "vest_lib2::asn1::BmpString".to_string(),
+            Type::BmpString(_) => "vest_lib::asn1::BmpString".to_string(),
             Type::NumericString(_) => match rule {
-                EncodingRules::Der => format!("vest_lib2::asn1::NumericString<{lifetime}>"),
-                EncodingRules::Ber => "vest_lib2::asn1::NumericStringOwned".to_string(),
+                EncodingRules::Der => format!("vest_lib::asn1::NumericString<{lifetime}>"),
+                EncodingRules::Ber => "vest_lib::asn1::NumericStringOwned".to_string(),
             },
-            Type::UniversalString(_) => "vest_lib2::asn1::UniversalString".to_string(),
-            Type::UtcTime => "vest_lib2::asn1::UtcTime".to_string(),
+            Type::UniversalString(_) => "vest_lib::asn1::UniversalString".to_string(),
+            Type::UtcTime => "vest_lib::asn1::UtcTime".to_string(),
             Type::GeneralizedTime => {
-                format!("vest_lib2::asn1::GeneralizedTime<{lifetime}>")
+                format!("vest_lib::asn1::GeneralizedTime<{lifetime}>")
             }
             Type::Any => match rule {
-                EncodingRules::Der => format!("vest_lib2::asn1::Any<{lifetime}>"),
-                EncodingRules::Ber => "vest_lib2::asn1::AnyOwned".to_string(),
+                EncodingRules::Der => format!("vest_lib::asn1::Any<{lifetime}>"),
+                EncodingRules::Ber => "vest_lib::asn1::AnyOwned".to_string(),
             },
             Type::SequenceOf(inner, _) | Type::SetOf(inner, _) => {
                 format!("Vec<{}>", self.exec_type(inner, lifetime, rule)?)
@@ -1406,20 +1406,20 @@ impl<'a> Generator<'a> {
             Type::Integer(_, _) | Type::Enumerated(_) => "int".to_string(),
             Type::Boolean => "bool".to_string(),
             Type::OctetString(_) => "Seq<u8>".to_string(),
-            Type::BitString(_) => "vest_lib2::asn1::BitStringSpec".to_string(),
-            Type::ObjectIdentifier => "vest_lib2::asn1::ObjectIdentifierSpec".to_string(),
-            Type::Real => "vest_lib2::asn1::RealSpec".to_string(),
+            Type::BitString(_) => "vest_lib::asn1::BitStringSpec".to_string(),
+            Type::ObjectIdentifier => "vest_lib::asn1::ObjectIdentifierSpec".to_string(),
+            Type::Real => "vest_lib::asn1::RealSpec".to_string(),
             Type::Null => "()".to_string(),
             Type::Utf8String(_) => "Seq<char>".to_string(),
-            Type::PrintableString(_) => "vest_lib2::asn1::PrintableStringSpec".to_string(),
-            Type::IA5String(_) => "vest_lib2::asn1::Ia5StringSpec".to_string(),
-            Type::TeletexString(_) => "vest_lib2::asn1::TeletexStringSpec".to_string(),
-            Type::BmpString(_) => "vest_lib2::asn1::BmpStringSpec".to_string(),
-            Type::NumericString(_) => "vest_lib2::asn1::NumericStringSpec".to_string(),
-            Type::UniversalString(_) => "vest_lib2::asn1::UniversalStringSpec".to_string(),
-            Type::UtcTime => "vest_lib2::asn1::UtcTime".to_string(),
-            Type::GeneralizedTime => "vest_lib2::asn1::GeneralizedTimeSpec".to_string(),
-            Type::Any => "vest_lib2::asn1::AnySpec".to_string(),
+            Type::PrintableString(_) => "vest_lib::asn1::PrintableStringSpec".to_string(),
+            Type::IA5String(_) => "vest_lib::asn1::Ia5StringSpec".to_string(),
+            Type::TeletexString(_) => "vest_lib::asn1::TeletexStringSpec".to_string(),
+            Type::BmpString(_) => "vest_lib::asn1::BmpStringSpec".to_string(),
+            Type::NumericString(_) => "vest_lib::asn1::NumericStringSpec".to_string(),
+            Type::UniversalString(_) => "vest_lib::asn1::UniversalStringSpec".to_string(),
+            Type::UtcTime => "vest_lib::asn1::UtcTime".to_string(),
+            Type::GeneralizedTime => "vest_lib::asn1::GeneralizedTimeSpec".to_string(),
+            Type::Any => "vest_lib::asn1::AnySpec".to_string(),
             Type::SequenceOf(inner, _) | Type::SetOf(inner, _) => {
                 format!("Seq<{}>", self.spec_type(inner)?)
             }
