@@ -453,7 +453,7 @@ fn mixed_rules_assign_one_transitive_rule_per_definition() {
     overrides.insert("Canonical".to_string(), EncodingRules::Der);
     overrides.insert("Ordered".to_string(), EncodingRules::Der);
     let generated = compile_with_rule_overrides(
-        include_str!("../test/fixture_mixed.asn1"),
+        include_str!("../../vest_asn1_tests/fixture_mixed.asn1"),
         CodegenOptions {
             encoding_rules: EncodingRules::Ber,
         },
@@ -554,14 +554,14 @@ fn vendored_frontend_rejects_unrepresented_with_components() {
 
 #[test]
 fn emits_explicit_notation_for_untagged_choice_and_any() {
-    let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
+    let generated = compile(include_str!("../../vest_asn1_tests/fixture.asn1")).unwrap();
     assert!(generated.contains("EXPLICIT(3u64, Ref(SELECTION::Fmt))"));
     assert!(generated.contains("EXPLICIT(1u64, Ref(OPEN_VALUE::Fmt))"));
 }
 
 #[test]
 fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
-    let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
+    let generated = compile(include_str!("../../vest_asn1_tests/fixture.asn1")).unwrap();
     let left_aligned = generated
         .lines()
         .map(str::trim_start)
@@ -594,16 +594,16 @@ fn pretty_prints_sequence_fields_as_a_left_aligned_chain() {
 
 #[test]
 fn checked_in_verified_fixture_is_fresh() {
-    let generated = compile(include_str!("../test/fixture.asn1")).unwrap();
+    let generated = compile(include_str!("../../vest_asn1_tests/fixture.asn1")).unwrap();
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../test/src/generated.rs"));
+    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated.rs"));
 }
 
 #[test]
 fn generates_ber_formats_with_owned_flattened_values() {
-    let generated = compile_ber(include_str!("../test/fixture_ber.asn1")).unwrap();
+    let generated = compile_ber(include_str!("../../vest_asn1_tests/fixture_ber.asn1")).unwrap();
     assert!(generated.contains("// Generated formats parse and serialize BER."));
     assert!(generated.contains("use vest_lib2::asn1::ber::{"));
     assert!(generated.contains("pub type Payload = Vec<u8>;"));
@@ -627,11 +627,11 @@ fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
 
 #[test]
 fn checked_in_verified_ber_fixture_is_fresh() {
-    let generated = compile_ber(include_str!("../test/fixture_ber.asn1")).unwrap();
+    let generated = compile_ber(include_str!("../../vest_asn1_tests/fixture_ber.asn1")).unwrap();
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated_ber.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../test/src/generated_ber.rs"));
+    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated_ber.rs"));
 }
 
 #[test]
@@ -640,7 +640,7 @@ fn checked_in_verified_mixed_fixture_is_fresh() {
     overrides.insert("Canonical".to_string(), EncodingRules::Der);
     overrides.insert("Ordered".to_string(), EncodingRules::Der);
     let generated = compile_with_rule_overrides(
-        include_str!("../test/fixture_mixed.asn1"),
+        include_str!("../../vest_asn1_tests/fixture_mixed.asn1"),
         CodegenOptions {
             encoding_rules: EncodingRules::Ber,
         },
@@ -650,7 +650,7 @@ fn checked_in_verified_mixed_fixture_is_fresh() {
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         std::fs::write("test/src/generated_mixed.rs", &generated).unwrap();
     }
-    assert_eq!(generated, include_str!("../test/src/generated_mixed.rs"));
+    assert_eq!(generated, include_str!("../../vest_asn1_tests/src/generated_mixed.rs"));
 }
 
 #[test]

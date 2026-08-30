@@ -119,7 +119,7 @@ jobs:
       - name: Add tool paths
         run: |
           echo "${{ github.workspace }}/verus" >> "$GITHUB_PATH"
-          echo "${{ github.workspace }}/vest2/target/release" >> "$GITHUB_PATH"
+          echo "${{ github.workspace }}/vest/target/release" >> "$GITHUB_PATH"
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -127,10 +127,10 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            vest2/target
-            vest_lib2/target
-            vestasn1/target
-            vestasn1/test/target
+            vest/target
+            vest_lib/target
+            vest_asn1/target
+            vest_asn1_tests/target
             vest_dev/target
             vest_derive/target
           key: ${{ runner.os }}-${{ matrix.verus-release }}-cargo-${{ hashFiles('**/Cargo.lock') }}
@@ -139,11 +139,11 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: DSL compiler tests
-        working-directory: ./vest2
+        working-directory: ./vest
         run: cargo test
 
       - name: ASN.1 frontend tests
-        working-directory: ./vestasn1
+        working-directory: ./vest_asn1
         run: cargo test
 
       - name: Derive tests
@@ -151,46 +151,46 @@ jobs:
         run: cargo test
 
       - name: Regenerate checked-in Vest output
-        working-directory: ./vest2/test
+        working-directory: ./vest_tests
         run: make vest
 
       - name: Regenerate checked-in ASN.1 output
-        working-directory: ./vestasn1/test
+        working-directory: ./vest_asn1_tests
         run: make generate
 
       - name: Generated output is current
         run: git diff --exit-code
 
       - name: vest_lib2 - cargo check (core only)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo check --no-default-features --all-targets
 
       - name: vest_lib2 - cargo check (alloc only)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo check --no-default-features --features alloc --all-targets
 
       - name: vest_lib2 - cargo test (std)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo test
 
       - name: vest_lib2 - cargo verus verify (core only)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo verus verify --no-default-features -- --expand-errors
 
       - name: vest_lib2 - cargo verus verify (alloc only)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo verus verify --no-default-features --features alloc -- --expand-errors
 
       - name: vest_lib2 - cargo verus verify (std)
-        working-directory: ./vest_lib2
+        working-directory: ./vest_lib
         run: cargo verus verify -- --expand-errors
 
       - name: Vest generated regression corpus - verify
-        working-directory: ./vest2/test
+        working-directory: ./vest_tests
         run: cargo verus verify -- --expand-errors
 
       - name: ASN.1 generated regression corpus - verify
-        working-directory: ./vestasn1/test
+        working-directory: ./vest_asn1_tests
         run: cargo verus verify -- --expand-errors
 
       - name: Development formats - verify
@@ -199,5 +199,5 @@ jobs:
 
       - name: Compile benchmarks
         run: |
-          cargo bench --manifest-path vest2/test/Cargo.toml --no-run
+          cargo bench --manifest-path vest_tests/Cargo.toml --no-run
           cargo bench --manifest-path vest_dev/Cargo.toml --no-run
