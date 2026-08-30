@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["lemma_permute3_spec_parse_ref","lemma_permute4_spec_parse_ref"]};

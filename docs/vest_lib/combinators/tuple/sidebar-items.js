@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["exec","proof","spec"],"struct":["Bind","Pair"]};

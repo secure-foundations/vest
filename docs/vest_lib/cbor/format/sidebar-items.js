@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cbor_body","cbor_fmt","cbor_value_valid","cbor_wire_valid","decode_cbor_wire","encode_cbor_value","normalized_only"],"struct":["CborFmt","CborMapper","CborRecBody"]};

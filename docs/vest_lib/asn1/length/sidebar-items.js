@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["LONG_FORM_MAX_COUNT","LONG_FORM_MIN_COUNT","SHORT_FORM_MAX"],"fn":["ber_length_fmt","der_long_len_bytes_minimal"]};

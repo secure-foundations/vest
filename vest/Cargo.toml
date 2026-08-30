@@ -1,6 +1,6 @@
 [package]
 name = "vest"
-version = "0.1.5"
+version = "0.2.0"
 edition.workspace = true
 license.workspace = true
 description = "Vest: A DSL for specifying and generating fast, formally verified parsers and serializers"

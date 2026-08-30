@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["is_valid_teletex_string","is_valid_teletex_string_spec","teletexstring_fmt"],"struct":["TeletexString","TeletexStringOwned","TeletexStringSpec"]};

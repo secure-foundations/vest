@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["lemma_oid_arcs_roundtrip","lemma_oid_from_subidentifiers_wf","lemma_oid_subidentifier_roundtrip","object_identifier_inner","oid_first_subidentifier","oid_from_subidentifiers","oid_to_subidentifiers"],"struct":["ObjectIdentifier","ObjectIdentifierSpec"],"type":["ObjectIdentifierInnerFmt"]};

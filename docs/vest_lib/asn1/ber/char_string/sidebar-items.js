@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ber_char_string_fmt"],"struct":["BerCharStringFmt"],"trait":["BerDecoderOwned"],"type":["BerBmpStringFmt","BerIa5StringFmt","BerNumericStringFmt","BerPrintableStringFmt","BerTeletexStringFmt","BerUniversalStringFmt","BerUtf8StringFmt"]};

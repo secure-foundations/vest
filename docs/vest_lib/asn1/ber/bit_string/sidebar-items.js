@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ber_bit_string_normalized_fmt","ber_bit_string_rec_body","ber_bit_string_segments_wf","ber_bit_string_wire_wf","flatten_ber_bit_string_segments"],"struct":["BerBitStringFmt","BerBitStringRecBody"]};

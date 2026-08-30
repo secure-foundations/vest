@@ -1,7 +1,13 @@
 [package]
 name = "vest_lib"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
+license.workspace = true
+description = "Verified parser and serializer combinators for Verus"
+repository.workspace = true
+readme = "README.md"
+keywords = ["verus", "verification", "parser", "serializer", "combinators"]
+categories = ["parsing", "no-std"]
 
 [features]
 default = ["std"]

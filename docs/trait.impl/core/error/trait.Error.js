@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["vest_lib",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.91.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"vest_lib/errors/enum.ParseError.html\" title=\"enum vest_lib::errors::ParseError\">ParseError</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.91.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"vest_lib/errors/enum.SerializeError.html\" title=\"enum vest_lib::errors::SerializeError\">SerializeError</a>"]]]]);
+    const implementors = Object.fromEntries([["vest_lib",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"vest_lib/core/exec/error/struct.ParseError.html\" title=\"struct vest_lib::core::exec::error::ParseError\">ParseError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"vest_lib/core/exec/serializer/struct.PreSerializeError.html\" title=\"struct vest_lib::core::exec::serializer::PreSerializeError\">PreSerializeError</a>",0]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[566]}
+//{"start":59,"fragment_lengths":[641]}

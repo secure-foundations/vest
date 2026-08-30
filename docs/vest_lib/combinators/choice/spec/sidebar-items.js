@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Sum"],"fn":["arbitrary_or_left","branch_exists","tag_position","unique_branch_match"]};

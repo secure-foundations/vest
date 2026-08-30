@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":[["with_deep_view",1],["with_deep_view_and_mapper",1]]};

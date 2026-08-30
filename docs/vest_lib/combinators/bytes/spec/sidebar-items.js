@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["array_from_seq","axiom_array_from_seq","lemma_array_from_seq_roundtrip","lemma_tail_and_then_consistent","tail_and_then_lemmas"]};

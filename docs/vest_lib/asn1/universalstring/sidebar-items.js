@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_valid_universal_string","decode_universal_string","encode_universal_string","is_valid_universal_string","lemma_decode_encode_universal_string","lemma_encode_decode_universal_string","lemma_encode_universal_string_valid","universal_code_point","universalstring_fmt"],"type":["UniversalString","UniversalStringSpec"]};

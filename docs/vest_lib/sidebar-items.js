@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["inj_ord_choice_pat","inj_ord_choice_result","ord_choice","ord_choice_result","ord_choice_type"],"mod":["bitcoin","buf_traits","errors","properties","regular","utils"]};
+window.SIDEBAR_ITEMS = {"macro":[["impl_ber",1],["impl_der",1],["with_deep_view",1],["with_deep_view_and_mapper",1]],"mod":["asn1","cbor","combinators","core","macros","primitives"],"type":["Never"]};

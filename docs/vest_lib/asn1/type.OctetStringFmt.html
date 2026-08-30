@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="ASN.1 OCTET STRING contents format (primitive)."><title>OctetStringFmt in vest_lib::asn1 - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc type"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">OctetStringFmt</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../vest_lib/index.html">vest_<wbr>lib</a></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Octet<wbr>String<wbr>Fmt</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example" title="Example">Example</a></li></ul><h3><a href="#aliased-type">Aliased Type</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In vest_<wbr>lib::<wbr>asn1</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">vest_lib</a>::<wbr><a href="index.html">asn1</a></div><h1>Type Alias <span class="type">Octet<wbr>String<wbr>Fmt</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/vest_lib/asn1/mod.rs.html#286">Source</a> </span></div><pre class="rust item-decl"><code>pub type OctetStringFmt = <a class="struct" href="../combinators/tail/struct.Tail.html" title="struct vest_lib::combinators::tail::Tail">Tail</a>;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>ASN.1 OCTET STRING contents format (primitive).</p>
+<p>TODO: support indefinite (constructed) forms:</p>
+<h4 id="example"><a class="doc-anchor" href="#example">§</a>Example</h4>
+<p>24 80 04 03 42 45 52 24 80 04 01 2D 04 05 52 55 4C 45 53 00 00 00 00
+│  │  │  │  └───────┘ │  │  │  │  │  │  │  └──────────────┘ │     │
+│  │  │  │  “BER”     │  │  │  │  │  │  └─ Len: 5 “RULES”   │     └─ Outer EOC
+│  │  │  └─ Len: 3    │  │  │  │  │  └─ Primitive           └─ Inner EOC
+│  │  └─ Primitive    │  │  │  │  └─ “-”
+│  └─ Indefinite      │  │  │  └─ Len: 1
+└─ Outer Outer        │  │  └─ Primitive
+│  └─ Indefinite
+└─ Inner Constructed</p>
+<p>[TAG: 24] Constructed OCTET STRING (Indefinite Length)
+│
+├── [TAG: 04] Primitive OCTET STRING (Definite Length: 3)
+│      └── Value: “BER” (Hex: 42 45 52)
+│
+├── [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+│      │
+│      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 1)
+│      │      └── Value: “-” (Hex: 2D)
+│      │
+│      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 5)
+│      │      └── Value: “RULES” (Hex: 52 55 4C 45 53)
+│      │
+│      └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+│             └── Meaning: Closes the Inner Constructed String
+│
+└── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+└── Meaning: Closes the Outer Constructed String</p>
+</div></details><h2 id="aliased-type" class="section-header">Aliased Type<a href="#aliased-type" class="anchor">§</a></h2><pre class="rust item-decl"><code>pub struct OctetStringFmt;</code></pre><script src="../../type.impl/vest_lib/combinators/tail/struct.Tail.js" data-self-path="vest_lib::asn1::OctetStringFmt" async></script></section></div></main></body></html>
