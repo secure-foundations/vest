@@ -57,9 +57,9 @@ else
     RUSTDOC_CMD="rustdoc"
 fi
 
-echo "Running rustdoc for vest-plus..."
+echo "Running rustdoc for vest_lib..."
 RUSTC_BOOTSTRAP=1 eval ""VERUSDOC=1 VERUS_Z3_PATH="$(pwd)/z3"  $RUSTDOC_CMD \
-  --crate-name vest_plus \
+  --crate-name vest_lib \
   -L dependency=$VERUS/target-verus/debug \
   -L dependency=$VERUS/target/debug/deps \
   --extern vstd=$VERUS/target-verus/debug/libvstd.rlib \
@@ -89,4 +89,4 @@ RUSTC_BOOTSTRAP=1 eval ""VERUSDOC=1 VERUS_Z3_PATH="$(pwd)/z3"  $RUSTDOC_CMD \
 echo "Running post-processor..."
 $VERUS/target/debug/verusdoc
 
-echo "Documentation generated at ./doc/vest_plus/index.html"
+echo "Documentation generated at ./doc/vest_lib/index.html"

@@ -1,4 +1,4 @@
-//! Primitive formats built from the core Vest++ combinators.
+//! Primitive formats built from the core Vest combinators.
 /// Unsigned big-endian base-128 (VLQ) format.
 pub mod base128;
 /// Unsigned big-endian base-256 format.

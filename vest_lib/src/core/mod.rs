@@ -1,6 +1,6 @@
-//! Core specifications and correctness/security theorems for Vest++ combinators.
+//! Core specifications and correctness/security theorems for Vest combinators.
 //!
-//! This module forms the foundation of the Vest++ combinator framework. It defines:
+//! This module forms the foundation of the Vest combinator framework. It defines:
 //!
 //! ## [`spec`] — Specification Family of Traits
 //!
@@ -14,7 +14,7 @@
 //!
 //! These traits are designed to be as independent as possible such that they can be useful individually
 //! (e.g., applications that only need to specify parsing but not serialization, or vice versa). However,
-//! Vest++ combinators generally provide trait implementations for all of these traits, and the proofs
+//! Vest combinators generally provide trait implementations for all of these traits, and the proofs
 //! in the [`proof`] module often rely on multiple, if not all, of these traits being implemented
 //! for the combinators in question.
 //!

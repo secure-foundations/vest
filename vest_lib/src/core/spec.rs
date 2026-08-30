@@ -1,4 +1,4 @@
-//! Core specification traits for Vest++ combinators.
+//! Core specification traits for Vest combinators.
 use vstd::prelude::*;
 
 verus! {

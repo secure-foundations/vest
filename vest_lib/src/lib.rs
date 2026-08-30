@@ -1,12 +1,12 @@
-//! # VEST++: The next generation VErified Serialization Toolkit
+//! # Vest: The next generation VErified Serialization Toolkit
 //!
-//! Vest++ provides a library of formally verified (de-)serializer **combinators** built with
+//! Vest provides a library of formally verified (de-)serializer **combinators** built with
 //! [Verus](https://github.com/verus-lang/verus), as well as a domain-specific language (DSL) for defining
 //! complex binary data formats leveraging these formally verified combinators.
 //!
 //! ## Key Properties
 //!
-//! All Vest++ combinators are formally proven to satisfy **[Serialize-Parse Roundtrip](core::proof::SPRoundTrip)**:
+//! All Vest combinators are formally proven to satisfy **[Serialize-Parse Roundtrip](core::proof::SPRoundTrip)**:
 //! for any value `v` consistent with a format, serializing `v` and then parsing the result recovers `v`.
 //! Additionally, combinators that are proven to be **[Non-Malleable](core::proof::NonMalleable)** also satisfy
 //! **[Parse-Serialize Roundtrip](core::proof::PSRoundTrip)**: parsing a buffer and then serializing the result

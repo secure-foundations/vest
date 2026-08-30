@@ -394,7 +394,7 @@ still safely rejecting ambiguous formats.
 
 ## New Trait System
 
-The core of Vest++ is built upon a set of traits defining the parsing and
+The core of Vest is built upon a set of traits defining the parsing and
 serialization specification for combinators, as well as the *stratified* correctness and security properties.
 
 ### Core Specification Traits
@@ -429,7 +429,7 @@ serialization specification for combinators, as well as the *stratified* correct
   serialized output). This would be useful for re-using existing proofs on
   exec-spec equivalence.
   
-In other words, all Vest++ combinators can (and should) prove `SPRoundTrip`, but
+In other words, all Vest combinators can (and should) prove `SPRoundTrip`, but
 only `NonMalleable` combinators can prove and hence enjoy the `PSRoundTrip` property.
 
 ### Hierarchy Diagram
@@ -501,7 +501,7 @@ classDiagram
 
 ### Malleable Combinators
 
-Vest++ handles **malleable** formats (where multiple binary sequences map to the
+Vest handles **malleable** formats (where multiple binary sequences map to the
 same value, or equivalently, a parser loses information) explicitly.
 A combinator is **malleable** if it does not satisfy the `NonMalleable` trait.
 
@@ -936,7 +936,7 @@ The same technique can be applied to other properties of recursive parsers/seria
 
 ### Bounding the Recursion Depth
 
-Adding support for recursive formats is a huge step towards a more expressive framework of verified parsers/serializers. However, it also opens up the possibility of entirely attacker-controlled recursion depth, which can lead to stack overflows and potential denial-of-service attacks. To mitigate this risk, format/protocol designers should be mindful of the maximum recursion depth allowed and leverage machineries provided by Vest++ to properly bound the recursion depth.
+Adding support for recursive formats is a huge step towards a more expressive framework of verified parsers/serializers. However, it also opens up the possibility of entirely attacker-controlled recursion depth, which can lead to stack overflows and potential denial-of-service attacks. To mitigate this risk, format/protocol designers should be mindful of the maximum recursion depth allowed and leverage machineries provided by Vest to properly bound the recursion depth.
 
 There are mainly two approaches to bounding the recursion, just like in the case of bounded repetition:
 
@@ -961,7 +961,7 @@ nested_braces = choose {
 
 This way, the recursion depth is *indirectly* bounded by the size of the buffer, which in turn is bounded by the maximum length allowed for the buffer. For example, in the case of `good_fmt2`, if the `@len` is set to 32, the maximum recursion depth would be 16 (`nested_braces` would consume 2 bytes per level of recursion).
 
-Vest++ would provide means to automatically *compute* the serialized buffer size, the maximum recursion depth for each format, or even the maximum *stack usage* for each format. This would allow format/protocol designers to easily reason about the resource usage and henceforce the security implications of their formats.
+Vest would provide means to automatically *compute* the serialized buffer size, the maximum recursion depth for each format, or even the maximum *stack usage* for each format. This would allow format/protocol designers to easily reason about the resource usage and henceforce the security implications of their formats.
 
 2. **Depth-based bounding**: Format designers can directly specify the maximum recursion depth allowed for a format (again, either static or dynamic). For example:
 

@@ -1,4 +1,4 @@
-//! Correctness and security proof traits for Vest++ combinators.
+//! Correctness and security proof traits for Vest combinators.
 
 use crate::core::spec::SpecParser;
 

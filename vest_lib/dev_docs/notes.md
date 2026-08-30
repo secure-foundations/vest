@@ -1,8 +1,8 @@
-# Vest++ Development Documentation
+# Vest Development Documentation
 
 ## New Theory of Format Ambiguity
 
-Vest1.0 guarantees non-ambiguity of format composition by imposing side conditions on the components. 
+Vest 1.x guarantees non-ambiguity of format composition by imposing side conditions on the components.
 
 * `Pair(A, B)` and `Repeat(A)` is unambiguous only if `A` is *prefix-secure*
 * `Choice(A, B)` is unambiguous only if `A` and `B` are *disjoint*
@@ -15,9 +15,9 @@ However, while *sufficient* to prove the serialze-parse roundtrip theorem, those
 
 Meanwhile, this theory surprisingly allows for composition of certain unambiguous, but *meaningless* formats:
 
-* `(Eof, Repeat(A))` is technically allowed in Vest1.0, but it's not meaningful (as it'd never process `Repeat(A)`).
+* `(Eof, Repeat(A))` is technically allowed in Vest 1.x, but it's not meaningful (as it'd never process `Repeat(A)`).
 
-Vest++ develops a new theory of format ambiguity that is more flexible and yet *subsumes* Vest1.0. The key is to specify the serialization functions in destination-passing style (DPS):
+Vest develops a new theory of format ambiguity that is more flexible and yet *subsumes* Vest 1.x. The key is to specify the serialization functions in destination-passing style (DPS):
 
 ```diff
 -    fn spec_serialize(&self, v: Self::Type) -> Seq<u8>;
@@ -75,9 +75,9 @@ open spec fn unambiguous(&self, v: Self::Type, obuf: Seq<u8>) -> bool {
 }
 ```
 
-This DPS-based theory rejects all formats that would be rejected by Vest1.0---one still won't be able to compose things like `Pair(Tail, U32Le)`, `Opt(Empty)`, `Choice(U8, U16Le)`.
+This DPS-based theory rejects all formats that would be rejected by Vest 1.x---one still won't be able to compose things like `Pair(Tail, U32Le)`, `Opt(Empty)`, `Choice(U8, U16Le)`.
 
-But more importantly, we can now easily express formats not supported in Vest1.0---both `Pair(Opt(A), Opt(B))` and `(Repeat(A), B)` can be composed and are unambiguous if `parse_A` fails on `serialize_B` (no longer requires prefix-security of `Opt(A)` or `Repeat(A)`!).
+But more importantly, we can now easily express formats not supported in Vest 1.x---both `Pair(Opt(A), Opt(B))` and `(Repeat(A), B)` can be composed and are unambiguous if `parse_A` fails on `serialize_B` (no longer requires prefix-security of `Opt(A)` or `Repeat(A)`!).
 
 And we will reject meaningless formats like `(Eof, U32Le)`, as the destination buffer won't be empty when serializing `Eof`.
 
@@ -162,7 +162,7 @@ Pros:
 - No heap allocation is needed
 - Encodes the "True" permutation semantics
   - Due to the full backtracking semantics of `Alt`, grammars like `Permute(any, 'a')` would succeed on both inputs `'ab'` and `'ba'`
-  - Although Vest++ would reject ambiguous grammars like these for any combinators implementing (`SPRoundtrip`)
+  - Although Vest would reject ambiguous grammars like these for any combinators implementing (`SPRoundtrip`)
 
 Cons:
 - Rust's compile-time monomorphization means that the number of instances of `Permute2` grows **factorially** with the number of permutations.
@@ -236,12 +236,12 @@ Cons:
 - Unlike approach 1, *heap allocation* is unavoidable with the use of `Repeat` in the encoding
   - For a const `N`, Can we have a version of `Repeat::<N>` that parses to a fixed-size array?
 - Because this encoding is non-backtracking, it does not actually encode the "True" permutation semantics.
-  - Maybe we can prove that given unambiguous fields (Vest++ already enforces this for any combinator implementing `SPRoundtrip`), two versions of permutations are semantically equivalent
+  - Maybe we can prove that given unambiguous fields (Vest already enforces this for any combinator implementing `SPRoundtrip`), two versions of permutations are semantically equivalent
 
 
 ## The Serialization Dillemma
 
-In Vest1.0, we claimed that users can simply invoke `.parse` and `.serialize` methods as one-liners:
+In Vest 1.x, we claimed that users can simply invoke `.parse` and `.serialize` methods as one-liners:
 
 ```rust
 let (consumed, msg) = parse_msg(&ibuf)?;
@@ -295,7 +295,7 @@ fn write_msg(msg: &Msg, obuf: &mut Vec<u8>, pos: usize) -> Result<usize> {
     };
     
     // manually get the length
-    let len = len_of_msg_v(&msg.v); // api provided by Vest1.0
+    let len = len_of_msg_v(&msg.v); // api provided by Vest 1.x
     
     // "correct" the tag and length
     msg.tag = tag;
