@@ -1,68 +1,117 @@
+" Vim syntax file for the Vest DSL
+" Language: Vest
+" Upstream: https://github.com/secure-foundations/vest
+"
+" Kept in sync with the PEG grammar in vest/src/vest.pest.  When that file
+" changes, re-check the keyword, type, and operator lists below.
+"
+" Install by copying to ~/.vim/syntax/vest.vim (or
+" ~/.config/nvim/syntax/vest.vim) and adding:
+"   autocmd BufRead,BufNewFile *.vest setfiletype vest
 
-" Quit if a syntax file was already loaded
 if exists("b:current_syntax")
   finish
 endif
 
-" Define syntax for comments
-syntax match vestComment "//.*$"
-highlight link vestComment Comment
+" --------------------------------------------------------------------------
+" Keywords and built-in formats
+"
+" These are exactly the `reserved_word` rule in vest.pest, split into
+" statement-level keywords and format names, plus `bits`, which is a literal in
+" `bits_combinator` rather than a reserved word.
+" --------------------------------------------------------------------------
+syntax keyword vestKeyword const enum choose wrap macro bits
 
-" Define syntax for keywords
-syntax keyword vestKeyword const let wrap choose apply Option Vec Vec1 Tail secret enum
-highlight link vestKeyword Keyword
+syntax keyword vestType Option Vec Tail Nothing Never
+syntax match   vestType "\<\%(btc_varint\|uleb128\)\>"
+" `int_combinator`: (u|i) followed by an arbitrary bit width, e.g. u8, u24, i64.
+syntax match   vestType "\<[ui]\d\+\>"
 
-syntax keyword vestPrimitiveType u8 u16 u32 u64
-highlight link vestPrimitiveType Type
+" --------------------------------------------------------------------------
+" Identifiers with dedicated syntax
+" --------------------------------------------------------------------------
+" `depend_id`: @field, @outer.inner
+syntax match vestDependId "@\h\w*\%(\.\h\w*\)*"
 
-" var_id: Lowercase letters followed by digits, lowercase, or underscores
-syntax match vestVarId "\<\l\(\l\|\d\|_\)*\>"
-highlight link vestVarId Identifier
+" `macro_invocation`: name!(..)
+syntax match vestMacro "\<\h\w*\ze!("
 
-" const_id: Uppercase letters possibly followed by more uppercase or underscores
-syntax match vestConstId "\<\u\(\u\|_\)*\>"
-highlight link vestConstId Constant
+" `variant_id` wildcard arm in `choose`
+syntax match vestWildcard "\<_\>"
 
-" choice_id: Uppercase letters followed by any letters, digits, or underscores
-syntax match vestChoiceId "\<\u\(\w\|_\)*\>"
-highlight link vestChoiceId Type
+" `combinator_defn` / `const_combinator_defn` name in the first column.  This is
+" a heuristic: enum fields share the `name = value` shape but are indented.
+syntax match vestDefinition "^\h\w*\ze\s*\%((\_[^)]*)\)\?\s*="
 
-" stream_id: Dollar sign followed by lowercase and possibly digits, lowercase, or underscores
-syntax match vestStreamId "\$\<\l\(\l\|\d\|_\)*\>"
-highlight link vestStreamId PreProc
+" --------------------------------------------------------------------------
+" Literals
+" --------------------------------------------------------------------------
+" `typed_const_int`: an optional u<width>/i<width> suffix on a literal.
+syntax match vestNumber "\<0x\x\+\%([ui]\d\+\)\?\>"
+syntax match vestNumber "\<\d\+\%([ui]\d\+\)\?\>"
 
-" depend_id: At sign followed by lowercase and possibly digits, lowercase, or underscores
-syntax match vestDependId "@\<\l\(\l\|\d\|_\)*\>"
-highlight link vestDependId PreProc
+" `ascii`: '\x1b' or 'a'
+syntax match  vestChar   "'\%(\\x\x\{2}\|[^']\)'"
+" `const_char_array`.  The grammar does not forbid a newline inside the quotes,
+" but `oneline` keeps an unterminated quote from colouring the rest of the file.
+syntax region vestString start=+"+ end=+"+ oneline
 
-" Define syntax for special characters and operators
-syntax match vestSpecialChar "[\[\]{}()<>,.;:=|]"
-highlight link vestSpecialChar SpecialChar
+" --------------------------------------------------------------------------
+" Punctuation, operators, and directives
+"
+" Order matters here.  When two items match at the same position Vim keeps the
+" one defined last, so the broad single-character class comes first and the
+" specific multi-character forms that start with the same characters follow it.
+" --------------------------------------------------------------------------
+syntax match vestDelimiter "[[\]{}()<>,;:=|!+*/-]"
 
-" Define syntax for numbers
-syntax match vestNumber "\<\d\+\>"
-highlight link vestNumber Number
+" >>= dependent combinator, => choice arm, ... non-exhaustive marker,
+" .. constraint range.
+syntax match vestOperator ">>=\|=>\|\.\.\.\|\.\."
 
-" Define syntax for hex numbers
-syntax match vestHexNumber "\<0x\x\+\>"
-highlight link vestHexNumber Number
+" `size_expr`: |format| yields the static byte size of a format.
+syntax match vestSizeExpr "|\s*\%(\h\w*\|[ui]\d\+\|btc_varint\|uleb128\)\s*|"
 
-" Define syntax for ASCII characters
-syntax match vestASCII "'\\x\x\{2}'"
-highlight link vestASCII String
+" `endianess_defn`
+syntax match vestDirective "!\%(LITTLE\|BIG\)_ENDIAN\>"
 
-" Define syntax for string literals
-syntax match vestString '"[^"]*"'
-highlight link vestString String
+" --------------------------------------------------------------------------
+" Rust keywords that the Vest grammar accepts as identifiers but that produce
+" Rust which does not compile.  Highlighted as errors so the problem surfaces
+" in the .vest file rather than in the generated .rs file.
+" --------------------------------------------------------------------------
+syntax keyword vestForbidden as async await break continue crate dyn else
+      \ extern false fn for if impl in let loop match mod move mut pub ref
+      \ return self Self static struct super trait true type unsafe use where
+      \ while abstract become box do final override priv try typeof unsized
+      \ virtual yield
 
-" Define syntax for char literals
-syntax match vestChar "'[^']'"
-highlight link vestChar String
+" --------------------------------------------------------------------------
+" Comments are defined last on purpose: Vim resolves items that match at the
+" same position in favour of the one defined last, and `vestDelimiter` also
+" matches the `/` that opens a comment.
+" --------------------------------------------------------------------------
+syntax keyword vestTodo contained TODO FIXME XXX NOTE
+syntax match   vestComment "//.*$" contains=vestTodo
 
-" forbidden keywords (rust reserved keywords except for `enum`, `const`, and `let`)
-syntax keyword vestForbidden abstract alignof as become box break continue crate do else extern false
-      \ final fn for if impl in loop macro match mod move mut offsetof override priv proc pure pub ref return
-      \ Self self sizeof static struct super trait true type typeof unsafe unsized use virtual where while yield 
-highlight default link vestForbidden Error
-" Set the syntax type
+" --------------------------------------------------------------------------
+" Highlight groups
+" --------------------------------------------------------------------------
+highlight default link vestComment    Comment
+highlight default link vestTodo       Todo
+highlight default link vestDirective  PreProc
+highlight default link vestKeyword    Keyword
+highlight default link vestType       Type
+highlight default link vestDependId   Identifier
+highlight default link vestMacro      Macro
+highlight default link vestDefinition Function
+highlight default link vestWildcard   Special
+highlight default link vestSizeExpr   Special
+highlight default link vestNumber     Number
+highlight default link vestChar       Character
+highlight default link vestString     String
+highlight default link vestOperator   Operator
+highlight default link vestDelimiter  Delimiter
+highlight default link vestForbidden  Error
+
 let b:current_syntax = "vest"
