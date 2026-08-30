@@ -83,16 +83,24 @@ jobs:
         include:
           - name: vest_lib-core
             cargo_args: -p vest_lib --no-default-features
+            verus_args: --expand-errors
           - name: vest_lib-alloc
             cargo_args: -p vest_lib --no-default-features --features alloc
+            verus_args: --expand-errors
           - name: vest_lib-std
             cargo_args: -p vest_lib
+            verus_args: --expand-errors
           - name: vest-tests
             cargo_args: -p vest_tests
+            verus_args: --expand-errors
+          # --rlimit matches vest_asn1_tests/Makefile: the width stress fixture
+          # needs more SMT budget than the Verus default.  Keep the two in step.
           - name: vest-asn1-tests
             cargo_args: -p vest_asn1_tests
+            verus_args: --expand-errors --rlimit 100
           - name: vest-dev
             cargo_args: -p vest_dev
+            verus_args: --expand-errors
     name: Verify ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +122,7 @@ jobs:
           restore-keys: |
             linux-verus-${{ matrix.name }}-
             linux-verus-
-      - run: cargo verus verify ${{ matrix.cargo_args }} -- --expand-errors
+      - run: cargo verus verify ${{ matrix.cargo_args }} -- ${{ matrix.verus_args }}
 
   verify-macos:
     if: github.event_name == 'schedule'
@@ -132,5 +140,5 @@ jobs:
         run: echo "${{ github.workspace }}/.verus" >> "$GITHUB_PATH"
       - run: cargo verus verify -p vest_lib -- --expand-errors
       - run: cargo verus verify -p vest_tests -- --expand-errors
-      - run: cargo verus verify -p vest_asn1_tests -- --expand-errors
+      - run: cargo verus verify -p vest_asn1_tests -- --expand-errors --rlimit 100
       - run: cargo verus verify -p vest_dev -- --expand-errors

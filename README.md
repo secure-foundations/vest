@@ -23,7 +23,7 @@ proofs.
 - [`vest_lib/`](vest_lib/) — verified parser and serializer combinators;
 - [`vest_asn1/`](vest_asn1/) — an ASN.1 frontend targeting the same backend;
 - [`vest_tests/`](vest_tests/) — DSL fixtures, including TLS and Bitcoin;
-- [`vest_asn1_tests/`](vest_asn1_tests/) — generated DER, BER, and mixed-rule fixtures; and
+- [`vest_asn1_tests/`](vest_asn1_tests/) — generated DER, BER, and mixed-rule fixtures, including the curated RFC 5652 CMS module; and
 - [`vest_dev/`](vest_dev/) — handwritten formats and development examples.
 
 `vest_lib` includes primitive integer and byte formats, dependent and recursive
@@ -99,7 +99,7 @@ cargo check -p vest_lib --no-default-features --all-targets
 cargo check -p vest_lib --no-default-features --features alloc --all-targets
 cargo verus verify -p vest_lib -- --expand-errors
 cargo verus verify -p vest_tests -- --expand-errors
-cargo verus verify -p vest_asn1_tests -- --expand-errors
+cargo verus verify -p vest_asn1_tests -- --expand-errors --rlimit 100
 ```
 
 Regenerate checked-in fixtures with `make -C vest_tests vest` and

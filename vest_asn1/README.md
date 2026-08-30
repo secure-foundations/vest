@@ -127,12 +127,25 @@ silent approximation.
 
 ## Tests
 
-The checked-in DER, BER, and mixed-rule fixtures under `test/` cover nominal
-formats, inline helpers, slice serialization, tagging, OPTIONAL, DEFAULT,
-CHOICE, SEQUENCE/SET OF, heterogeneous DER SET, ENUMERATED, OID and REAL round
-trips, BER constructed values, SIZE refinements, and generated proof
-interfaces.
+The checked-in DER, BER, and mixed-rule fixtures in
+[`vest_asn1_tests/`](../vest_asn1_tests/) cover nominal formats, inline helpers,
+slice serialization, tagging, OPTIONAL, DEFAULT, CHOICE, SEQUENCE/SET OF,
+heterogeneous DER SET, ENUMERATED, OID and REAL round trips, BER constructed
+values, SIZE refinements, and generated proof interfaces.
 
-Run `make test` or `make verify` in `test/` to test or verify the generated
-fixtures. Codegen freshness is checked by `cargo test`; set `UPDATE_GOLDEN=1`
-when intentionally regenerating the checked-in Rust files.
+Two further fixtures are scalability probes rather than feature coverage:
+`schema_depth.asn1` chains 18 nested definitions, and `schema_width.asn1` is a
+16-field SEQUENCE cycling OPTIONAL, DEFAULT, and required components. The width
+fixture needs a raised SMT ceiling; see the `VERUS_ARGS` comment in
+[`vest_asn1_tests/Makefile`](../vest_asn1_tests/Makefile).
+
+`generated_cms.rs` compiles the curated RFC 5652 CMS module in
+[`rfcs/`](rfcs/) — a BER envelope with a DER island, and the largest schema in
+the corpus. [`rfcs/README.md`](rfcs/README.md) derives the encoding-rule split
+from RFC 5652, RFC 5280, and RFC 5755, and records the resulting strictness
+deviations.
+
+Run `make -C ../vest_asn1_tests test` or `make -C ../vest_asn1_tests verify` to
+test or verify the generated fixtures, and `make -C ../vest_asn1_tests generate`
+to regenerate them. Codegen freshness is checked by `cargo test`; set
+`UPDATE_GOLDEN=1` when intentionally regenerating the checked-in Rust files.

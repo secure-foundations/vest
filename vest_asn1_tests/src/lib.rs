@@ -2,9 +2,10 @@
 
 pub mod generated;
 pub mod generated_ber;
-// #[path = "/tmp/vest_asn1_generated_cms.rs"]
-// pub mod generated_cms;
+pub mod generated_cms;
 pub mod generated_mixed;
+pub mod generated_stress_depth;
+pub mod generated_stress_width;
 
 use vest_lib::core::exec::parser::{PResult, Parser};
 use vstd::prelude::*;
