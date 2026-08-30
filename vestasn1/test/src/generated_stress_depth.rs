@@ -6,7 +6,9 @@
 
 use vest_lib2::asn1::*;
 use vest_lib2::asn1::der_ord::{DerOrd, DerState};
-use vest_lib2::asn1::disjoint::HasAsn1Start;
+#[cfg(verus_only)]
+use vest_lib2::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib2::asn1::tag::tag_num_from_uint;
 use vest_lib2::asn1::ber::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
 use vest_lib2::asn1::ber::{BerEndFmt, BER_END};
 use vest_lib2::combinators::mapped::spec::{BiMap, SpecMap};
@@ -821,7 +823,11 @@ impl<'x> Map<&'x Seq1> for Seq1Reverse {
             reveal(<Seq1 as DeepView>::deep_view);
             reveal(Seq1Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -902,9 +908,13 @@ impl<'x> Map<&'x Choice1> for Choice1Reverse {
             reveal(<Choice1 as DeepView>::deep_view);
             reveal(Choice1Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice1::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -979,7 +989,11 @@ impl<'x> Map<&'x Seq2> for Seq2Reverse {
             reveal(<Seq2 as DeepView>::deep_view);
             reveal(Seq2Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1060,9 +1074,13 @@ impl<'x> Map<&'x Choice2> for Choice2Reverse {
             reveal(<Choice2 as DeepView>::deep_view);
             reveal(Choice2Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice2::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1137,7 +1155,11 @@ impl<'x> Map<&'x Seq3> for Seq3Reverse {
             reveal(<Seq3 as DeepView>::deep_view);
             reveal(Seq3Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1218,9 +1240,13 @@ impl<'x> Map<&'x Choice3> for Choice3Reverse {
             reveal(<Choice3 as DeepView>::deep_view);
             reveal(Choice3Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice3::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1295,7 +1321,11 @@ impl<'x> Map<&'x Seq4> for Seq4Reverse {
             reveal(<Seq4 as DeepView>::deep_view);
             reveal(Seq4Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1376,9 +1406,13 @@ impl<'x> Map<&'x Choice4> for Choice4Reverse {
             reveal(<Choice4 as DeepView>::deep_view);
             reveal(Choice4Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice4::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1453,7 +1487,11 @@ impl<'x> Map<&'x Seq5> for Seq5Reverse {
             reveal(<Seq5 as DeepView>::deep_view);
             reveal(Seq5Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1534,9 +1572,13 @@ impl<'x> Map<&'x Choice5> for Choice5Reverse {
             reveal(<Choice5 as DeepView>::deep_view);
             reveal(Choice5Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice5::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1611,7 +1653,11 @@ impl<'x> Map<&'x Seq6> for Seq6Reverse {
             reveal(<Seq6 as DeepView>::deep_view);
             reveal(Seq6Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1692,9 +1738,13 @@ impl<'x> Map<&'x Choice6> for Choice6Reverse {
             reveal(<Choice6 as DeepView>::deep_view);
             reveal(Choice6Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice6::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1769,7 +1819,11 @@ impl<'x> Map<&'x Seq7> for Seq7Reverse {
             reveal(<Seq7 as DeepView>::deep_view);
             reveal(Seq7Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -1850,9 +1904,13 @@ impl<'x> Map<&'x Choice7> for Choice7Reverse {
             reveal(<Choice7 as DeepView>::deep_view);
             reveal(Choice7Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice7::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -1927,7 +1985,11 @@ impl<'x> Map<&'x Seq8> for Seq8Reverse {
             reveal(<Seq8 as DeepView>::deep_view);
             reveal(Seq8Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2008,9 +2070,13 @@ impl<'x> Map<&'x Choice8> for Choice8Reverse {
             reveal(<Choice8 as DeepView>::deep_view);
             reveal(Choice8Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice8::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2085,7 +2151,11 @@ impl<'x> Map<&'x Seq9> for Seq9Reverse {
             reveal(<Seq9 as DeepView>::deep_view);
             reveal(Seq9Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2166,9 +2236,13 @@ impl<'x> Map<&'x Choice9> for Choice9Reverse {
             reveal(<Choice9 as DeepView>::deep_view);
             reveal(Choice9Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice9::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2243,7 +2317,11 @@ impl<'x> Map<&'x Seq10> for Seq10Reverse {
             reveal(<Seq10 as DeepView>::deep_view);
             reveal(Seq10Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2324,9 +2402,13 @@ impl<'x> Map<&'x Choice10> for Choice10Reverse {
             reveal(<Choice10 as DeepView>::deep_view);
             reveal(Choice10Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice10::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2401,7 +2483,11 @@ impl<'x> Map<&'x Seq11> for Seq11Reverse {
             reveal(<Seq11 as DeepView>::deep_view);
             reveal(Seq11Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2482,9 +2568,13 @@ impl<'x> Map<&'x Choice11> for Choice11Reverse {
             reveal(<Choice11 as DeepView>::deep_view);
             reveal(Choice11Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice11::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2559,7 +2649,11 @@ impl<'x> Map<&'x Seq12> for Seq12Reverse {
             reveal(<Seq12 as DeepView>::deep_view);
             reveal(Seq12Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2640,9 +2734,13 @@ impl<'x> Map<&'x Choice12> for Choice12Reverse {
             reveal(<Choice12 as DeepView>::deep_view);
             reveal(Choice12Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice12::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2717,7 +2815,11 @@ impl<'x> Map<&'x Seq13> for Seq13Reverse {
             reveal(<Seq13 as DeepView>::deep_view);
             reveal(Seq13Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2798,9 +2900,13 @@ impl<'x> Map<&'x Choice13> for Choice13Reverse {
             reveal(<Choice13 as DeepView>::deep_view);
             reveal(Choice13Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice13::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -2875,7 +2981,11 @@ impl<'x> Map<&'x Seq14> for Seq14Reverse {
             reveal(<Seq14 as DeepView>::deep_view);
             reveal(Seq14Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -2956,9 +3066,13 @@ impl<'x> Map<&'x Choice14> for Choice14Reverse {
             reveal(<Choice14 as DeepView>::deep_view);
             reveal(Choice14Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice14::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -3033,7 +3147,11 @@ impl<'x> Map<&'x Seq15> for Seq15Reverse {
             reveal(<Seq15 as DeepView>::deep_view);
             reveal(Seq15Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -3114,9 +3232,13 @@ impl<'x> Map<&'x Choice15> for Choice15Reverse {
             reveal(<Choice15 as DeepView>::deep_view);
             reveal(Choice15Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice15::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -3191,7 +3313,11 @@ impl<'x> Map<&'x Seq16> for Seq16Reverse {
             reveal(<Seq16 as DeepView>::deep_view);
             reveal(Seq16Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -3272,9 +3398,13 @@ impl<'x> Map<&'x Choice16> for Choice16Reverse {
             reveal(<Choice16 as DeepView>::deep_view);
             reveal(Choice16Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice16::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -3349,7 +3479,11 @@ impl<'x> Map<&'x Seq17> for Seq17Reverse {
             reveal(<Seq17 as DeepView>::deep_view);
             reveal(Seq17Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -3430,9 +3564,13 @@ impl<'x> Map<&'x Choice17> for Choice17Reverse {
             reveal(<Choice17 as DeepView>::deep_view);
             reveal(Choice17Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice17::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -3507,7 +3645,11 @@ impl<'x> Map<&'x Seq18> for Seq18Reverse {
             reveal(<Seq18 as DeepView>::deep_view);
             reveal(Seq18Spec::into_structural);
         }
-        (&value.value, ())
+        let result = (&value.value, ());
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
     }
 }
 
@@ -3588,9 +3730,13 @@ impl<'x> Map<&'x Choice18> for Choice18Reverse {
             reveal(<Choice18 as DeepView>::deep_view);
             reveal(Choice18Spec::into_structural);
         }
-        match value {
+        let result = match value {
             Choice18::Value(value) => value,
+        };
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
         }
+        result
     }
 }
 
@@ -3611,6 +3757,19 @@ impl SEQ0 {
     {
         BOOLEAN
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ0::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice0`.
@@ -3629,6 +3788,19 @@ impl CHOICE0 {
             ),
     {
         BOOLEAN
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE0::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, false, self.1);
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000002u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3663,6 +3835,25 @@ impl SEQ1 {
             mapper: BiMap(Seq1Forward, Seq1Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ1::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq1Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq1Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice1`.
@@ -3681,6 +3872,31 @@ impl CHOICE1 {
             ),
     {
         Mapped { inner: EXPLICIT(1u64, Ref(CHOICE0::Fmt)), mapper: BiMap(Choice1Forward, Choice1Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE1::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(1u64, Ref(CHOICE0::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice1Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice1Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3715,6 +3931,25 @@ impl SEQ2 {
             mapper: BiMap(Seq2Forward, Seq2Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ2::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq2Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq2Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice2`.
@@ -3733,6 +3968,31 @@ impl CHOICE2 {
             ),
     {
         Mapped { inner: EXPLICIT(2u64, Ref(CHOICE1::Fmt)), mapper: BiMap(Choice2Forward, Choice2Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE2::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(2u64, Ref(CHOICE1::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 2u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice2Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice2Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3767,6 +4027,25 @@ impl SEQ3 {
             mapper: BiMap(Seq3Forward, Seq3Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ3::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq3Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq3Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice3`.
@@ -3785,6 +4064,31 @@ impl CHOICE3 {
             ),
     {
         Mapped { inner: EXPLICIT(3u64, Ref(CHOICE2::Fmt)), mapper: BiMap(Choice3Forward, Choice3Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE3::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(3u64, Ref(CHOICE2::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 3u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice3Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice3Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3819,6 +4123,25 @@ impl SEQ4 {
             mapper: BiMap(Seq4Forward, Seq4Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ4::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq4Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq4Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice4`.
@@ -3837,6 +4160,31 @@ impl CHOICE4 {
             ),
     {
         Mapped { inner: EXPLICIT(4u64, Ref(CHOICE3::Fmt)), mapper: BiMap(Choice4Forward, Choice4Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE4::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(4u64, Ref(CHOICE3::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 4u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 4u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice4Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice4Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 4u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3871,6 +4219,25 @@ impl SEQ5 {
             mapper: BiMap(Seq5Forward, Seq5Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ5::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq5Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq5Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice5`.
@@ -3889,6 +4256,31 @@ impl CHOICE5 {
             ),
     {
         Mapped { inner: EXPLICIT(5u64, Ref(CHOICE4::Fmt)), mapper: BiMap(Choice5Forward, Choice5Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE5::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(5u64, Ref(CHOICE4::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 5u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 5u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice5Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice5Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 5u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3923,6 +4315,25 @@ impl SEQ6 {
             mapper: BiMap(Seq6Forward, Seq6Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ6::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq6Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq6Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice6`.
@@ -3941,6 +4352,31 @@ impl CHOICE6 {
             ),
     {
         Mapped { inner: EXPLICIT(6u64, Ref(CHOICE5::Fmt)), mapper: BiMap(Choice6Forward, Choice6Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE6::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(6u64, Ref(CHOICE5::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 6u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 6u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice6Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice6Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 6u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -3975,6 +4411,25 @@ impl SEQ7 {
             mapper: BiMap(Seq7Forward, Seq7Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ7::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq7Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq7Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice7`.
@@ -3993,6 +4448,31 @@ impl CHOICE7 {
             ),
     {
         Mapped { inner: EXPLICIT(7u64, Ref(CHOICE6::Fmt)), mapper: BiMap(Choice7Forward, Choice7Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE7::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(7u64, Ref(CHOICE6::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 7u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 7u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice7Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice7Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 7u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4027,6 +4507,25 @@ impl SEQ8 {
             mapper: BiMap(Seq8Forward, Seq8Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ8::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq8Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq8Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice8`.
@@ -4045,6 +4544,31 @@ impl CHOICE8 {
             ),
     {
         Mapped { inner: EXPLICIT(8u64, Ref(CHOICE7::Fmt)), mapper: BiMap(Choice8Forward, Choice8Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE8::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(8u64, Ref(CHOICE7::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 8u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 8u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice8Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice8Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 8u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4079,6 +4603,25 @@ impl SEQ9 {
             mapper: BiMap(Seq9Forward, Seq9Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ9::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq9Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq9Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice9`.
@@ -4097,6 +4640,31 @@ impl CHOICE9 {
             ),
     {
         Mapped { inner: EXPLICIT(9u64, Ref(CHOICE8::Fmt)), mapper: BiMap(Choice9Forward, Choice9Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE9::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(9u64, Ref(CHOICE8::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 9u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 9u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice9Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice9Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 9u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4131,6 +4699,25 @@ impl SEQ10 {
             mapper: BiMap(Seq10Forward, Seq10Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ10::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq10Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq10Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice10`.
@@ -4149,6 +4736,31 @@ impl CHOICE10 {
             ),
     {
         Mapped { inner: EXPLICIT(10u64, Ref(CHOICE9::Fmt)), mapper: BiMap(Choice10Forward, Choice10Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE10::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(10u64, Ref(CHOICE9::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 10u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 10u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice10Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice10Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 10u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4183,6 +4795,25 @@ impl SEQ11 {
             mapper: BiMap(Seq11Forward, Seq11Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ11::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq11Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq11Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice11`.
@@ -4201,6 +4832,31 @@ impl CHOICE11 {
             ),
     {
         Mapped { inner: EXPLICIT(11u64, Ref(CHOICE10::Fmt)), mapper: BiMap(Choice11Forward, Choice11Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE11::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(11u64, Ref(CHOICE10::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 11u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 11u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice11Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice11Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 11u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4235,6 +4891,25 @@ impl SEQ12 {
             mapper: BiMap(Seq12Forward, Seq12Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ12::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq12Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq12Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice12`.
@@ -4253,6 +4928,31 @@ impl CHOICE12 {
             ),
     {
         Mapped { inner: EXPLICIT(12u64, Ref(CHOICE11::Fmt)), mapper: BiMap(Choice12Forward, Choice12Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE12::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(12u64, Ref(CHOICE11::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 12u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 12u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice12Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice12Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 12u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4287,6 +4987,25 @@ impl SEQ13 {
             mapper: BiMap(Seq13Forward, Seq13Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ13::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq13Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq13Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice13`.
@@ -4305,6 +5024,31 @@ impl CHOICE13 {
             ),
     {
         Mapped { inner: EXPLICIT(13u64, Ref(CHOICE12::Fmt)), mapper: BiMap(Choice13Forward, Choice13Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE13::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(13u64, Ref(CHOICE12::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 13u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 13u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice13Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice13Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 13u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4339,6 +5083,25 @@ impl SEQ14 {
             mapper: BiMap(Seq14Forward, Seq14Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ14::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq14Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq14Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice14`.
@@ -4357,6 +5120,31 @@ impl CHOICE14 {
             ),
     {
         Mapped { inner: EXPLICIT(14u64, Ref(CHOICE13::Fmt)), mapper: BiMap(Choice14Forward, Choice14Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE14::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(14u64, Ref(CHOICE13::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 14u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 14u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice14Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice14Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 14u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4391,6 +5179,25 @@ impl SEQ15 {
             mapper: BiMap(Seq15Forward, Seq15Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ15::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq15Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq15Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice15`.
@@ -4409,6 +5216,31 @@ impl CHOICE15 {
             ),
     {
         Mapped { inner: EXPLICIT(15u64, Ref(CHOICE14::Fmt)), mapper: BiMap(Choice15Forward, Choice15Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE15::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(15u64, Ref(CHOICE14::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 15u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 15u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice15Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice15Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 15u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4443,6 +5275,25 @@ impl SEQ16 {
             mapper: BiMap(Seq16Forward, Seq16Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ16::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq16Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq16Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice16`.
@@ -4461,6 +5312,31 @@ impl CHOICE16 {
             ),
     {
         Mapped { inner: EXPLICIT(16u64, Ref(CHOICE15::Fmt)), mapper: BiMap(Choice16Forward, Choice16Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE16::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(16u64, Ref(CHOICE15::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 16u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 16u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice16Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice16Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 16u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4495,6 +5371,25 @@ impl SEQ17 {
             mapper: BiMap(Seq17Forward, Seq17Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ17::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq17Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq17Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice17`.
@@ -4513,6 +5408,31 @@ impl CHOICE17 {
             ),
     {
         Mapped { inner: EXPLICIT(17u64, Ref(CHOICE16::Fmt)), mapper: BiMap(Choice17Forward, Choice17Reverse) }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE17::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(17u64, Ref(CHOICE16::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 17u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 17u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice17Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice17Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 17u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)) by (bit_vector);
     }
 }
 
@@ -4547,6 +5467,25 @@ impl SEQ18 {
             mapper: BiMap(Seq18Forward, Seq18Reverse),
         }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(SEQ18::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        assert forall|output: <Seq18Forward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                Seq18Spec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 /// BER format for ASN.1 `Choice18`.
@@ -4566,6 +5505,31 @@ impl CHOICE18 {
     {
         Mapped { inner: EXPLICIT(18u64, Ref(CHOICE17::Fmt)), mapper: BiMap(Choice18Forward, Choice18Reverse) }
     }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(CHOICE18::spec_inner);
+        let __asn1_fmt_0 =
+            self.spec_inner();
+        let __asn1_fmt_1 =
+            EXPLICIT(18u64, Ref(CHOICE17::Fmt));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 18u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, true, 18u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert forall|output: <Choice18Forward as SpecMap>::Output| #[trigger]
+            __asn1_fmt_0.consistent(output) implies __asn1_fmt_0.mapper.sound(output) by {
+            if __asn1_fmt_0.consistent(output) {
+                Choice18Spec::lemma_from_into(output);
+            }
+        }
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 18u64));
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
 }
 
 
@@ -4574,227 +5538,227 @@ impl CHOICE18 {
 mod __impl_seq0 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(false), owned, SEQ0, SEQ0__, Seq0Spec, Seq0);
+    vest_lib2::impl_ber!(tagged_exact(false), owned, SEQ0, SEQ0__, Seq0Spec, Seq0);
 }
 
 mod __impl_choice0 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(false), owned, CHOICE0, CHOICE0__, Choice0Spec, Choice0);
+    vest_lib2::impl_ber!(tagged_exact(false), owned, CHOICE0, CHOICE0__, Choice0Spec, Choice0);
 }
 
 mod __impl_seq1 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ1, SEQ1__, Seq1Spec, Seq1, Seq1Forward, Seq1Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ1, SEQ1__, Seq1Spec, Seq1, Seq1Forward, Seq1Reverse);
 }
 
 mod __impl_choice1 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE1, CHOICE1__, Choice1Spec, Choice1, Choice1Forward, Choice1Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)), owned, CHOICE1, CHOICE1__, Choice1Spec, Choice1, Choice1Forward, Choice1Reverse);
 }
 
 mod __impl_seq2 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ2, SEQ2__, Seq2Spec, Seq2, Seq2Forward, Seq2Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ2, SEQ2__, Seq2Spec, Seq2, Seq2Forward, Seq2Reverse);
 }
 
 mod __impl_choice2 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE2, CHOICE2__, Choice2Spec, Choice2, Choice2Forward, Choice2Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)), owned, CHOICE2, CHOICE2__, Choice2Spec, Choice2, Choice2Forward, Choice2Reverse);
 }
 
 mod __impl_seq3 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ3, SEQ3__, Seq3Spec, Seq3, Seq3Forward, Seq3Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ3, SEQ3__, Seq3Spec, Seq3, Seq3Forward, Seq3Reverse);
 }
 
 mod __impl_choice3 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE3, CHOICE3__, Choice3Spec, Choice3, Choice3Forward, Choice3Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)), owned, CHOICE3, CHOICE3__, Choice3Spec, Choice3, Choice3Forward, Choice3Reverse);
 }
 
 mod __impl_seq4 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ4, SEQ4__, Seq4Spec, Seq4, Seq4Forward, Seq4Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ4, SEQ4__, Seq4Spec, Seq4, Seq4Forward, Seq4Reverse);
 }
 
 mod __impl_choice4 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE4, CHOICE4__, Choice4Spec, Choice4, Choice4Forward, Choice4Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)), owned, CHOICE4, CHOICE4__, Choice4Spec, Choice4, Choice4Forward, Choice4Reverse);
 }
 
 mod __impl_seq5 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ5, SEQ5__, Seq5Spec, Seq5, Seq5Forward, Seq5Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ5, SEQ5__, Seq5Spec, Seq5, Seq5Forward, Seq5Reverse);
 }
 
 mod __impl_choice5 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE5, CHOICE5__, Choice5Spec, Choice5, Choice5Forward, Choice5Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)), owned, CHOICE5, CHOICE5__, Choice5Spec, Choice5, Choice5Forward, Choice5Reverse);
 }
 
 mod __impl_seq6 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ6, SEQ6__, Seq6Spec, Seq6, Seq6Forward, Seq6Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ6, SEQ6__, Seq6Spec, Seq6, Seq6Forward, Seq6Reverse);
 }
 
 mod __impl_choice6 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE6, CHOICE6__, Choice6Spec, Choice6, Choice6Forward, Choice6Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)), owned, CHOICE6, CHOICE6__, Choice6Spec, Choice6, Choice6Forward, Choice6Reverse);
 }
 
 mod __impl_seq7 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ7, SEQ7__, Seq7Spec, Seq7, Seq7Forward, Seq7Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ7, SEQ7__, Seq7Spec, Seq7, Seq7Forward, Seq7Reverse);
 }
 
 mod __impl_choice7 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE7, CHOICE7__, Choice7Spec, Choice7, Choice7Forward, Choice7Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)), owned, CHOICE7, CHOICE7__, Choice7Spec, Choice7, Choice7Forward, Choice7Reverse);
 }
 
 mod __impl_seq8 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ8, SEQ8__, Seq8Spec, Seq8, Seq8Forward, Seq8Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ8, SEQ8__, Seq8Spec, Seq8, Seq8Forward, Seq8Reverse);
 }
 
 mod __impl_choice8 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE8, CHOICE8__, Choice8Spec, Choice8, Choice8Forward, Choice8Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)), owned, CHOICE8, CHOICE8__, Choice8Spec, Choice8, Choice8Forward, Choice8Reverse);
 }
 
 mod __impl_seq9 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ9, SEQ9__, Seq9Spec, Seq9, Seq9Forward, Seq9Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ9, SEQ9__, Seq9Spec, Seq9, Seq9Forward, Seq9Reverse);
 }
 
 mod __impl_choice9 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE9, CHOICE9__, Choice9Spec, Choice9, Choice9Forward, Choice9Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)), owned, CHOICE9, CHOICE9__, Choice9Spec, Choice9, Choice9Forward, Choice9Reverse);
 }
 
 mod __impl_seq10 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ10, SEQ10__, Seq10Spec, Seq10, Seq10Forward, Seq10Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ10, SEQ10__, Seq10Spec, Seq10, Seq10Forward, Seq10Reverse);
 }
 
 mod __impl_choice10 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE10, CHOICE10__, Choice10Spec, Choice10, Choice10Forward, Choice10Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)), owned, CHOICE10, CHOICE10__, Choice10Spec, Choice10, Choice10Forward, Choice10Reverse);
 }
 
 mod __impl_seq11 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ11, SEQ11__, Seq11Spec, Seq11, Seq11Forward, Seq11Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ11, SEQ11__, Seq11Spec, Seq11, Seq11Forward, Seq11Reverse);
 }
 
 mod __impl_choice11 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE11, CHOICE11__, Choice11Spec, Choice11, Choice11Forward, Choice11Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)), owned, CHOICE11, CHOICE11__, Choice11Spec, Choice11, Choice11Forward, Choice11Reverse);
 }
 
 mod __impl_seq12 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ12, SEQ12__, Seq12Spec, Seq12, Seq12Forward, Seq12Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ12, SEQ12__, Seq12Spec, Seq12, Seq12Forward, Seq12Reverse);
 }
 
 mod __impl_choice12 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE12, CHOICE12__, Choice12Spec, Choice12, Choice12Forward, Choice12Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)), owned, CHOICE12, CHOICE12__, Choice12Spec, Choice12, Choice12Forward, Choice12Reverse);
 }
 
 mod __impl_seq13 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ13, SEQ13__, Seq13Spec, Seq13, Seq13Forward, Seq13Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ13, SEQ13__, Seq13Spec, Seq13, Seq13Forward, Seq13Reverse);
 }
 
 mod __impl_choice13 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE13, CHOICE13__, Choice13Spec, Choice13, Choice13Forward, Choice13Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)), owned, CHOICE13, CHOICE13__, Choice13Spec, Choice13, Choice13Forward, Choice13Reverse);
 }
 
 mod __impl_seq14 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ14, SEQ14__, Seq14Spec, Seq14, Seq14Forward, Seq14Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ14, SEQ14__, Seq14Spec, Seq14, Seq14Forward, Seq14Reverse);
 }
 
 mod __impl_choice14 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE14, CHOICE14__, Choice14Spec, Choice14, Choice14Forward, Choice14Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)), owned, CHOICE14, CHOICE14__, Choice14Spec, Choice14, Choice14Forward, Choice14Reverse);
 }
 
 mod __impl_seq15 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ15, SEQ15__, Seq15Spec, Seq15, Seq15Forward, Seq15Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ15, SEQ15__, Seq15Spec, Seq15, Seq15Forward, Seq15Reverse);
 }
 
 mod __impl_choice15 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE15, CHOICE15__, Choice15Spec, Choice15, Choice15Forward, Choice15Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)), owned, CHOICE15, CHOICE15__, Choice15Spec, Choice15, Choice15Forward, Choice15Reverse);
 }
 
 mod __impl_seq16 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ16, SEQ16__, Seq16Spec, Seq16, Seq16Forward, Seq16Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ16, SEQ16__, Seq16Spec, Seq16, Seq16Forward, Seq16Reverse);
 }
 
 mod __impl_choice16 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE16, CHOICE16__, Choice16Spec, Choice16, Choice16Forward, Choice16Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)), owned, CHOICE16, CHOICE16__, Choice16Spec, Choice16, Choice16Forward, Choice16Reverse);
 }
 
 mod __impl_seq17 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ17, SEQ17__, Seq17Spec, Seq17, Seq17Forward, Seq17Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ17, SEQ17__, Seq17Spec, Seq17, Seq17Forward, Seq17Reverse);
 }
 
 mod __impl_choice17 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE17, CHOICE17__, Choice17Spec, Choice17, Choice17Forward, Choice17Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)), owned, CHOICE17, CHOICE17__, Choice17Spec, Choice17, Choice17Forward, Choice17Reverse);
 }
 
 mod __impl_seq18 {
     use super::*;
 
-    vest_lib2::impl_ber!(tagged(true), owned, SEQ18, SEQ18__, Seq18Spec, Seq18, Seq18Forward, Seq18Reverse);
+    vest_lib2::impl_ber!(tagged_exact(true), owned, SEQ18, SEQ18__, Seq18Spec, Seq18, Seq18Forward, Seq18Reverse);
 }
 
 mod __impl_choice18 {
     use super::*;
 
-    vest_lib2::impl_ber!(untagged, owned, CHOICE18, CHOICE18__, Choice18Spec, Choice18, Choice18Forward, Choice18Reverse);
+    vest_lib2::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)), owned, CHOICE18, CHOICE18__, Choice18Spec, Choice18, Choice18Forward, Choice18Reverse);
 }
