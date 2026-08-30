@@ -33,6 +33,7 @@ parse.output
 
 # AI
 .antigravitycli
+.claude
 
 # Benchmarks
 **/bench_data/
