@@ -40,6 +40,8 @@ proof fn test_disjointness_mapped() {
 }
 
 proof fn test_disjointness_nested_choice() {
+    broadcast use crate::combinators::disjoint::disjoint_left_composite_lemmas;
+
     reveal(disjoint_domains);
     let tag1 = Const(U8, 1u8);
     let tag2 = Const(U8, 2u8);
@@ -61,6 +63,8 @@ proof fn test_disjointness_optional_chain() {
 }
 
 proof fn test_choice_with_repeat() {
+    broadcast use crate::combinators::disjoint::disjoint_left_composite_lemmas;
+
     reveal(disjoint_domains);
     reveal(<Star::<_> as SpecParser>::spec_parse);
     reveal(<Star::<_> as Consistency>::consistent);
@@ -104,6 +108,8 @@ proof fn test_disjointness_shared_prefix() {
     let c_right = Pair(tag1, Pair(tag2, tag3));
     let c_main = Choice(c_left, c_right);
 
+    lemma_disjoint_tuple_2(c_left.1, c_right.1);
+    lemma_disjoint_tuple_2(c_left, c_right);
     assert(c_main.unambiguous());
 }
 
