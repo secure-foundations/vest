@@ -1,0 +1,6 @@
+// A negative enumerator selects a signed backing type, which is not executable
+// until the backend has signed integer combinators.
+kind = enum {
+  Negative = -1,
+  Positive = 1,
+}

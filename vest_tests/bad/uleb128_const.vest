@@ -1,0 +1,5 @@
+// Constant fields must not bypass the executable-format support check.
+msg = {
+  const tag: uleb128 = 1,
+  body: u8,
+}

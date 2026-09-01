@@ -1,0 +1,7 @@
+// `uleb128` has specification and proof impls in vest_lib but no executable parser, so
+// generated code referencing it does not compile. Rejected in type checking until the
+// executable impls land. `btc_varint` is the supported variable-length integer.
+msg = {
+  a: uleb128,
+  b: u8,
+}

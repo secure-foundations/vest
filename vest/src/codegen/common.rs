@@ -913,8 +913,10 @@ impl<'a> Analysis<'a> {
             },
             IntCombinator::BtcVarint => quote! { VarInt<true> },
             IntCombinator::ULEB128 => quote! { ULeb128<true, 10> },
+            // Unsupported widths are rejected during type checking
+            // (`check_int_combinator_supported`), so reaching this arm is an internal error.
             other => panic!(
-                "unsupported integer combinator in spec emitter: {:?}",
+                "internal error: unsupported integer combinator reached the spec emitter: {:?}",
                 other
             ),
         }

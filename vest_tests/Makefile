@@ -32,7 +32,7 @@ bad: build-vest
 	@for file in $(BAD_VEST_FILES); do \
 		echo "==================================="; \
 		echo "Expecting failure for $$file"; \
-		if $(VEST_DSL) $$file >/tmp/vest_bad.log 2>&1; then \
+		if $(VEST_DSL) $$file -o /dev/null >/tmp/vest_bad.log 2>&1; then \
 			echo "⚠️ Expected failure but succeeded for $$file"; \
 			cat /tmp/vest_bad.log; \
 			exit 1; \

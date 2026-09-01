@@ -710,7 +710,10 @@ fn check_const_combinator<'ast>(
             combinator,
             value,
             span,
-        }) => check_const_int_combinator(combinator, value, span, source),
+        }) => {
+            check_int_combinator_supported(combinator, span, source)?;
+            check_const_int_combinator(combinator, value, span, source)
+        }
         ConstEnum(ConstEnumCombinator {
             combinator,
             variant,
@@ -992,6 +995,56 @@ fn check_const_int_combinator(
     Ok(())
 }
 
+/// Rejects integer types that the grammar accepts but the code generator cannot emit working
+/// code for.
+///
+/// Both cases used to surface far later and far worse: signed widths panicked the spec emitter
+/// (`codegen/common.rs`), and `uleb128` compiled to code referencing executable impls that
+/// `vest_lib` does not provide, so the generated Rust failed to build. Rejecting here keeps the
+/// diagnostic on the user's source span.
+fn check_int_combinator_supported(
+    combinator: &IntCombinator,
+    span: &Span,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    let (label, note) = match combinator {
+        IntCombinator::Signed(n) => (
+            format!("`i{}` is not supported by the code generator", n),
+            format!(
+                "use `u{}` and interpret the sign in your own code; signed integer support is \
+                 not implemented yet",
+                n
+            ),
+        ),
+        IntCombinator::ULEB128 => (
+            "`uleb128` is not supported by the code generator".to_string(),
+            "`vest_lib` has no executable parser for LEB128 yet, so generated code would not \
+             compile; `btc_varint` is a supported variable-length integer"
+                .to_string(),
+        ),
+        IntCombinator::Unsigned(8 | 16 | 24 | 32 | 64) | IntCombinator::BtcVarint => return Ok(()),
+        IntCombinator::Unsigned(bits) => (
+            format!("`u{}` is not a supported integer format", bits),
+            "ordinary integer formats must be u8, u16, u24, u32, or u64; other widths are \
+             available only as fields inside a `bits` format"
+                .to_string(),
+        ),
+    };
+
+    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
+        .with_message("unsupported integer type")
+        .with_label(
+            Label::new((source.0, span_as_range(span)))
+                .with_message(label)
+                .with_color(Color::Red),
+        )
+        .with_note(note)
+        .finish()
+        .eprint(source)
+        .unwrap();
+    Err(VestError::TypeError)
+}
+
 fn check_combinator<'ast>(
     Combinator {
         inner,
@@ -1051,8 +1104,11 @@ fn check_combinator_inner<'ast>(
         ConstraintInt(ConstraintIntCombinator {
             combinator,
             constraint,
-            span: _,
-        }) => check_constraint_int_combinator(combinator, constraint.as_ref(), source),
+            span,
+        }) => {
+            check_int_combinator_supported(combinator, span, source)?;
+            check_constraint_int_combinator(combinator, constraint.as_ref(), source)
+        }
         ConstraintEnum(ConstraintEnumCombinator {
             combinator,
             constraint,
@@ -2540,6 +2596,15 @@ fn check_enum_combinator(
     }
 
     let combinator = resolve_enum_type(enums);
+    // Nonstandard unsigned widths are valid declarations for enums used inside
+    // `bits`; their use as ordinary formats is rejected at the invocation site.
+    // Signed enum carriers, however, have no supported code-generation path.
+    if matches!(
+        combinator,
+        IntCombinator::Signed(_) | IntCombinator::ULEB128
+    ) {
+        check_int_combinator_supported(&combinator, &span, source)?;
+    }
     for Enum { value, .. } in enums {
         check_const_int_combinator(&combinator, value, &span, source)?;
     }
