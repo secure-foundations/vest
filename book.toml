@@ -11,3 +11,5 @@ create-missing = false
 [output.html]
 git-repository-url = "https://github.com/secure-foundations/vest"
 site-url = "/vest/guide/"
+additional-css = ["theme/vest-highlight.css"]
+additional-js = ["theme/vest-highlight.js"]

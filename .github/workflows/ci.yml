@@ -42,6 +42,10 @@ jobs:
         run: cargo check -p vest_lib --no-default-features --all-targets
       - name: vest_lib alloc-only check
         run: cargo check -p vest_lib --no-default-features --features alloc --all-targets
+      - name: Check vest_lib documentation links
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::invalid_codeblock_attributes
+        run: cargo doc -p vest_lib --no-deps
       - name: Compile benchmarks with the workspace profile
         run: |
           output="$(cargo bench --no-run -p vest_tests -p vest_dev 2>&1)"
@@ -71,6 +75,11 @@ jobs:
       - name: Regenerate Vest fixtures
         working-directory: vest_tests
         run: make vest
+      - name: Rejected fixtures are still rejected
+        working-directory: vest_tests
+        run: make bad
+      - name: Check Vest snippets in the guide
+        run: cargo test -p vest_guide_tests
       - name: Regenerate ASN.1 fixtures
         working-directory: vest_asn1_tests
         run: make generate

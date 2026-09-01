@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "../searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-203bd9cc.js"></script>
+        <script src="../toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,36 +179,127 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="supported-asn1-and-limitations"><a class="header" href="#supported-asn1-and-limitations">Supported ASN.1 and limitations</a></h1>
-<p>The frontend supports the following current subset:</p>
-<ul>
-<li>BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER, REAL, NULL, and ANY;</li>
-<li>BIT STRING, OCTET STRING, supported character strings, and time strings;</li>
-<li>SEQUENCE, SEQUENCE OF, SET OF, CHOICE, and statically ordered heterogeneous
-DER SET;</li>
-<li>OPTIONAL and supported DEFAULT components;</li>
-<li>local references and EXPLICIT/IMPLICIT tags in the context-specific,
-application, and private classes; and</li>
-<li>fixed, bounded, and one-sided SIZE constraints for supported strings and
-collections, plus INTEGER value and range constraints.</li>
-</ul>
-<p>DER <code>SET OF</code> requires values already sorted by complete DER TLV encoding and
-allows duplicate encodings. Preparation rejects unsorted values without
-allocating. BER <code>SET OF</code> preserves schema order. Heterogeneous BER SET is not
-yet generated.</p>
-<p>DEFAULT values are supported for BOOLEAN, ENUMERATED, and INTEGER types whose
-finite constraint selects the current <code>i8</code> or <code>i16</code> backend.</p>
-<p>Current unsupported or restricted constructs include OBJECT IDENTIFIER and
-REAL value assignments, large ENUMERATED executable values, BIT STRING SIZE
-constraints, RELATIVE-OID, GeneralString, VisibleString, ANY DEFINED BY,
-general constraint combinations, imports, AUTOMATIC TAGS, extension markers,
-extension-addition groups, WITH COMPONENTS, and recursive schema definitions.
-Recognized unsupported syntax is rejected rather than approximated.</p>
-<p>Generated first-tag certificates represent the 256 possible identifier-leading
-octets. Tags numbered 0 through 30 are exact. High-tag numbers with the same
-class and constructed bit share a leading-octet bit, so the current automation
-cannot certify two such tags as disjoint solely from later tag-number octets.</p>
-<p>The checked fixtures under <code>vest_asn1_tests</code> are the executable source of truth
-for combinations supported by the current compiler.</p>
+<p>What <code>vest_asn1</code> accepts today.
+Anything listed as not supported is <em>rejected</em> by the compiler
+with an error.</p>
+<h2 id="primitive-types"><a class="header" href="#primitive-types">Primitive types</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>BOOLEAN</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>INTEGER</code></td><td>Supported</td><td>support for arbitrary-width big integers; constraint <code>INTEGER</code> specializes to the narrow <code>i8</code> or <code>i16</code> backend</td></tr>
+<tr><td><code>ENUMERATED</code></td><td>Supported</td><td>supported as a constraint on <code>INTEGER</code> (specialized to <code>i16</code>)</td></tr>
+<tr><td><code>NULL</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>OBJECT IDENTIFIER</code></td><td>Supported</td><td>as a type; not as a value assignment</td></tr>
+<tr><td><code>REAL</code></td><td>Supported</td><td>as a type; not as a value assignment</td></tr>
+<tr><td><code>OCTET STRING</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>BIT STRING</code></td><td>Partially supported</td><td>no <code>SIZE</code> constraints</td></tr>
+<tr><td><code>ANY</code></td><td>Partially supported</td><td>no <code>ANY DEFINED BY</code> dispatch</td></tr>
+<tr><td><code>UTF8String</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>PrintableString</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>IA5String</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>NumericString</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>TeletexString</code></td><td>Partially supported</td><td>character-set validation is currently a stub</td></tr>
+<tr><td><code>BMPString</code></td><td>Supported</td><td>no borrowed forms, always owned</td></tr>
+<tr><td><code>UniversalString</code></td><td>Supported</td><td>no borrowed forms, always owned</td></tr>
+<tr><td><code>UTCTime</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>GeneralizedTime</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>GeneralString</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>VisibleString</code> / <code>ISO646String</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>GraphicString</code>, <code>VideotexString</code>, <code>T61String</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>RELATIVE-OID</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>ObjectDescriptor</code>, <code>EXTERNAL</code>, <code>EMBEDDED PDV</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>DATE</code>, <code>TIME</code>, <code>DURATION</code></td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="constructed-types"><a class="header" href="#constructed-types">Constructed types</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SEQUENCE</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SEQUENCE OF</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SET OF</code></td><td>Supported</td><td>ordering rules differ by encoding rule — see below</td></tr>
+<tr><td><code>CHOICE</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SET</code></td><td>Partially supported</td><td>DER only, and fields must already be in canonical tag order in the schema</td></tr>
+<tr><td>Anonymous inline composites</td><td>Supported</td><td>lifted to private helper definitions</td></tr>
+<tr><td>Recursive schema</td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="tagging"><a class="header" href="#tagging">Tagging</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>EXPLICIT</code> tags</td><td>Supported</td><td></td></tr>
+<tr><td><code>IMPLICIT</code> tags</td><td>Supported</td><td>replaces the outer tag</td></tr>
+<tr><td>Context-specific, application, private classes</td><td>Supported</td><td></td></tr>
+<tr><td><code>IMPLICIT</code> on <code>CHOICE</code> or <code>ANY</code></td><td>Supported</td><td>promoted to explicit — neither has one tag to replace</td></tr>
+<tr><td><code>AUTOMATIC TAGS</code></td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="components-and-constraints"><a class="header" href="#components-and-constraints">Components and constraints</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>OPTIONAL</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>DEFAULT</code></td><td>Partially supported</td><td><code>BOOLEAN</code>, <code>ENUMERATED</code>, and <code>INTEGER</code> whose range fits in <code>i8</code>/<code>i16</code></td></tr>
+<tr><td><code>SIZE</code> — fixed, bounded, one-sided</td><td>Supported</td><td>on strings and collections; not on <code>BIT STRING</code></td></tr>
+<tr><td><code>INTEGER</code> value and range constraints</td><td>Supported</td><td></td></tr>
+<tr><td><code>WITH COMPONENTS</code></td><td>Not supported</td><td></td></tr>
+<tr><td>Extension markers (<code>...</code>)</td><td>Not supported</td><td></td></tr>
+<tr><td>Extension-addition groups</td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="module-level"><a class="header" href="#module-level">Module-level</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Local type references</td><td>Supported</td><td></td></tr>
+<tr><td><code>BOOLEAN</code>, <code>INTEGER</code>, <code>ENUMERATED</code> value assignments</td><td>Supported</td><td>emitted as typed Rust constants</td></tr>
+<tr><td><code>OBJECT IDENTIFIER</code>, <code>REAL</code> value assignments</td><td>Not supported</td><td></td></tr>
+<tr><td>Imports from other modules</td><td>Not supported</td><td>module linking is unimplemented; curate dependencies into one module instead</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="additional-notes"><a class="header" href="#additional-notes">Additional notes</a></h2>
+<p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
+DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
+allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER
+<code>SET OF</code> imposes no canonical order and preserves schema order on output.</p>
+<p><strong>Heterogeneous <code>SET</code>.</strong> BER lets a <code>SET</code> carry its components in any order, so
+a BER parser would have to accept every permutation of the fields. DER
+instead fixes them in ascending tag order. <code>vest_asn1</code> currently emits <code>SET</code> only
+under DER, and only when the schema already lists the fields in canonical order. The <code>vest_lib</code> backend supports a group of <code>Permute</code> combinators that can be used to implement BER <code>SET</code>, but the generator does not yet emit them.</p>
+<p><strong>Borrowing and <code>alloc</code>.</strong> DER strings are contiguous, so their value types
+borrow from the input. BER strings may arrive fragmented across constructed
+encodings and are flattened into owned values, which is why BER modules need the
+<code>alloc</code> feature where the equivalent DER module may not. <code>BMPString</code> and
+<code>UniversalString</code> are always owned, since their wire form is not UTF-8.</p>
+<p><strong>High tag numbers and disjointness.</strong> <code>CHOICE</code>, <code>OPTIONAL</code>, and <code>DEFAULT</code> need
+alternatives/adjacent fields to be provably disjoint. The generated proof covers
+the 256 possible leading identifier octets: tags 0 through 30 are exact, but all
+high-tag-number forms sharing a class and constructed bit collapse onto one bit.
+Two such tags cannot be proven disjoint from their later tag-number octets
+alone, so a schema that distinguishes alternatives only by high tag numbers is
+conservatively rejected.</p>
 
                     </main>
 
@@ -244,6 +336,22 @@ for combinations supported by the current compiler.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -260,6 +368,7 @@ for combinations supported by the current compiler.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../theme/vest-highlight-f6db02d8.js"></script>
 
 
 

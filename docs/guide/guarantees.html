@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-203bd9cc.js"></script>
+        <script src="toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,58 +179,91 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="what-vest-proves"><a class="header" href="#what-vest-proves">What Vest proves</a></h1>
-<p>Vest separates a format into three related layers:</p>
-<ol>
-<li>pure specifications for parsing, serialization, byte length, and value
-consistency;</li>
-<li>executable Rust implementations; and</li>
-<li>proofs connecting the implementations to the specifications and composing
-format-level properties.</li>
-</ol>
-<p>Verus checks executable memory safety, panic freedom, termination, and the
-contracts on the parsing, preparation, length, and serialization APIs. The
-following properties describe the wire format itself.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Property</th><th>Vest interface</th><th>Meaning</th></tr>
-</thead>
-<tbody>
-<tr><td>Safe parsing</td><td><code>SafeParser</code></td><td>A successful specification parse consumes a valid prefix of the input.</td></tr>
-<tr><td>Parser soundness</td><td><code>SoundParser</code></td><td>The parsed value is consistent and the consumed length agrees with its specified byte length.</td></tr>
-<tr><td>Serialize–parse round trip</td><td><code>SPRoundTripDps</code> / <code>SPRoundTrip</code></td><td>Serializing a consistent value and parsing the result recovers that value.</td></tr>
-<tr><td>Parser non-malleability</td><td><code>NonMalleable</code></td><td>Equal parsed values imply equal consumed bytes.</td></tr>
-<tr><td>Parse–serialize round trip</td><td><code>PSRoundTrip</code></td><td>Serializing a successful parse reproduces exactly the consumed input prefix.</td></tr>
-<tr><td>No lookahead</td><td><code>NoLookAhead</code></td><td>Parsing a prefix does not depend on bytes after the consumed region.</td></tr>
-<tr><td>Productivity</td><td><code>Productive</code></td><td>A successful parse consumes at least one byte when its productivity invariant holds.</td></tr>
-<tr><td>Serializer equivalence</td><td><code>EquivSerializers</code></td><td>The ordinary and destination-passing specifications agree.</td></tr>
-</tbody>
-</table>
-</div>
-<p>Serialize–parse round trip also implies that serialization is injective over
-consistent values. Parse–serialize round trip follows compositionally from
-serialize–parse round trip, parser soundness, and non-malleability.</p>
-<p>Not every legal wire format is non-malleable. BER, general CBOR, ordered
-alternatives, and permutation formats deliberately accept multiple byte
-representations in some configurations. Such formats expose the properties
-that genuinely hold rather than claiming canonicality. DER formats and
-deterministic encodings can establish stronger properties when their format
-rules remove those alternatives.</p>
-<p>The exact quantified statements and invariant preconditions are in the
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/proof/"><code>core::proof</code></a>
-and
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/spec/"><code>core::spec</code></a>
-API documentation.</p>
+<p>Binary parsers and serializers are a classic source of security vulnerabilities, due to the conflicting goals of high performance and adherence to complex binary formats.
+The most common implementation mistakes are:</p>
+<ul>
+<li>Memory safety issues, such as <a href="https://cwe.mitre.org/data/definitions/416.html">use-after-free</a>, <a href="https://cwe.mitre.org/data/definitions/415.html">double-free</a>, and <a href="https://cwe.mitre.org/data/definitions/125.html">out-of-bounds accesses</a></li>
+<li>Arithmetic issues, such as <a href="https://cwe.mitre.org/data/definitions/190.html">integer overflow</a> and <a href="https://cwe.mitre.org/data/definitions/191.html">underflow</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/20.html">Improper Input Validation</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/502.html">Deserialization of Untrusted Data</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/400.html">Uncontrolled Resource Consumption</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/674.html">Uncontrolled Recursion</a></li>
+</ul>
+<p>There are also more subtle issues that root in the format itself, such as:</p>
+<ul>
+<li><strong>Format confusion.</strong> It occurs when objects from different semantic domains, or distinct objects from the same semantic domain are encoded with the same byte representation. In this case, a parser fundamentally cannot distinguish between the two objects, making it vulnerable to cross-protocol attacks.</li>
+<li><strong>Format malleability.</strong> It occurs when a single object can be encoded in multiple ways, and a parser accepts all of them. In this case, a parser can be tricked into accepting a modified input that is semantically equivalent to the original, but would yield completely different hash values or signatures. This is a common source of signature forgery or transaction malleability attacks.</li>
+</ul>
+<p>Vest’s answer is to formally prove the absence of these vulnerabilities,
+for each format you define, without asking you to write proofs.</p>
+<p>This page describes what you get, in plain terms, and then maps each guarantee
+onto the interface that carries it in <code>vest_lib</code>.</p>
+<h2 id="safety-for-every-format"><a class="header" href="#safety-for-every-format">Safety, for every format</a></h2>
+<p>These hold for every format Vest generates.</p>
+<ul>
+<li><strong>Memory safety.</strong> Parsers and serializers are written in safe Rust, so Rust’s ownership
+and borrowing rules rule out use-after-free and double-free. Verus adds proofs
+that there are no out-of-bounds accesses.</li>
+<li><strong>Arithmetic safety.</strong> No integer overflow or underflow, including in length/offset
+calculations — the classic place where a hand-written parser goes wrong.</li>
+<li><strong>Termination and panic freedom.</strong> Parsing and serializing terminate and never
+panic, on <em>any</em> input.</li>
+</ul>
+<h2 id="correctness-and-security"><a class="header" href="#correctness-and-security">Correctness and security</a></h2>
+<p>These are the properties that prevent format confusion and malleability. Not every format can satisfy all of them, and Vest is explicit
+about which ones a given format actually establishes.</p>
+<ul>
+<li><strong>Parser soundness.</strong> If parsing succeeds, the result is a valid instance of
+the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
+<li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
+<li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
+Modifying or truncating an accepted input changes the outcome — it fails, or
+yields a different value.</li>
+<li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
+change what was already parsed.</li>
+<li><strong>Parser productivity.</strong> A successful parse consumes at least one byte, making “progress” on the input.</li>
+<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the
+same bytes.</li>
+<li><strong>Round trips.</strong> Together, for unambiguous, non-malleable formats, parsing and serializing are mutual inverses: parse-then-serialize reproduces the consumed
+bytes, and serialize-then-parse recovers the value.</li>
+</ul>
+<h2 id="when-a-format-cannot-be-non-malleable"><a class="header" href="#when-a-format-cannot-be-non-malleable">When a format cannot be non-malleable</a></h2>
+<p>While non-malleability is the gold standard in cryptographic systems, it
+violates <a href="https://en.wikipedia.org/wiki/Robustness_principle">Postel’s law</a>: <em>be conservative in what you do; be liberal in what you accept</em>.
+Many foundational security standards explicitly rely on malleability for backwards-compatibility, extensibility, and interoperability.
+Concise Binary Object Representation (CBOR) permits multiple valid encodings and
+separately defines deterministic serialization as required; Cryptographic
+Message Syntax (CMS) permits the malleable Basic Encoding Rules (BER) for many
+structures and requires Distinguished Encoding Rules (DER) only at particular
+authenticated boundaries; and Internet Key Exchange (IKE) allows flexible
+ordering of payloads and defines explicit rules for ignoring payloads to
+preserve forward compatibility.</p>
+<p>In Vest, malleable formats are explicitly marked (those that do not carry the <code>NonMalleable</code> proof trait or only carry it conditionally), so you cannot accidentally rely on uniqueness that is not there.
+The practical consequence is that if your application needs byte-faithful round trips — verifying a signature over the bytes you parsed, for instance — add <code>NonMalleable</code> as a requirement (trait bound) to your format.</p>
+<p>The DSL currently only accepts and produces non-malleable formats, and we are working on bringing malleable features into the DSL securely.</p>
+<h2 id="vests-tcb"><a class="header" href="#vests-tcb">Vest’s TCB</a></h2>
+<p>The guarantees above rest on a trusted computing base:</p>
+<ul>
+<li><strong><code>rustc</code></strong>, the Rust compiler;</li>
+<li><strong>Verus</strong> and the <strong>Z3</strong> solver;</li>
+<li><strong><code>vstd</code></strong>, Verus’s trusted standard-library specification;</li>
+<li>top-level theorem statements in <strong><code>vest_lib</code></strong>.</li>
+</ul>
+<blockquote>
+<p>Vest also says nothing about whether your format is the <em>right</em> format. That it
+parses/serializes safely and securely does not mean it matches the RFC you are
+reading. For now, we recommend testing your format against real-world corpora. In the future, we hope to provide an automated testing framework that checks a format against its RFC or other authoritative specification, and flags any discrepancies.</p>
+</blockquote>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="getting-started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="dsl/tutorial.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="dsl/reference.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -239,11 +273,11 @@ API documentation.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="getting-started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="dsl/tutorial.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="dsl/reference.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -256,6 +290,22 @@ API documentation.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -272,6 +322,7 @@ API documentation.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="theme/vest-highlight-f6db02d8.js"></script>
 
 
 

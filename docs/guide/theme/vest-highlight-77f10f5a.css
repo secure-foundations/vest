@@ -1,0 +1,118 @@
+/*
+ * Vest-specific syntax colors. The light/dark palettes are based on GitHub's
+ * modern Primer syntax colors; Ayu keeps its warmer native character.
+ */
+
+.light,
+.rust,
+html:not(.js) {
+  --vest-syntax-comment: #6e7781;
+  --vest-syntax-keyword: #8250df;
+  --vest-syntax-type: #0550ae;
+  --vest-syntax-number: #0550ae;
+  --vest-syntax-string: #0a3069;
+  --vest-syntax-variable: #953800;
+  --vest-syntax-meta: #cf222e;
+  --vest-syntax-title: #116329;
+  --vest-syntax-symbol: #116329;
+  --vest-syntax-operator: #cf222e;
+  --vest-syntax-punctuation: #57606a;
+  --vest-syntax-invalid: #cf222e;
+  --vest-syntax-invalid-bg: #ffebe9;
+}
+
+.coal,
+.navy {
+  --vest-syntax-comment: #8b949e;
+  --vest-syntax-keyword: #ff7b72;
+  --vest-syntax-type: #79c0ff;
+  --vest-syntax-number: #79c0ff;
+  --vest-syntax-string: #a5d6ff;
+  --vest-syntax-variable: #ffa657;
+  --vest-syntax-meta: #d2a8ff;
+  --vest-syntax-title: #7ee787;
+  --vest-syntax-symbol: #7ee787;
+  --vest-syntax-operator: #ff7b72;
+  --vest-syntax-punctuation: #8b949e;
+  --vest-syntax-invalid: #ff7b72;
+  --vest-syntax-invalid-bg: rgb(248 81 73 / 16%);
+}
+
+.ayu {
+  --vest-syntax-comment: #6c7680;
+  --vest-syntax-keyword: #ff8f40;
+  --vest-syntax-type: #59c2ff;
+  --vest-syntax-number: #d2a6ff;
+  --vest-syntax-string: #aad94c;
+  --vest-syntax-variable: #f07178;
+  --vest-syntax-meta: #ffd173;
+  --vest-syntax-title: #59c2ff;
+  --vest-syntax-symbol: #aad94c;
+  --vest-syntax-operator: #f29668;
+  --vest-syntax-punctuation: #b8cfe6;
+  --vest-syntax-invalid: #f07178;
+  --vest-syntax-invalid-bg: rgb(240 113 120 / 16%);
+}
+
+code.language-vest .hljs-comment {
+  color: var(--vest-syntax-comment);
+  font-style: italic;
+}
+
+code.language-vest .hljs-doctag {
+  color: var(--vest-syntax-meta);
+  font-style: normal;
+  font-weight: 650;
+}
+
+code.language-vest .hljs-keyword {
+  color: var(--vest-syntax-keyword);
+  font-weight: 600;
+}
+
+code.language-vest .hljs-type {
+  color: var(--vest-syntax-type);
+}
+
+code.language-vest .hljs-number {
+  color: var(--vest-syntax-number);
+}
+
+code.language-vest .hljs-string {
+  color: var(--vest-syntax-string);
+}
+
+code.language-vest .hljs-variable {
+  color: var(--vest-syntax-variable);
+}
+
+code.language-vest .hljs-meta {
+  color: var(--vest-syntax-meta);
+  font-weight: 600;
+}
+
+code.language-vest .hljs-title {
+  color: var(--vest-syntax-title);
+  font-weight: 650;
+}
+
+code.language-vest .hljs-symbol {
+  color: var(--vest-syntax-symbol);
+  font-weight: 600;
+}
+
+code.language-vest .hljs-operator {
+  color: var(--vest-syntax-operator);
+  font-weight: 600;
+}
+
+code.language-vest .hljs-punctuation {
+  color: var(--vest-syntax-punctuation);
+}
+
+code.language-vest .hljs-deletion {
+  color: var(--vest-syntax-invalid);
+  background: var(--vest-syntax-invalid-bg);
+  border-radius: 0.2em;
+  text-decoration: none;
+}

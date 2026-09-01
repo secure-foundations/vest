@@ -29,6 +29,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-203bd9cc.js"></script>
+        <script src="toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,282 +179,1263 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="vest-documentation"><a class="header" href="#vest-documentation">Vest documentation</a></h1>
-<p>Vest generates fast, formally verified parsers and serializers for binary data
-formats. You can describe a format with the Vest DSL, generate codecs from an
-ASN.1 schema, or compose the verified library directly.</p>
-<p>Choose the path that matches your task:</p>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Vest generates secure, performant parsers and serializers for binary data
+formats, formally verified in <a href="https://github.com/verus-lang/verus">Verus</a>.
+It provides a concise format DSL for non-experts, as well as a combinator
+library for experts who want to build formats directly in Verus.</p>
+<p>Given a high-level format description, Vest automatically emits efficient, idiomatic Rust that is memory-safe, arithmetically safe, panic-free, and terminating on any input.
+More importantly, Vest parsers and serializers are proven to satisfy a suite of desirable <a href="#what-vest-proves">security properties</a>, making them immune to entire classes of attacks that historically plague unverified, hand-written code.</p>
+<p>With Vest, we have built the first
+production-grade formally verified <a href="#asn1-compiler">ASN.1 library</a> (supporting both DER and BER) and a verified prototype for <a href="#general-and-deterministic-cbor">both
+general and deterministic CBOR</a>.</p>
+<h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who this is for</a></h2>
+<p>Vest is for anyone who needs to parse or serialize binary data formats, especially when correctness and security are critical. This includes:
+<em>network security protocols</em> such as TLS and IKE, which parse handshake messages and serialize
+authenticated responses; <em>cryptographic message formats</em> such as X.509 and CMS,
+which encode certificates, signed objects, keys, and algorithm parameters; <em>executable and secure-update formats</em> carrying code alongside authenticated
+metadata; and <em>RPC and distributed-systems</em> frameworks,
+which marshal typed application objects onto wire formats such as Protocol Buffers.</p>
+<p>Vest is still a research tool. It does not cover every format in the wild, and
+<a href="#vest-language-reference">its current features and limitations are documented</a>.</p>
+<p>As of now, this book covers the nitty-gritty of the DSL and the ASN.1 compiler. We are working on a guide to the underlying combinator library, as well as a more complete support for CBOR.</p>
+<h2 id="choose-your-path"><a class="header" href="#choose-your-path">Choose your path</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>I want to…</th><th>Start here</th></tr>
 </thead>
 <tbody>
-<tr><td>describe a binary protocol concisely</td><td><a href="#vest-dsl-tutorial">Vest DSL tutorial</a></td></tr>
-<tr><td>understand the guarantees</td><td><a href="#what-vest-proves">What Vest proves</a></td></tr>
-<tr><td>build a format directly in Verus</td><td><a href="#using-vest_lib">Using <code>vest_lib</code></a></td></tr>
-<tr><td>generate DER or BER codecs</td><td><a href="#asn1-frontend">ASN.1 frontend</a></td></tr>
-<tr><td>parse generic CBOR values</td><td><a href="#general-and-deterministic-cbor">CBOR guide</a></td></tr>
-<tr><td>look up a trait or combinator</td><td><a href="https://secure-foundations.github.io/vest/vest_lib/"><code>vest_lib</code> API reference</a></td></tr>
+<tr><td>install Vest and parse/serialize something</td><td><a href="#getting-started">Getting started</a></td></tr>
+<tr><td>describe complex formats concisely</td><td><a href="#vest-language-reference">Vest DSL language reference</a></td></tr>
+<tr><td>understand what is actually proven</td><td><a href="#what-vest-proves">What Vest proves</a></td></tr>
+<tr><td>build a format using combinators</td><td><a href="#using-vest_lib">Using <code>vest_lib</code></a></td></tr>
+<tr><td>look up a trait or combinator in Vest</td><td><a href="../vest_lib/index.html"><code>vest_lib</code> API reference</a></td></tr>
 </tbody>
 </table>
 </div>
-<p>The <a href="https://github.com/secure-foundations/vest">project repository</a> contains
-the compiler, verified backend, generated TLS and Bitcoin case studies, ASN.1
-fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
+<p>The <a href="https://github.com/secure-foundations/vest">project repository</a> holds the
+source code for the combinator library, the DSL compiler, the ASN.1 library and frontend, and the CBOR codec.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
+<p>This tutorial shows how to install Vest, define a simple tag-length-value (TLV) format in the DSL, compile it to Rust, parse a message in that format, and serialize a value according to the format.</p>
+<h2 id="install"><a class="header" href="#install">Install</a></h2>
+<p>Prerequisites: a stable Rust toolchain with <code>cargo</code> and <code>rustc</code> on your <code>PATH</code>.</p>
+<pre><code class="language-console">cargo install vest
+</code></pre>
+<p>That puts the <code>vest</code> compiler on your <code>PATH</code>. In the crate that will hold the
+generated code, add the following dependencies to <code>Cargo.toml</code>:</p>
+<pre><code class="language-console">cargo add vest_lib
+cargo add vstd@=0.0.0-2026-08-23-0033 --no-default-features
+</code></pre>
+<p>which gives you:</p>
+<pre><code class="language-toml">[dependencies]
+vest_lib = "0.2"
+vstd = { version = "=0.0.0-2026-08-23-0033", default-features = false }
+</code></pre>
+<p>Generated modules refer to <code>vstd</code> directly, so it has to be a direct dependency even when you are only compiling and running the executable Rust. The version has to be exact (we’ll try to keep this doc up to date as much as possible): Verus and <code>vstd</code> move quickly, and each Vest release tracks one
+release of each.</p>
+<p><code>vest_lib</code> has three configurations — the default <code>std</code>,
+<code>alloc</code> alone for <code>no_std</code> with a heap, and neither for <code>core</code>-only. See
+<a href="#feature-configurations">Feature configurations</a>.</p>
+<h2 id="describe-a-format"><a class="header" href="#describe-a-format">Describe a format</a></h2>
+<p>Tag-length-value (TLV) is the shape underneath most network protocols: a tag says what
+follows, a length delimits it, and the body is interpreted according to the tag.</p>
+<p>Create <code>msg.vest</code>:</p>
+<pre><code class="language-vest">msg_type = enum {
+  Msg1 = 1,
+  Msg2 = 2,
+  Msg3 = 3,
+}
+
+msg1 = { a: u8, b: u16, c: [u8; 3], data: Tail, }
+msg2 = { a: u8, b: u16, c: u32, }
+msg3 = { data: [u8; 6], }
+
+msg = {
+  @tag: msg_type,
+  @len: u16,
+  content: [u8; @len] &gt;&gt;= choose(@tag) {
+    Msg1 =&gt; msg1,
+    Msg2 =&gt; msg2,
+    Msg3 =&gt; msg3,
+  },
+}
+</code></pre>
+<p>The syntax is mostly self-explanatory, akin to those of Rust.
+There are a few things to notice inside the <code>msg</code> definition:</p>
+<ul>
+<li><code>@tag</code> and <code>@len</code> are field <em>dependencies</em>.
+The <code>@</code> prefix lets later fields refer
+to them. They are still ordinary fields of the generated struct, and of course still
+bytes on the wire — <code>@</code> only signals that they are used in later format expressions.</li>
+<li><code>[u8; @len]</code> carves out exactly <code>len</code> bytes.</li>
+<li><code>&gt;&gt;= choose(@tag)</code> then reparses <em>that region</em> with the format chosen by <code>tag</code>. Because the
+region is bounded first, a body that tries to read past its length fails
+instead of silently consuming bytes from the next message. We will see what it means for serialization shortly.</li>
+</ul>
+<p>Integers are little-endian by default.
+Add <code>!BIG_ENDIAN</code> at the top of the file to switch to big-endian.</p>
+<h2 id="generate-rust"><a class="header" href="#generate-rust">Generate Rust</a></h2>
+<pre><code class="language-console">$ vest msg.vest -o src/msg.rs
+📜 Parsing the vest file...
+🔨 Elaborating the AST...
+🔍 Type checking...
+📝 Generating the verus file...
+👏 Done!
+</code></pre>
+<p>Without <code>-o</code>, the compiler writes next to the input, replacing the extension —
+<code>msg.vest</code> becomes <code>msg.rs</code>. The generated module is a normal Rust file, so you can <code>mod msg;</code> it and use it like any other module.</p>
+<p>You get one value type per definition, plus a zero-sized format type carrying
+the parser, serializer, and proofs:</p>
+<pre><code class="language-rust ignore">pub enum MsgType { Msg1 = 1, Msg2 = 2, Msg3 = 3 }
+
+pub struct Msg1&lt;'i&gt; { pub a: u8, pub b: u16, pub c: &amp;'i [u8], pub data: &amp;'i [u8] }
+pub struct Msg2      { pub a: u8, pub b: u16, pub c: u32 }
+pub struct Msg3&lt;'i&gt;  { pub data: &amp;'i [u8] }
+
+pub enum MsgContent&lt;'i&gt; { Msg1(Msg1&lt;'i&gt;), Msg2(Msg2), Msg3(Msg3&lt;'i&gt;) }
+
+pub struct Msg&lt;'i&gt; {
+    pub tag: MsgType,
+    pub len: u16,
+    pub content: MsgContent&lt;'i&gt;,
+}
+
+pub struct MsgFmt;   // the format: parser + serializer + proofs
+
+// ... specifications, proofs, and executable APIs</code></pre>
+<h2 id="checking-the-proofs-highly-recommended"><a class="header" href="#checking-the-proofs-highly-recommended">Checking the proofs (highly recommended)</a></h2>
+<p>Technically, <em>you do not need to install Verus to use Vest</em>, especially if you are working with unverified Rust and just want to parse and serialize things more safely.
+However, Vest-generated code comes with specifications and proofs that establish the correctness and security of the parser and serializer.
+It is therefore highly recommended to use Verus to automatically check the proofs (rather than trusting the DSL compiler)
+to ensure that the generated code indeed satisfies the <a href="#what-vest-proves">desired properties</a>.</p>
+<p>Verus and <code>vstd</code> move quickly, and each Vest release tracks one exact Verus
+release, recorded in
+<a href="https://github.com/secure-foundations/vest/blob/main/verus-version.txt"><code>verus-version.txt</code></a>.
+Follow the <a href="https://github.com/verus-lang/verus/blob/main/INSTALL.md">Verus installation instructions</a>
+and match that version, or let the script in the Vest repository install it for you:</p>
+<pre><code class="language-console">git clone https://github.com/secure-foundations/vest.git
+./vest/scripts/install-verus.sh
+export PATH="$PWD/vest/.verus:$PATH"
+</code></pre>
+<p>Then verify <em>your own crate</em> — the one holding the generated module:</p>
+<pre><code class="language-console">cd my-project
+cargo verus verify
+</code></pre>
+<p>Verus checks every specification and proof in <code>src/msg.rs</code>, so a clean run
+means the guarantees hold for your format.</p>
+<h2 id="parse"><a class="header" href="#parse">Parse</a></h2>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+use crate::msg::*;
+
+let wire: &amp;[u8] = &amp;[
+    0x02,                               // tag = Msg2
+    0x07, 0x00,                         // len = 7
+    0xAA,                               // a
+    0xBB, 0xCC,                         // b
+    0xDD, 0xEE, 0xFF, 0x11,             // c
+];
+
+let (consumed, msg) = MsgFmt.parse(&amp;wire).unwrap();
+assert_eq!(consumed, 10);
+assert_eq!(msg.tag, MsgType::Msg2);
+assert_eq!(msg.len, 7);
+assert!(matches!(msg.content, MsgContent::Msg2(_)));</code></pre>
+<p><code>parse</code> returns how many bytes it consumed, so a caller reading a stream knows
+where the next message begins (it does not mandate that the input slice end exactly at the message boundary). The <code>msg</code> value in the example copies and re-interprets the wire bytes because <code>msg2</code> only contains fixed-size integers (where “zero-copy” pointers to the input buffer would be even less efficient).
+For larger payloads, Vest uses borrowed slices to avoid unnecessary copies/allocations.</p>
+<h2 id="serialize-and-beyond"><a class="header" href="#serialize-and-beyond">Serialize (and beyond)</a></h2>
+<p>Serializing in Vest is two steps.
+The standard way is to call <code>prepare</code> first, which dynamically checks that the value is valid (we will see what that means) and returns the exact wire length of the serialized representation.
+Then you allocate a buffer of that length and call <code>serialize</code> to write into it. This two-step process allows Vest to serialize without failing, nor allocating memory during serialization.</p>
+<p>Using the <code>msg</code> value from the parse example:</p>
+<pre><code class="language-rust ignore">let len = MsgFmt.prepare(&amp;msg).unwrap();
+let mut output = vec![0u8; len];
+MsgFmt.serialize(&amp;msg, &amp;mut output);
+assert_eq!(output.as_slice(), wire);</code></pre>
+<p>Now build a new <code>msg</code> from scratch:</p>
+<pre><code class="language-rust ignore">let msg = Msg {
+    tag: MsgType::Msg2,
+    len: 7, // u8 + u16 + u32 = 1 + 2 + 4 = 7
+    content: MsgContent::Msg2(Msg2 { a: 0xAA, b: 0xBBCC, c: 0xDDEEFF11 }),
+};
+
+let len = MsgFmt.prepare(&amp;msg).unwrap();   // 10</code></pre>
+<p>A wrong <code>len</code> is rejected by <code>prepare</code>:</p>
+<pre><code class="language-rust ignore">let bad = Msg {
+    tag: MsgType::Msg2,
+    len: 99, // wrong length for the content
+    content: MsgContent::Msg2(Msg2 { a: 0xAA, b: 0xBBCC, c: 0xDDEEFF11 }),
+};
+
+assert!(MsgFmt.prepare(&amp;bad).is_err());</code></pre>
+<p>The error names the problem:</p>
+<pre><code class="language-text">PreSerializeError { kind: NotCompliant(LengthInconsistent), .. }
+</code></pre>
+<p>This is the field dependency being enforced in the <em>other</em> direction.
+Unlike for parsing, where <code>@len</code> determines how many bytes to read subsequently,
+a dependency
+like <code>@len</code> is
+a constraint the value must satisfy before serialization, and <code>prepare</code> is where that is checked.</p>
+<!--Finally, for verified code, you can statically prove that a value is valid and its length is less than some bound, and then call `length` and `serialize` without dynamic validity checks nor integer overflow checks. -->
+<h2 id="what-was-proven"><a class="header" href="#what-was-proven">What was proven</a></h2>
+<p>The generated module carries proofs that, among other things, parsing/serializing is memory and arithmetically safe, panic-free, and
+terminating; and that a successful parse reconstructs the original serialized value and consumes exactly as many bytes as the value would serialize to.
+See <a href="#what-vest-proves">What Vest proves</a> for a complete list of properties and the interfaces that carry them.</p>
+<h2 id="where-next"><a class="header" href="#where-next">Where next</a></h2>
+<ul>
+<li><a href="#vest-language-reference">Language reference</a> — every format construct, and the current limitations.</li>
+<li><a href="#generated-rust-code">Generated Rust Code</a> — the full shape of what comes out of the compiler.</li>
+<li><a href="#troubleshooting">Troubleshooting</a> — what the common errors mean.</li>
+<li><a href="#asn1-compiler">ASN.1 frontend</a> — generate DER or BER from an ASN.1 module instead of writing a <code>.vest</code> file.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="what-vest-proves"><a class="header" href="#what-vest-proves">What Vest proves</a></h1>
-<p>Vest separates a format into three related layers:</p>
-<ol>
-<li>pure specifications for parsing, serialization, byte length, and value
-consistency;</li>
-<li>executable Rust implementations; and</li>
-<li>proofs connecting the implementations to the specifications and composing
-format-level properties.</li>
-</ol>
-<p>Verus checks executable memory safety, panic freedom, termination, and the
-contracts on the parsing, preparation, length, and serialization APIs. The
-following properties describe the wire format itself.</p>
+<p>Binary parsers and serializers are a classic source of security vulnerabilities, due to the conflicting goals of high performance and adherence to complex binary formats.
+The most common implementation mistakes are:</p>
+<ul>
+<li>Memory safety issues, such as <a href="https://cwe.mitre.org/data/definitions/416.html">use-after-free</a>, <a href="https://cwe.mitre.org/data/definitions/415.html">double-free</a>, and <a href="https://cwe.mitre.org/data/definitions/125.html">out-of-bounds accesses</a></li>
+<li>Arithmetic issues, such as <a href="https://cwe.mitre.org/data/definitions/190.html">integer overflow</a> and <a href="https://cwe.mitre.org/data/definitions/191.html">underflow</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/20.html">Improper Input Validation</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/502.html">Deserialization of Untrusted Data</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/400.html">Uncontrolled Resource Consumption</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/674.html">Uncontrolled Recursion</a></li>
+</ul>
+<p>There are also more subtle issues that root in the format itself, such as:</p>
+<ul>
+<li><strong>Format confusion.</strong> It occurs when objects from different semantic domains, or distinct objects from the same semantic domain are encoded with the same byte representation. In this case, a parser fundamentally cannot distinguish between the two objects, making it vulnerable to cross-protocol attacks.</li>
+<li><strong>Format malleability.</strong> It occurs when a single object can be encoded in multiple ways, and a parser accepts all of them. In this case, a parser can be tricked into accepting a modified input that is semantically equivalent to the original, but would yield completely different hash values or signatures. This is a common source of signature forgery or transaction malleability attacks.</li>
+</ul>
+<p>Vest’s answer is to formally prove the absence of these vulnerabilities,
+for each format you define, without asking you to write proofs.</p>
+<p>This page describes what you get, in plain terms, and then maps each guarantee
+onto the interface that carries it in <code>vest_lib</code>.</p>
+<h2 id="safety-for-every-format"><a class="header" href="#safety-for-every-format">Safety, for every format</a></h2>
+<p>These hold for every format Vest generates.</p>
+<ul>
+<li><strong>Memory safety.</strong> Parsers and serializers are written in safe Rust, so Rust’s ownership
+and borrowing rules rule out use-after-free and double-free. Verus adds proofs
+that there are no out-of-bounds accesses.</li>
+<li><strong>Arithmetic safety.</strong> No integer overflow or underflow, including in length/offset
+calculations — the classic place where a hand-written parser goes wrong.</li>
+<li><strong>Termination and panic freedom.</strong> Parsing and serializing terminate and never
+panic, on <em>any</em> input.</li>
+</ul>
+<h2 id="correctness-and-security"><a class="header" href="#correctness-and-security">Correctness and security</a></h2>
+<p>These are the properties that prevent format confusion and malleability. Not every format can satisfy all of them, and Vest is explicit
+about which ones a given format actually establishes.</p>
+<ul>
+<li><strong>Parser soundness.</strong> If parsing succeeds, the result is a valid instance of
+the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
+<li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
+<li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
+Modifying or truncating an accepted input changes the outcome — it fails, or
+yields a different value.</li>
+<li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
+change what was already parsed.</li>
+<li><strong>Parser productivity.</strong> A successful parse consumes at least one byte, making “progress” on the input.</li>
+<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the
+same bytes.</li>
+<li><strong>Round trips.</strong> Together, for unambiguous, non-malleable formats, parsing and serializing are mutual inverses: parse-then-serialize reproduces the consumed
+bytes, and serialize-then-parse recovers the value.</li>
+</ul>
+<h2 id="when-a-format-cannot-be-non-malleable"><a class="header" href="#when-a-format-cannot-be-non-malleable">When a format cannot be non-malleable</a></h2>
+<p>While non-malleability is the gold standard in cryptographic systems, it
+violates <a href="https://en.wikipedia.org/wiki/Robustness_principle">Postel’s law</a>: <em>be conservative in what you do; be liberal in what you accept</em>.
+Many foundational security standards explicitly rely on malleability for backwards-compatibility, extensibility, and interoperability.
+Concise Binary Object Representation (CBOR) permits multiple valid encodings and
+separately defines deterministic serialization as required; Cryptographic
+Message Syntax (CMS) permits the malleable Basic Encoding Rules (BER) for many
+structures and requires Distinguished Encoding Rules (DER) only at particular
+authenticated boundaries; and Internet Key Exchange (IKE) allows flexible
+ordering of payloads and defines explicit rules for ignoring payloads to
+preserve forward compatibility.</p>
+<p>In Vest, malleable formats are explicitly marked (those that do not carry the <code>NonMalleable</code> proof trait or only carry it conditionally), so you cannot accidentally rely on uniqueness that is not there.
+The practical consequence is that if your application needs byte-faithful round trips — verifying a signature over the bytes you parsed, for instance — add <code>NonMalleable</code> as a requirement (trait bound) to your format.</p>
+<p>The DSL currently only accepts and produces non-malleable formats, and we are working on bringing malleable features into the DSL securely.</p>
+<h2 id="vests-tcb"><a class="header" href="#vests-tcb">Vest’s TCB</a></h2>
+<p>The guarantees above rest on a trusted computing base:</p>
+<ul>
+<li><strong><code>rustc</code></strong>, the Rust compiler;</li>
+<li><strong>Verus</strong> and the <strong>Z3</strong> solver;</li>
+<li><strong><code>vstd</code></strong>, Verus’s trusted standard-library specification;</li>
+<li>top-level theorem statements in <strong><code>vest_lib</code></strong>.</li>
+</ul>
+<blockquote>
+<p>Vest also says nothing about whether your format is the <em>right</em> format. That it
+parses/serializes safely and securely does not mean it matches the RFC you are
+reading. For now, we recommend testing your format against real-world corpora. In the future, we hope to provide an automated testing framework that checks a format against its RFC or other authoritative specification, and flags any discrepancies.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="vest-language-reference"><a class="header" href="#vest-language-reference">Vest language reference</a></h1>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Property</th><th>Vest interface</th><th>Meaning</th></tr>
+<tr><th>Topic</th><th>Covers</th></tr>
 </thead>
 <tbody>
-<tr><td>Safe parsing</td><td><code>SafeParser</code></td><td>A successful specification parse consumes a valid prefix of the input.</td></tr>
-<tr><td>Parser soundness</td><td><code>SoundParser</code></td><td>The parsed value is consistent and the consumed length agrees with its specified byte length.</td></tr>
-<tr><td>Serialize–parse round trip</td><td><code>SPRoundTripDps</code> / <code>SPRoundTrip</code></td><td>Serializing a consistent value and parsing the result recovers that value.</td></tr>
-<tr><td>Parser non-malleability</td><td><code>NonMalleable</code></td><td>Equal parsed values imply equal consumed bytes.</td></tr>
-<tr><td>Parse–serialize round trip</td><td><code>PSRoundTrip</code></td><td>Serializing a successful parse reproduces exactly the consumed input prefix.</td></tr>
-<tr><td>No lookahead</td><td><code>NoLookAhead</code></td><td>Parsing a prefix does not depend on bytes after the consumed region.</td></tr>
-<tr><td>Productivity</td><td><code>Productive</code></td><td>A successful parse consumes at least one byte when its productivity invariant holds.</td></tr>
-<tr><td>Serializer equivalence</td><td><code>EquivSerializers</code></td><td>The ordinary and destination-passing specifications agree.</td></tr>
+<tr><td><a href="#file-structure-and-lexical-rules">File structure and lexical rules</a></td><td>definitions, comments, names, literals, and byte order</td></tr>
+<tr><td><a href="#primitive-formats">Primitive formats</a></td><td>integers, byte strings, <code>Tail</code>, <code>Nothing</code>, and <code>Never</code></td></tr>
+<tr><td><a href="#refinements">Refinements</a></td><td>integer and enum constraints</td></tr>
+<tr><td><a href="#structures-and-dependencies">Structures and dependencies</a></td><td>fields, <code>@</code> references, constants, and length expressions</td></tr>
+<tr><td><a href="#enums">Enums</a></td><td>closed, open, typed, and bit-sized enums</td></tr>
+<tr><td><a href="#choices">Choices</a></td><td>dependent dispatch and ordered alternatives</td></tr>
+<tr><td><a href="#collections">Collections</a></td><td>arrays, <code>Vec</code>, and <code>Option</code></td></tr>
+<tr><td><a href="#"><code>&gt;&gt;=</code></a></td><td>re-reading a bounded byte region as another format</td></tr>
+<tr><td><a href="#bit-fields">Bit fields</a></td><td>packed fields, widths, and dotted dependencies</td></tr>
+<tr><td><a href="#composition">Composition</a></td><td>aliases, <code>wrap</code>, parameters, and macros</td></tr>
+<tr><td><a href="#recursion">Recursion</a></td><td>self-referential and mutually recursive definitions</td></tr>
 </tbody>
 </table>
 </div>
-<p>Serialize–parse round trip also implies that serialization is injective over
-consistent values. Parse–serialize round trip follows compositionally from
-serialize–parse round trip, parser soundness, and non-malleability.</p>
-<p>Not every legal wire format is non-malleable. BER, general CBOR, ordered
-alternatives, and permutation formats deliberately accept multiple byte
-representations in some configurations. Such formats expose the properties
-that genuinely hold rather than claiming canonicality. DER formats and
-deterministic encodings can establish stronger properties when their format
-rules remove those alternatives.</p>
-<p>The exact quantified statements and invariant preconditions are in the
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/proof/"><code>core::proof</code></a>
-and
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/spec/"><code>core::spec</code></a>
-API documentation.</p>
+<h2 id="how-each-construct-is-described"><a class="header" href="#how-each-construct-is-described">How each construct is described</a></h2>
+<p>Every construct below is given as what it <em>means</em> on the wire, plus how it
+behaves under Vest’s three operations:</p>
+<ul>
+<li><strong>parse</strong> reads bytes and returns a value together with the number of bytes
+consumed;</li>
+<li><strong>prepare</strong> checks that a value is <em>consistent</em> with the format — that its
+dependencies, constants, and refinements all hold — and returns the exact
+number of bytes it will occupy;</li>
+<li><strong>serialize</strong> writes a prepared value into a caller-owned buffer of exactly
+that size, and cannot fail.</li>
+</ul>
+<p><code>prepare</code> is the only fallible half of writing, so each construct’s preparation
+rules are precisely the conditions a value must satisfy before it can be
+serialized.</p>
+<p>The <a href="#construct-to-rust-mapping">construct-to-Rust table</a> is a compact lookup when you already
+know the format constructs. The <a href="#generated-rust-code">generated Rust code guide</a> explains the Rust
+types, format types, executable APIs,
+and specs/proofs that the compiler emits for each construct.</p>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li>The DSL does not support polymorphic or “higher-kinded” formats that take other <em>formats</em> as parameters.</li>
+<li>The DSL does not support arbitrary <em>semantic transformations</em> or <em>parsing actions</em> on the data.</li>
+<li>The DSL does not support expressing <em>backward dependencies</em> (e.g., a field that depends on a later field like footers).</li>
+<li>The DSL does not have a module/namespace system (so you cannot “import” a format from another <code>.vest</code> file).</li>
+<li>The DSL does not support declaring “trusted”/“external” formats that are implemented in Rust/Verus and used in the DSL.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="vest-dsl-tutorial"><a class="header" href="#vest-dsl-tutorial">Vest DSL tutorial</a></h1>
-<p>This tutorial builds a length-prefixed packet whose payload borrows from the
-input.</p>
-<h2 id="install-the-tools"><a class="header" href="#install-the-tools">Install the tools</a></h2>
-<p>Clone Vest and install the pinned Verus release:</p>
-<pre><code class="language-console">git clone --filter=blob:none https://github.com/secure-foundations/vest.git
-cd vest
-./scripts/install-verus.sh
-export PATH="$PWD/.verus:$PATH"
-cargo build --release -p vest
+<h1 id="file-structure-and-lexical-rules"><a class="header" href="#file-structure-and-lexical-rules">File structure and lexical rules</a></h1>
+<p>A <code>.vest</code> file is a sequence of top-level definitions in any order: format
+definitions, constant definitions, macro definitions, and at most one byte-order (endianness) directive.</p>
+<h2 id="identifiers-and-reserved-words"><a class="header" href="#identifiers-and-reserved-words">Identifiers and reserved words</a></h2>
+<p>Identifiers start with a letter or <code>_</code> and continue with letters, digits, or
+<code>_</code>. Format names, field names, and enum variants all use this form.</p>
+<p>These words are reserved and cannot be used as identifiers:</p>
+<pre><code class="language-text">macro   const   enum   choose   wrap
+Option  Vec     Tail   Nothing  Never
+btc_varint      uleb128
 </code></pre>
-<p>Applications using generated code also depend on the matching <code>vest_lib</code> and
-<code>vstd</code> versions. The workspace manifest is the authoritative compatibility
-record.</p>
-<h2 id="describe-the-wire-format"><a class="header" href="#describe-the-wire-format">Describe the wire format</a></h2>
-<p>Create <code>packet.vest</code>:</p>
-<pre><code class="language-vest">!BIG_ENDIAN
-
-packet = {
-    @len: u16,
-    payload: [u8; @len],
+<p>Integer type names are also reserved: any <code>u</code> or <code>i</code> followed by digits, so
+<code>u8</code>, <code>u16</code>, <code>u3</code>, <code>i32</code> and so on are unavailable as names.</p>
+<p>The following identifier forms have extra syntax:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Form</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@name</code></td><td>a dependency reference — a field bound with <code>@</code>, usable in later fields</td></tr>
+<tr><td><code>@name.member</code></td><td>dotted access into a dependency’s field, nested arbitrarily deep</td></tr>
+<tr><td><code>_</code></td><td>the wildcard branch of a <code>choose</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
+<p>Only line comments exist:</p>
+<pre><code class="language-vest ignore">// this is a comment
+</code></pre>
+<p>There is <em>no</em> block comment syntax (<code>/* ... */</code>).</p>
+<h2 id="byte-order"><a class="header" href="#byte-order">Byte order</a></h2>
+<pre><code class="language-vest ignore">!BIG_ENDIAN
+</code></pre>
+<p>or</p>
+<pre><code class="language-vest ignore">!LITTLE_ENDIAN
+</code></pre>
+<p>Note:</p>
+<ul>
+<li><strong>Little-endian is the default.</strong> A file with no directive is little-endian.</li>
+<li><strong>The directive is file-global, wherever it appears.</strong> Putting <code>!BIG_ENDIAN</code>
+on the last line still applies it to every definition in the file.</li>
+</ul>
+<p>Byte order applies only where it is meaningful: multi-byte integers. It does not
+affect <code>u8</code>, byte arrays, or an 8-bit <code>bits</code> block.</p>
+<h2 id="integer-literals"><a class="header" href="#integer-literals">Integer literals</a></h2>
+<p>There are three forms, usable anywhere a constant integer is expected — enum values,
+constraints, constant fields, array lengths:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Form</th><th>Example</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>decimal</td><td><code>15213</code></td><td></td></tr>
+<tr><td>hexadecimal</td><td><code>0x3F</code>, <code>0x5a</code></td><td><code>0x</code> prefix required</td></tr>
+<tr><td>ASCII character</td><td><code>'a'</code>, <code>'\x1b'</code></td><td>one byte, value 0–255</td></tr>
+</tbody>
+</table>
+</div>
+<p>Similar to Rust, enum values may carry a type suffix that fixes the underlying representation:</p>
+<pre><code class="language-vest">kind = enum { A = 0u16, B = 1u16, }
+</code></pre>
+<h2 id="constant-arrays"><a class="header" href="#constant-arrays">Constant arrays</a></h2>
+<p>Byte-array constants take either a string or a list form, and the list form has
+a repeat shorthand:</p>
+<pre><code class="language-vest">const MAGIC: [u8; 4] = "vest"
+const ZEROS: [u8; 4] = [0; 4]
+const BYTES: [u8; 3] = [0x01, 0x02, 0x03]
+</code></pre>
+<h2 id="whitespace"><a class="header" href="#whitespace">Whitespace</a></h2>
+<p>Whitespace, including newlines, is insignificant. Fields and enum variants are
+comma-terminated — including the last one:</p>
+<pre><code class="language-vest">msg = {
+    a: u8,
+    b: u16,     // trailing comma required
 }
 </code></pre>
-<p>The <code>@len</code> field appears on the wire but is a dependency rather than a field in
-the logical structural suffix. The payload length is checked against it during
-parsing and preparation.</p>
-<p>Generate Rust:</p>
-<pre><code class="language-console">target/release/vest packet.vest --output packet.rs
+<h2 id="vim-and-neovim-highlighting"><a class="header" href="#vim-and-neovim-highlighting">Vim and Neovim highlighting</a></h2>
+<p>The repository includes <a href="https://github.com/secure-foundations/vest/blob/main/vest/vest.vim"><code>vest/vest.vim</code></a>.
+Copy it to <code>~/.vim/syntax/vest.vim</code> (or
+<code>~/.config/nvim/syntax/vest.vim</code>) and add this to your Vim configuration:</p>
+<pre><code class="language-vim">autocmd BufRead,BufNewFile *.vest setfiletype vest
 </code></pre>
-<p>The generated file contains the executable value type <code>Packet</code>, the nominal
-format <code>PacketFmt</code>, pure specifications, and compositional proofs.</p>
-<h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
-<p>With the generated module in scope, use the backend traits directly:</p>
-<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
-
-let input: &amp;[u8] = &amp;[0, 3, b'a', b'b', b'c'];
-let (consumed, packet) = PacketFmt.parse(&amp;input).unwrap();
-assert_eq!(consumed, input.len());
-assert_eq!(packet.payload, b"abc");
-
-let len = PacketFmt.prepare(&amp;packet).unwrap();
-let mut output = vec![0; len];
-PacketFmt.serialize(&amp;packet, output.as_mut_slice());
-assert_eq!(output, input);</code></pre>
-<p><code>prepare</code> validates the value and returns its exact serialized length. The
-in-place <code>serialize</code> API therefore needs no temporary output allocation. Parse
-results include the number of bytes consumed, so callers can decide whether
-trailing input is permitted.</p>
-<p>Continue with the <a href="#vest-language-reference">language reference</a> and the
-<a href="#generated-rust-api">generated API guide</a>. Larger verified examples live in the
-<a href="#examples-and-test-corpus">test corpus</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="vest-language-reference"><a class="header" href="#vest-language-reference">Vest language reference</a></h1>
-<p>Vest source files contain named format definitions, optional parameters,
-constants, macros, and one byte-endianness directive. Definitions are compiled
-to Verus/Rust value types, format wrappers, specifications, proofs, and
-executable implementations.</p>
-<h2 id="primitive-formats"><a class="header" href="#primitive-formats">Primitive formats</a></h2>
-<ul>
-<li><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, <code>u64</code> and their signed counterparts use the file’s
-<code>!BIG_ENDIAN</code> or <code>!LITTLE_ENDIAN</code> directive where byte order applies.</li>
-<li><code>btc_varint</code> is Bitcoin’s variable-width integer and <code>uleb128</code> is unsigned LEB128.</li>
-<li><code>[u8; n]</code> is a byte string of the given length; <code>[fmt; n]</code> is a fixed or
-dependency-sized repetition.</li>
-<li><code>Tail</code> consumes the remaining input. <code>Nothing</code> consumes no bytes, while
-<code>Never("reason")</code> rejects every input.</li>
-</ul>
-<p>Integer formats may be refined with a value, range, set, or complement, such
-as <code>u16 | 1..1024</code> or <code>u8 | !{0, 255}</code>.</p>
-<h2 id="structures-and-dependencies"><a class="header" href="#structures-and-dependencies">Structures and dependencies</a></h2>
+<h1 id="primitive-formats"><a class="header" href="#primitive-formats">Primitive formats</a></h1>
+<p>Primitive formats are the leaves from which larger formats are composed. Each
+one occupies a known region of the input and produces a single Rust value.</p>
+<h2 id="unsigned-integers"><a class="header" href="#unsigned-integers">Unsigned integers</a></h2>
+<p>A fixed-width big- or little-endian integer.</p>
+<pre><code class="language-vest">!BIG_ENDIAN
+
+header = {
+    kind: u8,
+    length: u16,
+    sequence: u24,
+    timestamp: u32,
+    nonce: u64,
+}
+</code></pre>
+<p><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, and <code>u64</code> are supported. Multi-byte integers use the
+file’s byte order; <code>u8</code> is unaffected. The generated Rust types are the matching
+unsigned carrier types, except that <code>u24</code> is represented as <code>u32</code>.</p>
+<p><strong>Parsing.</strong> Reads exactly the declared number of bytes and interprets them in the
+file’s byte order. Fewer bytes remaining than the width is a parse error.</p>
+<p><strong>Preparation and serialization.</strong> Preparation always succeeds and reports the
+fixed width. Serialization writes that many bytes in the same byte order.</p>
+<p>Signed counterparts are supported in the <code>vest_lib</code> backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
+Widths other than the five listed above are rejected too.</p>
+<h2 id="variable-width-integers"><a class="header" href="#variable-width-integers">Variable-width integers</a></h2>
+<p><code>btc_varint</code> is Bitcoin’s CompactSize unsigned integer and maps to <code>u64</code> in Rust. The
+encoding is one byte for small values and a tagged 3-, 5-, or 9-byte form
+otherwise, so its width depends on the value.</p>
+<pre><code class="language-vest">input = {
+    flags: u8,
+}
+
+transaction_prefix = {
+    @input_count: btc_varint, // 1, 3, 5, or 9 bytes
+    inputs: [input; @input_count],
+}
+</code></pre>
+<p><strong>Parsing.</strong> Reads the leading tag byte, then the remaining bytes according to the tag. Interprets the result as a <code>u64</code>.
+Only the <em>shortest</em> encoding of a value is accepted — a value padded into a
+wider form is rejected, which is what keeps the format non-malleable.</p>
+<p><strong>Preparation and serialization.</strong> Preparation reports the width of the shortest encoding for that value. Serialization writes exactly that form.</p>
+<p>The <code>vest_lib</code> backend also supports other variable-length integers such as <code>uleb128</code>, <code>base128</code> (VLQ), and <code>base256</code>. We plan to expose them in the DSL soon.</p>
+<h2 id="bytes-and-arrays"><a class="header" href="#bytes-and-arrays">Bytes and arrays</a></h2>
+<p><code>[u8; length]</code> is a run of raw bytes of a known length, handed back as a
+borrowed slice rather than copied:</p>
+<pre><code class="language-vest">digest = [u8; 32]
+</code></pre>
+<p><strong>Parsing.</strong> Takes exactly <code>length</code> bytes and borrows them from the input.</p>
+<p><strong>Preparation and serialization.</strong> Preparation checks that the slice is exactly
+<code>length</code> bytes long and reports that length; a slice of any other size is an
+error. Serialization copies the bytes through unchanged.</p>
+<p>For non-byte elements, <code>[format; count]</code> is a repeated format, and a constant
+count produces a Rust array:</p>
+<pre><code class="language-vest">words = [u16; 8]
+</code></pre>
+<p>Lengths may also use runtime dependencies and arithmetic; see
+<a href="#structures-and-dependencies">Structures and dependencies</a>, and
+<a href="#collections">Collections</a> for the repetition semantics.</p>
+<h2 id="tail-nothing-and-never"><a class="header" href="#tail-nothing-and-never"><code>Tail</code>, <code>Nothing</code>, and <code>Never</code></a></h2>
+<p>Three degenerate formats that appear constantly inside larger ones:</p>
+<pre><code class="language-vest">payload = {
+    header: u16,
+    rest: Tail,
+}
+
+empty = Nothing
+reject = Never("this branch is reserved")
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Format</th><th>Meaning</th><th>Parsing</th><th>Preparation and serialization</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Tail</code></td><td>“whatever is left”</td><td>consumes all remaining input and borrows it</td><td>reports the slice length; writes the bytes through</td></tr>
+<tr><td><code>Nothing</code></td><td>the empty format</td><td>consumes nothing, yields <code>()</code></td><td>reports length 0; writes nothing</td></tr>
+<tr><td><code>Never("msg")</code></td><td>the impossible format</td><td>always fails with <code>msg</code></td><td>unreachable — its value type is uninhabited</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>Tail</code> can be used to “under-specify” a format, leaving the rest of the input uninterpreted.
+<code>Nothing</code> can be used as the “do-nothing” branch of a choice;
+<code>Never</code> marks a branch that must never be taken,
+and gives the resulting parse error a message you choose.
+See <a href="#choices">Choices</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="refinements"><a class="header" href="#refinements">Refinements</a></h1>
+<p>A refinement narrows an existing format to a subset of its values. The wire
+encoding and the Rust type are unchanged — only the set of <em>accepted</em> values
+shrinks. Writing <code>u16 | 1..1024</code> still parses two bytes into a <code>u16</code>; it just
+refuses the ones outside the range.</p>
+<p><strong>Parsing.</strong> Parses the underlying format, then tests the predicate. A value
+outside the refinement is a parse error.</p>
+<p><strong>Preparation and serialization.</strong> Preparation tests the same predicate on the
+value you supply and fails if it does not hold. Length and
+serialization are those of the underlying format.</p>
+<p>The predicate is therefore enforced in both directions.</p>
+<h2 id="integer-constraints"><a class="header" href="#integer-constraints">Integer constraints</a></h2>
+<pre><code class="language-vest">constrained = {
+    exact: u8 | 7,
+    range: u16 | 1..1024,
+    lower_bounded: u32 | 1..,
+    upper_bounded: u16 | ..4096,
+    selected: u8 | {1, 4, 9},
+    except: u8 | !{0, 255},
+}
+</code></pre>
+<p>Vest ranges include both supplied endpoints:
+<code>1..1024</code> accepts 1 through 1024. Either endpoint may be omitted. A set uses
+braces and commas; prefixing a
+constraint with <code>!</code> takes its complement. Values and range endpoints must fit
+the underlying integer type.</p>
+<h2 id="enum-constraints"><a class="header" href="#enum-constraints">Enum constraints</a></h2>
+<p>Named enum formats can be restricted by variant:</p>
+<pre><code class="language-vest">kind = enum {
+    Request = 1,
+    Response = 2,
+    Error = 3,
+}
+
+messages = {
+    request: kind | Request,
+    not_error: kind | !Error,
+    terminal: kind | {Response, Error},
+}
+</code></pre>
+<p>Every named variant must belong to the referenced enum. The generated field
+still has type <code>Kind</code>; the refinement changes only which values are consistent.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="structures-and-dependencies"><a class="header" href="#structures-and-dependencies">Structures and dependencies</a></h1>
+<p>A struct is a fixed sequence of fields laid out back to back on the wire (without padding). The DSL
+generates a Rust struct with the same field names, in the same order.</p>
+<pre><code class="language-vest">record = {
+    kind: u8,
+    flags: u16,
+    payload: [u8; 8],
+}
+</code></pre>
+<p>Every field is followed by a comma, including the last one.</p>
+<p><strong>Parsing.</strong> Parses each field in definition order. The bytes consumed are the sum of the fields’ wire lengths.
+The parsed value is <code>Record { kind, flags, payload }</code>.</p>
+<p><strong>Preparation and serialization.</strong> Preparation prepares each field, adds up the
+lengths with an overflow check, and fails if any field fails. Serialization
+writes the fields in the same order, back to back.</p>
+<h2 id="dependency-fields"><a class="header" href="#dependency-fields">Dependency fields</a></h2>
+<p>Prefix a field name with <code>@</code> to let later fields refer to its value:</p>
+<pre><code class="language-vest">packet = {
+    @length: u16,
+    payload: [u8; @length],
+}
+</code></pre>
+<p>The generated value is <code>Packet { length, payload }</code>. The <code>@</code> field is present on the wire and in the Rust value.</p>
+<p><strong>Parsing.</strong> <code>@length</code> is parsed like any other field; its value is then in
+scope, so <code>[u8; @length]</code> knows how many bytes to take.</p>
+<p><strong>Preparation and serialization.</strong> The direction reverses: <code>@length</code> is now a
+consistency requirement. Preparation checks that the payload really is <code>length</code> bytes and
+fails otherwise. Serialization then writes
+both fields normally.</p>
+<p>A dependency may refer only to a preceding field or a format parameter. Dotted
+field access is supported for nested structs:</p>
+<pre><code class="language-vest">header = {
+    kind: u8,
+    payload_length: u32,
+}
+
+framed = {
+    @header: header,
+    body: [u8; @header.payload_length],
+}
+</code></pre>
+<h2 id="constant-fields"><a class="header" href="#constant-fields">Constant fields</a></h2>
+<p>A field whose value is fixed by the format — a magic number or version byte:</p>
 <pre><code class="language-vest">message = {
-    @kind: message_type,
-    @len: u16,
-    body: [u8; @len] &gt;&gt;= choose(@kind) {
-        Request =&gt; request,
-        Response =&gt; response,
+    const version: u8 = 1,
+    const magic: [u8; 4] = "vest",
+    body: Tail,
+}
+</code></pre>
+<p><strong>Parsing.</strong> Reads the field and requires it to equal the declared constant;
+anything else is a parse error.</p>
+<p><strong>Preparation and serialization.</strong> Constant fields are still present in the
+generated struct, so preparation rejects a caller value whose field differs, and
+serialization writes the declared bytes. Use
+<a href="#framing-with-wrap"><code>wrap</code></a> when framing constants should be
+absent from the value type entirely.</p>
+<p>Top-level constants can name byte, integer, or enum constants for reuse:</p>
+<pre><code class="language-vest">const MAGIC: [u8; 4] = "vest"
+
+message = {
+    const magic: MAGIC,
+    body: Tail,
+}
+</code></pre>
+<h2 id="length-expressions"><a class="header" href="#length-expressions">Length expressions</a></h2>
+<p>Array and byte-string lengths support integer literals, dependencies, static
+format sizes, parentheses, and arithmetic:</p>
+<pre><code class="language-vest">header = {
+    @total: u16 | 8..,
+    flags: u8,
+}
+
+body(@header: header) = {
+    payload: [u8; @header.total - |header|],
+}
+</code></pre>
+<p><code>|format|</code> is the static encoded size of a fixed-width named or primitive
+format. It is rejected for dynamically sized or parameter-dependent formats.</p>
+<p><strong>Parsing and preparation.</strong> The expression is evaluated the same way in both
+directions — to decide how many bytes to read, and to check how many bytes a
+value must occupy. The arithmetic is checked for overflow and underflow in the
+executable code (statically by Verus for parsing, and at runtime for preparation).</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="enums"><a class="header" href="#enums">Enums</a></h1>
+<p>An enum is an integer on the wire with a name for each meaningful value. It corresponds to a Rust enum with the same discriminants. The generated Rust type is <code>#[repr(uN)]</code> where <code>N</code> is the backing width.</p>
+<h2 id="closed-enums"><a class="header" href="#closed-enums">Closed enums</a></h2>
+<pre><code class="language-vest">message_type = enum {
+    Request = 1,
+    Response = 2,
+    Error = 3,
+}
+</code></pre>
+<p>This emits a <code>MessageType</code> Rust enum. Values must be distinct and fit the
+inferred backing width.</p>
+<p><strong>Parsing.</strong> Reads the backing integer and maps it to a variant. Any other value
+is a parse error.</p>
+<p><strong>Preparation and serialization.</strong> Preparation always succeeds and reports the
+backing width. Serialization
+writes the variant’s discriminant as the backing integer.</p>
+<h2 id="open-enums"><a class="header" href="#open-enums">Open enums</a></h2>
+<p>Add <code>...</code> after the variants to preserve unknown values:</p>
+<pre><code class="language-vest">message_type = enum {
+    Request = 1,
+    Response = 2,
+    ...
+}
+</code></pre>
+<p><strong>Parsing.</strong> A recognised value maps to its
+variant, and anything else is kept as <code>Unknown(value)</code>.</p>
+<p><strong>Preparation and serialization.</strong> Same width as the closed form. Known variants serialize as before; <code>Unknown(value)</code> serializes as <code>value</code>.</p>
+<h2 id="choosing-the-backing-width"><a class="header" href="#choosing-the-backing-width">Choosing the backing width</a></h2>
+<p>The backing width is what actually determines how many bytes appear on the wire.
+Without a suffix, Vest selects the smallest unsigned width containing every
+value. A suffix on any enumerator fixes the type; all supplied suffixes must
+agree:</p>
+<pre><code class="language-vest">wide_type = enum {
+    Request = 1u16,
+    Response = 2,
+}
+</code></pre>
+<p>The supported executable backing widths are <code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, and
+<code>u64</code>.</p>
+<p>Inside a <code>bits</code> block, a suffix such as <code>0u3</code> instead selects a three-bit enum.
+See <a href="#bit-fields">Bit fields</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="choices"><a class="header" href="#choices">Choices</a></h1>
+<p>A choice is a format that can take one of several shapes. It generates a Rust
+enum, so the alternative that matched is recorded in the value. Vest has <em>dependent</em> choices, where an earlier field selects the
+branch, and <em>non-dependent</em> choices, where branches are tried in order.</p>
+<h2 id="enum-dependent-choices"><a class="header" href="#enum-dependent-choices">Enum-dependent choices</a></h2>
+<pre><code class="language-vest">kind = enum {
+    Short = 1,
+    Long = 2,
+}
+
+body(@kind: kind) = choose(@kind) {
+    Short =&gt; u16,
+    Long =&gt; u64,
+}
+</code></pre>
+<p><strong>Parsing.</strong> The dependency has already been parsed, so the branch is chosen
+directly — no backtracking, and no ambiguity about which arm applies.</p>
+<p><strong>Preparation and serialization.</strong> Preparation checks that the variant in your
+value matches the branch the dependency selects; a <code>Long</code> body under a <code>Short</code>
+tag is rejected before any bytes are written. It then prepares that branch.
+Serialization writes the selected branch only.</p>
+<p>A closed enum choice must cover every declared variant unless it has a final
+wildcard. An open enum choice requires a final <code>_</code> branch. Branch names must be
+unique and belong to the enum.</p>
+<h2 id="integer-dependent-choices"><a class="header" href="#integer-dependent-choices">Integer-dependent choices</a></h2>
+<pre><code class="language-vest">body(@kind: u8) = choose(@kind) {
+    1 =&gt; u16,
+    2..10 =&gt; u32,
+    _ =&gt; Never("unknown body kind"),
+}
+</code></pre>
+<p>Integer patterns use the same values and ranges as refinements. Explicit
+patterns must not overlap, and a final wildcard is mandatory because the
+integer domain is otherwise open. Semantics are as above: the dependency picks
+the arm, and the value must match that arm.</p>
+<h2 id="byte-string-dependent-choices"><a class="header" href="#byte-string-dependent-choices">Byte-string-dependent choices</a></h2>
+<pre><code class="language-vest">record = {
+    @magic: [u8; 2],
+    body: choose(@magic) {
+        [0x01, 0x02] =&gt; u16,
+        [0x03, 0x04] =&gt; u32,
+        _ =&gt; Nothing,
     },
 }
 </code></pre>
-<p>Ordinary fields become fields of the generated value type. A name prefixed by
-<code>@</code> may be referenced by later formats and length expressions. A constant field
-is checked on input and reconstructed during serialization without appearing
-in the logical value.</p>
-<p><code>lhs &gt;&gt;= rhs</code> parses <code>lhs</code>, restricts <code>rhs</code> to the resulting region where
-applicable, and returns the value of <code>rhs</code>. Length expressions support constants,
-dependencies, parentheses, <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>|format|</code> for static width.</p>
-<h2 id="choices-enums-and-collections"><a class="header" href="#choices-enums-and-collections">Choices, enums, and collections</a></h2>
+<p>Every explicit byte pattern must have the same length as the dependency, and a
+final wildcard is required.</p>
+<h2 id="non-dependent-ordered-choices"><a class="header" href="#non-dependent-ordered-choices">Non-dependent ordered choices</a></h2>
+<p>Without <code>(@dependency)</code>, there is no tag to dispatch on, so the branches are
+distinguished by their own content:</p>
+<pre><code class="language-vest">small = choose {
+    Tiny(u8 | 0..9),
+    Medium(u8 | 10..100),
+}
+
+// or equivalently
+small_arrow = choose {
+    Tiny =&gt; u8 | 0..9,
+    Medium =&gt; u8 | 10..100,
+}
+</code></pre>
+<p><strong>Parsing.</strong> Branches are attempted in source order and the first success wins.
+A failed attempt consumes nothing, so the next branch starts from the same
+position.</p>
+<p><strong>Preparation and serialization.</strong> Preparation prepares whichever branch the
+value holds; serialization writes it.</p>
+<p>Note that for non-dependent choices, the variant names (<code>Tiny</code> and <code>Medium</code>) are <strong>not</strong> part of the wire. In this case, Vest requires that the branches are <strong>non-overlapping</strong>, which is required for the parser to be able to unambiguously select the correct branch.</p>
+<h2 id="wildcard-rules"><a class="header" href="#wildcard-rules">Wildcard rules</a></h2>
 <ul>
-<li><code>enum { Name = value, ... }</code> defines a typed integer enumeration. A trailing
-<code>...</code> preserves unknown values.</li>
-<li><code>choose { Variant =&gt; fmt, ... }</code> defines an ordered choice with a nominal
-enum value.</li>
-<li><code>choose(@tag) { ... }</code> dispatches using an earlier dependency. <code>_</code> is the
-fallback branch.</li>
-<li><code>Option&lt;fmt&gt;</code> accepts zero or one value and <code>Vec&lt;fmt&gt;</code> accepts zero or more.
-Their placement must leave parsing unambiguous and productive.</li>
+<li><code>_</code> may appear at most once and must be the final branch.</li>
+<li>Integer and byte-string choices require it.</li>
+<li>Open-enum choices require it.</li>
+<li>A closed-enum choice is normally written exhaustively, but a final <code>_</code> is allowed to “catch all” other variants.</li>
 </ul>
-<h2 id="wrapping-bitfields-and-macros"><a class="header" href="#wrapping-bitfields-and-macros">Wrapping, bitfields, and macros</a></h2>
-<p><code>wrap(...)</code> surrounds a value format with fixed integer, enum, or byte
-constants. <code>bits { ... }</code> packs integer fields into a fixed-width carrier; the
-file endianness controls byte order, while fields are laid out from the most
-significant bit of the carrier.</p>
-<p>Format macros use <code>macro name!(...) = ...</code> and are expanded before type
-checking. Named formats may take dependency parameters using
-<code>name(@parameter: format) = ...</code>.</p>
-<h2 id="recursion-and-limitations"><a class="header" href="#recursion-and-limitations">Recursion and limitations</a></h2>
-<p>Vest supports generated bounded recursive formats through the backend’s
-fixpoint combinators. Mutual-recursion code generation remains experimental and
-is not part of the default verified fixture set. The compiler reports syntax,
-type, dependency, productivity, and proof-composition problems rather than
-silently changing the wire format.</p>
-<p>Run <code>vest --help</code> for the current command-line interface. The parser grammar is
-available in
-<a href="https://github.com/secure-foundations/vest/blob/main/vest/src/vest.pest"><code>vest/src/vest.pest</code></a>,
-and the checked-in <code>.vest</code> fixtures are the executable reference for supported
-combinations.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generated-rust-api"><a class="header" href="#generated-rust-api">Generated Rust API</a></h1>
-<p>For a definition named <code>message</code>, Vest normally emits:</p>
-<ul>
-<li><code>Message</code> and <code>MessageSpec</code>, the executable and logical value types;</li>
-<li><code>MessageFmt</code>, the nominal verified format;</li>
-<li>implementations of <code>Parser</code>, <code>Prepare</code>, <code>ByteLen</code>, and <code>Serializer</code>; and</li>
-<li>specification and proof-trait implementations used by enclosing formats.</li>
-</ul>
-<p>Generated structs borrow fixed and variable byte regions from their input when
-the wire format permits zero-copy parsing. Collections and formats that must
-combine fragmented input use owned values and therefore require the <code>alloc</code>
-feature.</p>
-<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
-<p><code>MessageFmt.parse(&amp;input)</code> returns <code>(consumed, value)</code>. Success is proved to
-match the pure <code>spec_parse</code> result. Parsing does not require that the entire
-input be consumed unless the format itself ends with an end-of-input
-combinator.</p>
-<h2 id="preparation-and-serialization"><a class="header" href="#preparation-and-serialization">Preparation and serialization</a></h2>
-<p>Call <code>MessageFmt.prepare(&amp;value)</code> before serializing. It checks constants,
-dependent lengths, predicates, choices, recursion limits, and other consistency
-conditions, then returns the exact output length. Allocate or borrow a slice of
-that length and call <code>MessageFmt.serialize(&amp;value, output)</code>.</p>
-<p>For advanced streaming code, <code>Serializer::serialize_into</code> targets any
-<code>OutputBuf</code>, including a growable <code>Vec&lt;u8&gt;</code> or an <code>OutputSlice</code>. The convenience
-slice API is preferred when the final length is known.</p>
-<h2 id="errors-and-generated-files"><a class="header" href="#errors-and-generated-files">Errors and generated files</a></h2>
-<p>Parsing returns a <code>ParseError</code>; preparation returns a <code>PreSerializeError</code>.
-Named formats preserve a nested format trace when allocation is enabled.
-Generated files are deterministic build artifacts and should be regenerated,
-not edited manually.</p>
-<p>The exact executable contracts are documented under
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/"><code>core::exec</code></a>.</p>
+<h1 id="collections"><a class="header" href="#collections">Collections</a></h1>
+<h2 id="fixed-and-dependency-sized-arrays"><a class="header" href="#fixed-and-dependency-sized-arrays">Fixed and dependency-sized arrays</a></h2>
+<p>A repetition of one format a known number of times.</p>
+<pre><code class="language-vest">fixed_words = [u16; 8]
+
+counted = {
+    @count: u16,
+    words: [u32; @count],
+}
+</code></pre>
+<p>A constant count generates a Rust array. A dependency-sized repetition
+generates a <code>Vec</code>, because its length is known only at runtime. <code>[u8; length]</code> is
+specialized to a borrowed byte slice.</p>
+<p><strong>Parsing.</strong> Parses the element format exactly <code>count</code> times, one after another.</p>
+<p><strong>Preparation and serialization.</strong> Preparation checks that the collection holds
+exactly <code>count</code> elements, prepares each element, and sums the lengths.
+Serialization writes the elements back to back.</p>
+<p>Nested arrays are supported:</p>
+<pre><code class="language-vest">matrix = {
+    @rows: u16,
+    @columns: u16,
+    cells: [[u8; @columns]; @rows],
+}
+</code></pre>
+<h2 id="vec"><a class="header" href="#vec"><code>Vec</code></a></h2>
+<p>A repetition with no count: zero or more occurrences of a format. The result is a <code>Vec</code> in Rust.</p>
+<pre><code class="language-vest">item = { value: u16, }
+
+items = Vec&lt;item&gt;
+</code></pre>
+<p><strong>Parsing.</strong> Repeats the element format until it errors (e.g., the input is exhausted).</p>
+<p><strong>Preparation and serialization.</strong> Preparation prepares every element and sums
+the lengths. Serialization writes the elements in order.</p>
+<p>Because there is no count, the element must be <em>productive</em> — every successful
+element parse must consume at least one byte. Otherwise repetition could loop
+forever. Verus will check this property in the emitted Rust code and reject the format if productivity cannot be proven for the element format.</p>
+<h2 id="option"><a class="header" href="#option"><code>Option</code></a></h2>
+<p>Zero or one occurrence of a format.</p>
+<pre><code class="language-vest">tagged = wrap(u8 = 1, u16)
+maybe_tagged = Option&lt;tagged&gt;
+</code></pre>
+<p><strong>Parsing.</strong> Tries the inner format. On success the result is <code>Some(v)</code>; on
+failure the result is <code>None</code> and <strong>no input is consumed</strong>, so parsing continues
+from the same position.</p>
+<p><strong>Preparation and serialization.</strong> <code>Some(v)</code> prepares and writes the inner
+format; <code>None</code> has length 0 and writes nothing.</p>
+<h2 id="notes-on-vec-and-option"><a class="header" href="#notes-on-vec-and-option">Notes on <code>Vec</code> and <code>Option</code></a></h2>
+<p>Because the absence of a <code>Vec</code> or <code>Option</code> field is allowed, the surrounding format must make their presence
+distinguishable from what follows — a tagged or otherwise disjoint inner format is the usual pattern.
+Ambiguous fields will fail the generated unambiguity proof obligations.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id=""><a class="header" href="#"><code>&gt;&gt;=</code></a></h1>
+<p><code>left &gt;&gt;= right</code> means “take the region <code>left</code> describes, then parse <code>right</code> against it.”</p>
+<p>The value of the whole expression is <code>right</code>’s value.</p>
+<p><strong>Parsing.</strong> Extract a bounded region from the input defined by <code>left</code>, then parse <code>right</code> from that region.
+<code>right</code> must consume the region <em>entirely</em> — leftover bytes
+are an error.</p>
+<p><strong>Preparation and serialization.</strong> Preparation prepares <code>right</code> and requires its
+length to equal the region <code>left</code> declares. Serialization writes
+<code>right</code>’s bytes directly.</p>
+<p>Currently, the left side must be <code>[u8; length]</code> or <code>Tail</code>. Using an integer or any other
+format there is an error.</p>
+<h2 id="bounding-vec-with-a-length-field"><a class="header" href="#bounding-vec-with-a-length-field">Bounding <code>Vec</code> with a length field</a></h2>
+<pre><code class="language-vest">item = { value: u16, }
+
+list = {
+    @byte_length: u16,
+    values: [u8; @byte_length] &gt;&gt;= Vec&lt;item&gt;,
+}
+</code></pre>
+<p><code>Vec&lt;item&gt;</code> repeats until its region runs out. Because the region is exactly
+<code>byte_length</code> bytes, the repetition stop. Preparation checks that the items really do add up to <code>byte_length</code>.</p>
+<h2 id="reinterpreting-the-remainder-of-a-region"><a class="header" href="#reinterpreting-the-remainder-of-a-region">Reinterpreting the remainder of a region</a></h2>
+<p><code>Tail</code> names everything left in the enclosing region, which turns <code>&gt;&gt;=</code> into
+“reinterpret the remainder”:</p>
+<pre><code class="language-vest">item = { value: u16, }
+
+items = Tail &gt;&gt;= Vec&lt;item&gt;
+</code></pre>
+<p>This is the idiom for a message that ends in a homogeneous run of records. It
+also composes: inside a format already bounded by a length field, <code>Tail</code> means
+the rest of <em>that</em> region, not the rest of the input buffer.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="bit-fields"><a class="header" href="#bit-fields">Bit fields</a></h1>
+<p><code>bits { ... }</code> describes several small unsigned fields packed into one
+fixed-width integer on the wire, while exposing them as ordinary typed Rust
+fields. The block as a whole is a single integer; the fields are slices of its
+bits.</p>
+<pre><code class="language-vest">ipv4_first_byte = bits {
+    version: u4,
+    ihl: u4,
+}
+</code></pre>
+<p>Fields are laid out from the most significant bit of the integer, in declaration
+order. The total width must be exactly 8, 16, 24, 32, or 64 bits; otherwise the
+compiler reports an invalid total width. Each individual width must be positive
+and no larger than 64.</p>
+<p><strong>Parsing.</strong> Reads the carrier integer, then splits it into fields from the most significant bit
+down, and checks each field’s constraint.</p>
+<p><strong>Preparation and serialization.</strong> Preparation checks that each field fits its
+declared bit width and satisfies its constraint, and reports the carrier width.
+Serialization packs the fields back into one integer and writes it.</p>
+<h2 id="cross-byte-fields-and-byte-order"><a class="header" href="#cross-byte-fields-and-byte-order">Cross-byte fields and byte order</a></h2>
+<pre><code class="language-vest">!BIG_ENDIAN
+
+packed = bits {
+    prefix: u3,
+    value: u10,
+    suffix: u3,
+}
+</code></pre>
+<p>Fields may straddle byte boundaries; only the integer as a whole is required to be byte
+aligned. Byte order (endianness) controls how that multi-byte integer is encoded.
+It has no effect on abstract ordering of the fields, which is always from the most significant bit down.</p>
+<h2 id="constraints-and-enums"><a class="header" href="#constraints-and-enums">Constraints and enums</a></h2>
+<p>Bit-sized integers use the ordinary refinement syntax, with the same two-way
+enforcement described in <a href="#refinements">Refinements</a>. Enum suffixes may select
+an exact bit width:</p>
+<pre><code class="language-vest">payload_kind = enum {
+    Raw = 0u3,
+    Words = 1u3,
+    ...
+}
+
+header = bits {
+    @kind: payload_kind,
+    @count: u5 | 1..31,
+    @length: u8,
+}
+
+packet = {
+    @header: header,
+    body: choose(@header.kind) {
+        Raw =&gt; [u8; @header.length],
+        Words =&gt; [u16; @header.count],
+        _ =&gt; [u8; @header.length],
+    },
+}
+</code></pre>
+<p>Only unsigned integers and enums with unsigned bit-sized backing types are
+allowed as bit fields. Dependency fields and dotted access work exactly as in
+ordinary structures: <code>@kind</code> is unpacked while parsing the integer and is then
+in scope for later fields, and preparation enforces it as a constraint in the
+other direction.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="composition"><a class="header" href="#composition">Composition</a></h1>
+<h2 id="format-aliases"><a class="header" href="#format-aliases">Format aliases</a></h2>
+<p>A definition may directly reuse another format:</p>
+<pre><code class="language-vest">header = { kind: u8, length: u16, }
+header_alias = header
+</code></pre>
+<p>The alias receives its own generated format name while using the referenced
+value type. Parsing, preparation, and serialization are those of the referenced
+format; the alias adds no wire bytes.</p>
+<h2 id="framing-with-wrap"><a class="header" href="#framing-with-wrap">Framing with <code>wrap</code></a></h2>
+<p><code>wrap</code> surrounds a format with fixed bytes that carry no information — a magic
+prefix, a terminator — and keeps them out of the value.</p>
+<pre><code class="language-vest">framed_word = wrap(
+    u8 = 0xAA,
+    u16,
+    [u8; 2] = [0x0D, 0x0A]
+)
+</code></pre>
+<p>The generated value is just <code>u16</code>.</p>
+<p><strong>Parsing.</strong> Requires the prefix constants, parses the inner format, then
+requires the suffix constants. A constant that does not match is a parse error.
+The framing bytes are consumed but discarded.</p>
+<p><strong>Preparation and serialization.</strong> Preparation reports the inner length plus the
+widths of all the constants. Serialization writes the prefix, the inner value,
+and the suffix — the constants are restored from the format, since they were
+never in the value.</p>
+<p>This is the difference from a <code>const</code> structure field, which stays part of the
+generated struct and must be supplied by the caller.</p>
+<p><code>wrap</code> accepts any number of constant integer, byte-string, or enum formats
+before and after its one non-constant inner format.</p>
+<h2 id="parameterized-formats"><a class="header" href="#parameterized-formats">Parameterized formats</a></h2>
+<p>Parameters are values supplied by the enclosing format:</p>
+<pre><code class="language-vest">payload(@length: u16) = [u8; @length]
+
+packet = {
+    @length: u16,
+    body: payload(@length),
+}
+</code></pre>
+<p><strong>Parsing and preparation.</strong> A parameter contributes no bytes of its own. It
+behaves exactly like a dependency that happens to be bound outside: it sizes or
+selects during parsing, and is enforced as a constraint during preparation.</p>
+<p>Arguments must be <code>@</code> dependencies in scope and must match the declared
+parameter format.</p>
+<h2 id="macros"><a class="header" href="#macros">Macros</a></h2>
+<p>Macros substitute format arguments before type checking:</p>
+<pre><code class="language-vest">macro length_prefixed!(length_format, body_format) = {
+    @length: length_format,
+    body: [u8; @length] &gt;&gt;= body_format,
+}
+
+words = length_prefixed!(u16, Vec&lt;u32&gt;)
+</code></pre>
+<p>Macro arguments are format expressions. Macros are purely syntactic and
+have no semantics of their own. The expansion behaves exactly as if you had
+written it out.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="recursion"><a class="header" href="#recursion">Recursion</a></h1>
+<p>Named formats may refer to themselves directly or through other definitions:</p>
+<pre><code class="language-vest">list_kind = enum {
+    Nil = 0,
+    Cons = 1,
+}
+
+list = {
+    @kind: list_kind,
+    value: choose(@kind) {
+        Nil =&gt; [u8; 0],
+        Cons =&gt; {
+            head: u8,
+            tail: list,
+        },
+    },
+}
+</code></pre>
+<p>The compiler finds strongly connected components, so mutually recursive
+definitions are supported too. It emits bounded fixpoint formats for the specification and owned <code>Box</code>
+links where Rust needs indirection in the value type.</p>
+<p><strong>Parsing.</strong> Recurses as the input demands, up to a fixed depth bound statically picked by the format. Exceeding the bounde is a parse error.</p>
+<p><strong>Preparation and serialization.</strong> Preparation walks the value to the same
+bound, summing lengths, and fails if the value nests deeper than the format
+allows. Serialization traverses the value and writes the bytes in order.</p>
+<h2 id="note"><a class="header" href="#note">Note</a></h2>
+<p>Recursive generation is experimental: the implementation is incomplete and there is some engineering work remaining for a more robust support.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="construct-to-rust-mapping"><a class="header" href="#construct-to-rust-mapping">Construct-to-Rust mapping</a></h1>
+<p>A quick-lookup table from DSL construct to the Rust type it generates.</p>
+<p>Names are converted to <code>UpperCamelCase</code>: <code>msg_type</code> becomes <code>MsgType</code>. Alongside
+each value type, the compiler emits a zero-sized format type — <code>MsgTypeFmt</code> —
+that carries the parser, serializer, and proofs. See
+<a href="#generated-rust-code">Generated Rust Code</a> for the full set of emitted names.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Vest DSL construct</th><th>Generated Rust type</th></tr>
+</thead>
+<tbody>
+<tr><td><code>name = u8</code> (or <code>u16</code>, <code>u24</code>, <code>u32</code>, <code>u64</code>)</td><td><code>type Name = u8</code></td></tr>
+<tr><td><code>name = btc_varint</code></td><td><code>type Name = u64</code></td></tr>
+<tr><td><code>name = u16 | {1..0xffff}</code></td><td><code>type Name = u16</code></td></tr>
+<tr><td><code>name = enum { A = 1, B = 2, }</code></td><td><code>enum Name { A = 1, B = 2 }</code></td></tr>
+<tr><td><code>name = enum { A = 1, B = 2, ... }</code></td><td><code>enum Name { A = 1, B = 2, Unknown(u8) }</code></td></tr>
+<tr><td><code>name = enum { A = 0u16, }</code></td><td><code>#[repr(u16)] enum Name { A = 0 }</code></td></tr>
+<tr><td><code>name = bits { f1: u4, f2: u4, }</code></td><td><code>struct Name { f1: u8, f2: u8 }</code></td></tr>
+<tr><td><code>name = bits { k: my_enum, n: u5 | {1..31}, }</code></td><td><code>struct Name { k: MyEnum, n: u8 }</code></td></tr>
+<tr><td><code>name = [u8; 16]</code></td><td><code>type Name&lt;'i&gt; = &amp;'i [u8]</code></td></tr>
+<tr><td><code>name = [u16; 8]</code></td><td><code>type Name = [u16; 8]</code></td></tr>
+<tr><td><code>name = Option&lt;inner&gt;</code></td><td><code>Option&lt;Inner&gt;</code></td></tr>
+<tr><td><code>name = Vec&lt;inner&gt;</code></td><td><code>Vec&lt;Inner&gt;</code></td></tr>
+<tr><td><code>name = Nothing</code></td><td><code>type Name = ()</code></td></tr>
+<tr><td><code>name = Never("reason")</code></td><td><code>type Name = Never</code></td></tr>
+<tr><td><code>name = Tail</code></td><td><code>type Name = &amp;[u8]</code></td></tr>
+<tr><td><code>name(@l: u8) = [u8; @l]</code></td><td><code>type Name = &amp;[u8]</code></td></tr>
+<tr><td><code>name(@l: u8) = [u8; @l] &gt;&gt;= Vec&lt;item&gt;</code></td><td><code>type Name = Vec&lt;Item&gt;</code></td></tr>
+<tr><td><code>name(@count) = [item; @count]</code></td><td><code>type Name = Vec&lt;Item&gt;</code></td></tr>
+<tr><td><code>name = { a: fmt_a, b: fmt_b, }</code></td><td><code>struct Name { a: FmtA, b: FmtB }</code></td></tr>
+<tr><td><code>name = { @l: u16, data: [u8; @l], }</code></td><td><code>struct Name { l: u16, data: &amp;[u8] }</code></td></tr>
+<tr><td><code>name = { @hdr: header, body: [u8; @hdr.len - 4], }</code></td><td><code>struct Name { hdr: Header, body: &amp;[u8] }</code></td></tr>
+<tr><td><code>name = { a: fmt_a, b: Tail, }</code></td><td><code>struct Name { a: FmtA, b: &amp;[u8] }</code></td></tr>
+<tr><td><code>name = { const tag: u8 = 0x01, data: u16, }</code></td><td><code>struct Name { tag: u8, data: u16 }</code></td></tr>
+<tr><td><code>name(@t: my_type) = choose(@t) { A =&gt; fmt_a, _ =&gt; fmt_c, }</code></td><td><code>enum Name { A(FmtA), Default(FmtC) }</code></td></tr>
+<tr><td><code>name = choose { V1(u8 | 0..10), V2(u8 | 11..), }</code></td><td><code>enum Name { V1(u8), V2(u8) }</code></td></tr>
+<tr><td><code>name = wrap(u8 = 0x01, inner, u8 = 0xFF)</code></td><td>same as <code>inner</code></td></tr>
+</tbody>
+</table>
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generated-rust-code"><a class="header" href="#generated-rust-code">Generated Rust Code</a></h1>
+<p>Vest emits one user-facing value type and one format type for each named DSL
+definition. It also emits specification, proof, and executable helpers/trait implementations. The
+helpers are public to ease the codegen plumbing,
+but application
+code normally needs only the value and format types.</p>
+<p>For this definition:</p>
+<pre><code class="language-vest">message = {
+    @length: u16,
+    payload: [u8; @length],
+}
+</code></pre>
+<p>the user-facing types are:</p>
+<pre><code class="language-rust ignore">#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Message&lt;'i&gt; {
+    pub length: u16,
+    pub payload: &amp;'i [u8],
+}
+
+pub struct MessageFmt;</code></pre>
+<h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
+<p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble, cut
+into five banner-delimited sections:</p>
+<pre><code class="language-rust ignore">use vest_lib::combinators::*;            // fixed preamble, identical in every file
+use vest_lib::core::exec::parser::*;
+// ...
+verus! {
+
+// ============================================================
+// Data Types
+// ============================================================
+// ============================================================
+// Format Specifications
+// ============================================================
+// ============================================================
+// Derived Parser, Serializer, Length, and Consistency Specifications
+// ============================================================
+// ============================================================
+// Proven Format Properties
+// ============================================================
+// ============================================================
+// Executable Implementations
+// ============================================================
+
+} // verus!</code></pre>
+<p>A file with nine definitions emits
+all nine value types, then all nine nominal format types, then all the derived
+specifications, and so on.
+Because the nominal format types (e.g., <code>MessageFmt</code>) are what the user actually interacts with,
+the last three sections are wrapped in private
+modules (<code>derived_specs</code>, <code>derived_proofs</code>, <code>exec_impls</code>).</p>
+<h2 id="data-types"><a class="header" href="#data-types">Data Types</a></h2>
+<p>Per definition, alongside the <code>Message</code> shown above, Vest emits a nominal abstract value type
+(<code>MessageSpec</code>) and a structural representation (<code>MessageInner</code>), plus the
+<code>DeepView</code> impl that converts between the executable value and the abstract value. Additionally, Vest emits two empty structs (<code>MessageForward</code> and <code>MessageReverse</code>)
+to name the bijective conversion between the structural and nominal abstract value types.</p>
+<pre><code class="language-rust ignore">#[verifier::ext_equal]
+pub struct MessageSpec&lt;T0 = u16, T1 = Seq&lt;u8&gt;&gt; {   // abstract view of Message
+    pub length: T0,
+    pub payload: T1,
+}
+
+pub type MessageInner = (u16, Seq&lt;u8&gt;);           // what the combinator tree yields
+
+impl&lt;'i&gt; DeepView for Message&lt;'i&gt; {               // exec value -&gt; abstract value
+    type V = MessageSpec;
+    #[verifier::opaque]
+    open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
+}
+
+impl&lt;T0, T1&gt; MessageSpec&lt;T0, T1&gt; {                // abstract value &lt;-&gt; nested tuple
+    #[verifier::opaque] pub open spec fn from_structural(input: (T0, T1)) -&gt; Self { /* .. */ }
+    #[verifier::opaque] pub open spec fn into_structural(self) -&gt; (T0, T1) { /* .. */ }
+    pub proof fn lemma_from_into(self) { /* .. */ }
+    pub proof fn lemma_into_from(input: (T0, T1)) { /* .. */ }
+}
+
+// The bijection between the structural tuple and the nominal abstract value
+#[doc(hidden)] pub struct MessageForward;
+#[doc(hidden)] pub struct MessageReverse;</code></pre>
+<p>For a <code>choose</code>, the same set appears with <code>enum</code> instead of <code>struct</code>, and
+<code>MessageInner</code> becomes nested <code>Sum</code>s rather than a nested tuple.</p>
+<h2 id="format-specifications"><a class="header" href="#format-specifications">Format Specifications</a></h2>
+<p>This section is the format combinator representation (defined in <code>vest_lib</code>) of the DSL definition.</p>
+<pre><code class="language-rust ignore">pub type MessageFmtSpec =
+    Named&lt;Mapped&lt;Bind&lt;U16Le, spec_fn(u16) -&gt; Varied&lt;u16&gt;&gt;, BiMap&lt;MessageForward, MessageReverse&gt;&gt;&gt;;
+
+impl MessageFmt {
+    pub open spec fn spec_inner() -&gt; MessageFmtSpec {
+        Named("message", Mapped {
+            inner: Bind(U16Le, |length: u16| Varied(length)),
+            mapper: BiMap(MessageForward, MessageReverse),
+        })
+    }
+}</code></pre>
+<p>Note how each DSL construct has a corresponding shape in the combinator representation (<code>@length: u16</code> becomes <code>Bind(U16Le, |length: u16| ...)</code>, <code>[u8; @length]</code> becomes <code>Varied(length)</code>, etc.). The <code>Named</code> wrapper is what gives the format a human-readable name for error reporting.</p>
+<h2 id="derived-specifications"><a class="header" href="#derived-specifications">Derived Specifications</a></h2>
+<p>Because <code>spec_inner()</code> is a combinator tree composed of <code>vest_lib</code> format combinators, we can <em>derive</em> the formal specifications of the format from it.</p>
+<pre><code class="language-rust ignore">impl SpecParser        for MessageFmt { type PVal   = MessageSpec; /* spec_parse */ }
+impl Consistency       for MessageFmt { type Val    = MessageSpec; /* consistent */ }
+impl SpecSerializer    for MessageFmt { type SVal   = MessageSpec; /* spec_serialize */ }
+impl SpecByteLen       for MessageFmt { type T      = MessageSpec; /* byte_len */ }</code></pre>
+<p>Every method body is literally <code>Self::spec_inner().&lt;method name&gt;(..)</code>.
+Most of them are marked
+<code>#[verifier::opaque]</code> so enclosing formats cannot see their inner definitions.
+This opacity is what keeps verification cost
+from exploding as formats grow in size and complexity.</p>
+<h2 id="proven-format-properties"><a class="header" href="#proven-format-properties">Proven Format Properties</a></h2>
+<p>Likewise, the proofs of format properties are <em>mostly</em> derived from <code>spec_inner()</code>.</p>
+<pre><code class="language-rust ignore">broadcast use {
+    vest_lib::combinators::disjoint::disjointness_lemmas,
+    MessageSpec::lemma_from_into,
+    MessageSpec::lemma_into_from,
+};
+
+impl SafeParser  for MessageFmt { /* .. */ }
+impl Productive  for MessageFmt { /* .. */ }
+impl SoundParser for MessageFmt { /* .. */ }
+impl SPRoundTrip for MessageFmt { /* .. */ }
+impl NonMalleable for MessageFmt { /* .. */ }
+// ...plus more auxiliary proof traits, depending on the format</code></pre>
+<p>Each proof reveals the opaque specifications it needs, then hands off to the
+corresponding lemma on <code>spec_inner()</code>. <code>disjointness_lemmas</code> is a broadcast group of lemmas that compositionally establish the non-ambiguity of certain format combinators, which is a prerequisite for serialize-then-parse round trips.</p>
+<h2 id="executable-implementations"><a class="header" href="#executable-implementations">Executable Implementations</a></h2>
+<p>Finally, the executable implementations of <code>Parser</code>, <code>Serializer</code>, and <code>Prepare</code> are emitted.
+Here, the implementations are <em>not</em> derived from <code>spec_inner()</code>; they are written in idiomatic imperative Rust to ensure performance and avoid unnecessary combinator overhead.</p>
+<pre><code class="language-rust ignore">impl&lt;'i&gt; Parser&lt;&amp;'i [u8]&gt; for MessageFmt {
+    type PT = Message&lt;'i&gt;;
+    fn parse(&amp;self, ibuf: &amp;&amp;'i [u8]) -&gt; PResult&lt;Self::PT&gt; { /* .. */ }
+}
+
+impl&lt;Output: OutputBuf, 'i&gt; Serializer&lt;Output, Message&lt;'i&gt;&gt; for MessageFmt {
+    fn serialize_into(&amp;self, v: &amp;Message&lt;'i&gt;, obuf: &amp;mut Output) { /* .. */ }
+}
+
+impl&lt;'i&gt; Prepare&lt;Message&lt;'i&gt;&gt; for MessageFmt {
+    fn prepare(&amp;self, v: &amp;Message&lt;'i&gt;) -&gt; Result&lt;usize, PreSerializeError&gt; { /* .. */ }
+}</code></pre>
+<p><code>parse</code> walks the fields, advancing a cursor and propagating failure with <code>?</code>,
+then assembles the value and asserts it matches <code>spec_parse</code>:</p>
+<pre><code class="language-rust ignore">let (n1, length)  = U16Le.parse(&amp;rest)?;
+let rest          = rest.skip(n1);
+let (n2, payload) = Varied(length).parse(&amp;rest)?;
+// ...
+Ok((n1 + n2, Message { length, payload }))</code></pre>
+<p><code>serialize_into</code> mirrors it — it traverses the value and writes each field directly in-place to the outbuf buffer. <code>prepare</code> similarly walks the value, checking that each field is valid and summing the lengths.</p>
+<h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let input: &amp;[u8] = &amp;[3, 0, b'a', b'b', b'c'];
+let (consumed, message) = MessageFmt.parse(&amp;input).unwrap();
+assert_eq!(consumed, 5);
+assert_eq!(message.payload, b"abc");
+
+let length = MessageFmt.prepare(&amp;message).unwrap();
+let mut output = vec![0u8; length];
+MessageFmt.serialize(&amp;message, &amp;mut output);</code></pre>
+<p><code>parse</code> returns the consumed prefix length and the value; it need not consume
+the whole input unless the format says so. Errors carry a <code>ParseErrorKind</code> along with the static identifier provided to the <code>Name</code> combinator. When the <code>alloc</code> feature is enabled, the error also builds a trace of the enclosing formats, which is useful for debugging.</p>
+<!--with allocation enabled the `Named` wrappers build a trace of the enclosing
+formats.-->
+<p>The <code>SerializerExt</code> trait provides two convenience methods for serializing values into a buffer: <code>serialize</code> and <code>serialize_with_vec</code>.
+<code>serialize</code> writes into an exactly sized
+slice and <code>serialize_with_vec</code> appends to a growable <code>Vec&lt;u8&gt;</code>. In both cases, the length of the buffer can be obtained from <code>prepare</code> to provably avoid (re)allocation.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="command-line-interface"><a class="header" href="#command-line-interface">Command-line interface</a></h1>
+<h2 id="synopsis"><a class="header" href="#synopsis">Synopsis</a></h2>
+<pre><code class="language-console">vest [OPTIONS] &lt;VEST_FILE&gt;
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument / option</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>&lt;VEST_FILE&gt;</code></td><td>the <code>.vest</code> file to compile (required)</td></tr>
+<tr><td><code>-o</code>, <code>--output &lt;OUTPUT&gt;</code></td><td>where to write the generated Rust (optional; defaults to the input path with its extension replaced, so <code>msg.vest</code> becomes <code>msg.rs</code>)</td></tr>
+<tr><td><code>-h</code>, <code>--help</code></td><td>print help</td></tr>
+<tr><td><code>-V</code>, <code>--version</code></td><td>print version</td></tr>
+</tbody>
+</table>
+</div>
+<p>A successful run should print the following five stages and exit zero:</p>
+<pre><code class="language-console">$ vest msg.vest -o src/msg.rs
+📜 Parsing the vest file...
+🔨 Elaborating the AST...
+🔍 Type checking...
+📝 Generating the verus file...
+👏 Done!
+</code></pre>
+<h2 id="generating-from-buildrs"><a class="header" href="#generating-from-buildrs">Generating from <code>build.rs</code></a></h2>
+<p>For a project that keeps its <code>.vest</code> schema under version control and regenerates the Rust code on
+change, we recommend a <code>build.rs</code> that calls the compiler.
+Add <code>vest</code> as a build
+dependency and use one of three entry points:</p>
+<pre><code class="language-rust ignore">// build.rs
+use std::error::Error;
+use vest::compile_to;
+
+fn main() -&gt; Result&lt;(), Box&lt;dyn Error&gt;&gt; {
+    println!("cargo::rerun-if-changed=src/msg.vest");
+    compile_to("src/msg.vest", "src/msg.rs")?;
+    Ok(())
+}</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Function</th><th>Signature</th><th>Use when</th></tr>
+</thead>
+<tbody>
+<tr><td><code>compile</code></td><td><code>(file_name: &amp;str, input: String) -&gt; Result&lt;String, Box&lt;dyn Error&gt;&gt;</code></td><td>the schema is already in memory; <code>file_name</code> is used only for diagnostics</td></tr>
+<tr><td><code>compile_file</code></td><td><code>(file_name: &amp;str) -&gt; Result&lt;String, Box&lt;dyn Error&gt;&gt;</code></td><td>you want the generated code as a <code>String</code></td></tr>
+<tr><td><code>compile_to</code></td><td><code>(input_file: &amp;str, output_file: &amp;str) -&gt; Result&lt;(), Box&lt;dyn Error&gt;&gt;</code></td><td>you want it written to disk</td></tr>
+</tbody>
+</table>
+</div>
+<p>All three report diagnostics to stderr and return <code>Err</code> on failure.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h1>
+<p><strong>TODO.</strong> This page is not written yet.</p>
+<p>It will cover the Vest DSL compiler, Verus verification, and runtime errors you are most likely to hit.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="using-vest_lib"><a class="header" href="#using-vest_lib">Using <code>vest_lib</code></a></h1>
-<p>Most applications should use the Vest DSL or ASN.1 frontend. Use <code>vest_lib</code>
-directly when the format is easier to express as a reusable Verus combinator or
-when implementing a new backend primitive.</p>
-<p>A format typically combines:</p>
-<ul>
-<li>primitive byte and integer formats;</li>
-<li>sequencing with <code>Pair</code>, <code>Preceded</code>, or <code>Terminated</code>;</li>
-<li>alternatives with <code>Choice</code> or deliberately malleable <code>Alt</code>;</li>
-<li>repetition with <code>Array</code>, <code>RepeatN</code>, <code>Star</code>, or <code>RepeatTillEnd</code>;</li>
-<li>semantic transformations with <code>Mapped</code>, <code>TryMap</code>, and <code>Refined</code>;</li>
-<li>dependencies with <code>Bind</code> or <code>Implicit</code>; and</li>
-<li>bounded recursion with <code>FixWith</code>.</li>
-</ul>
-<p>The same value implements separate specification traits for parsing,
-serialization, byte length, and consistency. Proof traits establish properties
-only when the relevant child invariants and side conditions hold. This makes it
-possible to represent both canonical and intentionally malleable formats
-without assigning either one inaccurate guarantees.</p>
-<p>The complete catalog and links to each implementation are in the
-<a href="https://secure-foundations.github.io/vest/vest_lib/combinators/"><code>combinators</code></a>
-module. See <a href="#what-vest-proves">What Vest proves</a> before implementing a new
-combinator proof.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="parsing-and-serialization"><a class="header" href="#parsing-and-serialization">Parsing and serialization</a></h1>
-<p>The executable API follows one lifecycle:</p>
-<ol>
-<li><code>Parser::parse</code> reads an input buffer and returns the consumed length and
-value.</li>
-<li><code>Prepare::prepare</code> checks that a value is serializable and returns its exact
-length.</li>
-<li><code>SerializerExt::serialize</code> writes into an exactly sized caller-provided
-slice.</li>
-</ol>
-<pre><code class="language-rust ignore">use vest_lib::combinators::U16Be;
-use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
-
-let input: &amp;[u8] = &amp;[0x12, 0x34];
-let (consumed, value) = U16Be.parse(&amp;input).unwrap();
-assert_eq!((consumed, value), (2, 0x1234));
-
-let len = U16Be.prepare(&amp;value).unwrap();
-let mut output = vec![0; len];
-U16Be.serialize(&amp;value, output.as_mut_slice());
-assert_eq!(output, input);</code></pre>
-<p>Parsers accept any input type implementing the slice-oriented <code>InputBuf</code>
-interface. Serializers target <code>OutputBuf</code>; <code>OutputSlice</code> provides bounded,
-allocation-free output and <code>Vec&lt;u8&gt;</code> provides growable output when <code>alloc</code> is
-enabled. <code>write_bytes</code> copies whole regions directly for both standard output
-implementations.</p>
-<p>Preparation is the fallible boundary. Once it succeeds, the value is proved
-consistent and the returned size agrees with the specification, allowing the
-serializer itself to be infallible.</p>
-<p>See the exact contracts for
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/parser/trait.Parser.html"><code>Parser</code></a>,
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/serializer/trait.Prepare.html"><code>Prepare</code></a>,
-and
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/serializer/trait.Serializer.html"><code>Serializer</code></a>.</p>
+<p><strong>TODO.</strong> This page is not written yet.</p>
+<p>Most applications should use the <a href="#getting-started">Vest DSL</a> or the
+<a href="#asn1-compiler">ASN.1 frontend</a>, which generate parsers and serializers  for you, composed with format combinators in <code>vest_lib</code>.
+This page will cover the case where you prefer writing them by hand: when a format is too complex to express in the DSL.</p>
+<p>Until then, the
+<a href="../vest_lib/combinators/index.html"><code>combinators</code> module documentation</a>
+lists every primitive and higher-order format with its semantics and
+<a href="https://github.com/secure-foundations/vest/tree/main/vest_dev/src/formats"><code>vest_dev/src/formats</code></a>
+holds some handwritten examples that demonstrate how to use them.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="feature-configurations"><a class="header" href="#feature-configurations">Feature configurations</a></h1>
 <p><code>vest_lib</code> has three supported configurations:</p>
@@ -463,8 +1445,8 @@ and
 <tr><th>Cargo configuration</th><th>Available environment</th></tr>
 </thead>
 <tbody>
-<tr><td>default features</td><td><code>std</code>, including allocation-backed errors and formats</td></tr>
-<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code>, and owned recursive values</td></tr>
+<tr><td>default features</td><td><code>std</code>: everything available, including heap-backed formats and full error traces</td></tr>
+<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code> and <code>String</code> for heap-backed formats and error reporting</td></tr>
 <tr><td><code>default-features = false</code></td><td><code>core</code>-only formats and caller-provided buffers</td></tr>
 </tbody>
 </table>
@@ -472,30 +1454,25 @@ and
 <pre><code class="language-toml">[dependencies]
 vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
 </code></pre>
-<p>The generic CBOR value codec and BER formats that flatten constructed strings
-require allocation. Primitive combinators, in-place serialization, and the
-non-owning parts of the ASN.1 backend remain available in smaller
-configurations where their types permit it.</p>
-<p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions recorded by
-the release. The repository pins the complete compatible set.</p>
+<p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions this release
+pins. The Verus version is in
+<a href="https://github.com/secure-foundations/vest/blob/main/verus-version.txt"><code>verus-version.txt</code></a>
+and the <code>vstd</code> version is in the workspace <code>Cargo.toml</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="asn1-frontend"><a class="header" href="#asn1-frontend">ASN.1 frontend</a></h1>
-<p><code>vest_asn1</code> parses an ASN.1 module and emits nominal verified formats backed by
+<h1 id="asn1-compiler"><a class="header" href="#asn1-compiler">ASN.1 Compiler</a></h1>
+<p><code>vest_asn1</code> parses an ASN.1 module and emits verified formats backed by
 <code>vest_lib::asn1</code>. DER is the default; BER and definition-level rule overrides
 are available.</p>
 <pre><code class="language-console">cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
 cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
 </code></pre>
-<p>Each supported ASN.1 definition becomes a user-facing Rust value type and a
-nominal format whose nested combinator implementation is verified once. This
-boundary keeps enclosing schemas from repeatedly expanding large combinator
-types during verification.</p>
-<p>Read <a href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a> before generating mixed-rule
-modules, then see the <a href="#asn1-generated-api">generated API</a> and
+<p>Similar to the Vest DSL, each supported ASN.1 definition becomes a user-facing Rust value type and a nominal format type whose specification, proof, and executable implementation are all derived from the
+inner combinator representation.</p>
+<p>Start with the <a href="#asn1-tutorial">ASN.1 tutorial</a>, then see the
+<a href="#generated-rust-code-1">generated Rust code</a> and the
 <a href="#supported-asn1-and-limitations">support table</a>. The backend API is documented under
-<a href="https://secure-foundations.github.io/vest/vest_lib/asn1/"><code>vest_lib::asn1</code></a>.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="der-ber-and-rule-overrides"><a class="header" href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a></h1>
+<a href="../vest_lib/asn1"><code>vest_lib::asn1</code></a>.</p>
+<h2 id="der-ber-and-rule-overrides"><a class="header" href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a></h2>
 <p><code>--rules der</code> or <code>--rules ber</code> authoritatively selects the module default. A
 definition override changes that definition and the transitive children it
 needs under the selected rule; parents remain under the module default.</p>
@@ -505,137 +1482,348 @@ needs under the selected rule; parents remain under the module default.</p>
   schema.asn1 -o generated_mixed.rs
 </code></pre>
 <p>Every ASN.1 definition is emitted exactly once with one global rule. A BER
-definition may contain a DER child because a DER encoding is valid BER. A DER
-definition cannot depend on a BER definition without violating recursive DER
+definition may contain a DER child because a DER encoding is valid BER. However,
+a DER definition cannot depend on a BER definition without violating DER
 canonicality. Conflicting transitive overrides are rejected and require an
 explicit rule boundary.</p>
-<p>DER formats use canonical lengths and applicable primitive encodings. BER
-formats accept the supported alternative encodings, including constructed
-strings and indefinite containers, then serialize to the backend’s normalized
-output form. Consequently BER formats do not claim DER-style
-non-malleability.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="asn1-generated-api"><a class="header" href="#asn1-generated-api">ASN.1 generated API</a></h1>
-<p>An ASN.1 definition such as <code>AlgorithmIdentifier</code> becomes a Rust value type and
-a fully verified nominal format type such as <code>ALGORITHM_IDENTIFIER</code>, used as
-<code>ALGORITHM_IDENTIFIER::Fmt</code>.</p>
+<h1 id="asn1-tutorial"><a class="header" href="#asn1-tutorial">ASN.1 tutorial</a></h1>
+<p>This walkthrough generates a small DER codec from an ASN.1 module and uses it to parse and serialize a message.</p>
+<h2 id="define-a-module"><a class="header" href="#define-a-module">Define a module</a></h2>
+<p>Create <code>message.asn1</code>:</p>
+<pre><code class="language-asn1">Message DEFINITIONS EXPLICIT TAGS ::= BEGIN
+    Kind ::= ENUMERATED {
+        request(0),
+        response(1)
+    }
+
+    Packet ::= SEQUENCE {
+        kind Kind,
+        payload [0] IMPLICIT OCTET STRING (SIZE (1..32)) OPTIONAL
+    }
+END
+</code></pre>
+<h2 id="generate-der"><a class="header" href="#generate-der">Generate DER</a></h2>
+<p><code>vest_asn1</code> is currently a repository tool rather than a published crate:</p>
+<pre><code class="language-console">cargo run -p vest_asn1 -- message.asn1 -o src/message.rs
+</code></pre>
+<p>DER is the default. Use <code>--rules ber</code> for BER, or definition overrides for a
+module with canonical DER substructures inside a BER envelope; see
+<a href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a>.</p>
+<p>The generator emits <code>Kind</code> and <code>Packet&lt;'i&gt;</code> value types. Unlike the Vest DSL, their verified format
+values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code> (due to technical reasons mandated by the ASN.1 standard). Uppercase format names avoid collisions
+with the idiomatic Rust value names.</p>
+<h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+use crate::message::{Kind, PACKET};
+
+let encoded: &amp;[u8] = &amp;[
+    0x30, 0x07,             // SEQUENCE, seven content octets
+    0x0a, 0x01, 0x00,       // Kind::Request
+    0x80, 0x02, 0xaa, 0xbb, // [0] IMPLICIT OCTET STRING
+];
+
+let (consumed, packet) = PACKET::Fmt.parse(&amp;encoded).unwrap();
+assert_eq!(consumed, encoded.len());
+assert_eq!(packet.kind, Kind::Request);
+assert_eq!(packet.payload, Some(&amp;[0xaa, 0xbb][..]));
+
+let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
+let mut output = vec![0u8; size];
+PACKET::Fmt.serialize(&amp;packet, &amp;mut output);
+assert_eq!(output, encoded);</code></pre>
+<p>DER string fields <em>borrow</em> from the input because their representation is
+contiguous. BER generated values may be <em>owned</em> when constructed, fragmented strings are concatenated.</p>
+<h2 id="what-is-checked"><a class="header" href="#what-is-checked">What is checked</a></h2>
+<p><strong>TODO.</strong> Discuss the proof obligations for format non-ambiguity, etc.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generated-rust-code-1"><a class="header" href="#generated-rust-code-1">Generated Rust Code</a></h1>
+<p>An ASN.1 definition such as <code>Packet</code> becomes a Rust value type <code>Packet</code> and a
+verified nominal format type <code>PACKET</code>, used as <code>PACKET::Fmt</code>. The screaming-case
+format name avoids colliding with the idiomatic value name.</p>
 <p><code>SEQUENCE</code> and supported heterogeneous <code>SET</code> definitions become structs;
-<code>CHOICE</code> becomes an enum; and <code>ENUMERATED</code> becomes a closed typed enum.
-Anonymous composites receive deterministic private helper definitions.
-Bidirectional mappers hide nested tuple and <code>Sum</code> representations.</p>
-<p>The nominal format exposes parsing, preparation, byte length, in-place
-serialization, retagging, and the proof traits valid under its encoding rule.
-DER formats also compose through the allocation-free ordering interface needed
-by DER <code>SET OF</code>.</p>
-<p>DER byte and character strings borrow from the input where possible. BER uses
-owned values when constructed encodings must be flattened. This difference is
-visible in generated Rust types and may require the <code>alloc</code> feature.</p>
-<p>IMPLICIT tagging replaces the outer tag. Untagged <code>CHOICE</code> and <code>ANY</code> have no
-single tag to replace, so the generator uses explicit tagging for those cases.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="supported-asn1-and-limitations"><a class="header" href="#supported-asn1-and-limitations">Supported ASN.1 and limitations</a></h1>
-<p>The frontend supports the following current subset:</p>
-<ul>
-<li>BOOLEAN, INTEGER, typed ENUMERATED, OBJECT IDENTIFIER, REAL, NULL, and ANY;</li>
-<li>BIT STRING, OCTET STRING, supported character strings, and time strings;</li>
-<li>SEQUENCE, SEQUENCE OF, SET OF, CHOICE, and statically ordered heterogeneous
-DER SET;</li>
-<li>OPTIONAL and supported DEFAULT components;</li>
-<li>local references and EXPLICIT/IMPLICIT tags in the context-specific,
-application, and private classes; and</li>
-<li>fixed, bounded, and one-sided SIZE constraints for supported strings and
-collections, plus INTEGER value and range constraints.</li>
-</ul>
-<p>DER <code>SET OF</code> requires values already sorted by complete DER TLV encoding and
-allows duplicate encodings. Preparation rejects unsorted values without
-allocating. BER <code>SET OF</code> preserves schema order. Heterogeneous BER SET is not
-yet generated.</p>
-<p>DEFAULT values are supported for BOOLEAN, ENUMERATED, and INTEGER types whose
-finite constraint selects the current <code>i8</code> or <code>i16</code> backend.</p>
-<p>Current unsupported or restricted constructs include OBJECT IDENTIFIER and
-REAL value assignments, large ENUMERATED executable values, BIT STRING SIZE
-constraints, RELATIVE-OID, GeneralString, VisibleString, ANY DEFINED BY,
-general constraint combinations, imports, AUTOMATIC TAGS, extension markers,
-extension-addition groups, WITH COMPONENTS, and recursive schema definitions.
-Recognized unsupported syntax is rejected rather than approximated.</p>
-<p>Generated first-tag certificates represent the 256 possible identifier-leading
-octets. Tags numbered 0 through 30 are exact. High-tag numbers with the same
-class and constructed bit share a leading-octet bit, so the current automation
-cannot certify two such tags as disjoint solely from later tag-number octets.</p>
-<p>The checked fixtures under <code>vest_asn1_tests</code> are the executable source of truth
-for combinations supported by the current compiler.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="general-and-deterministic-cbor"><a class="header" href="#general-and-deterministic-cbor">General and deterministic CBOR</a></h1>
-<p><code>vest_lib::cbor::CborFmt&lt;DET&gt;</code> implements the RFC 8949 generic data model. Use
-<code>CborFmt::&lt;false&gt;</code> for general well-formed CBOR and <code>CborFmt::&lt;true&gt;</code> for the
-currently supported deterministic restrictions.</p>
-<pre><code class="language-rust ignore">use vest_lib::cbor::CborFmt;
-use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
-
-let input: &amp;[u8] = &amp;[0x82, 0x01, 0x02];
-let (consumed, value) = CborFmt::&lt;false&gt;.parse(&amp;input).unwrap();
-assert_eq!(consumed, input.len());
-
-let len = CborFmt::&lt;false&gt;.prepare(&amp;value).unwrap();
-let mut output = vec![0; len];
-CborFmt::&lt;false&gt;.serialize(&amp;value, output.as_mut_slice());</code></pre>
-<p>Definite byte and text strings borrow directly from the input. Fragmented
-indefinite strings are flattened into owned values. Arrays, maps, tags, and
-other recursive values use allocation and are bounded by the format’s
-recursion limit.</p>
-<p>General CBOR accepts supported non-preferred argument widths and indefinite
-containers; serialization normalizes those values to definite output. The
-deterministic format additionally requires preferred integer, length, and tag
-arguments and rejects indefinite-length items.</p>
-<p>Deterministic map-key ordering and shortest-width floating-point normalization
-are not yet enforced. Floating-point width is retained in the logical value,
-and duplicate map keys are not rejected. Applications requiring those profile
-rules must add a refinement or validation layer.</p>
-<p>See the
-<a href="https://secure-foundations.github.io/vest/vest_lib/cbor/"><code>cbor</code></a> API and the
-RFC 8949 conformance tests under <code>vest_lib/tests/cbor_rfc.rs</code>.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="vest_lib-api-reference"><a class="header" href="#vest_lib-api-reference"><code>vest_lib</code> API reference</a></h1>
-<p>The symbol-level API documentation is generated by Rustdoc and Verusdoc so it
-can display executable signatures together with Verus specifications,
-preconditions, postconditions, and proof interfaces.</p>
-<p><a href="https://secure-foundations.github.io/vest/vest_lib/">Open the <code>vest_lib</code> API reference</a>.</p>
-<p>Return to the <a href="#using-vest_lib">combinator guide</a> for task-oriented
-documentation.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="examples-and-test-corpus"><a class="header" href="#examples-and-test-corpus">Examples and test corpus</a></h1>
-<p>The repository keeps source schemas beside generated, compiled, tested, and
-verified Rust:</p>
-<ul>
-<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_tests/src"><code>vest_tests/src</code></a>
-contains DSL examples, including TLS, Bitcoin, bitfields, nested dependent
-lengths, recursion, and depth/width stress schemas.</li>
-<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_asn1_tests"><code>vest_asn1_tests</code></a>
-contains DER, BER, and mixed-rule ASN.1 fixtures.</li>
-<li><a href="https://github.com/secure-foundations/vest/tree/main/vest_dev/src/formats"><code>vest_dev/src/formats</code></a>
-contains handwritten combinator examples and backend experiments.</li>
-<li><a href="https://github.com/secure-foundations/vest/blob/main/vest_lib/tests/cbor_rfc.rs"><code>vest_lib/tests/cbor_rfc.rs</code></a>
-exercises RFC 8949 examples and documented deterministic-profile gaps.</li>
-</ul>
-<p>These fixtures are preferable to isolated snippets when learning advanced
-format composition because CI checks their generation freshness, Rust behavior,
-and Verus proofs.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="publication-and-citation"><a class="header" href="#publication-and-citation">Publication and citation</a></h1>
-<p>Vest was introduced in:</p>
-<blockquote>
-<p>Yi Cai, Pratap Singh, Zhengyao Lin, Jay Bosamiya, Joshua Gancher, Milijana
-Surbatovich, and Bryan Parno. “Vest: Verified, Secure, High-Performance
-Parsing and Serialization for Rust.” USENIX Security, 2025.</p>
-</blockquote>
-<p><a href="https://tracycy.com/papers/vest-usenix-security25.pdf">Read the paper</a>.</p>
-<pre><code class="language-bibtex">@inproceedings{vest,
-  author    = {Cai, Yi and Singh, Pratap and Lin, Zhengyao and Bosamiya, Jay and Gancher, Joshua and Surbatovich, Milijana and Parno, Bryan},
-  booktitle = {Proceedings of the USENIX Security Symposium},
-  title     = {{Vest}: Verified, Secure, High-Performance Parsing and Serialization for {Rust}},
-  year      = {2025}
+<code>CHOICE</code> becomes an enum carrying the alternatives; and <code>ENUMERATED</code> becomes a
+closed typed enum. Anonymous composites receive deterministic private helper
+definitions. <code>IMPLICIT</code> tagging replaces the outer tag; untagged <code>CHOICE</code> and
+<code>ANY</code> have no single tag to replace, so the generator tags those explicitly.</p>
+<p>The examples below come from the module in the <a href="#asn1-tutorial">tutorial</a>:</p>
+<pre><code class="language-asn1">Kind   ::= ENUMERATED { request(0), response(1) }
+Packet ::= SEQUENCE {
+    kind    Kind,
+    payload [0] IMPLICIT OCTET STRING (SIZE (1..32)) OPTIONAL
 }
 </code></pre>
+<h2 id="the-shape-of-an-emitted-file-1"><a class="header" href="#the-shape-of-an-emitted-file-1">The shape of an emitted file</a></h2>
+<p>Unlike a DSL-generated module, an ASN.1 module has <em>no banner sections</em>. It is
+one flat <code>verus!</code> block holding every definition’s types and schema, followed by
+one small private module per definition <em>outside</em> the block:</p>
+<pre><code class="language-rust ignore">use vest_lib::asn1::der::{...};          // preamble selected by the encoding rules
+verus! {
+
+    // per definition: value type, abstract type, predicates, mappers,
+    // combinator representations, and the nominal format type
+
+} // verus!
+
+mod __impl_kind   { use super::*; vest_lib::impl_der!(...); }
+mod __impl_packet { use super::*; vest_lib::impl_der!(...); }</code></pre>
+<p>That last part is the biggest structural difference. Where the DSL writes out
+<code>derived_specs</code>, <code>derived_proofs</code>, and <code>exec_impls</code> explicitly, the ASN.1
+backend emits <em>one macro call per definition</em> and lets <code>vest_lib</code> expand the
+specifications, proofs, and executable code.</p>
+<h2 id="value-and-abstract-types"><a class="header" href="#value-and-abstract-types">Value and abstract types</a></h2>
+<p>This matches the DSL closely — a value type and a generic
+abstract type, bridged by <code>DeepView</code>:</p>
+<pre><code class="language-rust ignore">pub struct Packet&lt;'a&gt; {
+    pub kind: Kind,
+    pub payload: Option&lt;&amp;'a [u8]&gt;,
+}
+
+#[verifier::ext_equal]
+pub struct PacketSpec&lt;T0 = KindSpec, T1 = Option&lt;Seq&lt;u8&gt;&gt;&gt; {
+    pub kind: T0,
+    pub payload: T1,
+}
+
+impl&lt;'a&gt; DeepView for Packet&lt;'a&gt; {
+    type V = PacketSpec;
+    #[verifier::opaque]
+    open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
+}</code></pre>
+<p>For a definition whose value type is already <code>Copy</code> and structural — an
+<code>ENUMERATED</code>, for instance — there is no separate abstract type at all.</p>
+<pre><code class="language-rust ignore">#[repr(i16)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, StructuralEq)]
+pub enum Kind { Request = 0, Response = 1 }
+
+pub type KindSpec = Kind; // the abstract type is the same as the value type
+
+impl DeepView for Kind { type V = Self; /* *self */ }</code></pre>
+<h2 id="predicates-and-mappers"><a class="header" href="#predicates-and-mappers">Predicates and mappers</a></h2>
+<p>ASN.1 constraints become <em>named predicate structs</em> used in both the
+specification and implementation, rather than the inline closures the DSL
+emits:</p>
+<pre><code class="language-rust ignore">#[derive(Clone, Copy)]
+pub struct KindPredicate;
+
+impl SpecPred&lt;i16&gt; for KindPredicate { /* value == 0 || value == 1 */ }
+impl Pred&lt;i16&gt;     for KindPredicate { /* the executable test */ }</code></pre>
+<p><code>ENUMERATED</code> values are built on the verified <code>i16</code> integer-content backend, which is
+why the predicate is over <code>i16</code>. Larger enumerations are currently
+<a href="#supported-asn1-and-limitations">not yet supported</a>.</p>
+<p>Mappers follow the DSL’s <code>Forward</code>/<code>Reverse</code> pattern, with one addition — they
+implement the executable <code>Map</code> as well as <code>SpecMap</code>.</p>
+<pre><code class="language-rust ignore">pub struct KindForward;
+pub struct KindReverse;
+
+impl SpecMap for KindForward { /* .. */ }
+impl SpecMap for KindReverse { /* .. */ }
+impl Map&lt;i16&gt; for KindForward { /* executable */ }
+impl Map&lt;Kind&gt; for KindReverse { /* executable */ }</code></pre>
+<h2 id="the-nominal-format-type"><a class="header" href="#the-nominal-format-type">The nominal format type</a></h2>
+<pre><code class="language-rust ignore">/// DER format for ASN.1 `Kind`.
+type KIND__ = Mapped&lt;Refined&lt;Enumerated16TlvFmt, KindPredicate&gt;, BiMap&lt;KindForward, KindReverse&gt;&gt;;
+
+#[derive(Clone, Copy)]
+#[verifier::ext_equal]
+pub struct KIND(pub Class, pub u64); // tag class, tag number
+
+impl KIND {
+    pub const Fmt: Self = Self(Class::Universal, 10u64);
+
+    #[verifier::allow_in_spec]
+    pub const fn schema() -&gt; KIND__
+        returns (Mapped { inner: Refined(ENUMERATED16, KindPredicate),
+                          mapper: BiMap(KindForward, KindReverse) }),
+    { /* the same representation */ }
+
+    proof fn lemma_schema_unambiguous(&amp;self) { /* .. */ }
+}</code></pre>
+<p>Several things differ from the DSL here.</p>
+<p><strong>The format type is always parametric.</strong> <code>MessageFmt</code> in a DSL module is a zero-sized
+struct. <code>KIND</code> is a tuple struct holding the effective tag class and number, so
+an <code>IMPLICIT</code> tag can replace the outer tag without rebuilding the format.
+<code>KIND::Fmt</code> is the associated constant carrying the definition’s own tag —
+<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.</p>
+<p><strong><code>schema()</code> is dual spec-exec.</strong> The DSL’s <code>spec_inner()</code> is
+<code>pub open spec fn</code> — specification only. <code>schema()</code> here is a <code>const fn</code> marked
+<code>#[verifier::allow_in_spec]</code> with a <code>returns</code> clause, so the same definition
+serves both worlds (there are valid reasons for the DSL to separate them, such as to allow for more flexible executable implementations).</p>
+<p><strong><code>lemma_schema_unambiguous</code></strong> has no DSL counterpart. It proves the ASN.1 schema
+unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound over-approximation of each ASN.1 combinator’s parsing domain. On the other hand, the DSL’s constructs disambiguate themselves largely by construction, so the DSL does not need to emit this lemma.</p>
+<h2 id="specifications-proofs-and-executable-code"><a class="header" href="#specifications-proofs-and-executable-code">Specifications, proofs, and executable code</a></h2>
+<p>Everything else arrives from one macro invocation, placed outside <code>verus!</code>:</p>
+<pre><code class="language-rust ignore">mod __impl_packet {
+    use super::*;
+    vest_lib::impl_der!(
+        tagged_exact(true),   // this definition contributes an outer tag
+        borrowed,             // the value type borrows from the input
+        PACKET, PACKET__,     // nominal type and its combinator type alias
+        PacketSpec, Packet,   // abstract and executable value types
+        PacketForward, PacketReverse
+    );
+}</code></pre>
+<p><code>impl_der!</code> (or <code>impl_ber!</code> under BER) expands to the same code the DSL
+emits explicitly — derived spec trait impls (<code>SpecParser</code>, <code>SpecSerializer</code>,
+<code>SpecByteLen</code>, <code>Consistency</code>) and derived proof trait impls (<code>SafeParser</code>, <code>SoundParser</code>, <code>Productive</code>,
+<code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>NonMalleable</code>, etc.). Additionally, it also expands to the executable trait impls (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<!--## How this differs from DSL-generated code
+
+| | Vest DSL | ASN.1 |
+|---|---|---|
+| File layout | five banner sections | flat `verus!` block + `mod __impl_*` after it |
+| Spec/proof/exec code | written out in three private modules | one `impl_der!` / `impl_ber!` call per definition |
+| Format type | `MessageFmt`, zero-sized | `PACKET(Class, u64)`, carries the effective tag |
+| Entry value | `MessageFmt` | `PACKET::Fmt` associated constant |
+| Combinator alias | `pub type MessageFmtSpec` | private `type PACKET__` |
+| Constructor | `pub open spec fn spec_inner()` | dual `pub const fn schema()` |
+| Abstract type | always a generic `*Spec` | identity alias when the value is already structural |
+| Constraints | inline refinement closures | named `*Predicate` structs (`SpecPred` + `Pred`) |
+| Mappers | `SpecMap` only | `SpecMap` **and** executable `Map` |
+| Extra proofs | — | `lemma_schema_unambiguous`, `HasAsn1Start`, `DerOrd` |-->
+<h2 id="calling-it-1"><a class="header" href="#calling-it-1">Calling it</a></h2>
+<p>Calling the parser, serializer, and the prepare methods is
+almost identical in shape to DSL-generated code, except that the format value is the
+<code>::Fmt</code> constant:</p>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let (consumed, packet) = PACKET::Fmt.parse(&amp;encoded).unwrap();
+
+let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
+let mut output = vec![0u8; size];
+PACKET::Fmt.serialize(&amp;packet, &amp;mut output);</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="supported-asn1-and-limitations"><a class="header" href="#supported-asn1-and-limitations">Supported ASN.1 and limitations</a></h1>
+<p>What <code>vest_asn1</code> accepts today.
+Anything listed as not supported is <em>rejected</em> by the compiler
+with an error.</p>
+<h2 id="primitive-types"><a class="header" href="#primitive-types">Primitive types</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>BOOLEAN</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>INTEGER</code></td><td>Supported</td><td>support for arbitrary-width big integers; constraint <code>INTEGER</code> specializes to the narrow <code>i8</code> or <code>i16</code> backend</td></tr>
+<tr><td><code>ENUMERATED</code></td><td>Supported</td><td>supported as a constraint on <code>INTEGER</code> (specialized to <code>i16</code>)</td></tr>
+<tr><td><code>NULL</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>OBJECT IDENTIFIER</code></td><td>Supported</td><td>as a type; not as a value assignment</td></tr>
+<tr><td><code>REAL</code></td><td>Supported</td><td>as a type; not as a value assignment</td></tr>
+<tr><td><code>OCTET STRING</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>BIT STRING</code></td><td>Partially supported</td><td>no <code>SIZE</code> constraints</td></tr>
+<tr><td><code>ANY</code></td><td>Partially supported</td><td>no <code>ANY DEFINED BY</code> dispatch</td></tr>
+<tr><td><code>UTF8String</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>PrintableString</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>IA5String</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>NumericString</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>TeletexString</code></td><td>Partially supported</td><td>character-set validation is currently a stub</td></tr>
+<tr><td><code>BMPString</code></td><td>Supported</td><td>no borrowed forms, always owned</td></tr>
+<tr><td><code>UniversalString</code></td><td>Supported</td><td>no borrowed forms, always owned</td></tr>
+<tr><td><code>UTCTime</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>GeneralizedTime</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>GeneralString</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>VisibleString</code> / <code>ISO646String</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>GraphicString</code>, <code>VideotexString</code>, <code>T61String</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>RELATIVE-OID</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>ObjectDescriptor</code>, <code>EXTERNAL</code>, <code>EMBEDDED PDV</code></td><td>Not supported</td><td></td></tr>
+<tr><td><code>DATE</code>, <code>TIME</code>, <code>DURATION</code></td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="constructed-types"><a class="header" href="#constructed-types">Constructed types</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SEQUENCE</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SEQUENCE OF</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SET OF</code></td><td>Supported</td><td>ordering rules differ by encoding rule — see below</td></tr>
+<tr><td><code>CHOICE</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>SET</code></td><td>Partially supported</td><td>DER only, and fields must already be in canonical tag order in the schema</td></tr>
+<tr><td>Anonymous inline composites</td><td>Supported</td><td>lifted to private helper definitions</td></tr>
+<tr><td>Recursive schema</td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="tagging"><a class="header" href="#tagging">Tagging</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>EXPLICIT</code> tags</td><td>Supported</td><td></td></tr>
+<tr><td><code>IMPLICIT</code> tags</td><td>Supported</td><td>replaces the outer tag</td></tr>
+<tr><td>Context-specific, application, private classes</td><td>Supported</td><td></td></tr>
+<tr><td><code>IMPLICIT</code> on <code>CHOICE</code> or <code>ANY</code></td><td>Supported</td><td>promoted to explicit — neither has one tag to replace</td></tr>
+<tr><td><code>AUTOMATIC TAGS</code></td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="components-and-constraints"><a class="header" href="#components-and-constraints">Components and constraints</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>OPTIONAL</code></td><td>Supported</td><td></td></tr>
+<tr><td><code>DEFAULT</code></td><td>Partially supported</td><td><code>BOOLEAN</code>, <code>ENUMERATED</code>, and <code>INTEGER</code> whose range fits in <code>i8</code>/<code>i16</code></td></tr>
+<tr><td><code>SIZE</code> — fixed, bounded, one-sided</td><td>Supported</td><td>on strings and collections; not on <code>BIT STRING</code></td></tr>
+<tr><td><code>INTEGER</code> value and range constraints</td><td>Supported</td><td></td></tr>
+<tr><td><code>WITH COMPONENTS</code></td><td>Not supported</td><td></td></tr>
+<tr><td>Extension markers (<code>...</code>)</td><td>Not supported</td><td></td></tr>
+<tr><td>Extension-addition groups</td><td>Not supported</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="module-level"><a class="header" href="#module-level">Module-level</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Support</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Local type references</td><td>Supported</td><td></td></tr>
+<tr><td><code>BOOLEAN</code>, <code>INTEGER</code>, <code>ENUMERATED</code> value assignments</td><td>Supported</td><td>emitted as typed Rust constants</td></tr>
+<tr><td><code>OBJECT IDENTIFIER</code>, <code>REAL</code> value assignments</td><td>Not supported</td><td></td></tr>
+<tr><td>Imports from other modules</td><td>Not supported</td><td>module linking is unimplemented; curate dependencies into one module instead</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="additional-notes"><a class="header" href="#additional-notes">Additional notes</a></h2>
+<p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
+DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
+allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER
+<code>SET OF</code> imposes no canonical order and preserves schema order on output.</p>
+<p><strong>Heterogeneous <code>SET</code>.</strong> BER lets a <code>SET</code> carry its components in any order, so
+a BER parser would have to accept every permutation of the fields. DER
+instead fixes them in ascending tag order. <code>vest_asn1</code> currently emits <code>SET</code> only
+under DER, and only when the schema already lists the fields in canonical order. The <code>vest_lib</code> backend supports a group of <code>Permute</code> combinators that can be used to implement BER <code>SET</code>, but the generator does not yet emit them.</p>
+<p><strong>Borrowing and <code>alloc</code>.</strong> DER strings are contiguous, so their value types
+borrow from the input. BER strings may arrive fragmented across constructed
+encodings and are flattened into owned values, which is why BER modules need the
+<code>alloc</code> feature where the equivalent DER module may not. <code>BMPString</code> and
+<code>UniversalString</code> are always owned, since their wire form is not UTF-8.</p>
+<p><strong>High tag numbers and disjointness.</strong> <code>CHOICE</code>, <code>OPTIONAL</code>, and <code>DEFAULT</code> need
+alternatives/adjacent fields to be provably disjoint. The generated proof covers
+the 256 possible leading identifier octets: tags 0 through 30 are exact, but all
+high-tag-number forms sharing a class and constructed bit collapse onto one bit.
+Two such tags cannot be proven disjoint from their later tag-number octets
+alone, so a schema that distinguishes alternatives only by high tag numbers is
+conservatively rejected.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="general-and-deterministic-cbor"><a class="header" href="#general-and-deterministic-cbor">General and deterministic CBOR</a></h1>
+<p><strong>TODO.</strong> This page is not written yet.</p>
+<p><code>vest_lib::cbor</code> is a verified prototype codec for the RFC 8949 generic data
+model, covering both general well-formed CBOR and the deterministic profile.
+This page will cover the value model, the borrowing and allocation behaviour,
+and which parts of the deterministic profile are enforced today.</p>
+<p>Until then, the <a href="../vest_lib/cbor"><code>cbor</code> module documentation</a> describes the
+formats and their proof interfaces.</p>
 
                     </main>
 
@@ -660,6 +1848,22 @@ Parsing and Serialization for Rust.” USENIX Security, 2025.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -676,6 +1880,7 @@ Parsing and Serialization for Rust.” USENIX Security, 2025.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="theme/vest-highlight-f6db02d8.js"></script>
 
         <script>
         window.addEventListener('load', function() {

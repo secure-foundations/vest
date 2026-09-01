@@ -28,8 +28,8 @@ already-proved interfaces.
 Documentation:
 
 - [ASN.1 frontend guide](https://secure-foundations.github.io/vest/guide/asn1/)
-- [DER, BER, and rule overrides](https://secure-foundations.github.io/vest/guide/asn1/rules.html)
-- [Generated API](https://secure-foundations.github.io/vest/guide/asn1/generated-api.html)
+- [DER, BER, and rule overrides](https://secure-foundations.github.io/vest/guide/asn1/#der-ber-and-rule-overrides)
+- [Generated Rust code](https://secure-foundations.github.io/vest/guide/asn1/generated-api.html)
 - [Supported ASN.1 and limitations](https://secure-foundations.github.io/vest/guide/asn1/support.html)
 - [`vest_lib::asn1` backend API](https://secure-foundations.github.io/vest/vest_lib/asn1/)
 

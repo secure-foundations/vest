@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>    </span>}
 <a href=#39 id=39 data-nosnippet>39</a>}
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a><span class="doccomment">/// A [`Mapper`] that can be lossy (i.e., malleable).
+<a href=#41 id=41 data-nosnippet>41</a><span class="doccomment">/// A [`SpecMapper`] that can be lossy (i.e., malleable).
 <a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub trait </span>LossyMapper: SpecMapper {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="doccomment">/// A sound mapper should satisfy `spec_map(spec_map_rev(o)) == o` for all well-formed `o`.
 <a href=#44 id=44 data-nosnippet>44</a>    /// That is, once `Self::Out` values are mapped to `Self::In`, `spec_map` should map them back to the original `Self::Out` values.
@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>    ;
 <a href=#58 id=58 data-nosnippet>58</a>}
 <a href=#59 id=59 data-nosnippet>59</a>
-<a href=#60 id=60 data-nosnippet>60</a><span class="doccomment">/// A [`Mapper`] that is lossless (i.e., non-malleable).
+<a href=#60 id=60 data-nosnippet>60</a><span class="doccomment">/// A [`SpecMapper`] that is lossless (i.e., non-malleable).
 <a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">pub trait </span>LosslessMapper: LossyMapper {
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// A lossless mapper should satisfy `spec_map_rev(spec_map(i)) == i` for all well-formed `i`.
 <a href=#63 id=63 data-nosnippet>63</a>    /// That is, `spec_map` should be injective on well-formed `Self::In` values, and `spec_map_rev` should be its inverse.

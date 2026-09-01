@@ -7,6 +7,7 @@ members = [
     "vest_tests",
     "vest_asn1_tests",
     "vest_dev",
+    "guide",
 ]
 default-members = ["vest", "vest_lib", "vest_asn1"]
 resolver = "2"

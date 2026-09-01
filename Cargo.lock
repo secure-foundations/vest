@@ -1054,6 +1054,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "vest_guide_tests"
+version = "0.0.0"
+dependencies = [
+ "vest",
+ "vest_lib",
+]
+
+[[package]]
 name = "vest_lib"
 version = "0.2.0"
 dependencies = [

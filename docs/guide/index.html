@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Vest documentation - Vest Documentation</title>
+        <title>Introduction - Vest Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-203bd9cc.js"></script>
+        <script src="toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,36 +178,50 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="vest-documentation"><a class="header" href="#vest-documentation">Vest documentation</a></h1>
-<p>Vest generates fast, formally verified parsers and serializers for binary data
-formats. You can describe a format with the Vest DSL, generate codecs from an
-ASN.1 schema, or compose the verified library directly.</p>
-<p>Choose the path that matches your task:</p>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Vest generates secure, performant parsers and serializers for binary data
+formats, formally verified in <a href="https://github.com/verus-lang/verus">Verus</a>.
+It provides a concise format DSL for non-experts, as well as a combinator
+library for experts who want to build formats directly in Verus.</p>
+<p>Given a high-level format description, Vest automatically emits efficient, idiomatic Rust that is memory-safe, arithmetically safe, panic-free, and terminating on any input.
+More importantly, Vest parsers and serializers are proven to satisfy a suite of desirable <a href="guarantees.html">security properties</a>, making them immune to entire classes of attacks that historically plague unverified, hand-written code.</p>
+<p>With Vest, we have built the first
+production-grade formally verified <a href="asn1/index.html">ASN.1 library</a> (supporting both DER and BER) and a verified prototype for <a href="cbor.html">both
+general and deterministic CBOR</a>.</p>
+<h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who this is for</a></h2>
+<p>Vest is for anyone who needs to parse or serialize binary data formats, especially when correctness and security are critical. This includes:
+<em>network security protocols</em> such as TLS and IKE, which parse handshake messages and serialize
+authenticated responses; <em>cryptographic message formats</em> such as X.509 and CMS,
+which encode certificates, signed objects, keys, and algorithm parameters; <em>executable and secure-update formats</em> carrying code alongside authenticated
+metadata; and <em>RPC and distributed-systems</em> frameworks,
+which marshal typed application objects onto wire formats such as Protocol Buffers.</p>
+<p>Vest is still a research tool. It does not cover every format in the wild, and
+<a href="dsl/reference.html">its current features and limitations are documented</a>.</p>
+<p>As of now, this book covers the nitty-gritty of the DSL and the ASN.1 compiler. We are working on a guide to the underlying combinator library, as well as a more complete support for CBOR.</p>
+<h2 id="choose-your-path"><a class="header" href="#choose-your-path">Choose your path</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>I want to…</th><th>Start here</th></tr>
 </thead>
 <tbody>
-<tr><td>describe a binary protocol concisely</td><td><a href="dsl/tutorial.html">Vest DSL tutorial</a></td></tr>
-<tr><td>understand the guarantees</td><td><a href="guarantees.html">What Vest proves</a></td></tr>
-<tr><td>build a format directly in Verus</td><td><a href="library/combinators.html">Using <code>vest_lib</code></a></td></tr>
-<tr><td>generate DER or BER codecs</td><td><a href="asn1/index.html">ASN.1 frontend</a></td></tr>
-<tr><td>parse generic CBOR values</td><td><a href="cbor.html">CBOR guide</a></td></tr>
-<tr><td>look up a trait or combinator</td><td><a href="https://secure-foundations.github.io/vest/vest_lib/"><code>vest_lib</code> API reference</a></td></tr>
+<tr><td>install Vest and parse/serialize something</td><td><a href="getting-started.html">Getting started</a></td></tr>
+<tr><td>describe complex formats concisely</td><td><a href="dsl/reference.html">Vest DSL language reference</a></td></tr>
+<tr><td>understand what is actually proven</td><td><a href="guarantees.html">What Vest proves</a></td></tr>
+<tr><td>build a format using combinators</td><td><a href="library/combinators.html">Using <code>vest_lib</code></a></td></tr>
+<tr><td>look up a trait or combinator in Vest</td><td><a href="../vest_lib/index.html"><code>vest_lib</code> API reference</a></td></tr>
 </tbody>
 </table>
 </div>
-<p>The <a href="https://github.com/secure-foundations/vest">project repository</a> contains
-the compiler, verified backend, generated TLS and Bitcoin case studies, ASN.1
-fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
+<p>The <a href="https://github.com/secure-foundations/vest">project repository</a> holds the
+source code for the combinator library, the DSL compiler, the ASN.1 library and frontend, and the CBOR codec.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="guarantees.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="getting-started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -217,7 +232,7 @@ fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="guarantees.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="getting-started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -230,6 +245,22 @@ fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -246,6 +277,7 @@ fixtures, CBOR conformance tests, and the pinned Verus setup.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="theme/vest-highlight-f6db02d8.js"></script>
 
 
 

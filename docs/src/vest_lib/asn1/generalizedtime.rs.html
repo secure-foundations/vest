@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>    }
 <a href=#108 id=108 data-nosnippet>108</a>}
 <a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a><span class="doccomment">/// Helper spec function to validate the prefix date-time fields (YYYYMMDDhh[mm[ss]]).
+<a href=#110 id=110 data-nosnippet>110</a><span class="doccomment">/// Helper spec function to validate the prefix date-time fields (`YYYYMMDDhh[mm[ss]]`).
 <a href=#111 id=111 data-nosnippet>111</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>generalized_fields_wf(bytes: Seq&lt;u8&gt;, main_end: usize) -&gt; bool {
 <a href=#112 id=112 data-nosnippet>112</a>    &amp;&amp;&amp; (main_end == <span class="number">10 </span>|| main_end == <span class="number">12 </span>|| main_end == <span class="number">14</span>)
 <a href=#113 id=113 data-nosnippet>113</a>    &amp;&amp;&amp; digits(bytes, <span class="number">0</span>, main_end <span class="kw">as </span>int)
@@ -352,7 +352,7 @@
 <a href=#352 id=352 data-nosnippet>352</a>    }
 <a href=#353 id=353 data-nosnippet>353</a>}
 <a href=#354 id=354 data-nosnippet>354</a>
-<a href=#355 id=355 data-nosnippet>355</a><span class="doccomment">/// Spec function identifying the end index of the main date-time prefix (YYYYMMDDhh[mm[ss]]).
+<a href=#355 id=355 data-nosnippet>355</a><span class="doccomment">/// Spec function identifying the end index of the main date-time prefix (`YYYYMMDDhh[mm[ss]]`).
 <a href=#356 id=356 data-nosnippet>356</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>generalized_main_end(bytes: Seq&lt;u8&gt;, zone_start: usize) -&gt; usize {
 <a href=#357 id=357 data-nosnippet>357</a>    <span class="kw">if </span>generalized_candidate_wf::&lt;<span class="bool-val">false</span>&gt;(bytes, <span class="number">10</span>, zone_start) {
 <a href=#358 id=358 data-nosnippet>358</a>        <span class="number">10

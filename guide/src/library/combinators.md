@@ -1,27 +1,13 @@
 # Using `vest_lib`
 
-Most applications should use the Vest DSL or ASN.1 frontend. Use `vest_lib`
-directly when the format is easier to express as a reusable Verus combinator or
-when implementing a new backend primitive.
+**TODO.** This page is not written yet.
 
-A format typically combines:
+Most applications should use the [Vest DSL](../getting-started.md) or the
+[ASN.1 frontend](../asn1/index.md), which generate parsers and serializers  for you, composed with format combinators in `vest_lib`.
+This page will cover the case where you prefer writing them by hand: when a format is too complex to express in the DSL.
 
-- primitive byte and integer formats;
-- sequencing with `Pair`, `Preceded`, or `Terminated`;
-- alternatives with `Choice` or deliberately malleable `Alt`;
-- repetition with `Array`, `RepeatN`, `Star`, or `RepeatTillEnd`;
-- semantic transformations with `Mapped`, `TryMap`, and `Refined`;
-- dependencies with `Bind` or `Implicit`; and
-- bounded recursion with `FixWith`.
-
-The same value implements separate specification traits for parsing,
-serialization, byte length, and consistency. Proof traits establish properties
-only when the relevant child invariants and side conditions hold. This makes it
-possible to represent both canonical and intentionally malleable formats
-without assigning either one inaccurate guarantees.
-
-The complete catalog and links to each implementation are in the
-[`combinators`](https://secure-foundations.github.io/vest/vest_lib/combinators/)
-module. See [What Vest proves](../guarantees.md) before implementing a new
-combinator proof.
-
+Until then, the
+[`combinators` module documentation](../../vest_lib/combinators/index.html)
+lists every primitive and higher-order format with its semantics and
+[`vest_dev/src/formats`](https://github.com/secure-foundations/vest/tree/main/vest_dev/src/formats)
+holds some handwritten examples that demonstrate how to use them.

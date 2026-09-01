@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Generated API - Vest Documentation</title>
+        <title>Generated Rust Code - Vest Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "../searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-203bd9cc.js"></script>
+        <script src="../toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,29 +178,167 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="asn1-generated-api"><a class="header" href="#asn1-generated-api">ASN.1 generated API</a></h1>
-<p>An ASN.1 definition such as <code>AlgorithmIdentifier</code> becomes a Rust value type and
-a fully verified nominal format type such as <code>ALGORITHM_IDENTIFIER</code>, used as
-<code>ALGORITHM_IDENTIFIER::Fmt</code>.</p>
+                        <h1 id="generated-rust-code"><a class="header" href="#generated-rust-code">Generated Rust Code</a></h1>
+<p>An ASN.1 definition such as <code>Packet</code> becomes a Rust value type <code>Packet</code> and a
+verified nominal format type <code>PACKET</code>, used as <code>PACKET::Fmt</code>. The screaming-case
+format name avoids colliding with the idiomatic value name.</p>
 <p><code>SEQUENCE</code> and supported heterogeneous <code>SET</code> definitions become structs;
-<code>CHOICE</code> becomes an enum; and <code>ENUMERATED</code> becomes a closed typed enum.
-Anonymous composites receive deterministic private helper definitions.
-Bidirectional mappers hide nested tuple and <code>Sum</code> representations.</p>
-<p>The nominal format exposes parsing, preparation, byte length, in-place
-serialization, retagging, and the proof traits valid under its encoding rule.
-DER formats also compose through the allocation-free ordering interface needed
-by DER <code>SET OF</code>.</p>
-<p>DER byte and character strings borrow from the input where possible. BER uses
-owned values when constructed encodings must be flattened. This difference is
-visible in generated Rust types and may require the <code>alloc</code> feature.</p>
-<p>IMPLICIT tagging replaces the outer tag. Untagged <code>CHOICE</code> and <code>ANY</code> have no
-single tag to replace, so the generator uses explicit tagging for those cases.</p>
+<code>CHOICE</code> becomes an enum carrying the alternatives; and <code>ENUMERATED</code> becomes a
+closed typed enum. Anonymous composites receive deterministic private helper
+definitions. <code>IMPLICIT</code> tagging replaces the outer tag; untagged <code>CHOICE</code> and
+<code>ANY</code> have no single tag to replace, so the generator tags those explicitly.</p>
+<p>The examples below come from the module in the <a href="tutorial.html">tutorial</a>:</p>
+<pre><code class="language-asn1">Kind   ::= ENUMERATED { request(0), response(1) }
+Packet ::= SEQUENCE {
+    kind    Kind,
+    payload [0] IMPLICIT OCTET STRING (SIZE (1..32)) OPTIONAL
+}
+</code></pre>
+<h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
+<p>Unlike a DSL-generated module, an ASN.1 module has <em>no banner sections</em>. It is
+one flat <code>verus!</code> block holding every definition’s types and schema, followed by
+one small private module per definition <em>outside</em> the block:</p>
+<pre><code class="language-rust ignore">use vest_lib::asn1::der::{...};          // preamble selected by the encoding rules
+verus! {
+
+    // per definition: value type, abstract type, predicates, mappers,
+    // combinator representations, and the nominal format type
+
+} // verus!
+
+mod __impl_kind   { use super::*; vest_lib::impl_der!(...); }
+mod __impl_packet { use super::*; vest_lib::impl_der!(...); }</code></pre>
+<p>That last part is the biggest structural difference. Where the DSL writes out
+<code>derived_specs</code>, <code>derived_proofs</code>, and <code>exec_impls</code> explicitly, the ASN.1
+backend emits <em>one macro call per definition</em> and lets <code>vest_lib</code> expand the
+specifications, proofs, and executable code.</p>
+<h2 id="value-and-abstract-types"><a class="header" href="#value-and-abstract-types">Value and abstract types</a></h2>
+<p>This matches the DSL closely — a value type and a generic
+abstract type, bridged by <code>DeepView</code>:</p>
+<pre><code class="language-rust ignore">pub struct Packet&lt;'a&gt; {
+    pub kind: Kind,
+    pub payload: Option&lt;&amp;'a [u8]&gt;,
+}
+
+#[verifier::ext_equal]
+pub struct PacketSpec&lt;T0 = KindSpec, T1 = Option&lt;Seq&lt;u8&gt;&gt;&gt; {
+    pub kind: T0,
+    pub payload: T1,
+}
+
+impl&lt;'a&gt; DeepView for Packet&lt;'a&gt; {
+    type V = PacketSpec;
+    #[verifier::opaque]
+    open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
+}</code></pre>
+<p>For a definition whose value type is already <code>Copy</code> and structural — an
+<code>ENUMERATED</code>, for instance — there is no separate abstract type at all.</p>
+<pre><code class="language-rust ignore">#[repr(i16)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, StructuralEq)]
+pub enum Kind { Request = 0, Response = 1 }
+
+pub type KindSpec = Kind; // the abstract type is the same as the value type
+
+impl DeepView for Kind { type V = Self; /* *self */ }</code></pre>
+<h2 id="predicates-and-mappers"><a class="header" href="#predicates-and-mappers">Predicates and mappers</a></h2>
+<p>ASN.1 constraints become <em>named predicate structs</em> used in both the
+specification and implementation, rather than the inline closures the DSL
+emits:</p>
+<pre><code class="language-rust ignore">#[derive(Clone, Copy)]
+pub struct KindPredicate;
+
+impl SpecPred&lt;i16&gt; for KindPredicate { /* value == 0 || value == 1 */ }
+impl Pred&lt;i16&gt;     for KindPredicate { /* the executable test */ }</code></pre>
+<p><code>ENUMERATED</code> values are built on the verified <code>i16</code> integer-content backend, which is
+why the predicate is over <code>i16</code>. Larger enumerations are currently
+<a href="support.html">not yet supported</a>.</p>
+<p>Mappers follow the DSL’s <code>Forward</code>/<code>Reverse</code> pattern, with one addition — they
+implement the executable <code>Map</code> as well as <code>SpecMap</code>.</p>
+<pre><code class="language-rust ignore">pub struct KindForward;
+pub struct KindReverse;
+
+impl SpecMap for KindForward { /* .. */ }
+impl SpecMap for KindReverse { /* .. */ }
+impl Map&lt;i16&gt; for KindForward { /* executable */ }
+impl Map&lt;Kind&gt; for KindReverse { /* executable */ }</code></pre>
+<h2 id="the-nominal-format-type"><a class="header" href="#the-nominal-format-type">The nominal format type</a></h2>
+<pre><code class="language-rust ignore">/// DER format for ASN.1 `Kind`.
+type KIND__ = Mapped&lt;Refined&lt;Enumerated16TlvFmt, KindPredicate&gt;, BiMap&lt;KindForward, KindReverse&gt;&gt;;
+
+#[derive(Clone, Copy)]
+#[verifier::ext_equal]
+pub struct KIND(pub Class, pub u64); // tag class, tag number
+
+impl KIND {
+    pub const Fmt: Self = Self(Class::Universal, 10u64);
+
+    #[verifier::allow_in_spec]
+    pub const fn schema() -&gt; KIND__
+        returns (Mapped { inner: Refined(ENUMERATED16, KindPredicate),
+                          mapper: BiMap(KindForward, KindReverse) }),
+    { /* the same representation */ }
+
+    proof fn lemma_schema_unambiguous(&amp;self) { /* .. */ }
+}</code></pre>
+<p>Several things differ from the DSL here.</p>
+<p><strong>The format type is always parametric.</strong> <code>MessageFmt</code> in a DSL module is a zero-sized
+struct. <code>KIND</code> is a tuple struct holding the effective tag class and number, so
+an <code>IMPLICIT</code> tag can replace the outer tag without rebuilding the format.
+<code>KIND::Fmt</code> is the associated constant carrying the definition’s own tag —
+<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.</p>
+<p><strong><code>schema()</code> is dual spec-exec.</strong> The DSL’s <code>spec_inner()</code> is
+<code>pub open spec fn</code> — specification only. <code>schema()</code> here is a <code>const fn</code> marked
+<code>#[verifier::allow_in_spec]</code> with a <code>returns</code> clause, so the same definition
+serves both worlds (there are valid reasons for the DSL to separate them, such as to allow for more flexible executable implementations).</p>
+<p><strong><code>lemma_schema_unambiguous</code></strong> has no DSL counterpart. It proves the ASN.1 schema
+unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound over-approximation of each ASN.1 combinator’s parsing domain. On the other hand, the DSL’s constructs disambiguate themselves largely by construction, so the DSL does not need to emit this lemma.</p>
+<h2 id="specifications-proofs-and-executable-code"><a class="header" href="#specifications-proofs-and-executable-code">Specifications, proofs, and executable code</a></h2>
+<p>Everything else arrives from one macro invocation, placed outside <code>verus!</code>:</p>
+<pre><code class="language-rust ignore">mod __impl_packet {
+    use super::*;
+    vest_lib::impl_der!(
+        tagged_exact(true),   // this definition contributes an outer tag
+        borrowed,             // the value type borrows from the input
+        PACKET, PACKET__,     // nominal type and its combinator type alias
+        PacketSpec, Packet,   // abstract and executable value types
+        PacketForward, PacketReverse
+    );
+}</code></pre>
+<p><code>impl_der!</code> (or <code>impl_ber!</code> under BER) expands to the same code the DSL
+emits explicitly — derived spec trait impls (<code>SpecParser</code>, <code>SpecSerializer</code>,
+<code>SpecByteLen</code>, <code>Consistency</code>) and derived proof trait impls (<code>SafeParser</code>, <code>SoundParser</code>, <code>Productive</code>,
+<code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>NonMalleable</code>, etc.). Additionally, it also expands to the executable trait impls (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<!--## How this differs from DSL-generated code
+
+| | Vest DSL | ASN.1 |
+|---|---|---|
+| File layout | five banner sections | flat `verus!` block + `mod __impl_*` after it |
+| Spec/proof/exec code | written out in three private modules | one `impl_der!` / `impl_ber!` call per definition |
+| Format type | `MessageFmt`, zero-sized | `PACKET(Class, u64)`, carries the effective tag |
+| Entry value | `MessageFmt` | `PACKET::Fmt` associated constant |
+| Combinator alias | `pub type MessageFmtSpec` | private `type PACKET__` |
+| Constructor | `pub open spec fn spec_inner()` | dual `pub const fn schema()` |
+| Abstract type | always a generic `*Spec` | identity alias when the value is already structural |
+| Constraints | inline refinement closures | named `*Predicate` structs (`SpecPred` + `Pred`) |
+| Mappers | `SpecMap` only | `SpecMap` **and** executable `Map` |
+| Extra proofs | — | `lemma_schema_unambiguous`, `HasAsn1Start`, `DerOrd` |-->
+<h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
+<p>Calling the parser, serializer, and the prepare methods is
+almost identical in shape to DSL-generated code, except that the format value is the
+<code>::Fmt</code> constant:</p>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let (consumed, packet) = PACKET::Fmt.parse(&amp;encoded).unwrap();
+
+let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
+let mut output = vec![0u8; size];
+PACKET::Fmt.serialize(&amp;packet, &amp;mut output);</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../asn1/rules.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../asn1/tutorial.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -213,7 +352,7 @@ single tag to replace, so the generator uses explicit tagging for those cases.</
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../asn1/rules.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../asn1/tutorial.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
@@ -230,6 +369,22 @@ single tag to replace, so the generator uses explicit tagging for those cases.</
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -246,6 +401,7 @@ single tag to replace, so the generator uses explicit tagging for those cases.</
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../theme/vest-highlight-f6db02d8.js"></script>
 
 
 

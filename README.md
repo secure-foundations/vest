@@ -19,7 +19,7 @@ through compositional proof interfaces.
 
 | Task | Start here |
 |---|---|
-| Describe a binary protocol | [Vest DSL tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html) |
+| Describe a binary protocol | [Getting started](https://secure-foundations.github.io/vest/guide/getting-started.html) |
 | Generate DER or BER from ASN.1 | [ASN.1 frontend](https://secure-foundations.github.io/vest/guide/asn1/) |
 | Compose formats directly in Verus | [`vest_lib` guide](https://secure-foundations.github.io/vest/guide/library/combinators.html) |
 | Parse generic CBOR | [CBOR guide](https://secure-foundations.github.io/vest/guide/cbor.html) |
@@ -43,10 +43,11 @@ cargo install vest
 vest packet.vest --output packet.rs
 ```
 
+See [Getting started](https://secure-foundations.github.io/vest/guide/getting-started.html)
+for a complete project setup and optional proof re-verification.
+
 The generated module contains borrowing Rust value types, executable parsing,
-preparation and in-place serialization, pure specifications, and proofs. See
-the [tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html)
-for an end-to-end example.
+preparation and in-place serialization, pure specifications, and proofs.
 
 ## Components
 
@@ -65,7 +66,15 @@ and workspace manifest record the compatible toolchain and `vstd` version.
 
 Vest was introduced in
 [“Vest: Verified, Secure, High-Performance Parsing and Serialization for Rust”](https://tracycy.com/papers/vest-usenix-security25.pdf)
-(USENIX Security 2025). Citation information is in the
-[documentation](https://secure-foundations.github.io/vest/guide/citation.html).
+(USENIX Security 2025).
+
+```bibtex
+@inproceedings{vest,
+  author    = {Cai, Yi and Singh, Pratap and Lin, Zhengyao and Bosamiya, Jay and Gancher, Joshua and Surbatovich, Milijana and Parno, Bryan},
+  booktitle = {Proceedings of the USENIX Security Symposium},
+  title     = {{Vest}: Verified, Secure, High-Performance Parsing and Serialization for {Rust}},
+  year      = {2025}
+}
+```
 
 Vest is available under the MIT license.

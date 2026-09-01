@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "../searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-203bd9cc.js"></script>
+        <script src="../toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,79 +179,64 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="vest-language-reference"><a class="header" href="#vest-language-reference">Vest language reference</a></h1>
-<p>Vest source files contain named format definitions, optional parameters,
-constants, macros, and one byte-endianness directive. Definitions are compiled
-to Verus/Rust value types, format wrappers, specifications, proofs, and
-executable implementations.</p>
-<h2 id="primitive-formats"><a class="header" href="#primitive-formats">Primitive formats</a></h2>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Topic</th><th>Covers</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="lexical.html">File structure and lexical rules</a></td><td>definitions, comments, names, literals, and byte order</td></tr>
+<tr><td><a href="primitives.html">Primitive formats</a></td><td>integers, byte strings, <code>Tail</code>, <code>Nothing</code>, and <code>Never</code></td></tr>
+<tr><td><a href="refinements.html">Refinements</a></td><td>integer and enum constraints</td></tr>
+<tr><td><a href="structs.html">Structures and dependencies</a></td><td>fields, <code>@</code> references, constants, and length expressions</td></tr>
+<tr><td><a href="enums.html">Enums</a></td><td>closed, open, typed, and bit-sized enums</td></tr>
+<tr><td><a href="choices.html">Choices</a></td><td>dependent dispatch and ordered alternatives</td></tr>
+<tr><td><a href="collections.html">Collections</a></td><td>arrays, <code>Vec</code>, and <code>Option</code></td></tr>
+<tr><td><a href="and-then.html"><code>&gt;&gt;=</code></a></td><td>re-reading a bounded byte region as another format</td></tr>
+<tr><td><a href="bits.html">Bit fields</a></td><td>packed fields, widths, and dotted dependencies</td></tr>
+<tr><td><a href="composition.html">Composition</a></td><td>aliases, <code>wrap</code>, parameters, and macros</td></tr>
+<tr><td><a href="recursion.html">Recursion</a></td><td>self-referential and mutually recursive definitions</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="how-each-construct-is-described"><a class="header" href="#how-each-construct-is-described">How each construct is described</a></h2>
+<p>Every construct below is given as what it <em>means</em> on the wire, plus how it
+behaves under Vest’s three operations:</p>
 <ul>
-<li><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, <code>u64</code> and their signed counterparts use the file’s
-<code>!BIG_ENDIAN</code> or <code>!LITTLE_ENDIAN</code> directive where byte order applies.</li>
-<li><code>btc_varint</code> is Bitcoin’s variable-width integer and <code>uleb128</code> is unsigned LEB128.</li>
-<li><code>[u8; n]</code> is a byte string of the given length; <code>[fmt; n]</code> is a fixed or
-dependency-sized repetition.</li>
-<li><code>Tail</code> consumes the remaining input. <code>Nothing</code> consumes no bytes, while
-<code>Never("reason")</code> rejects every input.</li>
+<li><strong>parse</strong> reads bytes and returns a value together with the number of bytes
+consumed;</li>
+<li><strong>prepare</strong> checks that a value is <em>consistent</em> with the format — that its
+dependencies, constants, and refinements all hold — and returns the exact
+number of bytes it will occupy;</li>
+<li><strong>serialize</strong> writes a prepared value into a caller-owned buffer of exactly
+that size, and cannot fail.</li>
 </ul>
-<p>Integer formats may be refined with a value, range, set, or complement, such
-as <code>u16 | 1..1024</code> or <code>u8 | !{0, 255}</code>.</p>
-<h2 id="structures-and-dependencies"><a class="header" href="#structures-and-dependencies">Structures and dependencies</a></h2>
-<pre><code class="language-vest">message = {
-    @kind: message_type,
-    @len: u16,
-    body: [u8; @len] &gt;&gt;= choose(@kind) {
-        Request =&gt; request,
-        Response =&gt; response,
-    },
-}
-</code></pre>
-<p>Ordinary fields become fields of the generated value type. A name prefixed by
-<code>@</code> may be referenced by later formats and length expressions. A constant field
-is checked on input and reconstructed during serialization without appearing
-in the logical value.</p>
-<p><code>lhs &gt;&gt;= rhs</code> parses <code>lhs</code>, restricts <code>rhs</code> to the resulting region where
-applicable, and returns the value of <code>rhs</code>. Length expressions support constants,
-dependencies, parentheses, <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>|format|</code> for static width.</p>
-<h2 id="choices-enums-and-collections"><a class="header" href="#choices-enums-and-collections">Choices, enums, and collections</a></h2>
+<p><code>prepare</code> is the only fallible half of writing, so each construct’s preparation
+rules are precisely the conditions a value must satisfy before it can be
+serialized.</p>
+<p>The <a href="mapping.html">construct-to-Rust table</a> is a compact lookup when you already
+know the format constructs. The <a href="generated-api.html">generated Rust code guide</a> explains the Rust
+types, format types, executable APIs,
+and specs/proofs that the compiler emits for each construct.</p>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
 <ul>
-<li><code>enum { Name = value, ... }</code> defines a typed integer enumeration. A trailing
-<code>...</code> preserves unknown values.</li>
-<li><code>choose { Variant =&gt; fmt, ... }</code> defines an ordered choice with a nominal
-enum value.</li>
-<li><code>choose(@tag) { ... }</code> dispatches using an earlier dependency. <code>_</code> is the
-fallback branch.</li>
-<li><code>Option&lt;fmt&gt;</code> accepts zero or one value and <code>Vec&lt;fmt&gt;</code> accepts zero or more.
-Their placement must leave parsing unambiguous and productive.</li>
+<li>The DSL does not support polymorphic or “higher-kinded” formats that take other <em>formats</em> as parameters.</li>
+<li>The DSL does not support arbitrary <em>semantic transformations</em> or <em>parsing actions</em> on the data.</li>
+<li>The DSL does not support expressing <em>backward dependencies</em> (e.g., a field that depends on a later field like footers).</li>
+<li>The DSL does not have a module/namespace system (so you cannot “import” a format from another <code>.vest</code> file).</li>
+<li>The DSL does not support declaring “trusted”/“external” formats that are implemented in Rust/Verus and used in the DSL.</li>
 </ul>
-<h2 id="wrapping-bitfields-and-macros"><a class="header" href="#wrapping-bitfields-and-macros">Wrapping, bitfields, and macros</a></h2>
-<p><code>wrap(...)</code> surrounds a value format with fixed integer, enum, or byte
-constants. <code>bits { ... }</code> packs integer fields into a fixed-width carrier; the
-file endianness controls byte order, while fields are laid out from the most
-significant bit of the carrier.</p>
-<p>Format macros use <code>macro name!(...) = ...</code> and are expanded before type
-checking. Named formats may take dependency parameters using
-<code>name(@parameter: format) = ...</code>.</p>
-<h2 id="recursion-and-limitations"><a class="header" href="#recursion-and-limitations">Recursion and limitations</a></h2>
-<p>Vest supports generated bounded recursive formats through the backend’s
-fixpoint combinators. Mutual-recursion code generation remains experimental and
-is not part of the default verified fixture set. The compiler reports syntax,
-type, dependency, productivity, and proof-composition problems rather than
-silently changing the wire format.</p>
-<p>Run <code>vest --help</code> for the current command-line interface. The parser grammar is
-available in
-<a href="https://github.com/secure-foundations/vest/blob/main/vest/src/vest.pest"><code>vest/src/vest.pest</code></a>,
-and the checked-in <code>.vest</code> fixtures are the executable reference for supported
-combinations.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../dsl/tutorial.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../guarantees.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../dsl/generated-api.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../dsl/lexical.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -260,11 +246,11 @@ combinations.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../dsl/tutorial.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../guarantees.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../dsl/generated-api.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../dsl/lexical.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -277,6 +263,22 @@ combinations.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -293,6 +295,7 @@ combinations.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../theme/vest-highlight-f6db02d8.js"></script>
 
 
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Generated Rust API - Vest Documentation</title>
+        <title>Generated Rust Code - Vest Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/vest-highlight-77f10f5a.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-36e2e917.js";
+            window.path_to_searchindex_js = "../searchindex-51048403.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-203bd9cc.js"></script>
+        <script src="../toc-ec169036.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,48 +178,180 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="generated-rust-api"><a class="header" href="#generated-rust-api">Generated Rust API</a></h1>
-<p>For a definition named <code>message</code>, Vest normally emits:</p>
-<ul>
-<li><code>Message</code> and <code>MessageSpec</code>, the executable and logical value types;</li>
-<li><code>MessageFmt</code>, the nominal verified format;</li>
-<li>implementations of <code>Parser</code>, <code>Prepare</code>, <code>ByteLen</code>, and <code>Serializer</code>; and</li>
-<li>specification and proof-trait implementations used by enclosing formats.</li>
-</ul>
-<p>Generated structs borrow fixed and variable byte regions from their input when
-the wire format permits zero-copy parsing. Collections and formats that must
-combine fragmented input use owned values and therefore require the <code>alloc</code>
-feature.</p>
-<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
-<p><code>MessageFmt.parse(&amp;input)</code> returns <code>(consumed, value)</code>. Success is proved to
-match the pure <code>spec_parse</code> result. Parsing does not require that the entire
-input be consumed unless the format itself ends with an end-of-input
-combinator.</p>
-<h2 id="preparation-and-serialization"><a class="header" href="#preparation-and-serialization">Preparation and serialization</a></h2>
-<p>Call <code>MessageFmt.prepare(&amp;value)</code> before serializing. It checks constants,
-dependent lengths, predicates, choices, recursion limits, and other consistency
-conditions, then returns the exact output length. Allocate or borrow a slice of
-that length and call <code>MessageFmt.serialize(&amp;value, output)</code>.</p>
-<p>For advanced streaming code, <code>Serializer::serialize_into</code> targets any
-<code>OutputBuf</code>, including a growable <code>Vec&lt;u8&gt;</code> or an <code>OutputSlice</code>. The convenience
-slice API is preferred when the final length is known.</p>
-<h2 id="errors-and-generated-files"><a class="header" href="#errors-and-generated-files">Errors and generated files</a></h2>
-<p>Parsing returns a <code>ParseError</code>; preparation returns a <code>PreSerializeError</code>.
-Named formats preserve a nested format trace when allocation is enabled.
-Generated files are deterministic build artifacts and should be regenerated,
-not edited manually.</p>
-<p>The exact executable contracts are documented under
-<a href="https://secure-foundations.github.io/vest/vest_lib/core/exec/"><code>core::exec</code></a>.</p>
+                        <h1 id="generated-rust-code"><a class="header" href="#generated-rust-code">Generated Rust Code</a></h1>
+<p>Vest emits one user-facing value type and one format type for each named DSL
+definition. It also emits specification, proof, and executable helpers/trait implementations. The
+helpers are public to ease the codegen plumbing,
+but application
+code normally needs only the value and format types.</p>
+<p>For this definition:</p>
+<pre><code class="language-vest">message = {
+    @length: u16,
+    payload: [u8; @length],
+}
+</code></pre>
+<p>the user-facing types are:</p>
+<pre><code class="language-rust ignore">#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Message&lt;'i&gt; {
+    pub length: u16,
+    pub payload: &amp;'i [u8],
+}
+
+pub struct MessageFmt;</code></pre>
+<h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
+<p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble, cut
+into five banner-delimited sections:</p>
+<pre><code class="language-rust ignore">use vest_lib::combinators::*;            // fixed preamble, identical in every file
+use vest_lib::core::exec::parser::*;
+// ...
+verus! {
+
+// ============================================================
+// Data Types
+// ============================================================
+// ============================================================
+// Format Specifications
+// ============================================================
+// ============================================================
+// Derived Parser, Serializer, Length, and Consistency Specifications
+// ============================================================
+// ============================================================
+// Proven Format Properties
+// ============================================================
+// ============================================================
+// Executable Implementations
+// ============================================================
+
+} // verus!</code></pre>
+<p>A file with nine definitions emits
+all nine value types, then all nine nominal format types, then all the derived
+specifications, and so on.
+Because the nominal format types (e.g., <code>MessageFmt</code>) are what the user actually interacts with,
+the last three sections are wrapped in private
+modules (<code>derived_specs</code>, <code>derived_proofs</code>, <code>exec_impls</code>).</p>
+<h2 id="data-types"><a class="header" href="#data-types">Data Types</a></h2>
+<p>Per definition, alongside the <code>Message</code> shown above, Vest emits a nominal abstract value type
+(<code>MessageSpec</code>) and a structural representation (<code>MessageInner</code>), plus the
+<code>DeepView</code> impl that converts between the executable value and the abstract value. Additionally, Vest emits two empty structs (<code>MessageForward</code> and <code>MessageReverse</code>)
+to name the bijective conversion between the structural and nominal abstract value types.</p>
+<pre><code class="language-rust ignore">#[verifier::ext_equal]
+pub struct MessageSpec&lt;T0 = u16, T1 = Seq&lt;u8&gt;&gt; {   // abstract view of Message
+    pub length: T0,
+    pub payload: T1,
+}
+
+pub type MessageInner = (u16, Seq&lt;u8&gt;);           // what the combinator tree yields
+
+impl&lt;'i&gt; DeepView for Message&lt;'i&gt; {               // exec value -&gt; abstract value
+    type V = MessageSpec;
+    #[verifier::opaque]
+    open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
+}
+
+impl&lt;T0, T1&gt; MessageSpec&lt;T0, T1&gt; {                // abstract value &lt;-&gt; nested tuple
+    #[verifier::opaque] pub open spec fn from_structural(input: (T0, T1)) -&gt; Self { /* .. */ }
+    #[verifier::opaque] pub open spec fn into_structural(self) -&gt; (T0, T1) { /* .. */ }
+    pub proof fn lemma_from_into(self) { /* .. */ }
+    pub proof fn lemma_into_from(input: (T0, T1)) { /* .. */ }
+}
+
+// The bijection between the structural tuple and the nominal abstract value
+#[doc(hidden)] pub struct MessageForward;
+#[doc(hidden)] pub struct MessageReverse;</code></pre>
+<p>For a <code>choose</code>, the same set appears with <code>enum</code> instead of <code>struct</code>, and
+<code>MessageInner</code> becomes nested <code>Sum</code>s rather than a nested tuple.</p>
+<h2 id="format-specifications"><a class="header" href="#format-specifications">Format Specifications</a></h2>
+<p>This section is the format combinator representation (defined in <code>vest_lib</code>) of the DSL definition.</p>
+<pre><code class="language-rust ignore">pub type MessageFmtSpec =
+    Named&lt;Mapped&lt;Bind&lt;U16Le, spec_fn(u16) -&gt; Varied&lt;u16&gt;&gt;, BiMap&lt;MessageForward, MessageReverse&gt;&gt;&gt;;
+
+impl MessageFmt {
+    pub open spec fn spec_inner() -&gt; MessageFmtSpec {
+        Named("message", Mapped {
+            inner: Bind(U16Le, |length: u16| Varied(length)),
+            mapper: BiMap(MessageForward, MessageReverse),
+        })
+    }
+}</code></pre>
+<p>Note how each DSL construct has a corresponding shape in the combinator representation (<code>@length: u16</code> becomes <code>Bind(U16Le, |length: u16| ...)</code>, <code>[u8; @length]</code> becomes <code>Varied(length)</code>, etc.). The <code>Named</code> wrapper is what gives the format a human-readable name for error reporting.</p>
+<h2 id="derived-specifications"><a class="header" href="#derived-specifications">Derived Specifications</a></h2>
+<p>Because <code>spec_inner()</code> is a combinator tree composed of <code>vest_lib</code> format combinators, we can <em>derive</em> the formal specifications of the format from it.</p>
+<pre><code class="language-rust ignore">impl SpecParser        for MessageFmt { type PVal   = MessageSpec; /* spec_parse */ }
+impl Consistency       for MessageFmt { type Val    = MessageSpec; /* consistent */ }
+impl SpecSerializer    for MessageFmt { type SVal   = MessageSpec; /* spec_serialize */ }
+impl SpecByteLen       for MessageFmt { type T      = MessageSpec; /* byte_len */ }</code></pre>
+<p>Every method body is literally <code>Self::spec_inner().&lt;method name&gt;(..)</code>.
+Most of them are marked
+<code>#[verifier::opaque]</code> so enclosing formats cannot see their inner definitions.
+This opacity is what keeps verification cost
+from exploding as formats grow in size and complexity.</p>
+<h2 id="proven-format-properties"><a class="header" href="#proven-format-properties">Proven Format Properties</a></h2>
+<p>Likewise, the proofs of format properties are <em>mostly</em> derived from <code>spec_inner()</code>.</p>
+<pre><code class="language-rust ignore">broadcast use {
+    vest_lib::combinators::disjoint::disjointness_lemmas,
+    MessageSpec::lemma_from_into,
+    MessageSpec::lemma_into_from,
+};
+
+impl SafeParser  for MessageFmt { /* .. */ }
+impl Productive  for MessageFmt { /* .. */ }
+impl SoundParser for MessageFmt { /* .. */ }
+impl SPRoundTrip for MessageFmt { /* .. */ }
+impl NonMalleable for MessageFmt { /* .. */ }
+// ...plus more auxiliary proof traits, depending on the format</code></pre>
+<p>Each proof reveals the opaque specifications it needs, then hands off to the
+corresponding lemma on <code>spec_inner()</code>. <code>disjointness_lemmas</code> is a broadcast group of lemmas that compositionally establish the non-ambiguity of certain format combinators, which is a prerequisite for serialize-then-parse round trips.</p>
+<h2 id="executable-implementations"><a class="header" href="#executable-implementations">Executable Implementations</a></h2>
+<p>Finally, the executable implementations of <code>Parser</code>, <code>Serializer</code>, and <code>Prepare</code> are emitted.
+Here, the implementations are <em>not</em> derived from <code>spec_inner()</code>; they are written in idiomatic imperative Rust to ensure performance and avoid unnecessary combinator overhead.</p>
+<pre><code class="language-rust ignore">impl&lt;'i&gt; Parser&lt;&amp;'i [u8]&gt; for MessageFmt {
+    type PT = Message&lt;'i&gt;;
+    fn parse(&amp;self, ibuf: &amp;&amp;'i [u8]) -&gt; PResult&lt;Self::PT&gt; { /* .. */ }
+}
+
+impl&lt;Output: OutputBuf, 'i&gt; Serializer&lt;Output, Message&lt;'i&gt;&gt; for MessageFmt {
+    fn serialize_into(&amp;self, v: &amp;Message&lt;'i&gt;, obuf: &amp;mut Output) { /* .. */ }
+}
+
+impl&lt;'i&gt; Prepare&lt;Message&lt;'i&gt;&gt; for MessageFmt {
+    fn prepare(&amp;self, v: &amp;Message&lt;'i&gt;) -&gt; Result&lt;usize, PreSerializeError&gt; { /* .. */ }
+}</code></pre>
+<p><code>parse</code> walks the fields, advancing a cursor and propagating failure with <code>?</code>,
+then assembles the value and asserts it matches <code>spec_parse</code>:</p>
+<pre><code class="language-rust ignore">let (n1, length)  = U16Le.parse(&amp;rest)?;
+let rest          = rest.skip(n1);
+let (n2, payload) = Varied(length).parse(&amp;rest)?;
+// ...
+Ok((n1 + n2, Message { length, payload }))</code></pre>
+<p><code>serialize_into</code> mirrors it — it traverses the value and writes each field directly in-place to the outbuf buffer. <code>prepare</code> similarly walks the value, checking that each field is valid and summing the lengths.</p>
+<h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+
+let input: &amp;[u8] = &amp;[3, 0, b'a', b'b', b'c'];
+let (consumed, message) = MessageFmt.parse(&amp;input).unwrap();
+assert_eq!(consumed, 5);
+assert_eq!(message.payload, b"abc");
+
+let length = MessageFmt.prepare(&amp;message).unwrap();
+let mut output = vec![0u8; length];
+MessageFmt.serialize(&amp;message, &amp;mut output);</code></pre>
+<p><code>parse</code> returns the consumed prefix length and the value; it need not consume
+the whole input unless the format says so. Errors carry a <code>ParseErrorKind</code> along with the static identifier provided to the <code>Name</code> combinator. When the <code>alloc</code> feature is enabled, the error also builds a trace of the enclosing formats, which is useful for debugging.</p>
+<!--with allocation enabled the `Named` wrappers build a trace of the enclosing
+formats.-->
+<p>The <code>SerializerExt</code> trait provides two convenience methods for serializing values into a buffer: <code>serialize</code> and <code>serialize_with_vec</code>.
+<code>serialize</code> writes into an exactly sized
+slice and <code>serialize_with_vec</code> appends to a growable <code>Vec&lt;u8&gt;</code>. In both cases, the length of the buffer can be obtained from <code>prepare</code> to provably avoid (re)allocation.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../dsl/reference.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../dsl/mapping.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../library/combinators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../dsl/cli.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -228,11 +361,11 @@ not edited manually.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../dsl/reference.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../dsl/mapping.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../library/combinators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../dsl/cli.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -245,6 +378,22 @@ not edited manually.</p>
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
@@ -261,6 +410,7 @@ not edited manually.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../theme/vest-highlight-f6db02d8.js"></script>
 
 
 
