@@ -5,9 +5,9 @@
 //! the `vest` command-line tool; build scripts and other generators can call
 //! these functions directly.
 //!
-//! See the [Vest DSL tutorial](https://secure-foundations.github.io/vest/guide/dsl/tutorial.html),
+//! See [Getting started](https://secure-foundations.github.io/vest/guide/getting-started.html),
 //! [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html),
-//! and [generated API guide](https://secure-foundations.github.io/vest/guide/dsl/generated-api.html).
+//! and [generated Rust code guide](https://secure-foundations.github.io/vest/guide/dsl/generated-api.html).
 
 use std::error::Error;
 use std::io::Write;
@@ -44,17 +44,17 @@ impl std::error::Error for VestError {}
 /// Compiles the given source code and returns the resulting output.
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust,no_run
 /// use std::error::Error;
 /// use std::io::Write;
-/// use vest::{compile, codegen::CodegenOpts};
+/// use vest::compile;
 ///
 /// // build.rs
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///   println!("cargo::rerun-if-changed=src/tlv.vest");
 ///   let file_name = "src/tlv.vest";
 ///   let vest = std::fs::read_to_string(file_name)?;
-///   let code = compile(file_name, vest, CodegenOpts::All)?;
+///   let code = compile(file_name, vest)?;
 ///   let mut verus = std::fs::File::create("src/tlv.rs")?;
 ///   verus.write_all(code.as_bytes())?;
 ///   Ok(())
@@ -117,16 +117,16 @@ pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>>
 /// Compiles the given file and returns the resulting output.
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust,no_run
 /// // build.rs
 /// use std::error::Error;
 /// use std::io::Write;
-/// use vest::{compile_file, codegen::CodegenOpts};
+/// use vest::compile_file;
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///   println!("cargo::rerun-if-changed=src/tlv.vest");
 ///   let file_name = "src/tlv.vest";
-///   let code = compile_file(file_name, CodegenOpts::All)?;
+///   let code = compile_file(file_name)?;
 ///   let mut verus = std::fs::File::create("src/tlv.rs")?;
 ///   verus.write_all(code.as_bytes())?;
 ///   Ok(())
@@ -140,16 +140,16 @@ pub fn compile_file(file_name: &str) -> Result<String, Box<dyn Error>> {
 /// Compiles the given file and saves it to `output_file`.
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust,no_run
 /// // build.rs
 /// use std::error::Error;
-/// use vest::{compile_to, codegen::CodegenOpts};
+/// use vest::compile_to;
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///   println!("cargo::rerun-if-changed=src/tlv.vest");
 ///   let input_file = "src/tlv.vest";
 ///   let output_file = "src/tlv.rs";
-///   compile_to(input_file, CodegenOpts::All, output_file)?;
+///   compile_to(input_file, output_file)?;
 ///   Ok(())
 /// }
 /// ```

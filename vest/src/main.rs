@@ -13,14 +13,6 @@ struct Args {
     /// Name of the output verus file
     #[arg(short, long)]
     output: Option<String>,
-
-    /// Codegen options
-    /// all: Generate all the code
-    /// types: Only generate the format type definitions
-    /// impls: Only generate the implementation (and the data type definitions)
-    /// anns: Only generate the annotations (spec data types, spec combinators, etc.)
-    #[arg(short, long)]
-    codegen: Option<String>,
 }
 
 fn replace_extension(filename: &str, new_ext: &str) -> String {
