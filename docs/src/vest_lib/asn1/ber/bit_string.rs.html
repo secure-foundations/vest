@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>&gt;;
 <a href=#64 id=64 data-nosnippet>64</a>
 <a href=#65 id=65 data-nosnippet>65</a><span class="doccomment">/// Constructed BIT STRING segments are concatenable only when every segment except the last has
-<a href=#66 id=66 data-nosnippet>66</a>/// zero unused bits (X.690, 8.6.4.2).
+<a href=#66 id=66 data-nosnippet>66</a>/// zero unused bits (X.690 §8.6.4.2).
 <a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>ber_bit_string_segments_wf(segments: Seq&lt;BitStringSpec&gt;) -&gt; bool {
 <a href=#68 id=68 data-nosnippet>68</a>    forall|i: int| <span class="number">0 </span>&lt;= i &lt; segments.len() - <span class="number">1 </span>==&gt; <span class="attr">#[trigger] </span>segments[i].unused == <span class="number">0
 <a href=#69 id=69 data-nosnippet>69</a></span>}
@@ -94,7 +94,7 @@
 <a href=#94 id=94 data-nosnippet>94</a><span class="doccomment">/// One recursive unfolding of a BER BIT STRING.
 <a href=#95 id=95 data-nosnippet>95</a>///
 <a href=#96 id=96 data-nosnippet>96</a>/// IMPLICIT tagging replaces only the outer tag. Nested fragments retain universal BIT STRING
-<a href=#97 id=97 data-nosnippet>97</a>/// tag 3, as required by X.690, 8.6.4.1.
+<a href=#97 id=97 data-nosnippet>97</a>/// tag 3, as required by X.690 §8.6.4.1.
 <a href=#98 id=98 data-nosnippet>98</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>ber_bit_string_rec_body(
 <a href=#99 id=99 data-nosnippet>99</a>    tag: Tag,
 <a href=#100 id=100 data-nosnippet>100</a>    rec: ParamRecSpecs&lt;Tag, BitStringSpec&gt;,

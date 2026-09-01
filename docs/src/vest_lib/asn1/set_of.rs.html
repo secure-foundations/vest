@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/set_of.rs`."><title>set_of.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>set_of.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! ASN.1 DER `SET OF` contents.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! The enclosing universal tag and DER length are supplied by [`ASN1Fmt`](crate::asn1::ASN1Fmt). Elements are
-<a href=#4 id=4 data-nosnippet>4</a>//! ordered by their complete encodings, as required by X.690 section 11.6.
+<a href=#4 id=4 data-nosnippet>4</a>//! ordered by their complete encodings, as required by X.690 §11.6.
 <a href=#5 id=5 data-nosnippet>5</a></span><span class="kw">use </span><span class="kw">super</span>::DerOrd;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::combinators::{star::spec::<span class="kw-2">*</span>, Star};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::core::exec::output::<span class="kw-2">*</span>;
@@ -38,8 +38,8 @@
 <a href=#38 id=38 data-nosnippet>38</a>    }
 <a href=#39 id=39 data-nosnippet>39</a>}
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a><span class="doccomment">/// The byte used at `i` when comparing DER encodings. X.690 logically pads the shorter encoding
-<a href=#42 id=42 data-nosnippet>42</a>/// with zero octets at its trailing end.
+<a href=#41 id=41 data-nosnippet>41</a><span class="doccomment">/// The byte used at `i` when comparing DER encodings. X.690 §11.6 logically
+<a href=#42 id=42 data-nosnippet>42</a>/// pads the shorter encoding with zero octets at its trailing end.
 <a href=#43 id=43 data-nosnippet>43</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>der_octet_at(bytes: Seq&lt;u8&gt;, i: nat) -&gt; u8 {
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">if </span>i &lt; bytes.len() {
 <a href=#45 id=45 data-nosnippet>45</a>        bytes[i <span class="kw">as </span>int]
@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>}
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a><span class="doccomment">/// Whether complete element encodings are in nondecreasing DER order.
-<a href=#60 id=60 data-nosnippet>60</a>/// As per X.690 section 11.6 ordering on encoded component values.
+<a href=#60 id=60 data-nosnippet>60</a>/// Uses the encoded-component ordering from X.690 §11.6.
 <a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>der_octets_leq(a: Seq&lt;u8&gt;, b: Seq&lt;u8&gt;) -&gt; bool
 <a href=#62 id=62 data-nosnippet>62</a>    decreases a.len() + b.len(),
 <a href=#63 id=63 data-nosnippet>63</a>{
@@ -575,7 +575,7 @@
 <a href=#575 id=575 data-nosnippet>575</a>
 <a href=#576 id=576 data-nosnippet>576</a>}
 <a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a><span class="doccomment">/// Executable X.690 octet comparison.
+<a href=#578 id=578 data-nosnippet>578</a><span class="doccomment">/// Executable octet comparison for X.690 §11.6 ordering.
 <a href=#579 id=579 data-nosnippet>579</a></span><span class="kw">pub fn </span>der_leq(a: <span class="kw-2">&amp;</span>[u8], b: <span class="kw-2">&amp;</span>[u8]) -&gt; (leq: bool)
 <a href=#580 id=580 data-nosnippet>580</a>    ensures
 <a href=#581 id=581 data-nosnippet>581</a>        leq == der_octets_leq(a.deep_view(), b.deep_view()),

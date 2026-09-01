@@ -1,44 +1,25 @@
 //! # `vest_lib`
 //!
-//! `vest_lib` is Vest's formally verified parser and serializer combinator
-//! library for [Verus](https://github.com/verus-lang/verus). A format can
-//! provide three related layers:
+//! `vest_lib` is Vest's format combinator
+//! library verified in [Verus](https://github.com/verus-lang/verus).
+//! A format in Vest is organized in three layers:
 //!
 //! - pure parsing, serialization, byte-length, and consistency specifications
 //!   in [`core::spec`];
-//! - executable parsing, preparation, and destination-passing serialization in
-//!   [`core::exec`]; and
-//! - compositional correctness and security theorems in [`core::proof`].
-//!
-//! The executable serializer is intentionally infallible. Call
-//! [`Prepare::prepare`](core::exec::Prepare::prepare) first to validate the
-//! value and obtain its exact byte length, then use
-//! [`SerializerExt::serialize`](core::exec::SerializerExt::serialize) with an
-//! exactly sized caller-provided slice. Parsing returns both the consumed
-//! length and a value, allowing formats that intentionally leave trailing
-//! input.
+//! - executable parsing and serialization APIs in [`core::exec`]; and
+//! - correctness and security theorems in [`core::proof`].
 //!
 //! ## Where to start
 //!
-//! - [`combinators`] catalogs the primitive and higher-order formats.
-//! - [`core::exec`] documents the runtime API and buffer abstractions.
-//! - [`core::proof`] gives the exact round-trip and security properties.
+//! - [`core`] includes Vest's core specs as well as the runtime API and buffer abstractions.
+//! - [`combinators`] documents all the primitive and higher-order formats.
 //! - [`asn1`] contains modular DER and BER formats.
-//! - [`cbor`] provides generic general and deterministic CBOR when `alloc` is
-//!   enabled.
+//! - [`cbor`] provides generic CBOR formats for both general and deterministic profiles.
 //! - [`primitives`] contains reusable variable-width integer formats.
 //!
-//! The [Vest guide](https://secure-foundations.github.io/vest/guide/) contains
-//! tutorials, a plain-language account of the guarantees, and guidance for the
-//! DSL, ASN.1 frontend, and CBOR codec. Most application schemas should use the
-//! DSL or ASN.1 frontend instead of spelling large combinator types manually.
+//! See the [Vest guide](https://secure-foundations.github.io/vest/guide/) for more background and
+//! gentle introductions.
 //!
-//! ## Features
-//!
-//! The default `std` feature includes allocation-backed formats and detailed
-//! error traces. `alloc` supports owned and recursive values without `std`.
-//! With default features disabled, the remaining library is `core`-only and
-//! still supports caller-provided input and output slices.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]

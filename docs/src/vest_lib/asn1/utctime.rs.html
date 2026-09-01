@@ -145,7 +145,7 @@
 <a href=#145 id=145 data-nosnippet>145</a></span>}
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a><span class="doccomment">/// Spec function validating the lexical syntax of UTCTime bytes.
-<a href=#148 id=148 data-nosnippet>148</a>/// Under DER (X.690 11.8.1), the timezone offset MUST be Zulu ('Z').
+<a href=#148 id=148 data-nosnippet>148</a>/// Under DER (X.690 §11.8.1), the timezone offset MUST be Zulu ('Z').
 <a href=#149 id=149 data-nosnippet>149</a>/// Offsets like "+hhmm" or "-hhmm" are only permitted under BER/CER.
 <a href=#150 id=150 data-nosnippet>150</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>utc_time_lexical_wf&lt;<span class="kw">const </span>DER: bool&gt;(bytes: Seq&lt;u8&gt;) -&gt; bool {
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">if </span>DER {
@@ -265,7 +265,7 @@
 <a href=#265 id=265 data-nosnippet>265</a>}
 <a href=#266 id=266 data-nosnippet>266</a>
 <a href=#267 id=267 data-nosnippet>267</a><span class="doccomment">/// Spec function validating semantic well-formedness of parsed UTCTime bytes.
-<a href=#268 id=268 data-nosnippet>268</a>/// Under DER (X.690 11.8.2), the seconds element MUST always be present.
+<a href=#268 id=268 data-nosnippet>268</a>/// Under DER (X.690 §11.8.2), the seconds element MUST always be present.
 <a href=#269 id=269 data-nosnippet>269</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>utc_time_bytes_wf&lt;<span class="kw">const </span>DER: bool&gt;(bytes: Seq&lt;u8&gt;) -&gt; bool {
 <a href=#270 id=270 data-nosnippet>270</a>    &amp;&amp;&amp; utc_time_lexical_wf::&lt;DER&gt;(bytes)
 <a href=#271 id=271 data-nosnippet>271</a>    &amp;&amp;&amp; utc_time_value(bytes) matches <span class="prelude-val">Some</span>(value) ==&gt; value.wf()

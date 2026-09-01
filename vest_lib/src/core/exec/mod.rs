@@ -2,8 +2,8 @@
 //!
 //! Application code normally uses the following trait methods:
 //!
-//! - [`Parser::parse`] consumes an input prefix and returns a value;
-//! - [`Prepare::prepare`] validates a value and computes its exact wire length;
+//! - [`Parser::parse`] consumes an input prefix and produces a structured value;
+//! - [`Prepare::prepare`] validates a value against the format specification and computes its exact wire length;
 //! - [`SerializerExt::serialize`] writes into an exactly sized slice without allocation.
 //!
 //! [`InputBuf`] and [`OutputBuf`] let combinators share implementations across different buffer types.

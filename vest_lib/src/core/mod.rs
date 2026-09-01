@@ -2,19 +2,14 @@
 //!
 //! This module forms the foundation of the Vest combinator framework. It defines:
 //!
-//! For a task-oriented overview, see
-//! [What Vest proves](https://secure-foundations.github.io/vest/guide/guarantees.html)
-//! and the [runtime API guide](https://secure-foundations.github.io/vest/guide/library/runtime.html).
-//!
 //! ## [`spec`] — Specification Family of Traits
 //!
 //! - [`spec::SpecParser`] — parser specification
 //! - [`spec::SpecSerializer`] — serializer specification
-//! - [`spec::SpecSerializerDps`] — destination-passing style serializer specification
-//! - [`spec::SpecByteLen`] — byte length of serialized values
-//! - [`spec::ValueByteLen`] — byte length determined by the semantic value alone
-//! - [`spec::StaticByteLen`] — fixed byte length for static-size formats
 //! - [`spec::Consistency`] — value well-formedness against the format specification
+//! - [`spec::SpecByteLen`] — byte length of serialized values
+//! - [`spec::SpecSerializerDps`] — destination-passing style serializer specification for better composability
+//! - [`spec::StaticByteLen`] — fixed byte length for static-size formats
 //!
 //! These traits are designed to be as independent as possible such that they can be useful individually
 //! (e.g., applications that only need to specify parsing but not serialization, or vice versa). However,
@@ -30,6 +25,8 @@
 //! - [`proof::PSRoundTrip`] — parse-serialize roundtrip
 //! - [`proof::NonMalleable`] — parser non-malleability
 //! - [`proof::NoLookAhead`] — parser no-look-ahead property
+//! - [`proof::Productive`] — parser productivity
+//! - [`proof::NonAmbiguous`] — serializer non-ambiguity
 //! - [`proof::EquivSerializers`] / [`proof::EquivSerializersGeneral`] — DPS ↔ non-DPS equivalence
 //!
 //! Following the same philosophy as the specification traits, these proof traits are defined on top of

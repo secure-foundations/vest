@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>//! floating-point number. This covers arbitrary-size binary mantissas and
 <a href=#5 id=5 data-nosnippet>5</a>//! exponents, ISO 6093 decimal forms, infinities, NaN, and minus zero without
 <a href=#6 id=6 data-nosnippet>6</a>//! rounding or special-value equality problems. DER restricts this representation
-<a href=#7 id=7 data-nosnippet>7</a>//! to the canonical subset required by X.690 section 11.3.
+<a href=#7 id=7 data-nosnippet>7</a>//! to the canonical subset required by X.690 §11.3.
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">use </span><span class="kw">crate</span>::combinators::{Refined, Tail};
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::exec::input::InputSlice;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::exec::output::OutputBuf;
@@ -175,10 +175,10 @@
 <a href=#175 id=175 data-nosnippet>175</a>
 <a href=#176 id=176 data-nosnippet>176</a><span class="doccomment">/// BER decimal REAL contents using an ISO 6093 NR1, NR2, or NR3 field.
 <a href=#177 id=177 data-nosnippet>177</a>///
-<a href=#178 id=178 data-nosnippet>178</a>/// X.690 8.5.8 permits all three forms. Leading spaces and either case of the
+<a href=#178 id=178 data-nosnippet>178</a>/// X.690 §8.5.8 permits all three forms. Leading spaces and either case of the
 <a href=#179 id=179 data-nosnippet>179</a>/// exponent mark follow ISO 6093; NR2/NR3 require an explicit decimal mark and
 <a href=#180 id=180 data-nosnippet>180</a>/// NR3 requires a signed exponent. A decimal spelling of zero is rejected
-<a href=#181 id=181 data-nosnippet>181</a>/// because X.690 8.5.2 and 8.5.3 give zero dedicated encodings.
+<a href=#181 id=181 data-nosnippet>181</a>/// because X.690 §8.5.2 and §8.5.3 give zero dedicated encodings.
 <a href=#182 id=182 data-nosnippet>182</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>ber_real_decimal_wf(bytes: Seq&lt;u8&gt;) -&gt; bool {
 <a href=#183 id=183 data-nosnippet>183</a>    &amp;&amp;&amp; bytes.len() &gt; <span class="number">1
 <a href=#184 id=184 data-nosnippet>184</a>    </span>&amp;&amp;&amp; <span class="kw">match </span>bytes[<span class="number">0</span>] {
@@ -197,7 +197,7 @@
 <a href=#197 id=197 data-nosnippet>197</a>    </span>}
 <a href=#198 id=198 data-nosnippet>198</a>}
 <a href=#199 id=199 data-nosnippet>199</a>
-<a href=#200 id=200 data-nosnippet>200</a><span class="doccomment">/// Canonical X.690 DER NR3 at a proposed mantissa-terminating full stop.
+<a href=#200 id=200 data-nosnippet>200</a><span class="doccomment">/// Canonical DER NR3 form (X.690 §11.3) at a proposed mantissa-terminating full stop.
 <a href=#201 id=201 data-nosnippet>201</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>der_real_decimal_at(bytes: Seq&lt;u8&gt;, dot: int) -&gt; bool {
 <a href=#202 id=202 data-nosnippet>202</a>    <span class="kw">let </span>start = decimal_mantissa_start(bytes);
 <a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">let </span>exponent = dot + <span class="number">2</span>;
@@ -282,7 +282,7 @@
 <a href=#282 id=282 data-nosnippet>282</a>    </span>}
 <a href=#283 id=283 data-nosnippet>283</a>}
 <a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a><span class="doccomment">/// BER binary REAL contents as specified by X.690 8.5.7.
+<a href=#285 id=285 data-nosnippet>285</a><span class="doccomment">/// BER binary REAL contents as specified by X.690 §8.5.7.
 <a href=#286 id=286 data-nosnippet>286</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>ber_real_binary_wf(bytes: Seq&lt;u8&gt;) -&gt; bool {
 <a href=#287 id=287 data-nosnippet>287</a>    <span class="kw">if </span>bytes.len() &lt; <span class="number">3 </span>{
 <a href=#288 id=288 data-nosnippet>288</a>        <span class="bool-val">false

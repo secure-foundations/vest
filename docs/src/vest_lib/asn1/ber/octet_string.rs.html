@@ -60,9 +60,9 @@
 <a href=#60 id=60 data-nosnippet>60</a>
 <a href=#61 id=61 data-nosnippet>61</a><span class="doccomment">/// One full TLV unfolding of a BER OCTET STRING.
 <a href=#62 id=62 data-nosnippet>62</a>///
-<a href=#63 id=63 data-nosnippet>63</a>/// X.690, 8.23.3 specifies a restricted character string as
+<a href=#63 id=63 data-nosnippet>63</a>/// X.690 §8.23.3 specifies a restricted character string as
 <a href=#64 id=64 data-nosnippet>64</a>/// `[UNIVERSAL x] IMPLICIT OCTET STRING`. Thus `tag` applies only to the outermost TLV; constructed
-<a href=#65 id=65 data-nosnippet>65</a>/// fragments recursively use universal OCTET STRING tag 4, as required by X.690, 8.7.3.2.
+<a href=#65 id=65 data-nosnippet>65</a>/// fragments recursively use universal OCTET STRING tag 4, as required by X.690 §8.7.3.2.
 <a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>ber_octet_string_rec_body(
 <a href=#67 id=67 data-nosnippet>67</a>    tag: Tag,
 <a href=#68 id=68 data-nosnippet>68</a>    rec: ParamRecSpecs&lt;Tag, Seq&lt;u8&gt;&gt;,

@@ -67,7 +67,7 @@
 <a href=#67 id=67 data-nosnippet>67</a>        &amp;&amp;&amp; (<span class="self">self</span>.precision != TimePrecision::Minute || <span class="self">self</span>.datetime.second == <span class="number">0</span>)
 <a href=#68 id=68 data-nosnippet>68</a>    }
 <a href=#69 id=69 data-nosnippet>69</a>
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// Validates DER-specific restrictions for GeneralizedTime (X.690 clause 11.7):
+<a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// Validates DER-specific restrictions for GeneralizedTime (X.690 §11.7):
 <a href=#71 id=71 data-nosnippet>71</a>    /// - The encoding MUST terminate with 'Z' (meaning UTC only).
 <a href=#72 id=72 data-nosnippet>72</a>    /// - The seconds element MUST always be present.
 <a href=#73 id=73 data-nosnippet>73</a>    /// - Fractional seconds, if present, MUST omit all trailing zeros (and cannot end in '0').
@@ -165,7 +165,7 @@
 <a href=#165 id=165 data-nosnippet>165</a>
 <a href=#166 id=166 data-nosnippet>166</a><span class="doccomment">/// Spec function validating the optional fractional-seconds element of GeneralizedTime.
 <a href=#167 id=167 data-nosnippet>167</a>/// Under BER (X.680 46.3.a.2), either a comma (0x2c) or a full stop (0x2e) is allowed as the decimal separator.
-<a href=#168 id=168 data-nosnippet>168</a>/// Under DER (X.690 11.7.3-11.7.4):
+<a href=#168 id=168 data-nosnippet>168</a>/// Under DER (X.690 §11.7.3–11.7.4):
 <a href=#169 id=169 data-nosnippet>169</a>/// - The decimal separator MUST be a full stop (0x2e / '.').
 <a href=#170 id=170 data-nosnippet>170</a>/// - Trailing zeros are forbidden in the fractional part (i.e. cannot end with ASCII '0').
 <a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>generalized_fraction_wf&lt;<span class="kw">const </span>DER: bool&gt;(
@@ -207,7 +207,7 @@
 <a href=#207 id=207 data-nosnippet>207</a>}
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a><span class="doccomment">/// Spec function validating the timezone suffix (Zulu or UTC offset).
-<a href=#210 id=210 data-nosnippet>210</a>/// Under DER (X.690 11.7.1), only Zulu ('Z') is allowed.
+<a href=#210 id=210 data-nosnippet>210</a>/// Under DER (X.690 §11.7.1), only Zulu ('Z') is allowed.
 <a href=#211 id=211 data-nosnippet>211</a>/// Under BER, UTC offsets like `+hhmm`, `-hhmm`, `+hh`, or `-hh` (omitting minutes component) are allowed.
 <a href=#212 id=212 data-nosnippet>212</a></span><span class="kw">pub </span>open spec <span class="kw">fn </span>generalized_zone_wf&lt;<span class="kw">const </span>DER: bool&gt;(bytes: Seq&lt;u8&gt;, zone_start: usize) -&gt; bool {
 <a href=#213 id=213 data-nosnippet>213</a>    <span class="kw">if </span>DER {
