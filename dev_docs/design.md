@@ -1,4 +1,4 @@
-# New Design for `VestLib`
+# New Design for `vest_lib`
 
 ## Motivation
 
@@ -585,7 +585,7 @@ note: required by a bound in `tests::malleable::requires_non_malleable`
 ```
 
 
-See [`src/tests/malleable.rs`](src/tests/malleable.rs) for more examples.
+See [`vest_dev/src/formats/malleable.rs`](../vest_dev/src/formats/malleable.rs) for more examples.
 
 ## Recursive Formats
 

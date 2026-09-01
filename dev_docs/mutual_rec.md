@@ -1,3 +1,5 @@
+# Mutual recursion design notes
+
 ```ts
 generator = λfuncsTuple ->
   let (recEven, recOdd) = funcsTuple in

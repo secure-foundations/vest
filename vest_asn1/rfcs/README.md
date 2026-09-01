@@ -128,5 +128,6 @@ at the cost of introducing type names that do not appear in the source RFCs.
 
 This is a wire schema. It does not express CMS version-selection rules,
 algorithm policy, attribute uniqueness, `ANY DEFINED BY` dispatch, or any
-cryptographic validation. See [`../scalability.md`](../scalability.md) for how
+cryptographic validation. See
+[`dev_docs/asn1-scalability.md`](../../dev_docs/asn1-scalability.md) for how
 this module drove the nominal-format and start-domain design.

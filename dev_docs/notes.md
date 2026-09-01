@@ -1,4 +1,4 @@
-# Vest Development Documentation
+# Vest development notes
 
 ## New Theory of Format Ambiguity
 

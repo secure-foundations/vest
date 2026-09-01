@@ -1,5 +1,4 @@
-
- # Exec Codegen Plan for vest/src/codegen/execs.rs
+# Executable code-generation plan
 
 ## Summary
 
