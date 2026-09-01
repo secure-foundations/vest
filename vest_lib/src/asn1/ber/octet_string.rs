@@ -60,9 +60,9 @@ type BerOctetStringBodyFmt<Rec> = Mapped<
 
 /// One full TLV unfolding of a BER OCTET STRING.
 ///
-/// X.690, 8.23.3 specifies a restricted character string as
+/// X.690 §8.23.3 specifies a restricted character string as
 /// `[UNIVERSAL x] IMPLICIT OCTET STRING`. Thus `tag` applies only to the outermost TLV; constructed
-/// fragments recursively use universal OCTET STRING tag 4, as required by X.690, 8.7.3.2.
+/// fragments recursively use universal OCTET STRING tag 4, as required by X.690 §8.7.3.2.
 pub open spec fn ber_octet_string_rec_body(
     tag: Tag,
     rec: ParamRecSpecs<Tag, Seq<u8>>,

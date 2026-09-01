@@ -67,7 +67,7 @@ impl GeneralizedTimeSpec {
         &&& (self.precision != TimePrecision::Minute || self.datetime.second == 0)
     }
 
-    /// Validates DER-specific restrictions for GeneralizedTime (X.690 clause 11.7):
+    /// Validates DER-specific restrictions for GeneralizedTime (X.690 §11.7):
     /// - The encoding MUST terminate with 'Z' (meaning UTC only).
     /// - The seconds element MUST always be present.
     /// - Fractional seconds, if present, MUST omit all trailing zeros (and cannot end in '0').
@@ -165,7 +165,7 @@ pub fn generalized_fields_valid(bytes: &[u8], main_end: usize) -> bool
 
 /// Spec function validating the optional fractional-seconds element of GeneralizedTime.
 /// Under BER (X.680 46.3.a.2), either a comma (0x2c) or a full stop (0x2e) is allowed as the decimal separator.
-/// Under DER (X.690 11.7.3-11.7.4):
+/// Under DER (X.690 §11.7.3–11.7.4):
 /// - The decimal separator MUST be a full stop (0x2e / '.').
 /// - Trailing zeros are forbidden in the fractional part (i.e. cannot end with ASCII '0').
 pub open spec fn generalized_fraction_wf<const DER: bool>(
@@ -207,7 +207,7 @@ pub fn generalized_fraction_valid<const DER: bool>(
 }
 
 /// Spec function validating the timezone suffix (Zulu or UTC offset).
-/// Under DER (X.690 11.7.1), only Zulu ('Z') is allowed.
+/// Under DER (X.690 §11.7.1), only Zulu ('Z') is allowed.
 /// Under BER, UTC offsets like `+hhmm`, `-hhmm`, `+hh`, or `-hh` (omitting minutes component) are allowed.
 pub open spec fn generalized_zone_wf<const DER: bool>(bytes: Seq<u8>, zone_start: usize) -> bool {
     if DER {

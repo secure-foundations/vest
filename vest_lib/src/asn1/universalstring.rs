@@ -284,8 +284,8 @@ mod derived_proofs {
 
 }
 
-#[verifier::external_body]
 /// Check a UniversalString contents slice without allocation.
+#[verifier::external_body]
 pub fn check_valid_universal_string(bytes: &[u8]) -> (valid: bool)
     ensures
         valid == is_valid_universal_string(bytes.deep_view()),

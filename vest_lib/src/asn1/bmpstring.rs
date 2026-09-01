@@ -355,9 +355,9 @@ mod derived_proofs {
 
 }
 
-#[verifier::external_body]
 /// Check that a byte slice is a valid BMPString without allocation.
 /// TODO: Verify this function while keeping it efficient and idiomatic.
+#[verifier::external_body]
 pub fn check_valid_bmp_string(bytes: &[u8]) -> (res: bool)
     ensures
         res == is_valid_bmp_string(bytes.deep_view()),
@@ -370,10 +370,10 @@ pub fn check_valid_bmp_string(bytes: &[u8]) -> (res: bool)
     )
 }
 
-#[cfg(feature = "alloc")]
-#[verifier::external_body]
 /// Decode a byte slice into a String, assuming it contains a valid BMPString.
 /// TODO: Verify this function while keeping it efficient and idiomatic.
+#[cfg(feature = "alloc")]
+#[verifier::external_body]
 fn decode_bmp_string_owned(bytes: &[u8]) -> (res: String)
     requires
         is_valid_bmp_string(bytes.deep_view()),

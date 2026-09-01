@@ -1,7 +1,7 @@
 //! ASN.1 DER `SET OF` contents.
 //!
 //! The enclosing universal tag and DER length are supplied by [`ASN1Fmt`](crate::asn1::ASN1Fmt). Elements are
-//! ordered by their complete encodings, as required by X.690 section 11.6.
+//! ordered by their complete encodings, as required by X.690 §11.6.
 use super::DerOrd;
 use crate::combinators::{star::spec::*, Star};
 use crate::core::exec::output::*;
@@ -38,8 +38,8 @@ impl<C: Clone> Clone for SetOfFmt<C> {
     }
 }
 
-/// The byte used at `i` when comparing DER encodings. X.690 logically pads the shorter encoding
-/// with zero octets at its trailing end.
+/// The byte used at `i` when comparing DER encodings. X.690 §11.6 logically
+/// pads the shorter encoding with zero octets at its trailing end.
 pub open spec fn der_octet_at(bytes: Seq<u8>, i: nat) -> u8 {
     if i < bytes.len() {
         bytes[i as int]
@@ -57,7 +57,7 @@ pub open spec fn der_octets_drop_head(bytes: Seq<u8>) -> Seq<u8> {
 }
 
 /// Whether complete element encodings are in nondecreasing DER order.
-/// As per X.690 section 11.6 ordering on encoded component values.
+/// Uses the encoded-component ordering from X.690 §11.6.
 pub open spec fn der_octets_leq(a: Seq<u8>, b: Seq<u8>) -> bool
     decreases a.len() + b.len(),
 {
@@ -575,7 +575,7 @@ mod derived_proofs {
 
 }
 
-/// Executable X.690 octet comparison.
+/// Executable octet comparison for X.690 §11.6 ordering.
 pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
     ensures
         leq == der_octets_leq(a.deep_view(), b.deep_view()),

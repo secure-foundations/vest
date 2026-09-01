@@ -63,7 +63,7 @@ type BerBitStringBodyFmt<Rec> = Mapped<
 >;
 
 /// Constructed BIT STRING segments are concatenable only when every segment except the last has
-/// zero unused bits (X.690, 8.6.4.2).
+/// zero unused bits (X.690 §8.6.4.2).
 pub open spec fn ber_bit_string_segments_wf(segments: Seq<BitStringSpec>) -> bool {
     forall|i: int| 0 <= i < segments.len() - 1 ==> #[trigger] segments[i].unused == 0
 }
@@ -94,7 +94,7 @@ pub open spec fn ber_bit_string_wire_wf(parsed: BerBitStringWireType) -> bool {
 /// One recursive unfolding of a BER BIT STRING.
 ///
 /// IMPLICIT tagging replaces only the outer tag. Nested fragments retain universal BIT STRING
-/// tag 3, as required by X.690, 8.6.4.1.
+/// tag 3, as required by X.690 §8.6.4.1.
 pub open spec fn ber_bit_string_rec_body(
     tag: Tag,
     rec: ParamRecSpecs<Tag, BitStringSpec>,

@@ -40,7 +40,7 @@ pub struct ObjectIdentifierSpec {
 }
 
 impl ObjectIdentifierSpec {
-    /// Structural restrictions imposed by X.690, plus the finite `UInt` backend bound
+    /// Structural restrictions imposed by X.690 §8.19, plus the finite `UInt` backend bound
     /// on the combined first subidentifier.
     pub open spec fn wf(&self) -> bool {
         &&& self.first <= 2

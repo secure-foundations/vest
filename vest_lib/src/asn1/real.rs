@@ -4,7 +4,7 @@
 //! floating-point number. This covers arbitrary-size binary mantissas and
 //! exponents, ISO 6093 decimal forms, infinities, NaN, and minus zero without
 //! rounding or special-value equality problems. DER restricts this representation
-//! to the canonical subset required by X.690 section 11.3.
+//! to the canonical subset required by X.690 §11.3.
 use crate::combinators::{Refined, Tail};
 use crate::core::exec::input::InputSlice;
 use crate::core::exec::output::OutputBuf;
@@ -175,10 +175,10 @@ pub open spec fn ber_real_decimal_nr3_wf(bytes: Seq<u8>) -> bool {
 
 /// BER decimal REAL contents using an ISO 6093 NR1, NR2, or NR3 field.
 ///
-/// X.690 8.5.8 permits all three forms. Leading spaces and either case of the
+/// X.690 §8.5.8 permits all three forms. Leading spaces and either case of the
 /// exponent mark follow ISO 6093; NR2/NR3 require an explicit decimal mark and
 /// NR3 requires a signed exponent. A decimal spelling of zero is rejected
-/// because X.690 8.5.2 and 8.5.3 give zero dedicated encodings.
+/// because X.690 §8.5.2 and §8.5.3 give zero dedicated encodings.
 pub open spec fn ber_real_decimal_wf(bytes: Seq<u8>) -> bool {
     &&& bytes.len() > 1
     &&& match bytes[0] {
@@ -197,7 +197,7 @@ pub open spec fn decimal_mantissa_start(bytes: Seq<u8>) -> int {
     }
 }
 
-/// Canonical X.690 DER NR3 at a proposed mantissa-terminating full stop.
+/// Canonical DER NR3 form (X.690 §11.3) at a proposed mantissa-terminating full stop.
 pub open spec fn der_real_decimal_at(bytes: Seq<u8>, dot: int) -> bool {
     let start = decimal_mantissa_start(bytes);
     let exponent = dot + 2;
@@ -282,7 +282,7 @@ pub open spec fn der_real_binary_wf(bytes: Seq<u8>) -> bool {
     }
 }
 
-/// BER binary REAL contents as specified by X.690 8.5.7.
+/// BER binary REAL contents as specified by X.690 §8.5.7.
 pub open spec fn ber_real_binary_wf(bytes: Seq<u8>) -> bool {
     if bytes.len() < 3 {
         false

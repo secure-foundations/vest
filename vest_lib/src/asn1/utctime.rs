@@ -145,7 +145,7 @@ pub fn utc_offset_valid(bytes: &[u8], pos: usize) -> bool
 }
 
 /// Spec function validating the lexical syntax of UTCTime bytes.
-/// Under DER (X.690 11.8.1), the timezone offset MUST be Zulu ('Z').
+/// Under DER (X.690 §11.8.1), the timezone offset MUST be Zulu ('Z').
 /// Offsets like "+hhmm" or "-hhmm" are only permitted under BER/CER.
 pub open spec fn utc_time_lexical_wf<const DER: bool>(bytes: Seq<u8>) -> bool {
     if DER {
@@ -265,7 +265,7 @@ pub fn utctime_value(bytes: &[u8]) -> Option<UtcTime>
 }
 
 /// Spec function validating semantic well-formedness of parsed UTCTime bytes.
-/// Under DER (X.690 11.8.2), the seconds element MUST always be present.
+/// Under DER (X.690 §11.8.2), the seconds element MUST always be present.
 pub open spec fn utc_time_bytes_wf<const DER: bool>(bytes: Seq<u8>) -> bool {
     &&& utc_time_lexical_wf::<DER>(bytes)
     &&& utc_time_value(bytes) matches Some(value) ==> value.wf()
