@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -225,9 +225,9 @@ from the same position.</p>
 <p><strong>Preparation and serialization.</strong> <code>Some(v)</code> prepares and writes the inner
 format; <code>None</code> has length 0 and writes nothing.</p>
 <h2 id="notes-on-vec-and-option"><a class="header" href="#notes-on-vec-and-option">Notes on <code>Vec</code> and <code>Option</code></a></h2>
-<p>Because the absence of a <code>Vec</code> or <code>Option</code> field is allowed, the surrounding format must make their presence
+<p>Because a <code>Vec</code> can be empty and an <code>Option</code> can be absent, the surrounding format must make their presence
 distinguishable from what follows — a tagged or otherwise disjoint inner format is the usual pattern.
-Ambiguous fields will fail the generated unambiguity proof obligations.</p>
+A chain of ambiguous <code>Vec</code> or <code>Option</code> fields will fail the generated unambiguity proof obligations.</p>
 
                     </main>
 

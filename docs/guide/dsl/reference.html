@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -189,36 +189,33 @@
 <tr><td><a href="lexical.html">File structure and lexical rules</a></td><td>definitions, comments, names, literals, and byte order</td></tr>
 <tr><td><a href="primitives.html">Primitive formats</a></td><td>integers, byte strings, <code>Tail</code>, <code>Nothing</code>, and <code>Never</code></td></tr>
 <tr><td><a href="refinements.html">Refinements</a></td><td>integer and enum constraints</td></tr>
-<tr><td><a href="structs.html">Structures and dependencies</a></td><td>fields, <code>@</code> references, constants, and length expressions</td></tr>
+<tr><td><a href="structs.html">Structures and dependencies</a></td><td>fields, dependencies, constants, and length expressions</td></tr>
 <tr><td><a href="enums.html">Enums</a></td><td>closed, open, typed, and bit-sized enums</td></tr>
 <tr><td><a href="choices.html">Choices</a></td><td>dependent dispatch and ordered alternatives</td></tr>
 <tr><td><a href="collections.html">Collections</a></td><td>arrays, <code>Vec</code>, and <code>Option</code></td></tr>
-<tr><td><a href="and-then.html"><code>&gt;&gt;=</code></a></td><td>re-reading a bounded byte region as another format</td></tr>
-<tr><td><a href="bits.html">Bit fields</a></td><td>packed fields, widths, and dotted dependencies</td></tr>
-<tr><td><a href="composition.html">Composition</a></td><td>aliases, <code>wrap</code>, parameters, and macros</td></tr>
-<tr><td><a href="recursion.html">Recursion</a></td><td>self-referential and mutually recursive definitions</td></tr>
+<tr><td><a href="and-then.html"><code>&gt;&gt;=</code></a></td><td>reinterpretation of a bounded byte region as another format</td></tr>
+<tr><td><a href="bits.html">Bit fields</a></td><td><code>bits</code> blocks, bit-sized fields, and bit-level refinements</td></tr>
+<tr><td><a href="composition.html">Composition</a></td><td>format aliases, <code>wrap</code>, parameters, and macros</td></tr>
+<tr><td><a href="recursion.html">Recursion</a></td><td>self-recursive formats and mutually recursive formats</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="how-each-construct-is-described"><a class="header" href="#how-each-construct-is-described">How each construct is described</a></h2>
-<p>Every construct below is given as what it <em>means</em> on the wire, plus how it
-behaves under Vest’s three operations:</p>
+<p>Every format construct is given as what it <em>means</em> on the wire, plus how it
+behaves under Vest’s three core executable APIs:</p>
 <ul>
 <li><strong>parse</strong> reads bytes and returns a value together with the number of bytes
 consumed;</li>
-<li><strong>prepare</strong> checks that a value is <em>consistent</em> with the format — that its
-dependencies, constants, and refinements all hold — and returns the exact
+<li><strong>prepare</strong> checks that a value is <em>consistent</em> with the format (its
+dependencies, constants, and refinement constraints all hold) and returns the exact
 number of bytes it will occupy;</li>
 <li><strong>serialize</strong> writes a prepared value into a caller-owned buffer of exactly
-that size, and cannot fail.</li>
+that size, without failing or allocating.</li>
 </ul>
-<p><code>prepare</code> is the only fallible half of writing, so each construct’s preparation
-rules are precisely the conditions a value must satisfy before it can be
-serialized.</p>
-<p>The <a href="mapping.html">construct-to-Rust table</a> is a compact lookup when you already
-know the format constructs. The <a href="generated-api.html">generated Rust code guide</a> explains the Rust
+<p>The <a href="generated-api.html">generated Rust code guide</a> explains the Rust
 types, format types, executable APIs,
-and specs/proofs that the compiler emits for each construct.</p>
+and specs/proofs that the compiler emits for each construct.
+The <a href="mapping.html">construct-to-Rust table</a> provides a quick reference for the DSL constructs and their corresponding Rust types.</p>
 <h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
 <ul>
 <li>The DSL does not support polymorphic or “higher-kinded” formats that take other <em>formats</em> as parameters.</li>

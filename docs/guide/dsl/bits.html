@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -180,23 +180,23 @@
                     <main>
                         <h1 id="bit-fields"><a class="header" href="#bit-fields">Bit fields</a></h1>
 <p><code>bits { ... }</code> describes several small unsigned fields packed into one
-fixed-width integer on the wire, while exposing them as ordinary typed Rust
-fields. The block as a whole is a single integer; the fields are slices of its
-bits.</p>
+fixed-width integer on the wire. The block as a whole is a single integer; the fields are slices of its bits.
+The DSL compiler exposes them as ordinary integer-typed Rust
+fields.</p>
 <pre><code class="language-vest">ipv4_first_byte = bits {
     version: u4,
     ihl: u4,
 }
 </code></pre>
-<p>Fields are laid out from the most significant bit of the integer, in declaration
+<p>Fields are laid out from the <em>most significant bit</em> of the integer, in declaration
 order. The total width must be exactly 8, 16, 24, 32, or 64 bits; otherwise the
 compiler reports an invalid total width. Each individual width must be positive
 and no larger than 64.</p>
-<p><strong>Parsing.</strong> Reads the carrier integer, then splits it into fields from the most significant bit
+<p><strong>Parsing.</strong> Reads the integer according to the specified byte order, then splits it into fields from the most significant bit
 down, and checks each field’s constraint.</p>
 <p><strong>Preparation and serialization.</strong> Preparation checks that each field fits its
-declared bit width and satisfies its constraint, and reports the carrier width.
-Serialization packs the fields back into one integer and writes it.</p>
+declared bit width and satisfies its constraint, and reports the integer’s width.
+Serialization packs the fields back into one integer and writes it in the specified byte order.</p>
 <h2 id="cross-byte-fields-and-byte-order"><a class="header" href="#cross-byte-fields-and-byte-order">Cross-byte fields and byte order</a></h2>
 <pre><code class="language-vest">!BIG_ENDIAN
 
@@ -207,8 +207,21 @@ packed = bits {
 }
 </code></pre>
 <p>Fields may straddle byte boundaries; only the integer as a whole is required to be byte
-aligned. Byte order (endianness) controls how that multi-byte integer is encoded.
-It has no effect on abstract ordering of the fields, which is always from the most significant bit down.</p>
+aligned. Byte endianness controls how that multi-byte integer is decoded/encoded.
+It has no effect on abstract ordering of the fields, which is always from the most significant bit down.
+For example, the <code>packed</code> format above specifies a 16-bit integer with three bit fields.</p>
+<pre><code class="language-text">| prefix (3 bits) |      value (10 bits)      | suffix (3 bits) |
+</code></pre>
+<p>In big-endian order, the first byte is the most significant, so the fields are encoded as follows:</p>
+<pre><code class="language-text">|b00|b01|b02|b03|b04|b05|b06|b07|b08|b09|b10|b11|b12|b13|b14|b15|
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|   prefix  |                 value                 |   suffix  |
+</code></pre>
+<p>In little-endian order, the first byte is the least significant, so the fields are encoded as follows:</p>
+<pre><code class="language-text">|b00|b01|b02|b03|b04|b05|b06|b07|b08|b09|b10|b11|b12|b13|b14|b15|
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|    value (low 5)  |  suffix   |   prefix  |   value (high 5)  |
+</code></pre>
 <h2 id="constraints-and-enums"><a class="header" href="#constraints-and-enums">Constraints and enums</a></h2>
 <p>Bit-sized integers use the ordinary refinement syntax, with the same two-way
 enforcement described in <a href="refinements.html">Refinements</a>. Enum suffixes may select
@@ -234,7 +247,7 @@ packet = {
     },
 }
 </code></pre>
-<p>Only unsigned integers and enums with unsigned bit-sized backing types are
+<p>Only unsigned integers and enums with unsigned bit-sized integer types are
 allowed as bit fields. Dependency fields and dotted access work exactly as in
 ordinary structures: <code>@kind</code> is unpacked while parsing the integer and is then
 in scope for later fields, and preparation enforces it as a constraint in the

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-51048403.js";
+            window.path_to_searchindex_js = "searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -186,7 +186,8 @@ library for experts who want to build formats directly in Verus.</p>
 <p>Given a high-level format description, Vest automatically emits efficient, idiomatic Rust that is memory-safe, arithmetically safe, panic-free, and terminating on any input.
 More importantly, Vest parsers and serializers are proven to satisfy a suite of desirable <a href="guarantees.html">security properties</a>, making them immune to entire classes of attacks that historically plague unverified, hand-written code.</p>
 <p>With Vest, we have built the first
-production-grade formally verified <a href="asn1/index.html">ASN.1 library</a> (supporting both DER and BER) and a verified prototype for <a href="cbor.html">both
+production-grade formally verified <a href="asn1/index.html">ASN.1 library</a> (supporting both DER and BER, which we leverage to implement the first verified <a href="https://github.com/secure-foundations/vest/blob/main/vest_asn1/rfcs/CMS-RFC5652-Curated.asn1">CMS</a> <a href="https://github.com/secure-foundations/vest/blob/main/vest_asn1_tests/src/generated_cms.rs">codec</a>),
+and a verified prototype for <a href="cbor.html">both
 general and deterministic CBOR</a>.</p>
 <h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who this is for</a></h2>
 <p>Vest is for anyone who needs to parse or serialize binary data formats, especially when correctness and security are critical. This includes:

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -188,28 +188,26 @@ header_alias = header
 value type. Parsing, preparation, and serialization are those of the referenced
 format; the alias adds no wire bytes.</p>
 <h2 id="framing-with-wrap"><a class="header" href="#framing-with-wrap">Framing with <code>wrap</code></a></h2>
-<p><code>wrap</code> surrounds a format with fixed bytes that carry no information — a magic
-prefix, a terminator — and keeps them out of the value.</p>
+<p><code>wrap</code> surrounds a format with fixed bytes that carry no semantic information (e.g., a magic
+prefix, a terminator, or padding) and keeps them out of the value.</p>
 <pre><code class="language-vest">framed_word = wrap(
     u8 = 0xAA,
     u16,
     [u8; 2] = [0x0D, 0x0A]
 )
 </code></pre>
-<p>The generated value is just <code>u16</code>.</p>
-<p><strong>Parsing.</strong> Requires the prefix constants, parses the inner format, then
-requires the suffix constants. A constant that does not match is a parse error.
+<p>The generated value type for <code>framed_word</code> is just <code>u16</code>.</p>
+<p><strong>Parsing.</strong> Recognizes the prefix constants, parses the inner format, then
+recognizes the suffix constants. A constant that does not match is a parse error.
 The framing bytes are consumed but discarded.</p>
 <p><strong>Preparation and serialization.</strong> Preparation reports the inner length plus the
 widths of all the constants. Serialization writes the prefix, the inner value,
-and the suffix — the constants are restored from the format, since they were
-never in the value.</p>
+and the suffix.</p>
 <p>This is the difference from a <code>const</code> structure field, which stays part of the
-generated struct and must be supplied by the caller.</p>
+generated struct and must be supplied by the caller during preparation and serialization.</p>
 <p><code>wrap</code> accepts any number of constant integer, byte-string, or enum formats
 before and after its one non-constant inner format.</p>
 <h2 id="parameterized-formats"><a class="header" href="#parameterized-formats">Parameterized formats</a></h2>
-<p>Parameters are values supplied by the enclosing format:</p>
 <pre><code class="language-vest">payload(@length: u16) = [u8; @length]
 
 packet = {
@@ -217,10 +215,10 @@ packet = {
     body: payload(@length),
 }
 </code></pre>
+<p>Parameters are <em>values</em> supplied by the enclosing format. They are not part of the generated value type.</p>
 <p><strong>Parsing and preparation.</strong> A parameter contributes no bytes of its own. It
-behaves exactly like a dependency that happens to be bound outside: it sizes or
-selects during parsing, and is enforced as a constraint during preparation.</p>
-<p>Arguments must be <code>@</code> dependencies in scope and must match the declared
+behaves exactly like a dependency but is required to be bound <em>externally</em> in the enclosing format.</p>
+<p>When invoked, arguments must be <code>@</code> dependencies in scope and must match the declared
 parameter format.</p>
 <h2 id="macros"><a class="header" href="#macros">Macros</a></h2>
 <p>Macros substitute format arguments before type checking:</p>

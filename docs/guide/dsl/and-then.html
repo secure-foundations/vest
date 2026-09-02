@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -180,15 +180,14 @@
                     <main>
                         <h1 id=""><a class="header" href="#"><code>&gt;&gt;=</code></a></h1>
 <p><code>left &gt;&gt;= right</code> means “take the region <code>left</code> describes, then parse <code>right</code> against it.”</p>
-<p>The value of the whole expression is <code>right</code>’s value.</p>
+<p>The corresponding Rust value type of the whole expression is the same as <code>right</code>’s.</p>
 <p><strong>Parsing.</strong> Extract a bounded region from the input defined by <code>left</code>, then parse <code>right</code> from that region.
 <code>right</code> must consume the region <em>entirely</em> — leftover bytes
 are an error.</p>
 <p><strong>Preparation and serialization.</strong> Preparation prepares <code>right</code> and requires its
 length to equal the region <code>left</code> declares. Serialization writes
 <code>right</code>’s bytes directly.</p>
-<p>Currently, the left side must be <code>[u8; length]</code> or <code>Tail</code>. Using an integer or any other
-format there is an error.</p>
+<p>Currently, the left side must be <code>[u8; length]</code> or <code>Tail</code>. We’re working on generalizing this to any format that can be reinterpreted within a bounded region.</p>
 <h2 id="bounding-vec-with-a-length-field"><a class="header" href="#bounding-vec-with-a-length-field">Bounding <code>Vec</code> with a length field</a></h2>
 <pre><code class="language-vest">item = { value: u16, }
 
@@ -197,8 +196,8 @@ list = {
     values: [u8; @byte_length] &gt;&gt;= Vec&lt;item&gt;,
 }
 </code></pre>
-<p><code>Vec&lt;item&gt;</code> repeats until its region runs out. Because the region is exactly
-<code>byte_length</code> bytes, the repetition stop. Preparation checks that the items really do add up to <code>byte_length</code>.</p>
+<p>Here, <code>Vec&lt;item&gt;</code> repeats until its region (<code>[u8; @byte_length]</code>) runs out. Because the region is exactly
+<code>byte_length</code> bytes, the repetition will eventually stop. Preparation checks that the items really do add up to <code>byte_length</code>.</p>
 <h2 id="reinterpreting-the-remainder-of-a-region"><a class="header" href="#reinterpreting-the-remainder-of-a-region">Reinterpreting the remainder of a region</a></h2>
 <p><code>Tail</code> names everything left in the enclosing region, which turns <code>&gt;&gt;=</code> into
 “reinterpret the remainder”:</p>
@@ -206,9 +205,9 @@ list = {
 
 items = Tail &gt;&gt;= Vec&lt;item&gt;
 </code></pre>
-<p>This is the idiom for a message that ends in a homogeneous run of records. It
+<p>This is the idiom for a message that ends in an unknown number of records. It
 also composes: inside a format already bounded by a length field, <code>Tail</code> means
-the rest of <em>that</em> region, not the rest of the input buffer.</p>
+the rest of <em>that</em> region, not the rest of the original input buffer.</p>
 
                     </main>
 

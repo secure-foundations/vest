@@ -35,7 +35,7 @@ release of each.
 
 ## Describe a format
 
-Tag-length-value (TLV) is the shape underneath most network protocols: a tag says what
+Let's define a simple Tag-length-value (TLV) format in the Vest DSL, which is the shape underneath most network protocols. A tag says what
 follows, a length delimits it, and the body is interpreted according to the tag.
 
 Create `msg.vest`:
@@ -68,11 +68,10 @@ There are a few things to notice inside the `msg` definition:
 - `@tag` and `@len` are field *dependencies*.
   The `@` prefix lets later fields refer
   to them. They are still ordinary fields of the generated struct, and of course still
-  bytes on the wire — `@` only signals that they are used in later format expressions.
+  bytes on the wire. `@` only signals that they are used in later format expressions.
 - `[u8; @len]` carves out exactly `len` bytes.
 - `>>= choose(@tag)` then reparses *that region* with the format chosen by `tag`. Because the
-  region is bounded first, a body that tries to read past its length fails
-  instead of silently consuming bytes from the next message. We will see what it means for serialization shortly.
+  region is bounded first, a body that tries to read past its length would fail. We will see what it means for serialization shortly.
 
 Integers are little-endian by default.
 Add `!BIG_ENDIAN` at the top of the file to switch to big-endian.
@@ -88,11 +87,12 @@ $ vest msg.vest -o src/msg.rs
 👏 Done!
 ```
 
-Without `-o`, the compiler writes next to the input, replacing the extension —
-`msg.vest` becomes `msg.rs`. The generated module is a normal Rust file, so you can `mod msg;` it and use it like any other module.
+Without `-o`, the compiler writes next to the input and replaces its extension, so `msg.vest` becomes `msg.rs`.
+The generated module is a normal Rust file, so you can `mod msg;` it and use it like any other module.
 
-You get one value type per definition, plus a zero-sized format type carrying
-the parser, serializer, and proofs:
+See [here](dsl/cli.md#generating-from-buildrs) for how to automate this process in `build.rs` so that the generated code is always up to date.
+
+The DSL compiler emits one value type per definition, plus a zero-sized format type carrying the parser, serializer, and proofs:
 
 ```rust,ignore
 pub enum MsgType { Msg1 = 1, Msg2 = 2, Msg3 = 3 }
@@ -122,7 +122,7 @@ However, Vest-generated code comes with specifications and proofs that establish
 It is therefore highly recommended to use Verus to automatically check the proofs (rather than trusting the DSL compiler)
 to ensure that the generated code indeed satisfies the [desired properties](guarantees.md).
 
-Verus and `vstd` move quickly, and each Vest release tracks one exact Verus
+Each Vest release tracks one exact Verus
 release, recorded in
 [`verus-version.txt`](https://github.com/secure-foundations/vest/blob/main/verus-version.txt).
 Follow the [Verus installation instructions](https://github.com/verus-lang/verus/blob/main/INSTALL.md)
@@ -134,15 +134,14 @@ git clone https://github.com/secure-foundations/vest.git
 export PATH="$PWD/vest/.verus:$PATH"
 ```
 
-Then verify *your own crate* — the one holding the generated module:
+Then verify *your crate*, the one holding the generated module:
 
 ```console
 cd my-project
 cargo verus verify
 ```
 
-Verus checks every specification and proof in `src/msg.rs`, so a clean run
-means the guarantees hold for your format.
+Verus checks every specification and proof in `src/msg.rs`, so a successful run means that the guarantees hold for your format and the generated parser and serializer.
 
 
 ## Parse
@@ -166,7 +165,7 @@ assert_eq!(msg.len, 7);
 assert!(matches!(msg.content, MsgContent::Msg2(_)));
 ```
 
-`parse` returns how many bytes it consumed, so a caller reading a stream knows
+`parse` returns the parsed value and how many bytes it consumed, so a caller reading a stream knows
 where the next message begins (it does not mandate that the input slice end exactly at the message boundary). The `msg` value in the example copies and re-interprets the wire bytes because `msg2` only contains fixed-size integers (where "zero-copy" pointers to the input buffer would be even less efficient).
 For larger payloads, Vest uses borrowed slices to avoid unnecessary copies/allocations.
 
@@ -209,7 +208,7 @@ let bad = Msg {
 assert!(MsgFmt.prepare(&bad).is_err());
 ```
 
-The error names the problem:
+This would produce an error like:
 
 ```text
 PreSerializeError { kind: NotCompliant(LengthInconsistent), .. }
@@ -227,7 +226,7 @@ a constraint the value must satisfy before serialization, and `prepare` is where
 
 The generated module carries proofs that, among other things, parsing/serializing is memory and arithmetically safe, panic-free, and
 terminating; and that a successful parse reconstructs the original serialized value and consumes exactly as many bytes as the value would serialize to.
-See [What Vest proves](guarantees.md) for a complete list of properties and the interfaces that carry them.
+See [What Vest proves](guarantees.md) for a complete list of properties.
 
 
 ## Where next

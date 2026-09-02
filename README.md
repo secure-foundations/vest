@@ -33,7 +33,7 @@ Vest is a research tool under active development. The DSL and ASN.1 frontend are
 ## Examples of using Vest
 
 - Vest DSL examples include [TLS](vest_tests/src/tls.vest), [Bitcoin](vest_tests/src/bitcoin.vest), [WireGuard](vest_tests/src/wireguard.vest), and smaller ones covering [bit fields](vest_tests/src/bits.vest), [dependent choices and TLV](vest_tests/src/tlv.vest), and [nested structures](vest_tests/src/nested_access.vest).
-- The ASN.1 frontend includes a [curated CMS schema](vest_asn1/rfcs/CMS-RFC5652-Curated.asn1), alongside smaller [DER](vest_asn1_tests/fixture.asn1), [BER](vest_asn1_tests/fixture_ber.asn1), and [mixed-rule](vest_asn1_tests/fixture_mixed.asn1) schemas.
+- The ASN.1 frontend includes a [curated CMS schema](vest_asn1/rfcs/CMS-RFC5652-Curated.asn1) and its [generated, formally verified codec](vest_asn1_tests/src/generated_cms.rs), alongside smaller [DER](vest_asn1_tests/fixture.asn1), [BER](vest_asn1_tests/fixture_ber.asn1), and [mixed-rule](vest_asn1_tests/fixture_mixed.asn1) schemas.
 - [`vest_dev/src/formats`](vest_dev/src/formats) contains example formats written directly with `vest_lib` combinators, including [mapped formats](vest_dev/src/formats/mapped.rs), [dependent formats](vest_dev/src/formats/dependent.rs), and [recursive formats](vest_dev/src/formats/fix.rs).
 
 ## Getting in touch and reporting issues

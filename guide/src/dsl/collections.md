@@ -70,6 +70,6 @@ format; `None` has length 0 and writes nothing.
 
 ## Notes on `Vec` and `Option`
 
-Because the absence of a `Vec` or `Option` field is allowed, the surrounding format must make their presence
+Because a `Vec` can be empty and an `Option` can be absent, the surrounding format must make their presence
 distinguishable from what follows — a tagged or otherwise disjoint inner format is the usual pattern.
-Ambiguous fields will fail the generated unambiguity proof obligations.
+A chain of ambiguous `Vec` or `Option` fields will fail the generated unambiguity proof obligations.

@@ -1,7 +1,6 @@
 # Primitive formats
 
-Primitive formats are the leaves from which larger formats are composed. Each
-one occupies a known region of the input and produces a single Rust value.
+Primitive formats are the leaves from which larger formats are composed.
 
 ## Unsigned integers
 
@@ -19,18 +18,17 @@ header = {
 }
 ```
 
-`u8`, `u16`, `u24`, `u32`, and `u64` are supported. Multi-byte integers use the
-file's byte order; `u8` is unaffected. The generated Rust types are the matching
-unsigned carrier types, except that `u24` is represented as `u32`.
+`u8`, `u16`, `u24`, `u32`, and `u64` are supported. Multi-byte integers follow the file's byte order.
+The generated Rust types are the matching
+unsigned integer types, except that `u24` is represented as `u32` (with proper value constraints specified in Verus).
 
-**Parsing.** Reads exactly the declared number of bytes and interprets them in the
-file's byte order. Fewer bytes remaining than the width is a parse error.
+**Parsing.** Reads exactly the declared number of bytes and interprets them in the specified byte order. Fewer bytes remaining than the width is a parse error.
 
 **Preparation and serialization.** Preparation always succeeds and reports the
 fixed width. Serialization writes that many bytes in the same byte order.
 
 Signed counterparts are supported in the `vest_lib` backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
-Widths other than the five listed above are rejected too.
+Widths other than the five listed above are rejected too. See [bitfields](bits.md) for ways to specify bit-sized integers inside a `bits` block.
 
 ## Variable-width integers
 
@@ -59,8 +57,7 @@ The `vest_lib` backend also supports other variable-length integers such as `ule
 
 ## Bytes and arrays
 
-`[u8; length]` is a run of raw bytes of a known length, handed back as a
-borrowed slice rather than copied:
+`[u8; length]` is a run of raw bytes of a known length, mapping to a Rust byte slice (`&[u8]`) to avoid unnecessary copying.
 
 ```vest
 digest = [u8; 32]
@@ -79,13 +76,11 @@ count produces a Rust array:
 words = [u16; 8]
 ```
 
-Lengths may also use runtime dependencies and arithmetic; see
+Lengths and counts may also use runtime dependencies and arithmetic; see
 [Structures and dependencies](structs.md), and
 [Collections](collections.md) for the repetition semantics.
 
 ## `Tail`, `Nothing`, and `Never`
-
-Three degenerate formats that appear constantly inside larger ones:
 
 ```vest
 payload = {

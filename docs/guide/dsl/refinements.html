@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -180,13 +180,12 @@
                     <main>
                         <h1 id="refinements"><a class="header" href="#refinements">Refinements</a></h1>
 <p>A refinement narrows an existing format to a subset of its values. The wire
-encoding and the Rust type are unchanged — only the set of <em>accepted</em> values
-shrinks. Writing <code>u16 | 1..1024</code> still parses two bytes into a <code>u16</code>; it just
-refuses the ones outside the range.</p>
+encoding and the Rust type are unchanged, only the set of <em>accepted</em> values
+shrinks.</p>
 <p><strong>Parsing.</strong> Parses the underlying format, then tests the predicate. A value
 outside the refinement is a parse error.</p>
 <p><strong>Preparation and serialization.</strong> Preparation tests the same predicate on the
-value you supply and fails if it does not hold. Length and
+value and fails if it does not hold. Length and
 serialization are those of the underlying format.</p>
 <p>The predicate is therefore enforced in both directions.</p>
 <h2 id="integer-constraints"><a class="header" href="#integer-constraints">Integer constraints</a></h2>
@@ -219,7 +218,7 @@ messages = {
 }
 </code></pre>
 <p>Every named variant must belong to the referenced enum. The generated field
-still has type <code>Kind</code>; the refinement changes only which values are consistent.</p>
+still has type <code>Kind</code>; the refinement changes only which values are consistent with the format.</p>
 
                     </main>
 

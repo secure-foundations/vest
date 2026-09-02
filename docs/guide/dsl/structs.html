@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -180,7 +180,7 @@
                     <main>
                         <h1 id="structures-and-dependencies"><a class="header" href="#structures-and-dependencies">Structures and dependencies</a></h1>
 <p>A struct is a fixed sequence of fields laid out back to back on the wire (without padding). The DSL
-generates a Rust struct with the same field names, in the same order.</p>
+generates a Rust struct with the same field names, in the same order (though Rust may add padding for alignment or reorder fields for better layout).</p>
 <pre><code class="language-vest">record = {
     kind: u8,
     flags: u16,
@@ -254,7 +254,7 @@ body(@header: header) = {
     payload: [u8; @header.total - |header|],
 }
 </code></pre>
-<p><code>|format|</code> is the static encoded size of a fixed-width named or primitive
+<p><code>|format|</code> is the static serialized size of a fixed-width named or primitive
 format. It is rejected for dynamically sized or parameter-dependent formats.</p>
 <p><strong>Parsing and preparation.</strong> The expression is evaluated the same way in both
 directions — to decide how many bytes to read, and to check how many bytes a

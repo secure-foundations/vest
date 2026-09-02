@@ -1,7 +1,7 @@
 # Structures and dependencies
 
 A struct is a fixed sequence of fields laid out back to back on the wire (without padding). The DSL
-generates a Rust struct with the same field names, in the same order.
+generates a Rust struct with the same field names, in the same order (though Rust may add padding for alignment or reorder fields for better layout).
 
 ```vest
 record = {
@@ -104,7 +104,7 @@ body(@header: header) = {
 }
 ```
 
-`|format|` is the static encoded size of a fixed-width named or primitive
+`|format|` is the static serialized size of a fixed-width named or primitive
 format. It is rejected for dynamically sized or parameter-dependent formats.
 
 **Parsing and preparation.** The expression is evaluated the same way in both

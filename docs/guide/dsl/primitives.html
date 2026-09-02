@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -179,8 +179,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="primitive-formats"><a class="header" href="#primitive-formats">Primitive formats</a></h1>
-<p>Primitive formats are the leaves from which larger formats are composed. Each
-one occupies a known region of the input and produces a single Rust value.</p>
+<p>Primitive formats are the leaves from which larger formats are composed.</p>
 <h2 id="unsigned-integers"><a class="header" href="#unsigned-integers">Unsigned integers</a></h2>
 <p>A fixed-width big- or little-endian integer.</p>
 <pre><code class="language-vest">!BIG_ENDIAN
@@ -193,15 +192,14 @@ header = {
     nonce: u64,
 }
 </code></pre>
-<p><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, and <code>u64</code> are supported. Multi-byte integers use the
-file’s byte order; <code>u8</code> is unaffected. The generated Rust types are the matching
-unsigned carrier types, except that <code>u24</code> is represented as <code>u32</code>.</p>
-<p><strong>Parsing.</strong> Reads exactly the declared number of bytes and interprets them in the
-file’s byte order. Fewer bytes remaining than the width is a parse error.</p>
+<p><code>u8</code>, <code>u16</code>, <code>u24</code>, <code>u32</code>, and <code>u64</code> are supported. Multi-byte integers follow the file’s byte order.
+The generated Rust types are the matching
+unsigned integer types, except that <code>u24</code> is represented as <code>u32</code> (with proper value constraints specified in Verus).</p>
+<p><strong>Parsing.</strong> Reads exactly the declared number of bytes and interprets them in the specified byte order. Fewer bytes remaining than the width is a parse error.</p>
 <p><strong>Preparation and serialization.</strong> Preparation always succeeds and reports the
 fixed width. Serialization writes that many bytes in the same byte order.</p>
 <p>Signed counterparts are supported in the <code>vest_lib</code> backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
-Widths other than the five listed above are rejected too.</p>
+Widths other than the five listed above are rejected too. See <a href="bits.html">bitfields</a> for ways to specify bit-sized integers inside a <code>bits</code> block.</p>
 <h2 id="variable-width-integers"><a class="header" href="#variable-width-integers">Variable-width integers</a></h2>
 <p><code>btc_varint</code> is Bitcoin’s CompactSize unsigned integer and maps to <code>u64</code> in Rust. The
 encoding is one byte for small values and a tagged 3-, 5-, or 9-byte form
@@ -221,8 +219,7 @@ wider form is rejected, which is what keeps the format non-malleable.</p>
 <p><strong>Preparation and serialization.</strong> Preparation reports the width of the shortest encoding for that value. Serialization writes exactly that form.</p>
 <p>The <code>vest_lib</code> backend also supports other variable-length integers such as <code>uleb128</code>, <code>base128</code> (VLQ), and <code>base256</code>. We plan to expose them in the DSL soon.</p>
 <h2 id="bytes-and-arrays"><a class="header" href="#bytes-and-arrays">Bytes and arrays</a></h2>
-<p><code>[u8; length]</code> is a run of raw bytes of a known length, handed back as a
-borrowed slice rather than copied:</p>
+<p><code>[u8; length]</code> is a run of raw bytes of a known length, mapping to a Rust byte slice (<code>&amp;[u8]</code>) to avoid unnecessary copying.</p>
 <pre><code class="language-vest">digest = [u8; 32]
 </code></pre>
 <p><strong>Parsing.</strong> Takes exactly <code>length</code> bytes and borrows them from the input.</p>
@@ -233,11 +230,10 @@ error. Serialization copies the bytes through unchanged.</p>
 count produces a Rust array:</p>
 <pre><code class="language-vest">words = [u16; 8]
 </code></pre>
-<p>Lengths may also use runtime dependencies and arithmetic; see
+<p>Lengths and counts may also use runtime dependencies and arithmetic; see
 <a href="structs.html">Structures and dependencies</a>, and
 <a href="collections.html">Collections</a> for the repetition semantics.</p>
 <h2 id="tail-nothing-and-never"><a class="header" href="#tail-nothing-and-never"><code>Tail</code>, <code>Nothing</code>, and <code>Never</code></a></h2>
-<p>Three degenerate formats that appear constantly inside larger ones:</p>
 <pre><code class="language-vest">payload = {
     header: u16,
     rest: Tail,

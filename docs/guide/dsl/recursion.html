@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-51048403.js";
+            window.path_to_searchindex_js = "../searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -188,7 +188,7 @@
 list = {
     @kind: list_kind,
     value: choose(@kind) {
-        Nil =&gt; [u8; 0],
+        Nil =&gt; Nothing,
         Cons =&gt; {
             head: u8,
             tail: list,
@@ -196,15 +196,15 @@ list = {
     },
 }
 </code></pre>
-<p>The compiler finds strongly connected components, so mutually recursive
-definitions are supported too. It emits bounded fixpoint formats for the specification and owned <code>Box</code>
-links where Rust needs indirection in the value type.</p>
-<p><strong>Parsing.</strong> Recurses as the input demands, up to a fixed depth bound statically picked by the format. Exceeding the bounde is a parse error.</p>
+<p>The compiler finds strongly connected components (SCCs), so mutually recursive
+definitions are supported too. It emits owned <code>Box</code> links where Rust needs indirection in the value type.</p>
+<p><strong>Parsing.</strong> Recurses as the input demands, up to a fixed depth bound statically picked by the format. Exceeding the bound is a parse error.</p>
 <p><strong>Preparation and serialization.</strong> Preparation walks the value to the same
 bound, summing lengths, and fails if the value nests deeper than the format
 allows. Serialization traverses the value and writes the bytes in order.</p>
 <h2 id="note"><a class="header" href="#note">Note</a></h2>
-<p>Recursive generation is experimental: the implementation is incomplete and there is some engineering work remaining for a more robust support.</p>
+<p>Though <code>vest_lib</code> defines a bounded fixpoint format combinator that can express arbitrary recursion, the compilation of
+recursive formats in Vest DSL is experimental: the implementation is incomplete and there is some engineering work remaining for a more robust support.</p>
 
                     </main>
 

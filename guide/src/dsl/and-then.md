@@ -2,7 +2,7 @@
 
 `left >>= right` means "take the region `left` describes, then parse `right` against it."
 
-The value of the whole expression is `right`'s value.
+The corresponding Rust value type of the whole expression is the same as `right`'s.
 
 **Parsing.** Extract a bounded region from the input defined by `left`, then parse `right` from that region.
 `right` must consume the region *entirely* — leftover bytes
@@ -12,8 +12,7 @@ are an error.
 length to equal the region `left` declares. Serialization writes
 `right`'s bytes directly.
 
-Currently, the left side must be `[u8; length]` or `Tail`. Using an integer or any other
-format there is an error.
+Currently, the left side must be `[u8; length]` or `Tail`. We're working on generalizing this to any format that can be reinterpreted within a bounded region.
 
 ## Bounding `Vec` with a length field
 
@@ -26,8 +25,8 @@ list = {
 }
 ```
 
-`Vec<item>` repeats until its region runs out. Because the region is exactly
-`byte_length` bytes, the repetition stop. Preparation checks that the items really do add up to `byte_length`.
+Here, `Vec<item>` repeats until its region (`[u8; @byte_length]`) runs out. Because the region is exactly
+`byte_length` bytes, the repetition will eventually stop. Preparation checks that the items really do add up to `byte_length`.
 
 ## Reinterpreting the remainder of a region
 
@@ -40,6 +39,6 @@ item = { value: u16, }
 items = Tail >>= Vec<item>
 ```
 
-This is the idiom for a message that ends in a homogeneous run of records. It
+This is the idiom for a message that ends in an unknown number of records. It
 also composes: inside a format already bounded by a length field, `Tail` means
-the rest of *that* region, not the rest of the input buffer.
+the rest of *that* region, not the rest of the original input buffer.

@@ -83,7 +83,7 @@ small_arrow = choose {
 A failed attempt consumes nothing, so the next branch starts from the same
 position.
 
-**Preparation and serialization.** Preparation prepares whichever branch the
+**Preparation and serialization.** Preparation checks whichever branch the
 value holds; serialization writes it.
 
 Note that for non-dependent choices, the variant names (`Tiny` and `Medium`) are **not** part of the wire. In this case, Vest requires that the branches are **non-overlapping**, which is required for the parser to be able to unambiguously select the correct branch.

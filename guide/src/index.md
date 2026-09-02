@@ -9,7 +9,8 @@ Given a high-level format description, Vest automatically emits efficient, idiom
 More importantly, Vest parsers and serializers are proven to satisfy a suite of desirable [security properties](guarantees.md), making them immune to entire classes of attacks that historically plague unverified, hand-written code.
 
 With Vest, we have built the first
-production-grade formally verified [ASN.1 library](asn1/index.md) (supporting both DER and BER) and a verified prototype for [both
+production-grade formally verified [ASN.1 library](asn1/index.md) (supporting both DER and BER, which we leverage to implement the first verified [CMS](https://github.com/secure-foundations/vest/blob/main/vest_asn1/rfcs/CMS-RFC5652-Curated.asn1) [codec](https://github.com/secure-foundations/vest/blob/main/vest_asn1_tests/src/generated_cms.rs)),
+and a verified prototype for [both
 general and deterministic CBOR](cbor.md).
 
 ## Who this is for

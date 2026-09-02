@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-51048403.js";
+            window.path_to_searchindex_js = "searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -196,8 +196,8 @@ The most common implementation mistakes are:</p>
 </ul>
 <p>Vest’s answer is to formally prove the absence of these vulnerabilities,
 for each format you define, without asking you to write proofs.</p>
-<p>This page describes what you get, in plain terms, and then maps each guarantee
-onto the interface that carries it in <code>vest_lib</code>.</p>
+<p>This page describes Vest’s formal guarantees in plain words.
+For the formal definitions, see the <a href="../vest_lib/index.html">core specs in <code>vest_lib</code></a>.</p>
 <h2 id="safety-for-every-format"><a class="header" href="#safety-for-every-format">Safety, for every format</a></h2>
 <p>These hold for every format Vest generates.</p>
 <ul>
@@ -210,8 +210,9 @@ calculations — the classic place where a hand-written parser goes wrong.</li>
 panic, on <em>any</em> input.</li>
 </ul>
 <h2 id="correctness-and-security"><a class="header" href="#correctness-and-security">Correctness and security</a></h2>
-<p>These are the properties that prevent format confusion and malleability. Not every format can satisfy all of them, and Vest is explicit
-about which ones a given format actually establishes.</p>
+<p>These are the properties that prevent format confusion and malleability.
+Most, but not every format can satisfy all of them, and Vest is explicit
+about which properties hold for which formats.</p>
 <ul>
 <li><strong>Parser soundness.</strong> If parsing succeeds, the result is a valid instance of
 the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
@@ -239,10 +240,12 @@ authenticated boundaries; and Internet Key Exchange (IKE) allows flexible
 ordering of payloads and defines explicit rules for ignoring payloads to
 preserve forward compatibility.</p>
 <p>In Vest, malleable formats are explicitly marked (those that do not carry the <code>NonMalleable</code> proof trait or only carry it conditionally), so you cannot accidentally rely on uniqueness that is not there.
-The practical consequence is that if your application needs byte-faithful round trips — verifying a signature over the bytes you parsed, for instance — add <code>NonMalleable</code> as a requirement (trait bound) to your format.</p>
+The practical consequence is that if your application needs byte-faithful round trips (e.g., verifying a signature over the bytes you parsed), add <code>NonMalleable</code> as a requirement (trait bound) to your format.</p>
+<blockquote>
 <p>The DSL currently only accepts and produces non-malleable formats, and we are working on bringing malleable features into the DSL securely.</p>
-<h2 id="vests-tcb"><a class="header" href="#vests-tcb">Vest’s TCB</a></h2>
-<p>The guarantees above rest on a trusted computing base:</p>
+</blockquote>
+<h2 id="vests-trusted-computing-base-tcb"><a class="header" href="#vests-trusted-computing-base-tcb">Vest’s Trusted Computing Base (TCB)</a></h2>
+<p>The guarantees above rely on the correctness of the following components:</p>
 <ul>
 <li><strong><code>rustc</code></strong>, the Rust compiler;</li>
 <li><strong>Verus</strong> and the <strong>Z3</strong> solver;</li>

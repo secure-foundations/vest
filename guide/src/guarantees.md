@@ -16,8 +16,8 @@ There are also more subtle issues that root in the format itself, such as:
 Vest's answer is to formally prove the absence of these vulnerabilities,
 for each format you define, without asking you to write proofs.
 
-This page describes what you get, in plain terms, and then maps each guarantee
-onto the interface that carries it in `vest_lib`.
+This page describes Vest's formal guarantees in plain words.
+For the formal definitions, see the [core specs in `vest_lib`](../vest_lib/index.html).
 
 ## Safety, for every format
 
@@ -33,8 +33,9 @@ These hold for every format Vest generates.
 
 ## Correctness and security
 
-These are the properties that prevent format confusion and malleability. Not every format can satisfy all of them, and Vest is explicit
-about which ones a given format actually establishes.
+These are the properties that prevent format confusion and malleability.
+Most, but not every format can satisfy all of them, and Vest is explicit
+about which properties hold for which formats.
 
 - **Parser soundness.** If parsing succeeds, the result is a valid instance of
   the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.
@@ -64,14 +65,14 @@ ordering of payloads and defines explicit rules for ignoring payloads to
 preserve forward compatibility.
 
 In Vest, malleable formats are explicitly marked (those that do not carry the `NonMalleable` proof trait or only carry it conditionally), so you cannot accidentally rely on uniqueness that is not there.
-The practical consequence is that if your application needs byte-faithful round trips — verifying a signature over the bytes you parsed, for instance — add `NonMalleable` as a requirement (trait bound) to your format.
+The practical consequence is that if your application needs byte-faithful round trips (e.g., verifying a signature over the bytes you parsed), add `NonMalleable` as a requirement (trait bound) to your format.
 
-The DSL currently only accepts and produces non-malleable formats, and we are working on bringing malleable features into the DSL securely.
+> The DSL currently only accepts and produces non-malleable formats, and we are working on bringing malleable features into the DSL securely.
 
 
-## Vest's TCB
+## Vest's Trusted Computing Base (TCB)
 
-The guarantees above rest on a trusted computing base:
+The guarantees above rely on the correctness of the following components:
 
 - **`rustc`**, the Rust compiler;
 - **Verus** and the **Z3** solver;

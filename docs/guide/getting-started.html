@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-51048403.js";
+            window.path_to_searchindex_js = "searchindex-e69141b8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -200,7 +200,7 @@ release of each.</p>
 <code>alloc</code> alone for <code>no_std</code> with a heap, and neither for <code>core</code>-only. See
 <a href="library/features.html">Feature configurations</a>.</p>
 <h2 id="describe-a-format"><a class="header" href="#describe-a-format">Describe a format</a></h2>
-<p>Tag-length-value (TLV) is the shape underneath most network protocols: a tag says what
+<p>Let’s define a simple Tag-length-value (TLV) format in the Vest DSL, which is the shape underneath most network protocols. A tag says what
 follows, a length delimits it, and the body is interpreted according to the tag.</p>
 <p>Create <code>msg.vest</code>:</p>
 <pre><code class="language-vest">msg_type = enum {
@@ -229,11 +229,10 @@ There are a few things to notice inside the <code>msg</code> definition:</p>
 <li><code>@tag</code> and <code>@len</code> are field <em>dependencies</em>.
 The <code>@</code> prefix lets later fields refer
 to them. They are still ordinary fields of the generated struct, and of course still
-bytes on the wire — <code>@</code> only signals that they are used in later format expressions.</li>
+bytes on the wire. <code>@</code> only signals that they are used in later format expressions.</li>
 <li><code>[u8; @len]</code> carves out exactly <code>len</code> bytes.</li>
 <li><code>&gt;&gt;= choose(@tag)</code> then reparses <em>that region</em> with the format chosen by <code>tag</code>. Because the
-region is bounded first, a body that tries to read past its length fails
-instead of silently consuming bytes from the next message. We will see what it means for serialization shortly.</li>
+region is bounded first, a body that tries to read past its length would fail. We will see what it means for serialization shortly.</li>
 </ul>
 <p>Integers are little-endian by default.
 Add <code>!BIG_ENDIAN</code> at the top of the file to switch to big-endian.</p>
@@ -245,10 +244,10 @@ Add <code>!BIG_ENDIAN</code> at the top of the file to switch to big-endian.</p>
 📝 Generating the verus file...
 👏 Done!
 </code></pre>
-<p>Without <code>-o</code>, the compiler writes next to the input, replacing the extension —
-<code>msg.vest</code> becomes <code>msg.rs</code>. The generated module is a normal Rust file, so you can <code>mod msg;</code> it and use it like any other module.</p>
-<p>You get one value type per definition, plus a zero-sized format type carrying
-the parser, serializer, and proofs:</p>
+<p>Without <code>-o</code>, the compiler writes next to the input and replaces its extension, so <code>msg.vest</code> becomes <code>msg.rs</code>.
+The generated module is a normal Rust file, so you can <code>mod msg;</code> it and use it like any other module.</p>
+<p>See <a href="dsl/cli.html#generating-from-buildrs">here</a> for how to automate this process in <code>build.rs</code> so that the generated code is always up to date.</p>
+<p>The DSL compiler emits one value type per definition, plus a zero-sized format type carrying the parser, serializer, and proofs:</p>
 <pre><code class="language-rust ignore">pub enum MsgType { Msg1 = 1, Msg2 = 2, Msg3 = 3 }
 
 pub struct Msg1&lt;'i&gt; { pub a: u8, pub b: u16, pub c: &amp;'i [u8], pub data: &amp;'i [u8] }
@@ -271,7 +270,7 @@ pub struct MsgFmt;   // the format: parser + serializer + proofs
 However, Vest-generated code comes with specifications and proofs that establish the correctness and security of the parser and serializer.
 It is therefore highly recommended to use Verus to automatically check the proofs (rather than trusting the DSL compiler)
 to ensure that the generated code indeed satisfies the <a href="guarantees.html">desired properties</a>.</p>
-<p>Verus and <code>vstd</code> move quickly, and each Vest release tracks one exact Verus
+<p>Each Vest release tracks one exact Verus
 release, recorded in
 <a href="https://github.com/secure-foundations/vest/blob/main/verus-version.txt"><code>verus-version.txt</code></a>.
 Follow the <a href="https://github.com/verus-lang/verus/blob/main/INSTALL.md">Verus installation instructions</a>
@@ -280,12 +279,11 @@ and match that version, or let the script in the Vest repository install it for 
 ./vest/scripts/install-verus.sh
 export PATH="$PWD/vest/.verus:$PATH"
 </code></pre>
-<p>Then verify <em>your own crate</em> — the one holding the generated module:</p>
+<p>Then verify <em>your crate</em>, the one holding the generated module:</p>
 <pre><code class="language-console">cd my-project
 cargo verus verify
 </code></pre>
-<p>Verus checks every specification and proof in <code>src/msg.rs</code>, so a clean run
-means the guarantees hold for your format.</p>
+<p>Verus checks every specification and proof in <code>src/msg.rs</code>, so a successful run means that the guarantees hold for your format and the generated parser and serializer.</p>
 <h2 id="parse"><a class="header" href="#parse">Parse</a></h2>
 <pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 use crate::msg::*;
@@ -303,7 +301,7 @@ assert_eq!(consumed, 10);
 assert_eq!(msg.tag, MsgType::Msg2);
 assert_eq!(msg.len, 7);
 assert!(matches!(msg.content, MsgContent::Msg2(_)));</code></pre>
-<p><code>parse</code> returns how many bytes it consumed, so a caller reading a stream knows
+<p><code>parse</code> returns the parsed value and how many bytes it consumed, so a caller reading a stream knows
 where the next message begins (it does not mandate that the input slice end exactly at the message boundary). The <code>msg</code> value in the example copies and re-interprets the wire bytes because <code>msg2</code> only contains fixed-size integers (where “zero-copy” pointers to the input buffer would be even less efficient).
 For larger payloads, Vest uses borrowed slices to avoid unnecessary copies/allocations.</p>
 <h2 id="serialize-and-beyond"><a class="header" href="#serialize-and-beyond">Serialize (and beyond)</a></h2>
@@ -331,7 +329,7 @@ let len = MsgFmt.prepare(&amp;msg).unwrap();   // 10</code></pre>
 };
 
 assert!(MsgFmt.prepare(&amp;bad).is_err());</code></pre>
-<p>The error names the problem:</p>
+<p>This would produce an error like:</p>
 <pre><code class="language-text">PreSerializeError { kind: NotCompliant(LengthInconsistent), .. }
 </code></pre>
 <p>This is the field dependency being enforced in the <em>other</em> direction.
@@ -343,7 +341,7 @@ a constraint the value must satisfy before serialization, and <code>prepare</cod
 <h2 id="what-was-proven"><a class="header" href="#what-was-proven">What was proven</a></h2>
 <p>The generated module carries proofs that, among other things, parsing/serializing is memory and arithmetically safe, panic-free, and
 terminating; and that a successful parse reconstructs the original serialized value and consumes exactly as many bytes as the value would serialize to.
-See <a href="guarantees.html">What Vest proves</a> for a complete list of properties and the interfaces that carry them.</p>
+See <a href="guarantees.html">What Vest proves</a> for a complete list of properties.</p>
 <h2 id="where-next"><a class="header" href="#where-next">Where next</a></h2>
 <ul>
 <li><a href="dsl/reference.html">Language reference</a> — every format construct, and the current limitations.</li>
