@@ -18,7 +18,7 @@ Vest-generated parsers and serializers are provably memory-safe, arithmetically 
 More importantly, they are guaranteed to satisfy a suite of *security properties*, making them immune to entire classes of attacks that historically plague unverified, hand-written code.
 
 <p align="center">
-  <img src=".github/assets/vest-example.png" alt="Vest DSL describing TLS handshake messages" width="640">
+  <img src=".github/assets/vest-example.png" alt="Vest DSL describing TLS handshake messages">
 </p>
 
 ## Status
