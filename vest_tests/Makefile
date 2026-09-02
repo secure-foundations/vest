@@ -15,7 +15,7 @@ BAD_VEST_FILES := $(wildcard ./bad/*.vest)
 all: vest bad verus
 
 build-vest:
-	$(CARGO) build --manifest-path $(ROOT_MANIFEST) -p vest
+	$(CARGO) build --locked --manifest-path $(ROOT_MANIFEST) -p vest
 
 vest: build-vest
 	@for file in $(VEST_FILES); do \
@@ -42,4 +42,4 @@ bad: build-vest
 	done
 
 verus:
-	cargo verus verify -- --expand-errors
+	cargo verus verify --locked --check-toolchain -- --expand-errors

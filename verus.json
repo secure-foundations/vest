@@ -1,0 +1,16 @@
+{
+  "version": "0.2026.08.23.fbbbbcf",
+  "commit": "fbbbbcf3085c4c14f5566690eced4ed3bd659fed",
+  "rust": "1.97.1",
+  "artifacts": {
+    "arm64-macos": {
+      "sha256": "7075f6e1ac137143da47265691b9c8f376867708eb21480d4e751eb814806aea"
+    },
+    "x86-linux": {
+      "sha256": "b65483714e6bf2ae72bfe7c7199e1c608495a941306b979260e9ed585d5899c9"
+    },
+    "x86-macos": {
+      "sha256": "724efff85ccb71c958e251dda33e7663796d394ba81bfc231d407e2b4413e81c"
+    }
+  }
+}

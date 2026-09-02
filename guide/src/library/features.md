@@ -15,5 +15,5 @@ vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
 
 Vest and `vest_lib` must be used with the Verus and `vstd` versions this release
 pins. The Verus version is in
-[`verus-version.txt`](https://github.com/secure-foundations/vest/blob/main/verus-version.txt)
+[`verus.json`](https://github.com/secure-foundations/vest/blob/main/verus.json)
 and the `vstd` version is in the workspace `Cargo.toml`.

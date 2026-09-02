@@ -1,16 +1,16 @@
 .PHONY: generate test verify
 
 generate:
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- fixture.asn1 -o src/generated.rs
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber fixture_ber.asn1 -o src/generated_ber.rs
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- fixture.asn1 -o src/generated.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber fixture_ber.asn1 -o src/generated_ber.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		--der-definition Shared \
 		--der-definition Canonical \
 		--der-definition Ordered \
 		fixture_mixed.asn1 -o src/generated_mixed.rs
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		schema_depth.asn1 -o src/generated_stress_depth.rs
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		schema_width.asn1 -o src/generated_stress_width.rs
 # CMS is a BER envelope around a DER island.  BER is the default because RFC 5652
 # section 1 designs every content type for "single pass processing using
@@ -32,7 +32,7 @@ generate:
 # is deliberately NOT overridden: its closure reaches UnauthAttributes, which CMS
 # leaves BER, and RFC 5652 section 10.2.2 declares PKCS #6 extended certificates
 # obsolete.  See ../vest_asn1/rfcs/README.md for the full derivation.
-	cargo run --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		--der-definition SignedAttributes \
 		--der-definition AuthAttributes \
 		--der-definition Certificate \
@@ -42,7 +42,7 @@ generate:
 		../vest_asn1/rfcs/CMS-RFC5652-Curated.asn1 -o src/generated_cms.rs
 
 test: generate
-	cargo test
+	cargo test --locked
 
 # schema_width.asn1 is a deliberate scalability probe: a 16-field BER SEQUENCE
 # cycling OPTIONAL, DEFAULT, and required components.  Its nominal exec proof
@@ -53,5 +53,4 @@ test: generate
 VERUS_ARGS := --expand-errors --rlimit 100
 
 verify: generate
-	touch src/lib.rs
-	cargo verus verify -- $(VERUS_ARGS)
+	cargo verus verify --locked --check-toolchain -- $(VERUS_ARGS)

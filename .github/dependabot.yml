@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+  # Keep full-SHA action pins current without weakening reproducibility.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -23,7 +23,7 @@ More importantly, they are guaranteed to satisfy a suite of *security properties
 
 ## Status
 
-Vest is a research tool under active development. The DSL and ASN.1 frontend are *not* by themselves verified and could contain bugs. Some language and format features are still unsupported, and APIs may change. The [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html) and [ASN.1 support table](https://secure-foundations.github.io/vest/guide/asn1/support.html) document current limitations. Each Vest release pins the compatible [Verus version](verus-version.txt).
+Vest is a research tool under active development. The DSL and ASN.1 frontend are *not* by themselves verified and could contain bugs. Some language and format features are still unsupported, and APIs may change. The [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html) and [ASN.1 support table](https://secure-foundations.github.io/vest/guide/asn1/support.html) document current limitations. Each Vest release pins its compatible [Verus release](verus.json).
 
 ## Documentation
 

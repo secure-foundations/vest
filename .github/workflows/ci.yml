@@ -4,91 +4,181 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1"
 
+# The workflow only reads repository contents. Individual jobs do not receive
+# credentials beyond this unless they declare them explicitly.
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+  VERUSFMT_VERSION: 0.7.2
+  MDBOOK_VERSION: 0.5.4
+
 jobs:
-  build-and-test:
+  rust:
+    name: Rust checks
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+
+      - name: Read the pinned Rust version
+        id: toolchain
+        run: echo "rust=$(python3 -c 'import json; print(json.load(open("verus.json"))["rust"])')" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.rust }}
           components: clippy, rustfmt
-      - uses: actions/cache@v4
+
+      - name: Restore Cargo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
             target
-          key: linux-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: linux-cargo-
-      - name: Formatting
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ steps.toolchain.outputs.rust }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-${{ steps.toolchain.outputs.rust }}-
+
+      - name: Check formatting
         run: cargo fmt -p vest -p vest_asn1 -- --check
-      - name: Clippy
-        run: cargo clippy -p vest -p vest_asn1 --all-targets
-      - name: Workspace tests
-        run: cargo test --workspace
-      - name: vest_lib core-only check
-        run: cargo check -p vest_lib --no-default-features --all-targets
-      - name: vest_lib alloc-only check
-        run: cargo check -p vest_lib --no-default-features --features alloc --all-targets
+
+      - name: Run Clippy
+        run: cargo clippy -p vest -p vest_asn1 --all-targets --locked
+
+      - name: Run workspace tests
+        run: cargo test --workspace --locked
+
+      - name: Check vest_lib without allocation support
+        run: cargo check -p vest_lib --no-default-features --all-targets --locked
+
+      - name: Check vest_lib with alloc but without std
+        run: cargo check -p vest_lib --no-default-features --features alloc --all-targets --locked
+
       - name: Check vest_lib documentation links
         env:
           RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::invalid_codeblock_attributes
-        run: cargo doc -p vest_lib --no-deps
+        run: cargo doc -p vest_lib --no-deps --locked
+
       - name: Compile benchmarks with the workspace profile
         run: |
-          output="$(cargo bench --no-run -p vest_tests -p vest_dev 2>&1)"
-          echo "$output"
-          ! grep -qi "profile.*non root package.*ignored" <<<"$output"
+          cargo bench --no-run -p vest_tests -p vest_dev --locked 2>&1 | tee "$RUNNER_TEMP/bench-build.log"
+          if grep -qi "profile.*non root package.*ignored" "$RUNNER_TEMP/bench-build.log"; then
+            echo "A benchmark profile outside the workspace root was ignored." >&2
+            exit 1
+          fi
 
   regeneration:
+    name: Generated files and guide
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/cache@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the pinned Rust version
+        id: toolchain
+        run: echo "rust=$(python3 -c 'import json; print(json.load(open("verus.json"))["rust"])')" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.rust }}
+
+      - name: Restore Cargo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-regen-${{ steps.toolchain.outputs.rust }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-regen-${{ steps.toolchain.outputs.rust }}-
+
+      - name: Restore documentation tools
+        # Cache only version-pinned binaries; do not mix them into the Cargo cache.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
             ~/.cargo/bin/verusfmt
             ~/.cargo/bin/mdbook
-            target
-          key: linux-regen-${{ hashFiles('Cargo.lock') }}-verusfmt-0.7.2-mdbook-0.5.4
-          restore-keys: linux-regen-
-      - name: Install verusfmt
-        run: command -v verusfmt >/dev/null || cargo install verusfmt --version 0.7.2 --locked
-      - name: Install mdBook
-        run: test "$(mdbook --version 2>/dev/null)" = "mdbook v0.5.4" || cargo install mdbook --version 0.5.4 --locked
+          key: ${{ runner.os }}-${{ runner.arch }}-tools-verusfmt-${{ env.VERUSFMT_VERSION }}-mdbook-${{ env.MDBOOK_VERSION }}
+
+      - name: Install exact generator tool versions
+        run: |
+          if [[ "$(verusfmt --version 2>/dev/null || true)" != "verusfmt ${VERUSFMT_VERSION}" ]]; then
+            cargo install verusfmt --version "${VERUSFMT_VERSION}" --locked
+          fi
+          if [[ "$(mdbook --version 2>/dev/null || true)" != "mdbook v${MDBOOK_VERSION}" ]]; then
+            cargo install mdbook --version "${MDBOOK_VERSION}" --locked
+          fi
+
       - name: Regenerate Vest fixtures
         working-directory: vest_tests
         run: make vest
-      - name: Rejected fixtures are still rejected
+
+      - name: Check rejected Vest fixtures
         working-directory: vest_tests
         run: make bad
-      - name: Check Vest snippets in the guide
-        run: cargo test -p vest_guide_tests
+
+      - name: Test Vest snippets in the guide
+        run: cargo test -p vest_guide_tests --locked
+
       - name: Regenerate ASN.1 fixtures
         working-directory: vest_asn1_tests
         run: make generate
-      - name: Regenerate documentation guide
+
+      - name: Build and test the guide
         run: scripts/build-guide.sh && mdbook test
-      - name: Generated files are current
-        run: git diff --exit-code
+
+      - name: Check that generated files are current
+        run: |
+          git diff --exit-code
+          untracked="$(git ls-files --others --exclude-standard)"
+          if [[ -n "$untracked" ]]; then
+            echo "Generation produced untracked files:" >&2
+            printf '%s\n' "$untracked" >&2
+            exit 1
+          fi
+
+  verus-linux:
+    name: Prepare pinned Verus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore pinned Verus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .verus
+          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus.json', 'scripts/install-verus.sh') }}
+
+      - name: Install and validate pinned Verus
+        run: scripts/install-verus.sh
 
   verify:
+    name: Verify ${{ matrix.name }}
+    needs: verus-linux
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -107,52 +197,95 @@ jobs:
           - name: vest-tests
             cargo_args: -p vest_tests
             verus_args: --expand-errors
-          # --rlimit matches vest_asn1_tests/Makefile: the width stress fixture
-          # needs more SMT budget than the Verus default.  Keep the two in step.
+          # This matches vest_asn1_tests/Makefile. The width stress fixture needs
+          # more SMT budget than the Verus default.
           - name: vest-asn1-tests
             cargo_args: -p vest_asn1_tests
             verus_args: --expand-errors --rlimit 100
           - name: vest-dev
             cargo_args: -p vest_dev
             verus_args: --expand-errors
-    name: Verify ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore pinned Verus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .verus
-          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus-version.txt') }}
+          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus.json', 'scripts/install-verus.sh') }}
+
       - name: Install pinned Verus and Rust toolchain
         run: scripts/install-verus.sh
+
       - name: Add Verus to PATH
         run: echo "${{ github.workspace }}/.verus" >> "$GITHUB_PATH"
-      - uses: actions/cache@v4
+
+      - name: Restore Cargo downloads
+        # Deliberately do not cache target/: cached Verus artifacts can cause
+        # verification conditions to be skipped as already fresh.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: linux-verus-${{ matrix.name }}-${{ hashFiles('Cargo.lock', 'verus-version.txt') }}
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-${{ runner.arch }}-verus-cargo-${{ hashFiles('Cargo.lock', 'verus.json') }}
           restore-keys: |
-            linux-verus-${{ matrix.name }}-
-            linux-verus-
-      - run: cargo verus verify ${{ matrix.cargo_args }} -- ${{ matrix.verus_args }}
+            ${{ runner.os }}-${{ runner.arch }}-verus-cargo-
+
+      - name: Verify ${{ matrix.name }}
+        env:
+          CARGO_ARGS: ${{ matrix.cargo_args }}
+          VERUS_ARGS: ${{ matrix.verus_args }}
+        run: |
+          # A new target directory guarantees that this job checks the current
+          # verification conditions rather than restored Cargo freshness data.
+          cargo verus verify ${CARGO_ARGS} --locked --check-toolchain \
+            --target-dir "$RUNNER_TEMP/verus-target" -- ${VERUS_ARGS}
 
   verify-macos:
+    name: Verify supported packages on macOS
     if: github.event_name == 'schedule'
     runs-on: macos-15
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore pinned Verus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .verus
-          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus-version.txt') }}
+          key: verus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('verus.json', 'scripts/install-verus.sh') }}
+
       - name: Install pinned Verus and Rust toolchain
         run: scripts/install-verus.sh
+
       - name: Add Verus to PATH
         run: echo "${{ github.workspace }}/.verus" >> "$GITHUB_PATH"
-      - run: cargo verus verify -p vest_lib -- --expand-errors
-      - run: cargo verus verify -p vest_tests -- --expand-errors
-      - run: cargo verus verify -p vest_asn1_tests -- --expand-errors --rlimit 100
-      - run: cargo verus verify -p vest_dev -- --expand-errors
+
+      - name: Restore Cargo downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-${{ runner.arch }}-verus-cargo-${{ hashFiles('Cargo.lock', 'verus.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-verus-cargo-
+
+      - name: Verify vest_lib
+        run: cargo verus verify -p vest_lib --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors
+
+      - name: Verify Vest fixtures
+        run: cargo verus verify -p vest_tests --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors
+
+      - name: Verify ASN.1 fixtures
+        run: cargo verus verify -p vest_asn1_tests --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors --rlimit 100
+
+      - name: Verify development formats
+        run: cargo verus verify -p vest_dev --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors

@@ -124,7 +124,7 @@ to ensure that the generated code indeed satisfies the [desired properties](guar
 
 Each Vest release tracks one exact Verus
 release, recorded in
-[`verus-version.txt`](https://github.com/secure-foundations/vest/blob/main/verus-version.txt).
+[`verus.json`](https://github.com/secure-foundations/vest/blob/main/verus.json).
 Follow the [Verus installation instructions](https://github.com/verus-lang/verus/blob/main/INSTALL.md)
 and match that version, or let the script in the Vest repository install it for you:
 

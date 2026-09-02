@@ -3,102 +3,154 @@ name: Release to crates.io
 on:
   push:
     tags:
-      - "vest-v*" # Triggers on vest crate tags like vest-v0.1.0
-      - "vest_lib-v*" # Triggers on vest_lib crate tags like vest_lib-v0.1.0
+      - "vest-v*"
+      - "vest_lib-v*"
   workflow_dispatch:
     inputs:
       crate:
-        description: "Which crate to publish"
+        description: Crate to publish
         required: true
         type: choice
         options:
           - vest
           - vest_lib
       dry_run:
-        description: "Perform a dry run"
-        required: false
+        description: Stop after the crates.io packaging dry run
+        required: true
         type: boolean
         default: true
 
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.crate || 'tag' }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  publish-vest:
-    name: Publish vest to crates.io
-    runs-on: ubuntu-latest
+  preflight:
+    name: Validate and package release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      crate: ${{ steps.plan.outputs.crate }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read the pinned Rust version
+        id: toolchain
+        run: echo "rust=$(python3 -c 'import json; print(json.load(open("verus.json"))["rust"])')" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.rust }}
+
+      - name: Determine and validate release
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_NAME: ${{ github.ref_name }}
+          SELECTED_CRATE: ${{ inputs.crate }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            case "$TAG_NAME" in
+              vest-v*)
+                crate=vest
+                tag_version="${TAG_NAME#vest-v}"
+                ;;
+              vest_lib-v*)
+                crate=vest_lib
+                tag_version="${TAG_NAME#vest_lib-v}"
+                ;;
+              *)
+                echo "Unsupported release tag: $TAG_NAME" >&2
+                exit 1
+                ;;
+            esac
+
+            manifest_version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$crate/Cargo.toml" | head -n 1)"
+            if [[ -z "$manifest_version" || "$tag_version" != "$manifest_version" ]]; then
+              echo "Tag $TAG_NAME does not match $crate/Cargo.toml version ${manifest_version:-<missing>}." >&2
+              exit 1
+            fi
+
+            publish=true
+          else
+            case "$SELECTED_CRATE" in
+              vest|vest_lib) crate="$SELECTED_CRATE" ;;
+              *)
+                echo "Unsupported crate: $SELECTED_CRATE" >&2
+                exit 1
+                ;;
+            esac
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+              publish=false
+            else
+              publish=true
+            fi
+          fi
+
+          if [[ "$publish" == "true" ]]; then
+            # Do not publish either a tag or a manually selected revision until
+            # it has reached the repository's default branch.
+            if ! git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
+              echo "Checkout did not contain origin/$DEFAULT_BRANCH." >&2
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+              echo "Release commit $GITHUB_SHA is not on origin/$DEFAULT_BRANCH." >&2
+              exit 1
+            fi
+          fi
+
+          echo "crate=$crate" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - name: Check release package
+        env:
+          CRATE: ${{ steps.plan.outputs.crate }}
+        run: cargo publish -p "$CRATE" --locked --dry-run
+
+  publish:
+    name: Publish ${{ needs.preflight.outputs.crate }}
+    if: needs.preflight.outputs.publish == 'true'
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     environment: release
     permissions:
-      id-token: write # Required for OIDC token exchange
       contents: read
-    if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vest-v')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.crate == 'vest')
+      id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-publish-
+          persist-credentials: false
 
-      - name: Get crates.io token via OIDC
-        uses: rust-lang/crates-io-auth-action@v1
+      - name: Read the pinned Rust version
+        id: toolchain
+        run: echo "rust=$(python3 -c 'import json; print(json.load(open("verus.json"))["rust"])')" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.rust }}
+
+      - name: Get a short-lived crates.io token
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
         id: auth
 
-      - name: Publish vest (dry run)
-        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
-        run: cargo publish -p vest --dry-run
-
-      - name: Publish vest
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
-        run: cargo publish -p vest
+      - name: Publish crate
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-
-  publish-vest-lib:
-    name: Publish vest_lib to crates.io
-    runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      id-token: write # Required for OIDC token exchange
-      contents: read
-    if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vest_lib-v')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.crate == 'vest_lib')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-publish-
-
-      - name: Get crates.io token via OIDC
-        uses: rust-lang/crates-io-auth-action@v1
-        id: auth
-
-      - name: Publish vest_lib (dry run)
-        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
-        run: cargo publish -p vest_lib --dry-run
-
-      - name: Publish vest_lib
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
-        run: cargo publish -p vest_lib
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CRATE: ${{ needs.preflight.outputs.crate }}
+        run: cargo publish -p "$CRATE" --locked
