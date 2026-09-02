@@ -22,6 +22,18 @@ use bitcoin::consensus::{Decodable, Encodable};
 use rustls::internal::msgs::base::Payload;
 use rustls::internal::msgs::codec::Codec;
 
+#[cfg(feature = "bench-data")]
+mod handshakes {
+    include!("../bench_data/tls/tranco_handshakes.rs");
+}
+
+// CI compiles benchmarks from a clean checkout, which deliberately has no
+// private benchmark corpus. Actual benchmark runs enable `bench-data`.
+#[cfg(not(feature = "bench-data"))]
+mod handshakes {
+    pub const HANDSHAKE_DATA: &[(&str, &[&[u8]], &[&[u8]])] = &[];
+}
+
 /// Load blocks stored in bench_data/bitcoin/sampled_blocks.txt
 fn load_bitcoin_blocks(path: &str) -> Vec<Vec<u8>> {
     let mut blocks_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -40,10 +52,6 @@ fn load_bitcoin_blocks(path: &str) -> Vec<Vec<u8>> {
 
 /// Load TLS handshakes from local module
 fn load_tls_handshakes() -> Vec<Vec<u8>> {
-    mod handshakes {
-        include!("../bench_data/tls/tranco_handshakes.rs");
-    }
-
     let mut messages = Vec::new();
     for (_domain, client_msgs, server_msgs) in handshakes::HANDSHAKE_DATA {
         for msg in *client_msgs {

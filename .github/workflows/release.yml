@@ -23,7 +23,9 @@ on:
 permissions: {}
 
 concurrency:
-  group: release-${{ github.ref }}-${{ inputs.crate || 'tag' }}
+  # crates.io releases are repository-wide state transitions. Serialize them
+  # even when two different release tags are pushed close together.
+  group: release
   cancel-in-progress: false
 
 env:
@@ -101,17 +103,18 @@ jobs:
             fi
           fi
 
-          if [[ "$publish" == "true" ]]; then
-            # Do not publish either a tag or a manually selected revision until
-            # it has reached the repository's default branch.
-            if ! git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
-              echo "Checkout did not contain origin/$DEFAULT_BRANCH." >&2
-              exit 1
-            fi
-            if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
-              echo "Release commit $GITHUB_SHA is not on origin/$DEFAULT_BRANCH." >&2
-              exit 1
-            fi
+          # Fetch the exact ref this safety check relies on instead of assuming
+          # checkout happened to create a remote-tracking branch. Run the check
+          # for dry runs too, so workflow_dispatch exercises the release gate.
+          git fetch --no-tags --force origin \
+            "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+          if ! git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"; then
+            echo "Could not fetch origin/$DEFAULT_BRANCH." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "Release commit $GITHUB_SHA is not on origin/$DEFAULT_BRANCH." >&2
+            exit 1
           fi
 
           echo "crate=$crate" >> "$GITHUB_OUTPUT"
@@ -121,6 +124,34 @@ jobs:
         env:
           CRATE: ${{ steps.plan.outputs.crate }}
         run: cargo publish -p "$CRATE" --locked --dry-run
+
+      - name: Require the matching vest_lib release before vest
+        if: steps.plan.outputs.crate == 'vest'
+        run: |
+          vest_lib_version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' vest_lib/Cargo.toml | head -n 1)"
+          python3 - "$vest_lib_version" <<'PY'
+          import json
+          import sys
+          import urllib.error
+          import urllib.request
+
+          version = sys.argv[1]
+          url = f"https://crates.io/api/v1/crates/vest_lib/{version}"
+          request = urllib.request.Request(url, headers={"User-Agent": "vest-release-workflow"})
+          try:
+              with urllib.request.urlopen(request) as response:
+                  metadata = json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code == 404:
+                  raise SystemExit(
+                      f"vest_lib {version} is not on crates.io; publish vest_lib first and wait "
+                      "for the index to update."
+                  )
+              raise
+
+          if metadata["version"]["yanked"]:
+              raise SystemExit(f"vest_lib {version} is yanked on crates.io.")
+          PY
 
   publish:
     name: Publish ${{ needs.preflight.outputs.crate }}

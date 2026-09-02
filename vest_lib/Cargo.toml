@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 description = "Verified parser and serializer combinators in Verus"
 repository.workspace = true
+documentation = "https://secure-foundations.github.io/vest/vest_lib/"
 readme = "README.md"
 keywords = ["verus", "verification", "parser", "serializer", "combinators"]
 categories = ["parsing", "no-std"]

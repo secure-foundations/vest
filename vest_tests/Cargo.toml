@@ -4,6 +4,11 @@ version = "0.1.0"
 edition.workspace = true
 publish = false
 
+[features]
+# The benchmark corpora are intentionally kept out of Git. Enable this feature
+# when running benchmarks with a populated vest_tests/bench_data directory.
+bench-data = []
+
 [dependencies]
 vstd = { workspace = true, features = ["std"] }
 vest_lib = { workspace = true, features = ["std"] }
