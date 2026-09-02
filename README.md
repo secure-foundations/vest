@@ -25,6 +25,8 @@ More importantly, they are guaranteed to satisfy a suite of *security properties
 
 Vest is a research tool under active development. The DSL and ASN.1 frontend are *not* by themselves verified and could contain bugs. Some language and format features are still unsupported, and APIs may change. The [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html) and [ASN.1 support table](https://secure-foundations.github.io/vest/guide/asn1/support.html) document current limitations. Each Vest release pins its compatible [Verus release](verus.json).
 
+Vest 2.0 is a substantial redesign. Existing users should read the [migration guide](RELEASE_NOTES-v0.2.0.md) before upgrading.
+
 ## Documentation
 
 - The [Vest guide](https://secure-foundations.github.io/vest/guide/) covers installation, the DSL, generated Rust APIs, formal guarantees, and the ASN.1 frontend.
