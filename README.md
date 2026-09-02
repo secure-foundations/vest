@@ -5,7 +5,7 @@
 [![Crates.io - vest_lib](https://img.shields.io/crates/v/vest_lib?label=vest_lib)](https://crates.io/crates/vest_lib)
 [![Zulip](https://img.shields.io/badge/zulip-join%20chat-brightgreen.svg)](https://verus-lang.zulipchat.com/)
 
-# <img src=".github/assets/vest-logo.svg" alt="Vest" height="96px">
+# <img src=".github/assets/vest-logo.svg" alt="Vest" height="72px">
 
 Vest is a framework based on [Verus](https://github.com/verus-lang/verus) for building verified, secure, performant binary parsers and serializers in Rust.
 It consists of several core components:
@@ -18,7 +18,7 @@ Vest-generated parsers and serializers are provably memory-safe, arithmetically 
 More importantly, they are guaranteed to satisfy a suite of *security properties*, making them immune to entire classes of attacks that historically plague unverified, hand-written code.
 
 <p align="center">
-  <img src=".github/assets/vest-example.png" alt="Vest DSL describing TLS handshake messages" width="700">
+  <img src=".github/assets/vest-example.png" alt="Vest DSL describing TLS handshake messages" width="640">
 </p>
 
 ## Status
