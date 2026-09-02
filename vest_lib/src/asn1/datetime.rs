@@ -294,7 +294,7 @@ pub broadcast proof fn lemma_decimal4_roundtrip(value: u16)
     // Arithmetic normalization is discharged once here for all time formats.
 }
 
-#[verifier::rlimit(20)]
+#[verifier::rlimit(50)]
 pub proof fn lemma_decimal4_canonical(bytes: Seq<u8>, pos: usize)
     requires
         pos <= usize::MAX - 2,

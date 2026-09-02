@@ -99,6 +99,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # master
         with:
           toolchain: ${{ steps.toolchain.outputs.rust }}
+          components: rustfmt
 
       - name: Restore Cargo cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
