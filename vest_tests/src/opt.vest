@@ -1,0 +1,33 @@
+msg = {
+  const a: u8 = 1,
+  const b: [u8; 2] = [1, 2],
+}
+
+// Secure
+optmsg = Option<msg>
+
+// msg2(@x: u8) = [u8; @x]
+
+// Insecure
+// optmsg = {
+//   @x: u8,
+//   y: Option<msg2(@x)>,
+// }
+
+const_10 = {
+  reserved: [u8; 10],
+}
+
+a = wrap(u8 = 1, u8 = 2, const_10, u8 = 3)
+
+b = {
+  x: [u8; 10],
+  y: wrap(u16 = 0xffff, a, u8 = 1),
+}
+
+tagged_mix = {
+  x: Option<wrap(u8 = 10, const_10)>,
+  y: Vec<wrap(u8 = 11, a)>,
+  z: Option<wrap(u8 = 12, b)>,
+  w: Vec<wrap(u8 = 13, msg)>,
+}

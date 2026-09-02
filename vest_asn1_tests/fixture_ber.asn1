@@ -1,0 +1,39 @@
+BerFixture DEFINITIONS EXPLICIT TAGS ::= BEGIN
+    Payload ::= OCTET STRING (SIZE (1..16))
+    Bits ::= BIT STRING
+    Label ::= UTF8String (SIZE (1..16))
+    Printable ::= PrintableString (SIZE (1..16))
+    Ascii ::= IA5String (SIZE (1..16))
+    Legacy ::= TeletexString (SIZE (1..16))
+    Wide ::= BMPString (SIZE (1..16))
+    OpenValue ::= ANY
+
+    Item ::= SEQUENCE {
+        payload Payload,
+        bits [0] IMPLICIT Bits,
+        label [1] IMPLICIT Label,
+        printable [2] IMPLICIT Printable OPTIONAL,
+        open [3] EXPLICIT OpenValue OPTIONAL
+    }
+
+    AutomationChoice ::= CHOICE {
+        booleanValue [10] IMPLICIT BOOLEAN,
+        octetsValue [11] IMPLICIT OCTET STRING,
+        bitsValue [12] IMPLICIT BIT STRING,
+        textValue [13] IMPLICIT UTF8String,
+        printableValue [14] IMPLICIT PrintableString,
+        openValue [15] EXPLICIT ANY
+    }
+
+    AutomationSequence ::= SEQUENCE {
+        prefix [20] IMPLICIT BOOLEAN OPTIONAL,
+        enabled [21] IMPLICIT BOOLEAN DEFAULT TRUE,
+        payload [22] EXPLICIT OCTET STRING OPTIONAL,
+        marker [23] IMPLICIT BOOLEAN,
+        selected [24] EXPLICIT AutomationChoice OPTIONAL
+    }
+
+    Items ::= SEQUENCE OF Item
+    Flags ::= SEQUENCE OF BOOLEAN
+    FlagSet ::= SET OF BOOLEAN
+END

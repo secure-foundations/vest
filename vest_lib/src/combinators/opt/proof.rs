@@ -1,0 +1,229 @@
+//! Correctness and ambiguity proofs for optional formats.
+use crate::{
+    combinators::Pair,
+    core::{proof::*, spec::*},
+};
+use vstd::prelude::*;
+
+verus! {
+
+impl<A: SPRoundTripDps> super::Opt<A> {
+    proof fn lemma_serialize_parse_roundtrip(&self, v: Option<A::T>, obuf: Seq<u8>)
+        requires
+            self.0.unambiguous(),
+            parser_fails_on(self.0, obuf),
+        ensures
+            self.consistent(v) ==> {
+                let ibuf = self.spec_serialize_dps(v, obuf);
+                let n = self.byte_len(v) as int;
+                self.spec_parse(ibuf) == Some((n, v))
+            },
+    {
+        match v {
+            None => {},
+            Some(vv) => {
+                if self.consistent(Some(vv)) {
+                    self.0.theorem_serialize_dps_parse_roundtrip(vv, obuf);
+                }
+            },
+        }
+    }
+}
+
+impl<A: NoLookAhead> super::Opt<A> {
+    proof fn lemma_opt_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>)
+        requires
+            self.0.safe_inv(),
+            self.0.no_lookahead_inv(),
+            parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
+        ensures
+            self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
+                == i1.take(n) ==> self.spec_parse(i2) == Some((n, v)),
+    {
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    if let Some((n0, v0)) = self.0.spec_parse(i1) {
+                        self.0.lemma_no_lookahead(i1, i2);
+                    } else {
+                        assert(self.0.spec_parse(i2) is None);
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<A: NonMalleable> NonMalleable for super::Opt<A> {
+    open spec fn nonmal_inv(&self) -> bool {
+        self.0.nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        self.0.lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A: SafeParser> Productive for super::Opt<A> {
+    open spec fn productive_inv(&self) -> bool {
+        false
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+    }
+}
+
+impl<A> EquivSerializersGeneral for super::Opt<A> where A: EquivSerializersGeneral {
+    open spec fn equiv_general_inv(&self) -> bool {
+        self.0.equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.lemma_serialize_equiv(vv, obuf);
+            },
+        }
+    }
+}
+
+impl<A> EquivSerializers for super::Opt<A> where A: EquivSerializers {
+    open spec fn equiv_inv(&self) -> bool {
+        self.0.equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        match v {
+            None => {},
+            Some(vv) => {
+                self.0.lemma_serialize_equiv_on_empty(vv);
+            },
+        }
+    }
+}
+
+impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super::Optional<A, B> {
+    open spec fn unambiguous(&self) -> bool {
+        &&& self.0.serialize_dps_inv()
+        &&& self.0.unambiguous()
+        &&& self.1.unambiguous()
+        &&& disjoint_domains(self.0, self.1)
+    }
+
+    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+        let opt = super::Opt(self.0);
+        let serialized1 = self.1.spec_serialize_dps(v.1, obuf);
+        self.1.theorem_serialize_dps_parse_roundtrip(v.1, obuf);
+        assert(parser_fails_on(self.0, serialized1)) by {
+            reveal(disjoint_domains);
+            assert(self.1.spec_parse(serialized1) is Some);
+        }
+        let serialized0 = opt.spec_serialize_dps(v.0, serialized1);
+        opt.lemma_serialize_parse_roundtrip(v.0, serialized1);
+        let n0 = serialized0.len() - serialized1.len();
+        opt.lemma_serialize_dps_prepend(v.0, serialized1);
+        opt.lemma_serialize_dps_len(v.0, serialized1);
+        assert(serialized0.skip(n0) == serialized1);
+    }
+}
+
+// impl<
+//     A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
+//     B: PSRoundTrip,
+// > PSRoundTrip for super::Optional<A, B> {
+// }
+impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Optional<A, B> {
+    open spec fn nonmal_inv(&self) -> bool {
+        Pair(super::Opt(self.0), self.1).nonmal_inv()
+    }
+
+    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+        Pair(super::Opt(self.0), self.1).lemma_parse_non_malleable(buf1, buf2);
+    }
+}
+
+impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
+    open spec fn no_lookahead_inv(&self) -> bool {
+        &&& self.0.no_lookahead_inv()
+        &&& self.1.no_lookahead_inv()
+        &&& disjoint_domains(self.0, self.1)
+    }
+
+    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
+        reveal(disjoint_domains);
+        broadcast use vstd::seq_lib::group_seq_properties;
+
+        use crate::combinators::tuple::proof::lemma_take_skip;
+
+        let opt = super::Opt(self.0);
+        if let Some((n, v)) = self.spec_parse(i1) {
+            if 0 <= n <= i2.len() {
+                if i2.take(n) == i1.take(n) {
+                    assert(self.safe_inv());
+                    if let Some((n0, a)) = self.0.spec_parse(i1) {
+                        if let Some((n1, b)) = self.1.spec_parse(i1.skip(n0)) {
+                            assert(opt.safe_inv());
+                            assert(self.1.safe_inv());
+                            opt.lemma_parse_safe(i1);
+                            self.1.lemma_parse_safe(i1.skip(n0));
+                            assert(i2.take(n0) == i1.take(n0));
+                            opt.lemma_opt_no_lookahead(i1, i2);
+                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+                                lemma_take_skip(i1, n0, n1);
+                                lemma_take_skip(i2, n0, n1);
+                            };
+                            self.1.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+                        }
+                    } else if let Some((n1, b)) = self.1.spec_parse(i1) {
+                        assert(disjoint_domains(self.0, self.1));
+                        assert(self.1.safe_inv());
+                        self.1.lemma_no_lookahead(i1, i2);
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<A: Productive, B: Productive> Productive for super::Optional<A, B> {
+    open spec fn productive_inv(&self) -> bool {
+        self.1.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, s: Seq<u8>) {
+        if let Some((n, _v)) = self.spec_parse(s) {
+            let (n1, _v1) = super::Opt(self.0).spec_parse(s)->0;
+            let (n2, _v2) = self.1.spec_parse(s.skip(n1))->0;
+            super::Opt(self.0).lemma_parse_safe(s);
+            self.1.lemma_productive(s.skip(n1));
+        }
+    }
+}
+
+impl<
+    A: EquivSerializersGeneral,
+    B: EquivSerializersGeneral,
+> EquivSerializersGeneral for super::Optional<A, B> {
+    open spec fn equiv_general_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_general_inv()
+    }
+
+    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        Pair(super::Opt(self.0), self.1).lemma_serialize_equiv(v, obuf);
+    }
+}
+
+impl<A: EquivSerializersGeneral, B: EquivSerializers> EquivSerializers for super::Optional<A, B> {
+    open spec fn equiv_inv(&self) -> bool {
+        &&& self.0.equiv_general_inv()
+        &&& self.1.equiv_inv()
+    }
+
+    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+        Pair(super::Opt(self.0), self.1).lemma_serialize_equiv_on_empty(v);
+    }
+}
+
+} // verus!

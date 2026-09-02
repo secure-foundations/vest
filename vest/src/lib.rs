@@ -1,29 +1,162 @@
-#![crate_name = "vest_lib"]
-#![crate_type = "lib"]
-#![warn(missing_docs)]
-#![no_std]
-#![doc = include_str!("lib.md")]
+//! Compiler library for the Vest binary-format DSL.
+//!
+//! [`compile`], [`compile_file`], and [`compile_to`] parse and type-check a
+//! `.vest` source file and emit a verified Verus/Rust module. Most users invoke
+//! the `vest` command-line tool; build scripts and other generators can call
+//! these functions directly.
+//!
+//! See [Getting started](https://secure-foundations.github.io/vest/guide/getting-started.html),
+//! [language reference](https://secure-foundations.github.io/vest/guide/dsl/reference.html),
+//! and [generated Rust code guide](https://secure-foundations.github.io/vest/guide/dsl/generated-api.html).
 
-// mod examples;
+use std::error::Error;
+use std::io::Write;
 
-#[cfg(feature = "std")]
-extern crate std;
+mod ast;
+pub mod codegen;
+mod elab;
+mod type_check;
+mod utils;
+mod vestir;
 
-extern crate alloc;
+use ariadne::{Report, ReportKind};
+use pest::error::InputLocation;
 
-/// Combinators for Bitcoin formats.
-pub mod bitcoin;
-/// Definitions for buffer traits that can be used as input and output for parsers and serializers,
-/// along with some implementations for commonly used buffers.
-pub mod buf_traits;
-/// Definitions for parser and serializer combinators and their properties.
-pub mod properties;
-/// Regular parser and serializer combinators.
-pub mod regular;
-/// Utility functions and types.
-pub mod utils;
-//// Constant-time parser and serializer combinators.
-// mod secret;
-/// Error types
-#[allow(missing_docs)]
-pub mod errors;
+#[derive(Debug)]
+pub enum VestError {
+    ParsingError,
+    TypeError,
+    CodegenError,
+}
+
+impl std::fmt::Display for VestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VestError::ParsingError => write!(f, "Failed to compile, parsing error."),
+            VestError::TypeError => write!(f, "Failed to compile, type error."),
+            VestError::CodegenError => write!(f, "Failed to compile, codegen error."),
+        }
+    }
+}
+
+impl std::error::Error for VestError {}
+
+/// Compiles the given source code and returns the resulting output.
+///
+/// # Example
+/// ```rust,no_run
+/// use std::error::Error;
+/// use std::io::Write;
+/// use vest::compile;
+///
+/// // build.rs
+/// fn main() -> Result<(), Box<dyn Error>> {
+///   println!("cargo::rerun-if-changed=src/tlv.vest");
+///   let file_name = "src/tlv.vest";
+///   let vest = std::fs::read_to_string(file_name)?;
+///   let code = compile(file_name, vest)?;
+///   let mut verus = std::fs::File::create("src/tlv.rs")?;
+///   verus.write_all(code.as_bytes())?;
+///   Ok(())
+/// }
+/// ```
+pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>> {
+    let source = (file_name, &ariadne::Source::from(input.clone()));
+
+    // parse the vest file
+    println!("📜 Parsing the vest file...");
+    match ast::from_str(&input) {
+        Ok(mut ast) => {
+            // elaborate the AST
+            println!("🔨 Elaborating the AST...");
+            elab::elaborate(&mut ast);
+
+            // type check the AST
+            println!("🔍 Type checking...");
+            match type_check::check(&ast, source) {
+                Ok(ctx) => {
+                    // code gen to a file
+                    // if there is no output file specified, use the same name as the name of input vest file
+
+                    println!("📝 Generating the verus file...");
+                    let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
+                    let code = codegen::code_gen(&ir, &(&ctx).into());
+                    println!("👏 Done!");
+
+                    Ok(code)
+                }
+                Err(e) => {
+                    eprintln!("❌ Type checking failed.");
+                    Err(Box::new(e))
+                }
+            }
+            // let ctx = type_check::check(&ast, source)?;
+        }
+        Err(e) => {
+            let span = match e.location {
+                InputLocation::Pos(pos) => pos..pos,
+                InputLocation::Span(span) => span.0..span.1,
+            };
+            eprintln!("❌ Failed to parse the vest file.");
+            Report::build(ReportKind::Error, (source.0, span.clone()))
+                // .with_message(format!("{e}"))
+                .with_message(format!("{}", e.variant.message()))
+                .with_label(
+                    ariadne::Label::new((source.0, span))
+                        .with_message("here")
+                        .with_color(ariadne::Color::Red),
+                )
+                .finish()
+                .eprint(source)
+                .unwrap();
+            Err(Box::new(VestError::ParsingError))
+        }
+    }
+}
+
+/// Compiles the given file and returns the resulting output.
+///
+/// # Example
+/// ```rust,no_run
+/// // build.rs
+/// use std::error::Error;
+/// use std::io::Write;
+/// use vest::compile_file;
+///
+/// fn main() -> Result<(), Box<dyn Error>> {
+///   println!("cargo::rerun-if-changed=src/tlv.vest");
+///   let file_name = "src/tlv.vest";
+///   let code = compile_file(file_name)?;
+///   let mut verus = std::fs::File::create("src/tlv.rs")?;
+///   verus.write_all(code.as_bytes())?;
+///   Ok(())
+/// }
+/// ```
+pub fn compile_file(file_name: &str) -> Result<String, Box<dyn Error>> {
+    let vest = std::fs::read_to_string(file_name)?;
+    compile(file_name, vest)
+}
+
+/// Compiles the given file and saves it to `output_file`.
+///
+/// # Example
+/// ```rust,no_run
+/// // build.rs
+/// use std::error::Error;
+/// use vest::compile_to;
+///
+/// fn main() -> Result<(), Box<dyn Error>> {
+///   println!("cargo::rerun-if-changed=src/tlv.vest");
+///   let input_file = "src/tlv.vest";
+///   let output_file = "src/tlv.rs";
+///   compile_to(input_file, output_file)?;
+///   Ok(())
+/// }
+/// ```
+pub fn compile_to(input_file: &str, output_file: &str) -> Result<(), Box<dyn Error>> {
+    let vest = std::fs::read_to_string(input_file)?;
+    let code = compile(input_file, vest)?;
+    let mut verus = std::fs::File::create(output_file)?;
+    verus.write_all(code.as_bytes())?;
+    Ok(())
+}

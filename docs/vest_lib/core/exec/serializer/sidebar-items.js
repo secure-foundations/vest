@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ComplianceErrorKind","PreSerializeErrorKind"],"struct":["PreSerializeError"],"trait":["ByteLen","Prepare","Serializer","SerializerExt"]};

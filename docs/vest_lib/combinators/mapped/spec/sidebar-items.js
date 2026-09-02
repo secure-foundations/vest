@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BiMap"],"trait":["LosslessMapper","LossyMapper","SpecMap","SpecMapper"],"type":["BiMapper","FnSpecMapper","TryMapInner","TryMapPred"]};

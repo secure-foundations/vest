@@ -1,0 +1,38 @@
+[package]
+name = "vest_dev"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[features]
+default = ["std"]
+std = ["alloc", "vstd/std", "vest_lib/std"]
+alloc = ["vstd/alloc", "vest_lib/alloc"]
+
+[dependencies]
+vstd.workspace = true
+vest_lib.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "mutual_fix_benchmark"
+harness = false
+
+[[bench]]
+name = "nested_braces_benchmark"
+harness = false
+
+[[bench]]
+name = "overhead_study_benchmark"
+harness = false
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }

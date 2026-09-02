@@ -1,0 +1,8 @@
+MyEnum = enum {
+    A = 1i3,
+    B = 2i3,
+}
+Foo = bits {
+    a: u5,
+    b: MyEnum,
+}

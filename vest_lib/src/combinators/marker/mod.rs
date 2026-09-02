@@ -1,0 +1,45 @@
+//! Marker combinators for empty and impossible wire languages.
+//!
+//! [`Empty`] accepts the empty prefix and produces `()`. [`Void`] accepts
+//! nothing and is useful for eliminating impossible choice branches.
+/// Executable trait implementations for this combinator.
+pub mod exec;
+/// Correctness proofs for this combinator.
+pub mod proof;
+/// Specification trait implementations for this combinator.
+pub mod spec;
+
+use crate::core::proof::LeafNonMalleable;
+use vstd::prelude::*;
+
+verus! {
+
+/// Marker combinator that denotes the "empty" format.
+///
+/// Parsing semantics: always succeeds without consuming any input, returning `()`.
+///
+/// Serialization semantics: produces an empty byte sequence.
+#[derive(Clone, Copy)]
+pub struct Empty;
+
+/// Marker combinator that denotes the "void" format.
+///
+/// Parsing semantics: always fails.
+///
+/// ## Consistency
+///
+/// No value is consistent with `Void`.
+#[derive(Clone, Copy)]
+pub struct Void(pub &'static str);
+
+impl LeafNonMalleable for Empty {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+impl LeafNonMalleable for Void {
+    proof fn nonmal_leaf_inv(&self) {
+    }
+}
+
+} // verus!

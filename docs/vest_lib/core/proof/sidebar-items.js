@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["EquivSerializers","EquivSerializersGeneral","Leaf","LeafNonMalleable","NoLookAhead","NonAmbiguous","NonMalleable","PSRoundTrip","Productive","SPRoundTrip","SPRoundTripDps","StrictCombinator"]};

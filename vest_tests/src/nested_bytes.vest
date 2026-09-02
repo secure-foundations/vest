@@ -1,0 +1,24 @@
+anything = {
+  x: u8,
+}
+
+nested_dynamic_bytes = {
+  @num: u16,
+  @num_inner: u16,
+  xs: [[u8; @num_inner]; @num],
+}
+
+nested_fixed_bytes = {
+  @num: u16,
+  xs: [[u8; 10]; @num],
+}
+
+fixed_array_of_bytes = [[u8; 2]; 3]
+
+vec_of_bytes = Vec<[u8; 2]>
+
+optional_bytes = Option<[u8; 2]>
+
+tail_vec = {
+  xs: Tail >>= Vec<anything>,
+}

@@ -1,0 +1,9 @@
+(function() {
+    var type_impls = Object.fromEntries([["vest_lib",[["<details class=\"toggle implementors-toggle\" open><summary><section id=\"impl-PrintableStringSpec\" class=\"impl\"><a class=\"src rightside\" href=\"src/vest_lib/asn1/printablestring.rs.html#102-106\">Source</a><a href=\"#impl-PrintableStringSpec\" class=\"anchor\">§</a><h3 class=\"code-header\">impl <a class=\"struct\" href=\"vest_lib/asn1/printablestring/struct.PrintableStringSpec.html\" title=\"struct vest_lib::asn1::printablestring::PrintableStringSpec\">PrintableStringSpec</a></h3></section></summary><div class=\"impl-items\"><details class=\"toggle method-toggle\" open><summary><section id=\"method.wf\" class=\"method\"><a class=\"src rightside\" href=\"src/vest_lib/asn1/printablestring.rs.html#103-105\">Source</a><h4 class=\"code-header\">pub fn <a href=\"#method.wf\" class=\"fn\">wf</a>(&amp;self) -&gt; <a class=\"primitive\" href=\"https://doc.rust-lang.org/1.97.1/std/primitive.bool.html\">bool</a></h4></section></summary><div class=\"docblock\">\n<div class=\"example-wrap\"><pre class=\"rust rust-example-rendered\"><code><span class=\"comment\">// verusdoc_special_attr modes\n// { \"fn_mode\": \"open spec\", \"ret_mode\": \"Default\", \"param_modes\": [\"Default\"], \"broadcast\": false, \"ret_name\": \"\" }</span></code></pre></div>\n<div class=\"example-wrap\"><pre class=\"rust rust-example-rendered\"><code><span class=\"comment\">// verusdoc_special_attr body\n</span>{ is_valid_printable_string_spec(vstd::utf8::encode_utf8(<span class=\"self\">self</span>.inner)) }</code></pre></div></div></details></div></details>",0,"vest_lib::asn1::numericstring::NumericStringSpec"]]]]);
+    if (window.register_type_impls) {
+        window.register_type_impls(type_impls);
+    } else {
+        window.pending_type_impls = type_impls;
+    }
+})()
+//{"start":55,"fragment_lengths":[1627]}

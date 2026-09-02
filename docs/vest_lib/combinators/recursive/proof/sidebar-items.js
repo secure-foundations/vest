@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["no_lookahead_parser","non_malleable_parser","parser_pair_some","sp_roundtrip_dps"],"trait":["EquivSerializersGeneralRecBody","NoLookAheadRecBody","NonMalleableRecBody","SPRoundTripDpsRecBody","StrictRecBody"]};

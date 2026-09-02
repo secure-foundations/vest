@@ -1,0 +1,6 @@
+// Constants use the same executable integer formats as ordinary fields. Signed
+// formats are rejected until the backend has a signed integer combinator.
+msg = {
+  const tag: i16 = -1,
+  body: u8,
+}

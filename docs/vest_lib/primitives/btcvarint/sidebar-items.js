@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["VARINT_TAG_U16","VARINT_TAG_U32","VARINT_TAG_U64"],"fn":["varint_fmt"],"struct":["VarInt"],"type":["VarIntFmt"]};

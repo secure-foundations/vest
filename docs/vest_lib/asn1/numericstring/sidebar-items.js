@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NumericStringFmt"],"fn":["is_numeric_string_char","is_valid_numeric_string"],"struct":["NumericStringChars"],"type":["NumericString","NumericStringFmt","NumericStringOwned","NumericStringSpec"]};

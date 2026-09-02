@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["CHOICE","IMPLICIT","IMPLICIT_APPLICATION","IMPLICIT_PRIVATE","OPTIONAL","REQUIRED","defaulted","defaulted_fmt","explicit_tag","implicitly_tagged"],"struct":["DefaultedFmt","ImplicitlyTaggedFmt"],"trait":["Retaggable"],"type":["DefaultedInnerFmt","ImplicitFmt"]};

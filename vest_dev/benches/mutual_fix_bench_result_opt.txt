@@ -1,0 +1,80 @@
+mutual_fix_expr_parse/vest_fixwith_bulk
+                        time:   [14.609 µs 14.640 µs 14.671 µs]
+                        thrpt:  [102.97 MiB/s 103.19 MiB/s 103.40 MiB/s]
+                 change:
+                        time:   [+2.7176% +2.9873% +3.2464%] (p = 0.00 < 0.05)
+                        thrpt:  [-3.1443% -2.9007% -2.6457%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+mutual_fix_expr_parse/handrolled_bulk
+                        time:   [14.579 µs 14.608 µs 14.641 µs]
+                        thrpt:  [103.18 MiB/s 103.41 MiB/s 103.62 MiB/s]
+                 change:
+                        time:   [+0.2319% +0.5140% +0.8013%] (p = 0.00 < 0.05)
+                        thrpt:  [-0.7949% -0.5114% -0.2314%]
+                        Change within noise threshold.
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+
+mutual_fix_list_parse/vest_fixwith_bulk
+                        time:   [13.303 µs 13.324 µs 13.346 µs]
+                        thrpt:  [106.33 MiB/s 106.51 MiB/s 106.67 MiB/s]
+                 change:
+                        time:   [+2.2422% +2.7863% +3.1859%] (p = 0.00 < 0.05)
+                        thrpt:  [-3.0875% -2.7108% -2.1931%]
+                        Performance has regressed.
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+mutual_fix_list_parse/handrolled_bulk
+                        time:   [13.010 µs 13.033 µs 13.060 µs]
+                        thrpt:  [108.66 MiB/s 108.88 MiB/s 109.08 MiB/s]
+                 change:
+                        time:   [+0.2716% +0.7953% +1.3828%] (p = 0.00 < 0.05)
+                        thrpt:  [-1.3639% -0.7890% -0.2709%]
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+
+mutual_fix_expr_serialize/vest_fixwith_bulk
+                        time:   [2.1457 µs 2.1495 µs 2.1537 µs]
+                        thrpt:  [701.42 MiB/s 702.79 MiB/s 704.03 MiB/s]
+                 change:
+                        time:   [+0.4915% +1.0985% +1.5476%] (p = 0.00 < 0.05)
+                        thrpt:  [-1.5240% -1.0865% -0.4891%]
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+mutual_fix_expr_serialize/handrolled_bulk
+                        time:   [2.2274 µs 2.2304 µs 2.2334 µs]
+                        thrpt:  [676.36 MiB/s 677.29 MiB/s 678.19 MiB/s]
+                 change:
+                        time:   [+1.5505% +1.7884% +2.0250%] (p = 0.00 < 0.05)
+                        thrpt:  [-1.9848% -1.7570% -1.5268%]
+                        Performance has regressed.
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+mutual_fix_list_serialize/vest_fixwith_bulk
+                        time:   [2.0984 µs 2.1064 µs 2.1153 µs]
+                        thrpt:  [670.86 MiB/s 673.69 MiB/s 676.27 MiB/s]
+                 change:
+                        time:   [-0.1480% +0.3512% +0.8604%] (p = 0.17 > 0.05)
+                        thrpt:  [-0.8531% -0.3500% +0.1482%]
+                        No change in performance detected.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+mutual_fix_list_serialize/handrolled_bulk
+                        time:   [2.2352 µs 2.2536 µs 2.2709 µs]
+                        thrpt:  [624.89 MiB/s 629.68 MiB/s 634.86 MiB/s]
+                 change:
+                        time:   [+5.8003% +6.3835% +6.9304%] (p = 0.00 < 0.05)
+                        thrpt:  [-6.4813% -6.0005% -5.4823%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild

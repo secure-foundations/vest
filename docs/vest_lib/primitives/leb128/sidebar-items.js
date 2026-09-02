@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CONTINUATION_BIT"],"fn":["continuation_byte","terminal_byte","terminal_byte_nat","uleb128_fmt"],"struct":["LowBitsMask","TermByteFromToNat","ULeb128","ULeb128RecBody"],"type":["ContinuationByte","TerminalByte","TerminalByteNat","ULeb128Fmt"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["POrSType"],"struct":["Pair","Preceded","Terminated"],"trait":["Continuation"],"type":["GhostFn","SpecPair"]};

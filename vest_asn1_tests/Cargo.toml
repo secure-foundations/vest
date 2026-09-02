@@ -1,0 +1,18 @@
+[package]
+name = "vest_asn1_tests"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+vstd = { workspace = true, features = ["std"] }
+vest_lib = { workspace = true, features = ["std"] }
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", "cfg(verus_keep_ghost)"] }

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BREAK","MAX_RECURSION_DEPTH"],"enum":["CborBytes","CborFloat","CborHeadValue","CborText","CborValue","CborValueSpec","MajorType"],"mod":["format"],"struct":["CborHead","CborHeadFmt","CborInitial","CborInitialFmt"],"type":["BreakFmt","CborArray","CborMap"]};

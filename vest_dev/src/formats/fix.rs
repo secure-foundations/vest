@@ -1,0 +1,732 @@
+use crate::combinators::mapped;
+use crate::combinators::mapped::exec::*;
+use crate::combinators::mapped::spec::*;
+use crate::combinators::recursive::exec::*;
+use crate::combinators::recursive::*;
+use crate::combinators::*;
+use crate::core::exec::fns;
+use crate::core::exec::input::InputBuf;
+use crate::core::exec::output::OutputBuf;
+use crate::core::exec::parser::*;
+use crate::core::exec::serializer::*;
+use crate::core::exec::ParseError;
+use crate::core::proof::*;
+use crate::core::spec::*;
+use vstd::prelude::*;
+
+verus! {
+
+broadcast use crate::combinators::disjoint::disjointness_lemmas;
+/*
+* Example recursive parser: nested braces
+*/
+
+/// Example recursive value type: nested braces `{...}` or empty `\0`.
+#[derive(Debug)]
+pub enum NestedBracesT {
+    /// A brace-wrapped recursive value: `'{' inner '}'`.
+    Brace(Box<NestedBracesT>),
+    /// The empty (base case) value: `'\0'`.
+    Eps,
+}
+
+pub enum NestedBracesTSpec {
+    Brace(Box<NestedBracesTSpec>),
+    Eps,
+}
+
+pub open spec fn nested_braces_t_deep_view(v: &NestedBracesT) -> NestedBracesTSpec
+    decreases v,
+{
+    match v {
+        NestedBracesT::Brace(inner) => {
+            NestedBracesTSpec::Brace(Box::new(nested_braces_t_deep_view(&**inner)))
+        },
+        NestedBracesT::Eps => NestedBracesTSpec::Eps,
+    }
+}
+
+impl DeepView for NestedBracesT {
+    type V = NestedBracesTSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        nested_braces_t_deep_view(self)
+    }
+}
+
+/// One level of the nested-braces format: `'{' rec '}' | '\0'`.
+// pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec>
+pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> {
+    Mapped {
+        inner: Choice(SuffixTagged(PrefixTagged(U8, 0x7Bu8, rec), U8, 0x7Du8), Const(U8, 0x00u8)),
+        mapper: BiMap(
+            (|i: Sum<NestedBracesTSpec, u8>| -> NestedBracesTSpec
+                {
+                    match i {
+                        Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
+                        Sum::Inr(_) => NestedBracesTSpec::Eps,
+                    }
+                }),
+            (|o: NestedBracesTSpec| -> Sum<NestedBracesTSpec, u8>
+                {
+                    match o {
+                        NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
+                        NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
+                    }
+                }),
+        ),
+    }
+    // Implicit(
+    //     U8,
+    //     (
+    //         |tag: u8|
+    //             Mapped {
+    //                 inner: match tag {
+    //                     0x7Bu8 => Sum::Inl(SuffixTagged(rec, U8, 0x7Du8)),
+    //                     0x00u8 => Sum::Inr(Const(U8, 0x00u8)),
+    //                 },
+    //                 mapper: BiMap(
+    //                     (|i: Sum<NestedBracesTSpec, u8>| -> NestedBracesTSpec
+    //                         {
+    //                             match i {
+    //                                 Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
+    //                                 Sum::Inr(_) => NestedBracesTSpec::Eps,
+    //                             }
+    //                         }),
+    //                     (|o: NestedBracesTSpec| -> Sum<NestedBracesTSpec, u8>
+    //                         {
+    //                             match o {
+    //                                 NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
+    //                                 NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
+    //                             }
+    //                         }),
+    //                 ),
+    //             },
+    //         |o: NestedBracesTSpec| -> u8
+    //             {
+    //                 match o {
+    //                     NestedBracesTSpec::Brace(_) => 0x7Bu8,
+    //                     NestedBracesTSpec::Eps => 0x00u8,
+    //                 }
+    //             },
+    //     ),
+    // )
+
+}
+
+type NestedBracesBodyComb<Rec> = Mapped<
+    Choice<SuffixTagged<PrefixTagged<U8, u8, Rec>, U8, u8>, Const<U8, u8>>,
+    BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
+>;
+
+// type NestedBracesBodyComb<Rec> = Implicit<
+//     U8,
+//     KVFormat<
+//         u8,
+//         NestedBracesTSpec,
+//         Mapped<
+//             Sum<SuffixTagged<Rec, u8, U8>, Const<U8, u8>>,
+//             BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
+//         >,
+//     >,
+// >;
+/// [`SpecRecBody`] for the nested-braces example.
+pub struct NestedBracesBody;
+
+impl SpecRecBody for NestedBracesBody {
+    type Param = ();
+
+    type T = NestedBracesTSpec;
+
+    type Body = NestedBracesBodyComb<BundledSpecs<Self::T>>;
+
+    open spec fn spec_body(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        nested_braces_body(rec(()))
+    }
+}
+
+impl<'i> ParserRecBody<&'i [u8]> for NestedBracesBody {
+    type EP = ();
+
+    type O = NestedBracesT;
+
+    fn parse_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<Self::O> where Exec: Fn(&(), &&'i [u8]) -> PResult<Self::O> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+        let _total_len = ibuf.len();
+        let (n1, first) = U8.parse(ibuf)?;
+        match first {
+            0x00u8 => {
+                let value = NestedBracesT::Eps;
+                Ok((n1, value))
+            },
+            0x7Bu8 => {
+                let rest = ibuf.skip(n1);
+                let (n2, inner) = exec_rec(&(), &rest)?;
+                let rest2 = rest.skip(n2);
+                let (n3, _) = Const(U8, 0x7Du8).parse(&rest2)?;
+                let total = n1 + n2 + n3;
+                let value = NestedBracesT::Brace(Box::new(inner));
+                Ok((total, value))
+            },
+            _ => { Err(ParseError::invalid_tag()) },
+        }
+    }
+}
+
+impl<Output: OutputBuf> SerializerRecBody<Output, NestedBracesT> for NestedBracesBody {
+    type EP = ();
+
+    fn serialize_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &NestedBracesT,
+        obuf: &mut Output,
+    ) where Exec: Fn(&(), &NestedBracesT, &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+        match v {
+            NestedBracesT::Eps => {
+                U8.serialize_into(&0x00u8, obuf);
+            },
+            NestedBracesT::Brace(inner) => {
+                U8.serialize_into(&0x7Bu8, obuf);
+                exec_rec(&(), inner, obuf);
+                U8.serialize_into(&0x7Du8, obuf);
+            },
+        }
+    }
+}
+
+impl PrepareRecBody<NestedBracesT> for NestedBracesBody {
+    type EP = ();
+
+    fn prepare_body<Exec>(
+        &self,
+        _param: &(),
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &NestedBracesT,
+    ) -> Result<usize, PreSerializeError> where
+        Exec: Fn(&(), &NestedBracesT) -> Result<usize, PreSerializeError>,
+     {
+        match v {
+            NestedBracesT::Eps => U8.prepare(&0x00u8),
+            NestedBracesT::Brace(inner) => {
+                let l1 = U8.prepare(&0x7Bu8)?;
+                let l2 = exec_rec(&(), inner)?;
+                let l3 = U8.prepare(&0x7Du8)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                Ok(sum2)
+            },
+        }
+    }
+}
+
+impl StrictRecBody for NestedBracesBody {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        reveal(disjoint_domains);
+    }
+}
+
+impl NoLookAheadRecBody for NestedBracesBody {
+    proof fn lemma_body_no_lookahead_inv_preservation(
+        &self,
+        _param: (),
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        reveal(disjoint_domains);
+    }
+}
+
+proof fn nested_braces_sound_parser() {
+    let nested_braces = FixWith::<10, _, _>(NestedBracesBody, ());
+
+    let input = seq![0x7Bu8, 0x00u8, 0x7Du8];
+
+    assert(nested_braces.spec_parse(input) == Some(
+        (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
+    )) by {
+        let cb = FixWith::<10, NestedBracesBody, ()>::specs_callback(&NestedBracesBody, 10);
+        let body10 = nested_braces_body(cb(()));
+        assert(body10.spec_parse(input) == Some(
+            (3int, NestedBracesTSpec::Brace(Box::new(NestedBracesTSpec::Eps))),
+        ));
+    };
+
+    let input2 = seq![0x7Bu8, 0x00u8, 0x7Du8, 0x7Bu8, 0x00u8, 0x7Du8];
+
+    nested_braces.lemma_parse_safe(input);
+    nested_braces.lemma_parse_sound_value(input);
+    nested_braces.lemma_parse_sound_consumption(input);
+    nested_braces.lemma_parse_non_malleable(input, input2);
+    let (n, v) = nested_braces.spec_parse(input)->0;
+    nested_braces.lemma_serialize_len(v);
+
+    let serialized = nested_braces.spec_serialize(v);
+    nested_braces.nonmal_leaf_inv();
+    assert(nested_braces.unambiguous());
+    nested_braces.lemma_no_lookahead(input, input2);
+    nested_braces.theorem_serialize_parse_roundtrip(v);
+    nested_braces.theorem_parse_serialize_roundtrip(input);
+}
+
+/*
+* Example parameterized recursive parser: tag-threaded chain
+*/
+
+#[derive(Debug)]
+pub enum TaggedChainT {
+    End,
+    Step(u8, Box<TaggedChainT>),
+}
+
+pub enum TaggedChainTSpec {
+    End,
+    Step(u8, Box<TaggedChainTSpec>),
+}
+
+pub open spec fn tagged_chain_t_deep_view(v: &TaggedChainT) -> TaggedChainTSpec
+    decreases v,
+{
+    match v {
+        TaggedChainT::End => TaggedChainTSpec::End,
+        TaggedChainT::Step(tag, tail) => {
+            TaggedChainTSpec::Step(*tag, Box::new(tagged_chain_t_deep_view(&**tail)))
+        },
+    }
+}
+
+impl DeepView for TaggedChainT {
+    type V = TaggedChainTSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        tagged_chain_t_deep_view(self)
+    }
+}
+
+type TaggedChainBodyComb<Rec> = Mapped<
+    Sum<PrefixTagged<U8, u8, Bind<U8, Rec>>, Const<U8, u8>>,
+    BiMapper<Sum<(u8, TaggedChainTSpec), u8>, TaggedChainTSpec>,
+>;
+
+pub struct TaggedChainBody;
+
+impl SpecRecBody for TaggedChainBody {
+    type Param = u8;
+
+    type T = TaggedChainTSpec;
+
+    type Body = TaggedChainBodyComb<ParamRecSpecs<Self::Param, Self::T>>;
+
+    open spec fn spec_body(
+        &self,
+        current_tag: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) -> Self::Body {
+        Mapped {
+            inner: match current_tag {
+                0u8 => Sum::Inr(Const(U8, 0x00u8)),
+                _ => Sum::Inl(
+                    PrefixTagged(U8, current_tag, Bind(U8, |next_tag: u8| rec(next_tag))),
+                ),
+            },
+            mapper: BiMap(
+                |i: Sum<(u8, TaggedChainTSpec), u8>| -> TaggedChainTSpec
+                    {
+                        match i {
+                            Sum::Inl((next_tag, tail)) => TaggedChainTSpec::Step(
+                                next_tag,
+                                Box::new(tail),
+                            ),
+                            Sum::Inr(_) => TaggedChainTSpec::End,
+                        }
+                    },
+                |o: TaggedChainTSpec| -> Sum<(u8, TaggedChainTSpec), u8>
+                    {
+                        match o {
+                            TaggedChainTSpec::Step(next_tag, tail) => Sum::Inl((next_tag, *tail)),
+                            TaggedChainTSpec::End => Sum::Inr(0x00u8),
+                        }
+                    },
+            ),
+        }
+    }
+}
+
+impl<'i> ParserRecBody<&'i [u8]> for TaggedChainBody {
+    type EP = u8;
+
+    type O = TaggedChainT;
+
+    fn parse_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        ibuf: &&'i [u8],
+    ) -> PResult<Self::O> where Exec: Fn(&u8, &&'i [u8]) -> PResult<Self::O> {
+        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+        broadcast use vstd::seq_lib::lemma_seq_skip_of_skip;
+
+        let _total_len = ibuf.len();
+
+        match *current_tag {
+            0u8 => {
+                let (n1, _) = Const(U8, 0x00u8).parse(ibuf)?;
+                let value = TaggedChainT::End;
+                Ok((n1, value))
+            },
+            _ => {
+                let (n1, _) = Const(U8, *current_tag).parse(ibuf)?;
+                let rest = ibuf.skip(n1);
+                let (n2, next_tag) = U8.parse(&rest)?;
+                let rest2 = rest.skip(n2);
+                let (n3, tail) = exec_rec(&next_tag, &rest2)?;
+                let total = n1 + n2 + n3;
+                let value = TaggedChainT::Step(next_tag, Box::new(tail));
+                Ok((total, value))
+            },
+        }
+    }
+}
+
+impl<Output: OutputBuf> SerializerRecBody<Output, TaggedChainT> for TaggedChainBody {
+    type EP = u8;
+
+    fn serialize_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &TaggedChainT,
+        obuf: &mut Output,
+    ) where Exec: Fn(&u8, &TaggedChainT, &mut Output) {
+        broadcast use crate::core::exec::output::outbuf_lemmas;
+
+        match v {
+            TaggedChainT::End => {
+                U8.serialize_into(&0x00u8, obuf);
+            },
+            TaggedChainT::Step(next_tag, tail) => {
+                U8.serialize_into(current_tag, obuf);
+                U8.serialize_into(next_tag, obuf);
+                exec_rec(next_tag, tail, obuf);
+            },
+        }
+    }
+}
+
+impl PrepareRecBody<TaggedChainT> for TaggedChainBody {
+    type EP = u8;
+
+    fn prepare_body<Exec>(
+        &self,
+        current_tag: &u8,
+        Ghost(spec_rec): Ghost<ParamRecSpecs<Self::Param, Self::T>>,
+        exec_rec: Exec,
+        v: &TaggedChainT,
+    ) -> Result<usize, PreSerializeError> where
+        Exec: Fn(&u8, &TaggedChainT) -> Result<usize, PreSerializeError>,
+     {
+        match v {
+            TaggedChainT::End => {
+                if *current_tag == 0u8 {
+                    U8.prepare(&0x00u8)
+                } else {
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected))
+                }
+            },
+            TaggedChainT::Step(next_tag, tail) => {
+                if *current_tag == 0u8 {
+                    return Err(PreSerializeError::not_compliant(ComplianceErrorKind::CondRejected));
+                }
+                let l1 = U8.prepare(current_tag)?;
+                let l2 = U8.prepare(next_tag)?;
+                let l3 = exec_rec(next_tag, tail)?;
+                let sum1 = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+                let sum2 = sum1.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
+                Ok(sum2)
+            },
+        }
+    }
+}
+
+impl StrictRecBody for TaggedChainBody {
+    proof fn lemma_body_all_inv_preservation(
+        &self,
+        _param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+    }
+}
+
+proof fn tagged_chain_sound_parser() {
+    let tagged_chain = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
+
+    let input = seq![0x7Au8, 0x5Au8, 0x5Au8, 0x33u8, 0x33u8, 0x00u8, 0x00u8];
+    let value = TaggedChainTSpec::Step(
+        0x5Au8,
+        Box::new(
+            TaggedChainTSpec::Step(
+                0x33u8,
+                Box::new(TaggedChainTSpec::Step(0x00u8, Box::new(TaggedChainTSpec::End))),
+            ),
+        ),
+    );
+
+    tagged_chain.lemma_parse_safe(input);
+    tagged_chain.lemma_parse_sound_value(input);
+    tagged_chain.lemma_parse_sound_consumption(input);
+    tagged_chain.lemma_serialize_len(value);
+    tagged_chain.theorem_parse_serialize_roundtrip(input);
+}
+
+} // verus!
+#[test]
+fn nested_braces_exec_parse() {
+    fn nested_braces(depth: usize) -> NestedBracesT {
+        let mut value = NestedBracesT::Eps;
+        for _ in 0..depth {
+            value = NestedBracesT::Brace(Box::new(value));
+        }
+        value
+    }
+
+    let fmt = FixWith::<10, _, _>(NestedBracesBody, ());
+    let input: &[u8] = &[0x7b, 0x7b, 0x00, 0x7d, 0x7d];
+    let result = fmt.parse(&input);
+
+    println!("input buf: {:X?}, parse result: {:?}", input, result);
+
+    let parsed_value = match result {
+        Ok((5, value @ NestedBracesT::Brace(_))) => {
+            let NestedBracesT::Brace(inner) = &value else {
+                unreachable!();
+            };
+            assert!(
+                matches!(inner.as_ref(), NestedBracesT::Brace(inner2) if matches!(inner2.as_ref(), NestedBracesT::Eps))
+            );
+            value
+        }
+        other => panic!("unexpected parse result: {:?}", other),
+    };
+
+    let parsed_ref = &parsed_value;
+    let prepared = fmt.prepare(parsed_ref);
+    assert!(matches!(prepared, Ok(len) if len == input.len()));
+
+    let len = prepared.unwrap();
+    let mut serialized = vec![0; len];
+    fmt.serialize(&parsed_ref, &mut serialized);
+    println!(
+        "serialized value: {:?}, output buf: {:X?}",
+        parsed_value, serialized
+    );
+    assert_eq!(serialized.as_slice(), input);
+
+    let serialized_input = serialized.as_slice();
+    let serialized_parse_result = fmt.parse(&serialized_input);
+    println!(
+        "serialized input buf: {:X?}, parse result: {:?}",
+        serialized_input, serialized_parse_result
+    );
+
+    // Test with recursion limit exceeded
+    let bad_input: &[u8] = &[
+        0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x7b, 0x00, 0x7d, 0x7d, 0x7d,
+        0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d, 0x7d,
+    ];
+    let bad_result = fmt.parse(&bad_input);
+
+    println!(
+        "bad input buf: {:X?}, parse result: {:?}",
+        bad_input, bad_result
+    );
+
+    match &bad_result {
+        Err(err) => {
+            println!("bad parse error message: {}", err);
+            assert_eq!(
+                err.kind,
+                crate::core::exec::ParseErrorKind::RecursionLimitExceeded
+            );
+        }
+        other => panic!("expected recursion limit error, got {:?}", other),
+    }
+
+    let too_deep = nested_braces(11);
+    let too_deep_prepared = fmt.prepare(&too_deep);
+    println!("too-deep nested prepare result: {:?}", too_deep_prepared);
+    assert!(matches!(
+        too_deep_prepared,
+        Err(PreSerializeError {
+            kind: PreSerializeErrorKind::NotCompliant(ComplianceErrorKind::RecursionLimitExceeded),
+            ..
+        })
+    ));
+}
+
+#[test]
+fn tagged_chain_exec_parse_serialize() {
+    let fmt = FixWith::<10, _, _>(TaggedChainBody, 0x7Au8);
+    let input: &[u8] = &[0x7A, 0x5A, 0x5A, 0x33, 0x33, 0x00, 0x00];
+    let result = fmt.parse(&input);
+
+    println!(
+        "tagged-chain input buf: {:X?}, parse result: {:?}",
+        input, result
+    );
+
+    let parsed_value = match result {
+        Ok((7, TaggedChainT::Step(0x5A, tail1))) => {
+            assert!(matches!(
+                tail1.as_ref(),
+                TaggedChainT::Step(0x33, tail2)
+                    if matches!(tail2.as_ref(), TaggedChainT::Step(0x00, tail3)
+                        if matches!(tail3.as_ref(), TaggedChainT::End))
+            ));
+            TaggedChainT::Step(0x5A, tail1)
+        }
+        other => panic!("unexpected tagged-chain parse result: {:?}", other),
+    };
+
+    let prepared = fmt.prepare(&parsed_value);
+    assert!(matches!(prepared, Ok(len) if len == input.len()));
+    let len = prepared.unwrap();
+    let mut serialized = vec![0; len];
+    fmt.serialize(&&parsed_value, &mut serialized);
+    println!(
+        "tagged-chain parsed value: {:?}, serialized buf: {:X?}",
+        parsed_value, serialized
+    );
+    assert_eq!(serialized.as_slice(), input);
+}
+
+#[cfg(feature = "std")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NestedBracesBenchError {
+    UnexpectedEof,
+    InvalidTag,
+    RecursionLimitExceeded,
+}
+
+#[cfg(feature = "std")]
+pub const NESTED_BRACES_BENCH_LIMIT: usize = 512;
+
+#[cfg(feature = "std")]
+pub fn nested_braces_value(depth: usize) -> NestedBracesT {
+    let mut value = NestedBracesT::Eps;
+    for _ in 0..depth {
+        value = NestedBracesT::Brace(Box::new(value));
+    }
+    value
+}
+
+#[cfg(feature = "std")]
+pub fn benchmark_nested_braces_values() -> Vec<NestedBracesT> {
+    (0..192usize).map(nested_braces_value).collect()
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_prepare_nested_braces_checked(
+    v: &NestedBracesT,
+) -> Result<usize, NestedBracesBenchError> {
+    handrolled_prepare_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, v)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_prepare_nested_braces_gas(
+    gas: usize,
+    v: &NestedBracesT,
+) -> Result<usize, NestedBracesBenchError> {
+    match v {
+        NestedBracesT::Eps => Ok(1),
+        NestedBracesT::Brace(inner) => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            Ok(2 + handrolled_prepare_nested_braces_gas(gas - 1, inner)?)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_serialize_nested_braces_checked(
+    v: &NestedBracesT,
+    obuf: &mut Vec<u8>,
+) -> Result<(), NestedBracesBenchError> {
+    handrolled_serialize_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, v, obuf)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_serialize_nested_braces_gas(
+    gas: usize,
+    v: &NestedBracesT,
+    obuf: &mut Vec<u8>,
+) -> Result<(), NestedBracesBenchError> {
+    match v {
+        NestedBracesT::Eps => obuf.push(0x00),
+        NestedBracesT::Brace(inner) => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            obuf.push(0x7b);
+            handrolled_serialize_nested_braces_gas(gas - 1, inner, obuf)?;
+            obuf.push(0x7d);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+pub fn handrolled_parse_nested_braces_checked(
+    input: &[u8],
+) -> Result<(usize, NestedBracesT), NestedBracesBenchError> {
+    handrolled_parse_nested_braces_gas(NESTED_BRACES_BENCH_LIMIT, input)
+}
+
+#[cfg(feature = "std")]
+fn handrolled_parse_nested_braces_gas(
+    gas: usize,
+    input: &[u8],
+) -> Result<(usize, NestedBracesT), NestedBracesBenchError> {
+    let Some((&tag, rest)) = input.split_first() else {
+        return Err(NestedBracesBenchError::UnexpectedEof);
+    };
+
+    match tag {
+        0x00 => Ok((1, NestedBracesT::Eps)),
+        0x7b => {
+            if gas == 0 {
+                return Err(NestedBracesBenchError::RecursionLimitExceeded);
+            }
+            let (n_inner, inner) = handrolled_parse_nested_braces_gas(gas - 1, rest)?;
+            let Some((&close, _)) = rest[n_inner..].split_first() else {
+                return Err(NestedBracesBenchError::UnexpectedEof);
+            };
+            if close != 0x7d {
+                return Err(NestedBracesBenchError::InvalidTag);
+            }
+            Ok((n_inner + 2, NestedBracesT::Brace(Box::new(inner))))
+        }
+        _ => Err(NestedBracesBenchError::InvalidTag),
+    }
+}

@@ -1,0 +1,40 @@
+//! Name-carrying wrapper for runtime error reporting.
+//!
+//! [`Named`] preserves the child's format semantics and attaches a static name
+//! while parse or preparation errors propagate outward.
+/// Executable trait implementations for this combinator.
+pub mod exec;
+/// Correctness proofs for this combinator.
+pub mod proof;
+/// Specification trait implementations for this combinator.
+pub mod spec;
+
+use crate::core::proof::LeafNonMalleable;
+use vstd::prelude::*;
+
+verus! {
+
+/// Transparent wrapper around `Inner` that annotates runtime parse errors with a static format
+/// name.
+///
+/// The semantic format is unchanged: parsing, consistency, serialization, and all proof
+/// obligations are delegated to `Inner`.
+#[derive(Copy)]
+pub struct Named<Inner>(pub &'static str, pub Inner);
+
+impl<Inner: Clone> Clone for Named<Inner> {
+    fn clone(&self) -> (cloned: Self)
+        ensures
+            call_ensures(Inner::clone, (&self.1,), cloned.1),
+    {
+        Named(self.0, self.1.clone())
+    }
+}
+
+impl<Inner: LeafNonMalleable> LeafNonMalleable for Named<Inner> {
+    proof fn nonmal_leaf_inv(&self) {
+        self.1.nonmal_leaf_inv();
+    }
+}
+
+} // verus!

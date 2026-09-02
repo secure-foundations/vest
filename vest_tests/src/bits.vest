@@ -1,0 +1,56 @@
+!BIG_ENDIAN
+
+version_ihl = bits {
+    version: u4,
+    ihl: u4,
+}
+
+cross_byte_span = bits {
+    prefix: u3,
+    span: u10,
+    suffix: u3,
+}
+
+payload_kind = enum {
+    Raw         = 0u3,
+    Words       = 1u3,
+    Tiny        = 2u3,
+    ...
+}
+
+packet_header = bits {
+    @kind: payload_kind,
+    @count: u5 | { 1..31 },
+    @len: u8,
+}
+
+choice_packet = {
+    @hdr: packet_header,
+    payload: choose(@hdr.kind) {
+        Raw        => [u8; @hdr.len],
+        Words      => [u16; @hdr.count],
+        Tiny       => u8,
+        _          => [u8; @hdr.len],
+    },
+}
+
+closed_payload_kind = enum {
+    Raw         = 0u3,
+    Words       = 1u3,
+    Tiny        = 2u3,
+}
+
+closed_packet_header = bits {
+    kind: closed_payload_kind,
+    count: u5 | { 1..31 },
+    len: u8,
+}
+
+closed_choice_packet = {
+    @hdr: closed_packet_header,
+    payload: choose(@hdr.kind) {
+        Raw        => [u8; @hdr.len],
+        Words      => [u16; @hdr.count],
+        Tiny       => u8,
+    },
+}

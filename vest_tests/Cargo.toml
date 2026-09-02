@@ -1,0 +1,33 @@
+[package]
+name = "vest_tests"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[features]
+# The benchmark corpora are intentionally kept out of Git. Enable this feature
+# when running benchmarks with a populated vest_tests/bench_data directory.
+bench-data = []
+
+[dependencies]
+vstd = { workspace = true, features = ["std"] }
+vest_lib = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+base64 = "0.22.1"
+bitcoin = "0.32.100"
+rustls = "0.22"
+
+[[bench]]
+name = "generated_parser_benchmark"
+harness = false
+
+[package.metadata.verus]
+verify = true
+
+[package.metadata.verus.ide]
+extra_args = "--expand-errors"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }

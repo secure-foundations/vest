@@ -1,0 +1,619 @@
+//! Executable fn traits.
+use crate::combinators::mapped::spec::{SpecMap, SpecMapper};
+use crate::core::exec::output::*;
+use crate::core::exec::parser::*;
+use crate::core::exec::{
+    output::OutputBuf,
+    serializer::{ByteLen, PreSerializeError, Prepare, Serializer},
+};
+use crate::core::proof::Productive;
+use crate::core::spec::*;
+use core::marker::PhantomData;
+use vstd::prelude::*;
+
+verus! {
+
+/// Executable counterpart of [`crate::core::spec::SpecPred`].
+///
+/// The executable method takes `&T` so callers can validate parsed values without moving them.
+pub trait Pred<T: DeepView>: SpecPred<T::V> {
+    fn test(&self, value: &T) -> (ok: bool)
+        ensures
+            ok == self.apply(value.deep_view()),
+    ;
+}
+
+impl<T, P> Pred<T> for &P where T: DeepView, P: Pred<T> {
+    fn test(&self, value: &T) -> (ok: bool) {
+        (*self).test(value)
+    }
+}
+
+/// Pairs an executable predicate closure with a ghost spec predicate.
+pub struct FnPred<T: DeepView, Exec: Fn(&T) -> bool, Spec: SpecPred<T::V>> {
+    exec_fn: Exec,
+    spec_fn: Ghost<Spec>,
+    marker: PhantomData<T>,
+}
+
+impl<T, Exec, Spec> FnPred<T, Exec, Spec> where
+    T: DeepView,
+    Exec: Fn(&T) -> bool,
+    Spec: SpecPred<T::V>,
+ {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        &&& forall|v: &T| #[trigger] call_requires(self.exec_fn, (v,))
+        &&& forall|v: &T, ok: bool| #[trigger]
+            call_ensures(self.exec_fn, (v,), ok) ==> ok == {
+                let Ghost(spec_pred) = self.spec_fn;
+                spec_pred.apply(v.deep_view())
+            }
+    }
+
+    pub fn new(exec_fn: Exec, Ghost(spec): Ghost<Spec>) -> (pred: Self)
+        requires
+            forall|v: &T| #[trigger] call_requires(exec_fn, (v,)),
+            forall|v: &T, ok: bool| #[trigger]
+                call_ensures(exec_fn, (v,), ok) ==> ok == spec.apply(v.deep_view()),
+    {
+        Self { exec_fn, spec_fn: Ghost(spec), marker: PhantomData }
+    }
+}
+
+impl<T, Exec, Spec> SpecPred<T::V> for FnPred<T, Exec, Spec> where
+    T: DeepView,
+    Exec: Fn(&T) -> bool,
+    Spec: SpecPred<T::V>,
+ {
+    closed spec fn apply(&self, value: T::V) -> bool {
+        let Ghost(spec_pred) = self.spec_fn;
+        spec_pred.apply(value)
+    }
+}
+
+impl<T, Exec, Spec> Pred<T> for FnPred<T, Exec, Spec> where
+    T: DeepView,
+    Exec: Fn(&T) -> bool,
+    Spec: SpecPred<T::V>,
+ {
+    fn test(&self, value: &T) -> (ok: bool) {
+        proof {
+            use_type_invariant(self);
+        }
+        (self.exec_fn)(value)
+    }
+}
+
+pub trait Map<I>: SpecMap where I: DeepView<V = Self::Input> {
+    type O: DeepView<V = Self::Output>;
+
+    fn map(&self, i: I) -> (o: Self::O)
+        ensures
+            self.spec_map(i.deep_view()) == o.deep_view(),
+    ;
+}
+
+pub trait MapRef<I>: SpecMap<Output = Self::O> where I: DeepView<V = Self::Input> {
+    type O;
+
+    fn map(&self, i: &I) -> (o: Self::O)
+        ensures
+            self.spec_map(i.deep_view()) == o,
+    ;
+}
+
+// pub trait MapRef<I> where I: DeepView {
+//     type O;
+//     open spec fn pre(&self, i: &I) -> bool {
+//         true
+//     }
+//     spec fn post(&self, i: &I, o: Self::O) -> bool;
+//     fn map(&self, i: &I) -> (o: Self::O)
+//         requires
+//             self.pre(i),
+//         ensures
+//             self.post(i, o),
+//     ;
+// }
+// pub type ClsWithSpec<I, O, F> = (F, Ghost<spec_fn(I) -> O>);
+// // implement MapRef for any `Fn(&I) -> O` that satisfies the pre/post conditions
+// impl<I, O, F> MapRef<I> for ClsWithSpec<I, O, F> where I: DeepView, F: Fn(&I) -> O {
+//     type O = O;
+//     open spec fn pre(&self, i: &I) -> bool {
+//         call_requires(self.0, (i,))
+//     }
+//     open spec fn post(&self, i: &I, o: O) -> bool {
+//         call_ensures(self.0, (i,), o)
+//     }
+//     fn map(&self, i: &I) -> (o: O) {
+//         (self.0)(i)
+//     }
+// }
+// impl<I, O, F> SpecMap for ClsWithSpec<I, O, F> where I: DeepView, F: Fn(&I) -> O {
+//     type Input = I;
+//     type Output = O;
+//     open spec fn spec_map(&self, i: I) -> O {
+//         let Ghost(spec_fn) = self.1;
+//         spec_fn(i)
+//     }
+// }
+/// Pairs an executable predicate closure with a ghost spec predicate.
+#[verifier::reject_recursive_types(O)]
+pub struct FnMap<
+    I: DeepView,
+    O: DeepView,
+    Exec: Fn(I) -> O,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
+> {
+    exec_fn: Exec,
+    spec_fn: Ghost<Spec>,
+    _marker: PhantomData<(I, O)>,
+}
+
+impl<I: DeepView, O: DeepView, Exec: Fn(I) -> O, Spec: SpecMap<Input = I::V, Output = O::V>> FnMap<
+    I,
+    O,
+    Exec,
+    Spec,
+> {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        &&& forall|i: I| #[trigger] call_requires(self.exec_fn, (i,))
+        &&& forall|i: I, o: O| #[trigger]
+            call_ensures(self.exec_fn, (i,), o) ==> o.deep_view() == {
+                let Ghost(spec_fn) = self.spec_fn;
+                spec_fn.spec_map(i.deep_view())
+            }
+    }
+
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (fnmap: Self)
+        requires
+            forall|i: I| #[trigger] call_requires(exec_fn, (i,)),
+            forall|i: I, o: O| #[trigger]
+                call_ensures(exec_fn, (i,), o) ==> o.deep_view() == spec_fn.spec_map(i.deep_view()),
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<I, O, Exec, Spec> SpecMap for FnMap<I, O, Exec, Spec> where
+    I: DeepView,
+    O: DeepView,
+    Exec: Fn(I) -> O,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
+ {
+    type Input = I::V;
+
+    type Output = O::V;
+
+    closed spec fn spec_map(&self, i: Self::Input) -> Self::Output {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.spec_map(i)
+    }
+}
+
+impl<I, O, Exec, Spec> Map<I> for FnMap<I, O, Exec, Spec> where
+    I: DeepView,
+    O: DeepView,
+    Exec: Fn(I) -> O,
+    Spec: SpecMap<Input = I::V, Output = O::V>,
+ {
+    type O = O;
+
+    fn map(&self, i: I) -> (o: Self::O) {
+        proof {
+            use_type_invariant(self);
+        }
+        (self.exec_fn)(i)
+    }
+}
+
+/// Pairs an executable parser closure with a ghost specification parser.
+#[verifier::reject_recursive_types(O)]
+pub struct FnParser<
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SpecParser<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<(I, O)>,
+}
+
+impl<I, O, Spec, Exec> FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: Productive<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    /// Constructs a safe, productive parser callback with a ghost specification.
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (parser: Self)
+        requires
+            spec_fn.safe_inv(),
+            spec_fn.productive_inv(),
+            forall|i: &I| #[trigger] call_requires(exec_fn, (i,)),
+            forall|i: &I, r: PResult<O>| #[trigger]
+                call_ensures(exec_fn, (i,), r) ==> parse_matches_spec(r, spec_fn.spec_parse(i@)),
+        ensures
+            parser.exec_inv(),
+            parser.safe_inv(),
+            parser.productive_inv(),
+            parser.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<I, O, Spec, Exec> SpecParser for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SpecParser<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    type PVal = O::V;
+
+    open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.spec_parse(ibuf)
+    }
+}
+
+pub proof fn lemma_ref_fn_parser_spec_parse<I, O, Spec, Exec>(
+    parser: &FnParser<I, O, Spec, Exec>,
+    ibuf: Seq<u8>,
+) where I: View<V = Seq<u8>>, O: DeepView, Spec: SpecParser<PVal = O::V>, Exec: Fn(&I) -> PResult<O>
+    ensures
+        (&parser).spec_parse(ibuf) == parser.spec_fn@.spec_parse(ibuf),
+{
+}
+
+impl<I, O, Spec, Exec> SafeParser for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SafeParser<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    open spec fn safe_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.safe_inv()
+    }
+
+    proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.lemma_parse_safe(ibuf);
+    }
+}
+
+impl<I, O, Spec, Exec> Productive for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: Productive<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    open spec fn productive_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.productive_inv()
+    }
+
+    proof fn lemma_productive(&self, input: Seq<u8>) {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.lemma_productive(input);
+    }
+}
+
+impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SpecParser<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    type PT = O;
+
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|i: &I| #[trigger] call_requires(self.exec_fn, (i,))
+        &&& forall|i: &I, r: PResult<O>| #[trigger]
+            call_ensures(self.exec_fn, (i,), r) ==> {
+                let Ghost(spec_fn) = self.spec_fn;
+                parse_matches_spec(r, spec_fn.spec_parse(i@))
+            }
+    }
+
+    fn parse(&self, ibuf: &I) -> (r: PResult<O>) {
+        (self.exec_fn)(ibuf)
+    }
+}
+
+/// Pairs an executable serializer closure with a ghost specification serializer.
+#[verifier::reject_recursive_types(T)]
+pub struct FnSerializer<
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _output: PhantomData<Output>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<Output, T, Spec, Exec> FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (serializer: Self)
+        requires
+            forall|v: &T, obuf: &mut Output|
+                (spec_fn.consistent(v.deep_view()) && obuf.fits(spec_fn.byte_len(v.deep_view())))
+                    ==> #[trigger] call_requires(exec_fn, (v, obuf)),
+            forall|v: &T, obuf: &mut Output|
+                (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
+                    exec_fn,
+                    (v, obuf),
+                    (),
+                )) ==> {
+                    &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+                    &&& forall|n| #[trigger]
+                        obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(n)
+                    &&& obuf.same_destination(final(obuf))
+                },
+        ensures
+            serializer.exec_inv(),
+            serializer.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _output: PhantomData, _marker: PhantomData }
+    }
+}
+
+impl<Output, T, Spec, Exec> SpecSerializer for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    type SVal = T::V;
+
+    open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.spec_serialize(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> SpecByteLen for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    type T = T::V;
+
+    open spec fn byte_len(&self, v: Self::T) -> nat {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.byte_len(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> GoodSerializer for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: GoodSerializer<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    open spec fn serialize_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.serialize_inv()
+    }
+
+    proof fn lemma_serialize_len(&self, v: Self::SVal) {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.lemma_serialize_len(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> Consistency for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    type Val = T::V;
+
+    open spec fn consistent(&self, v: Self::Val) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        spec_fn.consistent(v)
+    }
+}
+
+impl<Output, T, Spec, Exec> Serializer<Output, T> for FnSerializer<Output, T, Spec, Exec> where
+    Output: OutputBuf,
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + SpecSerializer<SVal = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T, &mut Output),
+ {
+    #[verifier::prophetic]
+    open spec fn exec_inv(&self) -> bool {
+        let Ghost(spec_fn) = self.spec_fn;
+        &&& forall|v: &T, obuf: &mut Output|
+            (spec_fn.consistent(v.deep_view()) && obuf.fits(spec_fn.byte_len(v.deep_view())))
+                ==> #[trigger] call_requires(self.exec_fn, (v, obuf))
+        &&& forall|v: &T, obuf: &mut Output|
+            (spec_fn.consistent(v.deep_view()) && #[trigger] call_ensures(
+                self.exec_fn,
+                (v, obuf),
+                (),
+            )) ==> {
+                &&& final(obuf)@ == obuf@ + spec_fn.spec_serialize(v.deep_view())
+                &&& forall|n| #[trigger]
+                    obuf.fits(spec_fn.byte_len(v.deep_view()) + n) <==> final(obuf).fits(n)
+                &&& obuf.same_destination(final(obuf))
+            }
+    }
+
+    fn serialize_into(&self, v: &T, obuf: &mut Output) {
+        (self.exec_fn)(v, obuf)
+    }
+}
+
+/// Pairs an executable preparation closure with its consistency and byte-length specification.
+#[verifier::reject_recursive_types(T)]
+pub struct FnPrepare<
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (prepare: Self)
+        requires
+            forall|value: &T| #[trigger] call_requires(exec_fn, (value,)),
+            forall|value: &T, result: Result<usize, PreSerializeError>|
+                #[trigger] call_ensures(exec_fn, (value,), result) ==> (
+                    result matches Ok(len) ==> {
+                        &&& spec_fn.consistent(value.deep_view())
+                        &&& len == spec_fn.byte_len(value.deep_view())
+                    }
+                ),
+        ensures
+            prepare.exec_inv(),
+            prepare.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    type Val = T::V;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.spec_fn@.consistent(value)
+    }
+}
+
+impl<T, Spec, Exec> SpecByteLen for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    type T = T::V;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        self.spec_fn@.byte_len(value)
+    }
+}
+
+impl<T, Spec, Exec> Prepare<T> for FnPrepare<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> Result<usize, PreSerializeError>,
+{
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|value: &T| #[trigger] call_requires(self.exec_fn, (value,))
+        &&& forall|value: &T, result: Result<usize, PreSerializeError>|
+            #[trigger] call_ensures(self.exec_fn, (value,), result) ==> (
+                result matches Ok(len) ==> {
+                    &&& self.spec_fn@.consistent(value.deep_view())
+                    &&& len == self.spec_fn@.byte_len(value.deep_view())
+                }
+            )
+    }
+
+    fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
+        (self.exec_fn)(value)
+    }
+}
+
+/// Pairs an executable byte-length closure with its specification.
+#[verifier::reject_recursive_types(T)]
+pub struct FnByteLen<
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+> {
+    pub exec_fn: Exec,
+    pub spec_fn: Ghost<Spec>,
+    pub _marker: PhantomData<T>,
+}
+
+impl<T, Spec, Exec> FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    pub fn new(exec_fn: Exec, Ghost(spec_fn): Ghost<Spec>) -> (length: Self)
+        requires
+            forall|value: &T|
+                spec_fn.byte_len(value.deep_view()) <= usize::MAX ==> #[trigger]
+                    call_requires(exec_fn, (value,)),
+            forall|value: &T, len: usize| #[trigger]
+                call_ensures(exec_fn, (value,), len) ==> len == spec_fn.byte_len(
+                    value.deep_view(),
+                ),
+        ensures
+            length.exec_inv(),
+            length.spec_fn == spec_fn,
+    {
+        Self { exec_fn, spec_fn: Ghost(spec_fn), _marker: PhantomData }
+    }
+}
+
+impl<T, Spec, Exec> Consistency for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    type Val = T::V;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.spec_fn@.consistent(value)
+    }
+}
+
+impl<T, Spec, Exec> SpecByteLen for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    type T = T::V;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        self.spec_fn@.byte_len(value)
+    }
+}
+
+impl<T, Spec, Exec> ByteLen<T> for FnByteLen<T, Spec, Exec> where
+    T: DeepView + ?Sized,
+    Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
+    Exec: Fn(&T) -> usize,
+{
+    open spec fn exec_inv(&self) -> bool {
+        &&& forall|value: &T|
+            self.spec_fn@.byte_len(value.deep_view()) <= usize::MAX ==> #[trigger]
+                call_requires(self.exec_fn, (value,))
+        &&& forall|value: &T, len: usize| #[trigger]
+            call_ensures(self.exec_fn, (value,), len) ==> len == self.spec_fn@.byte_len(
+                value.deep_view(),
+            )
+    }
+
+    fn length(&self, value: &T) -> usize {
+        (self.exec_fn)(value)
+    }
+}
+
+} // verus!

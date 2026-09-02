@@ -1,313 +1,163 @@
-extern crate alloc;
-// use core::convert::Infallible;
+use std::collections::{HashMap, HashSet};
+use std::hash::DefaultHasher;
 
-use alloc::vec::Vec;
+#[derive(Default, Clone)]
+pub struct VestHasherBuilder;
 
-use vstd::prelude::*;
-use vstd::slice::slice_index_get;
+impl std::hash::BuildHasher for VestHasherBuilder {
+    type Hasher = DefaultHasher;
 
-use crate::regular::uints::FromToBytes;
-
-verus! {
-
-/// Spec version of [`From`].
-pub trait SpecFrom<T>: Sized {
-    /// Spec version of [`From::ex_from`]
-    spec fn spec_from(t: T) -> Self;
-}
-
-/// Spec version of [`Into`].
-pub trait SpecInto<T>: Sized {
-    /// Spec version of [`Into::ex_into`]
-    spec fn spec_into(self) -> T;
-}
-
-impl<T, U> SpecInto<U> for T where U: SpecFrom<T> {
-    open spec fn spec_into(self) -> U {
-        U::spec_from(self)
+    fn build_hasher(&self) -> Self::Hasher {
+        DefaultHasher::new()
     }
 }
 
-impl<T> SpecFrom<T> for T {
-    open spec fn spec_from(t: T) -> T {
-        t
+/// Compute SCCs via Tarjan's algorithm.
+/// Returns SCCs in reverse-topological order (callee SCCs before caller SCCs).
+/// Each SCC is a `Vec<String>`; single-node SCCs with no self-edge are non-recursive.
+pub fn tarjan_scc(graph: &HashMap<String, Vec<String>>) -> Vec<Vec<String>> {
+    struct State {
+        index_counter: usize,
+        stack: Vec<String>,
+        on_stack: HashSet<String>,
+        index: HashMap<String, usize>,
+        lowlink: HashMap<String, usize>,
+        sccs: Vec<Vec<String>>,
     }
-}
 
-/// Vest equivalent of [`std::convert::From`].
-pub trait From<T> where T: View, Self: View + Sized, Self::V: SpecFrom<T::V> {
-    /// Vest equivalent of [`std::convert::From::from`].
-    fn ex_from(t: T) -> (res: Self)
-        ensures
-            res@ == Self::V::spec_from(t@),
-    ;
-}
+    fn strongconnect(v: &str, graph: &HashMap<String, Vec<String>>, s: &mut State) {
+        s.index.insert(v.to_string(), s.index_counter);
+        s.lowlink.insert(v.to_string(), s.index_counter);
+        s.index_counter += 1;
+        s.stack.push(v.to_string());
+        s.on_stack.insert(v.to_string());
 
-/// Vest equivalent of [`std::convert::Into`].
-pub trait Into<T> where T: View, Self: View + Sized, Self::V: SpecInto<T::V> {
-    /// Vest equivalent of [`std::convert::Into::into`].
-    fn ex_into(self) -> (res: T)
-        ensures
-            res@ == self@.spec_into(),
-    ;
-}
-
-impl<T, U> Into<U> for T where T: View, U: View, U: From<T>, U::V: SpecFrom<T::V> {
-    fn ex_into(self) -> U {
-        U::ex_from(self)
-    }
-}
-
-impl<T> From<T> for T where T: View, T::V: SpecFrom<T::V> {
-    fn ex_from(t: T) -> (res: T) {
-        t
-    }
-}
-
-impl<const N: usize, 'a, 'b> From<&'a [u8; N]> for &'b [u8] where 'a: 'b {
-    fn ex_from(v: &'a [u8; N]) -> &'b [u8] {
-        v.as_slice()
-    }
-}
-
-/// Spec version of [`TryFrom`].
-pub trait SpecTryFrom<T>: Sized {
-    /// The type returned in the event of a conversion error.
-    type Error;
-
-    /// Performs the conversion.
-    spec fn spec_try_from(value: T) -> Result<Self, Self::Error>;
-}
-
-/// Spec version of [`TryInto`].
-pub trait SpecTryInto<T>: Sized {
-    /// The type returned in the event of a conversion error.
-    type Error;
-
-    /// Performs the conversion.
-    spec fn spec_try_into(self) -> Result<T, Self::Error>;
-}
-
-impl<T, U> SpecTryInto<U> for T where U: SpecTryFrom<T> {
-    type Error = U::Error;
-
-    open spec fn spec_try_into(self) -> Result<U, U::Error> {
-        U::spec_try_from(self)
-    }
-}
-
-// impl<T, U> SpecTryFrom<U> for T where U: SpecInto<T> {
-//     type Error = Infallible;
-//
-//     open spec fn spec_try_from(value: U) -> Result<Self, Self::Error> {
-//         Ok(U::spec_into(value))
-//     }
-// }
-/// Vest equivalent of [`std::convert::TryFrom`].
-pub trait TryFrom<T> where T: View, Self: View + Sized, Self::V: SpecTryFrom<T::V> {
-    /// The type returned in the event of a conversion error.
-    type Error;
-
-    /// Vest equivalent of [`std::convert::TryFrom::try_from`].
-    fn ex_try_from(t: T) -> (res: Result<Self, Self::Error>)
-        ensures
-            res matches Ok(v) ==> {
-                &&& Self::V::spec_try_from(t@) is Ok
-                &&& Self::V::spec_try_from(t@) matches Ok(v_) && v@ == v_
-            },
-            res matches Err(e) ==> Self::V::spec_try_from(t@) is Err,
-    ;
-}
-
-/// Vest equivalent of [`std::convert::TryInto`].
-pub trait TryInto<T> where T: View, Self: View + Sized, Self::V: SpecTryInto<T::V> {
-    /// The type returned in the event of a conversion error.
-    type Error;
-
-    /// Vest equivalent of [`std::convert::TryInto::try_into`].
-    fn ex_try_into(self) -> (res: Result<T, Self::Error>)
-        ensures
-            res matches Ok(v) ==> {
-                &&& self@.spec_try_into() is Ok
-                &&& self@.spec_try_into() matches Ok(v_) && v@ == v_
-            },
-            res matches Err(e) ==> self@.spec_try_into() is Err,
-    ;
-}
-
-impl<T, U> TryInto<U> for T where T: View, U: View, U: TryFrom<T>, U::V: SpecTryFrom<T::V> {
-    type Error = U::Error;
-
-    fn ex_try_into(self) -> Result<U, U::Error> {
-        U::ex_try_from(self)
-    }
-}
-
-// impl<T, U> TryFrom<U> for T where T: View, U: View, U: Into<T>, U::V: SpecInto<T::V> {
-//     type Error = Infallible;
-//
-//     fn ex_try_from(value: U) -> Result<T, Infallible> {
-//         Ok(U::ex_into(value))
-//     }
-// }
-/// A helper trait for two different types that can be compared.
-pub trait Compare<Other> where Self: View, Other: View<V = Self::V> {
-    /// Compare a value of `Self` with a value of `Other`.
-    fn compare(&self, other: &Other) -> (o: bool)
-        ensures
-            o == (self@ == other@),
-    ;
-}
-
-impl<Int: FromToBytes> Compare<Int> for Int {
-    fn compare(&self, other: &Int) -> bool {
-        self.eq(other)
-    }
-}
-
-impl<'a, 'b> Compare<&'b [u8]> for &'a [u8] {
-    fn compare(&self, other: &&'b [u8]) -> bool {
-        compare_slice(self, *other)
-    }
-}
-
-/// Helper function to splice a sequence of bytes into another sequence of bytes.
-pub open spec fn seq_splice(data: Seq<u8>, pos: usize, v: Seq<u8>) -> Seq<u8>
-    recommends
-        pos + v.len() <= data.len(),
-{
-    data.take(pos as int) + v + data.skip(pos + v.len() as int)
-}
-
-/// Wraps Rust's `Vec::extend_from_slice`.
-#[verifier::external_body]
-pub fn vec_u8_extend_from_slice(dest: &mut Vec<u8>, src: &[u8])
-    requires
-        old(dest)@.len() + src@.len() <= usize::MAX,
-    ensures
-        final(dest)@.len() == old(dest)@.len() + src@.len(),
-        final(dest)@ == old(dest)@.add(src@),
-{
-    dest.extend_from_slice(src);
-}
-
-/// Helper function to set a range of bytes in a vector.
-pub fn set_range<'a>(data: &mut Vec<u8>, i: usize, input: &[u8])
-    requires
-        0 <= i + input@.len() <= old(data)@.len() <= usize::MAX,
-    ensures
-        final(data)@.len() == old(data)@.len()
-        && final(data)@ == seq_splice(old(data)@, i, input@),
-{
-    // data[i..i + input.len()].copy_from_slice(input);
-    let mut j = 0;
-    while j < input.len()
-        invariant
-            data@.len() == old(data)@.len(),
-            forall|k| 0 <= k < i ==> data@[k] == old(data)@[k],
-            forall|k| i + input@.len() <= k < data@.len() ==> data@[k] == old(data)@[k],
-            0 <= i <= i + j <= i + input@.len() <= data@.len() <= usize::MAX,
-            forall|k| 0 <= k < j ==> data@[i + k] == input@[k],
-        decreases input@.len() - j,
-    {
-        data.set(i + j, *slice_index_get(input, j));
-        j = j + 1
-    }
-    assert(data@ =~= old(data)@.subrange(0, i as int).add(input@).add(
-        old(data)@.subrange(i + input@.len(), data@.len() as int),
-    ))
-}
-
-/// Helper function to compare two slices.
-pub fn compare_slice<'a, 'b>(x: &'a [u8], y: &'a [u8]) -> (res: bool)
-    ensures
-        res == (x@ =~= y@),
-{
-    if x.len() != y.len() {
-        assert(x@.len() != y@.len());
-        return false;
-    }
-    for i in 0..x.len()
-        invariant
-            0 <= i <= x.len(),
-            x.len() == y.len(),
-            forall|j: int| 0 <= j < i ==> x@[j] == y@[j],
-    {
-        if slice_index_get(x, i) != slice_index_get(y, i) {
-            assert(x@[i as int] != y@[i as int]);
-            return false;
-        }
-    }
-    proof {
-        assert(x@ =~= y@);
-    }
-    true
-}
-
-/// Helper trait for types that have a reflexive view.
-pub trait ViewReflex where Self: core::marker::Sized + View<V = Self> {
-    /// Reflexivity proof for the view.
-    proof fn reflex(&self)
-        ensures
-            self@ == self,
-    ;
-}
-
-/// Helper function to initialize a vector of `u8` with zeros.
-pub exec fn init_vec_u8(n: usize) -> (res: Vec<u8>)
-    ensures
-        res@.len() == n,
-{
-    let mut i: usize = 0;
-    let mut ret: Vec<u8> = Vec::new();
-    while i < n
-        invariant
-            0 <= i <= n,
-            ret@.len() == i,
-        decreases n - i,
-    {
-        ret.push(0);
-        assert(ret@[i as int] == 0);
-        i = i + 1
-    }
-    ret
-}
-
-} // verus!
-macro_rules! declare_identity_view_reflex {
-    ($t:ty) => {
-        ::vstd::prelude::verus! {
-            impl ViewReflex for $t {
-                proof fn reflex(&self) {}
+        if let Some(neighbors) = graph.get(v) {
+            for w in neighbors {
+                if !s.index.contains_key(w.as_str()) {
+                    strongconnect(w, graph, s);
+                    let ll_w = s.lowlink[w.as_str()];
+                    let ll_v = s.lowlink[v];
+                    s.lowlink.insert(v.to_string(), ll_v.min(ll_w));
+                } else if s.on_stack.contains(w.as_str()) {
+                    let idx_w = s.index[w.as_str()];
+                    let ll_v = s.lowlink[v];
+                    s.lowlink.insert(v.to_string(), ll_v.min(idx_w));
+                }
             }
         }
+
+        if s.lowlink[v] == s.index[v] {
+            let mut scc = Vec::new();
+            loop {
+                let w = s.stack.pop().unwrap();
+                s.on_stack.remove(&w);
+                scc.push(w.clone());
+                if w == v {
+                    break;
+                }
+            }
+            s.sccs.push(scc);
+        }
+    }
+
+    let mut state = State {
+        index_counter: 0,
+        stack: Vec::new(),
+        on_stack: HashSet::new(),
+        index: HashMap::new(),
+        lowlink: HashMap::new(),
+        sccs: Vec::new(),
     };
+
+    // Iterate in sorted order for determinism.
+    let mut nodes: Vec<&str> = graph.keys().map(|s| s.as_str()).collect();
+    nodes.sort_unstable();
+    for v in nodes {
+        if !state.index.contains_key(v) {
+            strongconnect(v, graph, &mut state);
+        }
+    }
+
+    state.sccs
 }
 
-declare_identity_view_reflex!(());
+/// Returns true if an SCC is recursive (size > 1, or a singleton with a self-edge).
+pub fn scc_is_recursive(scc: &[String], graph: &HashMap<String, Vec<String>>) -> bool {
+    if scc.len() > 1 {
+        return true;
+    }
+    let name = &scc[0];
+    graph.get(name).is_some_and(|deps| deps.contains(name))
+}
 
-declare_identity_view_reflex!(bool);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-declare_identity_view_reflex!(u8);
+    fn mk_graph(edges: &[(&str, &[&str])]) -> HashMap<String, Vec<String>> {
+        edges
+            .iter()
+            .map(|(k, vs)| (k.to_string(), vs.iter().map(|s| s.to_string()).collect()))
+            .collect()
+    }
 
-declare_identity_view_reflex!(u16);
+    #[test]
+    fn test_tarjan_self_loop() {
+        let g = mk_graph(&[("a", &["a"])]);
+        let sccs = tarjan_scc(&g);
+        assert_eq!(sccs.len(), 1);
+        assert_eq!(sccs[0], vec!["a".to_string()]);
+        assert!(scc_is_recursive(&sccs[0], &g));
+    }
 
-declare_identity_view_reflex!(u32);
+    #[test]
+    fn test_tarjan_2_cycle() {
+        let g = mk_graph(&[("expr", &["list"]), ("list", &["expr"])]);
+        let sccs = tarjan_scc(&g);
+        assert_eq!(sccs.len(), 1);
+        assert_eq!(sccs[0].len(), 2);
+        assert!(scc_is_recursive(&sccs[0], &g));
+    }
 
-declare_identity_view_reflex!(u64);
+    #[test]
+    fn test_tarjan_acyclic() {
+        let g = mk_graph(&[("a", &["b"]), ("b", &["c"]), ("c", &[])]);
+        let sccs = tarjan_scc(&g);
+        assert_eq!(sccs.len(), 3);
+        for scc in &sccs {
+            assert!(!scc_is_recursive(scc, &g));
+        }
+    }
 
-declare_identity_view_reflex!(u128);
+    #[test]
+    fn test_tarjan_5member_cycle() {
+        let g = mk_graph(&[
+            ("expr", &["expr_v"]),
+            ("expr_v", &["list"]),
+            ("list", &["list_v"]),
+            ("list_v", &["list_v_cons"]),
+            ("list_v_cons", &["expr", "list"]),
+        ]);
+        let sccs = tarjan_scc(&g);
+        assert_eq!(sccs.len(), 1);
+        assert_eq!(sccs[0].len(), 5);
+        assert!(scc_is_recursive(&sccs[0], &g));
+    }
 
-declare_identity_view_reflex!(usize);
-
-declare_identity_view_reflex!(i8);
-
-declare_identity_view_reflex!(i16);
-
-declare_identity_view_reflex!(i32);
-
-declare_identity_view_reflex!(i64);
-
-declare_identity_view_reflex!(i128);
-
-declare_identity_view_reflex!(isize);
+    #[test]
+    fn test_tarjan_mixed() {
+        // enum_kind is non-recursive; expr/list form a 2-cycle
+        let g = mk_graph(&[
+            ("expr_kind", &[]),
+            ("list_kind", &[]),
+            ("expr", &["expr_kind", "list"]),
+            ("list", &["list_kind", "expr"]),
+        ]);
+        let sccs = tarjan_scc(&g);
+        // 4 SCCs: {expr_kind}, {list_kind}, {expr,list}
+        let recursive: Vec<_> = sccs.iter().filter(|s| scc_is_recursive(s, &g)).collect();
+        assert_eq!(recursive.len(), 1);
+        assert_eq!(recursive[0].len(), 2);
+    }
+}

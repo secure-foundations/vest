@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BOOL_BYTE_LEN","CANONICAL_TRUE_BYTE","FALSE_BYTE"],"fn":["bool_fmt","der_bool_byte","non_zero","true_byte"],"struct":["BoolMapper"],"type":["BoolFmt"]};

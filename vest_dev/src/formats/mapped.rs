@@ -1,0 +1,277 @@
+use crate::combinators::mapped::exec::*;
+use crate::combinators::mapped::spec::*;
+use crate::combinators::*;
+use crate::combinators::{Mapped, Refined, U8};
+use crate::core::exec::fns;
+use crate::core::exec::fns::*;
+use crate::core::exec::parser::Parser;
+use crate::core::exec::serializer::Serializer;
+
+use crate::core::{proof::*, spec::*};
+use vstd::prelude::*;
+
+verus! {
+
+spec fn needs_spec_parser<C: SpecParser>(c: C) -> () {
+    ()
+}
+
+spec fn needs_spec_serializer<C: SpecSerializerDps>(c: C) -> () {
+    ()
+}
+
+spec fn needs_spec_combinator<C: SpecCombinator>(c: C) -> () {
+    ()
+}
+
+pub enum MyTag {
+    A = 1,
+    B = 2,
+    C = 3,
+}
+
+pub open spec fn is_my_tag_byte(v: u8) -> bool {
+    v == 1u8 || v == 2u8 || v == 3u8
+}
+
+struct IsMyTagByte;
+
+impl SpecPred<u8> for IsMyTagByte {
+    open spec fn apply(&self, v: u8) -> bool {
+        is_my_tag_byte(v)
+    }
+}
+
+struct MyTagMapper;
+
+impl SpecMapper for MyTagMapper {
+    type In = u8;
+
+    type Out = MyTag;
+
+    open spec fn spec_map(&self, i: u8) -> MyTag {
+        match i {
+            1u8 => MyTag::A,
+            2u8 => MyTag::B,
+            3u8 => MyTag::C,
+            _ => arbitrary(),
+        }
+    }
+
+    open spec fn spec_map_rev(&self, o: MyTag) -> u8 {
+        match o {
+            MyTag::A => 1u8,
+            MyTag::B => 2u8,
+            MyTag::C => 3u8,
+        }
+    }
+
+    open spec fn wf_in(&self, i: Self::In) -> bool {
+        is_my_tag_byte(i)
+    }
+}
+
+impl LossyMapper for MyTagMapper {
+    proof fn lemma_sound_mapper(&self, o: MyTag) {
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, o: Self::Out) {
+    }
+}
+
+impl LosslessMapper for MyTagMapper {
+    proof fn lemma_lossless_mapper(&self, i: u8) {
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, i: Self::In) {
+    }
+}
+
+proof fn my_tag_roundtrip() {
+    let my_tag = Mapped { inner: Refined(U8, |x| is_my_tag_byte(x)), mapper: MyTagMapper };
+
+    assert(my_tag.unambiguous());
+    assert(my_tag.consistent(MyTag::A));
+    assert(my_tag.consistent(MyTag::B));
+    assert(my_tag.consistent(MyTag::C));
+
+    my_tag.theorem_serialize_parse_roundtrip(MyTag::A);
+    my_tag.theorem_serialize_parse_roundtrip(MyTag::B);
+    my_tag.theorem_serialize_parse_roundtrip(MyTag::C);
+
+    assert(my_tag.spec_parse(seq![1u8]) == Some((1int, MyTag::A)));
+    assert(my_tag.spec_parse(seq![2u8]) == Some((1int, MyTag::B)));
+    assert(my_tag.spec_parse(seq![3u8]) == Some((1int, MyTag::C)));
+}
+
+spec fn test() -> () {
+    use super::super::*;
+    let m1 = Mapped { inner: U8, mapper: |x: u8| x as u16 };
+    let m2 = Mapped { inner: U8, mapper: |x: u16| x as u8 };
+    let m3 = Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) };
+    let m4 = Mapped { inner: Refined(U8, IsMyTagByte), mapper: MyTagMapper };
+    needs_spec_parser(m1);
+    needs_spec_serializer(m2);
+    needs_spec_combinator(m3);
+    needs_spec_combinator(m4);
+    ()
+}
+
+pub struct Triple<'i> {
+    pub a: u8,
+    pub b: u8,
+    pub c: &'i [u8],
+}
+
+pub struct TripleSpec {
+    pub a: u8,
+    pub b: u8,
+    pub c: Seq<u8>,
+}
+
+impl<'i> DeepView for Triple<'i> {
+    type V = TripleSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        TripleSpec { a: self.a, b: self.b, c: self.c.deep_view() }
+    }
+}
+
+pub struct TripleOwned {
+    pub a: u8,
+    pub b: u8,
+    pub c: Vec<u8>,
+}
+
+impl DeepView for TripleOwned {
+    type V = TripleSpec;
+
+    open spec fn deep_view(&self) -> Self::V {
+        TripleSpec { a: self.a, b: self.b, c: self.c.deep_view() }
+    }
+}
+
+pub struct TripleMap;
+
+pub struct TripleMapRev;
+
+impl SpecMap for TripleMap {
+    type Input = TripleSpecInner;
+
+    type Output = TripleSpec;
+
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
+        let (a, (b, c)) = i;
+        TripleSpec { a, b, c }
+    }
+}
+
+impl SpecMap for TripleMapRev {
+    type Input = TripleSpec;
+
+    type Output = TripleSpecInner;
+
+    open spec fn spec_map(&self, i: Self::Input) -> Self::Output {
+        (i.a, (i.b, i.c))
+    }
+}
+
+impl<'i> fns::Map<TripleInner<'i>> for TripleMap {
+    type O = Triple<'i>;
+
+    fn map(&self, i: TripleInner<'i>) -> Self::O {
+        let (a, (b, c)) = i;
+        Triple { a, b, c }
+    }
+}
+
+impl<'s> fns::Map<&'s Triple<'s>> for TripleMapRev {
+    type O = TripleInner<'s>;
+
+    fn map(&self, i: &'s Triple<'s>) -> Self::O {
+        (i.a, (i.b, i.c))
+    }
+}
+
+impl<'s> fns::Map<&'s TripleOwned> for TripleMapRev {
+    type O = TripleInner<'s>;
+
+    fn map(&self, i: &'s TripleOwned) -> Self::O {
+        (i.a, (i.b, i.c.as_slice()))
+    }
+}
+
+type TripleFmt = Pair<U8, Pair<U8, Fixed<3>>>;
+
+type TripleSpecInner = (u8, (u8, Seq<u8>));
+
+// type TripleSpecInner = <TripleFmt as SpecParser>::PVal;
+type TripleInner<'i> = (u8, (u8, &'i [u8]));
+
+// type TripleInner<'i> = <TripleFmt as Parser<&'i [u8]>>::PT;
+fn test_map_exec(ibuf: &[u8]) {
+    let ghost to_triple_spec = |i: TripleSpecInner|
+        {
+            let (a, (b, c)) = i;
+            TripleSpec { a, b, c }
+        };
+    let ghost from_triple_spec = |v: TripleSpec| (v.a, (v.b, v.c));
+    let fmt = Mapped {
+        inner: Pair(U8, Pair(U8, Fixed::<3>)),
+        mapper: BiMap(
+            FnMap::<_, _, _, spec_fn(TripleSpecInner) -> TripleSpec>::new(
+                |i: TripleInner| -> (o: Triple)
+                    ensures
+                        o.deep_view() == to_triple_spec(i.deep_view()),
+                    {
+                        let (a, (b, c)) = i;
+                        Triple { a, b, c }
+                    },
+                Ghost(to_triple_spec),
+            ),
+            FnMap::<_, _, _, spec_fn(TripleSpec) -> TripleSpecInner>::new(
+                |i: Triple| -> (o: TripleInner)
+                    ensures
+                        o.deep_view() == from_triple_spec(i.deep_view()),
+                    { (i.a, (i.b, i.c)) },
+                Ghost(from_triple_spec),
+            ),
+        ),
+    };
+
+    proof {
+        crate::core::exec::bridge_lemmas::lemma_mapped_parser_exec_inv::<&[u8], _, _, _>(&fmt);
+    }
+    let _ = fmt.parse(&ibuf);
+
+    let fmt2 = Mapped {
+        inner: Pair(U8, Pair(U8, Fixed::<3>)),
+        mapper: BiMap(TripleMap, TripleMapRev),
+    };
+
+    proof {
+        assert(forall|v: TripleSpecInner| fmt2.mapper.lossless(v));
+        fmt2.lemma_parse_safe(ibuf@);
+        assert(fmt2.nonmal_inv());
+        assert(fmt2.sound_inv());
+        assert(fmt2.unambiguous());
+        fmt2.lemma_parse_sound_consumption(ibuf@);
+        fmt2.lemma_parse_sound_value(ibuf@);
+    }
+
+    let _ = fmt2.parse(&ibuf);
+
+    let triple_v = Triple { a: 1u8, b: 2u8, c: &[3u8, 4u8, 5u8] };
+    // let mut obuf = Vec::<u8>::new();
+    assert(fmt2.consistent(triple_v.deep_view()));
+    // fmt2.serialize(&triple_v, &mut obuf);
+
+    let mut c = Vec::<u8>::new();
+    c.extend_from_slice(&[3u8, 4u8, 5u8]);
+    let triple_owned = TripleOwned { a: 1u8, b: 2u8, c };
+    // let mut obuf = Vec::<u8>::new();
+    assert(fmt2.consistent(triple_owned.deep_view()));
+    // fmt2.serialize(&triple_owned, &mut obuf);
+}
+
+} // verus!

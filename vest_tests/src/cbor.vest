@@ -1,0 +1,323 @@
+// Raw, schemaless CBOR wire-format specification.
+//
+// Scope and representation choices:
+// - This is a raw wire-format spec, not a normalized CBOR data model.
+//   It preserves the encoding family chosen on the wire:
+//   inline additional-info values vs. 1/2/4/8-byte arguments, definite vs. indefinite forms,
+//   and float payloads as raw IEEE bit patterns.
+// - Text strings are parsed as raw bytes of a CBOR text string payload. UTF-8 validity is not
+//   separately modeled here.
+// - Tags are parsed syntactically only; this spec does not validate tag semantics.
+// - Indefinite byte/text strings preserve chunking.
+//
+// References:
+// - RFC 8949
+// - https://cborbook.com/part_1/practical_introduction_to_cbor.html
+
+!BIG_ENDIAN
+
+empty = [u8; 0]
+
+macro raw_blob!(len_type) = {
+  @len: len_type,
+  data: [u8; @len],
+}
+
+macro raw_items!(len_type) = {
+  @len: len_type,
+  items: [cbor_item; @len],
+}
+
+macro raw_pairs!(len_type) = {
+  @len: len_type,
+  entries: [cbor_pair; @len],
+}
+
+macro raw_tagged_item!(tag_type) = {
+  tag: tag_type,
+  item: cbor_item,
+}
+
+cbor_major_type = enum {
+  UnsignedInt = 0u3,
+  NegativeInt = 1u3,
+  ByteString  = 2u3,
+  TextString  = 3u3,
+  Array       = 4u3,
+  Map         = 5u3,
+  Tag         = 6u3,
+  Misc        = 7u3,
+}
+
+cbor_header = bits {
+  @major: cbor_major_type,
+  @ai: u5,
+}
+
+cbor_pair = {
+  key: cbor_item,
+  value: cbor_item,
+}
+
+// Major type 0 / 1 arguments are represented raw:
+// - inline 0..23 => no trailing bytes; the argument is carried in `@head.ai`
+// - 24/25/26/27 => 1/2/4/8-byte trailing argument
+
+cbor_uint_arg_body(@ai: u5) = choose(@ai) {
+  0..23 => empty,
+  24 => u8,
+  25 => u16,
+  26 => u32,
+  27 => u64,
+  _  => Never("Invalid additional-info for major type 0/1"),
+}
+
+// Major types 2 / 3 / 4 / 5 / 6 use the same definite-length / definite-argument classes.
+
+cbor_bytes_small(@len: u5 | { 0..23 }) = {
+  data: [u8; @len],
+}
+
+cbor_text_small(@len: u5 | { 0..23 }) = {
+  data: [u8; @len],
+}
+
+cbor_array_small(@len: u5 | { 0..23 }) = {
+  items: [cbor_item; @len],
+}
+
+cbor_map_small(@len: u5 | { 0..23 }) = {
+  entries: [cbor_pair; @len],
+}
+
+cbor_tag_small = {
+  item: cbor_item,
+}
+
+cbor_bytes_u8 = raw_blob!(u8)
+cbor_bytes_u16 = raw_blob!(u16)
+cbor_bytes_u32 = raw_blob!(u32)
+cbor_bytes_u64 = raw_blob!(u64)
+
+cbor_text_u8 = raw_blob!(u8)
+cbor_text_u16 = raw_blob!(u16)
+cbor_text_u32 = raw_blob!(u32)
+cbor_text_u64 = raw_blob!(u64)
+
+cbor_array_u8 = raw_items!(u8)
+cbor_array_u16 = raw_items!(u16)
+cbor_array_u32 = raw_items!(u32)
+cbor_array_u64 = raw_items!(u64)
+
+cbor_map_u8 = raw_pairs!(u8)
+cbor_map_u16 = raw_pairs!(u16)
+cbor_map_u32 = raw_pairs!(u32)
+cbor_map_u64 = raw_pairs!(u64)
+
+cbor_tag_u8 = raw_tagged_item!(u8)
+cbor_tag_u16 = raw_tagged_item!(u16)
+cbor_tag_u32 = raw_tagged_item!(u32)
+cbor_tag_u64 = raw_tagged_item!(u64)
+
+// ----------------------------------------------------------------------
+// Indefinite byte/text strings
+// ----------------------------------------------------------------------
+
+cbor_indef_bytes_chunks = {
+  @head: cbor_header,
+  rest: choose(@head.major) {
+    Misc => choose(@head.ai) {
+      31 => empty,   // break
+      _  => Never("Invalid additional-info for indefinite byte string"),
+    },
+    ByteString => choose(@head.ai) {
+      0..23 => {
+        chunk: cbor_bytes_small(@head.ai),
+        tail: cbor_indef_bytes_chunks,
+      },
+      24 => {
+        chunk: cbor_bytes_u8,
+        tail: cbor_indef_bytes_chunks,
+      },
+      25 => {
+        chunk: cbor_bytes_u16,
+        tail: cbor_indef_bytes_chunks,
+      },
+      26 => {
+        chunk: cbor_bytes_u32,
+        tail: cbor_indef_bytes_chunks,
+      },
+      27 => {
+        chunk: cbor_bytes_u64,
+        tail: cbor_indef_bytes_chunks,
+      },
+      _  => Never("Invalid additional-info for indefinite byte string"),
+    },
+    _ => Never("Invalid major type for indefinite byte string"),
+  },
+}
+
+cbor_indef_text_chunks = {
+  @head: cbor_header,
+  rest: choose(@head.major) {
+    Misc => choose(@head.ai) {
+      31 => empty,   // break
+      _  => Never("Invalid additional-info for indefinite text string"),
+    },
+    TextString => choose(@head.ai) {
+      0..23 => {
+        chunk: cbor_text_small(@head.ai),
+        tail: cbor_indef_text_chunks,
+      },
+      24 => {
+        chunk: cbor_text_u8,
+        tail: cbor_indef_text_chunks,
+      },
+      25 => {
+        chunk: cbor_text_u16,
+        tail: cbor_indef_text_chunks,
+      },
+      26 => {
+        chunk: cbor_text_u32,
+        tail: cbor_indef_text_chunks,
+      },
+      27 => {
+        chunk: cbor_text_u64,
+        tail: cbor_indef_text_chunks,
+      },
+      _  => Never("Invalid additional-info for indefinite text string"),
+    },
+    _ => Never("Invalid major type for indefinite text string"),
+  },
+}
+
+// ----------------------------------------------------------------------
+// Indefinite arrays and maps
+// ----------------------------------------------------------------------
+
+cbor_indef_array_items = {
+  @head: cbor_header,
+  rest: choose(@head.major) {
+    Misc => choose(@head.ai) {
+      31 => empty,   // break
+      0..27 => {
+        item: cbor_misc_body(@head.ai),
+        tail: cbor_indef_array_items,
+      },
+      _  => Never("Invalid additional-info for indefinite array items"),
+    },
+    _ => {
+      item: cbor_item_body(@head),
+      tail: cbor_indef_array_items,
+    },
+  },
+}
+
+cbor_indef_map_entries = {
+  @head: cbor_header,
+  rest: choose(@head.major) {
+    Misc => choose(@head.ai) {
+      31 => empty,   // break
+      0..27 => {
+        key: cbor_misc_body(@head.ai),
+        value: cbor_item,
+        tail: cbor_indef_map_entries,
+      },
+      _  => Never("Invalid additional-info for indefinite map entries"),
+    },
+    _ => {
+      key: cbor_item_body(@head),
+      value: cbor_item,
+      tail: cbor_indef_map_entries,
+    },
+  },
+}
+
+// ----------------------------------------------------------------------
+// Major-type-specific bodies, after the initial byte has been consumed
+// ----------------------------------------------------------------------
+
+cbor_bytes_body(@ai: u5) = choose(@ai) {
+  0..23 => cbor_bytes_small(@ai),
+  24 => cbor_bytes_u8,
+  25 => cbor_bytes_u16,
+  26 => cbor_bytes_u32,
+  27 => cbor_bytes_u64,
+  31 => cbor_indef_bytes_chunks,
+  _  => Never("Invalid additional-info for major type 2"),
+}
+
+cbor_text_body(@ai: u5) = choose(@ai) {
+  0..23 => cbor_text_small(@ai),
+  24 => cbor_text_u8,
+  25 => cbor_text_u16,
+  26 => cbor_text_u32,
+  27 => cbor_text_u64,
+  31 => cbor_indef_text_chunks,
+  _  => Never("Invalid additional-info for major type 3"),
+}
+
+cbor_array_body(@ai: u5) = choose(@ai) {
+  0..23 => cbor_array_small(@ai),
+  24 => cbor_array_u8,
+  25 => cbor_array_u16,
+  26 => cbor_array_u32,
+  27 => cbor_array_u64,
+  31 => cbor_indef_array_items,
+  _  => Never("Invalid additional-info for major type 4"),
+}
+
+cbor_map_body(@ai: u5) = choose(@ai) {
+  0..23 => cbor_map_small(@ai),
+  24 => cbor_map_u8,
+  25 => cbor_map_u16,
+  26 => cbor_map_u32,
+  27 => cbor_map_u64,
+  31 => cbor_indef_map_entries,
+  _  => Never("Invalid additional-info for major type 5"),
+}
+
+cbor_tag_body(@ai: u5) = choose(@ai) {
+  0..23 => cbor_tag_small,
+  24 => cbor_tag_u8,
+  25 => cbor_tag_u16,
+  26 => cbor_tag_u32,
+  27 => cbor_tag_u64,
+  _  => Never("Invalid additional-info for major type 6"),
+}
+
+// Major type 7:
+// - 0..19: inline simple values
+// - 20..23: false / true / null / undefined (still represented raw here)
+// - 24: one-byte simple value (well-formed values 32..255)
+// - 25/26/27: half / single / double encoded as raw IEEE bit patterns
+// - 31: break; not a standalone item, only used in indefinite containers
+
+cbor_misc_body(@ai: u5) = choose(@ai) {
+  0..23 => empty,
+  24 => u8 | { 32..0xff },
+  25 => u16,
+  26 => u32,
+  27 => u64,
+  _  => Never("Invalid additional-info for major type 7"),
+}
+
+// ----------------------------------------------------------------------
+// Top-level recursive data item
+// ----------------------------------------------------------------------
+
+cbor_item_body(@head: cbor_header) = choose(@head.major) {
+  UnsignedInt => cbor_uint_arg_body(@head.ai),
+  NegativeInt => cbor_uint_arg_body(@head.ai),
+  ByteString  => cbor_bytes_body(@head.ai),
+  TextString  => cbor_text_body(@head.ai),
+  Array       => cbor_array_body(@head.ai),
+  Map         => cbor_map_body(@head.ai),
+  Tag         => cbor_tag_body(@head.ai),
+  Misc        => cbor_misc_body(@head.ai),
+}
+
+cbor_item = {
+  @head: cbor_header,
+  body: cbor_item_body(@head),
+}

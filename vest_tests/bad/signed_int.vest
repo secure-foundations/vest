@@ -1,0 +1,7 @@
+// Signed integer widths parse and type check, but the code generator has no combinator for
+// them. Rejected in type checking so the failure carries a source span instead of panicking
+// the spec emitter.
+msg = {
+  a: i16,
+  b: u8,
+}

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["any_fmt"],"struct":["Any","AnyOwned","AnySpec"],"type":["AnyInnerFmt","AnyWireFmt"]};

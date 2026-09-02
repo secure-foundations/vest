@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `normalize_offset` fn in crate `vest_lib`."><title>normalize_offset in vest_lib::asn1::datetime - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js"><script src="../../../static.files/storage-41dd4d93.js"></script><script defer="" src="sidebar-items.js"></script><script defer="" src="../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">normalize_offset</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../vest_lib/index.html">vest_<wbr>lib</a></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In vest_<wbr>lib::<wbr>asn1::<wbr>datetime</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">vest_lib</a>::<wbr><a href="../index.html">asn1</a>::<wbr><a href="index.html">datetime</a></div><h1>Function <span class="fn">normalize_<wbr>offset</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/vest_lib/asn1/datetime.rs.html#366-440">Source</a> </span></div><pre class="rust item-decl"><code>pub <span class="verus-sig-keyword">exec </span>fn normalize_offset(
+    local: <a class="struct" href="struct.DateTime.html" title="struct vest_lib::asn1::datetime::DateTime">DateTime</a>,
+    local_ahead_of_utc: <a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.bool.html">bool</a>,
+    offset_hour: <a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.u8.html">u8</a>,
+    offset_minute: <a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.u8.html">u8</a>,
+) -&gt; <span class="verus-ret-name">res : </span><a class="enum" href="https://doc.rust-lang.org/1.97.1/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.DateTime.html" title="struct vest_lib::asn1::datetime::DateTime">DateTime</a>&gt;</code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">requires</span><pre class="rust rest-example-rendered verus-spec-code"><code>datetime_wf(local),</code></pre><pre class="rust rest-example-rendered verus-spec-code"><code>offset_hour &lt;= <span class="number">23</span>,</code></pre><pre class="rust rest-example-rendered verus-spec-code"><code>offset_minute &lt;= <span class="number">59</span>,</code></pre><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>res matches <span class="prelude-val">Some</span>(utc) ==&gt; datetime_wf(utc),</code></pre><span class="verus-spec-keyword">returns</span><pre class="rust rest-example-rendered verus-spec-code"><code>({
+    <span class="kw">let </span>local_minutes = local.hour <span class="kw">as </span>i32 * <span class="number">60 </span>+ local.minute <span class="kw">as </span>i32;
+    <span class="kw">let </span>offset = offset_hour <span class="kw">as </span>i32 * <span class="number">60 </span>+ offset_minute <span class="kw">as </span>i32;
+    <span class="kw">let </span>utc_minutes = <span class="kw">if </span>local_ahead_of_utc {
+        local_minutes - offset
+    } <span class="kw">else </span>{
+        local_minutes + offset
+    };
+    <span class="kw">if </span>utc_minutes &lt; <span class="number">0 </span>{
+        previous_day(DateTime {
+            hour: ((utc_minutes + <span class="number">1440</span>) / <span class="number">60</span>) <span class="kw">as </span>u8,
+            minute: ((utc_minutes + <span class="number">1440</span>) % <span class="number">60</span>) <span class="kw">as </span>u8,
+            ..local
+        })
+    } <span class="kw">else if </span>utc_minutes &gt;= <span class="number">1440 </span>{
+        next_day(DateTime {
+            hour: ((utc_minutes - <span class="number">1440</span>) / <span class="number">60</span>) <span class="kw">as </span>u8,
+            minute: ((utc_minutes - <span class="number">1440</span>) % <span class="number">60</span>) <span class="kw">as </span>u8,
+            ..local
+        })
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Some</span>(DateTime {
+            hour: (utc_minutes / <span class="number">60</span>) <span class="kw">as </span>u8,
+            minute: (utc_minutes % <span class="number">60</span>) <span class="kw">as </span>u8,
+            ..local
+        })
+    }
+}),</code></pre></div>
+
+
+
+
+
+
+<p>Adjusts the local time to UTC by subtracting the timezone offset (UTC = local - offset).
+As per ASN.1 UTCTime (X.680 47.3) and GeneralizedTime (X.680 46.3) specifications:</p>
+<ul>
+<li>The timezone offset represents the difference between local time and UTC.</li>
+<li>If <code>local_ahead_of_utc</code> is true (indicated by ‘+’), the local time is ahead of UTC,
+so the offset is subtracted: <code>UTC = local - offset</code>.</li>
+<li>If <code>local_ahead_of_utc</code> is false (indicated by ‘-’), the local time is behind UTC,
+so the offset is added: <code>UTC = local + offset</code>.</li>
+<li>Properly rolls over the calendar date to the next or previous day if necessary.</li>
+</ul>
+</div></details></section></div></main></body></html>

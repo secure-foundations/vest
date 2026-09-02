@@ -1,0 +1,96 @@
+use crate::asn1::{BerBoolFmt, DerBoolFmt};
+use crate::combinators::mapped::spec::FnSpecMapper;
+use crate::combinators::{
+    Array, Cond, Const, Dispatch, Empty, Eof, Mapped, Pair, Permute3, Permute4, Preceded,
+    PrefixTagged, Refined, Terminated, U16Le, U32Be, U32Le, U8,
+};
+use crate::core::spec::*;
+use vstd::prelude::*;
+use PrefixTagged as Tagged;
+
+verus! {
+
+proof fn requires_static<C: StaticByteLen>(c: C) {
+}
+
+type PairFmt = Pair<U8, U16Le>;
+
+type PrecededFmt = Preceded<U8, u8, U16Le>;
+
+type TerminatedFmt = Terminated<U16Le, U8, u8>;
+
+type TaggedFmt = Tagged<U8, u8, U16Le>;
+
+type DispatchFmt = Dispatch<u8, U16Le, 2>;
+
+type ArrayFmt = Array<3, U8>;
+
+type BoolFmt = crate::asn1::BoolFmt<true>;
+
+type NestedPairFmt = Mapped<
+    Pair<Pair<U8, U16Le>, U32Be>,
+    FnSpecMapper<((u8, u16), u32), ((u8, u16), u32)>,
+>;
+
+type TaggedDispatchFmt = Tagged<U8, u8, Dispatch<u8, Pair<U8, U16Le>, 2>>;
+
+type ArrayOfTaggedFmt = Array<5, Tagged<U8, u8, U16Le>>;
+
+type Permute3Fmt = Permute3<U8, DerBoolFmt, U32Le>;
+
+type Permute4Fmt = Permute4<U8, U16Le, U32Be, BerBoolFmt>;
+
+type ZeroWrappedFmt = Preceded<Empty, (), Terminated<U32Be, Eof, ()>>;
+
+proof fn test_static_byte_len_trait_surface() {
+    requires_static(U8);
+    requires_static(U16Le);
+    requires_static(Pair(U8, U16Le));
+    requires_static(Preceded::<_, _, _, false> { a: U8, b: U16Le, a_val: 0u8 });
+    requires_static(Terminated::<_, _, _, false> { a: U16Le, b: U8, b_val: 0u8 });
+    requires_static(Cond(true, U16Le));
+    requires_static(Mapped { inner: U8, mapper: (|x: u8| x, |x: u8| x) });
+    requires_static(Refined(U8, |b: u8| b <= 10u8));
+    requires_static(Const(U8, 0x7fu8));
+    requires_static(Tagged(U8, 0xa1u8, U16Le));
+    requires_static(Dispatch(0x01u8, [(0x01u8, U16Le), (0x02u8, U16Le)]));
+    requires_static(Array::<3, _>(U8));
+    requires_static(DerBoolFmt);
+    requires_static(BerBoolFmt);
+    requires_static(Pair(Pair(U8, U16Le), U32Be));
+    requires_static(
+        Tagged(
+            U8,
+            0x01u8,
+            Dispatch(0x02u8, [(0x02u8, Pair(U8, U16Le)), (0x03u8, Pair(U8, U16Le))]),
+        ),
+    );
+    requires_static(Array::<2, _>(Tagged(U8, 0xa0u8, U16Le)));
+    requires_static(Permute3(U8, DerBoolFmt, U32Le));
+    requires_static(Permute4(U8, U16Le, U32Be, BerBoolFmt));
+    requires_static(
+        Preceded::<_, _, _, false> {
+            a: Empty,
+            b: Terminated::<_, _, _, false> { a: U32Be, b: Eof, b_val: () },
+            a_val: (),
+        },
+    );
+}
+
+proof fn test_static_byte_len_values() {
+    assert(PairFmt::static_byte_len() == 3);
+    assert(PrecededFmt::static_byte_len() == 3);
+    assert(TerminatedFmt::static_byte_len() == 3);
+    assert(TaggedFmt::static_byte_len() == 3);
+    assert(DispatchFmt::static_byte_len() == 2);
+    assert(ArrayFmt::static_byte_len() == 3);
+    assert(BoolFmt::static_byte_len() == 1);
+    assert(NestedPairFmt::static_byte_len() == 7);
+    assert(TaggedDispatchFmt::static_byte_len() == 4);
+    assert(ArrayOfTaggedFmt::static_byte_len() == 15);
+    assert(Permute3Fmt::static_byte_len() == 6);
+    assert(Permute4Fmt::static_byte_len() == 8);
+    assert(ZeroWrappedFmt::static_byte_len() == 4);
+}
+
+} // verus!

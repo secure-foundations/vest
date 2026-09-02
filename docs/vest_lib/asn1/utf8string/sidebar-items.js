@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["_verus_external_fn_specification_0_String_32__58__58__32_from__utf8__unchecked","is_valid_utf8","utf8_from_bytes_unchecked","utf8string_fmt"],"type":["Utf8String","Utf8StringOwned"]};
