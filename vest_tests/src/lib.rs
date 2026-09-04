@@ -18,6 +18,7 @@ pub mod matches;
 pub mod nested_access;
 pub mod nested_bytes;
 pub mod opt;
+pub mod projected_argument_deref;
 pub mod repeat;
 pub mod stress_depth;
 pub mod stress_width;
