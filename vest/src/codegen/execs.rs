@@ -2303,7 +2303,9 @@ impl<'a> Analysis<'a> {
                             let is_param = param_defns.iter().any(|p| match p {
                                 ParamDefn::Dependent { name: p_name, .. } => p_name == arg_name,
                             });
-                            if is_param {
+                            // A projection like `@hdr.len` already auto-derefs in Rust.
+                            let is_projection = arg_name.contains('.');
+                            if is_param || is_projection {
                                 arg_tokens
                             } else {
                                 quote! { *#arg_tokens }
