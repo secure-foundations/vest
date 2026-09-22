@@ -114,7 +114,17 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         let _total_len = ibuf.len();
         let mut consumed: usize = 0;
         let mut rest = ibuf.skip(0);
-        let mut values = Vec::new();
+        // The element count is known before the loop, so reserve once rather than
+        // letting `push` regrow the buffer element by element.
+        //
+        // The count arrives on the wire, so it is clamped to the remaining input
+        // length. Every element occupies at least one byte, so this never
+        // under-reserves for input that actually parses, and a bogus count
+        // cannot turn one length field into an allocation far larger than the
+        // message. Without the clamp, `cbor_rfc::oversized_declared_lengths_are_refused`
+        // aborts with a capacity overflow instead of rejecting the input.
+        let reserve = if count < _total_len { count } else { _total_len };
+        let mut values = Vec::with_capacity(reserve);
 
         for _i in 0..count
             invariant

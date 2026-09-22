@@ -5,6 +5,25 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Specification for `core`'s unchecked slice split.
+///
+/// `vstd` specifies the checked `split_at_mut` but not this variant. The two
+/// differ only in that `mid <= len` is a proof obligation here rather than a run
+/// time check, so the contract is the checked one with that bound moved into
+/// `requires`; discharging it at the call site is exactly what makes the `unsafe`
+/// sound.
+pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](
+    slice: &mut [T],
+    mid: usize,
+) -> (ret: (&mut [T], &mut [T]))
+    requires
+        0 <= mid <= old(slice)@.len(),
+    ensures
+        ret.0@ == old(slice)@.subrange(0, mid as int),
+        ret.1@ == old(slice)@.subrange(mid as int, old(slice)@.len() as int),
+        final(slice)@ == final(ret.0)@ + final(ret.1)@,
+;
+
 /// An abstraction for append-oriented output buffer.
 ///
 /// The view is the sequence already present in, or written through, the output. Capacity is
@@ -146,14 +165,21 @@ impl OutputBuf for OutputSlice<'_> {
         self.pos += 1;
     }
 
+    #[inline(always)]
     fn write_bytes(&mut self, bytes: &[u8]) {
         let ghost old_view = self@;
         let old_pos = self.pos;
         let len = bytes.len();
         assert(old_pos + len <= self.obuf.len());
         {
-            let (_prefix, rest) = self.obuf.split_at_mut(old_pos);
-            let (destination, _suffix) = rest.split_at_mut(len);
+            // `split_at_mut` bounds-checks both halves of each split at run
+            // time, and this method already requires `fits(bytes@.len())`, which
+            // Verus discharges at every call site. Repeated once per field, that
+            // redundant check dominates serialization of formats made of many
+            // small fixed-width fields. The unchecked split carries the same
+            // obligation as a precondition, so it is proved here instead.
+            let (_prefix, rest) = unsafe { self.obuf.split_at_mut_unchecked(old_pos) };
+            let (destination, _suffix) = unsafe { rest.split_at_mut_unchecked(len) };
             destination.copy_from_slice(bytes);
         }
         self.pos = old_pos + len;

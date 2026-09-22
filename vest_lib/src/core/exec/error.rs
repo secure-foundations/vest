@@ -1,7 +1,7 @@
 //! Runtime parse errors.
 use core::fmt;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "error-trace")]
 use alloc::vec::Vec;
 
 use vstd::prelude::*;
@@ -12,8 +12,9 @@ verus! {
 ///
 /// Vest parsers work on progressively sliced inputs, so a globally meaningful byte offset is not
 /// available unless the caller explicitly threads that information through the parser stack.
-/// Instead, this error carries a coarse-grained failure kind plus the names of the DSL-defined
-/// formats on the failing path, when that information is available.
+/// Instead, this error carries a coarse-grained failure kind plus the name of the innermost
+/// DSL-defined format that failed. With the `error-trace` feature it also retains the full
+/// named-format call stack, at the cost of making this type heap-owning.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseError {
     /// The kind of failure that occurred.
@@ -21,7 +22,7 @@ pub struct ParseError {
     /// The innermost named format known to have failed.
     pub failed_format: Option<&'static str>,
     /// The named-format call stack that led to the failure, stored innermost-first.
-    #[cfg(feature = "alloc")]
+    #[cfg(feature = "error-trace")]
     pub format_stack: Vec<&'static str>,
 }
 
@@ -30,7 +31,7 @@ impl Clone for ParseError {
         Self {
             kind: self.kind.clone(),
             failed_format: self.failed_format,
-            #[cfg(feature = "alloc")]
+            #[cfg(feature = "error-trace")]
             format_stack: self.format_stack.clone(),
         }
     }
@@ -45,7 +46,7 @@ impl ParseError {
         Self {
             kind,
             failed_format: None,
-            #[cfg(feature = "alloc")]
+            #[cfg(feature = "error-trace")]
             format_stack: Vec::new(),
         }
     }
@@ -60,7 +61,7 @@ impl ParseError {
         if err.failed_format.is_none() {
             err.failed_format = Some(current_format);
         }
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "error-trace")]
         {
             err.format_stack.push(current_format);
         }
@@ -69,9 +70,9 @@ impl ParseError {
 
     /// Returns the recorded format stack as an innermost-first slice.
     pub fn format_trace(&self) -> &[&'static str] {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "error-trace")]
         { self.format_stack.as_slice() }
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(not(feature = "error-trace"))]
         { &[] }
     }
 }

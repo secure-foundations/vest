@@ -32,6 +32,7 @@ impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8]> for super::Fixe
 }
 
 impl<'i, Output: OutputBuf, const N: usize> Serializer<Output, &'i [u8]> for super::Fixed<N> {
+    #[inline(always)]
     fn serialize_into(&self, v: &&'i [u8], obuf: &mut Output) {
         obuf.write_bytes(*v);
     }
