@@ -1038,6 +1038,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "vest_bench"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "vest_lib",
+ "vstd",
+]
+
+[[package]]
 name = "vest_dev"
 version = "0.1.0"
 dependencies = [

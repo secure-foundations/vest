@@ -1,0 +1,11 @@
+// Bitcoin-style variable-length integers driving a repetition. Isolates
+// BtcVarint and count-dependent repetition over a variable-width tag.
+varint_item = {
+    @len: btc_varint,
+    data: [u8; @len],
+}
+
+varint_list = {
+    @count: btc_varint,
+    items: [varint_item; @count],
+}

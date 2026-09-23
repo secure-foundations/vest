@@ -1,0 +1,23 @@
+// Tag/length/value with a dependent choice: isolates Dispatch plus the
+// length-bounded `>>=` re-interpretation.
+!BIG_ENDIAN
+
+tlv_kind = enum {
+    Ping = 1,
+    Data = 2,
+    Addr = 3,
+}
+
+tlv_ping = { nonce: u64, }
+tlv_data = { seq: u32, body: Tail, }
+tlv_addr = { host: [u8; 4], port: u16, }
+
+tlv_msg = {
+    @kind: tlv_kind,
+    @len: u16,
+    body: [u8; @len] >>= choose(@kind) {
+        Ping => tlv_ping,
+        Data => tlv_data,
+        Addr => tlv_addr,
+    },
+}

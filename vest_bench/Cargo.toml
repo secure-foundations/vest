@@ -1,0 +1,26 @@
+[package]
+name = "vest_bench"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[features]
+default = ["std"]
+std = ["alloc", "vstd/std", "vest_lib/std"]
+alloc = ["vstd/alloc", "vest_lib/alloc"]
+
+[dependencies]
+vstd.workspace = true
+vest_lib.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "formats"
+harness = false
+
+# Not part of the verification corpus: these formats duplicate shapes already
+# covered by vest_tests, and the point of this crate is measurement.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }

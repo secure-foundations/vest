@@ -1,0 +1,11 @@
+// The same repetition as `bounded_list`, but driven off the end of the
+// enclosing region rather than a byte count.
+!BIG_ENDIAN
+
+tail_item = {
+    tag: u16,
+    @len: u16,
+    body: [u8; @len],
+}
+
+tail_list = Tail >>= Vec<tail_item>

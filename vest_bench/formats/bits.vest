@@ -1,0 +1,21 @@
+// Bit-packed header followed by a byte-aligned body: isolates the bits
+// combinator against hand-written shift/mask code.
+!BIG_ENDIAN
+
+bits_header = bits {
+    version: u4,
+    ihl: u4,
+    dscp: u6,
+    ecn: u2,
+}
+
+bits_packet = {
+    hdr: bits_header,
+    total_len: u16,
+    ident: u16,
+    ttl: u8,
+    proto: u8,
+    checksum: u16,
+    src: [u8; 4],
+    dst: [u8; 4],
+}
