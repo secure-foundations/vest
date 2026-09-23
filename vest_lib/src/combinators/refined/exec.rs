@@ -25,6 +25,10 @@ impl<I, A, PredFn> Parser<I> for super::Refined<A, PredFn> where
  {
     type PT = A::PT;
 
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -92,6 +96,10 @@ impl<I, Inner, T> Parser<I> for super::Const<Inner, T> where
     T: DeepView<V = T> + PartialEq + Structural,
  {
     type PT = Inner::PVal;
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -200,6 +208,10 @@ impl<const N: usize> Prepare<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
 impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
     type PT = [u8; N];
 
+    fn min_byte_len(&self) -> usize {
+        N
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         let (n, v) = self.0.parse(ibuf)?;
         let tag = self.1.as_slice();
@@ -225,6 +237,10 @@ impl<I, Tg, TagVal, Of> Parser<I> for super::PrefixTagged<Tg, TagVal, Of> where
     Of: Parser<I> + SafeParser,
  {
     type PT = Of::PT;
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len().saturating_add(self.2.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         Preceded::<_, _, _, false> {
@@ -322,6 +338,10 @@ impl<I, Of, Tg, TagVal> Parser<I> for super::SuffixTagged<Of, Tg, TagVal> where
     Of: Parser<I> + SafeParser,
  {
     type PT = Of::PT;
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len().saturating_add(self.1.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         Terminated::<_, _, _, false> {

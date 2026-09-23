@@ -202,6 +202,11 @@ mod derived_proofs {
 impl<'i, const MINIMAL: bool> Parser<&'i [u8]> for VarInt<MINIMAL> {
     type PT = u64;
 
+    fn min_byte_len(&self) -> usize {
+        // The one-byte form covers values below 0xfd.
+        1
+    }
+
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 

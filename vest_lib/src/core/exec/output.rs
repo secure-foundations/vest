@@ -7,20 +7,16 @@ verus! {
 
 /// Specification for `core`'s unchecked slice split.
 ///
-/// `vstd` specifies the checked `split_at_mut` but not this variant. The two
-/// differ only in that `mid <= len` is a proof obligation here rather than a run
-/// time check, so the contract is the checked one with that bound moved into
-/// `requires`; discharging it at the call site is exactly what makes the `unsafe`
-/// sound.
-pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](
-    slice: &mut [T],
-    mid: usize,
-) -> (ret: (&mut [T], &mut [T]))
+/// `vstd` specifies the checked `split_at_mut` but not this variant.
+pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](slice: &mut [T], mid: usize) -> (ret: (
+    &mut [T],
+    &mut [T],
+))
     requires
-        0 <= mid <= old(slice)@.len(),
+        mid <= old(slice)@.len(),
     ensures
-        ret.0@ == old(slice)@.subrange(0, mid as int),
-        ret.1@ == old(slice)@.subrange(mid as int, old(slice)@.len() as int),
+        ret.0@ == old(slice)@.take(mid as int),
+        ret.1@ == old(slice)@.skip(mid as int),
         final(slice)@ == final(ret.0)@ + final(ret.1)@,
 ;
 
@@ -103,6 +99,21 @@ pub trait OutputBuf: View<V = Seq<u8>> {
             self.write_byte(bytes[i]);
         }
     }
+
+    /// Appends a fixed-width group of bytes.
+    ///
+    /// Identical to [`write_bytes`](Self::write_bytes) except that the width is
+    /// a const generic, which can help with the compiler optimization.
+    fn write_array<const N: usize>(&mut self, bytes: &[u8; N])
+        requires
+            old(self).fits(bytes@.len()),
+        ensures
+            final(self)@ == old(self)@ + bytes@,
+            forall|n| old(self).fits(bytes@.len() + n) <==> #[trigger] final(self).fits(n),
+            old(self).same_destination(final(self)),
+    {
+        self.write_bytes(bytes)
+    }
 }
 
 /// A non-allocating append sink backed by a caller-provided slice.
@@ -166,6 +177,20 @@ impl OutputBuf for OutputSlice<'_> {
     }
 
     #[inline(always)]
+    fn write_array<const N: usize>(&mut self, bytes: &[u8; N]) {
+        let ghost old_view = self@;
+        let old_pos = self.pos;
+        assert(old_pos + N <= self.obuf.len());
+        {
+            let (_prefix, rest) = unsafe { self.obuf.split_at_mut_unchecked(old_pos) };
+            let (destination, _suffix) = unsafe { rest.split_at_mut_unchecked(N) };
+            destination.copy_from_slice(bytes);
+        }
+        self.pos = old_pos + N;
+        assert(self@ == old_view + bytes@);
+    }
+
+    #[inline(always)]
     fn write_bytes(&mut self, bytes: &[u8]) {
         let ghost old_view = self@;
         let old_pos = self.pos;
@@ -173,11 +198,10 @@ impl OutputBuf for OutputSlice<'_> {
         assert(old_pos + len <= self.obuf.len());
         {
             // `split_at_mut` bounds-checks both halves of each split at run
-            // time, and this method already requires `fits(bytes@.len())`, which
-            // Verus discharges at every call site. Repeated once per field, that
-            // redundant check dominates serialization of formats made of many
-            // small fixed-width fields. The unchecked split carries the same
-            // obligation as a precondition, so it is proved here instead.
+            // time, which dominates serialization of formats made of many
+            // small fixed-width fields.
+            // SAFETY:
+            // We already requires `fits(bytes@.len())`, so it is sound to use the unchecked variant here.
             let (_prefix, rest) = unsafe { self.obuf.split_at_mut_unchecked(old_pos) };
             let (destination, _suffix) = unsafe { rest.split_at_mut_unchecked(len) };
             destination.copy_from_slice(bytes);

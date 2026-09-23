@@ -126,6 +126,10 @@ pub fn i64_to_be_bytes(value: i64) -> (bytes: [u8; 8])
 impl Parser<&[u8]> for super::I8 {
     type PT = i8;
 
+    fn min_byte_len(&self) -> usize {
+        U8_BYTE_LEN
+    }
+
     open spec fn exec_inv(&self) -> bool {
         true
     }
@@ -159,6 +163,10 @@ impl Prepare<i8> for super::I8 {
 
 impl Parser<&[u8]> for super::I16Le {
     type PT = i16;
+
+    fn min_byte_len(&self) -> usize {
+        U16_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -197,6 +205,10 @@ impl Prepare<i16> for super::I16Le {
 impl Parser<&[u8]> for super::I16Be {
     type PT = i16;
 
+    fn min_byte_len(&self) -> usize {
+        U16_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -233,6 +245,10 @@ impl Prepare<i16> for super::I16Be {
 
 impl Parser<&[u8]> for super::I32Le {
     type PT = i32;
+
+    fn min_byte_len(&self) -> usize {
+        U32_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -271,6 +287,10 @@ impl Prepare<i32> for super::I32Le {
 impl Parser<&[u8]> for super::I32Be {
     type PT = i32;
 
+    fn min_byte_len(&self) -> usize {
+        U32_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -307,6 +327,10 @@ impl Prepare<i32> for super::I32Be {
 
 impl Parser<&[u8]> for super::I64Le {
     type PT = i64;
+
+    fn min_byte_len(&self) -> usize {
+        U64_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -353,6 +377,10 @@ impl Prepare<i64> for super::I64Le {
 
 impl Parser<&[u8]> for super::I64Be {
     type PT = i64;
+
+    fn min_byte_len(&self) -> usize {
+        U64_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;

@@ -726,6 +726,11 @@ mod derived_proofs {
 impl<const MINIMAL: bool> Parser<&[u8]> for Base128Fmt<MINIMAL> {
     type PT = UInt;
 
+    fn min_byte_len(&self) -> usize {
+        // A single terminating byte is a complete encoding.
+        1
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         let (n, bytes) = scan_base128_bytes::<MINIMAL>(ibuf)?;
         proof {

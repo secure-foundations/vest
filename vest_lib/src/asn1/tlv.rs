@@ -225,6 +225,13 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1Fmt<Content, DER> wh
  {
     type PT = Content::PT;
 
+    fn min_byte_len(&self) -> usize {
+        // Every TLV carries at least one identifier octet and one length octet
+        // before its content. This is what lets `SET OF` and `SEQUENCE OF`
+        // size their result.
+        2usize.saturating_add(self.1.min_byte_len())
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }

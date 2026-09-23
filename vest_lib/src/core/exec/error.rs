@@ -14,7 +14,7 @@ verus! {
 /// available unless the caller explicitly threads that information through the parser stack.
 /// Instead, this error carries a coarse-grained failure kind plus the name of the innermost
 /// DSL-defined format that failed. With the `error-trace` feature it also retains the full
-/// named-format call stack, at the cost of making this type heap-owning.
+/// named-format call stack (at the cost of heap allocation).
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseError {
     /// The kind of failure that occurred.

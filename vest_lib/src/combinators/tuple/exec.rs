@@ -29,6 +29,11 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
         &&& self.1.safe_inv()
     }
 
+    fn min_byte_len(&self) -> usize {
+        // This is only a hint, so a saturating sum is fine.
+        self.0.min_byte_len().saturating_add(self.1.min_byte_len())
+    }
+
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         assert(self.exec_inv());
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
@@ -115,6 +120,11 @@ impl<I, A, B> Parser<I> for super::Bind<A, B> where
     B: MapRef<A::PT, Input = A::PVal>,
  {
     type PT = (A::PT, <B::O as Parser<I>>::PT);
+
+    fn min_byte_len(&self) -> usize {
+        // `B` is built from `A`'s value, so only `A` is known statically.
+        self.0.min_byte_len()
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

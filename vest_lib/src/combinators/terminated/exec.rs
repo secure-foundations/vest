@@ -26,6 +26,10 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, false> where
  {
     type PT = A::PT;
 
+    fn min_byte_len(&self) -> usize {
+        self.a.min_byte_len().saturating_add(self.b.min_byte_len())
+    }
+
     open spec fn exec_inv(&self) -> bool {
         Pair(&self.a, &self.b).exec_inv()
     }
@@ -44,6 +48,10 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
     BVal: DeepView<V = BVal> + PartialEq + Structural,
  {
     type PT = A::PT;
+
+    fn min_byte_len(&self) -> usize {
+        self.a.min_byte_len().saturating_add(self.b.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& Pair(&self.a, &self.b).exec_inv()

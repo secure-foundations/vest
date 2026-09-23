@@ -28,6 +28,10 @@ impl DeepView for ExecNever {
 impl<I: View<V = Seq<u8>>> Parser<I> for super::Empty {
     type PT = ();
 
+    fn min_byte_len(&self) -> usize {
+        0
+    }
+
     fn parse(&self, _ibuf: &I) -> PResult<Self::PT> {
         Ok((0, ()))
     }
@@ -54,6 +58,10 @@ impl Prepare<()> for super::Empty {
 
 impl<I: View<V = Seq<u8>>> Parser<I> for super::Void {
     type PT = ExecNever;
+
+    fn min_byte_len(&self) -> usize {
+        0
+    }
 
     fn parse(&self, _ibuf: &I) -> (r: PResult<Self::PT>) {
         Err(ParseError::new(ParseErrorKind::Custom(self.0)))

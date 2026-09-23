@@ -47,6 +47,16 @@ pub trait Parser<Input: View<V = Seq<u8>>>: SpecParser {
         ensures
             parse_matches_spec(r, self.spec_parse(ibuf@)),
     ;
+
+    /// A lower bound on the number of bytes one successful parse consumes.
+    ///
+    /// This is a capacity hint for repetition formats.
+    ///
+    /// Formats whose minimum is statically known should override it;
+    /// the DSL compiler emits an override for every named format it generates.
+    fn min_byte_len(&self) -> usize {
+        0
+    }
 }
 
 impl<Spec, Exec> SpecParser for (Spec, Exec) where Spec: SpecParser {
