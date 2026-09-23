@@ -14,6 +14,8 @@ pub struct GlobalCtx<'ast> {
     pub const_combinators: HashSet<ConstCombinatorSig<'ast>>,
     pub enums: HashMap<&'ast str, EnumCombinator<'ast>>, // enum name -> enum combinator
     pub static_sizes: HashMap<String, usize>,
+    /// Lower bound on each format's encoded size; see [`SizeMode::Min`].
+    pub min_sizes: HashMap<String, usize>,
 }
 
 pub struct LocalCtx<'ast> {
@@ -114,7 +116,18 @@ impl<'ast> GlobalCtx<'ast> {
     }
 }
 
+/// Which size an analysis pass computes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SizeMode {
+    /// The exact size, defined only for formats whose encoding is fixed-width.
+    Exact,
+    /// A lower bound on the encoded size, which every format has. Variable-width
+    /// constructs contribute zero, so this is always defined.
+    Min,
+}
+
 struct StaticSizeEnv<'ast> {
+    mode: SizeMode,
     formats: HashMap<&'ast str, &'ast Combinator<'ast>>,
     const_formats: HashMap<&'ast str, &'ast ConstCombinator<'ast>>,
     format_sizes: HashMap<String, Option<usize>>,
@@ -125,6 +138,15 @@ struct StaticSizeEnv<'ast> {
 
 impl<'ast> StaticSizeEnv<'ast> {
     fn new(ast: &'ast [Definition<'ast>]) -> Self {
+        Self::with_mode(ast, SizeMode::Exact)
+    }
+
+    /// Lower-bound pass: see [`SizeMode::Min`].
+    fn new_min(ast: &'ast [Definition<'ast>]) -> Self {
+        Self::with_mode(ast, SizeMode::Min)
+    }
+
+    fn with_mode(ast: &'ast [Definition<'ast>], mode: SizeMode) -> Self {
         let mut formats = HashMap::new();
         let mut const_formats = HashMap::new();
         for defn in ast {
@@ -151,12 +173,21 @@ impl<'ast> StaticSizeEnv<'ast> {
         }
 
         Self {
+            mode,
             formats,
             const_formats,
             format_sizes,
             const_sizes: HashMap::new(),
             visiting_formats: HashSet::new(),
             visiting_consts: HashSet::new(),
+        }
+    }
+
+    /// The bottom of the lattice: unknown for an exact pass, zero for a lower bound.
+    fn unknown(&self) -> Option<usize> {
+        match self.mode {
+            SizeMode::Exact => None,
+            SizeMode::Min => Some(0),
         }
     }
 
@@ -180,8 +211,9 @@ impl<'ast> StaticSizeEnv<'ast> {
         let combinator = *self.formats.get(name)?;
         let name = name.to_string();
         if !self.visiting_formats.insert(name.clone()) {
-            self.format_sizes.insert(name, None);
-            return None;
+            let bottom = self.unknown();
+            self.format_sizes.insert(name, bottom);
+            return bottom;
         }
 
         let size = self.combinator_size(combinator);
@@ -250,7 +282,8 @@ impl<'ast> StaticSizeEnv<'ast> {
             }
             Enum(enum_comb) => enum_static_size(enum_comb),
             Choice(ChoiceCombinator { choices, .. }) => self.choice_size(choices),
-            Vec(..) | Tail(..) | Option(..) => None,
+            // A repetition, a tail or an option may all be empty.
+            Vec(..) | Tail(..) | Option(..) => self.unknown(),
             Nothing(..) | Never(..) => Some(0),
             Array(ArrayCombinator {
                 combinator, len, ..
@@ -293,6 +326,18 @@ impl<'ast> StaticSizeEnv<'ast> {
     }
 
     fn choice_size(&mut self, choices: &Choices<'ast>) -> Option<usize> {
+        if self.mode == SizeMode::Min {
+            // Any branch may be taken, so the bound is the smallest of them.
+            // The branch label types differ, so collect each arm separately.
+            let sizes: Vec<Option<usize>> = match choices {
+                Choices::Enums(cs) => cs.iter().map(|(_, c)| self.combinator_size(c)).collect(),
+                Choices::Ints(cs) => cs.iter().map(|(_, c)| self.combinator_size(c)).collect(),
+                Choices::Arrays(cs) => cs.iter().map(|(_, c)| self.combinator_size(c)).collect(),
+            };
+            return sizes
+                .into_iter()
+                .try_fold(usize::MAX, |acc, s| Some(acc.min(s?)));
+        }
         match choices {
             Choices::Enums(choices) => common_static_size(
                 choices
@@ -315,7 +360,7 @@ impl<'ast> StaticSizeEnv<'ast> {
     fn length_expr_size(&mut self, len: &LengthExpr<'ast>) -> Option<usize> {
         match len {
             LengthExpr::Const { value, .. } => Some(*value),
-            LengthExpr::Dependent(..) => None,
+            LengthExpr::Dependent(..) => self.unknown(),
             LengthExpr::SizeOf { format_name, .. } => self.format_size(&format_name.name),
             LengthExpr::BinOp {
                 op, left, right, ..
@@ -519,6 +564,7 @@ pub fn check<'ast>(
         const_combinators: HashSet::new(),
         enums: HashMap::new(),
         static_sizes: HashMap::new(),
+        min_sizes: HashMap::new(),
     };
 
     // Collect every definition up front so that alias resolution can look up any
@@ -659,6 +705,7 @@ pub fn check<'ast>(
     }
 
     global_ctx.static_sizes = StaticSizeEnv::new(ast).compute_all();
+    global_ctx.min_sizes = StaticSizeEnv::new_min(ast).compute_all();
 
     for defn in ast {
         check_defn(defn, &mut local_ctx, &global_ctx, source)?;

@@ -4548,6 +4548,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for LockTimeFmt {
         type PT = LockTime;
 
+        fn min_byte_len(&self) -> usize {
+            4
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTime as DeepView>::deep_view);
@@ -4785,6 +4789,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for OutpointFmt {
         type PT = Outpoint<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            36
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;

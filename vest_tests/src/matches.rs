@@ -3515,6 +3515,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for Msg1Fmt {
         type PT = Msg1<'i>;
 
+        fn min_byte_len(&self) -> usize {
+            34
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -3570,6 +3574,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for HelloRetryRequestFmt {
         type PT = HelloRetryRequest;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<HelloRetryRequestFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
@@ -3603,6 +3611,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for ServerHelloFmt {
         type PT = ServerHello;
 
+        fn min_byte_len(&self) -> usize {
+            4
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ServerHelloFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
@@ -3635,6 +3647,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for Msg2Fmt {
         type PT = Msg2<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            3
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
@@ -3746,6 +3762,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for Msg4Fmt {
         type PT = Msg4;
 
+        fn min_byte_len(&self) -> usize {
+            3
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -3855,6 +3875,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for Msg1PayloadFmt<'i> {
         type PT = Msg1Payload;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<Msg1PayloadFmt as SpecParser>::spec_parse);

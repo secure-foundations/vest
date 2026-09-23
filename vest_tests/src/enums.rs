@@ -3709,6 +3709,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for ATypedClosedEnumFmt {
         type PT = ATypedClosedEnum;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedClosedEnum as DeepView>::deep_view);
@@ -3859,6 +3863,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for ATypedOpenEnumFmt {
         type PT = ATypedOpenEnum;
+
+        fn min_byte_len(&self) -> usize {
+            4
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
