@@ -2042,6 +2042,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for MsgDFmt {
         type PT = MsgD;
 
+        fn min_byte_len(&self) -> usize {
+            11
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -2103,6 +2107,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for MsgBFmt {
         type PT = MsgB;
 
+        fn min_byte_len(&self) -> usize {
+            11
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -2153,6 +2161,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for MsgAFmt {
         type PT = MsgA<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            11
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
@@ -2266,6 +2278,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for MsgCFmt {
         type PT = MsgC<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            4
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;

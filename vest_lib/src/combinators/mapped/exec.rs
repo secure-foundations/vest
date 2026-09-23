@@ -41,6 +41,10 @@ impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
  {
     type PT = M::O;
 
+    fn min_byte_len(&self) -> usize {
+        self.inner.min_byte_len()
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }

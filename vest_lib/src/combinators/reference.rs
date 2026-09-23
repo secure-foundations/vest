@@ -177,6 +177,10 @@ impl<Inner: EquivSerializers> EquivSerializers for Ref<Inner> {
 impl<I, Inner> Parser<I> for Ref<Inner> where I: View<V = Seq<u8>>, Inner: Parser<I> {
     type PT = Inner::PT;
 
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }

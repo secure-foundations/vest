@@ -3010,6 +3010,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for CrossByteSpanFmt {
         type PT = CrossByteSpan;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
             reveal(<CrossByteSpan as DeepView>::deep_view);
@@ -3054,6 +3058,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for PacketHeaderFmt {
         type PT = PacketHeader;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
@@ -3112,6 +3120,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for ChoicePacketFmt {
         type PT = ChoicePacket<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
@@ -3188,6 +3200,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for ClosedPacketHeaderFmt {
         type PT = ClosedPacketHeader;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
             reveal(<ClosedPacketHeader as DeepView>::deep_view);
@@ -3249,6 +3265,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for ClosedChoicePacketFmt {
         type PT = ClosedChoicePacket<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;

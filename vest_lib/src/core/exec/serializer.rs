@@ -124,14 +124,14 @@ pub enum PreSerializeErrorKind {
 /// Error returned by [`Prepare::prepare`].
 ///
 /// `failed_format` identifies the innermost named format that attached
-/// context. With the `alloc` feature, `format_stack` retains the complete
+/// context. With the `error-trace` feature, `format_stack` retains the complete
 /// format trace.
 pub struct PreSerializeError {
     /// The underlying failure category.
     pub kind: PreSerializeErrorKind,
     /// The innermost named format that reported the failure, if available.
     pub failed_format: Option<&'static str>,
-    #[cfg(feature = "alloc")]
+    #[cfg(feature = "error-trace")]
     /// Nested format names collected while propagating the error.
     pub format_stack: Vec<&'static str>,
 }
@@ -141,7 +141,7 @@ impl Clone for PreSerializeError {
         Self {
             kind: self.kind,
             failed_format: self.failed_format,
-            #[cfg(feature = "alloc")]
+            #[cfg(feature = "error-trace")]
             format_stack: self.format_stack.clone(),
         }
     }
@@ -153,7 +153,7 @@ impl PreSerializeError {
         Self {
             kind,
             failed_format: None,
-            #[cfg(feature = "alloc")]
+            #[cfg(feature = "error-trace")]
             format_stack: Vec::new(),
         }
     }
@@ -179,7 +179,7 @@ impl PreSerializeError {
         if err.failed_format.is_none() {
             err.failed_format = Some(current_format);
         }
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "error-trace")]
         {
             err.format_stack.push(current_format);
         }
@@ -191,11 +191,11 @@ impl PreSerializeError {
         self.failed_format
     }
 
-    /// Returns the collected format trace, or an empty slice without `alloc`.
+    /// Returns the collected format trace, or an empty slice without `error-trace`.
     pub fn format_trace(&self) -> &[&'static str] {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "error-trace")]
         { self.format_stack.as_slice() }
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(not(feature = "error-trace"))]
         { &[] }
     }
 }

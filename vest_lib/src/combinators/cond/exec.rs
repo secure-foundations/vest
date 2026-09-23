@@ -16,6 +16,10 @@ verus! {
 impl<I, Inner> Parser<I> for super::Cond<Inner> where I: View<V = Seq<u8>>, Inner: Parser<I> {
     type PT = Inner::PT;
 
+    fn min_byte_len(&self) -> usize {
+        0
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }

@@ -15,6 +15,12 @@ exclude = ["doc.sh"]
 default = ["std"]
 std = ["alloc", "vstd/std"]
 alloc = ["vstd/alloc"]
+# Records the full named-format call stack on parse and prepare failures.
+# Off by default: it puts a `Vec` inside `ParseError`/`PreSerializeError`, which
+# makes both types heap-owning and 64 bytes wide, so every `?` in a generated
+# parser has to carry and drop them. The innermost failing format name is always
+# retained regardless of this feature.
+error-trace = ["alloc"]
 
 [dependencies]
 vstd.workspace = true

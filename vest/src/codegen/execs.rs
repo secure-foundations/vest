@@ -62,6 +62,17 @@ impl<'a> Analysis<'a> {
             out.block(format!("impl<'i> Parser<&'i [u8]> for {}", fmt_ident_str), |w| {
                 w.line(format!("type PT = {};", exec_ty_str));
                 w.blank_line();
+                // A lower bound on this format's encoded size, so that
+                // repetitions can size their result in one allocation. Purely a
+                // hint: the default of 1 would also be sound.
+                if let Some(min) = self.ctx.min_sizes.get(name).copied() {
+                    if min > 1 {
+                        w.block("fn min_byte_len(&self) -> usize", |w| {
+                            w.line(format!("{}", min));
+                        });
+                        w.blank_line();
+                    }
+                }
                 if scaffold.use_spinoff_prover {
                     w.line("#[verifier::spinoff_prover]");
                 }

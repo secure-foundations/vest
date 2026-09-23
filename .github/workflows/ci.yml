@@ -64,6 +64,9 @@ jobs:
       - name: Run workspace tests
         run: cargo test --workspace --locked
 
+      - name: Run error-path tests with the full format trace
+        run: cargo test -p vest_tests --features error-trace --locked
+
       - name: Check vest_lib without allocation support
         run: cargo check -p vest_lib --no-default-features --all-targets --locked
 

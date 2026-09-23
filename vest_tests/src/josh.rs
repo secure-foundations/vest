@@ -2594,6 +2594,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for MydataFmt {
         type PT = Mydata<'i>;
 
+        fn min_byte_len(&self) -> usize {
+            4
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -2747,6 +2751,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for PairStressFmt {
         type PT = PairStress;
+
+        fn min_byte_len(&self) -> usize {
+            22
+        }
 
         #[verifier::spinoff_prover]
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {

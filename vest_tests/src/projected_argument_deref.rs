@@ -2463,6 +2463,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for DottedFmt {
         type PT = Dotted;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;

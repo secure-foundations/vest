@@ -13,8 +13,26 @@ use OutputBuf;
 
 verus! {
 
+/// Opaque view of `core`'s slice-to-array conversion error.
+#[verifier::external_type_specification]
+#[verifier::external_body]
+pub struct ExTryFromSliceError(core::array::TryFromSliceError);
+
+/// Specification for `core`'s borrowing slice-to-array conversion.
+pub assume_specification<'a, T, const N: usize>[ <&'a [T; N] as TryFrom<&'a [T]>>::try_from ](
+    slice: &'a [T],
+) -> (res: Result<&'a [T; N], core::array::TryFromSliceError>)
+    ensures
+        slice@.len() == N ==> res is Ok && res->Ok_0@ == slice@,
+        slice@.len() != N ==> res is Err,
+;
+
 impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
     type PT = I;
+
+    fn min_byte_len(&self) -> usize {
+        N
+    }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         if ibuf.len() < N {
@@ -26,20 +44,27 @@ impl<const N: usize, I: InputBuf> Parser<I> for super::Fixed<N> {
 }
 
 impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8]> for super::Fixed<N> {
+    #[inline(always)]
     fn serialize_into(&self, v: &[u8], obuf: &mut Output) {
-        obuf.write_bytes(v);
+        // `consistent(v)` fixes the length to `N`, but only at the proof level.
+        // We recover the array type from the slice to help with compiler optimizations.
+        let fixed = <&[u8; N]>::try_from(v).unwrap();
+        obuf.write_array(fixed);
     }
 }
 
 impl<'i, Output: OutputBuf, const N: usize> Serializer<Output, &'i [u8]> for super::Fixed<N> {
+    #[inline(always)]
     fn serialize_into(&self, v: &&'i [u8], obuf: &mut Output) {
-        obuf.write_bytes(*v);
+        let fixed = <&[u8; N]>::try_from(*v).unwrap();
+        obuf.write_array(fixed);
     }
 }
 
 impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
+    #[inline(always)]
     fn serialize_into(&self, v: &[u8; N], obuf: &mut Output) {
-        obuf.write_bytes(v);
+        obuf.write_array(v);
     }
 }
 
@@ -82,6 +107,10 @@ impl<'i, const N: usize> Prepare<&'i [u8]> for super::Fixed<N> {
 
 impl<Len: AsLen, I: InputBuf> Parser<I> for super::Varied<Len> {
     type PT = I;
+
+    fn min_byte_len(&self) -> usize {
+        self.0.get()
+    }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = self.0.get();
@@ -144,6 +173,10 @@ impl<I, Len, Inner> Parser<I> for super::ExactLen<Inner, Len> where
  {
     type PT = Inner::PT;
 
+    fn min_byte_len(&self) -> usize {
+        self.0.get()
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -158,6 +191,10 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
     Then: Parser<I>,
  {
     type PT = Then::PT;
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

@@ -1273,6 +1273,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for OpaqueU16Fmt {
         type PT = OpaqueU16<'i>;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
@@ -1337,6 +1341,10 @@ mod exec_impls {
     impl<'i> Parser<&'i [u8]> for ResponderIdFmt {
         type PT = ResponderId<'i>;
 
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ResponderIdFmt as SpecParser>::spec_parse);
             let _ = ibuf.len();
@@ -1369,6 +1377,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for ResponderIdListFmt {
         type PT = ResponderIdList<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
@@ -1433,6 +1445,10 @@ mod exec_impls {
 
     impl<'i> Parser<&'i [u8]> for RepeatFixFmt {
         type PT = RepeatFix;
+
+        fn min_byte_len(&self) -> usize {
+            64
+        }
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<RepeatFixFmt as SpecParser>::spec_parse);

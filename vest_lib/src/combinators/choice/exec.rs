@@ -42,6 +42,16 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
  {
     type PT = super::Sum<A::PT, B::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        let a = self.0.min_byte_len();
+        let b = self.1.min_byte_len();
+        if a < b {
+            a
+        } else {
+            b
+        }
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -132,6 +142,16 @@ impl<const NONDETERMINISTIC: bool, I, A, B> Parser<I> for super::Alt<A, B, NONDE
  {
     type PT = A::PT;
 
+    fn min_byte_len(&self) -> usize {
+        let a = self.0.min_byte_len();
+        let b = self.1.min_byte_len();
+        if a < b {
+            a
+        } else {
+            b
+        }
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -151,6 +171,14 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
     B: Parser<I>,
  {
     type PT = super::Sum<A::PT, B::PT>;
+
+    fn min_byte_len(&self) -> usize {
+        // The branch is already chosen here.
+        match self {
+            super::Sum::Inl(a) => a.min_byte_len(),
+            super::Sum::Inr(b) => b.min_byte_len(),
+        }
+    }
 
     open spec fn exec_inv(&self) -> bool {
         match self {

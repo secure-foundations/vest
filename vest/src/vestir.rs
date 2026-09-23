@@ -849,6 +849,8 @@ pub struct GlobalCtx {
     pub const_combinators: HashSet<ConstCombinatorSig>,
     pub enums: HashMap<String, EnumCombinator>,
     pub static_sizes: HashMap<String, usize>,
+    /// Lower bound on each format's encoded size, used to size repetitions.
+    pub min_sizes: HashMap<String, usize>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -1903,6 +1905,7 @@ pub mod lowering {
                 const_combinators,
                 enums,
                 static_sizes: src.static_sizes.clone(),
+                min_sizes: src.min_sizes.clone(),
             }
         }
     }

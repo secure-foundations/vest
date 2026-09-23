@@ -14,6 +14,11 @@ impl<I, P1, P2> Parser<I> for super::Permute2<P1, P2> where
  {
     type PT = (P1::PT, P2::PT);
 
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+            .saturating_add(self.1.min_byte_len())
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -88,6 +93,12 @@ impl<I, A, B, C> Parser<I> for super::Permute3<A, B, C> where
     C: Parser<I> + crate::core::spec::SafeParser,
  {
     type PT = (A::PT, (B::PT, C::PT));
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+            .saturating_add(self.1.min_byte_len())
+            .saturating_add(self.2.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -164,6 +175,13 @@ impl<I, A, B, C, D> Parser<I> for super::Permute4<A, B, C, D> where
     D: Parser<I> + crate::core::spec::SafeParser,
  {
     type PT = (A::PT, (B::PT, (C::PT, D::PT)));
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+            .saturating_add(self.1.min_byte_len())
+            .saturating_add(self.2.min_byte_len())
+            .saturating_add(self.3.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
@@ -312,6 +330,14 @@ impl<I, A, B, C, D, E> Parser<I> for super::Permute5<A, B, C, D, E> where
     E: Parser<I> + crate::core::spec::SafeParser,
 {
     type PT = (A::PT, (B::PT, (C::PT, (D::PT, E::PT))));
+
+    fn min_byte_len(&self) -> usize {
+        self.0.min_byte_len()
+            .saturating_add(self.1.min_byte_len())
+            .saturating_add(self.2.min_byte_len())
+            .saturating_add(self.3.min_byte_len())
+            .saturating_add(self.4.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

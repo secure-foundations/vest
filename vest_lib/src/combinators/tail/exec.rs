@@ -20,6 +20,11 @@ verus! {
 impl<I: InputBuf> Parser<I> for super::Tail {
     type PT = I;
 
+    fn min_byte_len(&self) -> usize {
+        // The remaining input may be empty.
+        0
+    }
+
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = ibuf.len();
         let tail = ibuf.take(len);
@@ -76,6 +81,10 @@ impl<'i> Prepare<&'i [u8]> for super::Tail {
 
 impl<I: InputBuf> Parser<I> for super::Eof {
     type PT = ();
+
+    fn min_byte_len(&self) -> usize {
+        0
+    }
 
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         let len = ibuf.len();
@@ -156,6 +165,11 @@ impl<I, A> Parser<I> for super::RepeatTillEnd<A> where
  {
     type PT = Vec<A::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        // A repetition may be empty.
+        0
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -170,6 +184,11 @@ impl<I, A> Parser<I> for super::RepeatTillEnd<A> where
 
 impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> + SafeParser {
     type PT = Option<A::PT>;
+
+    fn min_byte_len(&self) -> usize {
+        // The inner format may be absent.
+        0
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

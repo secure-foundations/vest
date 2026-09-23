@@ -158,6 +158,10 @@ pub fn u64_to_be_bytes(value: u64) -> (bytes: [u8; 8])
 impl Parser<&[u8]> for super::U8 {
     type PT = u8;
 
+    fn min_byte_len(&self) -> usize {
+        U8_BYTE_LEN
+    }
+
     open spec fn exec_inv(&self) -> bool {
         true
     }
@@ -191,6 +195,10 @@ impl Prepare<u8> for super::U8 {
 
 impl Parser<&[u8]> for super::U16Le {
     type PT = u16;
+
+    fn min_byte_len(&self) -> usize {
+        U16_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -230,6 +238,10 @@ impl Prepare<u16> for super::U16Le {
 impl Parser<&[u8]> for super::U16Be {
     type PT = u16;
 
+    fn min_byte_len(&self) -> usize {
+        U16_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -266,6 +278,10 @@ impl Prepare<u16> for super::U16Be {
 
 impl Parser<&[u8]> for super::U24Le {
     type PT = u32;
+
+    fn min_byte_len(&self) -> usize {
+        U24_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -308,6 +324,10 @@ impl Prepare<u32> for super::U24Le {
 impl Parser<&[u8]> for super::U24Be {
     type PT = u32;
 
+    fn min_byte_len(&self) -> usize {
+        U24_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -349,6 +369,10 @@ impl Prepare<u32> for super::U24Be {
 impl Parser<&[u8]> for super::U32Le {
     type PT = u32;
 
+    fn min_byte_len(&self) -> usize {
+        U32_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -386,6 +410,10 @@ impl Prepare<u32> for super::U32Le {
 impl Parser<&[u8]> for super::U32Be {
     type PT = u32;
 
+    fn min_byte_len(&self) -> usize {
+        U32_BYTE_LEN
+    }
+
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
 
@@ -422,6 +450,10 @@ impl Prepare<u32> for super::U32Be {
 
 impl Parser<&[u8]> for super::U64Le {
     type PT = u64;
+
+    fn min_byte_len(&self) -> usize {
+        U64_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;
@@ -468,6 +500,10 @@ impl Prepare<u64> for super::U64Le {
 
 impl Parser<&[u8]> for super::U64Be {
     type PT = u64;
+
+    fn min_byte_len(&self) -> usize {
+        U64_BYTE_LEN
+    }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {
         broadcast use lemma_array_from_seq_roundtrip;

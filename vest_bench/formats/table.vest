@@ -1,0 +1,15 @@
+// Counted repetition: a header followed by `@count` sub-structs. Isolates the
+// RepeatN loop and the cost of materialising a Vec of borrowed elements.
+!BIG_ENDIAN
+
+table_entry = {
+    key: [u8; 32],
+    @value_len: u32,
+    value: [u8; @value_len],
+}
+
+table = {
+    id: u64,
+    @entry_count: u32,
+    entries: [table_entry; @entry_count],
+}

@@ -1,0 +1,15 @@
+// Length-bounded repetition: `[u8; @len] >>= Vec<item>`. The dominant shape in
+// real protocols (TLS extension lists, vectors of records) and the one that
+// exercises AndThen over Star, where the element count is not known up front.
+!BIG_ENDIAN
+
+bounded_item = {
+    tag: u16,
+    @len: u16,
+    body: [u8; @len],
+}
+
+bounded_list = {
+    @byte_len: u32,
+    items: [u8; @byte_len] >>= Vec<bounded_item>,
+}

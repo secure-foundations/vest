@@ -1,0 +1,18 @@
+// Deep nesting: eight header/footer layers wrapped around one payload, the
+// "onion" shape from issue #46. Isolates per-layer cost.
+!BIG_ENDIAN
+
+nest0 = {
+    id: u64,
+    @len: u32,
+    payload: [u8; @len],
+}
+
+nest1 = { hdr: u32, inner: nest0, ftr: u16, }
+nest2 = { hdr: u32, inner: nest1, ftr: u16, }
+nest3 = { hdr: u32, inner: nest2, ftr: u16, }
+nest4 = { hdr: u32, inner: nest3, ftr: u16, }
+nest5 = { hdr: u32, inner: nest4, ftr: u16, }
+nest6 = { hdr: u32, inner: nest5, ftr: u16, }
+nest7 = { hdr: u32, inner: nest6, ftr: u16, }
+nest8 = { hdr: u32, inner: nest7, ftr: u16, }

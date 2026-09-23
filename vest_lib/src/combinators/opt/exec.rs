@@ -16,6 +16,10 @@ verus! {
 impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> {
     type PT = Option<A::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        0
+    }
+
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -83,6 +87,11 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
     B: Parser<I> + SafeParser,
  {
     type PT = (Option<A::PT>, B::PT);
+
+    fn min_byte_len(&self) -> usize {
+        // The optional half may be absent, so only `B` is guaranteed.
+        self.1.min_byte_len()
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

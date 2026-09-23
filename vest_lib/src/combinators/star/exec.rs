@@ -23,6 +23,11 @@ verus! {
 impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser<I> + Productive {
     type PT = Vec<Inner::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        // A repetition may be empty.
+        0
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -38,6 +43,16 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         let mut remaining = total_len;
         let mut rest = ibuf.skip(0);
         let mut values = Vec::new();
+        // Reserve the `Vec` capacity based on the minimum byte length of the inner parser.
+        // Without reservation, the `Vec` is regrown several times per repetition,
+        // which dominates the cost of parsing `[u8; @len] >>= Vec<..>`.
+        let min_len = self.0.min_byte_len();
+        let per = if min_len == 0 {
+            1
+        } else {
+            min_len
+        };
+        values.reserve(remaining / per);
 
         while remaining > 0
             invariant
@@ -81,6 +96,11 @@ impl<I, A, B> Parser<I> for super::Repeat<A, B> where
  {
     type PT = (Vec<A::PT>, B::PT);
 
+    fn min_byte_len(&self) -> usize {
+        // The repetition may be empty, so only the terminator is guaranteed.
+        self.1.min_byte_len()
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -102,6 +122,11 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
  {
     type PT = Vec<Inner::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        // Exactly `count` elements.
+        self.0.get().saturating_mul(self.1.min_byte_len())
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()
@@ -114,7 +139,17 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         let _total_len = ibuf.len();
         let mut consumed: usize = 0;
         let mut rest = ibuf.skip(0);
-        let mut values = Vec::new();
+        // The element count is known before the loop, so reserve once rather than
+        // letting `push` regrow the buffer element by element.
+        //
+        // The count could arrive on the wire, so it is capped at the remaining
+        // length of the input buffer to avoid over-allocation.
+        let reserve = if count < _total_len {
+            count
+        } else {
+            _total_len
+        };
+        let mut values = Vec::with_capacity(reserve);
 
         for _i in 0..count
             invariant
@@ -186,6 +221,10 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
     Inner: Parser<I> + SafeParser,
  {
     type PT = [Inner::PT; N];
+
+    fn min_byte_len(&self) -> usize {
+        N.saturating_mul(self.0.min_byte_len())
+    }
 
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()

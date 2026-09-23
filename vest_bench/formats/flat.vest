@@ -1,0 +1,10 @@
+// Flat struct: fixed-width ints, a fixed byte array, and one length-prefixed
+// tail. The baseline pattern — isolates per-field cost with nothing nested.
+!BIG_ENDIAN
+
+flat_record = {
+    id: u64,
+    key: [u8; 32],
+    @payload_len: u32,
+    payload: [u8; @payload_len],
+}

@@ -5,6 +5,21 @@ use vstd::prelude::*;
 
 verus! {
 
+/// Specification for `core`'s unchecked slice split.
+///
+/// `vstd` specifies the checked `split_at_mut` but not this variant.
+pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](slice: &mut [T], mid: usize) -> (ret: (
+    &mut [T],
+    &mut [T],
+))
+    requires
+        mid <= old(slice)@.len(),
+    ensures
+        ret.0@ == old(slice)@.take(mid as int),
+        ret.1@ == old(slice)@.skip(mid as int),
+        final(slice)@ == final(ret.0)@ + final(ret.1)@,
+;
+
 /// An abstraction for append-oriented output buffer.
 ///
 /// The view is the sequence already present in, or written through, the output. Capacity is
@@ -84,6 +99,21 @@ pub trait OutputBuf: View<V = Seq<u8>> {
             self.write_byte(bytes[i]);
         }
     }
+
+    /// Appends a fixed-width group of bytes.
+    ///
+    /// Identical to [`write_bytes`](Self::write_bytes) except that the width is
+    /// a const generic, which can help with the compiler optimization.
+    fn write_array<const N: usize>(&mut self, bytes: &[u8; N])
+        requires
+            old(self).fits(bytes@.len()),
+        ensures
+            final(self)@ == old(self)@ + bytes@,
+            forall|n| old(self).fits(bytes@.len() + n) <==> #[trigger] final(self).fits(n),
+            old(self).same_destination(final(self)),
+    {
+        self.write_bytes(bytes)
+    }
 }
 
 /// A non-allocating append sink backed by a caller-provided slice.
@@ -146,14 +176,34 @@ impl OutputBuf for OutputSlice<'_> {
         self.pos += 1;
     }
 
+    #[inline(always)]
+    fn write_array<const N: usize>(&mut self, bytes: &[u8; N]) {
+        let ghost old_view = self@;
+        let old_pos = self.pos;
+        assert(old_pos + N <= self.obuf.len());
+        {
+            let (_prefix, rest) = unsafe { self.obuf.split_at_mut_unchecked(old_pos) };
+            let (destination, _suffix) = unsafe { rest.split_at_mut_unchecked(N) };
+            destination.copy_from_slice(bytes);
+        }
+        self.pos = old_pos + N;
+        assert(self@ == old_view + bytes@);
+    }
+
+    #[inline(always)]
     fn write_bytes(&mut self, bytes: &[u8]) {
         let ghost old_view = self@;
         let old_pos = self.pos;
         let len = bytes.len();
         assert(old_pos + len <= self.obuf.len());
         {
-            let (_prefix, rest) = self.obuf.split_at_mut(old_pos);
-            let (destination, _suffix) = rest.split_at_mut(len);
+            // `split_at_mut` bounds-checks both halves of each split at run
+            // time, which dominates serialization of formats made of many
+            // small fixed-width fields.
+            // SAFETY:
+            // We already requires `fits(bytes@.len())`, so it is sound to use the unchecked variant here.
+            let (_prefix, rest) = unsafe { self.obuf.split_at_mut_unchecked(old_pos) };
+            let (destination, _suffix) = unsafe { rest.split_at_mut_unchecked(len) };
             destination.copy_from_slice(bytes);
         }
         self.pos = old_pos + len;

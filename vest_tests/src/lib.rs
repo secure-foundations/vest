@@ -163,8 +163,29 @@ mod bits_endianness_sanity {
     }
 }
 
+/// Asserts on the named-format context in an error message.
+///
+/// With the `error-trace` feature the whole call chain is recorded, so the full
+/// chain is required. Without it only the innermost failing format is kept,
+/// which is what the default build reports.
+#[cfg(test)]
+fn assert_trace(msg: &str, full_chain: &str, innermost: &str) {
+    if cfg!(feature = "error-trace") {
+        assert!(
+            msg.contains(full_chain),
+            "expected chain {full_chain} in: {msg}"
+        );
+    } else {
+        assert!(
+            msg.contains(innermost),
+            "expected format {innermost} in: {msg}"
+        );
+    }
+}
+
 #[cfg(test)]
 mod named_error_sanity {
+    use super::assert_trace;
     use super::nested_access;
     use vest_lib::core::exec::parser::Parser;
     use vest_lib::core::exec::serializer::Prepare;
@@ -176,7 +197,11 @@ mod named_error_sanity {
         let msg = err.to_string();
         println!("Parse error message: {}", msg);
         assert!(msg.contains("input ended before the format could finish parsing"));
-        assert!(msg.contains("`combined_example` -> `generic_header`"));
+        assert_trace(
+            &msg,
+            "`combined_example` -> `generic_header`",
+            "`generic_header`",
+        );
     }
 
     #[test]
@@ -209,12 +234,17 @@ mod named_error_sanity {
         let err = nested_access::FinalMsgFmt.prepare(&v).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("value failed a refinement predicate"));
-        assert!(msg.contains("`combined_example` -> `generic_header`"));
+        assert_trace(
+            &msg,
+            "`combined_example` -> `generic_header`",
+            "`generic_header`",
+        );
     }
 }
 
 #[cfg(test)]
 mod tls_error_sanity {
+    use super::assert_trace;
     use super::tls;
     use vest_lib::combinators::Named;
     use vest_lib::core::exec::parser::Parser;
@@ -236,9 +266,11 @@ mod tls_error_sanity {
         let msg = err.to_string();
         println!("TLS parse error message: {}", msg);
         assert!(msg.contains("a length-delimited parser did not consume the declared length"));
-        assert!(msg.contains(
-            "`client_hello_extension` -> `client_hello_extension_extension_data` -> `pre_shared_key_client_extension` -> `offered_psks` -> `psk_identities`"
-        ));
+        assert_trace(
+            &msg,
+            "`client_hello_extension` -> `client_hello_extension_extension_data` -> `pre_shared_key_client_extension` -> `offered_psks` -> `psk_identities`",
+            "`psk_identities`",
+        );
     }
 
     #[test]
@@ -265,9 +297,11 @@ mod tls_error_sanity {
         let msg = err.to_string();
         println!("TLS prepare error message: {}", msg);
         assert!(msg.contains("value failed a refinement predicate"));
-        assert!(msg.contains(
-            "`hello_retry_extensions` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`"
-        ));
+        assert_trace(
+            &msg,
+            "`hello_retry_extensions` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`",
+            "`opaque_1_ffff`",
+        );
     }
 
     #[test]
