@@ -6,10 +6,10 @@
 
 use crate::bits::{BitsHeader, BitsPacket};
 use crate::bounded_list::{BoundedItem, BoundedList};
-use crate::tail_list::TailItem;
 use crate::flat::FlatRecord;
 use crate::nest::{Nest0, Nest1, Nest2, Nest3, Nest4, Nest5, Nest6, Nest7, Nest8};
 use crate::table::{Table, TableEntry};
+use crate::tail_list::TailItem;
 use crate::tlv::{TlvAddr, TlvData, TlvKind, TlvMsg, TlvMsgBody, TlvPing};
 use crate::varint::{VarintItem, VarintList};
 
@@ -76,7 +76,9 @@ impl Corpus {
         let varint_data = (0..VARINT_LISTS * VARINT_ITEMS)
             .map(|_| vec![0x77; (1 + rng.next(200)) as usize])
             .collect();
-        let addrs = (0..TLV_COUNT).map(|i| [10, 0, (i >> 8) as u8, i as u8]).collect();
+        let addrs = (0..TLV_COUNT)
+            .map(|i| [10, 0, (i >> 8) as u8, i as u8])
+            .collect();
 
         let list_bodies = (0..LIST_COUNT * LIST_ITEMS)
             .map(|_| vec![0x33; (1 + rng.next(48)) as usize])
@@ -133,15 +135,51 @@ impl Corpus {
     pub fn nest_values(&self) -> Vec<Nest8<'_>> {
         (0..NEST_COUNT)
             .map(|i| {
-                let l0 = Nest0 { id: i as u64, len: 128, payload: &self.nest_payloads[i] };
-                let l1 = Nest1 { hdr: 0xA7, inner: l0, ftr: 0xB7 };
-                let l2 = Nest2 { hdr: 0xA6, inner: l1, ftr: 0xB6 };
-                let l3 = Nest3 { hdr: 0xA5, inner: l2, ftr: 0xB5 };
-                let l4 = Nest4 { hdr: 0xA4, inner: l3, ftr: 0xB4 };
-                let l5 = Nest5 { hdr: 0xA3, inner: l4, ftr: 0xB3 };
-                let l6 = Nest6 { hdr: 0xA2, inner: l5, ftr: 0xB2 };
-                let l7 = Nest7 { hdr: 0xA1, inner: l6, ftr: 0xB1 };
-                Nest8 { hdr: 0xA0, inner: l7, ftr: 0xB0 }
+                let l0 = Nest0 {
+                    id: i as u64,
+                    len: 128,
+                    payload: &self.nest_payloads[i],
+                };
+                let l1 = Nest1 {
+                    hdr: 0xA7,
+                    inner: l0,
+                    ftr: 0xB7,
+                };
+                let l2 = Nest2 {
+                    hdr: 0xA6,
+                    inner: l1,
+                    ftr: 0xB6,
+                };
+                let l3 = Nest3 {
+                    hdr: 0xA5,
+                    inner: l2,
+                    ftr: 0xB5,
+                };
+                let l4 = Nest4 {
+                    hdr: 0xA4,
+                    inner: l3,
+                    ftr: 0xB4,
+                };
+                let l5 = Nest5 {
+                    hdr: 0xA3,
+                    inner: l4,
+                    ftr: 0xB3,
+                };
+                let l6 = Nest6 {
+                    hdr: 0xA2,
+                    inner: l5,
+                    ftr: 0xB2,
+                };
+                let l7 = Nest7 {
+                    hdr: 0xA1,
+                    inner: l6,
+                    ftr: 0xB1,
+                };
+                Nest8 {
+                    hdr: 0xA0,
+                    inner: l7,
+                    ftr: 0xB0,
+                }
             })
             .collect()
     }
@@ -163,13 +201,19 @@ impl Corpus {
                     TlvMsg {
                         kind: TlvKind::Data,
                         len: (4 + body.len()) as u16,
-                        body: TlvMsgBody::Data(TlvData { seq: i as u32, body }),
+                        body: TlvMsgBody::Data(TlvData {
+                            seq: i as u32,
+                            body,
+                        }),
                     }
                 }
                 _ => TlvMsg {
                     kind: TlvKind::Addr,
                     len: 6,
-                    body: TlvMsgBody::Addr(TlvAddr { host: &self.addrs[i], port: i as u16 }),
+                    body: TlvMsgBody::Addr(TlvAddr {
+                        host: &self.addrs[i],
+                        port: i as u16,
+                    }),
                 },
             })
             .collect()
@@ -199,7 +243,12 @@ impl Corpus {
     pub fn bits_values(&self) -> Vec<BitsPacket<'_>> {
         (0..BITS_COUNT)
             .map(|i| BitsPacket {
-                hdr: BitsHeader { version: 4, ihl: 5, dscp: (i % 64) as u8, ecn: (i % 4) as u8 },
+                hdr: BitsHeader {
+                    version: 4,
+                    ihl: 5,
+                    dscp: (i % 64) as u8,
+                    ecn: (i % 4) as u8,
+                },
                 total_len: 1500,
                 ident: i as u16,
                 ttl: 64,
@@ -231,7 +280,10 @@ impl Corpus {
             .map(|l| {
                 let items = self.bounded_items(l);
                 let byte_len: usize = items.iter().map(|i| 4 + i.body.len()).sum();
-                BoundedList { byte_len: byte_len as u32, items }
+                BoundedList {
+                    byte_len: byte_len as u32,
+                    items,
+                }
             })
             .collect()
     }
@@ -252,5 +304,4 @@ impl Corpus {
             })
             .collect()
     }
-
 }

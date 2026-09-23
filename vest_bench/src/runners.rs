@@ -5,13 +5,6 @@
 //! checks — and hand the result to `black_box`. That is what makes the
 //! comparison meaningful: the two parsers do the same job and build the same
 //! structure, so the difference between them is the codec, not the harness.
-//!
-//! An earlier version folded a few fields into an accumulator instead. That
-//! avoids paying to materialise the result, but it only observes the fields it
-//! touches, so a baseline could silently skip work the generated parser still
-//! performs. Matching the layouts and observing the whole value is the honest
-//! comparison; the cost is that `black_box` forces both results to memory,
-//! which inflates both sides equally and compresses ratios slightly toward 1.
 
 use std::hint::black_box;
 
@@ -19,12 +12,12 @@ use vest_lib::core::exec::parser::Parser;
 use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 
 use crate::bits::{BitsPacket, BitsPacketFmt};
+use crate::bounded_list::{BoundedList, BoundedListFmt};
 use crate::flat::{FlatRecord, FlatRecordFmt};
 use crate::hand;
-use crate::bounded_list::{BoundedList, BoundedListFmt};
+use crate::nest::{Nest8, Nest8Fmt};
 use crate::table::{Table, TableFmt};
 use crate::tail_list::{TailItem, TailListFmt};
-use crate::nest::{Nest8, Nest8Fmt};
 use crate::tlv::{TlvMsg, TlvMsgFmt};
 use crate::varint::{VarintList, VarintListFmt};
 

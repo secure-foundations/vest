@@ -1,16 +1,6 @@
 //! Performance comparison between Vest-generated codecs and hand-written ones.
-//!
-//! Each schema in `formats/` isolates one construct that appears in real
-//! protocols. For every format there is a hand-written baseline in [`hand`] that
-//! does the same validation, and a pair of driver loops in [`runners`] that
-//! produce the same value type, so the harness itself costs the same on both
-//! sides.
-//!
-//! Schemas, generated modules and benchmark names all match, so the `FORMATS`
-//! list in the `Makefile` is the single source of truth. See `README.md`.
 
 // Generated from formats/*.vest by `make generate`; do not edit by hand.
-// One module per schema, named after the benchmark it drives.
 #[rustfmt::skip]
 pub mod bits;
 #[rustfmt::skip]
@@ -49,9 +39,7 @@ where
 }
 
 /// The benchmark is only fair if each hand-written value type is the same shape
-/// as the generated one it stands in for. Otherwise the two sides would be
-/// building different data structures and `black_box` would cost different
-/// amounts on each.
+/// as the generated one.
 #[cfg(test)]
 mod layout_parity {
     use super::*;
@@ -84,12 +72,32 @@ mod layout_parity {
     same_layout!(table, table::Table<'static>, hand::TableRef<'static>);
     same_layout!(nest, nest::Nest8<'static>, hand::HNest8<'static>);
     same_layout!(tlv, tlv::TlvMsg<'static>, hand::HTlvMsg<'static>);
-    same_layout!(varint_item, varint::VarintItem<'static>, hand::VarintItemRef<'static>);
-    same_layout!(varint_list, varint::VarintList<'static>, hand::VarintListRef<'static>);
+    same_layout!(
+        varint_item,
+        varint::VarintItem<'static>,
+        hand::VarintItemRef<'static>
+    );
+    same_layout!(
+        varint_list,
+        varint::VarintList<'static>,
+        hand::VarintListRef<'static>
+    );
     same_layout!(bits, bits::BitsPacket<'static>, hand::HBitsPacket<'static>);
-    same_layout!(bounded_item, bounded_list::BoundedItem<'static>, hand::ItemRef<'static>);
-    same_layout!(tail_item, tail_list::TailItem<'static>, hand::ItemRef<'static>);
-    same_layout!(bounded_list, bounded_list::BoundedList<'static>, hand::BoundedListRef<'static>);
+    same_layout!(
+        bounded_item,
+        bounded_list::BoundedItem<'static>,
+        hand::ItemRef<'static>
+    );
+    same_layout!(
+        tail_item,
+        tail_list::TailItem<'static>,
+        hand::ItemRef<'static>
+    );
+    same_layout!(
+        bounded_list,
+        bounded_list::BoundedList<'static>,
+        hand::BoundedListRef<'static>
+    );
 }
 
 #[cfg(test)]
@@ -127,13 +135,62 @@ mod wire_compat {
         };
     }
 
-    check!(flat, flat::FlatRecordFmt, Corpus::flat_values, hand::parse_flat, hand::size_flat, hand::write_flat);
-    check!(table, table::TableFmt, Corpus::table_values, hand::parse_table, hand::size_table, hand::write_table);
-    check!(nest, nest::Nest8Fmt, Corpus::nest_values, hand::parse_nest, hand::size_nest, hand::write_nest);
-    check!(tlv, tlv::TlvMsgFmt, Corpus::tlv_values, hand::parse_tlv, hand::size_tlv, hand::write_tlv);
-    check!(varint, varint::VarintListFmt, Corpus::varint_values, hand::parse_varint_list, hand::size_varint_list, hand::write_varint_list);
-    check!(bits, bits::BitsPacketFmt, Corpus::bits_values, hand::parse_bits, hand::size_bits, hand::write_bits);
-    check!(bounded_list, bounded_list::BoundedListFmt, Corpus::bounded_list_values, hand::parse_bounded_list, hand::size_bounded_list, hand::write_bounded_list);
+    check!(
+        flat,
+        flat::FlatRecordFmt,
+        Corpus::flat_values,
+        hand::parse_flat,
+        hand::size_flat,
+        hand::write_flat
+    );
+    check!(
+        table,
+        table::TableFmt,
+        Corpus::table_values,
+        hand::parse_table,
+        hand::size_table,
+        hand::write_table
+    );
+    check!(
+        nest,
+        nest::Nest8Fmt,
+        Corpus::nest_values,
+        hand::parse_nest,
+        hand::size_nest,
+        hand::write_nest
+    );
+    check!(
+        tlv,
+        tlv::TlvMsgFmt,
+        Corpus::tlv_values,
+        hand::parse_tlv,
+        hand::size_tlv,
+        hand::write_tlv
+    );
+    check!(
+        varint,
+        varint::VarintListFmt,
+        Corpus::varint_values,
+        hand::parse_varint_list,
+        hand::size_varint_list,
+        hand::write_varint_list
+    );
+    check!(
+        bits,
+        bits::BitsPacketFmt,
+        Corpus::bits_values,
+        hand::parse_bits,
+        hand::size_bits,
+        hand::write_bits
+    );
+    check!(
+        bounded_list,
+        bounded_list::BoundedListFmt,
+        Corpus::bounded_list_values,
+        hand::parse_bounded_list,
+        hand::size_bounded_list,
+        hand::write_bounded_list
+    );
 
     /// `Tail >>= Vec<item>` has a slice-shaped value, so it does not fit the
     /// macro above.
@@ -144,7 +201,9 @@ mod wire_compat {
             let mut vest_bytes = Vec::new();
             tail_list::TailListFmt.serialize_with_vec(v, &mut vest_bytes);
 
-            let (n, _) = tail_list::TailListFmt.parse(&&vest_bytes[..]).expect("vest parse failed");
+            let (n, _) = tail_list::TailListFmt
+                .parse(&&vest_bytes[..])
+                .expect("vest parse failed");
             assert_eq!(n, vest_bytes.len());
 
             let (hn, hv) = hand::parse_tail_list(&vest_bytes[..]).expect("hand parse failed");
