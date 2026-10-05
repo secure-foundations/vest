@@ -10,14 +10,47 @@ std = ["alloc", "vstd/std", "vest_lib/std"]
 alloc = ["vstd/alloc", "vest_lib/alloc"]
 
 [dependencies]
+base64 = "0.22.1"
 vstd.workspace = true
 vest_lib.workspace = true
 
 [dev-dependencies]
+bcder = "0.7.7"
+bitcoin = "0.32.100"
+cbor4ii = { version = "1.2.2", features = ["serde1"] }
+ciborium = "0.2.2"
+cryptographic-message-syntax = { version = "0.28.0", default-features = false }
 criterion = { version = "0.5", features = ["html_reports"] }
+der = { version = "0.8.1", features = ["alloc", "ber", "derive"] }
+minicbor-serde = { version = "0.7.1", features = ["std"] }
+rasn = "0.28.14"
+rasn-cms = "0.28.14"
+# This benchmark needs the publicly exposed parsed-handshake codec from 0.22.
+rustls = { version = "=0.22.4", default-features = false }
+rustcrypto-cms = { package = "cms", version = "0.3.0-pre.2" }
+serde = "1"
+serde_json = "1"
+vest_asn1_tests = { path = "../vest_asn1_tests" }
+vest_tests = { path = "../vest_tests" }
 
 [[bench]]
 name = "formats"
+harness = false
+
+[[bench]]
+name = "tls"
+harness = false
+
+[[bench]]
+name = "bitcoin"
+harness = false
+
+[[bench]]
+name = "cms"
+harness = false
+
+[[bench]]
+name = "cbor"
 harness = false
 
 # Not part of the verification corpus: these formats duplicate shapes already

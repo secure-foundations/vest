@@ -5,9 +5,6 @@ edition.workspace = true
 publish = false
 
 [features]
-# The benchmark corpora are intentionally kept out of Git. Enable this feature
-# when running benchmarks with a populated vest_tests/bench_data directory.
-bench-data = []
 # Forwards to `vest_lib/error-trace`, which records the full named-format call
 # stack on failures. The chain assertions in the error tests require it.
 error-trace = ["vest_lib/error-trace"]
@@ -15,16 +12,6 @@ error-trace = ["vest_lib/error-trace"]
 [dependencies]
 vstd = { workspace = true, features = ["std"] }
 vest_lib = { workspace = true, features = ["std"] }
-
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-base64 = "0.22.1"
-bitcoin = "0.32.100"
-rustls = "0.22"
-
-[[bench]]
-name = "generated_parser_benchmark"
-harness = false
 
 [package.metadata.verus]
 verify = true

@@ -20,6 +20,7 @@ pub mod varint;
 
 pub mod corpus;
 pub mod hand;
+pub mod real;
 pub mod runners;
 
 use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
