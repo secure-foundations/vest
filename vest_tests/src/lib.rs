@@ -255,9 +255,9 @@ mod tls_error_sanity {
     fn pre_shared_key_extension_parse_error_is_semantic_and_deeply_nested() {
         let input = [
             0x00, 0x29, // extension_type = PreSharedKey
-            0x00, 0x09, // ext_len = 9
+            0x00, 0x09, // data_len = 9
             0x00, 0x07, // psk_identities total length = 7
-            0x00, 0x00, // first identity: opaque_1_ffff length = 0, rejected by predicate
+            0x00, 0x00, // first identity: identity_len = 0, rejected by predicate
             0x00, 0x00, 0x00, 0x00, 0x00, // remaining bytes inside the exact-length chunk
         ];
 
@@ -269,7 +269,7 @@ mod tls_error_sanity {
         assert!(msg.contains("a length-delimited parser did not consume the declared length"));
         assert_trace(
             &msg,
-            "`client_hello_extension` -> `client_hello_extension_extension_data` -> `pre_shared_key_client_extension` -> `offered_psks` -> `psk_identities`",
+            "`client_hello_extension` -> `client_hello_extension_data` -> `offered_psks` -> `psk_identities`",
             "`psk_identities`",
         );
     }
@@ -278,16 +278,17 @@ mod tls_error_sanity {
     fn hello_retry_request_prepare_error_carries_deep_named_stack() {
         let empty: &[u8] = &[];
         let v = tls::HelloRetryRequest {
-            legacy_session_id_echo: tls::SessionId { l: 0, id: empty },
+            legacy_session_id_echo_len: 0,
+            legacy_session_id_echo: empty,
             cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
             legacy_compression_method: 0,
-            extensions: tls::HelloRetryExtensions {
-                l: 6,
-                list: vec![tls::HelloRetryExtension {
+            extensions: tls::HelloRetryRequestExtensions {
+                len: 6,
+                list: vec![tls::HelloRetryRequestExtension {
                     extension_type: tls::ExtensionType::Cookie,
-                    ext_len: 2,
-                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
-                        l: 0,
+                    data_len: 2,
+                    data: tls::HelloRetryRequestExtensionData::Cookie(tls::Cookie {
+                        len: 0,
                         data: empty,
                     }),
                 }],
@@ -300,8 +301,8 @@ mod tls_error_sanity {
         assert!(msg.contains("value failed a refinement predicate"));
         assert_trace(
             &msg,
-            "`hello_retry_extensions` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`",
-            "`opaque_1_ffff`",
+            "`hello_retry_request_extensions` -> `hello_retry_request_extension_data` -> `cookie`",
+            "`cookie`",
         );
     }
 
@@ -309,16 +310,17 @@ mod tls_error_sanity {
     fn hello_retry_request_roundtrips_when_well_formed() {
         let cookie_data: &[u8] = &[0xaa];
         let v = tls::HelloRetryRequest {
-            legacy_session_id_echo: tls::SessionId { l: 0, id: &[] },
+            legacy_session_id_echo_len: 0,
+            legacy_session_id_echo: &[],
             cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
             legacy_compression_method: 0,
-            extensions: tls::HelloRetryExtensions {
-                l: 7,
-                list: vec![tls::HelloRetryExtension {
+            extensions: tls::HelloRetryRequestExtensions {
+                len: 7,
+                list: vec![tls::HelloRetryRequestExtension {
                     extension_type: tls::ExtensionType::Cookie,
-                    ext_len: 3,
-                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
-                        l: 1,
+                    data_len: 3,
+                    data: tls::HelloRetryRequestExtensionData::Cookie(tls::Cookie {
+                        len: 1,
                         data: cookie_data,
                     }),
                 }],

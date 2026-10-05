@@ -1,127 +1,90 @@
+//! Bitcoin block and transaction wire formats.
+
 !LITTLE_ENDIAN
 
-block = {
+// Bitcoin block headers are exactly 80 bytes.
+// Hashes are stored in Bitcoin's internal byte order.
+block_header = {
   version: u32,
-  prev_block: [u8; 32],
-  merkle_root: [u8; 32],
+  previous_block_hash: [u8; 32],
+  merkle_root_hash: [u8; 32],
   timestamp: u32,
   bits: u32,
   nonce: u32,
-  @tx_count: btc_varint,
-  txs: [tx; @tx_count],
 }
 
+block = {
+  header: block_header,
+  @transaction_count: btc_varint,
+  transactions: [tx; @transaction_count],
+}
+
+// BIP 144 places a zero marker and a currently defined flag of 1 between the
+// version and input count. Canonical CompactSize encodes zero as that marker.
 tx = {
   version: u32,
-  @txin_count: btc_varint,
-  rem: choose(@txin_count) {
-    0 => tx_segwit,
-    _ => tx_nonsegwit(@txin_count),
+  @marker_or_input_count: btc_varint,
+  payload: choose(@marker_or_input_count) {
+    0 => tx_with_witness,
+    _ => tx_without_witness(@marker_or_input_count),
   },
 }
 
-tx_segwit = {
+tx_with_witness = {
   const flag: u8 = 1,
-  @txin_count: btc_varint,
-  txins: [txin; @txin_count],
-  @txout_count: btc_varint,
-  txouts: [txout; @txout_count],
-  witness: [witness; @txin_count],
+  @input_count: btc_varint,
+  inputs: [txin; @input_count],
+  @output_count: btc_varint,
+  outputs: [txout; @output_count],
+  witnesses: [witness; @input_count],
   lock_time: lock_time,
 }
 
-witness = {
-  @count: btc_varint,
-  data: [witness_component; @count],
-}
-
-witness_component = {
-  @l: btc_varint,
-  data: [u8; @l],
-}
-
-tx_nonsegwit(@txin_count: btc_varint) = {
-  txins: [txin; @txin_count],
-  @txout_count: btc_varint,
-  txouts: [txout; @txout_count],
+tx_without_witness(@input_count: btc_varint) = {
+  inputs: [txin; @input_count],
+  @output_count: btc_varint,
+  outputs: [txout; @output_count],
   lock_time: lock_time,
 }
 
+// The interpretation of nLockTime changes at 500,000,000, but both variants
+// have the same four-byte little-endian representation.
 lock_time = choose {
-  BlockNo(u32 | { 0..499999999 }),
+  BlockHeight(u32 | { 0..499999999 }),
   Timestamp(u32 | { 500000000.. }),
 }
 
-// tx without segwit
-// tx = {
-//   version: u32,
-//   @txin_count: btc_varint,
-//   txins: [txin; @txin_count],
-//   @txout_count: btc_varint,
-//   txouts: [txout; @txout_count],
-//   lock_time: u32,
-// }
+txin = {
+  previous_output: outpoint,
+  script_sig: script,
+  sequence: u32,
+}
+
+outpoint = {
+  transaction_hash: [u8; 32],
+  output_index: u32,
+}
 
 txout = {
+  // Bitcoin Core interprets this as int64_t. Vest uses the bit-equivalent u64;
+  // consensus validity imposes the nonnegative monetary range separately.
   value: u64,
   script_pubkey: script,
 }
 
 script = {
-  @l: btc_varint,
-  data: [u8; @l],
+  @length: btc_varint,
+  bytes: [u8; @length],
 }
 
-txin = {
-  previous_output: outpoint,
-  script_sig: script_sig,
-  sequence: u32,
+// BIP 144 encodes one witness stack per input. The stack count and every item
+// length are canonical CompactSize values.
+witness = {
+  @item_count: btc_varint,
+  items: [witness_item; @item_count],
 }
 
-outpoint = {
-  hash: [u8; 32],
-  index: u32,
+witness_item = {
+  @length: btc_varint,
+  bytes: [u8; @length],
 }
-
-script_sig = {
-  @l: btc_varint,
-  data: [u8; @l],
-}
-
-// empty = [u8; 0]
-
-// script_sig = {
-//   @tag: u8,
-//   rest: choose(@tag) {
-//     0..0xFC => [u8; @tag],
-//     0xFD => opaque_0_ff,
-//     0xFE => opaque_0_ffff,
-//     0xFF => opaque_0_ffffffff,
-//   }
-// }
-// 
-// opaque_0_ff = {
-//   @l: u16 | { 0..10000 },
-//   data: [u8; @l],
-// }
-// 
-// opaque_0_ffff = {
-//   @l: u32,
-//   data: [u8; @l],
-// }
-// 
-// opaque_0_ffffffff = {
-//   @l: u64,
-//   data: [u8; @l],
-// }
-
-// bt_varint = {
-//   @tag: u8,
-//   rest: choose(@tag) {
-//     0..0xFC => empty,
-//     0xFD => u16 | { 0xFD..0xFFFF },
-//     0xFE => u32 | { 0x10000..0xFFFFFFFF },
-//     0xFF => u64 | { 0x100000000..0xFFFFFFFFFFFFFFFF },
-//   }
-// } |> bt_varint_mapper
-

@@ -1,22 +1,26 @@
+//! TLS 1.3 handshake and record-layer wire formats.
+//!
+//! The definitions follow RFC 9846 (which obsoletes RFC 8446): the
+//! presentation-language structures of its Appendix B, their vector bounds,
+//! and the normative rules of the body text.
+//! Extension bodies not defined there follow the RFC that defines them.
+//!
+//! An `opaque field<..>` of a struct is written as `@field_len` followed by
+//! `field: [u8; @field_len]`, so the generated struct holds the bytes
+//! directly.
+
 !BIG_ENDIAN
 
-macro opaque!(int_type) = {
-  @l: int_type,
-  data: [u8; @l],
+// A standalone `opaque value<..>`, such as a list element.
+macro opaque!(len_type) = {
+  @len: len_type,
+  data: [u8; @len],
 }
 
-// opaque XXX<0..2^8-1>
-opaque_0_ff = opaque!(u8)
-opaque_1_ff = opaque!(u8 | { 1..0xff })
-opaque_0_ffff = opaque!(u16)
-opaque_1_ffff = opaque!(u16 | { 1..0xffff })
-opaque_2_ffff = opaque!(u16 | { 2..0xffff })
-opaque_0_ffffff = opaque!(u24)
-opaque_1_ffffff = opaque!(u24 | { 1..0xffffff })
-
-macro bounded_vec!(bound, item) = {
-  @l: bound,
-  list: [u8; @l] >>= Vec<item>,
+// `Item list<..>`: the length counts bytes, not items.
+macro bounded_vec!(len_type, item) = {
+  @len: len_type,
+  list: [u8; @len] >>= Vec<item>,
 }
 
 protocol_version = enum {
@@ -28,23 +32,31 @@ protocol_version = enum {
   ...
 }
 
+// RFC 9846 Section 4.3, plus the code points this file gives a meaning to that
+// RFC 9846 omits because they are not "Recommended" or not TLS 1.3. The enum
+// stays open: receivers MUST ignore extensions they do not recognize.
 extension_type = enum {
-  ServerName = 0u16,
-  MaxFragmentLength = 1,
-  StatusRequest = 5,
+  ServerName = 0u16,                          // RFC 6066
+  MaxFragmentLength = 1,                      // RFC 6066
+  StatusRequest = 5,                          // RFC 6066
   SupportedGroups = 10,
-  ECPointFormats = 11,
+  ECPointFormats = 11,                        // RFC 8422; TLS 1.2 only
   SignatureAlgorithms = 13,
-  UseSRTP = 14,
-  Heartbeat = 15,
-  ApplicationLayerProtocolNegotiation = 16,
-  SignedCertificateTimeStamp = 18,
-  ClientCertificateType = 19,
-  ServerCertificateType = 20,
-  Padding = 21,
-  EncryptThenMac = 22,
-  ExtendedMasterSecret = 23,
-  SessionTicket = 35,
+  UseSRTP = 14,                               // RFC 5764
+  Heartbeat = 15,                             // RFC 6520
+  ApplicationLayerProtocolNegotiation = 16,   // RFC 7301
+  StatusRequestV2 = 17,                       // RFC 6961; deprecated
+  SignedCertificateTimeStamp = 18,            // RFC 6962
+  ClientCertificateType = 19,                 // RFC 7250
+  ServerCertificateType = 20,                 // RFC 7250
+  Padding = 21,                               // RFC 7685
+  EncryptThenMac = 22,                        // RFC 7366; TLS 1.2 only
+  ExtendedMasterSecret = 23,                  // RFC 7627; TLS 1.2 only
+  CompressCertificate = 27,                   // RFC 8879
+  RecordSizeLimit = 28,                       // RFC 8449
+  DelegatedCredential = 34,                   // RFC 9345
+  SessionTicket = 35,                         // RFC 5077; TLS 1.2 only
+  SupportedEktCiphers = 39,                   // RFC 8870
   PreSharedKey = 41,
   EarlyData = 42,
   SupportedVersions = 43,
@@ -55,6 +67,14 @@ extension_type = enum {
   PostHandshakeAuth = 49,
   SignatureAlgorithmsCert = 50,
   KeyShare = 51,
+  TransparencyInfo = 52,                      // RFC 9162
+  ExternalIdHash = 55,                        // RFC 8844
+  ExternalSessionId = 56,                     // RFC 8844
+  QuicTransportParameters = 57,               // RFC 9001
+  TicketRequest = 58,                         // RFC 9149
+  EchOuterExtensions = 64768,                 // RFC 9849
+  EncryptedClientHello = 65037,               // RFC 9849
+  RenegotiationInfo = 65281,                  // RFC 5746; TLS 1.2 only
   ...
 }
 
@@ -63,73 +83,48 @@ name_type = enum {
   ...
 }
 
-host_name = opaque_1_ffff
-
-unknown_name = opaque_1_ffff
-
+// RFC 6066 Section 3. Every name, including a host_name, is
+// opaque<1..2^16-1>.
 server_name = {
-  @name_type: name_type,
-  name: choose(@name_type) {
-    HostName => host_name,
-    _ => unknown_name,
-  },
+  name_type: name_type,
+  @name_len: u16 | 1..0xffff,
+  name: [u8; @name_len],
 }
 
 server_name_list = bounded_vec!(u16 | 1..0xffff, server_name)
 
+// RFC 6066 Section 4: a request "for a value other than the allowed values"
+// MUST be rejected, so this enum is closed.
 max_fragment_length = enum {
   Pow2_9 = 1,
   Pow2_10 = 2,
   Pow2_11 = 3,
   Pow2_12 = 4,
-  ...
 }
 
-// certificate_status_type = enum {
-//   OCSP = 1,
-// }
+// RFC 6066 Section 8. `ocsp` (1) is the only status type.
+certificate_status_request = {
+  const status_type: u8 = 1,
+  responder_id_list: responder_id_list,
+  @request_extensions_len: u16,
+  request_extensions: [u8; @request_extensions_len],
+}
 
-responder_id = opaque_1_ffff
-ocsp_extensions = opaque_0_ffff
+responder_id = opaque!(u16 | 1..0xffff)
 
 responder_id_list = bounded_vec!(u16, responder_id)
 
-oscp_status_request = {
-  responder_id_list: responder_id_list,
-  extensions: ocsp_extensions,
-}
-
-certificate_status_request = {
-  const status_type: u8 = 1,
-  request: oscp_status_request,
-  // @status_type: certificate_status_type,
-  // request: choose(@status_type) {
-  //   OCSP => oscp_status_request,
-  // },
-}
-
-ocsp_response = opaque_1_ffffff
-
 certificate_status = {
   const status_type: u8 = 1,
-  response: ocsp_response,
-  // @status_type: certificate_status_type,
-  // response: choose(@status_type) {
-  //   OCSP => ocsp_response,
-  // },
+  @ocsp_response_len: u24 | 1..0xffffff,
+  ocsp_response: [u8; @ocsp_response_len],
 }
 
+// RFC 9846 Section 4.3.7. The obsolete_RESERVED ranges (0x0001..0x0016,
+// 0x001A..0x001C, 0xFF01..0xFF02) and the private-use ranges MUST NOT be
+// offered by TLS 1.3 implementations, so they are not named here; a ClientHello
+// that also serves earlier versions may still carry them, and they still parse.
 named_group = enum {
-  // Old curves (RFC 4492)
-  Sect163k1 = 1, Sect163r1 = 2, Sect163r2 = 3,
-  Sect193r1 = 4, Sect193r2 = 5, Sect233k1 = 6,
-  Sect233r1 = 7, Sect239k1 = 8, Sect283k1 = 9,
-  Sect283r1 = 10, Sect409k1 = 11, Sect409r1 = 12,
-  Sect571k1 = 13, Sect571r1 = 14, Secp160k1 = 15,
-  Secp160r1 = 16, Secp160r2 = 17, Secp192k1 = 18,
-  Secp192r1 = 19, Secp224k1 = 20, Secp224r1 = 21,
-  Secp256k1 = 22,
-
   // Elliptic Curve Groups (ECDHE)
   Secp256r1 = 0x0017, Secp384r1 = 0x0018, Secp521r1 = 0x0019,
   X25519 = 0x001D, X448 = 0x001E,
@@ -137,15 +132,13 @@ named_group = enum {
   // Finite Field Groups (DHE)
   Ffdhe2048 = 0x0100, Ffdhe3072 = 0x0101, Ffdhe4096 = 0x0102,
   Ffdhe6144 = 0x0103, Ffdhe8192 = 0x0104,
-
-  // Reserved Code Points, USE plain int to parse
-  // ffdhe_private_use = 0x01FC..0x01FF,
-  // ecdhe_private_use = 0xFE00..0xFEFF,
   ...
 }
 
 named_group_list = bounded_vec!(u16 | 2..0xffff, named_group)
 
+// RFC 8422 Section 5.1.2. Only `Uncompressed` remains in use, but the list
+// "MAY still be included" by clients that also offer TLS 1.2.
 ec_point_format = enum {
   Uncompressed = 0,
   AnsiX962CompressedPrime = 1,
@@ -155,13 +148,9 @@ ec_point_format = enum {
 
 ec_point_format_list = bounded_vec!(u8 | 1..0xff, ec_point_format)
 
+// RFC 9846 Section 4.3.3. The obsolete_RESERVED and private-use ranges are not
+// named, but still parse.
 signature_scheme = enum {
-  // Legacy schemes
-  RSA_PKCS1_MD5 = 0x0101,
-  RSA_PKCS1_SHA1 = 0x0201,
-  ECDSA_MD5 = 0x0103,
-  ECDSA_SHA1 = 0x0203,
-
   // RSASSA-PKCS1-v1_5 algorithms
   RSA_PKCS1_SHA256 = 0x0401,
   RSA_PKCS1_SHA384 = 0x0501,
@@ -186,7 +175,9 @@ signature_scheme = enum {
   RSA_PSS_PSS_SHA384 = 0x080A,
   RSA_PSS_PSS_SHA512 = 0x080B,
 
-  // Reserved Code Points
+  // Legacy algorithms
+  RSA_PKCS1_SHA1 = 0x0201,
+  ECDSA_SHA1 = 0x0203,
   ...
 }
 
@@ -195,28 +186,26 @@ signature_scheme = enum {
 // } SignatureSchemeList;
 signature_scheme_list = bounded_vec!(u16 | 2..0xfffe, signature_scheme)
 
-srtp_protection_profile = [u8; 2]
-srtp_protection_profiles = bounded_vec!(u16 | 2..0xffff, srtp_protection_profile)
-
-use_srtp_data = {
-  profiles: srtp_protection_profiles,
-  srtp_mki: opaque_0_ff,
-}
-
+// RFC 6520 Section 2: "Upon reception of an unknown mode, an error Alert
+// message using illegal_parameter ... MUST be sent", so this enum is closed.
 heartbeat_mode = enum {
   PeerAllowedToSend = 1,
   PeerNotAllowedToSend = 2,
-  ...
 }
 
-heartbeat_extension = {
-  mode: heartbeat_mode,
-}
+protocol_name = opaque!(u8 | 1..0xff)
 
-protocol_name = opaque_1_ff
 protocol_name_list = bounded_vec!(u16 | 2..0xffff, protocol_name)
 
-serialized_sct = opaque_1_ffff
+// RFC 7301 Section 3.1: the server's ProtocolNameList "MUST contain exactly one
+// ProtocolName". A single name occupies 2..256 bytes.
+protocol_name_selection = {
+  @len: u16 | 2..256,
+  name: [u8; @len] >>= protocol_name,
+}
+
+serialized_sct = opaque!(u16 | 1..0xffff)
+
 signed_certificate_timestamp_list = bounded_vec!(u16 | 1..0xffff, serialized_sct)
 
 certificate_type = enum {
@@ -225,75 +214,198 @@ certificate_type = enum {
   ...
 }
 
-client_cert_type_client_extension = bounded_vec!(u8 | 1..0xff, certificate_type)
+// RFC 7250 Section 3: a client lists the types it supports, and the server
+// answers with the single type it selected.
+certificate_type_list = bounded_vec!(u8 | 1..0xff, certificate_type)
 
-client_cert_type_server_extension = {
-  client_certificate_type: certificate_type,
+zero_byte = u8 | 0
+
+// RFC 7685: extension_data is the outer extension length's worth of zeroes;
+// it does not carry another length prefix.
+padding(@len: u16) = [zero_byte; @len]
+
+// RFC 5764 Section 4.1.1.
+srtp_protection_profile = [u8; 2]
+
+srtp_protection_profiles = bounded_vec!(u16 | 2..0xffff, srtp_protection_profile)
+
+use_srtp_data = {
+  profiles: srtp_protection_profiles,
+  @srtp_mki_len: u8,
+  srtp_mki: [u8; @srtp_mki_len],
 }
 
-server_cert_type_client_extension = bounded_vec!(u8 | 1..0xff, certificate_type)
-
-server_cert_type_server_extension = {
-  server_certificate_type: certificate_type,
+// The server's response carries "a single SRTPProtectionProfile value".
+use_srtp_selection = {
+  const profiles_len: u16 = 2,
+  profile: srtp_protection_profile,
+  @srtp_mki_len: u8,
+  srtp_mki: [u8; @srtp_mki_len],
 }
 
-zero_byte = {
-  const zero: u8 = 0,
+// RFC 8879 Section 3.
+certificate_compression_algorithm = enum {
+  Zlib = 1u16,
+  Brotli = 2,
+  Zstd = 3,
+  ...
 }
 
-// padding_extension = bounded_vec!(u16, zero_byte) // this is wrong as per rfc7685
-padding_extension(@ext_len: u16) = {
-  @l: u16,
-  padding: [u8; @l] >>= Vec<zero_byte>,
+certificate_compression_algorithms = bounded_vec!(u8 | 2..254, certificate_compression_algorithm)
+
+// RFC 8449 Section 4: a value below 64 "MUST [be treated] as a fatal error".
+// There is no upper bound to check: a server MUST NOT enforce one.
+record_size_limit = u16 | 64..
+
+// RFC 9345 Section 4.
+credential = {
+  valid_time: u32,
+  dc_cert_verify_algorithm: signature_scheme,
+  @asn1_subject_public_key_info_len: u24 | 1..0xffffff,
+  asn1_subject_public_key_info: [u8; @asn1_subject_public_key_info_len],
 }
 
-// struct {
-//   opaque ticket_data<0..2^16-1>;
-// } SessionTicket;
-// session_ticket = opaque_0_ffff
+delegated_credential = {
+  cred: credential,
+  algorithm: signature_scheme,
+  @signature_len: u16 | 1..0xffff,
+  signature: [u8; @signature_len],
+}
+
+// RFC 8844 Sections 3 and 4.
+external_id_hash = {
+  @binding_hash_len: u8 | 0..32,
+  binding_hash: [u8; @binding_hash_len],
+}
+
+external_session_id = {
+  @session_id_len: u8 | 20..255,
+  session_id: [u8; @session_id_len],
+}
+
+// RFC 9149 Section 3.
+client_ticket_request = {
+  new_session_count: u8,
+  resumption_count: u8,
+}
+
+// struct { uint8 expected_count; } ServerTicketRequestHint;
+server_ticket_request_hint = u8
+
+// RFC 5746 Section 3.2: opaque renegotiated_connection<0..255>. It is empty on
+// an initial handshake; TLS 1.3 clients send it only for servers that fall back
+// to TLS 1.2.
+renegotiation_info = opaque!(u8)
+
+// RFC 9849 Section 4.
+hpke_symmetric_cipher_suite = {
+  kdf_id: u16,
+  aead_id: u16,
+}
+
+hpke_symmetric_cipher_suites = bounded_vec!(u16 | 4..0xfffc, hpke_symmetric_cipher_suite)
+
+hpke_key_config = {
+  config_id: u8,
+  kem_id: u16,
+  @public_key_len: u16 | 1..0xffff,
+  public_key: [u8; @public_key_len],
+  cipher_suites: hpke_symmetric_cipher_suites,
+}
+
+ech_config_extension = {
+  extension_type: u16,
+  @data_len: u16,
+  data: [u8; @data_len],
+}
+
+ech_config_extensions = bounded_vec!(u16, ech_config_extension)
+
+ech_config_contents = {
+  key_config: hpke_key_config,
+  maximum_name_length: u8,
+  @public_name_len: u8 | 1..0xff,
+  public_name: [u8; @public_name_len],
+  extensions: ech_config_extensions,
+}
+
+ech_config = {
+  @version: u16,
+  @length: u16,
+  contents: [u8; @length] >>= ech_config_body(@version),
+}
+
+// "Clients MUST ignore any ECHConfig structure with a version they do not
+// support", so other versions remain opaque.
+ech_config_body(@version: u16) = choose(@version) {
+  0xfe0d => ech_config_contents,
+  _ => Tail,
+}
+
+ech_config_list = bounded_vec!(u16 | 4..0xffff, ech_config)
+
+// RFC 9849 Section 5.
+ech_client_hello_type = enum {
+  Outer = 0,
+  Inner = 1,
+}
+
+ech_client_hello_outer = {
+  cipher_suite: hpke_symmetric_cipher_suite,
+  config_id: u8,
+  @enc_len: u16,
+  enc: [u8; @enc_len],
+  @payload_len: u16 | 1..0xffff,
+  payload: [u8; @payload_len],
+}
+
+ech_client_hello = {
+  @ech_type: ech_client_hello_type,
+  body: choose(@ech_type) {
+    Outer => ech_client_hello_outer,
+    Inner => empty,
+  },
+}
+
+// struct { opaque confirmation[8]; } ECHHelloRetryRequest;
+ech_hello_retry_request = [u8; 8]
+
+// Only in an EncodedClientHelloInner, which travels encrypted inside the
+// outer ClientHello's encrypted_client_hello payload.
+ech_outer_extensions = bounded_vec!(u8 | 2..254, extension_type)
 
 psk_identity = {
-  identity: opaque_1_ffff,
+  @identity_len: u16 | 1..0xffff,
+  identity: [u8; @identity_len],
   obfuscated_ticket_age: u32,
 }
 
-psk_binder_entry = {
-  @l: u8 | { 32..255 },
-  entries: [u8; @l],
-}
+psk_binder_entry = opaque!(u8 | 32..255)
 
 psk_identities = bounded_vec!(u16 | 7..0xffff, psk_identity)
 
 psk_binder_entries = bounded_vec!(u16 | 33..0xffff, psk_binder_entry)
 
-// TODO: binders:  A series of HMAC values, one for each value in the
-// identities list and in the same order, computed as described
-// below.
+// The protocol layer additionally checks that there is one binder per
+// identity; the wire format alone carries byte-length-delimited vectors.
 offered_psks = {
   identities: psk_identities,
   binders: psk_binder_entries,
 }
 
-pre_shared_key_client_extension = {
-  offers: offered_psks,
-}
+// The ServerHello's pre_shared_key: the index of the identity it accepted.
+selected_identity = u16
 
-pre_shared_key_server_extension = {
-  selected_identity: u16,
-}
+// The NewSessionTicket's early_data.
+max_early_data_size = u32
 
-early_data_indication_new_session_ticket = {
-  max_early_data_size: u32,
-}
+supported_versions = bounded_vec!(u8 | 2..254, protocol_version)
 
-supported_versions_client = bounded_vec!(u8 | 2..254, protocol_version)
+// RFC 9846 Section 4.3.1: a ServerHello or HelloRetryRequest selecting "a
+// version prior to TLS 1.3" MUST be rejected.
+selected_version = u16 | 0x0304..
 
-supported_versions_server = protocol_version
-
-// struct {
-//   opaque cookie<1..2^16-1>;
-// } Cookie;
-cookie = opaque_1_ffff
+cookie = opaque!(u16 | 1..0xffff)
 
 psk_key_exchange_mode = enum {
   PSK_KE = 0,
@@ -303,223 +415,288 @@ psk_key_exchange_mode = enum {
 
 psk_key_exchange_modes = bounded_vec!(u8 | 1..0xff, psk_key_exchange_mode)
 
-distinguished_name = opaque_1_ffff
+distinguished_name = opaque!(u16 | 1..0xffff)
 
-certificate_authorities_extension = bounded_vec!(u16 | 3..0xffff, distinguished_name)
+certificate_authorities = bounded_vec!(u16 | 3..0xffff, distinguished_name)
 
 oid_filter = {
-  certificate_extension_oid: opaque_1_ff,
-  certificate_extension_values: opaque_0_ffff,
+  @certificate_extension_oid_len: u8 | 1..0xff,
+  certificate_extension_oid: [u8; @certificate_extension_oid_len],
+  @certificate_extension_values_len: u16,
+  certificate_extension_values: [u8; @certificate_extension_values_len],
 }
 
-oid_filter_extension = bounded_vec!(u16, oid_filter)
+oid_filters = bounded_vec!(u16, oid_filter)
 
-// uncompressed_point_representation32 = {
-//   const legacy_form: u8 = 4,
-//   x: [u8; 32],
-//   y: [u8; 32],
-// }
-//
-// uncompressed_point_representation48 = {
-//   const legacy_form: u8 = 4,
-//   x: [u8; 48],
-//   y: [u8; 48],
-// }
-//
-// uncompressed_point_representation66 = {
-//   const legacy_form: u8 = 4,
-//   x: [u8; 66],
-//   y: [u8; 66],
-// }
-//
-// montgomery_point32 = [u8; 32]
-//
-// montgomery_form56 = [u8; 56]
-//
-// sever_dh_params = {
-//   dh_p: opaque_1_ffff,
-//   dh_g: opaque_1_ffff,
-//   dh_ys: opaque_1_ffff,
-// }
-//
-// key_exchange_data = opaque_1_ffff
+// RFC 9846 Section 4.3.8.2: an ECDHE share is an UncompressedPointRepresentation,
+// with each coordinate taking "as many octets as implied by the curve".
+uncompressed_point_p256 = {
+  const legacy_form: u8 = 4,
+  x: [u8; 32],
+  y: [u8; 32],
+}
+
+uncompressed_point_p384 = {
+  const legacy_form: u8 = 4,
+  x: [u8; 48],
+  y: [u8; 48],
+}
+
+uncompressed_point_p521 = {
+  const legacy_form: u8 = 4,
+  x: [u8; 66],
+  y: [u8; 66],
+}
 
 key_share_entry = {
   @group: named_group,
-  @l: u16 | 1..0xffff,
-  key_exchange: [u8; @l],
-  // key_exchange: [u8; @l] >>= choose(@group) {
-  //   Secp256r1 => uncompressed_point_representation32,
-  //   Secp384r1 => uncompressed_point_representation48,
-  //   Secp521r1 => uncompressed_point_representation66,
+  @key_exchange_len: u16 | 1..0xffff,
+  key_exchange: [u8; @key_exchange_len] >>= key_exchange(@group),
+}
 
-  //   X25519 => montgomery_point32,
-  //   X448 => montgomery_form56,
-
-  //   Ffdhe2048 => sever_dh_params,
-  //   Ffdhe3072 => sever_dh_params,
-  //   Ffdhe4096 => sever_dh_params,
-  //   Ffdhe6144 => sever_dh_params,
-  //   Ffdhe8192 => sever_dh_params,
-
-  //   _ => key_exchange_data,
-  // },
+// The key_exchange encoding is fixed by the group: RFC 9846 Section 4.3.8.1
+// pads a DHE share "to the size of p in bytes", and Section 4.3.8.2 fixes X25519
+// at 32 bytes and X448 at 56. Other groups, including hybrids, stay opaque.
+key_exchange(@group: named_group) = choose(@group) {
+  Secp256r1 => uncompressed_point_p256,
+  Secp384r1 => uncompressed_point_p384,
+  Secp521r1 => uncompressed_point_p521,
+  X25519 => [u8; 32],
+  X448 => [u8; 56],
+  Ffdhe2048 => [u8; 256],
+  Ffdhe3072 => [u8; 384],
+  Ffdhe4096 => [u8; 512],
+  Ffdhe6144 => [u8; 768],
+  Ffdhe8192 => [u8; 1024],
+  _ => Tail,
 }
 
 key_share_client_hello = bounded_vec!(u16, key_share_entry)
 
-unknown_extension = opaque_0_ffff
-
 empty = [u8; 0]
 
+// Each message below excludes the extension types RFC 9846 Table 1 does not
+// permit in it; the TLS 1.2 extensions named above are permitted only in a
+// ClientHello, which carries them for servers that fall back to TLS 1.2. The
+// exclusions are negated because unknown types must still parse: they, and
+// permitted types this file does not define a body for, fall through to
+// `_ => Tail`.
+
 client_hello_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+  @extension_type: extension_type | !{ OidFilters },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
     // popular extensions
     ServerName => server_name_list,
     SignatureAlgorithms => signature_scheme_list,
     SupportedGroups => named_group_list,
     StatusRequest => certificate_status_request,
     ApplicationLayerProtocolNegotiation => protocol_name_list,
-    SupportedVersions => supported_versions_client,
+    SupportedVersions => supported_versions,
     KeyShare => key_share_client_hello,
     PskKeyExchangeModes => psk_key_exchange_modes,
-    PreSharedKey => pre_shared_key_client_extension,
+    PreSharedKey => offered_psks,
     // less popular extensions
     MaxFragmentLength => max_fragment_length,
+    UseSRTP => use_srtp_data,
     Heartbeat => heartbeat_mode,
-    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
-    ClientCertificateType => client_cert_type_client_extension,
-    ServerCertificateType => server_cert_type_client_extension,
-    // Padding => padding_extension(@ext_len),
-    Padding => [u8; @ext_len],
+    // RFC 6962 Section 3.3.1: the client signals support with "empty
+    // extension_data"; the SCT list itself is the server's response.
+    SignedCertificateTimeStamp => empty,
+    ClientCertificateType => certificate_type_list,
+    ServerCertificateType => certificate_type_list,
+    Padding => padding(@data_len),
+    CompressCertificate => certificate_compression_algorithms,
+    RecordSizeLimit => record_size_limit,
+    // RFC 9345 Section 4.1.1.
+    DelegatedCredential => signature_scheme_list,
+    EarlyData => empty,
     Cookie => cookie,
-    CertificateAuthorities => certificate_authorities_extension,
-    OidFilters => oid_filter_extension,
+    CertificateAuthorities => certificate_authorities,
+    PostHandshakeAuth => empty,
     SignatureAlgorithmsCert => signature_scheme_list,
-    _ => Tail,
-    // _ => client_hello_extension_rest(@ext_len, @extension_type),
-  },
-}
-
-// client_hello_extension_rest(@ext_len: u16, @extension_type: extension_type) = choose(@extension_type) {
-//   // EarlyData => empty,
-//   // PostHandshakeAuth => empty,
-//   // UseSRTP => use_srtp_data, // Only allowed in DTLS?
-//   // ECPointFormats => ec_point_format_list, // not used in TLS 1.3
-//   // EncryptThenMac => empty, // not used in TLS 1.3
-//   // ExtendedMasterSecret => empty, // not used in TLS 1.3
-//   // SessionTicket => [u8; @ext_len], // not used in TLS 1.3
-//   _ => [u8; @ext_len],
-// }
-
-sever_hello_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
-    ServerName => server_name_list,
-    MaxFragmentLength => max_fragment_length,
-    StatusRequest => certificate_status_request,
-    SupportedGroups => named_group_list,
+    // RFC 9162 Section 6.5: the server "MUST verify that the received
+    // extension_data is empty".
+    TransparencyInfo => empty,
+    ExternalIdHash => external_id_hash,
+    ExternalSessionId => external_session_id,
+    TicketRequest => client_ticket_request,
+    EchOuterExtensions => ech_outer_extensions,
+    EncryptedClientHello => ech_client_hello,
+    // TLS 1.2 extensions a TLS 1.3 ClientHello carries for fallback. RFC 7366
+    // Section 2 and RFC 7627 Section 5.1 define both bodies as empty.
     ECPointFormats => ec_point_format_list,
-    SignatureAlgorithms => signature_scheme_list,
-    UseSRTP => srtp_protection_profiles,
-    Heartbeat => heartbeat_mode,
-    ApplicationLayerProtocolNegotiation => protocol_name_list,
-    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
-    ClientCertificateType => client_cert_type_client_extension,
-    ServerCertificateType => server_cert_type_client_extension,
-    Padding => [u8; @ext_len],
-    // Padding => padding_extension(@ext_len),
     EncryptThenMac => empty,
     ExtendedMasterSecret => empty,
-    SessionTicket => empty,
-    PreSharedKey => pre_shared_key_server_extension,
-    // EarlyData => empty,
-    SupportedVersions => supported_versions_server,
-    //Cookie => cookie,
-    //PskKeyExchangeModes => psk_key_exchange_modes,
-    //CertificateAuthorities => certificate_authorities_extension,
-    //OidFilters => oid_filter_extension,
-    //PostHandshakeAuth => empty,
-    //SignatureAlgorithmsCert => signature_scheme_list,
-    KeyShare => key_share_entry,
-    _ => [u8; @ext_len],
+    RenegotiationInfo => renegotiation_info,
+    _ => Tail,
   },
 }
 
-hello_retry_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
-    SupportedVersions => supported_versions_server,
+server_hello_extension = {
+  @extension_type: extension_type | !{
+    ServerName, MaxFragmentLength, StatusRequest, SupportedGroups,
+    ECPointFormats, SignatureAlgorithms, UseSRTP, Heartbeat,
+    ApplicationLayerProtocolNegotiation, StatusRequestV2,
+    SignedCertificateTimeStamp, ClientCertificateType,
+    ServerCertificateType, Padding, EncryptThenMac, ExtendedMasterSecret,
+    CompressCertificate, RecordSizeLimit, DelegatedCredential,
+    SessionTicket, SupportedEktCiphers, EarlyData, Cookie,
+    PskKeyExchangeModes, CertificateAuthorities, OidFilters,
+    PostHandshakeAuth, SignatureAlgorithmsCert, TransparencyInfo,
+    ExternalIdHash, ExternalSessionId, QuicTransportParameters,
+    TicketRequest, EchOuterExtensions, EncryptedClientHello,
+    RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
+    PreSharedKey => selected_identity,
+    SupportedVersions => selected_version,
+    KeyShare => key_share_entry,
+    _ => Tail,
+  },
+}
+
+hello_retry_request_extension = {
+  @extension_type: extension_type | !{
+    ServerName, MaxFragmentLength, StatusRequest, SupportedGroups,
+    ECPointFormats, SignatureAlgorithms, UseSRTP, Heartbeat,
+    ApplicationLayerProtocolNegotiation, StatusRequestV2,
+    SignedCertificateTimeStamp, ClientCertificateType,
+    ServerCertificateType, Padding, EncryptThenMac, ExtendedMasterSecret,
+    CompressCertificate, RecordSizeLimit, DelegatedCredential,
+    SessionTicket, SupportedEktCiphers, PreSharedKey, EarlyData,
+    PskKeyExchangeModes, CertificateAuthorities, OidFilters,
+    PostHandshakeAuth, SignatureAlgorithmsCert, TransparencyInfo,
+    ExternalIdHash, ExternalSessionId, QuicTransportParameters,
+    TicketRequest, EchOuterExtensions, RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
+    SupportedVersions => selected_version,
     Cookie => cookie,
+    // struct { NamedGroup selected_group; } KeyShareHelloRetryRequest;
     KeyShare => named_group,
-    _ => [u8; @ext_len],
+    EncryptedClientHello => ech_hello_retry_request,
+    _ => Tail,
   },
 }
 
 encrypted_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+  @extension_type: extension_type | !{
+    StatusRequest, ECPointFormats, SignatureAlgorithms, StatusRequestV2,
+    SignedCertificateTimeStamp, Padding, EncryptThenMac,
+    ExtendedMasterSecret, CompressCertificate, DelegatedCredential,
+    SessionTicket, PreSharedKey, SupportedVersions, Cookie,
+    PskKeyExchangeModes, CertificateAuthorities, OidFilters,
+    PostHandshakeAuth, SignatureAlgorithmsCert, KeyShare,
+    TransparencyInfo, EchOuterExtensions, RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
+    // RFC 6066 Section 3: the server's acknowledgement "SHALL be empty".
     ServerName => empty,
     MaxFragmentLength => max_fragment_length,
     SupportedGroups => named_group_list,
-    // UseSRTP => use_srtp_data,
+    UseSRTP => use_srtp_selection,
     Heartbeat => heartbeat_mode,
-    ApplicationLayerProtocolNegotiation => protocol_name_list,
-    ClientCertificateType => client_cert_type_client_extension,
-    ServerCertificateType => server_cert_type_client_extension,
+    ApplicationLayerProtocolNegotiation => protocol_name_selection,
+    ClientCertificateType => certificate_type,
+    ServerCertificateType => certificate_type,
+    RecordSizeLimit => record_size_limit,
     EarlyData => empty,
-    _ => [u8; @ext_len],
+    ExternalIdHash => external_id_hash,
+    ExternalSessionId => external_session_id,
+    TicketRequest => server_ticket_request_hint,
+    // RFC 9849 Section 5: the server's retry configurations.
+    EncryptedClientHello => ech_config_list,
+    _ => Tail,
   },
 }
 
 certificate_request_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+  @extension_type: extension_type | !{
+    MaxFragmentLength, SupportedGroups, ECPointFormats, UseSRTP,
+    Heartbeat, ApplicationLayerProtocolNegotiation, StatusRequestV2,
+    ClientCertificateType, ServerCertificateType, Padding, EncryptThenMac,
+    ExtendedMasterSecret, RecordSizeLimit, SessionTicket,
+    SupportedEktCiphers, PreSharedKey, EarlyData, SupportedVersions,
+    Cookie, PskKeyExchangeModes, PostHandshakeAuth, KeyShare,
+    ExternalIdHash, ExternalSessionId, QuicTransportParameters,
+    TicketRequest, EchOuterExtensions, EncryptedClientHello,
+    RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
     SignatureAlgorithms => signature_scheme_list,
-    CertificateAuthorities => certificate_authorities_extension,
+    CertificateAuthorities => certificate_authorities,
     SignatureAlgorithmsCert => signature_scheme_list,
-    StatusRequest => certificate_status_request,
-    SignedCertificateTimeStamp => signed_certificate_timestamp_list,
-    OidFilters => oid_filter_extension,
-    _ => [u8; @ext_len],
+    // RFC 9846 Section 4.5.1.1: the server requests an OCSP response "by
+    // sending an empty status_request extension".
+    StatusRequest => empty,
+    CompressCertificate => certificate_compression_algorithms,
+    // RFC 9345 Section 4.1.2.
+    DelegatedCredential => signature_scheme_list,
+    OidFilters => oid_filters,
+    _ => Tail,
   },
 }
 
-certificate_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
+certificate_entry_extension = {
+  @extension_type: extension_type | !{
+    ServerName, MaxFragmentLength, SupportedGroups, ECPointFormats,
+    SignatureAlgorithms, UseSRTP, Heartbeat,
+    ApplicationLayerProtocolNegotiation, StatusRequestV2,
+    ClientCertificateType, ServerCertificateType, Padding, EncryptThenMac,
+    ExtendedMasterSecret, CompressCertificate, RecordSizeLimit,
+    SessionTicket, SupportedEktCiphers, PreSharedKey, EarlyData,
+    SupportedVersions, Cookie, PskKeyExchangeModes,
+    CertificateAuthorities, OidFilters, PostHandshakeAuth,
+    SignatureAlgorithmsCert, KeyShare, ExternalIdHash, ExternalSessionId,
+    QuicTransportParameters, TicketRequest, EchOuterExtensions,
+    EncryptedClientHello, RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
     StatusRequest => certificate_status,
     SignedCertificateTimeStamp => signed_certificate_timestamp_list,
-    _ => [u8; @ext_len],
+    DelegatedCredential => delegated_credential,
+    _ => Tail,
   },
 }
 
 new_session_ticket_extension = {
-  @extension_type: extension_type,
-  @ext_len: u16,
-  extension_data: [u8; @ext_len] >>= choose(@extension_type) {
-    EarlyData => early_data_indication_new_session_ticket,
-    _ => [u8; @ext_len],
+  @extension_type: extension_type | !{
+    ServerName, MaxFragmentLength, StatusRequest, SupportedGroups,
+    ECPointFormats, SignatureAlgorithms, UseSRTP, Heartbeat,
+    ApplicationLayerProtocolNegotiation, StatusRequestV2,
+    SignedCertificateTimeStamp, ClientCertificateType,
+    ServerCertificateType, Padding, EncryptThenMac, ExtendedMasterSecret,
+    CompressCertificate, RecordSizeLimit, DelegatedCredential,
+    SessionTicket, SupportedEktCiphers, PreSharedKey, SupportedVersions,
+    Cookie, PskKeyExchangeModes, CertificateAuthorities, OidFilters,
+    PostHandshakeAuth, SignatureAlgorithmsCert, KeyShare,
+    TransparencyInfo, ExternalIdHash, ExternalSessionId,
+    QuicTransportParameters, TicketRequest, EchOuterExtensions,
+    EncryptedClientHello, RenegotiationInfo
+  },
+  @data_len: u16,
+  data: [u8; @data_len] >>= choose(@extension_type) {
+    EarlyData => max_early_data_size,
+    _ => Tail,
   },
 }
 
-extension = {
-  extension_type: extension_type,
-  extension_data: opaque_0_ffff,
-}
-
+// RFC 9846 Section 6: "the level field can safely be ignored", so any level
+// parses.
 alert_level = enum {
   Warning = 1,
   Fatal = 2,
+  ...
 }
 
+// "Unknown Alert types MUST be treated as error alerts" -- which requires
+// receiving them, so this enum is open.
 alert_description = enum {
   CloseNotify = 0,
   UnexpectedMessage = 10,
@@ -547,7 +724,10 @@ alert_description = enum {
   BadCertificateStatusResponse = 113,
   UnknownPSKIdentity = 115,
   CertificateRequired = 116,
+  GeneralError = 117,
   NoApplicationProtocol = 120,
+  EchRequired = 121,                          // RFC 9849
+  ...
 }
 
 alert = {
@@ -555,6 +735,8 @@ alert = {
   description: alert_description,
 }
 
+// Receiving an unexpected record type MUST terminate the connection (RFC 9846
+// Section 5), so this enum is closed.
 content_type = enum {
   Invalid = 0,
   ChangeCipherSpec = 20,
@@ -563,16 +745,39 @@ content_type = enum {
   ApplicationData = 23,
 }
 
+// RFC 9846 Section 5: the only change_cipher_spec record is the single byte
+// 0x01; "any other change_cipher_spec value" MUST be rejected.
+change_cipher_spec = u8 | 1
+
+// RFC 9846 Section 5.1: handshake data may be fragmented across records, so a
+// fragment is opaque here, but "Implementations MUST NOT send zero-length
+// fragments of Handshake types".
+handshake_fragment = {
+  first: u8,
+  remaining: Tail,
+}
+
 tls_plaintext = {
-  content_type: content_type,
-  legacy_record_version: protocol_version,
-  fragment: opaque_0_ffff,
+  @content_type: content_type,
+  // RFC 9846 requires receivers to ignore this legacy field.
+  legacy_record_version: u16,
+  @length: u16 | { 0..16384 },
+  fragment: [u8; @length] >>= choose(@content_type) {
+    Invalid => Never("invalid is not a record content type"),
+    ChangeCipherSpec => change_cipher_spec,
+    // "A record with an Alert type MUST contain exactly one message."
+    Alert => alert,
+    Handshake => handshake_fragment,
+    // Zero-length application data "MAY be sent".
+    ApplicationData => Tail,
+  },
 }
 
 tls_ciphertext = {
-  opaque_type: content_type,
-  version: protocol_version,
-  encrypted_record: opaque_0_ffff,
+  const opaque_type: u8 = 23,
+  const legacy_record_version: u16 = 0x0303,
+  @length: u16 | { 0..16640 }, // 2^14 + 256
+  encrypted_record: [u8; @length],
 }
 
 cipher_suite = enum {
@@ -584,14 +789,19 @@ cipher_suite = enum {
   ...
 }
 
+cipher_suite_list = bounded_vec!(u16 | 2..0xfffe, cipher_suite)
+
 client_hello = {
   const legacy_version: u16 = 0x0303, // TLS 1.2
   random: [u8; 32],
-  legacy_session_id: session_id,
+  @legacy_session_id_len: u8 | 0..32,
+  legacy_session_id: [u8; @legacy_session_id_len],
   cipher_suites: cipher_suite_list,
-  legacy_compression_methods: opaque_1_ff,
-  // const legacy_compression_methods: [u8; 2] = [0x01, 0x00],
-  extensions: client_extensions,
+  // RFC 9846 Section 4.2.2: "For every TLS 1.3 ClientHello, this list MUST
+  // contain exactly one byte, set to zero": its length, then null compression.
+  // A TLS 1.2 ClientHello, which may list other methods, is outside this codec.
+  const legacy_compression_methods: [u8; 2] = [0x01, 0x00],
+  extensions: client_hello_extensions,
 }
 
 sh_or_hrr = {
@@ -607,120 +817,89 @@ sh_or_hrr = {
 }
 
 server_hello = {
-  legacy_session_id_echo: session_id,
+  @legacy_session_id_echo_len: u8 | 0..32,
+  legacy_session_id_echo: [u8; @legacy_session_id_echo_len],
   cipher_suite: cipher_suite,
   const legacy_compression_method: u8 = 0,
-  extensions: server_extensions,
+  extensions: server_hello_extensions,
 }
 
 hello_retry_request = {
-  legacy_session_id_echo: session_id,
+  @legacy_session_id_echo_len: u8 | 0..32,
+  legacy_session_id_echo: [u8; @legacy_session_id_echo_len],
   cipher_suite: cipher_suite,
   const legacy_compression_method: u8 = 0,
-  extensions: hello_retry_extensions,
+  extensions: hello_retry_request_extensions,
 }
 
-cipher_suite_list = bounded_vec!(u16 | 2..0xfffe, cipher_suite)
+// RFC 9846 Section 4.2.2: Extension extensions<7..2^16-1>. The smallest valid
+// block is a lone supported_versions offering one version: 4 + 1 + 2 bytes.
+client_hello_extensions = bounded_vec!(u16 | 7..0xffff, client_hello_extension)
 
-session_id = {
-  @l: u8 | { 0..32 },
-  id: [u8; @l],
-}
+server_hello_extensions = bounded_vec!(u16 | 6..0xffff, server_hello_extension)
 
-client_extensions = bounded_vec!(u16 | 8..0xffff, client_hello_extension)
-
-server_extensions = bounded_vec!(u16 | 6..0xffff, sever_hello_extension)
-
-hello_retry_extensions = bounded_vec!(u16 | 6..0xffff, hello_retry_extension)
-
-certificate_request_extensions = bounded_vec!(u16 | 2..0xffff, certificate_request_extension)
+hello_retry_request_extensions = bounded_vec!(u16 | 6..0xffff, hello_retry_request_extension)
 
 encrypted_extensions = bounded_vec!(u16, encrypted_extension)
 
-new_session_ticket_extensions = bounded_vec!(u16 | 0..0xfffe, new_session_ticket_extension)
+// RFC 9846 Section 4.4.2: Extension extensions<0..2^16-1>.
+certificate_request_extensions = bounded_vec!(u16, certificate_request_extension)
 
-certificate_extensions = bounded_vec!(u16, certificate_extension)
+certificate_entry_extensions = bounded_vec!(u16, certificate_entry_extension)
+
+// RFC 9846 Section 4.7.1: Extension extensions<0..2^16-1>.
+new_session_ticket_extensions = bounded_vec!(u16, new_session_ticket_extension)
 
 certificate_request = {
-  certificate_request_context: opaque_0_ff,
+  @certificate_request_context_len: u8,
+  certificate_request_context: [u8; @certificate_request_context_len],
   extensions: certificate_request_extensions,
 }
 
-// struct {
-//     select (certificate_type) {
-//         case RawPublicKey:
-//           /* From RFC 7250 ASN.1_subjectPublicKeyInfo */
-//           opaque ASN1_subjectPublicKeyInfo<1..2^24-1>;
-//
-//         case X509:
-//           opaque cert_data<1..2^24-1>;
-//     };
-//     Extension extensions<0..2^16-1>;
-// } CertificateEntry;
-certificate_entry(@cert_type: certificate_type) = {
-  data: choose(@cert_type) {
-    X509 => opaque_1_ffffff,
-    RawPublicKey => opaque_1_ffffff,
-    _ => opaque_1_ffffff,
-  },
-  extensions: certificate_extensions,
+// The certificate is DER X.509 or, with RFC 7250, a DER SubjectPublicKeyInfo;
+// both are opaque<1..2^24-1>.
+certificate_entry = {
+  @cert_data_len: u24 | 1..0xffffff,
+  cert_data: [u8; @cert_data_len],
+  extensions: certificate_entry_extensions,
 }
 
-certificate_entry_opaque = {
-  cert_data: opaque_1_ffffff,
-  extensions: certificate_extensions,
-}
-
-certificate_list = bounded_vec!(u24, certificate_entry_opaque)
+certificate_list = bounded_vec!(u24, certificate_entry)
 
 certificate = {
-  certificate_request_context: opaque_0_ff,
+  @certificate_request_context_len: u8,
+  certificate_request_context: [u8; @certificate_request_context_len],
   certificate_list: certificate_list,
 }
 
 certificate_verify = {
   algorithm: signature_scheme,
-  signature: opaque_0_ffff,
+  @signature_len: u16,
+  signature: [u8; @signature_len],
 }
 
 // struct {
 //     opaque verify_data[Hash.length];
 // } Finished;
-digest_size = enum {
-  Hash12 = 12,
-  Hash20 = 20,
-  Sha256 = 32,
-  Sha384 = 48,
-  Sha512 = 64,
-  Max = 0xffffff,
-  ...
-}
-
-finished(@size: u24) = choose(@size) {
-  12 => [u8; 12],
-  20 => [u8; 20],
-  32 => [u8; 32],
-  48 => [u8; 48],
-  64 => [u8; 64],
-  _ => [u8; @size],
-}
-finished_opaque(@digest_size: u24) = [u8; @digest_size]
+//
+// Hash is negotiated connection state, so this standalone handshake format uses the enclosing message length;
+// the state machine must check it against the selected cipher suite's hash.
+finished(@hash_length: u24) = [u8; @hash_length]
 
 new_session_ticket = {
   ticket_lifetime: u32,
   ticket_age_add: u32,
-  ticket_nonce: opaque_0_ff,
-  ticket: opaque_1_ffff,
+  @ticket_nonce_len: u8,
+  ticket_nonce: [u8; @ticket_nonce_len],
+  @ticket_len: u16 | 1..0xffff,
+  ticket: [u8; @ticket_len],
   extensions: new_session_ticket_extensions,
 }
 
+// struct { KeyUpdateRequest request_update; } KeyUpdate;
 key_update_request = enum {
   UpdateNotRequested = 0,
   UpdateRequested = 1,
-}
-
-key_update = {
-  request_update: key_update_request,
 }
 
 // enum {
@@ -772,6 +951,6 @@ handshake = {
     CertificateRequest => certificate_request,
     CertificateVerify => certificate_verify,
     Finished => finished(@length),
-    KeyUpdate => key_update,
+    KeyUpdate => key_update_request,
   },
 }

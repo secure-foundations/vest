@@ -19,41 +19,75 @@ verus! {
 // ============================================================
 // Data Types
 // ============================================================
-/// data type for `block`.
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Block<'i> {
+/// data type for `block_header`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct BlockHeader<'i> {
     pub version: u32,
-    pub prev_block: &'i [u8],
-    pub merkle_root: &'i [u8],
+    pub previous_block_hash: &'i [u8],
+    pub merkle_root_hash: &'i [u8],
     pub timestamp: u32,
     pub bits: u32,
     pub nonce: u32,
-    pub tx_count: u64,
-    pub txs: Vec<Tx<'i>>,
 }
 
 #[verifier::ext_equal]
-pub struct BlockSpec<
-    T0 = u32,
-    T1 = Seq<u8>,
-    T2 = Seq<u8>,
-    T3 = u32,
-    T4 = u32,
-    T5 = u32,
-    T6 = u64,
-    T7 = Seq<TxSpec>,
-> {
+pub struct BlockHeaderSpec<T0 = u32, T1 = Seq<u8>, T2 = Seq<u8>, T3 = u32, T4 = u32, T5 = u32> {
     pub version: T0,
-    pub prev_block: T1,
-    pub merkle_root: T2,
+    pub previous_block_hash: T1,
+    pub merkle_root_hash: T2,
     pub timestamp: T3,
     pub bits: T4,
     pub nonce: T5,
-    pub tx_count: T6,
-    pub txs: T7,
 }
 
-pub type BlockInner = (u32, (Seq<u8>, (Seq<u8>, (u32, (u32, (u32, (u64, Seq<TxSpec>)))))));
+pub type BlockHeaderInner = (u32, (Seq<u8>, (Seq<u8>, (u32, (u32, u32)))));
+
+impl<'i> DeepView for BlockHeader<'i> {
+    type V = BlockHeaderSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        BlockHeaderSpec {
+            version: self.version.deep_view(),
+            previous_block_hash: self.previous_block_hash.deep_view(),
+            merkle_root_hash: self.merkle_root_hash.deep_view(),
+            timestamp: self.timestamp.deep_view(),
+            bits: self.bits.deep_view(),
+            nonce: self.nonce.deep_view(),
+        }
+    }
+}
+
+impl<'i> BlockHeader<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().version == self.version.deep_view(),
+            self.deep_view().previous_block_hash == self.previous_block_hash.deep_view(),
+            self.deep_view().merkle_root_hash == self.merkle_root_hash.deep_view(),
+            self.deep_view().timestamp == self.timestamp.deep_view(),
+            self.deep_view().bits == self.bits.deep_view(),
+            self.deep_view().nonce == self.nonce.deep_view(),
+    {
+        reveal(<BlockHeader as DeepView>::deep_view);
+    }
+}
+
+/// data type for `block`.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Block<'i> {
+    pub header: BlockHeader<'i>,
+    pub transaction_count: u64,
+    pub transactions: Vec<Tx<'i>>,
+}
+
+#[verifier::ext_equal]
+pub struct BlockSpec<T0 = BlockHeaderSpec, T1 = u64, T2 = Seq<TxSpec>> {
+    pub header: T0,
+    pub transaction_count: T1,
+    pub transactions: T2,
+}
+
+pub type BlockInner = (BlockHeaderSpec, (u64, Seq<TxSpec>));
 
 impl<'i> DeepView for Block<'i> {
     type V = BlockSpec;
@@ -61,14 +95,9 @@ impl<'i> DeepView for Block<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         BlockSpec {
-            version: self.version.deep_view(),
-            prev_block: self.prev_block.deep_view(),
-            merkle_root: self.merkle_root.deep_view(),
-            timestamp: self.timestamp.deep_view(),
-            bits: self.bits.deep_view(),
-            nonce: self.nonce.deep_view(),
-            tx_count: self.tx_count.deep_view(),
-            txs: self.txs.deep_view(),
+            header: self.header.deep_view(),
+            transaction_count: self.transaction_count.deep_view(),
+            transactions: self.transactions.deep_view(),
         }
     }
 }
@@ -76,14 +105,9 @@ impl<'i> DeepView for Block<'i> {
 impl<'i> Block<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view().version == self.version.deep_view(),
-            self.deep_view().prev_block == self.prev_block.deep_view(),
-            self.deep_view().merkle_root == self.merkle_root.deep_view(),
-            self.deep_view().timestamp == self.timestamp.deep_view(),
-            self.deep_view().bits == self.bits.deep_view(),
-            self.deep_view().nonce == self.nonce.deep_view(),
-            self.deep_view().tx_count == self.tx_count.deep_view(),
-            self.deep_view().txs == self.txs.deep_view(),
+            self.deep_view().header == self.header.deep_view(),
+            self.deep_view().transaction_count == self.transaction_count.deep_view(),
+            self.deep_view().transactions == self.transactions.deep_view(),
     {
         reveal(<Block as DeepView>::deep_view);
     }
@@ -93,18 +117,18 @@ impl<'i> Block<'i> {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Tx<'i> {
     pub version: u32,
-    pub txin_count: u64,
-    pub rem: TxRem<'i>,
+    pub marker_or_input_count: u64,
+    pub payload: TxPayload<'i>,
 }
 
 #[verifier::ext_equal]
-pub struct TxSpec<T0 = u32, T1 = u64, T2 = TxRemSpec> {
+pub struct TxSpec<T0 = u32, T1 = u64, T2 = TxPayloadSpec> {
     pub version: T0,
-    pub txin_count: T1,
-    pub rem: T2,
+    pub marker_or_input_count: T1,
+    pub payload: T2,
 }
 
-pub type TxInner = (u32, (u64, TxRemSpec));
+pub type TxInner = (u32, (u64, TxPayloadSpec));
 
 impl<'i> DeepView for Tx<'i> {
     type V = TxSpec;
@@ -113,8 +137,8 @@ impl<'i> DeepView for Tx<'i> {
     open spec fn deep_view(&self) -> Self::V {
         TxSpec {
             version: self.version.deep_view(),
-            txin_count: self.txin_count.deep_view(),
-            rem: self.rem.deep_view(),
+            marker_or_input_count: self.marker_or_input_count.deep_view(),
+            payload: self.payload.deep_view(),
         }
     }
 }
@@ -123,27 +147,27 @@ impl<'i> Tx<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
             self.deep_view().version == self.version.deep_view(),
-            self.deep_view().txin_count == self.txin_count.deep_view(),
-            self.deep_view().rem == self.rem.deep_view(),
+            self.deep_view().marker_or_input_count == self.marker_or_input_count.deep_view(),
+            self.deep_view().payload == self.payload.deep_view(),
     {
         reveal(<Tx as DeepView>::deep_view);
     }
 }
 
-/// data type for `tx_segwit`.
+/// data type for `tx_with_witness`.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TxSegwit<'i> {
+pub struct TxWithWitness<'i> {
     pub flag: u8,
-    pub txin_count: u64,
-    pub txins: Vec<Txin<'i>>,
-    pub txout_count: u64,
-    pub txouts: Vec<Txout<'i>>,
-    pub witness: Vec<Witness<'i>>,
+    pub input_count: u64,
+    pub inputs: Vec<Txin<'i>>,
+    pub output_count: u64,
+    pub outputs: Vec<Txout<'i>>,
+    pub witnesses: Vec<Witness<'i>>,
     pub lock_time: LockTime,
 }
 
 #[verifier::ext_equal]
-pub struct TxSegwitSpec<
+pub struct TxWithWitnessSpec<
     T0 = u8,
     T1 = u64,
     T2 = Seq<TxinSpec>,
@@ -153,172 +177,109 @@ pub struct TxSegwitSpec<
     T6 = LockTimeSpec,
 > {
     pub flag: T0,
-    pub txin_count: T1,
-    pub txins: T2,
-    pub txout_count: T3,
-    pub txouts: T4,
-    pub witness: T5,
+    pub input_count: T1,
+    pub inputs: T2,
+    pub output_count: T3,
+    pub outputs: T4,
+    pub witnesses: T5,
     pub lock_time: T6,
 }
 
-pub type TxSegwitInner = (u8, (u64, (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>,
+pub type TxWithWitnessInner = (u8, (u64, (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>,
     (Seq<WitnessSpec>, LockTimeSpec))))));
 
-impl<'i> DeepView for TxSegwit<'i> {
-    type V = TxSegwitSpec;
+impl<'i> DeepView for TxWithWitness<'i> {
+    type V = TxWithWitnessSpec;
 
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        TxSegwitSpec {
+        TxWithWitnessSpec {
             flag: self.flag.deep_view(),
-            txin_count: self.txin_count.deep_view(),
-            txins: self.txins.deep_view(),
-            txout_count: self.txout_count.deep_view(),
-            txouts: self.txouts.deep_view(),
-            witness: self.witness.deep_view(),
+            input_count: self.input_count.deep_view(),
+            inputs: self.inputs.deep_view(),
+            output_count: self.output_count.deep_view(),
+            outputs: self.outputs.deep_view(),
+            witnesses: self.witnesses.deep_view(),
             lock_time: self.lock_time.deep_view(),
         }
     }
 }
 
-impl<'i> TxSegwit<'i> {
+impl<'i> TxWithWitness<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
             self.deep_view().flag == self.flag.deep_view(),
-            self.deep_view().txin_count == self.txin_count.deep_view(),
-            self.deep_view().txins == self.txins.deep_view(),
-            self.deep_view().txout_count == self.txout_count.deep_view(),
-            self.deep_view().txouts == self.txouts.deep_view(),
-            self.deep_view().witness == self.witness.deep_view(),
+            self.deep_view().input_count == self.input_count.deep_view(),
+            self.deep_view().inputs == self.inputs.deep_view(),
+            self.deep_view().output_count == self.output_count.deep_view(),
+            self.deep_view().outputs == self.outputs.deep_view(),
+            self.deep_view().witnesses == self.witnesses.deep_view(),
             self.deep_view().lock_time == self.lock_time.deep_view(),
     {
-        reveal(<TxSegwit as DeepView>::deep_view);
+        reveal(<TxWithWitness as DeepView>::deep_view);
     }
 }
 
-/// data type for `witness`.
+/// data type for `tx_without_witness`.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Witness<'i> {
-    pub count: u64,
-    pub data: Vec<WitnessComponent<'i>>,
-}
-
-#[verifier::ext_equal]
-pub struct WitnessSpec<T0 = u64, T1 = Seq<WitnessComponentSpec>> {
-    pub count: T0,
-    pub data: T1,
-}
-
-pub type WitnessInner = (u64, Seq<WitnessComponentSpec>);
-
-impl<'i> DeepView for Witness<'i> {
-    type V = WitnessSpec;
-
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        WitnessSpec { count: self.count.deep_view(), data: self.data.deep_view() }
-    }
-}
-
-impl<'i> Witness<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().count == self.count.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<Witness as DeepView>::deep_view);
-    }
-}
-
-/// data type for `witness_component`.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct WitnessComponent<'i> {
-    pub l: u64,
-    pub data: &'i [u8],
-}
-
-#[verifier::ext_equal]
-pub struct WitnessComponentSpec<T0 = u64, T1 = Seq<u8>> {
-    pub l: T0,
-    pub data: T1,
-}
-
-pub type WitnessComponentInner = (u64, Seq<u8>);
-
-impl<'i> DeepView for WitnessComponent<'i> {
-    type V = WitnessComponentSpec;
-
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        WitnessComponentSpec { l: self.l.deep_view(), data: self.data.deep_view() }
-    }
-}
-
-impl<'i> WitnessComponent<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<WitnessComponent as DeepView>::deep_view);
-    }
-}
-
-/// data type for `tx_nonsegwit`.
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TxNonsegwit<'i> {
-    pub txins: Vec<Txin<'i>>,
-    pub txout_count: u64,
-    pub txouts: Vec<Txout<'i>>,
+pub struct TxWithoutWitness<'i> {
+    pub inputs: Vec<Txin<'i>>,
+    pub output_count: u64,
+    pub outputs: Vec<Txout<'i>>,
     pub lock_time: LockTime,
 }
 
 #[verifier::ext_equal]
-pub struct TxNonsegwitSpec<T0 = Seq<TxinSpec>, T1 = u64, T2 = Seq<TxoutSpec>, T3 = LockTimeSpec> {
-    pub txins: T0,
-    pub txout_count: T1,
-    pub txouts: T2,
+pub struct TxWithoutWitnessSpec<
+    T0 = Seq<TxinSpec>,
+    T1 = u64,
+    T2 = Seq<TxoutSpec>,
+    T3 = LockTimeSpec,
+> {
+    pub inputs: T0,
+    pub output_count: T1,
+    pub outputs: T2,
     pub lock_time: T3,
 }
 
-pub type TxNonsegwitInner = (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>, LockTimeSpec)));
+pub type TxWithoutWitnessInner = (Seq<TxinSpec>, (u64, (Seq<TxoutSpec>, LockTimeSpec)));
 
-impl<'i> DeepView for TxNonsegwit<'i> {
-    type V = TxNonsegwitSpec;
+impl<'i> DeepView for TxWithoutWitness<'i> {
+    type V = TxWithoutWitnessSpec;
 
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        TxNonsegwitSpec {
-            txins: self.txins.deep_view(),
-            txout_count: self.txout_count.deep_view(),
-            txouts: self.txouts.deep_view(),
+        TxWithoutWitnessSpec {
+            inputs: self.inputs.deep_view(),
+            output_count: self.output_count.deep_view(),
+            outputs: self.outputs.deep_view(),
             lock_time: self.lock_time.deep_view(),
         }
     }
 }
 
-impl<'i> TxNonsegwit<'i> {
+impl<'i> TxWithoutWitness<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view().txins == self.txins.deep_view(),
-            self.deep_view().txout_count == self.txout_count.deep_view(),
-            self.deep_view().txouts == self.txouts.deep_view(),
+            self.deep_view().inputs == self.inputs.deep_view(),
+            self.deep_view().output_count == self.output_count.deep_view(),
+            self.deep_view().outputs == self.outputs.deep_view(),
             self.deep_view().lock_time == self.lock_time.deep_view(),
     {
-        reveal(<TxNonsegwit as DeepView>::deep_view);
+        reveal(<TxWithoutWitness as DeepView>::deep_view);
     }
 }
 
 /// data type for `lock_time`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LockTime {
-    BlockNo(u32),
+    BlockHeight(u32),
     Timestamp(u32),
 }
 
 #[verifier::ext_equal]
 pub enum LockTimeSpec<T0 = u32, T1 = u32> {
-    BlockNo(T0),
+    BlockHeight(T0),
     Timestamp(T1),
 }
 
@@ -330,7 +291,7 @@ impl DeepView for LockTime {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            LockTime::BlockNo(v) => LockTimeSpec::BlockNo(v.deep_view()),
+            LockTime::BlockHeight(v) => LockTimeSpec::BlockHeight(v.deep_view()),
             LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
         }
     }
@@ -341,11 +302,89 @@ impl LockTime {
         ensures
             self.deep_view()
                 == match self {
-                    LockTime::BlockNo(v) => LockTimeSpec::BlockNo(v.deep_view()),
+                    LockTime::BlockHeight(v) => LockTimeSpec::BlockHeight(v.deep_view()),
                     LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
                 },
     {
         reveal(<LockTime as DeepView>::deep_view);
+    }
+}
+
+/// data type for `txin`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Txin<'i> {
+    pub previous_output: Outpoint<'i>,
+    pub script_sig: Script<'i>,
+    pub sequence: u32,
+}
+
+#[verifier::ext_equal]
+pub struct TxinSpec<T0 = OutpointSpec, T1 = ScriptSpec, T2 = u32> {
+    pub previous_output: T0,
+    pub script_sig: T1,
+    pub sequence: T2,
+}
+
+pub type TxinInner = (OutpointSpec, (ScriptSpec, u32));
+
+impl<'i> DeepView for Txin<'i> {
+    type V = TxinSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        TxinSpec {
+            previous_output: self.previous_output.deep_view(),
+            script_sig: self.script_sig.deep_view(),
+            sequence: self.sequence.deep_view(),
+        }
+    }
+}
+
+impl<'i> Txin<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().previous_output == self.previous_output.deep_view(),
+            self.deep_view().script_sig == self.script_sig.deep_view(),
+            self.deep_view().sequence == self.sequence.deep_view(),
+    {
+        reveal(<Txin as DeepView>::deep_view);
+    }
+}
+
+/// data type for `outpoint`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Outpoint<'i> {
+    pub transaction_hash: &'i [u8],
+    pub output_index: u32,
+}
+
+#[verifier::ext_equal]
+pub struct OutpointSpec<T0 = Seq<u8>, T1 = u32> {
+    pub transaction_hash: T0,
+    pub output_index: T1,
+}
+
+pub type OutpointInner = (Seq<u8>, u32);
+
+impl<'i> DeepView for Outpoint<'i> {
+    type V = OutpointSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        OutpointSpec {
+            transaction_hash: self.transaction_hash.deep_view(),
+            output_index: self.output_index.deep_view(),
+        }
+    }
+}
+
+impl<'i> Outpoint<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().transaction_hash == self.transaction_hash.deep_view(),
+            self.deep_view().output_index == self.output_index.deep_view(),
+    {
+        reveal(<Outpoint as DeepView>::deep_view);
     }
 }
 
@@ -386,14 +425,14 @@ impl<'i> Txout<'i> {
 /// data type for `script`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Script<'i> {
-    pub l: u64,
-    pub data: &'i [u8],
+    pub length: u64,
+    pub bytes: &'i [u8],
 }
 
 #[verifier::ext_equal]
 pub struct ScriptSpec<T0 = u64, T1 = Seq<u8>> {
-    pub l: T0,
-    pub data: T1,
+    pub length: T0,
+    pub bytes: T1,
 }
 
 pub type ScriptInner = (u64, Seq<u8>);
@@ -403,184 +442,218 @@ impl<'i> DeepView for Script<'i> {
 
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
-        ScriptSpec { l: self.l.deep_view(), data: self.data.deep_view() }
+        ScriptSpec { length: self.length.deep_view(), bytes: self.bytes.deep_view() }
     }
 }
 
 impl<'i> Script<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
+            self.deep_view().length == self.length.deep_view(),
+            self.deep_view().bytes == self.bytes.deep_view(),
     {
         reveal(<Script as DeepView>::deep_view);
     }
 }
 
-/// data type for `txin`.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Txin<'i> {
-    pub previous_output: Outpoint<'i>,
-    pub script_sig: ScriptSig<'i>,
-    pub sequence: u32,
-}
-
-#[verifier::ext_equal]
-pub struct TxinSpec<T0 = OutpointSpec, T1 = ScriptSigSpec, T2 = u32> {
-    pub previous_output: T0,
-    pub script_sig: T1,
-    pub sequence: T2,
-}
-
-pub type TxinInner = (OutpointSpec, (ScriptSigSpec, u32));
-
-impl<'i> DeepView for Txin<'i> {
-    type V = TxinSpec;
-
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        TxinSpec {
-            previous_output: self.previous_output.deep_view(),
-            script_sig: self.script_sig.deep_view(),
-            sequence: self.sequence.deep_view(),
-        }
-    }
-}
-
-impl<'i> Txin<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().previous_output == self.previous_output.deep_view(),
-            self.deep_view().script_sig == self.script_sig.deep_view(),
-            self.deep_view().sequence == self.sequence.deep_view(),
-    {
-        reveal(<Txin as DeepView>::deep_view);
-    }
-}
-
-/// data type for `outpoint`.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Outpoint<'i> {
-    pub hash: &'i [u8],
-    pub index: u32,
-}
-
-#[verifier::ext_equal]
-pub struct OutpointSpec<T0 = Seq<u8>, T1 = u32> {
-    pub hash: T0,
-    pub index: T1,
-}
-
-pub type OutpointInner = (Seq<u8>, u32);
-
-impl<'i> DeepView for Outpoint<'i> {
-    type V = OutpointSpec;
-
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        OutpointSpec { hash: self.hash.deep_view(), index: self.index.deep_view() }
-    }
-}
-
-impl<'i> Outpoint<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hash == self.hash.deep_view(),
-            self.deep_view().index == self.index.deep_view(),
-    {
-        reveal(<Outpoint as DeepView>::deep_view);
-    }
-}
-
-/// data type for `script_sig`.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct ScriptSig<'i> {
-    pub l: u64,
-    pub data: &'i [u8],
-}
-
-#[verifier::ext_equal]
-pub struct ScriptSigSpec<T0 = u64, T1 = Seq<u8>> {
-    pub l: T0,
-    pub data: T1,
-}
-
-pub type ScriptSigInner = (u64, Seq<u8>);
-
-impl<'i> DeepView for ScriptSig<'i> {
-    type V = ScriptSigSpec;
-
-    #[verifier::opaque]
-    open spec fn deep_view(&self) -> Self::V {
-        ScriptSigSpec { l: self.l.deep_view(), data: self.data.deep_view() }
-    }
-}
-
-impl<'i> ScriptSig<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<ScriptSig as DeepView>::deep_view);
-    }
-}
-
-/// data type for `tx_rem`.
+/// data type for `witness`.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum TxRem<'i> {
-    TxSegwit(TxSegwit<'i>),
-    TxNonsegwit(TxNonsegwit<'i>),
+pub struct Witness<'i> {
+    pub item_count: u64,
+    pub items: Vec<WitnessItem<'i>>,
 }
 
 #[verifier::ext_equal]
-pub enum TxRemSpec<T0 = TxSegwitSpec, T1 = TxNonsegwitSpec> {
-    TxSegwit(T0),
-    TxNonsegwit(T1),
+pub struct WitnessSpec<T0 = u64, T1 = Seq<WitnessItemSpec>> {
+    pub item_count: T0,
+    pub items: T1,
 }
 
-pub type TxRemInner = Sum<TxSegwitSpec, TxNonsegwitSpec>;
+pub type WitnessInner = (u64, Seq<WitnessItemSpec>);
 
-impl<'i> DeepView for TxRem<'i> {
-    type V = TxRemSpec;
+impl<'i> DeepView for Witness<'i> {
+    type V = WitnessSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        WitnessSpec { item_count: self.item_count.deep_view(), items: self.items.deep_view() }
+    }
+}
+
+impl<'i> Witness<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().item_count == self.item_count.deep_view(),
+            self.deep_view().items == self.items.deep_view(),
+    {
+        reveal(<Witness as DeepView>::deep_view);
+    }
+}
+
+/// data type for `witness_item`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct WitnessItem<'i> {
+    pub length: u64,
+    pub bytes: &'i [u8],
+}
+
+#[verifier::ext_equal]
+pub struct WitnessItemSpec<T0 = u64, T1 = Seq<u8>> {
+    pub length: T0,
+    pub bytes: T1,
+}
+
+pub type WitnessItemInner = (u64, Seq<u8>);
+
+impl<'i> DeepView for WitnessItem<'i> {
+    type V = WitnessItemSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        WitnessItemSpec { length: self.length.deep_view(), bytes: self.bytes.deep_view() }
+    }
+}
+
+impl<'i> WitnessItem<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().length == self.length.deep_view(),
+            self.deep_view().bytes == self.bytes.deep_view(),
+    {
+        reveal(<WitnessItem as DeepView>::deep_view);
+    }
+}
+
+/// data type for `tx_payload`.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum TxPayload<'i> {
+    TxWithWitness(TxWithWitness<'i>),
+    TxWithoutWitness(TxWithoutWitness<'i>),
+}
+
+#[verifier::ext_equal]
+pub enum TxPayloadSpec<T0 = TxWithWitnessSpec, T1 = TxWithoutWitnessSpec> {
+    TxWithWitness(T0),
+    TxWithoutWitness(T1),
+}
+
+pub type TxPayloadInner = Sum<TxWithWitnessSpec, TxWithoutWitnessSpec>;
+
+impl<'i> DeepView for TxPayload<'i> {
+    type V = TxPayloadSpec;
 
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            TxRem::TxSegwit(v) => TxRemSpec::TxSegwit(v.deep_view()),
-            TxRem::TxNonsegwit(v) => TxRemSpec::TxNonsegwit(v.deep_view()),
+            TxPayload::TxWithWitness(v) => TxPayloadSpec::TxWithWitness(v.deep_view()),
+            TxPayload::TxWithoutWitness(v) => TxPayloadSpec::TxWithoutWitness(v.deep_view()),
         }
     }
 }
 
-impl<'i> TxRem<'i> {
+impl<'i> TxPayload<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
             self.deep_view()
                 == match self {
-                    TxRem::TxSegwit(v) => TxRemSpec::TxSegwit(v.deep_view()),
-                    TxRem::TxNonsegwit(v) => TxRemSpec::TxNonsegwit(v.deep_view()),
+                    TxPayload::TxWithWitness(v) => TxPayloadSpec::TxWithWitness(v.deep_view()),
+                    TxPayload::TxWithoutWitness(v) =>
+                        TxPayloadSpec::TxWithoutWitness(v.deep_view()),
                 },
     {
-        reveal(<TxRem as DeepView>::deep_view);
+        reveal(<TxPayload as DeepView>::deep_view);
     }
 }
 
 // ============================================================
 // Structural Mappers
 // ============================================================
-impl<T0, T1, T2, T3, T4, T5, T6, T7> BlockSpec<T0, T1, T2, T3, T4, T5, T6, T7> {
+impl<T0, T1, T2, T3, T4, T5> BlockHeaderSpec<T0, T1, T2, T3, T4, T5> {
     #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7)))))))) -> Self {
-        let (version, (prev_block, (merkle_root, (timestamp, (bits, (nonce,
-            (tx_count, txs))))))) = input;
-        Self { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs }
+    pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, T5)))))) -> Self {
+        let (version, (previous_block_hash, (merkle_root_hash, (timestamp,
+            (bits, nonce))))) = input;
+        Self { version, previous_block_hash, merkle_root_hash, timestamp, bits, nonce }
     }
 
     #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7))))))) {
-        let Self { version, prev_block, merkle_root, timestamp, bits, nonce, tx_count, txs } = self;
-        (version, (prev_block, (merkle_root, (timestamp, (bits, (nonce, (tx_count, txs)))))))
+    pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, T5))))) {
+        let Self { version, previous_block_hash, merkle_root_hash, timestamp, bits, nonce } = self;
+        (version, (previous_block_hash, (merkle_root_hash, (timestamp, (bits, nonce)))))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(BlockHeaderSpec::from_structural);
+        reveal(BlockHeaderSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, T5))))))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(BlockHeaderSpec::from_structural);
+        reveal(BlockHeaderSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self {
+                        version,
+                        previous_block_hash,
+                        merkle_root_hash,
+                        timestamp,
+                        bits,
+                        nonce,
+                    } =>
+                        (version, (previous_block_hash, (merkle_root_hash, (timestamp,
+                            (bits, nonce))))),
+                },
+    {
+        reveal(BlockHeaderSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct BlockHeaderForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct BlockHeaderReverse;
+
+impl SpecMap for BlockHeaderForward {
+    type Input = BlockHeaderInner;
+    type Output = BlockHeaderSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        BlockHeaderSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for BlockHeaderReverse {
+    type Input = BlockHeaderSpec;
+    type Output = BlockHeaderInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1, T2> BlockSpec<T0, T1, T2> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (header, (transaction_count, transactions)) = input;
+        Self { header, transaction_count, transactions }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { header, transaction_count, transactions } = self;
+        (header, (transaction_count, transactions))
     }
 
     pub broadcast proof fn lemma_from_into(self)
@@ -591,7 +664,7 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7> BlockSpec<T0, T1, T2, T3, T4, T5, T6, T7> {
         reveal(BlockSpec::into_structural);
     }
 
-    pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, (T5, (T6, T7))))))))
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
         ensures
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
@@ -603,18 +676,8 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7> BlockSpec<T0, T1, T2, T3, T4, T5, T6, T7> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self {
-                        version,
-                        prev_block,
-                        merkle_root,
-                        timestamp,
-                        bits,
-                        nonce,
-                        tx_count,
-                        txs,
-                    } =>
-                        (version, (prev_block, (merkle_root, (timestamp, (bits, (nonce,
-                            (tx_count, txs))))))),
+                    Self { header, transaction_count, transactions } =>
+                        (header, (transaction_count, transactions)),
                 },
     {
         reveal(BlockSpec::into_structural);
@@ -649,14 +712,14 @@ impl SpecMap for BlockReverse {
 impl<T0, T1, T2> TxSpec<T0, T1, T2> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
-        let (version, (txin_count, rem)) = input;
-        Self { version, txin_count, rem }
+        let (version, (marker_or_input_count, payload)) = input;
+        Self { version, marker_or_input_count, payload }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
-        let Self { version, txin_count, rem } = self;
-        (version, (txin_count, rem))
+        let Self { version, marker_or_input_count, payload } = self;
+        (version, (marker_or_input_count, payload))
     }
 
     pub broadcast proof fn lemma_from_into(self)
@@ -679,7 +742,8 @@ impl<T0, T1, T2> TxSpec<T0, T1, T2> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self { version, txin_count, rem } => (version, (txin_count, rem)),
+                    Self { version, marker_or_input_count, payload } =>
+                        (version, (marker_or_input_count, payload)),
                 },
     {
         reveal(TxSpec::into_structural);
@@ -711,263 +775,142 @@ impl SpecMap for TxReverse {
     }
 }
 
-impl<T0, T1, T2, T3, T4, T5, T6> TxSegwitSpec<T0, T1, T2, T3, T4, T5, T6> {
+impl<T0, T1, T2, T3, T4, T5, T6> TxWithWitnessSpec<T0, T1, T2, T3, T4, T5, T6> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: (T0, (T1, (T2, (T3, (T4, (T5, T6))))))) -> Self {
-        let (flag, (txin_count, (txins, (txout_count, (txouts, (witness, lock_time)))))) = input;
-        Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time }
+        let (flag, (input_count, (inputs, (output_count, (outputs,
+            (witnesses, lock_time)))))) = input;
+        Self { flag, input_count, inputs, output_count, outputs, witnesses, lock_time }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> (T0, (T1, (T2, (T3, (T4, (T5, T6)))))) {
-        let Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = self;
-        (flag, (txin_count, (txins, (txout_count, (txouts, (witness, lock_time))))))
+        let Self { flag, input_count, inputs, output_count, outputs, witnesses, lock_time } = self;
+        (flag, (input_count, (inputs, (output_count, (outputs, (witnesses, lock_time))))))
     }
 
     pub broadcast proof fn lemma_from_into(self)
         ensures
             #[trigger] Self::from_structural(Self::into_structural(self)) == self,
     {
-        reveal(TxSegwitSpec::from_structural);
-        reveal(TxSegwitSpec::into_structural);
+        reveal(TxWithWitnessSpec::from_structural);
+        reveal(TxWithWitnessSpec::into_structural);
     }
 
     pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, (T3, (T4, (T5, T6)))))))
         ensures
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
-        reveal(TxSegwitSpec::from_structural);
-        reveal(TxSegwitSpec::into_structural);
+        reveal(TxWithWitnessSpec::from_structural);
+        reveal(TxWithWitnessSpec::into_structural);
     }
 
     pub proof fn lemma_into_structural_fields(self)
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self { flag, txin_count, txins, txout_count, txouts, witness, lock_time } =>
-                        (flag, (txin_count, (txins, (txout_count, (txouts,
-                            (witness, lock_time)))))),
+                    Self {
+                        flag,
+                        input_count,
+                        inputs,
+                        output_count,
+                        outputs,
+                        witnesses,
+                        lock_time,
+                    } =>
+                        (flag, (input_count, (inputs, (output_count, (outputs,
+                            (witnesses, lock_time)))))),
                 },
     {
-        reveal(TxSegwitSpec::into_structural);
+        reveal(TxWithWitnessSpec::into_structural);
     }
 }
 
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxSegwitForward;
+pub struct TxWithWitnessForward;
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxSegwitReverse;
+pub struct TxWithWitnessReverse;
 
-impl SpecMap for TxSegwitForward {
-    type Input = TxSegwitInner;
-    type Output = TxSegwitSpec;
+impl SpecMap for TxWithWitnessForward {
+    type Input = TxWithWitnessInner;
+    type Output = TxWithWitnessSpec;
 
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        TxSegwitSpec::from_structural(input)
+        TxWithWitnessSpec::from_structural(input)
     }
 }
 
-impl SpecMap for TxSegwitReverse {
-    type Input = TxSegwitSpec;
-    type Output = TxSegwitInner;
+impl SpecMap for TxWithWitnessReverse {
+    type Input = TxWithWitnessSpec;
+    type Output = TxWithWitnessInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         value.into_structural()
     }
 }
 
-impl<T0, T1> WitnessSpec<T0, T1> {
-    #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (count, data) = input;
-        Self { count, data }
-    }
-
-    #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { count, data } = self;
-        (count, data)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(WitnessSpec::from_structural);
-        reveal(WitnessSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(WitnessSpec::from_structural);
-        reveal(WitnessSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { count, data } => (count, data),
-                },
-    {
-        reveal(WitnessSpec::into_structural);
-    }
-}
-
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct WitnessForward;
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct WitnessReverse;
-
-impl SpecMap for WitnessForward {
-    type Input = WitnessInner;
-    type Output = WitnessSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        WitnessSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for WitnessReverse {
-    type Input = WitnessSpec;
-    type Output = WitnessInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-impl<T0, T1> WitnessComponentSpec<T0, T1> {
-    #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (l, data) = input;
-        Self { l, data }
-    }
-
-    #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { l, data } = self;
-        (l, data)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(WitnessComponentSpec::from_structural);
-        reveal(WitnessComponentSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(WitnessComponentSpec::from_structural);
-        reveal(WitnessComponentSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { l, data } => (l, data),
-                },
-    {
-        reveal(WitnessComponentSpec::into_structural);
-    }
-}
-
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct WitnessComponentForward;
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct WitnessComponentReverse;
-
-impl SpecMap for WitnessComponentForward {
-    type Input = WitnessComponentInner;
-    type Output = WitnessComponentSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        WitnessComponentSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for WitnessComponentReverse {
-    type Input = WitnessComponentSpec;
-    type Output = WitnessComponentInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-impl<T0, T1, T2, T3> TxNonsegwitSpec<T0, T1, T2, T3> {
+impl<T0, T1, T2, T3> TxWithoutWitnessSpec<T0, T1, T2, T3> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: (T0, (T1, (T2, T3)))) -> Self {
-        let (txins, (txout_count, (txouts, lock_time))) = input;
-        Self { txins, txout_count, txouts, lock_time }
+        let (inputs, (output_count, (outputs, lock_time))) = input;
+        Self { inputs, output_count, outputs, lock_time }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> (T0, (T1, (T2, T3))) {
-        let Self { txins, txout_count, txouts, lock_time } = self;
-        (txins, (txout_count, (txouts, lock_time)))
+        let Self { inputs, output_count, outputs, lock_time } = self;
+        (inputs, (output_count, (outputs, lock_time)))
     }
 
     pub broadcast proof fn lemma_from_into(self)
         ensures
             #[trigger] Self::from_structural(Self::into_structural(self)) == self,
     {
-        reveal(TxNonsegwitSpec::from_structural);
-        reveal(TxNonsegwitSpec::into_structural);
+        reveal(TxWithoutWitnessSpec::from_structural);
+        reveal(TxWithoutWitnessSpec::into_structural);
     }
 
     pub broadcast proof fn lemma_into_from(input: (T0, (T1, (T2, T3))))
         ensures
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
-        reveal(TxNonsegwitSpec::from_structural);
-        reveal(TxNonsegwitSpec::into_structural);
+        reveal(TxWithoutWitnessSpec::from_structural);
+        reveal(TxWithoutWitnessSpec::into_structural);
     }
 
     pub proof fn lemma_into_structural_fields(self)
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self { txins, txout_count, txouts, lock_time } =>
-                        (txins, (txout_count, (txouts, lock_time))),
+                    Self { inputs, output_count, outputs, lock_time } =>
+                        (inputs, (output_count, (outputs, lock_time))),
                 },
     {
-        reveal(TxNonsegwitSpec::into_structural);
+        reveal(TxWithoutWitnessSpec::into_structural);
     }
 }
 
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxNonsegwitForward;
+pub struct TxWithoutWitnessForward;
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxNonsegwitReverse;
+pub struct TxWithoutWitnessReverse;
 
-impl SpecMap for TxNonsegwitForward {
-    type Input = TxNonsegwitInner;
-    type Output = TxNonsegwitSpec;
+impl SpecMap for TxWithoutWitnessForward {
+    type Input = TxWithoutWitnessInner;
+    type Output = TxWithoutWitnessSpec;
 
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        TxNonsegwitSpec::from_structural(input)
+        TxWithoutWitnessSpec::from_structural(input)
     }
 }
 
-impl SpecMap for TxNonsegwitReverse {
-    type Input = TxNonsegwitSpec;
-    type Output = TxNonsegwitInner;
+impl SpecMap for TxWithoutWitnessReverse {
+    type Input = TxWithoutWitnessSpec;
+    type Output = TxWithoutWitnessInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         value.into_structural()
@@ -978,7 +921,7 @@ impl<T0, T1> LockTimeSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
-            L(value) => Self::BlockNo(value),
+            L(value) => Self::BlockHeight(value),
             R(value) => Self::Timestamp(value),
         }
     }
@@ -986,7 +929,7 @@ impl<T0, T1> LockTimeSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
-            Self::BlockNo(value) => L(value),
+            Self::BlockHeight(value) => L(value),
             Self::Timestamp(value) => R(value),
         }
     }
@@ -998,7 +941,7 @@ impl<T0, T1> LockTimeSpec<T0, T1> {
         reveal(LockTimeSpec::from_structural);
         reveal(LockTimeSpec::into_structural);
         match self {
-            Self::BlockNo(_) => {}
+            Self::BlockHeight(_) => {}
             Self::Timestamp(_) => {}
         }
     }
@@ -1019,7 +962,7 @@ impl<T0, T1> LockTimeSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::BlockNo(value) => L(value),
+                    Self::BlockHeight(value) => L(value),
                     Self::Timestamp(value) => R(value),
                 },
     {
@@ -1046,136 +989,6 @@ impl SpecMap for LockTimeForward {
 impl SpecMap for LockTimeReverse {
     type Input = LockTimeSpec;
     type Output = LockTimeInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-impl<T0, T1> TxoutSpec<T0, T1> {
-    #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (value, script_pubkey) = input;
-        Self { value, script_pubkey }
-    }
-
-    #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { value, script_pubkey } = self;
-        (value, script_pubkey)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(TxoutSpec::from_structural);
-        reveal(TxoutSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(TxoutSpec::from_structural);
-        reveal(TxoutSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value, script_pubkey } => (value, script_pubkey),
-                },
-    {
-        reveal(TxoutSpec::into_structural);
-    }
-}
-
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct TxoutForward;
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct TxoutReverse;
-
-impl SpecMap for TxoutForward {
-    type Input = TxoutInner;
-    type Output = TxoutSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        TxoutSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for TxoutReverse {
-    type Input = TxoutSpec;
-    type Output = TxoutInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-impl<T0, T1> ScriptSpec<T0, T1> {
-    #[verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (l, data) = input;
-        Self { l, data }
-    }
-
-    #[verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { l, data } = self;
-        (l, data)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(ScriptSpec::from_structural);
-        reveal(ScriptSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(ScriptSpec::from_structural);
-        reveal(ScriptSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { l, data } => (l, data),
-                },
-    {
-        reveal(ScriptSpec::into_structural);
-    }
-}
-
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct ScriptForward;
-#[derive(Clone, Copy)]
-#[doc(hidden)]
-pub struct ScriptReverse;
-
-impl SpecMap for ScriptForward {
-    type Input = ScriptInner;
-    type Output = ScriptSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        ScriptSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for ScriptReverse {
-    type Input = ScriptSpec;
-    type Output = ScriptInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         value.into_structural()
@@ -1251,14 +1064,14 @@ impl SpecMap for TxinReverse {
 impl<T0, T1> OutpointSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (hash, index) = input;
-        Self { hash, index }
+        let (transaction_hash, output_index) = input;
+        Self { transaction_hash, output_index }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { hash, index } = self;
-        (hash, index)
+        let Self { transaction_hash, output_index } = self;
+        (transaction_hash, output_index)
     }
 
     pub broadcast proof fn lemma_from_into(self)
@@ -1281,7 +1094,7 @@ impl<T0, T1> OutpointSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self { hash, index } => (hash, index),
+                    Self { transaction_hash, output_index } => (transaction_hash, output_index),
                 },
     {
         reveal(OutpointSpec::into_structural);
@@ -1313,85 +1126,280 @@ impl SpecMap for OutpointReverse {
     }
 }
 
-impl<T0, T1> ScriptSigSpec<T0, T1> {
+impl<T0, T1> TxoutSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (l, data) = input;
-        Self { l, data }
+        let (value, script_pubkey) = input;
+        Self { value, script_pubkey }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { l, data } = self;
-        (l, data)
+        let Self { value, script_pubkey } = self;
+        (value, script_pubkey)
     }
 
     pub broadcast proof fn lemma_from_into(self)
         ensures
             #[trigger] Self::from_structural(Self::into_structural(self)) == self,
     {
-        reveal(ScriptSigSpec::from_structural);
-        reveal(ScriptSigSpec::into_structural);
+        reveal(TxoutSpec::from_structural);
+        reveal(TxoutSpec::into_structural);
     }
 
     pub broadcast proof fn lemma_into_from(input: (T0, T1))
         ensures
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
-        reveal(ScriptSigSpec::from_structural);
-        reveal(ScriptSigSpec::into_structural);
+        reveal(TxoutSpec::from_structural);
+        reveal(TxoutSpec::into_structural);
     }
 
     pub proof fn lemma_into_structural_fields(self)
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self { l, data } => (l, data),
+                    Self { value, script_pubkey } => (value, script_pubkey),
                 },
     {
-        reveal(ScriptSigSpec::into_structural);
+        reveal(TxoutSpec::into_structural);
     }
 }
 
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct ScriptSigForward;
+pub struct TxoutForward;
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct ScriptSigReverse;
+pub struct TxoutReverse;
 
-impl SpecMap for ScriptSigForward {
-    type Input = ScriptSigInner;
-    type Output = ScriptSigSpec;
+impl SpecMap for TxoutForward {
+    type Input = TxoutInner;
+    type Output = TxoutSpec;
 
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        ScriptSigSpec::from_structural(input)
+        TxoutSpec::from_structural(input)
     }
 }
 
-impl SpecMap for ScriptSigReverse {
-    type Input = ScriptSigSpec;
-    type Output = ScriptSigInner;
+impl SpecMap for TxoutReverse {
+    type Input = TxoutSpec;
+    type Output = TxoutInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         value.into_structural()
     }
 }
 
-impl<T0, T1> TxRemSpec<T0, T1> {
+impl<T0, T1> ScriptSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (length, bytes) = input;
+        Self { length, bytes }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { length, bytes } = self;
+        (length, bytes)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(ScriptSpec::from_structural);
+        reveal(ScriptSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(ScriptSpec::from_structural);
+        reveal(ScriptSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { length, bytes } => (length, bytes),
+                },
+    {
+        reveal(ScriptSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct ScriptForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct ScriptReverse;
+
+impl SpecMap for ScriptForward {
+    type Input = ScriptInner;
+    type Output = ScriptSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        ScriptSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for ScriptReverse {
+    type Input = ScriptSpec;
+    type Output = ScriptInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> WitnessSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (item_count, items) = input;
+        Self { item_count, items }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { item_count, items } = self;
+        (item_count, items)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(WitnessSpec::from_structural);
+        reveal(WitnessSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(WitnessSpec::from_structural);
+        reveal(WitnessSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { item_count, items } => (item_count, items),
+                },
+    {
+        reveal(WitnessSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct WitnessForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct WitnessReverse;
+
+impl SpecMap for WitnessForward {
+    type Input = WitnessInner;
+    type Output = WitnessSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        WitnessSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for WitnessReverse {
+    type Input = WitnessSpec;
+    type Output = WitnessInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> WitnessItemSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (length, bytes) = input;
+        Self { length, bytes }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { length, bytes } = self;
+        (length, bytes)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(WitnessItemSpec::from_structural);
+        reveal(WitnessItemSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(WitnessItemSpec::from_structural);
+        reveal(WitnessItemSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { length, bytes } => (length, bytes),
+                },
+    {
+        reveal(WitnessItemSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct WitnessItemForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct WitnessItemReverse;
+
+impl SpecMap for WitnessItemForward {
+    type Input = WitnessItemInner;
+    type Output = WitnessItemSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        WitnessItemSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for WitnessItemReverse {
+    type Input = WitnessItemSpec;
+    type Output = WitnessItemInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> TxPayloadSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
-            L(value) => Self::TxSegwit(value),
-            R(value) => Self::TxNonsegwit(value),
+            L(value) => Self::TxWithWitness(value),
+            R(value) => Self::TxWithoutWitness(value),
         }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
-            Self::TxSegwit(value) => L(value),
-            Self::TxNonsegwit(value) => R(value),
+            Self::TxWithWitness(value) => L(value),
+            Self::TxWithoutWitness(value) => R(value),
         }
     }
 
@@ -1399,11 +1407,11 @@ impl<T0, T1> TxRemSpec<T0, T1> {
         ensures
             #[trigger] Self::from_structural(Self::into_structural(self)) == self,
     {
-        reveal(TxRemSpec::from_structural);
-        reveal(TxRemSpec::into_structural);
+        reveal(TxPayloadSpec::from_structural);
+        reveal(TxPayloadSpec::into_structural);
         match self {
-            Self::TxSegwit(_) => {}
-            Self::TxNonsegwit(_) => {}
+            Self::TxWithWitness(_) => {}
+            Self::TxWithoutWitness(_) => {}
         }
     }
 
@@ -1411,8 +1419,8 @@ impl<T0, T1> TxRemSpec<T0, T1> {
         ensures
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
-        reveal(TxRemSpec::from_structural);
-        reveal(TxRemSpec::into_structural);
+        reveal(TxPayloadSpec::from_structural);
+        reveal(TxPayloadSpec::into_structural);
         match input {
             L(_) => {}
             R(_) => {}
@@ -1423,33 +1431,33 @@ impl<T0, T1> TxRemSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::TxSegwit(value) => L(value),
-                    Self::TxNonsegwit(value) => R(value),
+                    Self::TxWithWitness(value) => L(value),
+                    Self::TxWithoutWitness(value) => R(value),
                 },
     {
-        reveal(TxRemSpec::into_structural);
+        reveal(TxPayloadSpec::into_structural);
     }
 }
 
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxRemForward;
+pub struct TxPayloadForward;
 #[derive(Clone, Copy)]
 #[doc(hidden)]
-pub struct TxRemReverse;
+pub struct TxPayloadReverse;
 
-impl SpecMap for TxRemForward {
-    type Input = TxRemInner;
-    type Output = TxRemSpec;
+impl SpecMap for TxPayloadForward {
+    type Input = TxPayloadInner;
+    type Output = TxPayloadSpec;
 
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        TxRemSpec::from_structural(input)
+        TxPayloadSpec::from_structural(input)
     }
 }
 
-impl SpecMap for TxRemReverse {
-    type Input = TxRemSpec;
-    type Output = TxRemInner;
+impl SpecMap for TxPayloadReverse {
+    type Input = TxPayloadSpec;
+    type Output = TxPayloadInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
         value.into_structural()
@@ -1459,28 +1467,40 @@ impl SpecMap for TxRemReverse {
 // ============================================================
 // Format Specifications
 // ============================================================
+/// named format combinator for `block_header`.
+#[derive(Clone, Copy)]
+pub struct BlockHeaderFmt;
+
+pub type BlockHeaderFmtSpec = Named<
+    Mapped<
+        Pair<U32Le, Pair<Fixed<32>, Pair<Fixed<32>, Pair<U32Le, Pair<U32Le, U32Le>>>>>,
+        BiMap<BlockHeaderForward, BlockHeaderReverse>,
+    >,
+>;
+
+impl BlockHeaderFmt {
+    /// specification constructor for `block_header`.
+    pub open spec fn spec_inner() -> BlockHeaderFmtSpec {
+        Named(
+            "block_header",
+            Mapped {
+                inner: Pair(
+                    U32Le,
+                    Pair(Fixed::<32>, Pair(Fixed::<32>, Pair(U32Le, Pair(U32Le, U32Le)))),
+                ),
+                mapper: BiMap(BlockHeaderForward, BlockHeaderReverse),
+            },
+        )
+    }
+}
+
 /// named format combinator for `block`.
 #[derive(Clone, Copy)]
 pub struct BlockFmt;
 
 pub type BlockFmtSpec = Named<
     Mapped<
-        Pair<
-            U32Le,
-            Pair<
-                Fixed<32>,
-                Pair<
-                    Fixed<32>,
-                    Pair<
-                        U32Le,
-                        Pair<
-                            U32Le,
-                            Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> RepeatN<TxFmt, u64>>>,
-                        >,
-                    >,
-                >,
-            >,
-        >,
+        Pair<BlockHeaderFmt, Bind<VarInt<true>, spec_fn(u64) -> RepeatN<TxFmt, u64>>>,
         BiMap<BlockForward, BlockReverse>,
     >,
 >;
@@ -1492,25 +1512,10 @@ impl BlockFmt {
             "block",
             Mapped {
                 inner: Pair(
-                    U32Le,
-                    Pair(
-                        Fixed::<32>,
-                        Pair(
-                            Fixed::<32>,
-                            Pair(
-                                U32Le,
-                                Pair(
-                                    U32Le,
-                                    Pair(
-                                        U32Le,
-                                        Bind(
-                                            VarInt::<true>,
-                                            |tx_count: u64| RepeatN(tx_count, TxFmt),
-                                        ),
-                                    ),
-                                ),
-                            ),
-                        ),
+                    BlockHeaderFmt,
+                    Bind(
+                        VarInt::<true>,
+                        |transaction_count: u64| RepeatN(transaction_count, TxFmt),
                     ),
                 ),
                 mapper: BiMap(BlockForward, BlockReverse),
@@ -1524,7 +1529,10 @@ impl BlockFmt {
 pub struct TxFmt;
 
 pub type TxFmtSpec = Named<
-    Mapped<Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> TxRemFmt>>, BiMap<TxForward, TxReverse>>,
+    Mapped<
+        Pair<U32Le, Bind<VarInt<true>, spec_fn(u64) -> TxPayloadFmt>>,
+        BiMap<TxForward, TxReverse>,
+    >,
 >;
 
 impl TxFmt {
@@ -1535,7 +1543,10 @@ impl TxFmt {
             Mapped {
                 inner: Pair(
                     U32Le,
-                    Bind(VarInt::<true>, |txin_count: u64| TxRemFmt::spec(txin_count)),
+                    Bind(
+                        VarInt::<true>,
+                        |marker_or_input_count: u64| TxPayloadFmt::spec(marker_or_input_count),
+                    ),
                 ),
                 mapper: BiMap(TxForward, TxReverse),
             },
@@ -1543,11 +1554,11 @@ impl TxFmt {
     }
 }
 
-/// named format combinator for `tx_segwit`.
+/// named format combinator for `tx_with_witness`.
 #[derive(Clone, Copy)]
-pub struct TxSegwitFmt;
+pub struct TxWithWitnessFmt;
 
-pub type TxSegwitFmtSpec = Named<
+pub type TxWithWitnessFmtSpec = Named<
     Mapped<
         Pair<
             Const<U8, u8>,
@@ -1565,131 +1576,83 @@ pub type TxSegwitFmtSpec = Named<
                 >,
             >,
         >,
-        BiMap<TxSegwitForward, TxSegwitReverse>,
+        BiMap<TxWithWitnessForward, TxWithWitnessReverse>,
     >,
 >;
 
-impl TxSegwitFmt {
-    /// specification constructor for `tx_segwit`.
-    pub open spec fn spec_inner() -> TxSegwitFmtSpec {
+impl TxWithWitnessFmt {
+    /// specification constructor for `tx_with_witness`.
+    pub open spec fn spec_inner() -> TxWithWitnessFmtSpec {
         Named(
-            "tx_segwit",
+            "tx_with_witness",
             Mapped {
                 inner: Pair(
                     Const(U8, 1),
                     Bind(
                         VarInt::<true>,
-                        |txin_count: u64| Pair(
-                            RepeatN(txin_count, TxinFmt),
+                        |input_count: u64| Pair(
+                            RepeatN(input_count, TxinFmt),
                             Bind(
                                 VarInt::<true>,
-                                |txout_count: u64| Pair(
-                                    RepeatN(txout_count, TxoutFmt),
-                                    Pair(RepeatN(txin_count, WitnessFmt), LockTimeFmt),
+                                |output_count: u64| Pair(
+                                    RepeatN(output_count, TxoutFmt),
+                                    Pair(RepeatN(input_count, WitnessFmt), LockTimeFmt),
                                 ),
                             ),
                         ),
                     ),
                 ),
-                mapper: BiMap(TxSegwitForward, TxSegwitReverse),
+                mapper: BiMap(TxWithWitnessForward, TxWithWitnessReverse),
             },
         )
     }
 }
 
-/// named format combinator for `witness`.
+/// named format combinator for `tx_without_witness`.
 #[derive(Clone, Copy)]
-pub struct WitnessFmt;
-
-pub type WitnessFmtSpec = Named<
-    Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<WitnessComponentFmt, u64>>,
-        BiMap<WitnessForward, WitnessReverse>,
-    >,
->;
-
-impl WitnessFmt {
-    /// specification constructor for `witness`.
-    pub open spec fn spec_inner() -> WitnessFmtSpec {
-        Named(
-            "witness",
-            Mapped {
-                inner: Bind(VarInt::<true>, |count: u64| RepeatN(count, WitnessComponentFmt)),
-                mapper: BiMap(WitnessForward, WitnessReverse),
-            },
-        )
-    }
+pub struct TxWithoutWitnessFmt {
+    input_count: u64,
 }
 
-/// named format combinator for `witness_component`.
-#[derive(Clone, Copy)]
-pub struct WitnessComponentFmt;
-
-pub type WitnessComponentFmtSpec = Named<
-    Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
-        BiMap<WitnessComponentForward, WitnessComponentReverse>,
-    >,
->;
-
-impl WitnessComponentFmt {
-    /// specification constructor for `witness_component`.
-    pub open spec fn spec_inner() -> WitnessComponentFmtSpec {
-        Named(
-            "witness_component",
-            Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
-                mapper: BiMap(WitnessComponentForward, WitnessComponentReverse),
-            },
-        )
-    }
-}
-
-/// named format combinator for `tx_nonsegwit`.
-#[derive(Clone, Copy)]
-pub struct TxNonsegwitFmt {
-    txin_count: u64,
-}
-
-impl TxNonsegwitFmt {
+impl TxWithoutWitnessFmt {
     #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
 
-    pub closed spec fn txin_count_spec(&self) -> u64 {
-        self.txin_count.deep_view()
+    pub closed spec fn input_count_spec(&self) -> u64 {
+        self.input_count.deep_view()
     }
 
-    pub closed spec fn spec(txin_count: u64) -> Self {
-        TxNonsegwitFmt { txin_count }
+    pub closed spec fn spec(input_count: u64) -> Self {
+        TxWithoutWitnessFmt { input_count }
     }
 }
 
-pub type TxNonsegwitFmtSpec = Named<
+pub type TxWithoutWitnessFmtSpec = Named<
     Mapped<
         Pair<
             RepeatN<TxinFmt, u64>,
             Bind<VarInt<true>, spec_fn(u64) -> Pair<RepeatN<TxoutFmt, u64>, LockTimeFmt>>,
         >,
-        BiMap<TxNonsegwitForward, TxNonsegwitReverse>,
+        BiMap<TxWithoutWitnessForward, TxWithoutWitnessReverse>,
     >,
 >;
 
-impl TxNonsegwitFmt {
-    /// specification constructor for `tx_nonsegwit`.
-    pub open spec fn spec_inner(txin_count: u64) -> TxNonsegwitFmtSpec {
+impl TxWithoutWitnessFmt {
+    /// specification constructor for `tx_without_witness`.
+    pub open spec fn spec_inner(input_count: u64) -> TxWithoutWitnessFmtSpec {
         Named(
-            "tx_nonsegwit",
+            "tx_without_witness",
             Mapped {
                 inner: Pair(
-                    RepeatN(txin_count, TxinFmt),
+                    RepeatN(input_count, TxinFmt),
                     Bind(
                         VarInt::<true>,
-                        |txout_count: u64| Pair(RepeatN(txout_count, TxoutFmt), LockTimeFmt),
+                        |output_count: u64| Pair(RepeatN(output_count, TxoutFmt), LockTimeFmt),
                     ),
                 ),
-                mapper: BiMap(TxNonsegwitForward, TxNonsegwitReverse),
+                mapper: BiMap(TxWithoutWitnessForward, TxWithoutWitnessReverse),
             },
         )
     }
@@ -1717,6 +1680,48 @@ impl LockTimeFmt {
                     Refined(U32Le, |x: u32| x >= 500000000),
                 ),
                 mapper: BiMap(LockTimeForward, LockTimeReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `txin`.
+#[derive(Clone, Copy)]
+pub struct TxinFmt;
+
+pub type TxinFmtSpec = Named<
+    Mapped<Pair<OutpointFmt, Pair<ScriptFmt, U32Le>>, BiMap<TxinForward, TxinReverse>>,
+>;
+
+impl TxinFmt {
+    /// specification constructor for `txin`.
+    pub open spec fn spec_inner() -> TxinFmtSpec {
+        Named(
+            "txin",
+            Mapped {
+                inner: Pair(OutpointFmt, Pair(ScriptFmt, U32Le)),
+                mapper: BiMap(TxinForward, TxinReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `outpoint`.
+#[derive(Clone, Copy)]
+pub struct OutpointFmt;
+
+pub type OutpointFmtSpec = Named<
+    Mapped<Pair<Fixed<32>, U32Le>, BiMap<OutpointForward, OutpointReverse>>,
+>;
+
+impl OutpointFmt {
+    /// specification constructor for `outpoint`.
+    pub open spec fn spec_inner() -> OutpointFmtSpec {
+        Named(
+            "outpoint",
+            Mapped {
+                inner: Pair(Fixed::<32>, U32Le),
+                mapper: BiMap(OutpointForward, OutpointReverse),
             },
         )
     }
@@ -1752,115 +1757,97 @@ impl ScriptFmt {
         Named(
             "script",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
+                inner: Bind(VarInt::<true>, |length: u64| Varied(length)),
                 mapper: BiMap(ScriptForward, ScriptReverse),
             },
         )
     }
 }
 
-/// named format combinator for `txin`.
+/// named format combinator for `witness`.
 #[derive(Clone, Copy)]
-pub struct TxinFmt;
+pub struct WitnessFmt;
 
-pub type TxinFmtSpec = Named<
-    Mapped<Pair<OutpointFmt, Pair<ScriptSigFmt, U32Le>>, BiMap<TxinForward, TxinReverse>>,
->;
-
-impl TxinFmt {
-    /// specification constructor for `txin`.
-    pub open spec fn spec_inner() -> TxinFmtSpec {
-        Named(
-            "txin",
-            Mapped {
-                inner: Pair(OutpointFmt, Pair(ScriptSigFmt, U32Le)),
-                mapper: BiMap(TxinForward, TxinReverse),
-            },
-        )
-    }
-}
-
-/// named format combinator for `outpoint`.
-#[derive(Clone, Copy)]
-pub struct OutpointFmt;
-
-pub type OutpointFmtSpec = Named<
-    Mapped<Pair<Fixed<32>, U32Le>, BiMap<OutpointForward, OutpointReverse>>,
->;
-
-impl OutpointFmt {
-    /// specification constructor for `outpoint`.
-    pub open spec fn spec_inner() -> OutpointFmtSpec {
-        Named(
-            "outpoint",
-            Mapped {
-                inner: Pair(Fixed::<32>, U32Le),
-                mapper: BiMap(OutpointForward, OutpointReverse),
-            },
-        )
-    }
-}
-
-/// named format combinator for `script_sig`.
-#[derive(Clone, Copy)]
-pub struct ScriptSigFmt;
-
-pub type ScriptSigFmtSpec = Named<
+pub type WitnessFmtSpec = Named<
     Mapped<
-        Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
-        BiMap<ScriptSigForward, ScriptSigReverse>,
+        Bind<VarInt<true>, spec_fn(u64) -> RepeatN<WitnessItemFmt, u64>>,
+        BiMap<WitnessForward, WitnessReverse>,
     >,
 >;
 
-impl ScriptSigFmt {
-    /// specification constructor for `script_sig`.
-    pub open spec fn spec_inner() -> ScriptSigFmtSpec {
+impl WitnessFmt {
+    /// specification constructor for `witness`.
+    pub open spec fn spec_inner() -> WitnessFmtSpec {
         Named(
-            "script_sig",
+            "witness",
             Mapped {
-                inner: Bind(VarInt::<true>, |l: u64| Varied(l)),
-                mapper: BiMap(ScriptSigForward, ScriptSigReverse),
+                inner: Bind(VarInt::<true>, |item_count: u64| RepeatN(item_count, WitnessItemFmt)),
+                mapper: BiMap(WitnessForward, WitnessReverse),
             },
         )
     }
 }
 
-/// named format combinator for `tx_rem`.
+/// named format combinator for `witness_item`.
 #[derive(Clone, Copy)]
-pub struct TxRemFmt {
-    txin_count: u64,
+pub struct WitnessItemFmt;
+
+pub type WitnessItemFmtSpec = Named<
+    Mapped<
+        Bind<VarInt<true>, spec_fn(u64) -> Varied<u64>>,
+        BiMap<WitnessItemForward, WitnessItemReverse>,
+    >,
+>;
+
+impl WitnessItemFmt {
+    /// specification constructor for `witness_item`.
+    pub open spec fn spec_inner() -> WitnessItemFmtSpec {
+        Named(
+            "witness_item",
+            Mapped {
+                inner: Bind(VarInt::<true>, |length: u64| Varied(length)),
+                mapper: BiMap(WitnessItemForward, WitnessItemReverse),
+            },
+        )
+    }
 }
 
-impl TxRemFmt {
+/// named format combinator for `tx_payload`.
+#[derive(Clone, Copy)]
+pub struct TxPayloadFmt {
+    marker_or_input_count: u64,
+}
+
+impl TxPayloadFmt {
     #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
 
-    pub closed spec fn txin_count_spec(&self) -> u64 {
-        self.txin_count.deep_view()
+    pub closed spec fn marker_or_input_count_spec(&self) -> u64 {
+        self.marker_or_input_count.deep_view()
     }
 
-    pub closed spec fn spec(txin_count: u64) -> Self {
-        TxRemFmt { txin_count }
+    pub closed spec fn spec(marker_or_input_count: u64) -> Self {
+        TxPayloadFmt { marker_or_input_count }
     }
 }
 
-pub type TxRemFmtSpec = Named<
-    Mapped<Sum<TxSegwitFmt, TxNonsegwitFmt>, BiMap<TxRemForward, TxRemReverse>>,
+pub type TxPayloadFmtSpec = Named<
+    Mapped<Sum<TxWithWitnessFmt, TxWithoutWitnessFmt>, BiMap<TxPayloadForward, TxPayloadReverse>>,
 >;
 
-impl TxRemFmt {
-    /// specification constructor for `tx_rem`.
-    pub open spec fn spec_inner(txin_count: u64) -> TxRemFmtSpec {
+impl TxPayloadFmt {
+    /// specification constructor for `tx_payload`.
+    pub open spec fn spec_inner(marker_or_input_count: u64) -> TxPayloadFmtSpec {
         Named(
-            "tx_rem",
+            "tx_payload",
             Mapped {
-                inner: match txin_count {
-                    0 => L(TxSegwitFmt),
-                    _ => R(TxNonsegwitFmt::spec(txin_count)),
+                inner: match marker_or_input_count {
+                    0 => L(TxWithWitnessFmt),
+                    _ => R(TxWithoutWitnessFmt::spec(marker_or_input_count)),
                 },
-                mapper: BiMap(TxRemForward, TxRemReverse),
+                mapper: BiMap(TxPayloadForward, TxPayloadReverse),
             },
         )
     }
@@ -1871,6 +1858,50 @@ impl TxRemFmt {
 // ============================================================
 mod derived_specs {
     use super::*;
+
+    impl SpecParser for BlockHeaderFmt {
+        type PVal = BlockHeaderSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for BlockHeaderFmt {
+        type Val = BlockHeaderSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for BlockHeaderFmt {
+        type SValue = BlockHeaderSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for BlockHeaderFmt {
+        type SVal = BlockHeaderSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for BlockHeaderFmt {
+        type T = BlockHeaderSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
 
     impl SpecParser for BlockFmt {
         type PVal = BlockSpec;
@@ -1960,8 +1991,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for TxSegwitFmt {
-        type PVal = TxSegwitSpec;
+    impl SpecParser for TxWithWitnessFmt {
+        type PVal = TxWithWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -1969,16 +2000,16 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for TxSegwitFmt {
-        type Val = TxSegwitSpec;
+    impl Consistency for TxWithWitnessFmt {
+        type Val = TxWithWitnessSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
             Self::spec_inner().consistent(v)
         }
     }
 
-    impl SpecSerializerDps for TxSegwitFmt {
-        type SValue = TxSegwitSpec;
+    impl SpecSerializerDps for TxWithWitnessFmt {
+        type SValue = TxWithWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -1986,8 +2017,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for TxSegwitFmt {
-        type SVal = TxSegwitSpec;
+    impl SpecSerializer for TxWithWitnessFmt {
+        type SVal = TxWithWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -1995,8 +2026,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for TxSegwitFmt {
-        type T = TxSegwitSpec;
+    impl SpecByteLen for TxWithWitnessFmt {
+        type T = TxWithWitnessSpec;
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -2004,135 +2035,47 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for WitnessFmt {
-        type PVal = WitnessSpec;
+    impl SpecParser for TxWithoutWitnessFmt {
+        type PVal = TxWithoutWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
+            Self::spec_inner(self.input_count_spec()).spec_parse(ibuf)
         }
     }
 
-    impl Consistency for WitnessFmt {
-        type Val = WitnessSpec;
+    impl Consistency for TxWithoutWitnessFmt {
+        type Val = TxWithoutWitnessSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner(self.input_count_spec()).consistent(v)
         }
     }
 
-    impl SpecSerializerDps for WitnessFmt {
-        type SValue = WitnessSpec;
+    impl SpecSerializerDps for TxWithoutWitnessFmt {
+        type SValue = TxWithoutWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
+            Self::spec_inner(self.input_count_spec()).spec_serialize_dps(v, obuf)
         }
     }
 
-    impl SpecSerializer for WitnessFmt {
-        type SVal = WitnessSpec;
+    impl SpecSerializer for TxWithoutWitnessFmt {
+        type SVal = TxWithoutWitnessSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
+            Self::spec_inner(self.input_count_spec()).spec_serialize(v)
         }
     }
 
-    impl SpecByteLen for WitnessFmt {
-        type T = WitnessSpec;
+    impl SpecByteLen for TxWithoutWitnessFmt {
+        type T = TxWithoutWitnessSpec;
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
-        }
-    }
-
-    impl SpecParser for WitnessComponentFmt {
-        type PVal = WitnessComponentSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
-        }
-    }
-
-    impl Consistency for WitnessComponentFmt {
-        type Val = WitnessComponentSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
-        }
-    }
-
-    impl SpecSerializerDps for WitnessComponentFmt {
-        type SValue = WitnessComponentSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl SpecSerializer for WitnessComponentFmt {
-        type SVal = WitnessComponentSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
-        }
-    }
-
-    impl SpecByteLen for WitnessComponentFmt {
-        type T = WitnessComponentSpec;
-
-        #[verifier::opaque]
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
-        }
-    }
-
-    impl SpecParser for TxNonsegwitFmt {
-        type PVal = TxNonsegwitSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner(self.txin_count_spec()).spec_parse(ibuf)
-        }
-    }
-
-    impl Consistency for TxNonsegwitFmt {
-        type Val = TxNonsegwitSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.txin_count_spec()).consistent(v)
-        }
-    }
-
-    impl SpecSerializerDps for TxNonsegwitFmt {
-        type SValue = TxNonsegwitSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner(self.txin_count_spec()).spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl SpecSerializer for TxNonsegwitFmt {
-        type SVal = TxNonsegwitSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner(self.txin_count_spec()).spec_serialize(v)
-        }
-    }
-
-    impl SpecByteLen for TxNonsegwitFmt {
-        type T = TxNonsegwitSpec;
-
-        #[verifier::opaque]
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.txin_count_spec()).byte_len(v)
+            Self::spec_inner(self.input_count_spec()).byte_len(v)
         }
     }
 
@@ -2173,94 +2116,6 @@ mod derived_specs {
 
     impl SpecByteLen for LockTimeFmt {
         type T = LockTimeSpec;
-
-        #[verifier::opaque]
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
-        }
-    }
-
-    impl SpecParser for TxoutFmt {
-        type PVal = TxoutSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
-        }
-    }
-
-    impl Consistency for TxoutFmt {
-        type Val = TxoutSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
-        }
-    }
-
-    impl SpecSerializerDps for TxoutFmt {
-        type SValue = TxoutSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl SpecSerializer for TxoutFmt {
-        type SVal = TxoutSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
-        }
-    }
-
-    impl SpecByteLen for TxoutFmt {
-        type T = TxoutSpec;
-
-        #[verifier::opaque]
-        open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
-        }
-    }
-
-    impl SpecParser for ScriptFmt {
-        type PVal = ScriptSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner().spec_parse(ibuf)
-        }
-    }
-
-    impl Consistency for ScriptFmt {
-        type Val = ScriptSpec;
-
-        open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
-        }
-    }
-
-    impl SpecSerializerDps for ScriptFmt {
-        type SValue = ScriptSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner().spec_serialize_dps(v, obuf)
-        }
-    }
-
-    impl SpecSerializer for ScriptFmt {
-        type SVal = ScriptSpec;
-
-        #[verifier::opaque]
-        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner().spec_serialize(v)
-        }
-    }
-
-    impl SpecByteLen for ScriptFmt {
-        type T = ScriptSpec;
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -2356,8 +2211,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for ScriptSigFmt {
-        type PVal = ScriptSigSpec;
+    impl SpecParser for TxoutFmt {
+        type PVal = TxoutSpec;
 
         #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -2365,16 +2220,16 @@ mod derived_specs {
         }
     }
 
-    impl Consistency for ScriptSigFmt {
-        type Val = ScriptSigSpec;
+    impl Consistency for TxoutFmt {
+        type Val = TxoutSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
             Self::spec_inner().consistent(v)
         }
     }
 
-    impl SpecSerializerDps for ScriptSigFmt {
-        type SValue = ScriptSigSpec;
+    impl SpecSerializerDps for TxoutFmt {
+        type SValue = TxoutSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -2382,8 +2237,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecSerializer for ScriptSigFmt {
-        type SVal = ScriptSigSpec;
+    impl SpecSerializer for TxoutFmt {
+        type SVal = TxoutSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
@@ -2391,8 +2246,8 @@ mod derived_specs {
         }
     }
 
-    impl SpecByteLen for ScriptSigFmt {
-        type T = ScriptSigSpec;
+    impl SpecByteLen for TxoutFmt {
+        type T = TxoutSpec;
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
@@ -2400,47 +2255,179 @@ mod derived_specs {
         }
     }
 
-    impl SpecParser for TxRemFmt {
-        type PVal = TxRemSpec;
+    impl SpecParser for ScriptFmt {
+        type PVal = ScriptSpec;
 
         #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            Self::spec_inner(self.txin_count_spec()).spec_parse(ibuf)
+            Self::spec_inner().spec_parse(ibuf)
         }
     }
 
-    impl Consistency for TxRemFmt {
-        type Val = TxRemSpec;
+    impl Consistency for ScriptFmt {
+        type Val = ScriptSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.txin_count_spec()).consistent(v)
+            Self::spec_inner().consistent(v)
         }
     }
 
-    impl SpecSerializerDps for TxRemFmt {
-        type SValue = TxRemSpec;
+    impl SpecSerializerDps for ScriptFmt {
+        type SValue = ScriptSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            Self::spec_inner(self.txin_count_spec()).spec_serialize_dps(v, obuf)
+            Self::spec_inner().spec_serialize_dps(v, obuf)
         }
     }
 
-    impl SpecSerializer for TxRemFmt {
-        type SVal = TxRemSpec;
+    impl SpecSerializer for ScriptFmt {
+        type SVal = ScriptSpec;
 
         #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            Self::spec_inner(self.txin_count_spec()).spec_serialize(v)
+            Self::spec_inner().spec_serialize(v)
         }
     }
 
-    impl SpecByteLen for TxRemFmt {
-        type T = TxRemSpec;
+    impl SpecByteLen for ScriptFmt {
+        type T = ScriptSpec;
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.txin_count_spec()).byte_len(v)
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for WitnessFmt {
+        type PVal = WitnessSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for WitnessFmt {
+        type Val = WitnessSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for WitnessFmt {
+        type SValue = WitnessSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for WitnessFmt {
+        type SVal = WitnessSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for WitnessFmt {
+        type T = WitnessSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for WitnessItemFmt {
+        type PVal = WitnessItemSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for WitnessItemFmt {
+        type Val = WitnessItemSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for WitnessItemFmt {
+        type SValue = WitnessItemSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for WitnessItemFmt {
+        type SVal = WitnessItemSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for WitnessItemFmt {
+        type T = WitnessItemSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for TxPayloadFmt {
+        type PVal = TxPayloadSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner(self.marker_or_input_count_spec()).spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for TxPayloadFmt {
+        type Val = TxPayloadSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner(self.marker_or_input_count_spec()).consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for TxPayloadFmt {
+        type SValue = TxPayloadSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner(self.marker_or_input_count_spec()).spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for TxPayloadFmt {
+        type SVal = TxPayloadSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner(self.marker_or_input_count_spec()).spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for TxPayloadFmt {
+        type T = TxPayloadSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner(self.marker_or_input_count_spec()).byte_len(v)
         }
     }
 }
@@ -2452,33 +2439,155 @@ mod derived_proofs {
     use super::*;
     broadcast use {
         vest_lib::combinators::disjoint::disjointness_lemmas,
+        BlockHeaderSpec::lemma_from_into,
+        BlockHeaderSpec::lemma_into_from,
         BlockSpec::lemma_from_into,
         BlockSpec::lemma_into_from,
         TxSpec::lemma_from_into,
         TxSpec::lemma_into_from,
-        TxSegwitSpec::lemma_from_into,
-        TxSegwitSpec::lemma_into_from,
-        WitnessSpec::lemma_from_into,
-        WitnessSpec::lemma_into_from,
-        WitnessComponentSpec::lemma_from_into,
-        WitnessComponentSpec::lemma_into_from,
-        TxNonsegwitSpec::lemma_from_into,
-        TxNonsegwitSpec::lemma_into_from,
+        TxWithWitnessSpec::lemma_from_into,
+        TxWithWitnessSpec::lemma_into_from,
+        TxWithoutWitnessSpec::lemma_from_into,
+        TxWithoutWitnessSpec::lemma_into_from,
         LockTimeSpec::lemma_from_into,
         LockTimeSpec::lemma_into_from,
-        TxoutSpec::lemma_from_into,
-        TxoutSpec::lemma_into_from,
-        ScriptSpec::lemma_from_into,
-        ScriptSpec::lemma_into_from,
         TxinSpec::lemma_from_into,
         TxinSpec::lemma_into_from,
         OutpointSpec::lemma_from_into,
         OutpointSpec::lemma_into_from,
-        ScriptSigSpec::lemma_from_into,
-        ScriptSigSpec::lemma_into_from,
-        TxRemSpec::lemma_from_into,
-        TxRemSpec::lemma_into_from,
+        TxoutSpec::lemma_from_into,
+        TxoutSpec::lemma_into_from,
+        ScriptSpec::lemma_from_into,
+        ScriptSpec::lemma_into_from,
+        WitnessSpec::lemma_from_into,
+        WitnessSpec::lemma_into_from,
+        WitnessItemSpec::lemma_from_into,
+        WitnessItemSpec::lemma_into_from,
+        TxPayloadSpec::lemma_from_into,
+        TxPayloadSpec::lemma_into_from,
     };
+
+    impl SafeParser for BlockHeaderFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for BlockHeaderFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for BlockHeaderFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: BlockHeaderInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockHeaderSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            reveal(<BlockHeaderFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: BlockHeaderInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockHeaderSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for BlockHeaderFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for BlockHeaderFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<BlockHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for BlockHeaderFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BlockHeaderFmt as Consistency>::consistent);
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: BlockHeaderSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                BlockHeaderSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for BlockHeaderFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: BlockHeaderInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BlockHeaderSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for BlockHeaderFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BlockHeaderFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for BlockHeaderFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BlockHeaderFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
 
     impl SafeParser for BlockFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -2724,489 +2833,245 @@ mod derived_proofs {
         }
     }
 
-    impl SafeParser for TxSegwitFmt {
+    impl SafeParser for TxWithWitnessFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for TxSegwitFmt {
+    impl Productive for TxWithWitnessFmt {
         open spec fn productive_inv(&self) -> bool {
             Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
     }
 
-    impl SoundParser for TxSegwitFmt {
+    impl SoundParser for TxWithWitnessFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: TxSegwitInner|
+            assert forall|input: TxWithWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxSegwitSpec::lemma_into_from(input);
+                TxWithWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxSegwitFmt as Consistency>::consistent);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: TxSegwitInner|
+            assert forall|input: TxWithWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxSegwitSpec::lemma_into_from(input);
+                TxWithWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
     }
 
-    impl NonTailFmt for TxSegwitFmt {
+    impl NonTailFmt for TxWithWitnessFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
     }
 
-    impl GoodSerializer for TxSegwitFmt {
+    impl GoodSerializer for TxWithWitnessFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for TxSegwitFmt {
+    impl SPRoundTripDps for TxWithWitnessFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxSegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxSegwitFmt as Consistency>::consistent);
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithWitnessFmt as Consistency>::consistent);
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: TxSegwitSpec|
+            assert forall|output: TxWithWitnessSpec|
                 #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                TxSegwitSpec::lemma_from_into(output);
+                TxWithWitnessSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for TxSegwitFmt {
+    impl NonMalleable for TxWithWitnessFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: TxSegwitInner|
+            assert forall|input: TxWithWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxSegwitSpec::lemma_into_from(input);
+                TxWithWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializersGeneral for TxSegwitFmt {
+    impl EquivSerializersGeneral for TxWithWitnessFmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<TxSegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithWitnessFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl EquivSerializers for TxSegwitFmt {
+    impl EquivSerializers for TxWithWitnessFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<TxSegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithWitnessFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
     }
 
-    impl SafeParser for WitnessFmt {
+    impl SafeParser for TxWithoutWitnessFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            Self::spec_inner().lemma_parse_safe(ibuf);
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            Self::spec_inner(self.input_count_spec()).lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for WitnessFmt {
+    impl Productive for TxWithoutWitnessFmt {
         open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner().productive_inv()
+            Self::spec_inner(self.input_count_spec()).productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
     }
 
-    impl SoundParser for WitnessFmt {
+    impl SoundParser for TxWithoutWitnessFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessInner|
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.input_count_spec());
+            assert forall|input: TxWithoutWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessSpec::lemma_into_from(input);
+                TxWithoutWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            reveal(<WitnessFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessInner|
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithoutWitnessFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner(self.input_count_spec());
+            assert forall|input: TxWithoutWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessSpec::lemma_into_from(input);
+                TxWithoutWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
     }
 
-    impl NonTailFmt for WitnessFmt {
+    impl NonTailFmt for TxWithoutWitnessFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner();
+            reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
+            reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
     }
 
-    impl GoodSerializer for WitnessFmt {
+    impl GoodSerializer for TxWithoutWitnessFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
+            reveal(<TxWithoutWitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for WitnessFmt {
+    impl SPRoundTripDps for TxWithoutWitnessFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessFmt as Consistency>::consistent);
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|output: WitnessSpec|
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithoutWitnessFmt as Consistency>::consistent);
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.input_count_spec());
+            assert forall|output: TxWithoutWitnessSpec|
                 #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                WitnessSpec::lemma_from_into(output);
+                TxWithoutWitnessSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for WitnessFmt {
+    impl NonMalleable for TxWithoutWitnessFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessInner|
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.input_count_spec());
+            assert forall|input: TxWithoutWitnessInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessSpec::lemma_into_from(input);
+                TxWithoutWitnessSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializersGeneral for WitnessFmt {
+    impl EquivSerializersGeneral for TxWithoutWitnessFmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
+            reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithoutWitnessFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl EquivSerializers for WitnessFmt {
+    impl EquivSerializers for TxWithoutWitnessFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl SafeParser for WitnessComponentFmt {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            Self::spec_inner().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl Productive for WitnessComponentFmt {
-        open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner().productive_inv()
-        }
-
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert(fmt.productive_inv());
-            fmt.lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for WitnessComponentFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessComponentInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessComponentSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            reveal(<WitnessComponentFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessComponentInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessComponentSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl NonTailFmt for WitnessComponentFmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl GoodSerializer for WitnessComponentFmt {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl SPRoundTripDps for WitnessComponentFmt {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            reveal(<WitnessComponentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessComponentFmt as Consistency>::consistent);
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|output: WitnessComponentSpec|
-                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                WitnessComponentSpec::lemma_from_into(output);
-            }
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl NonMalleable for WitnessComponentFmt {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert forall|input: WitnessComponentInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                WitnessComponentSpec::lemma_into_from(input);
-            }
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for WitnessComponentFmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<WitnessComponentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl EquivSerializers for WitnessComponentFmt {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<WitnessComponentFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl SafeParser for TxNonsegwitFmt {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            Self::spec_inner(self.txin_count_spec()).lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl Productive for TxNonsegwitFmt {
-        open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner(self.txin_count_spec()).productive_inv()
-        }
-
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert(fmt.productive_inv());
-            fmt.lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for TxNonsegwitFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxNonsegwitInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxNonsegwitSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxNonsegwitFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxNonsegwitInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxNonsegwitSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl NonTailFmt for TxNonsegwitFmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl GoodSerializer for TxNonsegwitFmt {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl SPRoundTripDps for TxNonsegwitFmt {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxNonsegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxNonsegwitFmt as Consistency>::consistent);
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|output: TxNonsegwitSpec|
-                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                TxNonsegwitSpec::lemma_from_into(output);
-            }
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl NonMalleable for TxNonsegwitFmt {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxNonsegwitInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxNonsegwitSpec::lemma_into_from(input);
-            }
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for TxNonsegwitFmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<TxNonsegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl EquivSerializers for TxNonsegwitFmt {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<TxNonsegwitFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxWithoutWitnessFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.input_count_spec());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -3328,250 +3193,6 @@ mod derived_proofs {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(<LockTimeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<LockTimeFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl SafeParser for TxoutFmt {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            Self::spec_inner().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl Productive for TxoutFmt {
-        open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner().productive_inv()
-        }
-
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert(fmt.productive_inv());
-            fmt.lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for TxoutFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            reveal(<TxoutFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|input: TxoutInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxoutSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            reveal(<TxoutFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner();
-            assert forall|input: TxoutInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxoutSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl NonTailFmt for TxoutFmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxoutFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl GoodSerializer for TxoutFmt {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxoutFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl SPRoundTripDps for TxoutFmt {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxoutFmt as Consistency>::consistent);
-            reveal(<TxoutFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|output: TxoutSpec|
-                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                TxoutSpec::lemma_from_into(output);
-            }
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl NonMalleable for TxoutFmt {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<TxoutFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert forall|input: TxoutInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxoutSpec::lemma_into_from(input);
-            }
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for TxoutFmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl EquivSerializers for TxoutFmt {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_inv());
-            fmt.lemma_serialize_equiv_on_empty(v);
-        }
-    }
-
-    impl SafeParser for ScriptFmt {
-        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            Self::spec_inner().lemma_parse_safe(ibuf);
-        }
-    }
-
-    impl Productive for ScriptFmt {
-        open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner().productive_inv()
-        }
-
-        proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert(fmt.productive_inv());
-            fmt.lemma_productive(s);
-        }
-    }
-
-    impl SoundParser for ScriptFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            reveal(<ScriptFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|input: ScriptInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            reveal(<ScriptFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner();
-            assert forall|input: ScriptInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSpec::lemma_into_from(input);
-            }
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_value(ibuf);
-        }
-    }
-
-    impl NonTailFmt for ScriptFmt {
-        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_prepend(v, obuf);
-        }
-
-        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_dps_inv());
-            fmt.lemma_serialize_dps_len(v, obuf);
-        }
-    }
-
-    impl GoodSerializer for ScriptFmt {
-        proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
-            reveal(<ScriptFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert(fmt.serialize_inv());
-            fmt.lemma_serialize_len(v);
-        }
-    }
-
-    impl SPRoundTripDps for ScriptFmt {
-        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptFmt as Consistency>::consistent);
-            reveal(<ScriptFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner();
-            assert forall|output: ScriptSpec|
-                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                ScriptSpec::lemma_from_into(output);
-            }
-            assert(fmt.unambiguous());
-            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
-        }
-    }
-
-    impl NonMalleable for ScriptFmt {
-        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<ScriptFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner();
-            assert forall|input: ScriptInner|
-                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSpec::lemma_into_from(input);
-            }
-            assert(fmt.nonmal_inv());
-            fmt.lemma_parse_non_malleable(buf1, buf2);
-        }
-    }
-
-    impl EquivSerializersGeneral for ScriptFmt {
-        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner();
-            assert(fmt.equiv_general_inv());
-            fmt.lemma_serialize_equiv(v, obuf);
-        }
-    }
-
-    impl EquivSerializers for ScriptFmt {
-        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
@@ -3822,245 +3443,611 @@ mod derived_proofs {
         }
     }
 
-    impl SafeParser for ScriptSigFmt {
+    impl SafeParser for TxoutFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
             Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for ScriptSigFmt {
+    impl Productive for TxoutFmt {
         open spec fn productive_inv(&self) -> bool {
             Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
     }
 
-    impl SoundParser for ScriptSigFmt {
+    impl SoundParser for TxoutFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: ScriptSigInner|
+            assert forall|input: TxoutInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSigSpec::lemma_into_from(input);
+                TxoutSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
-            reveal(<ScriptSigFmt as Consistency>::consistent);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: ScriptSigInner|
+            assert forall|input: TxoutInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSigSpec::lemma_into_from(input);
+                TxoutSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
     }
 
-    impl NonTailFmt for ScriptSigFmt {
+    impl NonTailFmt for TxoutFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
     }
 
-    impl GoodSerializer for ScriptSigFmt {
+    impl GoodSerializer for TxoutFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for ScriptSigFmt {
+    impl SPRoundTripDps for TxoutFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
-            reveal(<ScriptSigFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptSigFmt as Consistency>::consistent);
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxoutFmt as Consistency>::consistent);
+            reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: ScriptSigSpec|
+            assert forall|output: TxoutSpec|
                 #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                ScriptSigSpec::lemma_from_into(output);
+                TxoutSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for ScriptSigFmt {
+    impl NonMalleable for TxoutFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
+            reveal(<TxoutFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: ScriptSigInner|
+            assert forall|input: TxoutInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                ScriptSigSpec::lemma_into_from(input);
+                TxoutSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializersGeneral for ScriptSigFmt {
+    impl EquivSerializersGeneral for TxoutFmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<ScriptSigFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl EquivSerializers for ScriptSigFmt {
+    impl EquivSerializers for TxoutFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<ScriptSigFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
     }
 
-    impl SafeParser for TxRemFmt {
+    impl SafeParser for ScriptFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            Self::spec_inner(self.txin_count_spec()).lemma_parse_safe(ibuf);
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
         }
     }
 
-    impl Productive for TxRemFmt {
+    impl Productive for ScriptFmt {
         open spec fn productive_inv(&self) -> bool {
-            Self::spec_inner(self.txin_count_spec()).productive_inv()
+            Self::spec_inner().productive_inv()
         }
 
         proof fn lemma_productive(&self, s: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
             assert(fmt.productive_inv());
             fmt.lemma_productive(s);
         }
     }
 
-    impl SoundParser for TxRemFmt {
+    impl SoundParser for ScriptFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxRemInner|
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxRemSpec::lemma_into_from(input);
+                ScriptSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_consumption(ibuf);
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            reveal(<TxRemFmt as Consistency>::consistent);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxRemInner|
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            reveal(<ScriptFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxRemSpec::lemma_into_from(input);
+                ScriptSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
         }
     }
 
-    impl NonTailFmt for TxRemFmt {
+    impl NonTailFmt for ScriptFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecSerializerDps>::spec_serialize_dps);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_prepend(v, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
         }
     }
 
-    impl GoodSerializer for TxRemFmt {
+    impl GoodSerializer for ScriptFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
         }
     }
 
-    impl SPRoundTripDps for TxRemFmt {
+    impl SPRoundTripDps for ScriptFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            reveal(<TxRemFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxRemFmt as Consistency>::consistent);
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|output: TxRemSpec|
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<ScriptFmt as Consistency>::consistent);
+            reveal(<ScriptFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: ScriptSpec|
                 #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
-                TxRemSpec::lemma_from_into(output);
+                ScriptSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
             fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
-    impl NonMalleable for TxRemFmt {
+    impl NonMalleable for ScriptFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            let fmt = Self::spec_inner(self.txin_count_spec());
-            assert forall|input: TxRemInner|
+            reveal(<ScriptFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: ScriptInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
-                TxRemSpec::lemma_into_from(input);
+                ScriptSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
             fmt.lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
-    impl EquivSerializersGeneral for TxRemFmt {
+    impl EquivSerializersGeneral for ScriptFmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-            reveal(<TxRemFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
             fmt.lemma_serialize_equiv(v, obuf);
         }
     }
 
-    impl EquivSerializers for TxRemFmt {
+    impl EquivSerializers for ScriptFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            reveal(<TxRemFmt as SpecSerializerDps>::spec_serialize_dps);
-            reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
-            let fmt = Self::spec_inner(self.txin_count_spec());
+            reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for WitnessFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for WitnessFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for WitnessFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            reveal(<WitnessFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for WitnessFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for WitnessFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for WitnessFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessFmt as Consistency>::consistent);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: WitnessSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                WitnessSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for WitnessFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for WitnessFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for WitnessFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for WitnessItemFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for WitnessItemFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for WitnessItemFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessItemInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessItemSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            reveal(<WitnessItemFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessItemInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessItemSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for WitnessItemFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for WitnessItemFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<WitnessItemFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for WitnessItemFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessItemFmt as Consistency>::consistent);
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: WitnessItemSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                WitnessItemSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for WitnessItemFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: WitnessItemInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                WitnessItemSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for WitnessItemFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessItemFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for WitnessItemFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<WitnessItemFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for TxPayloadFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            Self::spec_inner(self.marker_or_input_count_spec()).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for TxPayloadFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner(self.marker_or_input_count_spec()).productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for TxPayloadFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert forall|input: TxPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxPayloadSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            reveal(<TxPayloadFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert forall|input: TxPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxPayloadSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for TxPayloadFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for TxPayloadFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<TxPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for TxPayloadFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxPayloadFmt as Consistency>::consistent);
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert forall|output: TxPayloadSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TxPayloadSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for TxPayloadFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert forall|input: TxPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TxPayloadSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for TxPayloadFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxPayloadFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for TxPayloadFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TxPayloadFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.marker_or_input_count_spec());
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
         }
@@ -4072,6 +4059,114 @@ mod derived_proofs {
 // ============================================================
 mod exec_impls {
     use super::*;
+
+    impl<'i> Parser<&'i [u8]> for BlockHeaderFmt {
+        type PT = BlockHeader<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            80
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
+            reveal(<BlockHeader as DeepView>::deep_view);
+            reveal(BlockHeaderSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, version) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, previous_block_hash) = (Fixed::<32>).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let (n3, merkle_root_hash) = (Fixed::<32>).parse(&rest)?;
+            let rest = rest.skip(n3);
+            let (n4, timestamp) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n4);
+            let (n5, bits) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n5);
+            let (n6, nonce) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n6);
+            let total_n = n1 + n2 + n3 + n4 + n5 + n6;
+
+            let final_v = BlockHeader {
+                version,
+                previous_block_hash,
+                merkle_root_hash,
+                timestamp,
+                bits,
+                nonce,
+            };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, BlockHeader<'i>> for BlockHeaderFmt {
+        fn serialize_into(&self, v: &BlockHeader<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<BlockHeaderFmt as SpecSerializer>::spec_serialize);
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<BlockHeader as DeepView>::deep_view);
+            reveal(BlockHeaderSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let BlockHeader {
+                version,
+                previous_block_hash,
+                merkle_root_hash,
+                timestamp,
+                bits,
+                nonce,
+            } = v;
+
+            U32Le.serialize_into(version, obuf);
+            Fixed::<32>.serialize_into(*previous_block_hash, obuf);
+            Fixed::<32>.serialize_into(*merkle_root_hash, obuf);
+            U32Le.serialize_into(timestamp, obuf);
+            U32Le.serialize_into(bits, obuf);
+            U32Le.serialize_into(nonce, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<BlockHeader<'i>> for BlockHeaderFmt {
+        fn prepare(&self, v: &BlockHeader<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            reveal(<BlockHeader as DeepView>::deep_view);
+            reveal(BlockHeaderSpec::into_structural);
+            let BlockHeader {
+                version,
+                previous_block_hash,
+                merkle_root_hash,
+                timestamp,
+                bits,
+                nonce,
+            } = v;
+            let l1 = (U32Le).prepare(version)?;
+            let l2 = (Fixed::<32>).prepare(previous_block_hash)?;
+            let l3 = (Fixed::<32>).prepare(merkle_root_hash)?;
+            let l4 = (U32Le).prepare(timestamp)?;
+            let l5 = (U32Le).prepare(bits)?;
+            let l6 = (U32Le).prepare(nonce)?;
+            let total_len = l1
+                .checked_add(l2)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l3)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l4)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l5)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l6)
+                .ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
 
     impl<'i> Parser<&'i [u8]> for BlockFmt {
         type PT = Block<'i>;
@@ -4086,34 +4181,15 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, version) = (U32Le).parse(&rest)?;
+            let (n1, header) = (Named("block_header", BlockHeaderFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, prev_block) = (Fixed::<32>).parse(&rest)?;
+            let (n2, transaction_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, merkle_root) = (Fixed::<32>).parse(&rest)?;
+            let (n3, transactions) = (RepeatN(transaction_count, TxFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, timestamp) = (U32Le).parse(&rest)?;
-            let rest = rest.skip(n4);
-            let (n5, bits) = (U32Le).parse(&rest)?;
-            let rest = rest.skip(n5);
-            let (n6, nonce) = (U32Le).parse(&rest)?;
-            let rest = rest.skip(n6);
-            let (n7, tx_count) = (VarInt::<true>).parse(&rest)?;
-            let rest = rest.skip(n7);
-            let (n8, txs) = (RepeatN(tx_count, TxFmt)).parse(&rest)?;
-            let rest = rest.skip(n8);
-            let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8;
+            let total_n = n1 + n2 + n3;
 
-            let final_v = Block {
-                version,
-                prev_block,
-                merkle_root,
-                timestamp,
-                bits,
-                nonce,
-                tx_count,
-                txs,
-            };
+            let final_v = Block { header, transaction_count, transactions };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
@@ -4129,25 +4205,11 @@ mod exec_impls {
             reveal(BlockSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let Block {
-                version,
-                prev_block,
-                merkle_root,
-                timestamp,
-                bits,
-                nonce,
-                tx_count,
-                txs,
-            } = v;
+            let Block { header, transaction_count, transactions } = v;
 
-            U32Le.serialize_into(version, obuf);
-            Fixed::<32>.serialize_into(*prev_block, obuf);
-            Fixed::<32>.serialize_into(*merkle_root, obuf);
-            U32Le.serialize_into(timestamp, obuf);
-            U32Le.serialize_into(bits, obuf);
-            U32Le.serialize_into(nonce, obuf);
-            VarInt::<true>.serialize_into(tx_count, obuf);
-            RepeatN(*tx_count, TxFmt).serialize_into(txs, obuf);
+            BlockHeaderFmt.serialize_into(header, obuf);
+            VarInt::<true>.serialize_into(transaction_count, obuf);
+            RepeatN(*transaction_count, TxFmt).serialize_into(transactions, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4158,38 +4220,14 @@ mod exec_impls {
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             reveal(<Block as DeepView>::deep_view);
             reveal(BlockSpec::into_structural);
-            let Block {
-                version,
-                prev_block,
-                merkle_root,
-                timestamp,
-                bits,
-                nonce,
-                tx_count,
-                txs,
-            } = v;
-            let l1 = (U32Le).prepare(version)?;
-            let l2 = (Fixed::<32>).prepare(prev_block)?;
-            let l3 = (Fixed::<32>).prepare(merkle_root)?;
-            let l4 = (U32Le).prepare(timestamp)?;
-            let l5 = (U32Le).prepare(bits)?;
-            let l6 = (U32Le).prepare(nonce)?;
-            let l7 = (VarInt::<true>).prepare(tx_count)?;
-            let l8 = (RepeatN(*tx_count, TxFmt)).prepare(txs)?;
+            let Block { header, transaction_count, transactions } = v;
+            let l1 = (Named("block_header", BlockHeaderFmt)).prepare(header)?;
+            let l2 = (VarInt::<true>).prepare(transaction_count)?;
+            let l3 = (RepeatN(*transaction_count, TxFmt)).prepare(transactions)?;
             let total_len = l1
                 .checked_add(l2)
                 .ok_or(PreSerializeError::length_too_large())?
                 .checked_add(l3)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l4)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l5)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l6)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l7)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l8)
                 .ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -4210,13 +4248,15 @@ mod exec_impls {
 
             let (n1, version) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, marker_or_input_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, rem) = (Named("tx_rem", TxRemFmt { txin_count: txin_count })).parse(&rest)?;
+            let (n3, payload) = (
+                Named("tx_payload", TxPayloadFmt { marker_or_input_count: marker_or_input_count })
+            ).parse(&rest)?;
             let rest = rest.skip(n3);
             let total_n = n1 + n2 + n3;
 
-            let final_v = Tx { version, txin_count, rem };
+            let final_v = Tx { version, marker_or_input_count, payload };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
@@ -4232,12 +4272,15 @@ mod exec_impls {
             reveal(TxSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let Tx { version, txin_count, rem } = v;
+            let Tx { version, marker_or_input_count, payload } = v;
 
             U32Le.serialize_into(version, obuf);
-            VarInt::<true>.serialize_into(txin_count, obuf);
+            VarInt::<true>.serialize_into(marker_or_input_count, obuf);
 
-            TxRemFmt { txin_count: *txin_count }.serialize_into(rem, obuf);
+            TxPayloadFmt { marker_or_input_count: *marker_or_input_count }.serialize_into(
+                payload,
+                obuf,
+            );
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4248,10 +4291,12 @@ mod exec_impls {
             reveal(<TxFmt as SpecByteLen>::byte_len);
             reveal(<Tx as DeepView>::deep_view);
             reveal(TxSpec::into_structural);
-            let Tx { version, txin_count, rem } = v;
+            let Tx { version, marker_or_input_count, payload } = v;
             let l1 = (U32Le).prepare(version)?;
-            let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (Named("tx_rem", TxRemFmt { txin_count: *txin_count })).prepare(rem)?;
+            let l2 = (VarInt::<true>).prepare(marker_or_input_count)?;
+            let l3 = (
+                Named("tx_payload", TxPayloadFmt { marker_or_input_count: *marker_or_input_count })
+            ).prepare(payload)?;
             let total_len = l1
                 .checked_add(l2)
                 .ok_or(PreSerializeError::length_too_large())?
@@ -4261,42 +4306,42 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
-        type PT = TxSegwit<'i>;
+    impl<'i> Parser<&'i [u8]> for TxWithWitnessFmt {
+        type PT = TxWithWitness<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
-            reveal(<TxSegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxSegwit as DeepView>::deep_view);
-            reveal(TxSegwitSpec::from_structural);
+            reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithWitness as DeepView>::deep_view);
+            reveal(TxWithWitnessSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
             let (n1, flag) = Const(U8, 1).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txin_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, input_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txins) = (RepeatN(txin_count, TxinFmt)).parse(&rest)?;
+            let (n3, inputs) = (RepeatN(input_count, TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
-            let (n4, txout_count) = (VarInt::<true>).parse(&rest)?;
+            let (n4, output_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n4);
-            let (n5, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
+            let (n5, outputs) = (RepeatN(output_count, TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n5);
-            let (n6, witness) = (RepeatN(txin_count, WitnessFmt)).parse(&rest)?;
+            let (n6, witnesses) = (RepeatN(input_count, WitnessFmt)).parse(&rest)?;
             let rest = rest.skip(n6);
             let (n7, lock_time) = (Named("lock_time", LockTimeFmt)).parse(&rest)?;
             let rest = rest.skip(n7);
             let total_n = n1 + n2 + n3 + n4 + n5 + n6 + n7;
 
-            let final_v = TxSegwit {
+            let final_v = TxWithWitness {
                 flag,
-                txin_count,
-                txins,
-                txout_count,
-                txouts,
-                witness,
+                input_count,
+                inputs,
+                output_count,
+                outputs,
+                witnesses,
                 lock_time,
             };
 
@@ -4305,41 +4350,57 @@ mod exec_impls {
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, TxSegwit<'i>> for TxSegwitFmt {
-        fn serialize_into(&self, v: &TxSegwit<'i>, obuf: &mut Output) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxWithWitness<'i>> for TxWithWitnessFmt {
+        fn serialize_into(&self, v: &TxWithWitness<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
-            reveal(<TxSegwit as DeepView>::deep_view);
-            reveal(TxSegwitSpec::into_structural);
+            reveal(<TxWithWitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitness as DeepView>::deep_view);
+            reveal(TxWithWitnessSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
+            let TxWithWitness {
+                flag,
+                input_count,
+                inputs,
+                output_count,
+                outputs,
+                witnesses,
+                lock_time,
+            } = v;
 
             U8.serialize_into(flag, obuf);
-            VarInt::<true>.serialize_into(txin_count, obuf);
-            RepeatN(*txin_count, TxinFmt).serialize_into(txins, obuf);
-            VarInt::<true>.serialize_into(txout_count, obuf);
-            RepeatN(*txout_count, TxoutFmt).serialize_into(txouts, obuf);
-            RepeatN(*txin_count, WitnessFmt).serialize_into(witness, obuf);
+            VarInt::<true>.serialize_into(input_count, obuf);
+            RepeatN(*input_count, TxinFmt).serialize_into(inputs, obuf);
+            VarInt::<true>.serialize_into(output_count, obuf);
+            RepeatN(*output_count, TxoutFmt).serialize_into(outputs, obuf);
+            RepeatN(*input_count, WitnessFmt).serialize_into(witnesses, obuf);
             LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
     }
 
-    impl<'i> Prepare<TxSegwit<'i>> for TxSegwitFmt {
-        fn prepare(&self, v: &TxSegwit<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
-            reveal(<TxSegwit as DeepView>::deep_view);
-            reveal(TxSegwitSpec::into_structural);
-            let TxSegwit { flag, txin_count, txins, txout_count, txouts, witness, lock_time } = v;
+    impl<'i> Prepare<TxWithWitness<'i>> for TxWithWitnessFmt {
+        fn prepare(&self, v: &TxWithWitness<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithWitness as DeepView>::deep_view);
+            reveal(TxWithWitnessSpec::into_structural);
+            let TxWithWitness {
+                flag,
+                input_count,
+                inputs,
+                output_count,
+                outputs,
+                witnesses,
+                lock_time,
+            } = v;
             let l1 = (Const(U8, 1)).prepare(flag)?;
-            let l2 = (VarInt::<true>).prepare(txin_count)?;
-            let l3 = (RepeatN(*txin_count, TxinFmt)).prepare(txins)?;
-            let l4 = (VarInt::<true>).prepare(txout_count)?;
-            let l5 = (RepeatN(*txout_count, TxoutFmt)).prepare(txouts)?;
-            let l6 = (RepeatN(*txin_count, WitnessFmt)).prepare(witness)?;
+            let l2 = (VarInt::<true>).prepare(input_count)?;
+            let l3 = (RepeatN(*input_count, TxinFmt)).prepare(inputs)?;
+            let l4 = (VarInt::<true>).prepare(output_count)?;
+            let l5 = (RepeatN(*output_count, TxoutFmt)).prepare(outputs)?;
+            let l6 = (RepeatN(*input_count, WitnessFmt)).prepare(witnesses)?;
             let l7 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1
                 .checked_add(l2)
@@ -4358,130 +4419,16 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for WitnessFmt {
-        type PT = Witness<'i>;
+    impl<'i> Parser<&'i [u8]> for TxWithoutWitnessFmt {
+        type PT = TxWithoutWitness<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
-            reveal(<WitnessFmt as SpecParser>::spec_parse);
-            reveal(<Witness as DeepView>::deep_view);
-            reveal(WitnessSpec::from_structural);
-            let _ = ibuf.len();
-            let rest = *ibuf;
-
-            let (n1, count) = (VarInt::<true>).parse(&rest)?;
-            let rest = rest.skip(n1);
-            let (n2, data) = (RepeatN(count, WitnessComponentFmt)).parse(&rest)?;
-            let rest = rest.skip(n2);
-            let total_n = n1 + n2;
-
-            let final_v = Witness { count, data };
-
-            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-            Ok((total_n, final_v))
-        }
-    }
-
-    impl<Output: OutputBuf, 'i> Serializer<Output, Witness<'i>> for WitnessFmt {
-        fn serialize_into(&self, v: &Witness<'i>, obuf: &mut Output) {
-            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            reveal(<Witness as DeepView>::deep_view);
-            reveal(WitnessSpec::into_structural);
-            let ghost old_obuf = obuf@;
-
-            let Witness { count, data } = v;
-
-            VarInt::<true>.serialize_into(count, obuf);
-            RepeatN(*count, WitnessComponentFmt).serialize_into(data, obuf);
-
-            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
-        }
-    }
-
-    impl<'i> Prepare<Witness<'i>> for WitnessFmt {
-        fn prepare(&self, v: &Witness<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<WitnessFmt as SpecByteLen>::byte_len);
-            reveal(<Witness as DeepView>::deep_view);
-            reveal(WitnessSpec::into_structural);
-            let Witness { count, data } = v;
-            let l1 = (VarInt::<true>).prepare(count)?;
-            let l2 = (RepeatN(*count, WitnessComponentFmt)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-            Ok(total_len)
-        }
-    }
-
-    impl<'i> Parser<&'i [u8]> for WitnessComponentFmt {
-        type PT = WitnessComponent<'i>;
-
-        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
-
-            reveal(<WitnessComponentFmt as SpecParser>::spec_parse);
-            reveal(<WitnessComponent as DeepView>::deep_view);
-            reveal(WitnessComponentSpec::from_structural);
-            let _ = ibuf.len();
-            let rest = *ibuf;
-
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
-            let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
-            let rest = rest.skip(n2);
-            let total_n = n1 + n2;
-
-            let final_v = WitnessComponent { l, data };
-
-            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-            Ok((total_n, final_v))
-        }
-    }
-
-    impl<Output: OutputBuf, 'i> Serializer<Output, WitnessComponent<'i>> for WitnessComponentFmt {
-        fn serialize_into(&self, v: &WitnessComponent<'i>, obuf: &mut Output) {
-            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<WitnessComponentFmt as SpecSerializer>::spec_serialize);
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            reveal(<WitnessComponent as DeepView>::deep_view);
-            reveal(WitnessComponentSpec::into_structural);
-            let ghost old_obuf = obuf@;
-
-            let WitnessComponent { l, data } = v;
-
-            VarInt::<true>.serialize_into(l, obuf);
-            Varied(*l).serialize_into(*data, obuf);
-
-            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
-        }
-    }
-
-    impl<'i> Prepare<WitnessComponent<'i>> for WitnessComponentFmt {
-        fn prepare(&self, v: &WitnessComponent<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<WitnessComponentFmt as SpecByteLen>::byte_len);
-            reveal(<WitnessComponent as DeepView>::deep_view);
-            reveal(WitnessComponentSpec::into_structural);
-            let WitnessComponent { l, data } = v;
-            let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(*l)).prepare(data)?;
-            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
-            Ok(total_len)
-        }
-    }
-
-    impl<'i> Parser<&'i [u8]> for TxNonsegwitFmt {
-        type PT = TxNonsegwit<'i>;
-
-        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
-
-            reveal(<TxNonsegwitFmt as SpecParser>::spec_parse);
-            reveal(<TxNonsegwit as DeepView>::deep_view);
-            reveal(TxNonsegwitSpec::from_structural);
+            reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
+            reveal(<TxWithoutWitness as DeepView>::deep_view);
+            reveal(TxWithoutWitnessSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -4489,30 +4436,30 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n1, txins) = (RepeatN(self.txin_count, TxinFmt)).parse(&rest)?;
+            let (n1, inputs) = (RepeatN(self.input_count, TxinFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, txout_count) = (VarInt::<true>).parse(&rest)?;
+            let (n2, output_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n2);
-            let (n3, txouts) = (RepeatN(txout_count, TxoutFmt)).parse(&rest)?;
+            let (n3, outputs) = (RepeatN(output_count, TxoutFmt)).parse(&rest)?;
             let rest = rest.skip(n3);
             let (n4, lock_time) = (Named("lock_time", LockTimeFmt)).parse(&rest)?;
             let rest = rest.skip(n4);
             let total_n = n1 + n2 + n3 + n4;
 
-            let final_v = TxNonsegwit { txins, txout_count, txouts, lock_time };
+            let final_v = TxWithoutWitness { inputs, output_count, outputs, lock_time };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, TxNonsegwit<'i>> for TxNonsegwitFmt {
-        fn serialize_into(&self, v: &TxNonsegwit<'i>, obuf: &mut Output) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxWithoutWitness<'i>> for TxWithoutWitnessFmt {
+        fn serialize_into(&self, v: &TxWithoutWitness<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<TxNonsegwitFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            reveal(<TxNonsegwit as DeepView>::deep_view);
-            reveal(TxNonsegwitSpec::into_structural);
+            reveal(<TxWithoutWitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithoutWitness as DeepView>::deep_view);
+            reveal(TxWithoutWitnessSpec::into_structural);
 
             proof {
                 use_type_invariant(self);
@@ -4520,30 +4467,30 @@ mod exec_impls {
 
             let ghost old_obuf = obuf@;
 
-            let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
+            let TxWithoutWitness { inputs, output_count, outputs, lock_time } = v;
 
-            RepeatN(self.txin_count, TxinFmt).serialize_into(txins, obuf);
-            VarInt::<true>.serialize_into(txout_count, obuf);
-            RepeatN(*txout_count, TxoutFmt).serialize_into(txouts, obuf);
+            RepeatN(self.input_count, TxinFmt).serialize_into(inputs, obuf);
+            VarInt::<true>.serialize_into(output_count, obuf);
+            RepeatN(*output_count, TxoutFmt).serialize_into(outputs, obuf);
             LockTimeFmt.serialize_into(lock_time, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
     }
 
-    impl<'i> Prepare<TxNonsegwit<'i>> for TxNonsegwitFmt {
-        fn prepare(&self, v: &TxNonsegwit<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<TxNonsegwitFmt as SpecByteLen>::byte_len);
-            reveal(<TxNonsegwit as DeepView>::deep_view);
-            reveal(TxNonsegwitSpec::into_structural);
+    impl<'i> Prepare<TxWithoutWitness<'i>> for TxWithoutWitnessFmt {
+        fn prepare(&self, v: &TxWithoutWitness<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
+            reveal(<TxWithoutWitness as DeepView>::deep_view);
+            reveal(TxWithoutWitnessSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
-            let TxNonsegwit { txins, txout_count, txouts, lock_time } = v;
-            let l1 = (RepeatN(self.txin_count, TxinFmt)).prepare(txins)?;
-            let l2 = (VarInt::<true>).prepare(txout_count)?;
-            let l3 = (RepeatN(*txout_count, TxoutFmt)).prepare(txouts)?;
+            let TxWithoutWitness { inputs, output_count, outputs, lock_time } = v;
+            let l1 = (RepeatN(self.input_count, TxinFmt)).prepare(inputs)?;
+            let l2 = (VarInt::<true>).prepare(output_count)?;
+            let l3 = (RepeatN(*output_count, TxoutFmt)).prepare(outputs)?;
             let l4 = (Named("lock_time", LockTimeFmt)).prepare(lock_time)?;
             let total_len = l1
                 .checked_add(l2)
@@ -4572,7 +4519,7 @@ mod exec_impls {
 
             let (n, v) = match (U32Le).parse(&rest) {
                 Ok((n, va)) if va >= 0 &&va <= 499999999 => {
-                    Ok((n, LockTime::BlockNo(va)))
+                    Ok((n, LockTime::BlockHeight(va)))
                 }
                 _ =>
                     match (U32Le).parse(&rest) {
@@ -4596,7 +4543,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match v {
-                LockTime::BlockNo(v) => {
+                LockTime::BlockHeight(v) => {
                     (U32Le).serialize_into(v, obuf);
                 }
                 LockTime::Timestamp(v) => {
@@ -4614,7 +4561,7 @@ mod exec_impls {
             reveal(<LockTime as DeepView>::deep_view);
             reveal(LockTimeSpec::into_structural);
             match v {
-                LockTime::BlockNo(v) => {
+                LockTime::BlockHeight(v) => {
                     if !(*v >= 0 &&*v <= 499999999) {
                         Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
                     } else {
@@ -4629,6 +4576,132 @@ mod exec_impls {
                     }
                 }
             }
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for TxinFmt {
+        type PT = Txin<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<TxinFmt as SpecParser>::spec_parse);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, previous_output) = (Named("outpoint", OutpointFmt)).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, script_sig) = (Named("script", ScriptFmt)).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let (n3, sequence) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+
+            let final_v = Txin { previous_output, script_sig, sequence };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Txin<'i>> for TxinFmt {
+        fn serialize_into(&self, v: &Txin<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<TxinFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxinFmt as SpecByteLen>::byte_len);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Txin { previous_output, script_sig, sequence } = v;
+
+            OutpointFmt.serialize_into(previous_output, obuf);
+            ScriptFmt.serialize_into(script_sig, obuf);
+            U32Le.serialize_into(sequence, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Txin<'i>> for TxinFmt {
+        fn prepare(&self, v: &Txin<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxinFmt as SpecByteLen>::byte_len);
+            reveal(<Txin as DeepView>::deep_view);
+            reveal(TxinSpec::into_structural);
+            let Txin { previous_output, script_sig, sequence } = v;
+            let l1 = (Named("outpoint", OutpointFmt)).prepare(previous_output)?;
+            let l2 = (Named("script", ScriptFmt)).prepare(script_sig)?;
+            let l3 = (U32Le).prepare(sequence)?;
+            let total_len = l1
+                .checked_add(l2)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l3)
+                .ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for OutpointFmt {
+        type PT = Outpoint<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            36
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<OutpointFmt as SpecParser>::spec_parse);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, transaction_hash) = (Fixed::<32>).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, output_index) = (U32Le).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+
+            let final_v = Outpoint { transaction_hash, output_index };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Outpoint<'i>> for OutpointFmt {
+        fn serialize_into(&self, v: &Outpoint<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<OutpointFmt as SpecSerializer>::spec_serialize);
+            reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Outpoint { transaction_hash, output_index } = v;
+
+            Fixed::<32>.serialize_into(*transaction_hash, obuf);
+            U32Le.serialize_into(output_index, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Outpoint<'i>> for OutpointFmt {
+        fn prepare(&self, v: &Outpoint<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            reveal(<Outpoint as DeepView>::deep_view);
+            reveal(OutpointSpec::into_structural);
+            let Outpoint { transaction_hash, output_index } = v;
+            let l1 = (Fixed::<32>).prepare(transaction_hash)?;
+            let l2 = (U32Le).prepare(output_index)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
         }
     }
 
@@ -4702,13 +4775,13 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, length) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, bytes) = (Varied(length)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
 
-            let final_v = Script { l, data };
+            let final_v = Script { length, bytes };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
@@ -4724,10 +4797,10 @@ mod exec_impls {
             reveal(ScriptSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let Script { l, data } = v;
+            let Script { length, bytes } = v;
 
-            VarInt::<true>.serialize_into(l, obuf);
-            Varied(*l).serialize_into(*data, obuf);
+            VarInt::<true>.serialize_into(length, obuf);
+            Varied(*length).serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
@@ -4738,204 +4811,135 @@ mod exec_impls {
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             reveal(<Script as DeepView>::deep_view);
             reveal(ScriptSpec::into_structural);
-            let Script { l, data } = v;
-            let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(*l)).prepare(data)?;
+            let Script { length, bytes } = v;
+            let l1 = (VarInt::<true>).prepare(length)?;
+            let l2 = (Varied(*length)).prepare(bytes)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for TxinFmt {
-        type PT = Txin<'i>;
+    impl<'i> Parser<&'i [u8]> for WitnessFmt {
+        type PT = Witness<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
-            reveal(<TxinFmt as SpecParser>::spec_parse);
-            reveal(<Txin as DeepView>::deep_view);
-            reveal(TxinSpec::from_structural);
+            reveal(<WitnessFmt as SpecParser>::spec_parse);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, previous_output) = (Named("outpoint", OutpointFmt)).parse(&rest)?;
+            let (n1, item_count) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, script_sig) = (Named("script_sig", ScriptSigFmt)).parse(&rest)?;
-            let rest = rest.skip(n2);
-            let (n3, sequence) = (U32Le).parse(&rest)?;
-            let rest = rest.skip(n3);
-            let total_n = n1 + n2 + n3;
-
-            let final_v = Txin { previous_output, script_sig, sequence };
-
-            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
-            Ok((total_n, final_v))
-        }
-    }
-
-    impl<Output: OutputBuf, 'i> Serializer<Output, Txin<'i>> for TxinFmt {
-        fn serialize_into(&self, v: &Txin<'i>, obuf: &mut Output) {
-            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<TxinFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxinFmt as SpecByteLen>::byte_len);
-            reveal(<Txin as DeepView>::deep_view);
-            reveal(TxinSpec::into_structural);
-            let ghost old_obuf = obuf@;
-
-            let Txin { previous_output, script_sig, sequence } = v;
-
-            OutpointFmt.serialize_into(previous_output, obuf);
-            ScriptSigFmt.serialize_into(script_sig, obuf);
-            U32Le.serialize_into(sequence, obuf);
-
-            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
-        }
-    }
-
-    impl<'i> Prepare<Txin<'i>> for TxinFmt {
-        fn prepare(&self, v: &Txin<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<TxinFmt as SpecByteLen>::byte_len);
-            reveal(<Txin as DeepView>::deep_view);
-            reveal(TxinSpec::into_structural);
-            let Txin { previous_output, script_sig, sequence } = v;
-            let l1 = (Named("outpoint", OutpointFmt)).prepare(previous_output)?;
-            let l2 = (Named("script_sig", ScriptSigFmt)).prepare(script_sig)?;
-            let l3 = (U32Le).prepare(sequence)?;
-            let total_len = l1
-                .checked_add(l2)
-                .ok_or(PreSerializeError::length_too_large())?
-                .checked_add(l3)
-                .ok_or(PreSerializeError::length_too_large())?;
-            Ok(total_len)
-        }
-    }
-
-    impl<'i> Parser<&'i [u8]> for OutpointFmt {
-        type PT = Outpoint<'i>;
-
-        fn min_byte_len(&self) -> usize {
-            36
-        }
-
-        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
-
-            reveal(<OutpointFmt as SpecParser>::spec_parse);
-            reveal(<Outpoint as DeepView>::deep_view);
-            reveal(OutpointSpec::from_structural);
-            let _ = ibuf.len();
-            let rest = *ibuf;
-
-            let (n1, hash) = (Fixed::<32>).parse(&rest)?;
-            let rest = rest.skip(n1);
-            let (n2, index) = (U32Le).parse(&rest)?;
+            let (n2, items) = (RepeatN(item_count, WitnessItemFmt)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
 
-            let final_v = Outpoint { hash, index };
+            let final_v = Witness { item_count, items };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, Outpoint<'i>> for OutpointFmt {
-        fn serialize_into(&self, v: &Outpoint<'i>, obuf: &mut Output) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, Witness<'i>> for WitnessFmt {
+        fn serialize_into(&self, v: &Witness<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<OutpointFmt as SpecSerializer>::spec_serialize);
-            reveal(<OutpointFmt as SpecByteLen>::byte_len);
-            reveal(<Outpoint as DeepView>::deep_view);
-            reveal(OutpointSpec::into_structural);
+            reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let Outpoint { hash, index } = v;
+            let Witness { item_count, items } = v;
 
-            Fixed::<32>.serialize_into(*hash, obuf);
-            U32Le.serialize_into(index, obuf);
+            VarInt::<true>.serialize_into(item_count, obuf);
+            RepeatN(*item_count, WitnessItemFmt).serialize_into(items, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
     }
 
-    impl<'i> Prepare<Outpoint<'i>> for OutpointFmt {
-        fn prepare(&self, v: &Outpoint<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<OutpointFmt as SpecByteLen>::byte_len);
-            reveal(<Outpoint as DeepView>::deep_view);
-            reveal(OutpointSpec::into_structural);
-            let Outpoint { hash, index } = v;
-            let l1 = (Fixed::<32>).prepare(hash)?;
-            let l2 = (U32Le).prepare(index)?;
+    impl<'i> Prepare<Witness<'i>> for WitnessFmt {
+        fn prepare(&self, v: &Witness<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<WitnessFmt as SpecByteLen>::byte_len);
+            reveal(<Witness as DeepView>::deep_view);
+            reveal(WitnessSpec::into_structural);
+            let Witness { item_count, items } = v;
+            let l1 = (VarInt::<true>).prepare(item_count)?;
+            let l2 = (RepeatN(*item_count, WitnessItemFmt)).prepare(items)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for ScriptSigFmt {
-        type PT = ScriptSig<'i>;
+    impl<'i> Parser<&'i [u8]> for WitnessItemFmt {
+        type PT = WitnessItem<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
             broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
-            reveal(<ScriptSigFmt as SpecParser>::spec_parse);
-            reveal(<ScriptSig as DeepView>::deep_view);
-            reveal(ScriptSigSpec::from_structural);
+            reveal(<WitnessItemFmt as SpecParser>::spec_parse);
+            reveal(<WitnessItem as DeepView>::deep_view);
+            reveal(WitnessItemSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, l) = (VarInt::<true>).parse(&rest)?;
+            let (n1, length) = (VarInt::<true>).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, data) = (Varied(l)).parse(&rest)?;
+            let (n2, bytes) = (Varied(length)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
 
-            let final_v = ScriptSig { l, data };
+            let final_v = WitnessItem { length, bytes };
 
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, ScriptSig<'i>> for ScriptSigFmt {
-        fn serialize_into(&self, v: &ScriptSig<'i>, obuf: &mut Output) {
+    impl<Output: OutputBuf, 'i> Serializer<Output, WitnessItem<'i>> for WitnessItemFmt {
+        fn serialize_into(&self, v: &WitnessItem<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-            reveal(<ScriptSigFmt as SpecSerializer>::spec_serialize);
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
-            reveal(<ScriptSig as DeepView>::deep_view);
-            reveal(ScriptSigSpec::into_structural);
+            reveal(<WitnessItemFmt as SpecSerializer>::spec_serialize);
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            reveal(<WitnessItem as DeepView>::deep_view);
+            reveal(WitnessItemSpec::into_structural);
             let ghost old_obuf = obuf@;
 
-            let ScriptSig { l, data } = v;
+            let WitnessItem { length, bytes } = v;
 
-            VarInt::<true>.serialize_into(l, obuf);
-            Varied(*l).serialize_into(*data, obuf);
+            VarInt::<true>.serialize_into(length, obuf);
+            Varied(*length).serialize_into(*bytes, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
     }
 
-    impl<'i> Prepare<ScriptSig<'i>> for ScriptSigFmt {
-        fn prepare(&self, v: &ScriptSig<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<ScriptSigFmt as SpecByteLen>::byte_len);
-            reveal(<ScriptSig as DeepView>::deep_view);
-            reveal(ScriptSigSpec::into_structural);
-            let ScriptSig { l, data } = v;
-            let l1 = (VarInt::<true>).prepare(l)?;
-            let l2 = (Varied(*l)).prepare(data)?;
+    impl<'i> Prepare<WitnessItem<'i>> for WitnessItemFmt {
+        fn prepare(&self, v: &WitnessItem<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
+            reveal(<WitnessItem as DeepView>::deep_view);
+            reveal(WitnessItemSpec::into_structural);
+            let WitnessItem { length, bytes } = v;
+            let l1 = (VarInt::<true>).prepare(length)?;
+            let l2 = (Varied(*length)).prepare(bytes)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
     }
 
-    impl<'i> Parser<&'i [u8]> for TxRemFmt {
-        type PT = TxRem<'i>;
+    impl<'i> Parser<&'i [u8]> for TxPayloadFmt {
+        type PT = TxPayload<'i>;
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-            reveal(<TxRemFmt as SpecParser>::spec_parse);
-            reveal(<TxRem as DeepView>::deep_view);
-            reveal(TxRemSpec::from_structural);
+            reveal(<TxPayloadFmt as SpecParser>::spec_parse);
+            reveal(<TxPayload as DeepView>::deep_view);
+            reveal(TxPayloadSpec::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -4943,16 +4947,19 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let (n, v) = match self.txin_count {
+            let (n, v) = match self.marker_or_input_count {
                 0 => {
-                    let (n, v) = (Named("tx_segwit", TxSegwitFmt)).parse(&rest)?;
-                    (n, TxRem::TxSegwit(v))
+                    let (n, v) = (Named("tx_with_witness", TxWithWitnessFmt)).parse(&rest)?;
+                    (n, TxPayload::TxWithWitness(v))
                 }
                 _ => {
                     let (n, v) = (
-                        Named("tx_nonsegwit", TxNonsegwitFmt { txin_count: self.txin_count })
+                        Named(
+                            "tx_without_witness",
+                            TxWithoutWitnessFmt { input_count: self.marker_or_input_count },
+                        )
                     ).parse(&rest)?;
-                    (n, TxRem::TxNonsegwit(v))
+                    (n, TxPayload::TxWithoutWitness(v))
                 }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
@@ -4960,24 +4967,26 @@ mod exec_impls {
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, TxRem<'i>> for TxRemFmt {
-        fn serialize_into(&self, v: &TxRem<'i>, obuf: &mut Output) {
-            reveal(<TxRemFmt as SpecSerializer>::spec_serialize);
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            reveal(<TxRem as DeepView>::deep_view);
-            reveal(TxRemSpec::into_structural);
+    impl<Output: OutputBuf, 'i> Serializer<Output, TxPayload<'i>> for TxPayloadFmt {
+        fn serialize_into(&self, v: &TxPayload<'i>, obuf: &mut Output) {
+            reveal(<TxPayloadFmt as SpecSerializer>::spec_serialize);
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            reveal(<TxPayload as DeepView>::deep_view);
+            reveal(TxPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
             let ghost old_obuf = obuf@;
 
-            match (self.txin_count, v) {
-                (0, TxRem::TxSegwit(v)) => {
-                    (TxSegwitFmt).serialize_into(v, obuf);
+            match (self.marker_or_input_count, v) {
+                (0, TxPayload::TxWithWitness(v)) => {
+                    (TxWithWitnessFmt).serialize_into(v, obuf);
                 }
-                (_, TxRem::TxNonsegwit(v)) => {
-                    (TxNonsegwitFmt { txin_count: self.txin_count }).serialize_into(v, obuf);
+                (_, TxPayload::TxWithoutWitness(v)) => {
+                    (
+                        TxWithoutWitnessFmt { input_count: self.marker_or_input_count }
+                    ).serialize_into(v, obuf);
                 }
                 _ => {}
             }
@@ -4986,20 +4995,24 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Prepare<TxRem<'i>> for TxRemFmt {
-        fn prepare(&self, v: &TxRem<'i>) -> Result<usize, PreSerializeError> {
-            reveal(<TxRemFmt as SpecByteLen>::byte_len);
-            reveal(<TxRem as DeepView>::deep_view);
-            reveal(TxRemSpec::into_structural);
+    impl<'i> Prepare<TxPayload<'i>> for TxPayloadFmt {
+        fn prepare(&self, v: &TxPayload<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
+            reveal(<TxPayload as DeepView>::deep_view);
+            reveal(TxPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
             }
 
-            match (self.txin_count, v) {
-                (0, TxRem::TxSegwit(v)) => (Named("tx_segwit", TxSegwitFmt)).prepare(v),
-                (x, TxRem::TxNonsegwit(v)) if !(x == 0) =>
+            match (self.marker_or_input_count, v) {
+                (0, TxPayload::TxWithWitness(v)) =>
+                    (Named("tx_with_witness", TxWithWitnessFmt)).prepare(v),
+                (x, TxPayload::TxWithoutWitness(v)) if !(x == 0) =>
                     (
-                        Named("tx_nonsegwit", TxNonsegwitFmt { txin_count: self.txin_count })
+                        Named(
+                            "tx_without_witness",
+                            TxWithoutWitnessFmt { input_count: self.marker_or_input_count },
+                        )
                     ).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
