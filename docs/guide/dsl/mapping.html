@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-2625125e.js";
+            window.path_to_searchindex_js = "../searchindex-ef6232ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-ec169036.js"></script>
+        <script src="../toc-e939e675.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -214,6 +214,7 @@ that carries the parser, serializer, and proofs. See
 <tr><td><code>name = { a: fmt_a, b: Tail, }</code></td><td><code>struct Name { a: FmtA, b: &amp;[u8] }</code></td></tr>
 <tr><td><code>name = { const tag: u8 = 0x01, data: u16, }</code></td><td><code>struct Name { tag: u8, data: u16 }</code></td></tr>
 <tr><td><code>name(@t: my_type) = choose(@t) { A =&gt; fmt_a, _ =&gt; fmt_c, }</code></td><td><code>enum Name { A(FmtA), Default(FmtC) }</code></td></tr>
+<tr><td><code>name(@t: u8) = choose(@t) { 1 =&gt; fmt_a, 2 =&gt; u16, _ =&gt; fmt_c, }</code></td><td><code>enum Name { FmtA(FmtA), Variant2(u16), FmtC(FmtC) }</code></td></tr>
 <tr><td><code>name = choose { V1(u8 | 0..10), V2(u8 | 11..), }</code></td><td><code>enum Name { V1(u8), V2(u8) }</code></td></tr>
 <tr><td><code>name = wrap(u8 = 0x01, inner, u8 = 0xFF)</code></td><td>same as <code>inner</code></td></tr>
 </tbody>

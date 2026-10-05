@@ -4,6 +4,7 @@
 
 - [Getting started](getting-started.md)
 - [What Vest proves](guarantees.md)
+- [Benchmarks](benchmarks.md)
 
 # Vest DSL
 

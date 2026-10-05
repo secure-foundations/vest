@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-2625125e.js";
+            window.path_to_searchindex_js = "../searchindex-ef6232ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-ec169036.js"></script>
+        <script src="../toc-e939e675.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,6 +191,18 @@ btc_varint      uleb128
 </code></pre>
 <p>Integer type names are also reserved: any <code>u</code> or <code>i</code> followed by digits, so
 <code>u8</code>, <code>u16</code>, <code>u3</code>, <code>i32</code> and so on are unavailable as names.</p>
+<p>Field names and parameters become Rust variables in the generated code, so a
+few more names are unavailable for them:</p>
+<ul>
+<li>Rust keywords, such as <code>type</code>, <code>match</code>, <code>self</code>, and <code>box</code>, and the Verus
+keywords <code>ghost</code>, <code>tracked</code>, and <code>exec</code>;</li>
+<li>names the generated code uses for its own variables: <code>ibuf</code>, <code>obuf</code>,
+<code>old_obuf</code>, <code>v</code>, <code>rest</code>, <code>total_n</code>, <code>parse_spec</code>, <code>gas</code>, and <code>n</code> or <code>l</code>
+followed by digits (<code>n1</code>, <code>l2</code>, …);</li>
+<li>in a <code>bits</code> format, also <code>n</code>, and the names of the helpers generated for it:
+<code>pack_&lt;format&gt;</code>, <code>unpack_&lt;format&gt;</code>, <code>&lt;format&gt;_bounds</code>, and <code>&lt;enum&gt;_to_bits</code>,
+<code>&lt;enum&gt;_from_bits</code>, <code>&lt;enum&gt;_wf</code> for any enum.</li>
+</ul>
 <p>The following identifier forms have extra syntax:</p>
 <div class="table-wrapper">
 <table>

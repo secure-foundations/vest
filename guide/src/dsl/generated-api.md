@@ -30,7 +30,7 @@ pub struct MessageFmt;
 ## The shape of an emitted file
 
 The whole module is a single `verus!` block behind a fixed `use` preamble, cut
-into five banner-delimited sections:
+into six banner-delimited sections:
 
 ```rust,ignore
 use vest_lib::combinators::*;            // fixed preamble, identical in every file
@@ -40,6 +40,9 @@ verus! {
 
 // ============================================================
 // Data Types
+// ============================================================
+// ============================================================
+// Structural Mappers
 // ============================================================
 // ============================================================
 // Format Specifications
@@ -64,12 +67,15 @@ Because the nominal format types (e.g., `MessageFmt`) are what the user actually
 the last three sections are wrapped in private
 modules (`derived_specs`, `derived_proofs`, `exec_impls`).
 
+The compiler lays out the code it emits itself, in the style of `rustfmt` with
+lines of at most 100 columns, so generated files need no separate formatting
+pass.
+
 ## Data Types
 
 Per definition, alongside the `Message` shown above, Vest emits a nominal abstract value type
 (`MessageSpec`) and a structural representation (`MessageInner`), plus the
-`DeepView` impl that converts between the executable value and the abstract value. Additionally, Vest emits two empty structs (`MessageForward` and `MessageReverse`)
-to name the bijective conversion between the structural and nominal abstract value types.
+`DeepView` impl that converts between the executable value and the abstract value.
 
 ```rust,ignore
 #[verifier::ext_equal]
@@ -85,7 +91,17 @@ impl<'i> DeepView for Message<'i> {               // exec value -> abstract valu
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V { /* field-wise */ }
 }
+```
 
+## Structural Mappers
+
+The combinator tree yields the structural representation (`MessageInner`), and
+the user-facing specification value is the nominal `MessageSpec`. This section
+holds, for every definition, the conversions between the two and two empty
+structs (`MessageForward` and `MessageReverse`) that name that bijection for the
+`Mapped` combinator:
+
+```rust,ignore
 impl<T0, T1> MessageSpec<T0, T1> {                // abstract value <-> nested tuple
     #[verifier::opaque] pub open spec fn from_structural(input: (T0, T1)) -> Self { /* .. */ }
     #[verifier::opaque] pub open spec fn into_structural(self) -> (T0, T1) { /* .. */ }

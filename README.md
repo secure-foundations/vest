@@ -44,6 +44,11 @@ Vest 2.0 is a substantial redesign. Existing users should read the [migration gu
 - The ASN.1 frontend includes a [curated CMS schema](vest_asn1/rfcs/CMS-RFC5652-Curated.asn1) and its [generated, formally verified codec](vest_asn1_tests/src/generated_cms.rs), alongside smaller [DER](vest_asn1_tests/fixture.asn1), [BER](vest_asn1_tests/fixture_ber.asn1), and [mixed-rule](vest_asn1_tests/fixture_mixed.asn1) schemas.
 - [`vest_dev/src/formats`](vest_dev/src/formats) contains example formats written directly with `vest_lib` combinators, including [mapped formats](vest_dev/src/formats/mapped.rs), [dependent formats](vest_dev/src/formats/dependent.rs), and [recursive formats](vest_dev/src/formats/fix.rs).
 
+## Benchmarks
+
+[`vest_bench`](vest_bench) contains reproducible Criterion benchmarks for Vest-generated parsers and serializers. It includes focused microformats that compare Vest with hand-written Rust implementations, and real-format benchmarks that compare Vest with open-source Rust libraries for TLS, Bitcoin, CMS, and CBOR.
+See the [benchmark guide](https://secure-foundations.github.io/vest/guide/benchmarks.html) for the benchmark design and commands.
+
 ## Getting in touch and reporting issues
 
 Please report `vest_lib` issues and DSL/ASN.1 compiler bugs through [GitHub Issues](https://github.com/secure-foundations/vest/issues). For questions, help, or design discussions, join the [Verus Zulip](https://verus-lang.zulipchat.com/) and mention **Vest** in the topic or message.

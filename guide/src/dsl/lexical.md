@@ -19,6 +19,18 @@ btc_varint      uleb128
 Integer type names are also reserved: any `u` or `i` followed by digits, so
 `u8`, `u16`, `u3`, `i32` and so on are unavailable as names.
 
+Field names and parameters become Rust variables in the generated code, so a
+few more names are unavailable for them:
+
+- Rust keywords, such as `type`, `match`, `self`, and `box`, and the Verus
+  keywords `ghost`, `tracked`, and `exec`;
+- names the generated code uses for its own variables: `ibuf`, `obuf`,
+  `old_obuf`, `v`, `rest`, `total_n`, `parse_spec`, `gas`, and `n` or `l`
+  followed by digits (`n1`, `l2`, …);
+- in a `bits` format, also `n`, and the names of the helpers generated for it:
+  `pack_<format>`, `unpack_<format>`, `<format>_bounds`, and `<enum>_to_bits`,
+  `<enum>_from_bits`, `<enum>_wf` for any enum.
+
 The following identifier forms have extra syntax:
 
 | Form           | Meaning                                                                 |

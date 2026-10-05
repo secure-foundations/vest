@@ -61,6 +61,36 @@ record = {
 Every explicit byte pattern must have the same length as the dependency, and a
 final wildcard is required.
 
+## Variant names
+
+Each branch becomes a variant of the generated Rust enum. An enum-dependent
+choice names its variants after the enum's, and its `_` branch `Default`.
+Integer and byte-string patterns have no name of their own, so a branch whose
+format is a named definition is named after that definition, and any other
+branch is `Variant1`, `Variant2`, … by position (`Default` for `_`):
+
+```vest
+request = {
+    id: u32,
+}
+
+reply = {
+    status: u8,
+}
+
+message = {
+    @magic: [u8; 2],
+    body: choose(@magic) {
+        [0x01, 0x02] => request,  // MessageBody::Request
+        [0x01, 0x03] => u16,      // MessageBody::Variant2
+        _ => reply,               // MessageBody::Reply
+    },
+}
+```
+
+If two branches invoke the same definition, both fall back to positional
+names.
+
 ## Non-dependent ordered choices
 
 Without `(@dependency)`, there is no tag to dispatch on, so the branches are

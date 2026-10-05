@@ -33,5 +33,6 @@ that carries the parser, serializer, and proofs. See
 | `name = { a: fmt_a, b: Tail, }` | `struct Name { a: FmtA, b: &[u8] }` |
 | `name = { const tag: u8 = 0x01, data: u16, }` | `struct Name { tag: u8, data: u16 }` |
 | `name(@t: my_type) = choose(@t) { A => fmt_a, _ => fmt_c, }` | `enum Name { A(FmtA), Default(FmtC) }` |
+| `name(@t: u8) = choose(@t) { 1 => fmt_a, 2 => u16, _ => fmt_c, }` | `enum Name { FmtA(FmtA), Variant2(u16), FmtC(FmtC) }` |
 | `name = choose { V1(u8 \| 0..10), V2(u8 \| 11..), }` | `enum Name { V1(u8), V2(u8) }` |
 | `name = wrap(u8 = 0x01, inner, u8 = 0xFF)` | same as `inner` |
