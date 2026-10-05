@@ -11,6 +11,23 @@ use crate::vestir::{
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
+/// A definition's value types, and the structural mappers between its spec
+/// value and its structural representation, which the generated file lists in
+/// a section of their own.
+pub(crate) struct ValueTypes {
+    pub(crate) types: String,
+    pub(crate) mappers: String,
+}
+
+impl ValueTypes {
+    pub(crate) fn types_only(types: String) -> Self {
+        Self {
+            types,
+            mappers: String::new(),
+        }
+    }
+}
+
 impl<'a> Analysis<'a> {
     fn type_doc(name: &str) -> String {
         format!("data type for `{}`.", name)
@@ -78,9 +95,13 @@ impl<'a> Analysis<'a> {
         name: &str,
         struct_comb: &StructCombinator,
         scc_members: &[String],
-    ) -> String {
+    ) -> ValueTypes {
         if !scc_members.is_empty() {
-            return self.gen_recursive_struct_value_types(name, struct_comb, scc_members);
+            return ValueTypes::types_only(self.gen_recursive_struct_value_types(
+                name,
+                struct_comb,
+                scc_members,
+            ));
         }
 
         let info = self.info(name);
@@ -305,14 +326,16 @@ impl<'a> Analysis<'a> {
             }
         };
 
-        render_ts(quote! {
-            #[doc = #doc]
-            #exec_struct
-            #spec_struct
-            pub type #inner_ident = #inner_ty;
-            #deep_view_impl
-            #conversions
-        })
+        ValueTypes {
+            types: render_ts(quote! {
+                #[doc = #doc]
+                #exec_struct
+                #spec_struct
+                pub type #inner_ident = #inner_ty;
+                #deep_view_impl
+            }),
+            mappers: render_ts(conversions),
+        }
     }
 
     fn gen_recursive_struct_value_types(
@@ -458,9 +481,13 @@ impl<'a> Analysis<'a> {
         name: &str,
         choice_comb: &ChoiceCombinator,
         scc_members: &[String],
-    ) -> String {
+    ) -> ValueTypes {
         if !scc_members.is_empty() {
-            return self.gen_recursive_choice_value_types(name, choice_comb, scc_members);
+            return ValueTypes::types_only(self.gen_recursive_choice_value_types(
+                name,
+                choice_comb,
+                scc_members,
+            ));
         }
 
         let names = &self.info(name).names;
@@ -662,14 +689,16 @@ impl<'a> Analysis<'a> {
                 }
             }
         };
-        render_ts(quote! {
-            #[doc = #doc]
-            #exec_enum
-            #spec_enum
-            pub type #inner_ident = #inner_ty;
-            #deep_view_impl
-            #conversions
-        })
+        ValueTypes {
+            types: render_ts(quote! {
+                #[doc = #doc]
+                #exec_enum
+                #spec_enum
+                pub type #inner_ident = #inner_ty;
+                #deep_view_impl
+            }),
+            mappers: render_ts(conversions),
+        }
     }
 
     fn gen_recursive_choice_value_types(
@@ -749,7 +778,11 @@ impl<'a> Analysis<'a> {
         })
     }
 
-    pub(crate) fn gen_enum_value_types(&self, name: &str, enum_comb: &EnumCombinator) -> String {
+    pub(crate) fn gen_enum_value_types(
+        &self,
+        name: &str,
+        enum_comb: &EnumCombinator,
+    ) -> ValueTypes {
         let names = &self.info(name).names;
         let exec_ident = format_ident!("{}", names.exec);
         let spec_ident = format_ident!("{}", names.spec);
@@ -874,7 +907,7 @@ impl<'a> Analysis<'a> {
             )
         };
         let doc = format!("data type for `{}`.", names.dsl);
-        render_ts(quote! {
+        let types = render_ts(quote! {
             #[doc = #doc]
             #[repr(#repr_ty)]
             #[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
@@ -898,7 +931,12 @@ impl<'a> Analysis<'a> {
                 {
                     reveal(<#exec_ident as DeepView>::deep_view);
                 }
-
+            }
+            #[cfg(not(verus_keep_ghost))]
+            unsafe impl Structural for #exec_ident {}
+        });
+        let mappers = render_ts(quote! {
+            impl #exec_ident {
                 pub open spec fn structural_valid(input: #inner_ident) -> bool {
                     #valid_body
                 }
@@ -955,9 +993,8 @@ impl<'a> Analysis<'a> {
                     value.into_structural()
                 }
             }
-            #[cfg(not(verus_keep_ghost))]
-            unsafe impl Structural for #exec_ident {}
-        })
+        });
+        ValueTypes { types, mappers }
     }
 
     pub(crate) fn gen_const_value_aliases(

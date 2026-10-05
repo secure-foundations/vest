@@ -1,6 +1,7 @@
 mod common;
 mod datatypes;
 mod execs;
+mod pretty;
 mod proofs;
 mod recursive;
 mod specs;
@@ -8,6 +9,7 @@ mod writer;
 
 use crate::vestir::{self, Definition};
 use common::Analysis;
+use datatypes::ValueTypes;
 use quote::quote;
 use writer::render_ts;
 use writer::CodeWriter;
@@ -15,9 +17,12 @@ use writer::CodeWriter;
 pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String {
     let analysis = Analysis::new(defs, ctx);
     let defs = non_endian_defs(defs);
-    let data_types = render_fragments(&analysis, &defs, |analysis, def| {
-        analysis.gen_data_fragment(def)
-    });
+    let value_types: Vec<ValueTypes> = defs
+        .iter()
+        .map(|def| analysis.gen_data_fragment(def))
+        .collect();
+    let data_types = join_fragments(value_types.iter().map(|v| v.types.as_str()));
+    let mappers = join_fragments(value_types.iter().map(|v| v.mappers.as_str()));
     let specs = render_fragments(&analysis, &defs, |analysis, def| {
         analysis.gen_specs_fragment(def)
     });
@@ -53,6 +58,10 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
     let mut body = CodeWriter::new();
     body.push_multiline(render_section("Data Types", &data_types));
     body.blank_line();
+    if !mappers.is_empty() {
+        body.push_multiline(render_section("Structural Mappers", &mappers));
+        body.blank_line();
+    }
     body.push_multiline(render_section("Format Specifications", &specs));
     body.blank_line();
     body.push_multiline(render_nested_section(
@@ -77,7 +86,7 @@ pub fn code_gen(defs: &[vestir::Definition], ctx: &vestir::GlobalCtx) -> String 
     ));
 
     let mut out = CodeWriter::new();
-    out.push_multiline(prelude());
+    out.push_multiline(pretty::format_items(&prelude(), 0));
     out.line("verus! {");
     out.push_multiline(body.finish());
     out.line("}");
@@ -101,22 +110,28 @@ fn render_fragments(
         .join("\n\n")
 }
 
+fn join_fragments<'s>(fragments: impl Iterator<Item = &'s str>) -> String {
+    fragments
+        .filter(|f| !f.trim().is_empty())
+        .collect::<Vec<_>>()
+        .join("\n\n")
+}
+
 fn render_section(title: &str, body: &str) -> String {
-    let mut out = CodeWriter::new();
-    out.push_multiline(section_header(title));
-    out.push_multiline(body);
-    out.finish()
+    format!(
+        "{}\n{}",
+        section_header(title),
+        pretty::format_items(body, 0)
+    )
 }
 
 fn render_nested_section(title: &str, module: &str, imports: &str, body: &str) -> String {
-    let mut out = CodeWriter::new();
-    out.push_multiline(section_header(title));
-    out.block(format!("mod {module}"), |w| {
-        w.push_multiline(imports.trim_end());
-        w.blank_line();
-        w.push_multiline(body);
-    });
-    out.finish()
+    let contents = format!("{}\n\n{}", imports.trim_end(), body);
+    format!(
+        "{}\nmod {module} {{\n{}}}",
+        section_header(title),
+        pretty::format_items(&contents, 1)
+    )
 }
 
 fn section_header(title: &str) -> String {
@@ -127,7 +142,8 @@ fn section_header(title: &str) -> String {
 }
 
 impl<'a> Analysis<'a> {
-    pub(crate) fn gen_data_fragment(&self, def: &Definition) -> String {
+    pub(crate) fn gen_data_fragment(&self, def: &Definition) -> ValueTypes {
+        let types_only = ValueTypes::types_only;
         match def {
             Definition::StructDef {
                 name, combinator, ..
@@ -140,16 +156,16 @@ impl<'a> Analysis<'a> {
             } => self.gen_enum_value_types(name, combinator),
             Definition::BitsDef {
                 name, combinator, ..
-            } => self.gen_bits_value_types(name, combinator),
+            } => types_only(self.gen_bits_value_types(name, combinator)),
             Definition::CombinatorDef {
                 name, combinator, ..
-            } => self.gen_combinator_value_types(name, combinator, &[]),
+            } => types_only(self.gen_combinator_value_types(name, combinator, &[])),
             Definition::ConstCombinatorDef {
                 name,
                 const_combinator,
-            } => self.gen_const_value_aliases(name, const_combinator),
-            Definition::Endianess(_) => String::new(),
-            Definition::RecursiveScc(scc) => self.gen_recursive_data_fragment(scc),
+            } => types_only(self.gen_const_value_aliases(name, const_combinator)),
+            Definition::Endianess(_) => types_only(String::new()),
+            Definition::RecursiveScc(scc) => types_only(self.gen_recursive_data_fragment(scc)),
         }
     }
 
