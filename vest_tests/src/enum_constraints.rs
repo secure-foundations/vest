@@ -181,6 +181,122 @@ impl TypedEnumConstraints {
     }
 }
 
+/// data type for `open_kind`.
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
+pub enum OpenKind {
+    P = 1,
+    Q = 2,
+    R = 3,
+    Unknown(u8),
+}
+
+pub type OpenKindSpec = OpenKind;
+pub type OpenKindInner = Sum<u8, u8>;
+
+impl DeepView for OpenKind {
+    type V = Self;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        *self
+    }
+}
+
+impl OpenKind {
+    pub proof fn lemma_deep_view(&self)
+        ensures
+            self.deep_view() == *self,
+    {
+        reveal(<OpenKind as DeepView>::deep_view);
+    }
+}
+
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for OpenKind {}
+
+/// data type for `refined_dispatch`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct RefinedDispatch<'i> {
+    pub kind: OpenKind,
+    pub len: u8,
+    pub body: RefinedDispatchBody<'i>,
+}
+
+#[verifier::ext_equal]
+pub struct RefinedDispatchSpec<T0 = OpenKindSpec, T1 = u8, T2 = RefinedDispatchBodySpec> {
+    pub kind: T0,
+    pub len: T1,
+    pub body: T2,
+}
+
+pub type RefinedDispatchInner = (OpenKindSpec, (u8, RefinedDispatchBodySpec));
+
+impl<'i> DeepView for RefinedDispatch<'i> {
+    type V = RefinedDispatchSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        RefinedDispatchSpec {
+            kind: self.kind.deep_view(),
+            len: self.len.deep_view(),
+            body: self.body.deep_view(),
+        }
+    }
+}
+
+impl<'i> RefinedDispatch<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view().kind == self.kind.deep_view(),
+            self.deep_view().len == self.len.deep_view(),
+            self.deep_view().body == self.body.deep_view(),
+    {
+        reveal(<RefinedDispatch as DeepView>::deep_view);
+    }
+}
+
+/// data type for `refined_dispatch_body`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum RefinedDispatchBody<'i> {
+    P(u8),
+    Default(&'i [u8]),
+}
+
+#[verifier::ext_equal]
+pub enum RefinedDispatchBodySpec<T0 = u8, T1 = Seq<u8>> {
+    P(T0),
+    Default(T1),
+}
+
+pub type RefinedDispatchBodyInner = Sum<u8, Seq<u8>>;
+
+impl<'i> DeepView for RefinedDispatchBody<'i> {
+    type V = RefinedDispatchBodySpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        match self {
+            RefinedDispatchBody::P(v) => RefinedDispatchBodySpec::P(v.deep_view()),
+            RefinedDispatchBody::Default(v) => RefinedDispatchBodySpec::Default(v.deep_view()),
+        }
+    }
+}
+
+impl<'i> RefinedDispatchBody<'i> {
+    pub proof fn lemma_deep_view_fields(&self)
+        ensures
+            self.deep_view()
+                == match self {
+                    RefinedDispatchBody::P(v) => RefinedDispatchBodySpec::P(v.deep_view()),
+                    RefinedDispatchBody::Default(v) =>
+                        RefinedDispatchBodySpec::Default(v.deep_view()),
+                },
+    {
+        reveal(<RefinedDispatchBody as DeepView>::deep_view);
+    }
+}
+
 // ============================================================
 // Structural Mappers
 // ============================================================
@@ -482,6 +598,243 @@ impl SpecMap for TypedEnumConstraintsReverse {
     }
 }
 
+impl OpenKind {
+    pub open spec fn structural_valid(input: OpenKindInner) -> bool {
+        match input {
+            L(x) => x == 1 || x == 2 || x == 3,
+            R(x) => true,
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: OpenKindInner) -> Self {
+        match input {
+            L(x) =>
+                match x {
+                    1 => Self::P,
+                    2 => Self::Q,
+                    3 => Self::R,
+                    _ => arbitrary(),
+                },
+            R(x) => Self::Unknown(x),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> OpenKindInner {
+        match self {
+            Self::P => L(1),
+            Self::Q => L(2),
+            Self::R => L(3),
+            Self::Unknown(x) => R(x),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(OpenKind::from_structural);
+        reveal(OpenKind::into_structural);
+        match self {
+            Self::P => {}
+            Self::Q => {}
+            Self::R => {}
+            Self::Unknown(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: OpenKindInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(OpenKind::from_structural);
+        reveal(OpenKind::into_structural);
+        match input {
+            L(x) =>
+                match x {
+                    1 => {}
+                    2 => {}
+                    3 => {}
+                    _ => {
+                        assert(false);
+                    }
+                },
+            R(_) => {}
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct OpenKindForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct OpenKindReverse;
+
+impl SpecMap for OpenKindForward {
+    type Input = OpenKindInner;
+    type Output = OpenKindSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        OpenKind::from_structural(input)
+    }
+}
+
+impl SpecMap for OpenKindReverse {
+    type Input = OpenKindSpec;
+    type Output = OpenKindInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1, T2> RefinedDispatchSpec<T0, T1, T2> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (kind, (len, body)) = input;
+        Self { kind, len, body }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { kind, len, body } = self;
+        (kind, (len, body))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(RefinedDispatchSpec::from_structural);
+        reveal(RefinedDispatchSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(RefinedDispatchSpec::from_structural);
+        reveal(RefinedDispatchSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { kind, len, body } => (kind, (len, body)),
+                },
+    {
+        reveal(RefinedDispatchSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct RefinedDispatchForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct RefinedDispatchReverse;
+
+impl SpecMap for RefinedDispatchForward {
+    type Input = RefinedDispatchInner;
+    type Output = RefinedDispatchSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        RefinedDispatchSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for RefinedDispatchReverse {
+    type Input = RefinedDispatchSpec;
+    type Output = RefinedDispatchInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> RefinedDispatchBodySpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::P(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::P(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(RefinedDispatchBodySpec::from_structural);
+        reveal(RefinedDispatchBodySpec::into_structural);
+        match self {
+            Self::P(_) => {}
+            Self::Default(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(RefinedDispatchBodySpec::from_structural);
+        reveal(RefinedDispatchBodySpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::P(value) => L(value),
+                    Self::Default(value) => R(value),
+                },
+    {
+        reveal(RefinedDispatchBodySpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct RefinedDispatchBodyForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct RefinedDispatchBodyReverse;
+
+impl SpecMap for RefinedDispatchBodyForward {
+    type Input = RefinedDispatchBodyInner;
+    type Output = RefinedDispatchBodySpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        RefinedDispatchBodySpec::from_structural(input)
+    }
+}
+
+impl SpecMap for RefinedDispatchBodyReverse {
+    type Input = RefinedDispatchBodySpec;
+    type Output = RefinedDispatchBodyInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
 // ============================================================
 // Format Specifications
 // ============================================================
@@ -610,6 +963,110 @@ impl TypedEnumConstraintsFmt {
                     ),
                 ),
                 mapper: BiMap(TypedEnumConstraintsForward, TypedEnumConstraintsReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `open_kind`.
+#[derive(Clone, Copy)]
+pub struct OpenKindFmt;
+
+pub type OpenKindFmtSpec = Named<
+    Mapped<
+        Choice<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
+        BiMap<OpenKindForward, OpenKindReverse>,
+    >,
+>;
+
+impl OpenKindFmt {
+    /// specification constructor for `open_kind`.
+    pub open spec fn spec_inner() -> OpenKindFmtSpec {
+        Named(
+            "open_kind",
+            Mapped {
+                inner: Choice(
+                    Refined(U8, |x: u8| x == 1 || x == 2 || x == 3),
+                    Refined(U8, |x: u8| x != 1 &&x != 2 &&x != 3),
+                ),
+                mapper: BiMap(OpenKindForward, OpenKindReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `refined_dispatch`.
+#[derive(Clone, Copy)]
+pub struct RefinedDispatchFmt;
+
+pub type RefinedDispatchFmtSpec = Named<
+    Mapped<
+        Bind<
+            Refined<OpenKindFmt, PredFnSpec<OpenKindSpec>>,
+            spec_fn(OpenKindSpec) -> Bind<U8, spec_fn(u8) -> ExactLen<RefinedDispatchBodyFmt, u8>>,
+        >,
+        BiMap<RefinedDispatchForward, RefinedDispatchReverse>,
+    >,
+>;
+
+impl RefinedDispatchFmt {
+    /// specification constructor for `refined_dispatch`.
+    pub open spec fn spec_inner() -> RefinedDispatchFmtSpec {
+        Named(
+            "refined_dispatch",
+            Mapped {
+                inner: Bind(
+                    Refined(
+                        OpenKindFmt,
+                        |x: OpenKindSpec| !(x == OpenKindSpec::Q || x == OpenKindSpec::R),
+                    ),
+                    |kind: OpenKindSpec| Bind(
+                        U8,
+                        |len: u8| ExactLen(len, RefinedDispatchBodyFmt::spec(kind)),
+                    ),
+                ),
+                mapper: BiMap(RefinedDispatchForward, RefinedDispatchReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `refined_dispatch_body`.
+#[derive(Clone, Copy)]
+pub struct RefinedDispatchBodyFmt {
+    kind: OpenKind,
+}
+
+impl RefinedDispatchBodyFmt {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        !(self.kind == OpenKindSpec::Q || self.kind == OpenKindSpec::R)
+    }
+
+    pub closed spec fn kind_spec(&self) -> OpenKindSpec {
+        self.kind.deep_view()
+    }
+
+    pub closed spec fn spec(kind: OpenKind) -> Self {
+        RefinedDispatchBodyFmt { kind }
+    }
+}
+
+pub type RefinedDispatchBodyFmtSpec = Named<
+    Mapped<Sum<U8, Tail>, BiMap<RefinedDispatchBodyForward, RefinedDispatchBodyReverse>>,
+>;
+
+impl RefinedDispatchBodyFmt {
+    /// specification constructor for `refined_dispatch_body`.
+    pub open spec fn spec_inner(kind: OpenKindSpec) -> RefinedDispatchBodyFmtSpec {
+        Named(
+            "refined_dispatch_body",
+            Mapped {
+                inner: match kind {
+                    OpenKindSpec::P => L(U8),
+                    _ => R(Tail),
+                },
+                mapper: BiMap(RefinedDispatchBodyForward, RefinedDispatchBodyReverse),
             },
         )
     }
@@ -796,6 +1253,138 @@ mod derived_specs {
             Self::spec_inner().byte_len(v)
         }
     }
+
+    impl SpecParser for OpenKindFmt {
+        type PVal = OpenKindSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for OpenKindFmt {
+        type Val = OpenKindSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for OpenKindFmt {
+        type SValue = OpenKindSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for OpenKindFmt {
+        type SVal = OpenKindSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for OpenKindFmt {
+        type T = OpenKindSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for RefinedDispatchFmt {
+        type PVal = RefinedDispatchSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for RefinedDispatchFmt {
+        type Val = RefinedDispatchSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for RefinedDispatchFmt {
+        type SValue = RefinedDispatchSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for RefinedDispatchFmt {
+        type SVal = RefinedDispatchSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for RefinedDispatchFmt {
+        type T = RefinedDispatchSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for RefinedDispatchBodyFmt {
+        type PVal = RefinedDispatchBodySpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner(self.kind_spec()).spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for RefinedDispatchBodyFmt {
+        type Val = RefinedDispatchBodySpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner(self.kind_spec()).consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for RefinedDispatchBodyFmt {
+        type SValue = RefinedDispatchBodySpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner(self.kind_spec()).spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for RefinedDispatchBodyFmt {
+        type SVal = RefinedDispatchBodySpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner(self.kind_spec()).spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for RefinedDispatchBodyFmt {
+        type T = RefinedDispatchBodySpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner(self.kind_spec()).byte_len(v)
+        }
+    }
 }
 
 // ============================================================
@@ -813,6 +1402,12 @@ mod derived_proofs {
         MyTypedEnum::lemma_into_from,
         TypedEnumConstraintsSpec::lemma_from_into,
         TypedEnumConstraintsSpec::lemma_into_from,
+        OpenKind::lemma_from_into,
+        OpenKind::lemma_into_from,
+        RefinedDispatchSpec::lemma_from_into,
+        RefinedDispatchSpec::lemma_into_from,
+        RefinedDispatchBodySpec::lemma_from_into,
+        RefinedDispatchBodySpec::lemma_into_from,
     };
 
     impl SafeParser for MyEnumFmt {
@@ -1308,6 +1903,348 @@ mod derived_proofs {
             fmt.lemma_serialize_equiv_on_empty(v);
         }
     }
+
+    impl SafeParser for OpenKindFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for OpenKindFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for OpenKindFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: OpenKindInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(OpenKind::structural_valid(input));
+                OpenKind::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            reveal(<OpenKindFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: OpenKindInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(OpenKind::structural_valid(input));
+                OpenKind::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for OpenKindFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for OpenKindFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<OpenKindFmt as SpecSerializer>::spec_serialize);
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for OpenKindFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            reveal(<OpenKindFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<OpenKindFmt as Consistency>::consistent);
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: OpenKindSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                OpenKind::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for OpenKindFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: OpenKindInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                assert(OpenKind::structural_valid(input));
+                OpenKind::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for OpenKindFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<OpenKindFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<OpenKindFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for OpenKindFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<OpenKindFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<OpenKindFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for RefinedDispatchFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for RefinedDispatchFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for RefinedDispatchFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: RefinedDispatchInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: RefinedDispatchInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for RefinedDispatchFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for RefinedDispatchFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<RefinedDispatchFmt as SpecSerializer>::spec_serialize);
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for RefinedDispatchFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchFmt as Consistency>::consistent);
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: RefinedDispatchSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                RefinedDispatchSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for RefinedDispatchFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: RefinedDispatchInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for RefinedDispatchFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<RefinedDispatchFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for RefinedDispatchFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<RefinedDispatchFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for RefinedDispatchBodyFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            Self::spec_inner(self.kind_spec()).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for RefinedDispatchBodyFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner(self.kind_spec()).productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for RefinedDispatchBodyFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert forall|input: RefinedDispatchBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchBodySpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchBodyFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert forall|input: RefinedDispatchBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchBodySpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl GoodSerializer for RefinedDispatchBodyFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<RefinedDispatchBodyFmt as SpecSerializer>::spec_serialize);
+            reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for RefinedDispatchBodyFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchBodyFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchBodyFmt as Consistency>::consistent);
+            reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert forall|output: RefinedDispatchBodySpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                RefinedDispatchBodySpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for RefinedDispatchBodyFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert forall|input: RefinedDispatchBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                RefinedDispatchBodySpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializers for RefinedDispatchBodyFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<RefinedDispatchBodyFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<RefinedDispatchBodyFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.kind_spec());
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
 }
 
 // ============================================================
@@ -1739,6 +2676,262 @@ mod exec_impls {
                 .checked_add(l4)
                 .ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for OpenKindFmt {
+        type PT = OpenKind;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<OpenKindFmt as SpecParser>::spec_parse);
+            reveal(<OpenKind as DeepView>::deep_view);
+            reveal(OpenKind::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = U8.parse(&rest)?;
+            let enum_val = match v {
+                1 => OpenKind::P,
+                2 => OpenKind::Q,
+                3 => OpenKind::R,
+                x => OpenKind::Unknown(x),
+            };
+            assert(self.spec_parse(ibuf@) == Some((n as int, enum_val.deep_view())));
+            Ok((n, enum_val))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, OpenKind> for OpenKindFmt {
+        fn serialize_into(&self, v: &OpenKind, obuf: &mut Output) {
+            reveal(<OpenKindFmt as SpecSerializer>::spec_serialize);
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            reveal(<OpenKind as DeepView>::deep_view);
+            reveal(OpenKind::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let tag = match *v {
+                OpenKind::P => 1,
+                OpenKind::Q => 2,
+                OpenKind::R => 3,
+                OpenKind::Unknown(x) => x,
+            };
+            U8.serialize_into(&tag, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<OpenKind> for OpenKindFmt {
+        fn prepare(&self, v: &OpenKind) -> Result<usize, PreSerializeError> {
+            reveal(<OpenKindFmt as SpecByteLen>::byte_len);
+            reveal(<OpenKind as DeepView>::deep_view);
+            reveal(OpenKind::into_structural);
+            let tag = match *v {
+                OpenKind::P => 1,
+                OpenKind::Q => 2,
+                OpenKind::R => 3,
+                OpenKind::Unknown(x) if x != 1 &&x != 2 &&x != 3 => x,
+                _ => return Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
+            };
+            U8.prepare(&tag)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for RefinedDispatchFmt {
+        type PT = RefinedDispatch<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatch as DeepView>::deep_view);
+            reveal(RefinedDispatchSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, kind) = (Named("open_kind", OpenKindFmt)).parse(&rest)?;
+
+            proof {
+                kind.lemma_deep_view();
+            }
+
+            if !(!(kind == OpenKind::Q || kind == OpenKind::R)) {
+                return Err(ParseError::predicate_failed());
+            }
+
+            let rest = rest.skip(n1);
+            let (n2, len) = (U8).parse(&rest)?;
+            let rest = rest.skip(n2);
+
+            proof {
+                kind.lemma_deep_view();
+            }
+
+            let (n3, body) = (
+                ExactLen(len, Named("refined_dispatch_body", RefinedDispatchBodyFmt { kind: kind }))
+            ).parse(&rest)?;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+
+            let final_v = RefinedDispatch { kind, len, body };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, RefinedDispatch<'i>> for RefinedDispatchFmt {
+        fn serialize_into(&self, v: &RefinedDispatch<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<RefinedDispatchFmt as SpecSerializer>::spec_serialize);
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            reveal(<RefinedDispatch as DeepView>::deep_view);
+            reveal(RefinedDispatchSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let RefinedDispatch { kind, len, body } = v;
+
+            proof {
+                kind.lemma_deep_view();
+            }
+
+            OpenKindFmt.serialize_into(kind, obuf);
+            U8.serialize_into(len, obuf);
+            ExactLen(*len, RefinedDispatchBodyFmt { kind: *kind }).serialize_into(body, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<RefinedDispatch<'i>> for RefinedDispatchFmt {
+        fn prepare(&self, v: &RefinedDispatch<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
+            reveal(<RefinedDispatch as DeepView>::deep_view);
+            reveal(RefinedDispatchSpec::into_structural);
+            let RefinedDispatch { kind, len, body } = v;
+            proof {
+                kind.lemma_deep_view();
+            }
+
+            let l1 = {
+                if !(!(*kind == OpenKind::Q || *kind == OpenKind::R)) {
+                    Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                } else {
+                    (Named("open_kind", OpenKindFmt)).prepare(kind)
+                }
+            }?;
+            let l2 = (U8).prepare(len)?;
+            let l3 = (
+                ExactLen(
+                    *len,
+                    Named("refined_dispatch_body", RefinedDispatchBodyFmt { kind: *kind }),
+                )
+            ).prepare(body)?;
+            let total_len = l1
+                .checked_add(l2)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l3)
+                .ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for RefinedDispatchBodyFmt {
+        type PT = RefinedDispatchBody<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
+            reveal(<RefinedDispatchBody as DeepView>::deep_view);
+            reveal(RefinedDispatchBodySpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            proof {
+                use_type_invariant(self);
+                self.kind.lemma_deep_view();
+            }
+
+            proof {
+                self.kind.lemma_deep_view();
+            }
+
+            let (n, v) = match self.kind {
+                OpenKind::P => {
+                    let (n, v) = (U8).parse(&rest)?;
+                    (n, RefinedDispatchBody::P(v))
+                }
+                _ => {
+                    let (n, v) = (Tail).parse(&rest)?;
+                    (n, RefinedDispatchBody::Default(v))
+                }
+            };
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, RefinedDispatchBody<'i>>
+        for RefinedDispatchBodyFmt
+    {
+        fn serialize_into(&self, v: &RefinedDispatchBody<'i>, obuf: &mut Output) {
+            reveal(<RefinedDispatchBodyFmt as SpecSerializer>::spec_serialize);
+            reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
+            reveal(<RefinedDispatchBody as DeepView>::deep_view);
+            reveal(RefinedDispatchBodySpec::into_structural);
+            proof {
+                use_type_invariant(self);
+                self.kind.lemma_deep_view();
+            }
+
+            let ghost old_obuf = obuf@;
+
+            proof {
+                self.kind.lemma_deep_view();
+            }
+
+            match (self.kind, v) {
+                (OpenKind::P, RefinedDispatchBody::P(v)) => {
+                    (U8).serialize_into(v, obuf);
+                }
+                (_, RefinedDispatchBody::Default(v)) => {
+                    (Tail).serialize_into(v, obuf);
+                }
+                _ => {}
+            }
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<RefinedDispatchBody<'i>> for RefinedDispatchBodyFmt {
+        fn prepare(&self, v: &RefinedDispatchBody<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
+            reveal(<RefinedDispatchBody as DeepView>::deep_view);
+            reveal(RefinedDispatchBodySpec::into_structural);
+            proof {
+                use_type_invariant(self);
+                self.kind.lemma_deep_view();
+            }
+
+            proof {
+                self.kind.lemma_deep_view();
+            }
+
+            match (self.kind, v) {
+                (OpenKind::P, RefinedDispatchBody::P(v)) => (U8).prepare(v),
+                (OpenKind::Q, RefinedDispatchBody::Default(v)) => (Tail).prepare(v),
+                (OpenKind::R, RefinedDispatchBody::Default(v)) => (Tail).prepare(v),
+                (OpenKind::Unknown(x), RefinedDispatchBody::Default(v)) if x != 1
+                    &&x != 2
+                    &&x != 3 =>
+                    (Tail).prepare(v),
+                _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
+            }
         }
     }
 }

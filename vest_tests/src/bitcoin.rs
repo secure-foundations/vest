@@ -529,14 +529,14 @@ impl<'i> ScriptSig<'i> {
 /// data type for `tx_rem`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TxRem<'i> {
-    Variant1(TxSegwit<'i>),
-    Default(TxNonsegwit<'i>),
+    TxSegwit(TxSegwit<'i>),
+    TxNonsegwit(TxNonsegwit<'i>),
 }
 
 #[verifier::ext_equal]
 pub enum TxRemSpec<T0 = TxSegwitSpec, T1 = TxNonsegwitSpec> {
-    Variant1(T0),
-    Default(T1),
+    TxSegwit(T0),
+    TxNonsegwit(T1),
 }
 
 pub type TxRemInner = Sum<TxSegwitSpec, TxNonsegwitSpec>;
@@ -547,8 +547,8 @@ impl<'i> DeepView for TxRem<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            TxRem::Variant1(v) => TxRemSpec::Variant1(v.deep_view()),
-            TxRem::Default(v) => TxRemSpec::Default(v.deep_view()),
+            TxRem::TxSegwit(v) => TxRemSpec::TxSegwit(v.deep_view()),
+            TxRem::TxNonsegwit(v) => TxRemSpec::TxNonsegwit(v.deep_view()),
         }
     }
 }
@@ -558,8 +558,8 @@ impl<'i> TxRem<'i> {
         ensures
             self.deep_view()
                 == match self {
-                    TxRem::Variant1(v) => TxRemSpec::Variant1(v.deep_view()),
-                    TxRem::Default(v) => TxRemSpec::Default(v.deep_view()),
+                    TxRem::TxSegwit(v) => TxRemSpec::TxSegwit(v.deep_view()),
+                    TxRem::TxNonsegwit(v) => TxRemSpec::TxNonsegwit(v.deep_view()),
                 },
     {
         reveal(<TxRem as DeepView>::deep_view);
@@ -1382,16 +1382,16 @@ impl<T0, T1> TxRemSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
+            L(value) => Self::TxSegwit(value),
+            R(value) => Self::TxNonsegwit(value),
         }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
+            Self::TxSegwit(value) => L(value),
+            Self::TxNonsegwit(value) => R(value),
         }
     }
 
@@ -1402,8 +1402,8 @@ impl<T0, T1> TxRemSpec<T0, T1> {
         reveal(TxRemSpec::from_structural);
         reveal(TxRemSpec::into_structural);
         match self {
-            Self::Variant1(_) => {}
-            Self::Default(_) => {}
+            Self::TxSegwit(_) => {}
+            Self::TxNonsegwit(_) => {}
         }
     }
 
@@ -1423,8 +1423,8 @@ impl<T0, T1> TxRemSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::Variant1(value) => L(value),
-                    Self::Default(value) => R(value),
+                    Self::TxSegwit(value) => L(value),
+                    Self::TxNonsegwit(value) => R(value),
                 },
     {
         reveal(TxRemSpec::into_structural);
@@ -4946,13 +4946,13 @@ mod exec_impls {
             let (n, v) = match self.txin_count {
                 0 => {
                     let (n, v) = (Named("tx_segwit", TxSegwitFmt)).parse(&rest)?;
-                    (n, TxRem::Variant1(v))
+                    (n, TxRem::TxSegwit(v))
                 }
                 _ => {
                     let (n, v) = (
                         Named("tx_nonsegwit", TxNonsegwitFmt { txin_count: self.txin_count })
                     ).parse(&rest)?;
-                    (n, TxRem::Default(v))
+                    (n, TxRem::TxNonsegwit(v))
                 }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
@@ -4973,10 +4973,10 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.txin_count, v) {
-                (0, TxRem::Variant1(v)) => {
+                (0, TxRem::TxSegwit(v)) => {
                     (TxSegwitFmt).serialize_into(v, obuf);
                 }
-                (_, TxRem::Default(v)) => {
+                (_, TxRem::TxNonsegwit(v)) => {
                     (TxNonsegwitFmt { txin_count: self.txin_count }).serialize_into(v, obuf);
                 }
                 _ => {}
@@ -4996,8 +4996,8 @@ mod exec_impls {
             }
 
             match (self.txin_count, v) {
-                (0, TxRem::Variant1(v)) => (Named("tx_segwit", TxSegwitFmt)).prepare(v),
-                (x, TxRem::Default(v)) if !(x == 0) =>
+                (0, TxRem::TxSegwit(v)) => (Named("tx_segwit", TxSegwitFmt)).prepare(v),
+                (x, TxRem::TxNonsegwit(v)) if !(x == 0) =>
                     (
                         Named("tx_nonsegwit", TxNonsegwitFmt { txin_count: self.txin_count })
                     ).prepare(v),

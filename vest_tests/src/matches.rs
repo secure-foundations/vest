@@ -200,14 +200,14 @@ impl Msg5 {
 /// data type for `msg1_payload`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Msg1Payload {
-    Variant1(HelloRetryRequest),
-    Default(ServerHello),
+    HelloRetryRequest(HelloRetryRequest),
+    ServerHello(ServerHello),
 }
 
 #[verifier::ext_equal]
 pub enum Msg1PayloadSpec<T0 = HelloRetryRequestSpec, T1 = ServerHelloSpec> {
-    Variant1(T0),
-    Default(T1),
+    HelloRetryRequest(T0),
+    ServerHello(T1),
 }
 
 pub type Msg1PayloadInner = Sum<HelloRetryRequestSpec, ServerHelloSpec>;
@@ -218,8 +218,8 @@ impl DeepView for Msg1Payload {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            Msg1Payload::Variant1(v) => Msg1PayloadSpec::Variant1(v.deep_view()),
-            Msg1Payload::Default(v) => Msg1PayloadSpec::Default(v.deep_view()),
+            Msg1Payload::HelloRetryRequest(v) => Msg1PayloadSpec::HelloRetryRequest(v.deep_view()),
+            Msg1Payload::ServerHello(v) => Msg1PayloadSpec::ServerHello(v.deep_view()),
         }
     }
 }
@@ -229,8 +229,9 @@ impl Msg1Payload {
         ensures
             self.deep_view()
                 == match self {
-                    Msg1Payload::Variant1(v) => Msg1PayloadSpec::Variant1(v.deep_view()),
-                    Msg1Payload::Default(v) => Msg1PayloadSpec::Default(v.deep_view()),
+                    Msg1Payload::HelloRetryRequest(v) =>
+                        Msg1PayloadSpec::HelloRetryRequest(v.deep_view()),
+                    Msg1Payload::ServerHello(v) => Msg1PayloadSpec::ServerHello(v.deep_view()),
                 },
     {
         reveal(<Msg1Payload as DeepView>::deep_view);
@@ -745,16 +746,16 @@ impl<T0, T1> Msg1PayloadSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
+            L(value) => Self::HelloRetryRequest(value),
+            R(value) => Self::ServerHello(value),
         }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
+            Self::HelloRetryRequest(value) => L(value),
+            Self::ServerHello(value) => R(value),
         }
     }
 
@@ -765,8 +766,8 @@ impl<T0, T1> Msg1PayloadSpec<T0, T1> {
         reveal(Msg1PayloadSpec::from_structural);
         reveal(Msg1PayloadSpec::into_structural);
         match self {
-            Self::Variant1(_) => {}
-            Self::Default(_) => {}
+            Self::HelloRetryRequest(_) => {}
+            Self::ServerHello(_) => {}
         }
     }
 
@@ -786,8 +787,8 @@ impl<T0, T1> Msg1PayloadSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::Variant1(value) => L(value),
-                    Self::Default(value) => R(value),
+                    Self::HelloRetryRequest(value) => L(value),
+                    Self::ServerHello(value) => R(value),
                 },
     {
         reveal(Msg1PayloadSpec::into_structural);
@@ -3929,11 +3930,11 @@ mod exec_impls {
                     ],
                 ) => {
                     let (n, v) = (Named("hello_retry_request", HelloRetryRequestFmt)).parse(&rest)?;
-                    (n, Msg1Payload::Variant1(v))
+                    (n, Msg1Payload::HelloRetryRequest(v))
                 }
                 _ => {
                     let (n, v) = (Named("server_hello", ServerHelloFmt)).parse(&rest)?;
-                    (n, Msg1Payload::Default(v))
+                    (n, Msg1Payload::ServerHello(v))
                 }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
@@ -3954,7 +3955,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.b, v) {
-                (x, Msg1Payload::Variant1(v)) if bytes_eq(
+                (x, Msg1Payload::HelloRetryRequest(v)) if bytes_eq(
                     x,
                     &[
                         0xcf,
@@ -3993,7 +3994,7 @@ mod exec_impls {
                 ) => {
                     (HelloRetryRequestFmt).serialize_into(v, obuf);
                 }
-                (_, Msg1Payload::Default(v)) => {
+                (_, Msg1Payload::ServerHello(v)) => {
                     (ServerHelloFmt).serialize_into(v, obuf);
                 }
                 _ => {}
@@ -4013,7 +4014,7 @@ mod exec_impls {
             }
 
             match (self.b, v) {
-                (x, Msg1Payload::Variant1(v)) if bytes_eq(
+                (x, Msg1Payload::HelloRetryRequest(v)) if bytes_eq(
                     x,
                     &[
                         0xcf,
@@ -4051,7 +4052,7 @@ mod exec_impls {
                     ],
                 ) =>
                     (Named("hello_retry_request", HelloRetryRequestFmt)).prepare(v),
-                (x, Msg1Payload::Default(v)) if !bytes_eq(
+                (x, Msg1Payload::ServerHello(v)) if !bytes_eq(
                     x,
                     &[
                         0xcf,

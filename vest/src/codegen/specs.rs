@@ -1696,6 +1696,11 @@ impl<'a> Analysis<'a> {
             .unwrap_or_else(|| panic!("could not resolve enum pattern type for `{variant_name}`"));
         match resolved {
             Combinator::Invocation(inv) => self.render_nominal_type(&inv.func, TypeMode::Spec),
+            // A refined tag (`kind | !{ .. }`) is still dispatched on by its enum; the
+            // refinement is enforced by the tag's own parser before the choice runs.
+            Combinator::ConstraintEnum(ce) => {
+                self.render_nominal_type(&ce.combinator.func, TypeMode::Spec)
+            }
             _ => panic!("enum pattern `{variant_name}` does not resolve to an enum invocation"),
         }
     }

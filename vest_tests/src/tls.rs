@@ -4431,14 +4431,14 @@ impl<'i> NewSessionTicketExtensionExtensionData<'i> {
 /// data type for `sh_or_hrr_payload`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ShOrHrrPayload<'i> {
-    Variant1(HelloRetryRequest<'i>),
-    Default(ServerHello<'i>),
+    HelloRetryRequest(HelloRetryRequest<'i>),
+    ServerHello(ServerHello<'i>),
 }
 
 #[verifier::ext_equal]
 pub enum ShOrHrrPayloadSpec<T0 = HelloRetryRequestSpec, T1 = ServerHelloSpec> {
-    Variant1(T0),
-    Default(T1),
+    HelloRetryRequest(T0),
+    ServerHello(T1),
 }
 
 pub type ShOrHrrPayloadInner = Sum<HelloRetryRequestSpec, ServerHelloSpec>;
@@ -4449,8 +4449,9 @@ impl<'i> DeepView for ShOrHrrPayload<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            ShOrHrrPayload::Variant1(v) => ShOrHrrPayloadSpec::Variant1(v.deep_view()),
-            ShOrHrrPayload::Default(v) => ShOrHrrPayloadSpec::Default(v.deep_view()),
+            ShOrHrrPayload::HelloRetryRequest(v) =>
+                ShOrHrrPayloadSpec::HelloRetryRequest(v.deep_view()),
+            ShOrHrrPayload::ServerHello(v) => ShOrHrrPayloadSpec::ServerHello(v.deep_view()),
         }
     }
 }
@@ -4460,8 +4461,10 @@ impl<'i> ShOrHrrPayload<'i> {
         ensures
             self.deep_view()
                 == match self {
-                    ShOrHrrPayload::Variant1(v) => ShOrHrrPayloadSpec::Variant1(v.deep_view()),
-                    ShOrHrrPayload::Default(v) => ShOrHrrPayloadSpec::Default(v.deep_view()),
+                    ShOrHrrPayload::HelloRetryRequest(v) =>
+                        ShOrHrrPayloadSpec::HelloRetryRequest(v.deep_view()),
+                    ShOrHrrPayload::ServerHello(v) =>
+                        ShOrHrrPayloadSpec::ServerHello(v.deep_view()),
                 },
     {
         reveal(<ShOrHrrPayload as DeepView>::deep_view);
@@ -12770,16 +12773,16 @@ impl<T0, T1> ShOrHrrPayloadSpec<T0, T1> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
+            L(value) => Self::HelloRetryRequest(value),
+            R(value) => Self::ServerHello(value),
         }
     }
 
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
+            Self::HelloRetryRequest(value) => L(value),
+            Self::ServerHello(value) => R(value),
         }
     }
 
@@ -12790,8 +12793,8 @@ impl<T0, T1> ShOrHrrPayloadSpec<T0, T1> {
         reveal(ShOrHrrPayloadSpec::from_structural);
         reveal(ShOrHrrPayloadSpec::into_structural);
         match self {
-            Self::Variant1(_) => {}
-            Self::Default(_) => {}
+            Self::HelloRetryRequest(_) => {}
+            Self::ServerHello(_) => {}
         }
     }
 
@@ -12811,8 +12814,8 @@ impl<T0, T1> ShOrHrrPayloadSpec<T0, T1> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::Variant1(value) => L(value),
-                    Self::Default(value) => R(value),
+                    Self::HelloRetryRequest(value) => L(value),
+                    Self::ServerHello(value) => R(value),
                 },
     {
         reveal(ShOrHrrPayloadSpec::into_structural);
@@ -46565,11 +46568,11 @@ mod exec_impls {
                     ],
                 ) => {
                     let (n, v) = (Named("hello_retry_request", HelloRetryRequestFmt)).parse(&rest)?;
-                    (n, ShOrHrrPayload::Variant1(v))
+                    (n, ShOrHrrPayload::HelloRetryRequest(v))
                 }
                 _ => {
                     let (n, v) = (Named("server_hello", ServerHelloFmt)).parse(&rest)?;
-                    (n, ShOrHrrPayload::Default(v))
+                    (n, ShOrHrrPayload::ServerHello(v))
                 }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
@@ -46590,7 +46593,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.random, v) {
-                (x, ShOrHrrPayload::Variant1(v)) if bytes_eq(
+                (x, ShOrHrrPayload::HelloRetryRequest(v)) if bytes_eq(
                     x,
                     &[
                         0xcf,
@@ -46629,7 +46632,7 @@ mod exec_impls {
                 ) => {
                     (HelloRetryRequestFmt).serialize_into(v, obuf);
                 }
-                (_, ShOrHrrPayload::Default(v)) => {
+                (_, ShOrHrrPayload::ServerHello(v)) => {
                     (ServerHelloFmt).serialize_into(v, obuf);
                 }
                 _ => {}
@@ -46649,7 +46652,7 @@ mod exec_impls {
             }
 
             match (self.random, v) {
-                (x, ShOrHrrPayload::Variant1(v)) if bytes_eq(
+                (x, ShOrHrrPayload::HelloRetryRequest(v)) if bytes_eq(
                     x,
                     &[
                         0xcf,
@@ -46687,7 +46690,7 @@ mod exec_impls {
                     ],
                 ) =>
                     (Named("hello_retry_request", HelloRetryRequestFmt)).prepare(v),
-                (x, ShOrHrrPayload::Default(v)) if !bytes_eq(
+                (x, ShOrHrrPayload::ServerHello(v)) if !bytes_eq(
                     x,
                     &[
                         0xcf,

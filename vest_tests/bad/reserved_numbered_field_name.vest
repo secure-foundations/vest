@@ -1,0 +1,6 @@
+// `n2` is the byte count of a struct's second field.
+record = {
+    a: u8,
+    b: u8,
+    n2: u16,
+}

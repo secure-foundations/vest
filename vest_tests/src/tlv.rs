@@ -338,17 +338,17 @@ impl<'i> MsgContent<'i> {
 /// data type for `msg_alt_content`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MsgAltContent<'i> {
-    Variant1(Msg1<'i>),
-    Variant2(Msg2),
-    Variant3(Msg3<'i>),
+    Msg1(Msg1<'i>),
+    Msg2(Msg2),
+    Msg3(Msg3<'i>),
     Default(&'i [u8]),
 }
 
 #[verifier::ext_equal]
 pub enum MsgAltContentSpec<T0 = Msg1Spec, T1 = Msg2Spec, T2 = Msg3Spec, T3 = Seq<u8>> {
-    Variant1(T0),
-    Variant2(T1),
-    Variant3(T2),
+    Msg1(T0),
+    Msg2(T1),
+    Msg3(T2),
     Default(T3),
 }
 
@@ -360,9 +360,9 @@ impl<'i> DeepView for MsgAltContent<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            MsgAltContent::Variant1(v) => MsgAltContentSpec::Variant1(v.deep_view()),
-            MsgAltContent::Variant2(v) => MsgAltContentSpec::Variant2(v.deep_view()),
-            MsgAltContent::Variant3(v) => MsgAltContentSpec::Variant3(v.deep_view()),
+            MsgAltContent::Msg1(v) => MsgAltContentSpec::Msg1(v.deep_view()),
+            MsgAltContent::Msg2(v) => MsgAltContentSpec::Msg2(v.deep_view()),
+            MsgAltContent::Msg3(v) => MsgAltContentSpec::Msg3(v.deep_view()),
             MsgAltContent::Default(v) => MsgAltContentSpec::Default(v.deep_view()),
         }
     }
@@ -373,9 +373,9 @@ impl<'i> MsgAltContent<'i> {
         ensures
             self.deep_view()
                 == match self {
-                    MsgAltContent::Variant1(v) => MsgAltContentSpec::Variant1(v.deep_view()),
-                    MsgAltContent::Variant2(v) => MsgAltContentSpec::Variant2(v.deep_view()),
-                    MsgAltContent::Variant3(v) => MsgAltContentSpec::Variant3(v.deep_view()),
+                    MsgAltContent::Msg1(v) => MsgAltContentSpec::Msg1(v.deep_view()),
+                    MsgAltContent::Msg2(v) => MsgAltContentSpec::Msg2(v.deep_view()),
+                    MsgAltContent::Msg3(v) => MsgAltContentSpec::Msg3(v.deep_view()),
                     MsgAltContent::Default(v) => MsgAltContentSpec::Default(v.deep_view()),
                 },
     {
@@ -965,9 +965,9 @@ impl<T0, T1, T2, T3> MsgAltContentSpec<T0, T1, T2, T3> {
     #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<Sum<T0, T1>, Sum<T2, T3>>) -> Self {
         match input {
-            L(L(value)) => Self::Variant1(value),
-            L(R(value)) => Self::Variant2(value),
-            R(L(value)) => Self::Variant3(value),
+            L(L(value)) => Self::Msg1(value),
+            L(R(value)) => Self::Msg2(value),
+            R(L(value)) => Self::Msg3(value),
             R(R(value)) => Self::Default(value),
         }
     }
@@ -975,9 +975,9 @@ impl<T0, T1, T2, T3> MsgAltContentSpec<T0, T1, T2, T3> {
     #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<Sum<T0, T1>, Sum<T2, T3>> {
         match self {
-            Self::Variant1(value) => L(L(value)),
-            Self::Variant2(value) => L(R(value)),
-            Self::Variant3(value) => R(L(value)),
+            Self::Msg1(value) => L(L(value)),
+            Self::Msg2(value) => L(R(value)),
+            Self::Msg3(value) => R(L(value)),
             Self::Default(value) => R(R(value)),
         }
     }
@@ -989,9 +989,9 @@ impl<T0, T1, T2, T3> MsgAltContentSpec<T0, T1, T2, T3> {
         reveal(MsgAltContentSpec::from_structural);
         reveal(MsgAltContentSpec::into_structural);
         match self {
-            Self::Variant1(_) => {}
-            Self::Variant2(_) => {}
-            Self::Variant3(_) => {}
+            Self::Msg1(_) => {}
+            Self::Msg2(_) => {}
+            Self::Msg3(_) => {}
             Self::Default(_) => {}
         }
     }
@@ -1014,9 +1014,9 @@ impl<T0, T1, T2, T3> MsgAltContentSpec<T0, T1, T2, T3> {
         ensures
             Self::into_structural(self)
                 == match self {
-                    Self::Variant1(value) => L(L(value)),
-                    Self::Variant2(value) => L(R(value)),
-                    Self::Variant3(value) => R(L(value)),
+                    Self::Msg1(value) => L(L(value)),
+                    Self::Msg2(value) => L(R(value)),
+                    Self::Msg3(value) => R(L(value)),
                     Self::Default(value) => R(R(value)),
                 },
     {
@@ -3387,15 +3387,15 @@ mod exec_impls {
             let (n, v) = match self.tag {
                 1 => {
                     let (n, v) = (Named("msg1", Msg1Fmt)).parse(&rest)?;
-                    (n, MsgAltContent::Variant1(v))
+                    (n, MsgAltContent::Msg1(v))
                 }
                 2 => {
                     let (n, v) = (Named("msg2", Msg2Fmt)).parse(&rest)?;
-                    (n, MsgAltContent::Variant2(v))
+                    (n, MsgAltContent::Msg2(v))
                 }
                 3 => {
                     let (n, v) = (Named("msg3", Msg3Fmt)).parse(&rest)?;
-                    (n, MsgAltContent::Variant3(v))
+                    (n, MsgAltContent::Msg3(v))
                 }
                 _ => {
                     let (n, v) = (Varied(self.len)).parse(&rest)?;
@@ -3420,13 +3420,13 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             match (self.tag, v) {
-                (1, MsgAltContent::Variant1(v)) => {
+                (1, MsgAltContent::Msg1(v)) => {
                     (Msg1Fmt).serialize_into(v, obuf);
                 }
-                (2, MsgAltContent::Variant2(v)) => {
+                (2, MsgAltContent::Msg2(v)) => {
                     (Msg2Fmt).serialize_into(v, obuf);
                 }
-                (3, MsgAltContent::Variant3(v)) => {
+                (3, MsgAltContent::Msg3(v)) => {
                     (Msg3Fmt).serialize_into(v, obuf);
                 }
                 (_, MsgAltContent::Default(v)) => {
@@ -3449,9 +3449,9 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (1, MsgAltContent::Variant1(v)) => (Named("msg1", Msg1Fmt)).prepare(v),
-                (2, MsgAltContent::Variant2(v)) => (Named("msg2", Msg2Fmt)).prepare(v),
-                (3, MsgAltContent::Variant3(v)) => (Named("msg3", Msg3Fmt)).prepare(v),
+                (1, MsgAltContent::Msg1(v)) => (Named("msg1", Msg1Fmt)).prepare(v),
+                (2, MsgAltContent::Msg2(v)) => (Named("msg2", Msg2Fmt)).prepare(v),
+                (3, MsgAltContent::Msg3(v)) => (Named("msg3", Msg3Fmt)).prepare(v),
                 (x, MsgAltContent::Default(v)) if !(x == 1) &&!(x == 2) &&!(x == 3) =>
                     (Varied(self.len)).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),

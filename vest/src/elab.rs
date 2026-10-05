@@ -10,7 +10,9 @@ use crate::{ast::*, utils::VestHasherBuilder};
 /// anonymous helper formats appended at the end). Downstream passes
 /// (type checking and codegen) no longer require a topological pre-sort, so the
 /// emitted Rust mirrors the order of the `.vest` source.
-pub fn elaborate(ast: &mut Vec<Definition>) {
+///
+/// Returns the names of the definitions lifted out of anonymous formats.
+pub fn elaborate(ast: &mut Vec<Definition>) -> HashSet<String> {
     // expand the macro invocations
     expand_macros(ast);
     // for defn in ast.iter() {
@@ -18,7 +20,7 @@ pub fn elaborate(ast: &mut Vec<Definition>) {
     // }
 
     // expand the inlined, anonymous combinator definitions
-    expand_definitions(ast);
+    expand_definitions(ast)
     // println!("Number of definitions: {}", ast.len());
 }
 
@@ -231,7 +233,7 @@ fn substitute_in_combinator_inner<'ast>(
     }
 }
 
-fn expand_definitions(ast: &mut Vec<Definition>) {
+fn expand_definitions(ast: &mut Vec<Definition>) -> HashSet<String> {
     let mut expanded = Vec::new();
     let mut used_names: HashSet<String> = ast
         .iter()
@@ -272,7 +274,15 @@ fn expand_definitions(ast: &mut Vec<Definition>) {
             _ => {}
         }
     }
+    let lifted = expanded
+        .iter()
+        .filter_map(|defn| match defn {
+            Definition::Combinator { name, .. } => Some(name.name.clone()),
+            _ => None,
+        })
+        .collect();
     ast.extend(expanded);
+    lifted
 }
 
 fn expand_combinator<'ast>(

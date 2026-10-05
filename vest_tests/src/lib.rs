@@ -12,6 +12,7 @@ pub mod enums;
 pub mod josh;
 pub mod length_expr;
 pub mod matches;
+pub mod names;
 // Mutual-recursion code generation remains experimental; this fixture is not
 // part of the default compiled and verified regression corpus yet.
 // pub mod mutual_rec;
@@ -345,5 +346,63 @@ mod never_error_sanity {
         let err_msg = err.to_string();
         println!("Never combinator error: {}", err_msg);
         assert!(err_msg.contains("i for msg4 can only be 1"));
+    }
+}
+
+#[cfg(test)]
+mod refined_tag_dispatch {
+    use super::enum_constraints::RefinedDispatchFmt;
+    use vest_lib::core::exec::parser::Parser;
+
+    fn accepts(input: &[u8]) -> bool {
+        RefinedDispatchFmt.parse(&input).is_ok()
+    }
+
+    #[test]
+    fn refinement_is_checked_before_dispatch() {
+        assert!(
+            accepts(&[1, 1, 7]),
+            "P is permitted and dispatches to its u8 body"
+        );
+        assert!(
+            accepts(&[99, 2, 7, 8]),
+            "an unknown kind still reaches the wildcard"
+        );
+        assert!(!accepts(&[2, 0]), "Q is excluded by the refinement");
+        assert!(!accepts(&[3, 0]), "R is excluded by the refinement");
+        assert!(
+            !accepts(&[1, 2, 7, 8]),
+            "P's body must fill its length exactly"
+        );
+    }
+}
+
+#[cfg(test)]
+mod label_names {
+    use super::names::*;
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
+
+    #[test]
+    fn labels_named_like_generated_bindings_roundtrip() {
+        let bytes: &[u8] = &[2, 1, 0xa0, 0xa1, 0xb0, 1, 0, 2, 0, 3, 0, 4, 5, 6];
+        let (n, v) = InternalNamesFmt.parse(&bytes).unwrap();
+        assert_eq!(n, bytes.len());
+        assert_eq!(
+            (v.n, v.l, v.raw, v.packed),
+            (2, 1, &[0xa0, 0xa1][..], &[0xb0][..])
+        );
+        assert_eq!((v.inner, v.total, v.total_len), (1, 2, 3));
+        assert_eq!((v.final_v, v.x, v.tag), (4, 5, 6));
+        let mut out = vec![0; InternalNamesFmt.prepare(&v).unwrap()];
+        InternalNamesFmt.serialize(&v, out.as_mut_slice());
+        assert_eq!(out, bytes);
+
+        let bytes: &[u8] = &[2, 7, 8, 9];
+        let (_, v) = UsesCountedFmt.parse(&bytes).unwrap();
+        assert_eq!((v.body.items, v.body.final_v), (&[7, 8][..], 9));
+        let mut out = vec![0; UsesCountedFmt.prepare(&v).unwrap()];
+        UsesCountedFmt.serialize(&v, out.as_mut_slice());
+        assert_eq!(out, bytes);
     }
 }

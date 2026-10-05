@@ -1,0 +1,38 @@
+//! Labels that coincide with names the generated code binds or calls, but
+//! only in ways a label cannot disturb, so the frontend does not reserve them.
+
+!LITTLE_ENDIAN
+
+internal_names = {
+  @n: u8,
+  @l: u8,
+  raw: [u8; @n],
+  packed: [u8; @l],
+  inner: u16,
+  total: u16,
+  total_len: u16,
+  final_v: u8,
+  x: u8,
+  tag: u8,
+}
+
+bit_names = bits {
+  raw: u4,
+  packed: u2,
+  x: u2,
+}
+
+with_bits = {
+  flags: bit_names,
+  total_len: u8,
+}
+
+counted(@n: u8) = {
+  items: [u8; @n],
+  final_v: u8,
+}
+
+uses_counted = {
+  @n: u8,
+  body: counted(@n),
+}

@@ -619,7 +619,7 @@ notify_payload_body(@payload_length: u16 | {8..0xffff}) = {
     @protocol_id:       notify_protocol_id,
     @spi_size:          ipsec_spi_size_or_none,
     notify_msg_type:    notify_msg_type,
-    rest:               [u8; @payload_length - 8] >>= choose(@spi_size) {
+    body:               [u8; @payload_length - 8] >>= choose(@spi_size) {
         0 => notify_payload_body_spi0,
         4 => notify_payload_body_spi4,
     },

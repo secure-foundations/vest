@@ -21,6 +21,8 @@ pub struct GlobalCtx<'ast> {
 pub struct LocalCtx<'ast> {
     pub struct_fields: HashSet<Identifier<'ast>>,
     pub dependent_fields: HashMap<Identifier<'ast>, Combinator<'ast>>,
+    /// The definition being checked, which names its generated bits helpers.
+    pub definition: &'ast str,
 }
 
 impl<'ast> LocalCtx<'ast> {
@@ -28,12 +30,14 @@ impl<'ast> LocalCtx<'ast> {
         Self {
             struct_fields: HashSet::new(),
             dependent_fields: HashMap::new(),
+            definition: "",
         }
     }
 
     pub fn reset(&mut self) {
         self.struct_fields.clear();
         self.dependent_fields.clear();
+        self.definition = "";
     }
 }
 
@@ -452,6 +456,76 @@ fn span_as_range(span: &Span) -> std::ops::Range<usize> {
     span.start()..span.end()
 }
 
+/// Rust keywords (strict and reserved, 2021 edition) and the Verus keywords
+/// that cannot name a Rust binding. Contextual keywords such as `union`,
+/// `spec`, and `open` remain ordinary identifiers.
+const BINDING_KEYWORDS: &[&str] = &[
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
+    "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type",
+    "unsafe", "use", "where", "while", "abstract", "become", "box", "do", "final", "macro",
+    "override", "priv", "try", "typeof", "unsized", "virtual", "yield", "exec", "ghost", "tracked",
+];
+
+/// Names the generated parsers, serializers, and preparers bind in scopes
+/// where they also bind field labels and parameters (see `codegen/execs.rs`
+/// and `codegen/recursive.rs`); a label with one of these names would shadow
+/// the generated binding. Extend this list whenever the generated code binds a
+/// new name that it still uses after binding labels.
+const RESERVED_BINDINGS: &[&str] = &[
+    "ibuf",       // the parser's input
+    "obuf",       // the serializer's output
+    "old_obuf",   // the serializer's output before writing
+    "v",          // the value being serialized or prepared
+    "rest",       // the parser's remaining input
+    "total_n",    // the bytes a struct parser consumed
+    "parse_spec", // a recursive parser's specification
+    "gas",        // a recursive format's remaining depth
+];
+
+/// Field labels and parameters become Rust bindings in the generated code, so
+/// they may neither be keywords nor shadow the generated code's own bindings:
+/// the names in `RESERVED_BINDINGS`, and the per-field byte counts `n1`, `n2`,
+/// ... and lengths `l1`, `l2`, ....
+fn check_binding_name(
+    name: &Identifier,
+    what: &str,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    let numbered = |prefix: char| {
+        name.name
+            .strip_prefix(prefix)
+            .is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()))
+    };
+    let reason = if BINDING_KEYWORDS.contains(&name.name.as_str()) {
+        format!("`{}` is a Rust keyword", name.name)
+    } else if RESERVED_BINDINGS.contains(&name.name.as_str()) || numbered('n') || numbered('l') {
+        format!("`{}` is reserved for the generated code", name.name)
+    } else {
+        return Ok(());
+    };
+    report_invalid_binding_name(name, what, &reason, source)
+}
+
+fn report_invalid_binding_name(
+    name: &Identifier,
+    what: &str,
+    reason: &str,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    Report::build(ReportKind::Error, (source.0, span_as_range(&name.span)))
+        .with_message(format!("invalid {what} name `{}`", name.name))
+        .with_label(
+            Label::new((source.0, span_as_range(&name.span)))
+                .with_message(reason)
+                .with_color(Color::Red),
+        )
+        .finish()
+        .eprint(source)
+        .unwrap();
+    Err(VestError::TypeError)
+}
+
 fn report_undefined_format_name(name: &Identifier, source: (&str, &Source)) -> VestError {
     Report::build(ReportKind::Error, (source.0, span_as_range(&name.span)))
         .with_message("undefined format")
@@ -723,15 +797,19 @@ fn check_defn<'ast>(
     local_ctx.reset();
     match defn {
         Definition::Combinator {
+            name,
             param_defns,
             combinator,
             ..
         } => {
+            local_ctx.definition = name.name.as_str();
             for param in param_defns {
                 let ParamDefn::Dependent {
+                    name: param_name,
                     combinator: param_comb,
                     ..
                 } = param;
+                check_binding_name(param_name, "parameter", source)?;
                 let mut dummy_local_ctx = LocalCtx::new();
                 check_combinator_inner(param_comb, &[], &mut dummy_local_ctx, global_ctx, source)?;
             }
@@ -2754,6 +2832,10 @@ fn check_struct_combinator<'ast>(
         };
     }
     for field in struct_fields {
+        let (StructField::Dependent { label, .. }
+        | StructField::Const { label, .. }
+        | StructField::Ordinary { label, .. }) = field;
+        check_binding_name(label, "field", source)?;
         match field {
             StructField::Dependent {
                 label,
@@ -2856,6 +2938,23 @@ fn check_bits_combinator<'ast>(
 
     for field in &bits_comb.fields {
         let label = field.label();
+        check_binding_name(label, "field", source)?;
+        // A bits format's code also binds its byte count `n`, and calls helpers
+        // named after the format and its enum members.
+        let definition = local_ctx.definition;
+        let helper = |suffix: &str, name: &str| label.name == format!("{name}_{suffix}");
+        if label.name == "n"
+            || label.name == format!("pack_{definition}")
+            || label.name == format!("unpack_{definition}")
+            || helper("bounds", definition)
+            || global_ctx
+                .enums
+                .keys()
+                .any(|e| helper("to_bits", e) || helper("from_bits", e) || helper("wf", e))
+        {
+            let reason = format!("`{}` is reserved for the generated code", label.name);
+            report_invalid_binding_name(label, "field", &reason, source)?;
+        }
         let combinator = field.combinator();
         let field_span = match field {
             BitField::Dependent { span, .. } | BitField::Ordinary { span, .. } => span,
