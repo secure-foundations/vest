@@ -23,3 +23,22 @@ typed_enum_constraints = {
   baz: my_typed_enum | { X, Z },
   const tag: my_typed_enum = X,
 }
+
+// A choice may dispatch on a refined tag. The refinement rejects the excluded
+// variants before the choice runs, while unknown values of an open enum still
+// reach the wildcard.
+open_kind = enum {
+  P = 0x01,
+  Q = 0x02,
+  R = 0x03,
+  ...
+}
+
+refined_dispatch = {
+  @kind: open_kind | !{ Q, R },
+  @len: u8,
+  body: [u8; @len] >>= choose(@kind) {
+    P => u8,
+    _ => Tail,
+  },
+}

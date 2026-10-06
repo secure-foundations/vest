@@ -12,6 +12,7 @@ pub mod enums;
 pub mod josh;
 pub mod length_expr;
 pub mod matches;
+pub mod names;
 // Mutual-recursion code generation remains experimental; this fixture is not
 // part of the default compiled and verified regression corpus yet.
 // pub mod mutual_rec;
@@ -254,9 +255,9 @@ mod tls_error_sanity {
     fn pre_shared_key_extension_parse_error_is_semantic_and_deeply_nested() {
         let input = [
             0x00, 0x29, // extension_type = PreSharedKey
-            0x00, 0x09, // ext_len = 9
+            0x00, 0x09, // data_len = 9
             0x00, 0x07, // psk_identities total length = 7
-            0x00, 0x00, // first identity: opaque_1_ffff length = 0, rejected by predicate
+            0x00, 0x00, // first identity: identity_len = 0, rejected by predicate
             0x00, 0x00, 0x00, 0x00, 0x00, // remaining bytes inside the exact-length chunk
         ];
 
@@ -268,7 +269,7 @@ mod tls_error_sanity {
         assert!(msg.contains("a length-delimited parser did not consume the declared length"));
         assert_trace(
             &msg,
-            "`client_hello_extension` -> `client_hello_extension_extension_data` -> `pre_shared_key_client_extension` -> `offered_psks` -> `psk_identities`",
+            "`client_hello_extension` -> `client_hello_extension_data` -> `offered_psks` -> `psk_identities`",
             "`psk_identities`",
         );
     }
@@ -277,16 +278,17 @@ mod tls_error_sanity {
     fn hello_retry_request_prepare_error_carries_deep_named_stack() {
         let empty: &[u8] = &[];
         let v = tls::HelloRetryRequest {
-            legacy_session_id_echo: tls::SessionId { l: 0, id: empty },
+            legacy_session_id_echo_len: 0,
+            legacy_session_id_echo: empty,
             cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
             legacy_compression_method: 0,
-            extensions: tls::HelloRetryExtensions {
-                l: 6,
-                list: vec![tls::HelloRetryExtension {
+            extensions: tls::HelloRetryRequestExtensions {
+                len: 6,
+                list: vec![tls::HelloRetryRequestExtension {
                     extension_type: tls::ExtensionType::Cookie,
-                    ext_len: 2,
-                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
-                        l: 0,
+                    data_len: 2,
+                    data: tls::HelloRetryRequestExtensionData::Cookie(tls::Cookie {
+                        len: 0,
                         data: empty,
                     }),
                 }],
@@ -299,8 +301,8 @@ mod tls_error_sanity {
         assert!(msg.contains("value failed a refinement predicate"));
         assert_trace(
             &msg,
-            "`hello_retry_extensions` -> `hello_retry_extension_extension_data` -> `cookie` -> `opaque_1_ffff`",
-            "`opaque_1_ffff`",
+            "`hello_retry_request_extensions` -> `hello_retry_request_extension_data` -> `cookie`",
+            "`cookie`",
         );
     }
 
@@ -308,16 +310,17 @@ mod tls_error_sanity {
     fn hello_retry_request_roundtrips_when_well_formed() {
         let cookie_data: &[u8] = &[0xaa];
         let v = tls::HelloRetryRequest {
-            legacy_session_id_echo: tls::SessionId { l: 0, id: &[] },
+            legacy_session_id_echo_len: 0,
+            legacy_session_id_echo: &[],
             cipher_suite: tls::CipherSuite::TLS_AES_128_GCM_SHA256,
             legacy_compression_method: 0,
-            extensions: tls::HelloRetryExtensions {
-                l: 7,
-                list: vec![tls::HelloRetryExtension {
+            extensions: tls::HelloRetryRequestExtensions {
+                len: 7,
+                list: vec![tls::HelloRetryRequestExtension {
                     extension_type: tls::ExtensionType::Cookie,
-                    ext_len: 3,
-                    extension_data: tls::HelloRetryExtensionExtensionData::Cookie(tls::Cookie {
-                        l: 1,
+                    data_len: 3,
+                    data: tls::HelloRetryRequestExtensionData::Cookie(tls::Cookie {
+                        len: 1,
                         data: cookie_data,
                     }),
                 }],
@@ -345,5 +348,63 @@ mod never_error_sanity {
         let err_msg = err.to_string();
         println!("Never combinator error: {}", err_msg);
         assert!(err_msg.contains("i for msg4 can only be 1"));
+    }
+}
+
+#[cfg(test)]
+mod refined_tag_dispatch {
+    use super::enum_constraints::RefinedDispatchFmt;
+    use vest_lib::core::exec::parser::Parser;
+
+    fn accepts(input: &[u8]) -> bool {
+        RefinedDispatchFmt.parse(&input).is_ok()
+    }
+
+    #[test]
+    fn refinement_is_checked_before_dispatch() {
+        assert!(
+            accepts(&[1, 1, 7]),
+            "P is permitted and dispatches to its u8 body"
+        );
+        assert!(
+            accepts(&[99, 2, 7, 8]),
+            "an unknown kind still reaches the wildcard"
+        );
+        assert!(!accepts(&[2, 0]), "Q is excluded by the refinement");
+        assert!(!accepts(&[3, 0]), "R is excluded by the refinement");
+        assert!(
+            !accepts(&[1, 2, 7, 8]),
+            "P's body must fill its length exactly"
+        );
+    }
+}
+
+#[cfg(test)]
+mod label_names {
+    use super::names::*;
+    use vest_lib::core::exec::parser::Parser;
+    use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
+
+    #[test]
+    fn labels_named_like_generated_bindings_roundtrip() {
+        let bytes: &[u8] = &[2, 1, 0xa0, 0xa1, 0xb0, 1, 0, 2, 0, 3, 0, 4, 5, 6];
+        let (n, v) = InternalNamesFmt.parse(&bytes).unwrap();
+        assert_eq!(n, bytes.len());
+        assert_eq!(
+            (v.n, v.l, v.raw, v.packed),
+            (2, 1, &[0xa0, 0xa1][..], &[0xb0][..])
+        );
+        assert_eq!((v.inner, v.total, v.total_len), (1, 2, 3));
+        assert_eq!((v.final_v, v.x, v.tag), (4, 5, 6));
+        let mut out = vec![0; InternalNamesFmt.prepare(&v).unwrap()];
+        InternalNamesFmt.serialize(&v, out.as_mut_slice());
+        assert_eq!(out, bytes);
+
+        let bytes: &[u8] = &[2, 7, 8, 9];
+        let (_, v) = UsesCountedFmt.parse(&bytes).unwrap();
+        assert_eq!((v.body.items, v.body.final_v), (&[7, 8][..], 9));
+        let mut out = vec![0; UsesCountedFmt.prepare(&v).unwrap()];
+        UsesCountedFmt.serialize(&v, out.as_mut_slice());
+        assert_eq!(out, bytes);
     }
 }

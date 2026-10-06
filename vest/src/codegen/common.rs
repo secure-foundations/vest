@@ -1180,18 +1180,57 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    /// The Rust variant name of each branch of a choice.
+    ///
+    /// An enum pattern names its branch. Integer and byte-string patterns carry
+    /// no name, so in such a choice every branch, the final `_` included, is
+    /// named after the user-written definition its format invokes. A branch
+    /// whose format is not such an invocation, or whose derived name another
+    /// branch also has, falls back to `Variant{n}` (`Default` for `_`). In an
+    /// enum choice, `_` is always `Default`.
     pub(crate) fn choice_variant_names(&self, choice_comb: &ChoiceCombinator) -> Vec<String> {
-        choice_comb
+        let fallback = |idx: usize, pat: &ChoicePattern| match pat {
+            ChoicePattern::Enum(name) => name.clone(),
+            ChoicePattern::Int(_) | ChoicePattern::Array(_) => format!("Variant{}", idx + 1),
+            ChoicePattern::Wildcard => "Default".to_string(),
+        };
+        let unnamed_patterns = choice_comb
+            .choices
+            .iter()
+            .any(|(pat, _)| matches!(pat, ChoicePattern::Int(_) | ChoicePattern::Array(_)));
+        let mut names: Vec<String> = choice_comb
             .choices
             .iter()
             .enumerate()
-            .map(|(idx, (pat, _))| match pat {
-                ChoicePattern::Enum(name) => name.clone(),
-                ChoicePattern::Int(_) => format!("Variant{}", idx + 1),
-                ChoicePattern::Array(_) => format!("Variant{}", idx + 1),
-                ChoicePattern::Wildcard => "Default".to_string(),
+            .map(|(idx, (pat, comb))| match (pat, comb) {
+                (ChoicePattern::Enum(_), _) => fallback(idx, pat),
+                (_, Combinator::Invocation(inv))
+                    if unnamed_patterns && !self.ctx.lifted_definitions.contains(&inv.func) =>
+                {
+                    format_names(&inv.func).exec
+                }
+                _ => fallback(idx, pat),
             })
-            .collect()
+            .collect();
+        // Fallback names are distinct from one another, so reverting every
+        // clashing derived name terminates with distinct names.
+        loop {
+            let clashing: Vec<usize> = (0..names.len())
+                .filter(|&i| {
+                    names[i] != fallback(i, &choice_comb.choices[i].0)
+                        && names
+                            .iter()
+                            .enumerate()
+                            .any(|(j, n)| j != i && *n == names[i])
+                })
+                .collect();
+            if clashing.is_empty() {
+                return names;
+            }
+            for i in clashing {
+                names[i] = fallback(i, &choice_comb.choices[i].0);
+            }
+        }
     }
 
     pub(crate) fn wrapper_generics(&self, param_defns: &[ParamDefn]) -> TokenStream {

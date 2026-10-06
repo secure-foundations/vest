@@ -1,0 +1,5 @@
+// `rest` is the generated parser's remaining input.
+header = {
+    @rest: u8,
+    body: [u8; @rest],
+}

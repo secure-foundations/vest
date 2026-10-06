@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-2625125e.js";
+            window.path_to_searchindex_js = "searchindex-1032325f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -210,6 +210,7 @@ which marshal typed application objects onto wire formats such as Protocol Buffe
 <tr><td>install Vest and parse/serialize something</td><td><a href="#getting-started">Getting started</a></td></tr>
 <tr><td>describe complex formats concisely</td><td><a href="#vest-language-reference">Vest DSL language reference</a></td></tr>
 <tr><td>understand what is actually proven</td><td><a href="#what-vest-proves">What Vest proves</a></td></tr>
+<tr><td>see how fast Vest is vs existing unverified libraries</td><td><a href="https://github.com/secure-foundations/vest/blob/main/vest_bench/README.md">Vest benchmarks</a></td></tr>
 <tr><td>build a format using combinators</td><td><a href="#using-vest_lib">Using <code>vest_lib</code></a></td></tr>
 <tr><td>look up a trait or combinator in Vest</td><td><a href="../vest_lib/index.html"><code>vest_lib</code> API reference</a></td></tr>
 </tbody>
@@ -530,6 +531,18 @@ btc_varint      uleb128
 </code></pre>
 <p>Integer type names are also reserved: any <code>u</code> or <code>i</code> followed by digits, so
 <code>u8</code>, <code>u16</code>, <code>u3</code>, <code>i32</code> and so on are unavailable as names.</p>
+<p>Field names and parameters become Rust variables in the generated code, so a
+few more names are unavailable for them:</p>
+<ul>
+<li>Rust keywords, such as <code>type</code>, <code>match</code>, <code>self</code>, and <code>box</code>, and the Verus
+keywords <code>ghost</code>, <code>tracked</code>, and <code>exec</code>;</li>
+<li>names the generated code uses for its own variables: <code>ibuf</code>, <code>obuf</code>,
+<code>old_obuf</code>, <code>v</code>, <code>rest</code>, <code>total_n</code>, <code>parse_spec</code>, <code>gas</code>, and <code>n</code> or <code>l</code>
+followed by digits (<code>n1</code>, <code>l2</code>, …);</li>
+<li>in a <code>bits</code> format, also <code>n</code>, and the names of the helpers generated for it:
+<code>pack_&lt;format&gt;</code>, <code>unpack_&lt;format&gt;</code>, <code>&lt;format&gt;_bounds</code>, and <code>&lt;enum&gt;_to_bits</code>,
+<code>&lt;enum&gt;_from_bits</code>, <code>&lt;enum&gt;_wf</code> for any enum.</li>
+</ul>
 <p>The following identifier forms have extra syntax:</p>
 <div class="table-wrapper">
 <table>
@@ -660,7 +673,7 @@ count produces a Rust array:</p>
 <h2 id="tail-nothing-and-never"><a class="header" href="#tail-nothing-and-never"><code>Tail</code>, <code>Nothing</code>, and <code>Never</code></a></h2>
 <pre><code class="language-vest">payload = {
     header: u16,
-    rest: Tail,
+    body: Tail,
 }
 
 empty = Nothing
@@ -898,6 +911,31 @@ the arm, and the value must match that arm.</p>
 </code></pre>
 <p>Every explicit byte pattern must have the same length as the dependency, and a
 final wildcard is required.</p>
+<h2 id="variant-names"><a class="header" href="#variant-names">Variant names</a></h2>
+<p>Each branch becomes a variant of the generated Rust enum. An enum-dependent
+choice names its variants after the enum’s, and its <code>_</code> branch <code>Default</code>.
+Integer and byte-string patterns have no name of their own, so a branch whose
+format is a named definition is named after that definition, and any other
+branch is <code>Variant1</code>, <code>Variant2</code>, … by position (<code>Default</code> for <code>_</code>):</p>
+<pre><code class="language-vest">request = {
+    id: u32,
+}
+
+reply = {
+    status: u8,
+}
+
+message = {
+    @magic: [u8; 2],
+    body: choose(@magic) {
+        [0x01, 0x02] =&gt; request,  // MessageBody::Request
+        [0x01, 0x03] =&gt; u16,      // MessageBody::Variant2
+        _ =&gt; reply,               // MessageBody::Reply
+    },
+}
+</code></pre>
+<p>If two branches invoke the same definition, both fall back to positional
+names.</p>
 <h2 id="non-dependent-ordered-choices"><a class="header" href="#non-dependent-ordered-choices">Non-dependent ordered choices</a></h2>
 <p>Without <code>(@dependency)</code>, there is no tag to dispatch on, so the branches are
 distinguished by their own content:</p>
@@ -1202,6 +1240,7 @@ that carries the parser, serializer, and proofs. See
 <tr><td><code>name = { a: fmt_a, b: Tail, }</code></td><td><code>struct Name { a: FmtA, b: &amp;[u8] }</code></td></tr>
 <tr><td><code>name = { const tag: u8 = 0x01, data: u16, }</code></td><td><code>struct Name { tag: u8, data: u16 }</code></td></tr>
 <tr><td><code>name(@t: my_type) = choose(@t) { A =&gt; fmt_a, _ =&gt; fmt_c, }</code></td><td><code>enum Name { A(FmtA), Default(FmtC) }</code></td></tr>
+<tr><td><code>name(@t: u8) = choose(@t) { 1 =&gt; fmt_a, 2 =&gt; u16, _ =&gt; fmt_c, }</code></td><td><code>enum Name { FmtA(FmtA), Variant2(u16), FmtC(FmtC) }</code></td></tr>
 <tr><td><code>name = choose { V1(u8 | 0..10), V2(u8 | 11..), }</code></td><td><code>enum Name { V1(u8), V2(u8) }</code></td></tr>
 <tr><td><code>name = wrap(u8 = 0x01, inner, u8 = 0xFF)</code></td><td>same as <code>inner</code></td></tr>
 </tbody>
@@ -1230,7 +1269,7 @@ pub struct Message&lt;'i&gt; {
 pub struct MessageFmt;</code></pre>
 <h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
 <p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble, cut
-into five banner-delimited sections:</p>
+into six banner-delimited sections:</p>
 <pre><code class="language-rust ignore">use vest_lib::combinators::*;            // fixed preamble, identical in every file
 use vest_lib::core::exec::parser::*;
 // ...
@@ -1238,6 +1277,9 @@ verus! {
 
 // ============================================================
 // Data Types
+// ============================================================
+// ============================================================
+// Structural Mappers
 // ============================================================
 // ============================================================
 // Format Specifications
@@ -1259,11 +1301,13 @@ specifications, and so on.
 Because the nominal format types (e.g., <code>MessageFmt</code>) are what the user actually interacts with,
 the last three sections are wrapped in private
 modules (<code>derived_specs</code>, <code>derived_proofs</code>, <code>exec_impls</code>).</p>
+<p>The compiler lays out the code it emits itself, in the style of <code>rustfmt</code> with
+lines of at most 100 columns, so generated files need no separate formatting
+pass.</p>
 <h2 id="data-types"><a class="header" href="#data-types">Data Types</a></h2>
 <p>Per definition, alongside the <code>Message</code> shown above, Vest emits a nominal abstract value type
 (<code>MessageSpec</code>) and a structural representation (<code>MessageInner</code>), plus the
-<code>DeepView</code> impl that converts between the executable value and the abstract value. Additionally, Vest emits two empty structs (<code>MessageForward</code> and <code>MessageReverse</code>)
-to name the bijective conversion between the structural and nominal abstract value types.</p>
+<code>DeepView</code> impl that converts between the executable value and the abstract value.</p>
 <pre><code class="language-rust ignore">#[verifier::ext_equal]
 pub struct MessageSpec&lt;T0 = u16, T1 = Seq&lt;u8&gt;&gt; {   // abstract view of Message
     pub length: T0,
@@ -1276,9 +1320,14 @@ impl&lt;'i&gt; DeepView for Message&lt;'i&gt; {               // exec value -&gt
     type V = MessageSpec;
     #[verifier::opaque]
     open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
-}
-
-impl&lt;T0, T1&gt; MessageSpec&lt;T0, T1&gt; {                // abstract value &lt;-&gt; nested tuple
+}</code></pre>
+<h2 id="structural-mappers"><a class="header" href="#structural-mappers">Structural Mappers</a></h2>
+<p>The combinator tree yields the structural representation (<code>MessageInner</code>), and
+the user-facing specification value is the nominal <code>MessageSpec</code>. This section
+holds, for every definition, the conversions between the two and two empty
+structs (<code>MessageForward</code> and <code>MessageReverse</code>) that name that bijection for the
+<code>Mapped</code> combinator:</p>
+<pre><code class="language-rust ignore">impl&lt;T0, T1&gt; MessageSpec&lt;T0, T1&gt; {                // abstract value &lt;-&gt; nested tuple
     #[verifier::opaque] pub open spec fn from_structural(input: (T0, T1)) -&gt; Self { /* .. */ }
     #[verifier::opaque] pub open spec fn into_structural(self) -&gt; (T0, T1) { /* .. */ }
     pub proof fn lemma_from_into(self) { /* .. */ }

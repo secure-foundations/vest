@@ -132,8 +132,14 @@ impl<'a> Analysis<'a> {
 
     fn gen_scc_member_data_type(&self, member: &SccMember, ctx: &RecCtx<'_>) -> String {
         match &member.body {
-            SccMemberBody::Struct(s) => self.gen_struct_value_types(&member.name, s, ctx.members),
-            SccMemberBody::Choice(c) => self.gen_choice_value_types(&member.name, c, ctx.members),
+            SccMemberBody::Struct(s) => {
+                self.gen_struct_value_types(&member.name, s, ctx.members)
+                    .types
+            }
+            SccMemberBody::Choice(c) => {
+                self.gen_choice_value_types(&member.name, c, ctx.members)
+                    .types
+            }
             SccMemberBody::Combinator(comb) => {
                 self.gen_combinator_value_types(&member.name, comb, ctx.members)
             }

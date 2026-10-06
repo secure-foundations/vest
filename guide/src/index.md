@@ -34,6 +34,7 @@ As of now, this book covers the nitty-gritty of the DSL and the ASN.1 compiler. 
 | install Vest and parse/serialize something | [Getting started](getting-started.md) |
 | describe complex formats concisely | [Vest DSL language reference](dsl/reference.md) |
 | understand what is actually proven | [What Vest proves](guarantees.md) |
+| see how fast Vest is vs existing unverified libraries | [Vest benchmarks](https://github.com/secure-foundations/vest/blob/main/vest_bench/README.md) |
 | build a format using combinators | [Using `vest_lib`](library/combinators.md) |
 | look up a trait or combinator in Vest | [`vest_lib` API reference](../vest_lib/index.html) |
 

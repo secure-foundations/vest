@@ -2488,6 +2488,8 @@ impl<'a> Analysis<'a> {
         let resolved = self.resolve_dep_combinator_path(dep, param_defns)?;
         let enum_name = match resolved {
             Combinator::Invocation(inv) => inv.func,
+            // See `render_enum_pattern_type`: dispatch on a refined tag uses its enum.
+            Combinator::ConstraintEnum(ce) => ce.combinator.func,
             _ => return None,
         };
 
@@ -2538,8 +2540,7 @@ impl<'a> Analysis<'a> {
         combinator: &Combinator,
         val_tokens: TokenStream,
     ) -> Option<TokenStream> {
-        let resolved = self.ctx.resolve_alias(combinator);
-        match resolved {
+        match combinator {
             Combinator::ConstraintInt(c) => c.constraint.as_ref().map(|constraint| {
                 self.render_int_constraint(constraint, &c.combinator, val_tokens)
             }),

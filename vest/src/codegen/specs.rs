@@ -1696,6 +1696,11 @@ impl<'a> Analysis<'a> {
             .unwrap_or_else(|| panic!("could not resolve enum pattern type for `{variant_name}`"));
         match resolved {
             Combinator::Invocation(inv) => self.render_nominal_type(&inv.func, TypeMode::Spec),
+            // A refined tag (`kind | !{ .. }`) is still dispatched on by its enum; the
+            // refinement is enforced by the tag's own parser before the choice runs.
+            Combinator::ConstraintEnum(ce) => {
+                self.render_nominal_type(&ce.combinator.func, TypeMode::Spec)
+            }
             _ => panic!("enum pattern `{variant_name}` does not resolve to an enum invocation"),
         }
     }
@@ -1866,24 +1871,50 @@ fn fold_choice(mut branches: Vec<RenderedSpec>) -> RenderedSpec {
     }
 }
 
-fn fold_bool_or(mut terms: Vec<TokenStream>) -> TokenStream {
-    let first = terms
-        .drain(..1)
-        .next()
-        .expect("boolean disjunction requires at least one term");
-    terms
+fn fold_bool_or(terms: Vec<TokenStream>) -> TokenStream {
+    assert!(
+        !terms.is_empty(),
+        "boolean disjunction requires at least one term"
+    );
+    let terms = terms
         .into_iter()
-        .fold(first, |acc, term| quote! { (#acc) || (#term) })
+        .map(|t| parenthesize_looser(t, &["==>", "<==", "<==>"]));
+    quote! { #(#terms)||* }
 }
 
-fn fold_bool_and(mut terms: Vec<TokenStream>) -> TokenStream {
-    let first = terms
-        .drain(..1)
-        .next()
-        .expect("boolean conjunction requires at least one term");
-    terms
+fn fold_bool_and(terms: Vec<TokenStream>) -> TokenStream {
+    assert!(
+        !terms.is_empty(),
+        "boolean conjunction requires at least one term"
+    );
+    let terms = terms
         .into_iter()
-        .fold(first, |acc, term| quote! { (#acc) && (#term) })
+        .map(|t| parenthesize_looser(t, &["||", "==>", "<==", "<==>"]));
+    quote! { #(#terms)&&* }
+}
+
+/// Parenthesizes `term` if a top-level operator in it binds more loosely than
+/// the chain it joins; `looser` lists such operators.
+fn parenthesize_looser(term: TokenStream, looser: &[&str]) -> TokenStream {
+    let mut run = String::new();
+    let mut loose = false;
+    for tree in term.clone() {
+        match tree {
+            proc_macro2::TokenTree::Punct(p) => {
+                run.push(p.as_char());
+                if p.spacing() == proc_macro2::Spacing::Alone {
+                    loose |= looser.iter().any(|op| run.contains(op));
+                    run.clear();
+                }
+            }
+            _ => run.clear(),
+        }
+    }
+    if loose {
+        quote! { (#term) }
+    } else {
+        term
+    }
 }
 
 fn shouty_snake_case(s: &str) -> String {

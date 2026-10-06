@@ -851,6 +851,9 @@ pub struct GlobalCtx {
     pub static_sizes: HashMap<String, usize>,
     /// Lower bound on each format's encoded size, used to size repetitions.
     pub min_sizes: HashMap<String, usize>,
+    /// Definitions the elaborator lifted out of anonymous formats, which have
+    /// no user-chosen name.
+    pub lifted_definitions: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -1906,6 +1909,7 @@ pub mod lowering {
                 enums,
                 static_sizes: src.static_sizes.clone(),
                 min_sizes: src.min_sizes.clone(),
+                lifted_definitions: HashSet::new(),
             }
         }
     }

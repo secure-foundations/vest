@@ -85,7 +85,7 @@ Lengths and counts may also use runtime dependencies and arithmetic; see
 ```vest
 payload = {
     header: u16,
-    rest: Tail,
+    body: Tail,
 }
 
 empty = Nothing

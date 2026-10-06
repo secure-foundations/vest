@@ -1,41 +1,39 @@
 #![allow(warnings)]
 use vest_lib::combinators::mapped::spec::*;
-use vest_lib::combinators::recursive::*;
 use vest_lib::combinators::*;
-use vest_lib::core::exec::bytes_eq;
+use vest_lib::combinators::recursive::*;
+use Sum::Inl as L;
+use Sum::Inr as R;
+use vest_lib::Never;
 use vest_lib::core::exec::input::{InputBuf, InputSlice};
 use vest_lib::core::exec::output::OutputBuf;
 use vest_lib::core::exec::parser::*;
 use vest_lib::core::exec::serializer::*;
 use vest_lib::core::exec::ParseError;
+use vest_lib::core::exec::bytes_eq;
 use vest_lib::core::{proof::*, spec::*};
 use vest_lib::primitives::btcvarint::VarInt;
 use vest_lib::primitives::leb128::ULeb128;
-use vest_lib::Never;
 use vstd::prelude::*;
-use Sum::Inl as L;
-use Sum::Inr as R;
 verus! {
-
 // ============================================================
 // Data Types
 // ============================================================
-# [doc = "data type for `a_or_b`."]
-# [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
+/// data type for `a_or_b`.
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum AOrB {
     A = 1,
     B = 2,
 }
 
 pub type AOrBSpec = AOrB;
-
 pub type AOrBInner = u8;
 
 impl DeepView for AOrB {
     type V = Self;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
     }
@@ -48,110 +46,26 @@ impl AOrB {
     {
         reveal(<AOrB as DeepView>::deep_view);
     }
-
-    pub open spec fn structural_valid(input: AOrBInner) -> bool {
-        {
-            let x = input;
-            x == 1 || x == 2
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: AOrBInner) -> Self {
-        match input {
-            1 => Self::A,
-            2 => Self::B,
-            _ => arbitrary(),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> AOrBInner {
-        match self {
-            Self::A => 1,
-            Self::B => 2,
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(AOrB::from_structural);
-        reveal(AOrB::into_structural);
-        match self {
-            Self::A => {},
-            Self::B => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: AOrBInner)
-        requires
-            Self::structural_valid(input),
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(AOrB::from_structural);
-        reveal(AOrB::into_structural);
-        match input {
-            1 => {},
-            2 => {},
-            _ => {
-                assert(false);
-            },
-        }
-    }
 }
 
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct AOrBForward;
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for AOrB {}
 
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct AOrBReverse;
-
-impl SpecMap for AOrBForward {
-    type Input = AOrBInner;
-
-    type Output = AOrBSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        AOrB::from_structural(input)
-    }
-}
-
-impl SpecMap for AOrBReverse {
-    type Input = AOrBSpec;
-
-    type Output = AOrBInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [cfg (not (verus_keep_ghost))]
-unsafe impl Structural for AOrB {
-
-}
-
-# [doc = "data type for `c_or_d`."]
-# [repr (u8)]
-# [derive (Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
+/// data type for `c_or_d`.
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
 pub enum COrD {
     C = 1,
     D = 2,
 }
 
 pub type COrDSpec = COrD;
-
 pub type COrDInner = u8;
 
 impl DeepView for COrD {
     type V = Self;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
     }
@@ -164,102 +78,19 @@ impl COrD {
     {
         reveal(<COrD as DeepView>::deep_view);
     }
-
-    pub open spec fn structural_valid(input: COrDInner) -> bool {
-        {
-            let x = input;
-            x == 1 || x == 2
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: COrDInner) -> Self {
-        match input {
-            1 => Self::C,
-            2 => Self::D,
-            _ => arbitrary(),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> COrDInner {
-        match self {
-            Self::C => 1,
-            Self::D => 2,
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(COrD::from_structural);
-        reveal(COrD::into_structural);
-        match self {
-            Self::C => {},
-            Self::D => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: COrDInner)
-        requires
-            Self::structural_valid(input),
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(COrD::from_structural);
-        reveal(COrD::into_structural);
-        match input {
-            1 => {},
-            2 => {},
-            _ => {
-                assert(false);
-            },
-        }
-    }
 }
 
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct COrDForward;
+#[cfg(not(verus_keep_ghost))]
+unsafe impl Structural for COrD {}
 
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct COrDReverse;
-
-impl SpecMap for COrDForward {
-    type Input = COrDInner;
-
-    type Output = COrDSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        COrD::from_structural(input)
-    }
-}
-
-impl SpecMap for COrDReverse {
-    type Input = COrDSpec;
-
-    type Output = COrDInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [cfg (not (verus_keep_ghost))]
-unsafe impl Structural for COrD {
-
-}
-
-# [doc = "data type for `nested_inner_struct`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `nested_inner_struct`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedInnerStruct<'i> {
     pub len: u32,
     pub val: NestedInnerStructVal<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct NestedInnerStructSpec<T0 = u32, T1 = NestedInnerStructValSpec> {
     pub len: T0,
     pub val: T1,
@@ -270,7 +101,7 @@ pub type NestedInnerStructInner = (u32, NestedInnerStructValSpec);
 impl<'i> DeepView for NestedInnerStruct<'i> {
     type V = NestedInnerStructSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedInnerStructSpec { len: self.len.deep_view(), val: self.val.deep_view() }
     }
@@ -286,80 +117,13 @@ impl<'i> NestedInnerStruct<'i> {
     }
 }
 
-impl<T0, T1> NestedInnerStructSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (len, val) = input;
-        Self { len, val }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { len, val } = self;
-        (len, val)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(NestedInnerStructSpec::from_structural);
-        reveal(NestedInnerStructSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(NestedInnerStructSpec::from_structural);
-        reveal(NestedInnerStructSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { len, val } => (len, val),
-            },
-    {
-        reveal(NestedInnerStructSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerStructForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerStructReverse;
-
-impl SpecMap for NestedInnerStructForward {
-    type Input = NestedInnerStructInner;
-
-    type Output = NestedInnerStructSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        NestedInnerStructSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for NestedInnerStructReverse {
-    type Input = NestedInnerStructSpec;
-
-    type Output = NestedInnerStructInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `nested_inner_choice`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `nested_inner_choice`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedInnerChoice {
     pub x: NestedInnerChoiceX,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct NestedInnerChoiceSpec<T0 = NestedInnerChoiceXSpec> {
     pub x: T0,
 }
@@ -369,7 +133,7 @@ pub type NestedInnerChoiceInner = NestedInnerChoiceXSpec;
 impl DeepView for NestedInnerChoice {
     type V = NestedInnerChoiceSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedInnerChoiceSpec { x: self.x.deep_view() }
     }
@@ -384,81 +148,14 @@ impl NestedInnerChoice {
     }
 }
 
-impl<T0> NestedInnerChoiceSpec<T0> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: T0) -> Self {
-        let x = input;
-        Self { x }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> T0 {
-        let Self { x } = self;
-        x
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(NestedInnerChoiceSpec::from_structural);
-        reveal(NestedInnerChoiceSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: T0)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(NestedInnerChoiceSpec::from_structural);
-        reveal(NestedInnerChoiceSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { x } => x,
-            },
-    {
-        reveal(NestedInnerChoiceSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceReverse;
-
-impl SpecMap for NestedInnerChoiceForward {
-    type Input = NestedInnerChoiceInner;
-
-    type Output = NestedInnerChoiceSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        NestedInnerChoiceSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for NestedInnerChoiceReverse {
-    type Input = NestedInnerChoiceSpec;
-
-    type Output = NestedInnerChoiceInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_outer_and_local`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_outer_and_local`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocal<'i> {
     pub frame_len: u8,
     pub payload: CaptureOuterAndLocalPayload<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureOuterAndLocalSpec<T0 = u8, T1 = CaptureOuterAndLocalPayloadSpec> {
     pub frame_len: T0,
     pub payload: T1,
@@ -469,7 +166,7 @@ pub type CaptureOuterAndLocalInner = (u8, CaptureOuterAndLocalPayloadSpec);
 impl<'i> DeepView for CaptureOuterAndLocal<'i> {
     type V = CaptureOuterAndLocalSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureOuterAndLocalSpec {
             frame_len: self.frame_len.deep_view(),
@@ -488,80 +185,13 @@ impl<'i> CaptureOuterAndLocal<'i> {
     }
 }
 
-impl<T0, T1> CaptureOuterAndLocalSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (frame_len, payload) = input;
-        Self { frame_len, payload }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { frame_len, payload } = self;
-        (frame_len, payload)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureOuterAndLocalSpec::from_structural);
-        reveal(CaptureOuterAndLocalSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureOuterAndLocalSpec::from_structural);
-        reveal(CaptureOuterAndLocalSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { frame_len, payload } => (frame_len, payload),
-            },
-    {
-        reveal(CaptureOuterAndLocalSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalReverse;
-
-impl SpecMap for CaptureOuterAndLocalForward {
-    type Input = CaptureOuterAndLocalInner;
-
-    type Output = CaptureOuterAndLocalSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureOuterAndLocalSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureOuterAndLocalReverse {
-    type Input = CaptureOuterAndLocalSpec;
-
-    type Output = CaptureOuterAndLocalInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_local_in_anon_struct`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_local_in_anon_struct`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStruct<'i> {
     pub wrapper: CaptureLocalInAnonStructWrapper<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureLocalInAnonStructSpec<T0 = CaptureLocalInAnonStructWrapperSpec> {
     pub wrapper: T0,
 }
@@ -571,7 +201,7 @@ pub type CaptureLocalInAnonStructInner = CaptureLocalInAnonStructWrapperSpec;
 impl<'i> DeepView for CaptureLocalInAnonStruct<'i> {
     type V = CaptureLocalInAnonStructSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureLocalInAnonStructSpec { wrapper: self.wrapper.deep_view() }
     }
@@ -586,80 +216,13 @@ impl<'i> CaptureLocalInAnonStruct<'i> {
     }
 }
 
-impl<T0> CaptureLocalInAnonStructSpec<T0> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: T0) -> Self {
-        let wrapper = input;
-        Self { wrapper }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> T0 {
-        let Self { wrapper } = self;
-        wrapper
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureLocalInAnonStructSpec::from_structural);
-        reveal(CaptureLocalInAnonStructSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: T0)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureLocalInAnonStructSpec::from_structural);
-        reveal(CaptureLocalInAnonStructSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { wrapper } => wrapper,
-            },
-    {
-        reveal(CaptureLocalInAnonStructSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructReverse;
-
-impl SpecMap for CaptureLocalInAnonStructForward {
-    type Input = CaptureLocalInAnonStructInner;
-
-    type Output = CaptureLocalInAnonStructSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureLocalInAnonStructSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureLocalInAnonStructReverse {
-    type Input = CaptureLocalInAnonStructSpec;
-
-    type Output = CaptureLocalInAnonStructInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureParamAndLocal<'i> {
     pub x: CaptureParamAndLocalX<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureParamAndLocalSpec<T0 = CaptureParamAndLocalXSpec> {
     pub x: T0,
 }
@@ -669,7 +232,7 @@ pub type CaptureParamAndLocalInner = CaptureParamAndLocalXSpec;
 impl<'i> DeepView for CaptureParamAndLocal<'i> {
     type V = CaptureParamAndLocalSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureParamAndLocalSpec { x: self.x.deep_view() }
     }
@@ -684,81 +247,14 @@ impl<'i> CaptureParamAndLocal<'i> {
     }
 }
 
-impl<T0> CaptureParamAndLocalSpec<T0> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: T0) -> Self {
-        let x = input;
-        Self { x }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> T0 {
-        let Self { x } = self;
-        x
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureParamAndLocalSpec::from_structural);
-        reveal(CaptureParamAndLocalSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: T0)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureParamAndLocalSpec::from_structural);
-        reveal(CaptureParamAndLocalSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { x } => x,
-            },
-    {
-        reveal(CaptureParamAndLocalSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalReverse;
-
-impl SpecMap for CaptureParamAndLocalForward {
-    type Input = CaptureParamAndLocalInner;
-
-    type Output = CaptureParamAndLocalSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureParamAndLocalSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureParamAndLocalReverse {
-    type Input = CaptureParamAndLocalSpec;
-
-    type Output = CaptureParamAndLocalInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `nested_inner_struct_val`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `nested_inner_struct_val`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NestedInnerStructVal<'i> {
     pub x: u8,
     pub y: &'i [u8],
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct NestedInnerStructValSpec<T0 = u8, T1 = Seq<u8>> {
     pub x: T0,
     pub y: T1,
@@ -769,7 +265,7 @@ pub type NestedInnerStructValInner = (u8, Seq<u8>);
 impl<'i> DeepView for NestedInnerStructVal<'i> {
     type V = NestedInnerStructValSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NestedInnerStructValSpec { x: self.x.deep_view(), y: self.y.deep_view() }
     }
@@ -785,81 +281,14 @@ impl<'i> NestedInnerStructVal<'i> {
     }
 }
 
-impl<T0, T1> NestedInnerStructValSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (x, y) = input;
-        Self { x, y }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { x, y } = self;
-        (x, y)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(NestedInnerStructValSpec::from_structural);
-        reveal(NestedInnerStructValSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(NestedInnerStructValSpec::from_structural);
-        reveal(NestedInnerStructValSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { x, y } => (x, y),
-            },
-    {
-        reveal(NestedInnerStructValSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerStructValForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerStructValReverse;
-
-impl SpecMap for NestedInnerStructValForward {
-    type Input = NestedInnerStructValInner;
-
-    type Output = NestedInnerStructValSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        NestedInnerStructValSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for NestedInnerStructValReverse {
-    type Input = NestedInnerStructValSpec;
-
-    type Output = NestedInnerStructValInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `nested_inner_choice_x_a`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `nested_inner_choice_x_a`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NestedInnerChoiceXA {
     C(u8),
     D(u16),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum NestedInnerChoiceXASpec<T0 = u8, T1 = u16> {
     C(T0),
     D(T1),
@@ -870,7 +299,7 @@ pub type NestedInnerChoiceXAInner = Sum<u8, u16>;
 impl DeepView for NestedInnerChoiceXA {
     type V = NestedInnerChoiceXASpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             NestedInnerChoiceXA::C(v) => NestedInnerChoiceXASpec::C(v.deep_view()),
@@ -882,103 +311,24 @@ impl DeepView for NestedInnerChoiceXA {
 impl NestedInnerChoiceXA {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                NestedInnerChoiceXA::C(v) => NestedInnerChoiceXASpec::C(v.deep_view()),
-                NestedInnerChoiceXA::D(v) => NestedInnerChoiceXASpec::D(v.deep_view()),
-            },
+            self.deep_view()
+                == match self {
+                    NestedInnerChoiceXA::C(v) => NestedInnerChoiceXASpec::C(v.deep_view()),
+                    NestedInnerChoiceXA::D(v) => NestedInnerChoiceXASpec::D(v.deep_view()),
+                },
     {
         reveal(<NestedInnerChoiceXA as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> NestedInnerChoiceXASpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::C(value),
-            R(value) => Self::D(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::C(value) => L(value),
-            Self::D(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(NestedInnerChoiceXASpec::from_structural);
-        reveal(NestedInnerChoiceXASpec::into_structural);
-        match self {
-            Self::C(_) => {},
-            Self::D(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(NestedInnerChoiceXASpec::from_structural);
-        reveal(NestedInnerChoiceXASpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::C(value) => L(value),
-                Self::D(value) => R(value),
-            },
-    {
-        reveal(NestedInnerChoiceXASpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceXAForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceXAReverse;
-
-impl SpecMap for NestedInnerChoiceXAForward {
-    type Input = NestedInnerChoiceXAInner;
-
-    type Output = NestedInnerChoiceXASpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        NestedInnerChoiceXASpec::from_structural(input)
-    }
-}
-
-impl SpecMap for NestedInnerChoiceXAReverse {
-    type Input = NestedInnerChoiceXASpec;
-
-    type Output = NestedInnerChoiceXAInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `nested_inner_choice_x`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `nested_inner_choice_x`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NestedInnerChoiceX {
     A(NestedInnerChoiceXA),
     B(u32),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum NestedInnerChoiceXSpec<T0 = NestedInnerChoiceXASpec, T1 = u32> {
     A(T0),
     B(T1),
@@ -989,7 +339,7 @@ pub type NestedInnerChoiceXInner = Sum<NestedInnerChoiceXASpec, u32>;
 impl DeepView for NestedInnerChoiceX {
     type V = NestedInnerChoiceXSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             NestedInnerChoiceX::A(v) => NestedInnerChoiceXSpec::A(v.deep_view()),
@@ -1001,103 +351,24 @@ impl DeepView for NestedInnerChoiceX {
 impl NestedInnerChoiceX {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                NestedInnerChoiceX::A(v) => NestedInnerChoiceXSpec::A(v.deep_view()),
-                NestedInnerChoiceX::B(v) => NestedInnerChoiceXSpec::B(v.deep_view()),
-            },
+            self.deep_view()
+                == match self {
+                    NestedInnerChoiceX::A(v) => NestedInnerChoiceXSpec::A(v.deep_view()),
+                    NestedInnerChoiceX::B(v) => NestedInnerChoiceXSpec::B(v.deep_view()),
+                },
     {
         reveal(<NestedInnerChoiceX as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> NestedInnerChoiceXSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::A(value),
-            R(value) => Self::B(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::A(value) => L(value),
-            Self::B(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(NestedInnerChoiceXSpec::from_structural);
-        reveal(NestedInnerChoiceXSpec::into_structural);
-        match self {
-            Self::A(_) => {},
-            Self::B(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(NestedInnerChoiceXSpec::from_structural);
-        reveal(NestedInnerChoiceXSpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::A(value) => L(value),
-                Self::B(value) => R(value),
-            },
-    {
-        reveal(NestedInnerChoiceXSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceXForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct NestedInnerChoiceXReverse;
-
-impl SpecMap for NestedInnerChoiceXForward {
-    type Input = NestedInnerChoiceXInner;
-
-    type Output = NestedInnerChoiceXSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        NestedInnerChoiceXSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for NestedInnerChoiceXReverse {
-    type Input = NestedInnerChoiceXSpec;
-
-    type Output = NestedInnerChoiceXInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_outer_and_local_payload_body_choice1`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_outer_and_local_payload_body_choice1`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1<'i> {
     pub count: u8,
     pub items: &'i [u8],
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1Spec<T0 = u8, T1 = Seq<u8>> {
     pub count: T0,
     pub items: T1,
@@ -1108,7 +379,7 @@ pub type CaptureOuterAndLocalPayloadBodyChoice1Inner = (u8, Seq<u8>);
 impl<'i> DeepView for CaptureOuterAndLocalPayloadBodyChoice1<'i> {
     type V = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureOuterAndLocalPayloadBodyChoice1Spec {
             count: self.count.deep_view(),
@@ -1127,81 +398,14 @@ impl<'i> CaptureOuterAndLocalPayloadBodyChoice1<'i> {
     }
 }
 
-impl<T0, T1> CaptureOuterAndLocalPayloadBodyChoice1Spec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (count, items) = input;
-        Self { count, items }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { count, items } = self;
-        (count, items)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { count, items } => (count, items),
-            },
-    {
-        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadBodyChoice1Forward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadBodyChoice1Reverse;
-
-impl SpecMap for CaptureOuterAndLocalPayloadBodyChoice1Forward {
-    type Input = CaptureOuterAndLocalPayloadBodyChoice1Inner;
-
-    type Output = CaptureOuterAndLocalPayloadBodyChoice1Spec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureOuterAndLocalPayloadBodyChoice1Reverse {
-    type Input = CaptureOuterAndLocalPayloadBodyChoice1Spec;
-
-    type Output = CaptureOuterAndLocalPayloadBodyChoice1Inner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_outer_and_local_payload_body`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_outer_and_local_payload_body`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureOuterAndLocalPayloadBody<'i> {
     Variant1(&'i [u8]),
     Default(CaptureOuterAndLocalPayloadBodyChoice1<'i>),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum CaptureOuterAndLocalPayloadBodySpec<
     T0 = Seq<u8>,
     T1 = CaptureOuterAndLocalPayloadBodyChoice1Spec,
@@ -1218,15 +422,13 @@ pub type CaptureOuterAndLocalPayloadBodyInner = Sum<
 impl<'i> DeepView for CaptureOuterAndLocalPayloadBody<'i> {
     type V = CaptureOuterAndLocalPayloadBodySpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            CaptureOuterAndLocalPayloadBody::Variant1(
-                v,
-            ) => CaptureOuterAndLocalPayloadBodySpec::Variant1(v.deep_view()),
-            CaptureOuterAndLocalPayloadBody::Default(
-                v,
-            ) => CaptureOuterAndLocalPayloadBodySpec::Default(v.deep_view()),
+            CaptureOuterAndLocalPayloadBody::Variant1(v) =>
+                CaptureOuterAndLocalPayloadBodySpec::Variant1(v.deep_view()),
+            CaptureOuterAndLocalPayloadBody::Default(v) =>
+                CaptureOuterAndLocalPayloadBodySpec::Default(v.deep_view()),
         }
     }
 }
@@ -1234,107 +436,26 @@ impl<'i> DeepView for CaptureOuterAndLocalPayloadBody<'i> {
 impl<'i> CaptureOuterAndLocalPayloadBody<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                CaptureOuterAndLocalPayloadBody::Variant1(
-                    v,
-                ) => CaptureOuterAndLocalPayloadBodySpec::Variant1(v.deep_view()),
-                CaptureOuterAndLocalPayloadBody::Default(
-                    v,
-                ) => CaptureOuterAndLocalPayloadBodySpec::Default(v.deep_view()),
-            },
+            self.deep_view()
+                == match self {
+                    CaptureOuterAndLocalPayloadBody::Variant1(v) =>
+                        CaptureOuterAndLocalPayloadBodySpec::Variant1(v.deep_view()),
+                    CaptureOuterAndLocalPayloadBody::Default(v) =>
+                        CaptureOuterAndLocalPayloadBodySpec::Default(v.deep_view()),
+                },
     {
         reveal(<CaptureOuterAndLocalPayloadBody as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> CaptureOuterAndLocalPayloadBodySpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureOuterAndLocalPayloadBodySpec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
-        match self {
-            Self::Variant1(_) => {},
-            Self::Default(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureOuterAndLocalPayloadBodySpec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::Variant1(value) => L(value),
-                Self::Default(value) => R(value),
-            },
-    {
-        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadBodyForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadBodyReverse;
-
-impl SpecMap for CaptureOuterAndLocalPayloadBodyForward {
-    type Input = CaptureOuterAndLocalPayloadBodyInner;
-
-    type Output = CaptureOuterAndLocalPayloadBodySpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureOuterAndLocalPayloadBodySpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureOuterAndLocalPayloadBodyReverse {
-    type Input = CaptureOuterAndLocalPayloadBodySpec;
-
-    type Output = CaptureOuterAndLocalPayloadBodyInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_outer_and_local_payload`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_outer_and_local_payload`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureOuterAndLocalPayload<'i> {
     pub tag: u8,
     pub body: CaptureOuterAndLocalPayloadBody<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureOuterAndLocalPayloadSpec<T0 = u8, T1 = CaptureOuterAndLocalPayloadBodySpec> {
     pub tag: T0,
     pub body: T1,
@@ -1345,7 +466,7 @@ pub type CaptureOuterAndLocalPayloadInner = (u8, CaptureOuterAndLocalPayloadBody
 impl<'i> DeepView for CaptureOuterAndLocalPayload<'i> {
     type V = CaptureOuterAndLocalPayloadSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureOuterAndLocalPayloadSpec { tag: self.tag.deep_view(), body: self.body.deep_view() }
     }
@@ -1361,81 +482,14 @@ impl<'i> CaptureOuterAndLocalPayload<'i> {
     }
 }
 
-impl<T0, T1> CaptureOuterAndLocalPayloadSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (tag, body) = input;
-        Self { tag, body }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { tag, body } = self;
-        (tag, body)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureOuterAndLocalPayloadSpec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureOuterAndLocalPayloadSpec::from_structural);
-        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { tag, body } => (tag, body),
-            },
-    {
-        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureOuterAndLocalPayloadReverse;
-
-impl SpecMap for CaptureOuterAndLocalPayloadForward {
-    type Input = CaptureOuterAndLocalPayloadInner;
-
-    type Output = CaptureOuterAndLocalPayloadSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureOuterAndLocalPayloadSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureOuterAndLocalPayloadReverse {
-    type Input = CaptureOuterAndLocalPayloadSpec;
-
-    type Output = CaptureOuterAndLocalPayloadInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_local_in_anon_struct_wrapper_value_choice0`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_local_in_anon_struct_wrapper_value_choice0`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0<'i> {
     pub len: u8,
     pub bytes: &'i [u8],
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0Spec<T0 = u8, T1 = Seq<u8>> {
     pub len: T0,
     pub bytes: T1,
@@ -1446,7 +500,7 @@ pub type CaptureLocalInAnonStructWrapperValueChoice0Inner = (u8, Seq<u8>);
 impl<'i> DeepView for CaptureLocalInAnonStructWrapperValueChoice0<'i> {
     type V = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureLocalInAnonStructWrapperValueChoice0Spec {
             len: self.len.deep_view(),
@@ -1465,81 +519,14 @@ impl<'i> CaptureLocalInAnonStructWrapperValueChoice0<'i> {
     }
 }
 
-impl<T0, T1> CaptureLocalInAnonStructWrapperValueChoice0Spec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (len, bytes) = input;
-        Self { len, bytes }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { len, bytes } = self;
-        (len, bytes)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { len, bytes } => (len, bytes),
-            },
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperValueChoice0Forward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperValueChoice0Reverse;
-
-impl SpecMap for CaptureLocalInAnonStructWrapperValueChoice0Forward {
-    type Input = CaptureLocalInAnonStructWrapperValueChoice0Inner;
-
-    type Output = CaptureLocalInAnonStructWrapperValueChoice0Spec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureLocalInAnonStructWrapperValueChoice0Reverse {
-    type Input = CaptureLocalInAnonStructWrapperValueChoice0Spec;
-
-    type Output = CaptureLocalInAnonStructWrapperValueChoice0Inner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_local_in_anon_struct_wrapper_value`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_local_in_anon_struct_wrapper_value`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureLocalInAnonStructWrapperValue<'i> {
     Variant1(CaptureLocalInAnonStructWrapperValueChoice0<'i>),
     Default(u16),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum CaptureLocalInAnonStructWrapperValueSpec<
     T0 = CaptureLocalInAnonStructWrapperValueChoice0Spec,
     T1 = u16,
@@ -1556,15 +543,13 @@ pub type CaptureLocalInAnonStructWrapperValueInner = Sum<
 impl<'i> DeepView for CaptureLocalInAnonStructWrapperValue<'i> {
     type V = CaptureLocalInAnonStructWrapperValueSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            CaptureLocalInAnonStructWrapperValue::Variant1(
-                v,
-            ) => CaptureLocalInAnonStructWrapperValueSpec::Variant1(v.deep_view()),
-            CaptureLocalInAnonStructWrapperValue::Default(
-                v,
-            ) => CaptureLocalInAnonStructWrapperValueSpec::Default(v.deep_view()),
+            CaptureLocalInAnonStructWrapperValue::Variant1(v) =>
+                CaptureLocalInAnonStructWrapperValueSpec::Variant1(v.deep_view()),
+            CaptureLocalInAnonStructWrapperValue::Default(v) =>
+                CaptureLocalInAnonStructWrapperValueSpec::Default(v.deep_view()),
         }
     }
 }
@@ -1572,107 +557,26 @@ impl<'i> DeepView for CaptureLocalInAnonStructWrapperValue<'i> {
 impl<'i> CaptureLocalInAnonStructWrapperValue<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                CaptureLocalInAnonStructWrapperValue::Variant1(
-                    v,
-                ) => CaptureLocalInAnonStructWrapperValueSpec::Variant1(v.deep_view()),
-                CaptureLocalInAnonStructWrapperValue::Default(
-                    v,
-                ) => CaptureLocalInAnonStructWrapperValueSpec::Default(v.deep_view()),
-            },
+            self.deep_view()
+                == match self {
+                    CaptureLocalInAnonStructWrapperValue::Variant1(v) =>
+                        CaptureLocalInAnonStructWrapperValueSpec::Variant1(v.deep_view()),
+                    CaptureLocalInAnonStructWrapperValue::Default(v) =>
+                        CaptureLocalInAnonStructWrapperValueSpec::Default(v.deep_view()),
+                },
     {
         reveal(<CaptureLocalInAnonStructWrapperValue as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> CaptureLocalInAnonStructWrapperValueSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueSpec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
-        match self {
-            Self::Variant1(_) => {},
-            Self::Default(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueSpec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::Variant1(value) => L(value),
-                Self::Default(value) => R(value),
-            },
-    {
-        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperValueForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperValueReverse;
-
-impl SpecMap for CaptureLocalInAnonStructWrapperValueForward {
-    type Input = CaptureLocalInAnonStructWrapperValueInner;
-
-    type Output = CaptureLocalInAnonStructWrapperValueSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureLocalInAnonStructWrapperValueSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureLocalInAnonStructWrapperValueReverse {
-    type Input = CaptureLocalInAnonStructWrapperValueSpec;
-
-    type Output = CaptureLocalInAnonStructWrapperValueInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_local_in_anon_struct_wrapper`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_local_in_anon_struct_wrapper`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapper<'i> {
     pub tag: u8,
     pub value: CaptureLocalInAnonStructWrapperValue<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureLocalInAnonStructWrapperSpec<
     T0 = u8,
     T1 = CaptureLocalInAnonStructWrapperValueSpec,
@@ -1686,7 +590,7 @@ pub type CaptureLocalInAnonStructWrapperInner = (u8, CaptureLocalInAnonStructWra
 impl<'i> DeepView for CaptureLocalInAnonStructWrapper<'i> {
     type V = CaptureLocalInAnonStructWrapperSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureLocalInAnonStructWrapperSpec {
             tag: self.tag.deep_view(),
@@ -1705,81 +609,14 @@ impl<'i> CaptureLocalInAnonStructWrapper<'i> {
     }
 }
 
-impl<T0, T1> CaptureLocalInAnonStructWrapperSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (tag, value) = input;
-        Self { tag, value }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { tag, value } = self;
-        (tag, value)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureLocalInAnonStructWrapperSpec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureLocalInAnonStructWrapperSpec::from_structural);
-        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { tag, value } => (tag, value),
-            },
-    {
-        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureLocalInAnonStructWrapperReverse;
-
-impl SpecMap for CaptureLocalInAnonStructWrapperForward {
-    type Input = CaptureLocalInAnonStructWrapperInner;
-
-    type Output = CaptureLocalInAnonStructWrapperSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureLocalInAnonStructWrapperSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureLocalInAnonStructWrapperReverse {
-    type Input = CaptureLocalInAnonStructWrapperSpec;
-
-    type Output = CaptureLocalInAnonStructWrapperInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local_x_a_payload`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local_x_a_payload`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureParamAndLocalXAPayload<'i> {
     C(&'i [u8]),
     D(&'i [u8]),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum CaptureParamAndLocalXAPayloadSpec<T0 = Seq<u8>, T1 = Seq<u8>> {
     C(T0),
     D(T1),
@@ -1790,15 +627,13 @@ pub type CaptureParamAndLocalXAPayloadInner = Sum<Seq<u8>, Seq<u8>>;
 impl<'i> DeepView for CaptureParamAndLocalXAPayload<'i> {
     type V = CaptureParamAndLocalXAPayloadSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            CaptureParamAndLocalXAPayload::C(v) => CaptureParamAndLocalXAPayloadSpec::C(
-                v.deep_view(),
-            ),
-            CaptureParamAndLocalXAPayload::D(v) => CaptureParamAndLocalXAPayloadSpec::D(
-                v.deep_view(),
-            ),
+            CaptureParamAndLocalXAPayload::C(v) =>
+                CaptureParamAndLocalXAPayloadSpec::C(v.deep_view()),
+            CaptureParamAndLocalXAPayload::D(v) =>
+                CaptureParamAndLocalXAPayloadSpec::D(v.deep_view()),
         }
     }
 }
@@ -1806,107 +641,26 @@ impl<'i> DeepView for CaptureParamAndLocalXAPayload<'i> {
 impl<'i> CaptureParamAndLocalXAPayload<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                CaptureParamAndLocalXAPayload::C(v) => CaptureParamAndLocalXAPayloadSpec::C(
-                    v.deep_view(),
-                ),
-                CaptureParamAndLocalXAPayload::D(v) => CaptureParamAndLocalXAPayloadSpec::D(
-                    v.deep_view(),
-                ),
-            },
+            self.deep_view()
+                == match self {
+                    CaptureParamAndLocalXAPayload::C(v) =>
+                        CaptureParamAndLocalXAPayloadSpec::C(v.deep_view()),
+                    CaptureParamAndLocalXAPayload::D(v) =>
+                        CaptureParamAndLocalXAPayloadSpec::D(v.deep_view()),
+                },
     {
         reveal(<CaptureParamAndLocalXAPayload as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> CaptureParamAndLocalXAPayloadSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::C(value),
-            R(value) => Self::D(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::C(value) => L(value),
-            Self::D(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureParamAndLocalXAPayloadSpec::from_structural);
-        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
-        match self {
-            Self::C(_) => {},
-            Self::D(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureParamAndLocalXAPayloadSpec::from_structural);
-        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::C(value) => L(value),
-                Self::D(value) => R(value),
-            },
-    {
-        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXAPayloadForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXAPayloadReverse;
-
-impl SpecMap for CaptureParamAndLocalXAPayloadForward {
-    type Input = CaptureParamAndLocalXAPayloadInner;
-
-    type Output = CaptureParamAndLocalXAPayloadSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureParamAndLocalXAPayloadSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureParamAndLocalXAPayloadReverse {
-    type Input = CaptureParamAndLocalXAPayloadSpec;
-
-    type Output = CaptureParamAndLocalXAPayloadInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local_x_a`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local_x_a`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureParamAndLocalXA<'i> {
     pub len: u8,
     pub payload: CaptureParamAndLocalXAPayload<'i>,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureParamAndLocalXASpec<T0 = u8, T1 = CaptureParamAndLocalXAPayloadSpec> {
     pub len: T0,
     pub payload: T1,
@@ -1917,7 +671,7 @@ pub type CaptureParamAndLocalXAInner = (u8, CaptureParamAndLocalXAPayloadSpec);
 impl<'i> DeepView for CaptureParamAndLocalXA<'i> {
     type V = CaptureParamAndLocalXASpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureParamAndLocalXASpec { len: self.len.deep_view(), payload: self.payload.deep_view() }
     }
@@ -1933,81 +687,14 @@ impl<'i> CaptureParamAndLocalXA<'i> {
     }
 }
 
-impl<T0, T1> CaptureParamAndLocalXASpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (len, payload) = input;
-        Self { len, payload }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { len, payload } = self;
-        (len, payload)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureParamAndLocalXASpec::from_structural);
-        reveal(CaptureParamAndLocalXASpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureParamAndLocalXASpec::from_structural);
-        reveal(CaptureParamAndLocalXASpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { len, payload } => (len, payload),
-            },
-    {
-        reveal(CaptureParamAndLocalXASpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXAForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXAReverse;
-
-impl SpecMap for CaptureParamAndLocalXAForward {
-    type Input = CaptureParamAndLocalXAInner;
-
-    type Output = CaptureParamAndLocalXASpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureParamAndLocalXASpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureParamAndLocalXAReverse {
-    type Input = CaptureParamAndLocalXASpec;
-
-    type Output = CaptureParamAndLocalXAInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local_x_b_y`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local_x_b_y`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureParamAndLocalXBY {
     Variant1(u8),
     Default(u16),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum CaptureParamAndLocalXBYSpec<T0 = u8, T1 = u16> {
     Variant1(T0),
     Default(T1),
@@ -2018,15 +705,13 @@ pub type CaptureParamAndLocalXBYInner = Sum<u8, u16>;
 impl DeepView for CaptureParamAndLocalXBY {
     type V = CaptureParamAndLocalXBYSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
-            CaptureParamAndLocalXBY::Variant1(v) => CaptureParamAndLocalXBYSpec::Variant1(
-                v.deep_view(),
-            ),
-            CaptureParamAndLocalXBY::Default(v) => CaptureParamAndLocalXBYSpec::Default(
-                v.deep_view(),
-            ),
+            CaptureParamAndLocalXBY::Variant1(v) =>
+                CaptureParamAndLocalXBYSpec::Variant1(v.deep_view()),
+            CaptureParamAndLocalXBY::Default(v) =>
+                CaptureParamAndLocalXBYSpec::Default(v.deep_view()),
         }
     }
 }
@@ -2034,107 +719,26 @@ impl DeepView for CaptureParamAndLocalXBY {
 impl CaptureParamAndLocalXBY {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                CaptureParamAndLocalXBY::Variant1(v) => CaptureParamAndLocalXBYSpec::Variant1(
-                    v.deep_view(),
-                ),
-                CaptureParamAndLocalXBY::Default(v) => CaptureParamAndLocalXBYSpec::Default(
-                    v.deep_view(),
-                ),
-            },
+            self.deep_view()
+                == match self {
+                    CaptureParamAndLocalXBY::Variant1(v) =>
+                        CaptureParamAndLocalXBYSpec::Variant1(v.deep_view()),
+                    CaptureParamAndLocalXBY::Default(v) =>
+                        CaptureParamAndLocalXBYSpec::Default(v.deep_view()),
+                },
     {
         reveal(<CaptureParamAndLocalXBY as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> CaptureParamAndLocalXBYSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
-        match input {
-            L(value) => Self::Variant1(value),
-            R(value) => Self::Default(value),
-        }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> Sum<T0, T1> {
-        match self {
-            Self::Variant1(value) => L(value),
-            Self::Default(value) => R(value),
-        }
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureParamAndLocalXBYSpec::from_structural);
-        reveal(CaptureParamAndLocalXBYSpec::into_structural);
-        match self {
-            Self::Variant1(_) => {},
-            Self::Default(_) => {},
-        }
-    }
-
-    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureParamAndLocalXBYSpec::from_structural);
-        reveal(CaptureParamAndLocalXBYSpec::into_structural);
-        match input {
-            L(_) => {},
-            R(_) => {},
-        }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self::Variant1(value) => L(value),
-                Self::Default(value) => R(value),
-            },
-    {
-        reveal(CaptureParamAndLocalXBYSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXBYForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXBYReverse;
-
-impl SpecMap for CaptureParamAndLocalXBYForward {
-    type Input = CaptureParamAndLocalXBYInner;
-
-    type Output = CaptureParamAndLocalXBYSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureParamAndLocalXBYSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureParamAndLocalXBYReverse {
-    type Input = CaptureParamAndLocalXBYSpec;
-
-    type Output = CaptureParamAndLocalXBYInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local_x_b`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local_x_b`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CaptureParamAndLocalXB {
     pub tag: u8,
     pub y: CaptureParamAndLocalXBY,
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub struct CaptureParamAndLocalXBSpec<T0 = u8, T1 = CaptureParamAndLocalXBYSpec> {
     pub tag: T0,
     pub y: T1,
@@ -2145,7 +749,7 @@ pub type CaptureParamAndLocalXBInner = (u8, CaptureParamAndLocalXBYSpec);
 impl DeepView for CaptureParamAndLocalXB {
     type V = CaptureParamAndLocalXBSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         CaptureParamAndLocalXBSpec { tag: self.tag.deep_view(), y: self.y.deep_view() }
     }
@@ -2161,81 +765,14 @@ impl CaptureParamAndLocalXB {
     }
 }
 
-impl<T0, T1> CaptureParamAndLocalXBSpec<T0, T1> {
-    # [verifier::opaque]
-    pub open spec fn from_structural(input: (T0, T1)) -> Self {
-        let (tag, y) = input;
-        Self { tag, y }
-    }
-
-    # [verifier::opaque]
-    pub open spec fn into_structural(self) -> (T0, T1) {
-        let Self { tag, y } = self;
-        (tag, y)
-    }
-
-    pub broadcast proof fn lemma_from_into(self)
-        ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
-    {
-        reveal(CaptureParamAndLocalXBSpec::from_structural);
-        reveal(CaptureParamAndLocalXBSpec::into_structural);
-    }
-
-    pub broadcast proof fn lemma_into_from(input: (T0, T1))
-        ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
-    {
-        reveal(CaptureParamAndLocalXBSpec::from_structural);
-        reveal(CaptureParamAndLocalXBSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self) == match self {
-                Self { tag, y } => (tag, y),
-            },
-    {
-        reveal(CaptureParamAndLocalXBSpec::into_structural);
-    }
-}
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXBForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
-pub struct CaptureParamAndLocalXBReverse;
-
-impl SpecMap for CaptureParamAndLocalXBForward {
-    type Input = CaptureParamAndLocalXBInner;
-
-    type Output = CaptureParamAndLocalXBSpec;
-
-    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
-        CaptureParamAndLocalXBSpec::from_structural(input)
-    }
-}
-
-impl SpecMap for CaptureParamAndLocalXBReverse {
-    type Input = CaptureParamAndLocalXBSpec;
-
-    type Output = CaptureParamAndLocalXBInner;
-
-    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
-        value.into_structural()
-    }
-}
-
-# [doc = "data type for `capture_param_and_local_x`."]
-# [derive (Debug, PartialEq, Eq, Clone, Copy)]
+/// data type for `capture_param_and_local_x`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CaptureParamAndLocalX<'i> {
     A(CaptureParamAndLocalXA<'i>),
     B(CaptureParamAndLocalXB),
 }
 
-# [verifier::ext_equal]
+#[verifier::ext_equal]
 pub enum CaptureParamAndLocalXSpec<
     T0 = CaptureParamAndLocalXASpec,
     T1 = CaptureParamAndLocalXBSpec,
@@ -2249,7 +786,7 @@ pub type CaptureParamAndLocalXInner = Sum<CaptureParamAndLocalXASpec, CapturePar
 impl<'i> DeepView for CaptureParamAndLocalX<'i> {
     type V = CaptureParamAndLocalXSpec;
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         match self {
             CaptureParamAndLocalX::A(v) => CaptureParamAndLocalXSpec::A(v.deep_view()),
@@ -2261,17 +798,649 @@ impl<'i> DeepView for CaptureParamAndLocalX<'i> {
 impl<'i> CaptureParamAndLocalX<'i> {
     pub proof fn lemma_deep_view_fields(&self)
         ensures
-            self.deep_view() == match self {
-                CaptureParamAndLocalX::A(v) => CaptureParamAndLocalXSpec::A(v.deep_view()),
-                CaptureParamAndLocalX::B(v) => CaptureParamAndLocalXSpec::B(v.deep_view()),
-            },
+            self.deep_view()
+                == match self {
+                    CaptureParamAndLocalX::A(v) => CaptureParamAndLocalXSpec::A(v.deep_view()),
+                    CaptureParamAndLocalX::B(v) => CaptureParamAndLocalXSpec::B(v.deep_view()),
+                },
     {
         reveal(<CaptureParamAndLocalX as DeepView>::deep_view);
     }
 }
 
-impl<T0, T1> CaptureParamAndLocalXSpec<T0, T1> {
-    # [verifier::opaque]
+// ============================================================
+// Structural Mappers
+// ============================================================
+impl AOrB {
+    pub open spec fn structural_valid(input: AOrBInner) -> bool {
+        {
+            let x = input;
+            x == 1 || x == 2
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: AOrBInner) -> Self {
+        match input {
+            1 => Self::A,
+            2 => Self::B,
+            _ => arbitrary(),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> AOrBInner {
+        match self {
+            Self::A => 1,
+            Self::B => 2,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(AOrB::from_structural);
+        reveal(AOrB::into_structural);
+        match self {
+            Self::A => {}
+            Self::B => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: AOrBInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(AOrB::from_structural);
+        reveal(AOrB::into_structural);
+        match input {
+            1 => {}
+            2 => {}
+            _ => {
+                assert(false);
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct AOrBForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct AOrBReverse;
+
+impl SpecMap for AOrBForward {
+    type Input = AOrBInner;
+    type Output = AOrBSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        AOrB::from_structural(input)
+    }
+}
+
+impl SpecMap for AOrBReverse {
+    type Input = AOrBSpec;
+    type Output = AOrBInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl COrD {
+    pub open spec fn structural_valid(input: COrDInner) -> bool {
+        {
+            let x = input;
+            x == 1 || x == 2
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: COrDInner) -> Self {
+        match input {
+            1 => Self::C,
+            2 => Self::D,
+            _ => arbitrary(),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> COrDInner {
+        match self {
+            Self::C => 1,
+            Self::D => 2,
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(COrD::from_structural);
+        reveal(COrD::into_structural);
+        match self {
+            Self::C => {}
+            Self::D => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: COrDInner)
+        requires
+            Self::structural_valid(input),
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(COrD::from_structural);
+        reveal(COrD::into_structural);
+        match input {
+            1 => {}
+            2 => {}
+            _ => {
+                assert(false);
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct COrDForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct COrDReverse;
+
+impl SpecMap for COrDForward {
+    type Input = COrDInner;
+    type Output = COrDSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        COrD::from_structural(input)
+    }
+}
+
+impl SpecMap for COrDReverse {
+    type Input = COrDSpec;
+    type Output = COrDInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> NestedInnerStructSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (len, val) = input;
+        Self { len, val }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { len, val } = self;
+        (len, val)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedInnerStructSpec::from_structural);
+        reveal(NestedInnerStructSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedInnerStructSpec::from_structural);
+        reveal(NestedInnerStructSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { len, val } => (len, val),
+                },
+    {
+        reveal(NestedInnerStructSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerStructForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerStructReverse;
+
+impl SpecMap for NestedInnerStructForward {
+    type Input = NestedInnerStructInner;
+    type Output = NestedInnerStructSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedInnerStructSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedInnerStructReverse {
+    type Input = NestedInnerStructSpec;
+    type Output = NestedInnerStructInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0> NestedInnerChoiceSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let x = input;
+        Self { x }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { x } = self;
+        x
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedInnerChoiceSpec::from_structural);
+        reveal(NestedInnerChoiceSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedInnerChoiceSpec::from_structural);
+        reveal(NestedInnerChoiceSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { x } => x,
+                },
+    {
+        reveal(NestedInnerChoiceSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceReverse;
+
+impl SpecMap for NestedInnerChoiceForward {
+    type Input = NestedInnerChoiceInner;
+    type Output = NestedInnerChoiceSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedInnerChoiceSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedInnerChoiceReverse {
+    type Input = NestedInnerChoiceSpec;
+    type Output = NestedInnerChoiceInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureOuterAndLocalSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (frame_len, payload) = input;
+        Self { frame_len, payload }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { frame_len, payload } = self;
+        (frame_len, payload)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureOuterAndLocalSpec::from_structural);
+        reveal(CaptureOuterAndLocalSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureOuterAndLocalSpec::from_structural);
+        reveal(CaptureOuterAndLocalSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { frame_len, payload } => (frame_len, payload),
+                },
+    {
+        reveal(CaptureOuterAndLocalSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalReverse;
+
+impl SpecMap for CaptureOuterAndLocalForward {
+    type Input = CaptureOuterAndLocalInner;
+    type Output = CaptureOuterAndLocalSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureOuterAndLocalSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureOuterAndLocalReverse {
+    type Input = CaptureOuterAndLocalSpec;
+    type Output = CaptureOuterAndLocalInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0> CaptureLocalInAnonStructSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let wrapper = input;
+        Self { wrapper }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { wrapper } = self;
+        wrapper
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureLocalInAnonStructSpec::from_structural);
+        reveal(CaptureLocalInAnonStructSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureLocalInAnonStructSpec::from_structural);
+        reveal(CaptureLocalInAnonStructSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { wrapper } => wrapper,
+                },
+    {
+        reveal(CaptureLocalInAnonStructSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructReverse;
+
+impl SpecMap for CaptureLocalInAnonStructForward {
+    type Input = CaptureLocalInAnonStructInner;
+    type Output = CaptureLocalInAnonStructSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureLocalInAnonStructSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureLocalInAnonStructReverse {
+    type Input = CaptureLocalInAnonStructSpec;
+    type Output = CaptureLocalInAnonStructInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0> CaptureParamAndLocalSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let x = input;
+        Self { x }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { x } = self;
+        x
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalSpec::from_structural);
+        reveal(CaptureParamAndLocalSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalSpec::from_structural);
+        reveal(CaptureParamAndLocalSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { x } => x,
+                },
+    {
+        reveal(CaptureParamAndLocalSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalReverse;
+
+impl SpecMap for CaptureParamAndLocalForward {
+    type Input = CaptureParamAndLocalInner;
+    type Output = CaptureParamAndLocalSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureParamAndLocalSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureParamAndLocalReverse {
+    type Input = CaptureParamAndLocalSpec;
+    type Output = CaptureParamAndLocalInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> NestedInnerStructValSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (x, y) = input;
+        Self { x, y }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { x, y } = self;
+        (x, y)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedInnerStructValSpec::from_structural);
+        reveal(NestedInnerStructValSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedInnerStructValSpec::from_structural);
+        reveal(NestedInnerStructValSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { x, y } => (x, y),
+                },
+    {
+        reveal(NestedInnerStructValSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerStructValForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerStructValReverse;
+
+impl SpecMap for NestedInnerStructValForward {
+    type Input = NestedInnerStructValInner;
+    type Output = NestedInnerStructValSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedInnerStructValSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedInnerStructValReverse {
+    type Input = NestedInnerStructValSpec;
+    type Output = NestedInnerStructValInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> NestedInnerChoiceXASpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::C(value),
+            R(value) => Self::D(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::C(value) => L(value),
+            Self::D(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedInnerChoiceXASpec::from_structural);
+        reveal(NestedInnerChoiceXASpec::into_structural);
+        match self {
+            Self::C(_) => {}
+            Self::D(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedInnerChoiceXASpec::from_structural);
+        reveal(NestedInnerChoiceXASpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::C(value) => L(value),
+                    Self::D(value) => R(value),
+                },
+    {
+        reveal(NestedInnerChoiceXASpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceXAForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceXAReverse;
+
+impl SpecMap for NestedInnerChoiceXAForward {
+    type Input = NestedInnerChoiceXAInner;
+    type Output = NestedInnerChoiceXASpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedInnerChoiceXASpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedInnerChoiceXAReverse {
+    type Input = NestedInnerChoiceXASpec;
+    type Output = NestedInnerChoiceXAInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> NestedInnerChoiceXSpec<T0, T1> {
+    #[verifier::opaque]
     pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
         match input {
             L(value) => Self::A(value),
@@ -2279,7 +1448,7 @@ impl<T0, T1> CaptureParamAndLocalXSpec<T0, T1> {
         }
     }
 
-    # [verifier::opaque]
+    #[verifier::opaque]
     pub open spec fn into_structural(self) -> Sum<T0, T1> {
         match self {
             Self::A(value) => L(value),
@@ -2289,50 +1458,829 @@ impl<T0, T1> CaptureParamAndLocalXSpec<T0, T1> {
 
     pub broadcast proof fn lemma_from_into(self)
         ensures
-            # [trigger] Self::from_structural(Self::into_structural(self)) == self,
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
     {
-        reveal(CaptureParamAndLocalXSpec::from_structural);
-        reveal(CaptureParamAndLocalXSpec::into_structural);
+        reveal(NestedInnerChoiceXSpec::from_structural);
+        reveal(NestedInnerChoiceXSpec::into_structural);
         match self {
-            Self::A(_) => {},
-            Self::B(_) => {},
+            Self::A(_) => {}
+            Self::B(_) => {}
         }
     }
 
     pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
         ensures
-            # [trigger] Self::into_structural(Self::from_structural(input)) == input,
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
-        reveal(CaptureParamAndLocalXSpec::from_structural);
-        reveal(CaptureParamAndLocalXSpec::into_structural);
+        reveal(NestedInnerChoiceXSpec::from_structural);
+        reveal(NestedInnerChoiceXSpec::into_structural);
         match input {
-            L(_) => {},
-            R(_) => {},
+            L(_) => {}
+            R(_) => {}
         }
     }
 
     pub proof fn lemma_into_structural_variant(self)
         ensures
-            Self::into_structural(self) == match self {
-                Self::A(value) => L(value),
-                Self::B(value) => R(value),
-            },
+            Self::into_structural(self)
+                == match self {
+                    Self::A(value) => L(value),
+                    Self::B(value) => R(value),
+                },
+    {
+        reveal(NestedInnerChoiceXSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceXForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct NestedInnerChoiceXReverse;
+
+impl SpecMap for NestedInnerChoiceXForward {
+    type Input = NestedInnerChoiceXInner;
+    type Output = NestedInnerChoiceXSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedInnerChoiceXSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedInnerChoiceXReverse {
+    type Input = NestedInnerChoiceXSpec;
+    type Output = NestedInnerChoiceXInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureOuterAndLocalPayloadBodyChoice1Spec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (count, items) = input;
+        Self { count, items }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { count, items } = self;
+        (count, items)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { count, items } => (count, items),
+                },
+    {
+        reveal(CaptureOuterAndLocalPayloadBodyChoice1Spec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadBodyChoice1Forward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadBodyChoice1Reverse;
+
+impl SpecMap for CaptureOuterAndLocalPayloadBodyChoice1Forward {
+    type Input = CaptureOuterAndLocalPayloadBodyChoice1Inner;
+    type Output = CaptureOuterAndLocalPayloadBodyChoice1Spec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureOuterAndLocalPayloadBodyChoice1Spec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureOuterAndLocalPayloadBodyChoice1Reverse {
+    type Input = CaptureOuterAndLocalPayloadBodyChoice1Spec;
+    type Output = CaptureOuterAndLocalPayloadBodyChoice1Inner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureOuterAndLocalPayloadBodySpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureOuterAndLocalPayloadBodySpec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
+        match self {
+            Self::Variant1(_) => {}
+            Self::Default(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureOuterAndLocalPayloadBodySpec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::Variant1(value) => L(value),
+                    Self::Default(value) => R(value),
+                },
+    {
+        reveal(CaptureOuterAndLocalPayloadBodySpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadBodyForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadBodyReverse;
+
+impl SpecMap for CaptureOuterAndLocalPayloadBodyForward {
+    type Input = CaptureOuterAndLocalPayloadBodyInner;
+    type Output = CaptureOuterAndLocalPayloadBodySpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureOuterAndLocalPayloadBodySpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureOuterAndLocalPayloadBodyReverse {
+    type Input = CaptureOuterAndLocalPayloadBodySpec;
+    type Output = CaptureOuterAndLocalPayloadBodyInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureOuterAndLocalPayloadSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (tag, body) = input;
+        Self { tag, body }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { tag, body } = self;
+        (tag, body)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureOuterAndLocalPayloadSpec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureOuterAndLocalPayloadSpec::from_structural);
+        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { tag, body } => (tag, body),
+                },
+    {
+        reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureOuterAndLocalPayloadReverse;
+
+impl SpecMap for CaptureOuterAndLocalPayloadForward {
+    type Input = CaptureOuterAndLocalPayloadInner;
+    type Output = CaptureOuterAndLocalPayloadSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureOuterAndLocalPayloadSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureOuterAndLocalPayloadReverse {
+    type Input = CaptureOuterAndLocalPayloadSpec;
+    type Output = CaptureOuterAndLocalPayloadInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureLocalInAnonStructWrapperValueChoice0Spec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (len, bytes) = input;
+        Self { len, bytes }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { len, bytes } = self;
+        (len, bytes)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { len, bytes } => (len, bytes),
+                },
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueChoice0Spec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperValueChoice0Forward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperValueChoice0Reverse;
+
+impl SpecMap for CaptureLocalInAnonStructWrapperValueChoice0Forward {
+    type Input = CaptureLocalInAnonStructWrapperValueChoice0Inner;
+    type Output = CaptureLocalInAnonStructWrapperValueChoice0Spec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureLocalInAnonStructWrapperValueChoice0Spec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureLocalInAnonStructWrapperValueChoice0Reverse {
+    type Input = CaptureLocalInAnonStructWrapperValueChoice0Spec;
+    type Output = CaptureLocalInAnonStructWrapperValueChoice0Inner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureLocalInAnonStructWrapperValueSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueSpec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
+        match self {
+            Self::Variant1(_) => {}
+            Self::Default(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueSpec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::Variant1(value) => L(value),
+                    Self::Default(value) => R(value),
+                },
+    {
+        reveal(CaptureLocalInAnonStructWrapperValueSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperValueForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperValueReverse;
+
+impl SpecMap for CaptureLocalInAnonStructWrapperValueForward {
+    type Input = CaptureLocalInAnonStructWrapperValueInner;
+    type Output = CaptureLocalInAnonStructWrapperValueSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureLocalInAnonStructWrapperValueSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureLocalInAnonStructWrapperValueReverse {
+    type Input = CaptureLocalInAnonStructWrapperValueSpec;
+    type Output = CaptureLocalInAnonStructWrapperValueInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureLocalInAnonStructWrapperSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (tag, value) = input;
+        Self { tag, value }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { tag, value } = self;
+        (tag, value)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureLocalInAnonStructWrapperSpec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureLocalInAnonStructWrapperSpec::from_structural);
+        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { tag, value } => (tag, value),
+                },
+    {
+        reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureLocalInAnonStructWrapperReverse;
+
+impl SpecMap for CaptureLocalInAnonStructWrapperForward {
+    type Input = CaptureLocalInAnonStructWrapperInner;
+    type Output = CaptureLocalInAnonStructWrapperSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureLocalInAnonStructWrapperSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureLocalInAnonStructWrapperReverse {
+    type Input = CaptureLocalInAnonStructWrapperSpec;
+    type Output = CaptureLocalInAnonStructWrapperInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureParamAndLocalXAPayloadSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::C(value),
+            R(value) => Self::D(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::C(value) => L(value),
+            Self::D(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalXAPayloadSpec::from_structural);
+        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
+        match self {
+            Self::C(_) => {}
+            Self::D(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalXAPayloadSpec::from_structural);
+        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::C(value) => L(value),
+                    Self::D(value) => R(value),
+                },
+    {
+        reveal(CaptureParamAndLocalXAPayloadSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXAPayloadForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXAPayloadReverse;
+
+impl SpecMap for CaptureParamAndLocalXAPayloadForward {
+    type Input = CaptureParamAndLocalXAPayloadInner;
+    type Output = CaptureParamAndLocalXAPayloadSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureParamAndLocalXAPayloadSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureParamAndLocalXAPayloadReverse {
+    type Input = CaptureParamAndLocalXAPayloadSpec;
+    type Output = CaptureParamAndLocalXAPayloadInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureParamAndLocalXASpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (len, payload) = input;
+        Self { len, payload }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { len, payload } = self;
+        (len, payload)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalXASpec::from_structural);
+        reveal(CaptureParamAndLocalXASpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalXASpec::from_structural);
+        reveal(CaptureParamAndLocalXASpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { len, payload } => (len, payload),
+                },
+    {
+        reveal(CaptureParamAndLocalXASpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXAForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXAReverse;
+
+impl SpecMap for CaptureParamAndLocalXAForward {
+    type Input = CaptureParamAndLocalXAInner;
+    type Output = CaptureParamAndLocalXASpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureParamAndLocalXASpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureParamAndLocalXAReverse {
+    type Input = CaptureParamAndLocalXASpec;
+    type Output = CaptureParamAndLocalXAInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureParamAndLocalXBYSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Variant1(value),
+            R(value) => Self::Default(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Variant1(value) => L(value),
+            Self::Default(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalXBYSpec::from_structural);
+        reveal(CaptureParamAndLocalXBYSpec::into_structural);
+        match self {
+            Self::Variant1(_) => {}
+            Self::Default(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalXBYSpec::from_structural);
+        reveal(CaptureParamAndLocalXBYSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::Variant1(value) => L(value),
+                    Self::Default(value) => R(value),
+                },
+    {
+        reveal(CaptureParamAndLocalXBYSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXBYForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXBYReverse;
+
+impl SpecMap for CaptureParamAndLocalXBYForward {
+    type Input = CaptureParamAndLocalXBYInner;
+    type Output = CaptureParamAndLocalXBYSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureParamAndLocalXBYSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureParamAndLocalXBYReverse {
+    type Input = CaptureParamAndLocalXBYSpec;
+    type Output = CaptureParamAndLocalXBYInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureParamAndLocalXBSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (tag, y) = input;
+        Self { tag, y }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { tag, y } = self;
+        (tag, y)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalXBSpec::from_structural);
+        reveal(CaptureParamAndLocalXBSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalXBSpec::from_structural);
+        reveal(CaptureParamAndLocalXBSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_structural_fields(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self { tag, y } => (tag, y),
+                },
+    {
+        reveal(CaptureParamAndLocalXBSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXBForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct CaptureParamAndLocalXBReverse;
+
+impl SpecMap for CaptureParamAndLocalXBForward {
+    type Input = CaptureParamAndLocalXBInner;
+    type Output = CaptureParamAndLocalXBSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        CaptureParamAndLocalXBSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for CaptureParamAndLocalXBReverse {
+    type Input = CaptureParamAndLocalXBSpec;
+    type Output = CaptureParamAndLocalXBInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> CaptureParamAndLocalXSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::A(value),
+            R(value) => Self::B(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::A(value) => L(value),
+            Self::B(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(CaptureParamAndLocalXSpec::from_structural);
+        reveal(CaptureParamAndLocalXSpec::into_structural);
+        match self {
+            Self::A(_) => {}
+            Self::B(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(CaptureParamAndLocalXSpec::from_structural);
+        reveal(CaptureParamAndLocalXSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+
+    pub proof fn lemma_into_structural_variant(self)
+        ensures
+            Self::into_structural(self)
+                == match self {
+                    Self::A(value) => L(value),
+                    Self::B(value) => R(value),
+                },
     {
         reveal(CaptureParamAndLocalXSpec::into_structural);
     }
 }
 
-# [derive (Clone, Copy)]
-# [doc (hidden)]
+#[derive(Clone, Copy)]
+#[doc(hidden)]
 pub struct CaptureParamAndLocalXForward;
-
-# [derive (Clone, Copy)]
-# [doc (hidden)]
+#[derive(Clone, Copy)]
+#[doc(hidden)]
 pub struct CaptureParamAndLocalXReverse;
 
 impl SpecMap for CaptureParamAndLocalXForward {
     type Input = CaptureParamAndLocalXInner;
-
     type Output = CaptureParamAndLocalXSpec;
 
     open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
@@ -2342,7 +2290,6 @@ impl SpecMap for CaptureParamAndLocalXForward {
 
 impl SpecMap for CaptureParamAndLocalXReverse {
     type Input = CaptureParamAndLocalXSpec;
-
     type Output = CaptureParamAndLocalXInner;
 
     open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
@@ -2353,46 +2300,46 @@ impl SpecMap for CaptureParamAndLocalXReverse {
 // ============================================================
 // Format Specifications
 // ============================================================
-# [doc = "named format combinator for `a_or_b`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `a_or_b`.
+#[derive(Clone, Copy)]
 pub struct AOrBFmt;
 
 pub type AOrBFmtSpec = Named<Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<AOrBForward, AOrBReverse>>>;
 
 impl AOrBFmt {
-    # [doc = "specification constructor for `a_or_b`."]
+    /// specification constructor for `a_or_b`.
     pub open spec fn spec_inner() -> AOrBFmtSpec {
         Named(
             "a_or_b",
             Mapped {
-                inner: Refined(U8, |x: u8| (x == 1) || (x == 2)),
+                inner: Refined(U8, |x: u8| x == 1 || x == 2),
                 mapper: BiMap(AOrBForward, AOrBReverse),
             },
         )
     }
 }
 
-# [doc = "named format combinator for `c_or_d`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `c_or_d`.
+#[derive(Clone, Copy)]
 pub struct COrDFmt;
 
 pub type COrDFmtSpec = Named<Mapped<Refined<U8, PredFnSpec<u8>>, BiMap<COrDForward, COrDReverse>>>;
 
 impl COrDFmt {
-    # [doc = "specification constructor for `c_or_d`."]
+    /// specification constructor for `c_or_d`.
     pub open spec fn spec_inner() -> COrDFmtSpec {
         Named(
             "c_or_d",
             Mapped {
-                inner: Refined(U8, |x: u8| (x == 1) || (x == 2)),
+                inner: Refined(U8, |x: u8| x == 1 || x == 2),
                 mapper: BiMap(COrDForward, COrDReverse),
             },
         )
     }
 }
 
-# [doc = "named format combinator for `nested_inner_struct`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `nested_inner_struct`.
+#[derive(Clone, Copy)]
 pub struct NestedInnerStructFmt;
 
 pub type NestedInnerStructFmtSpec = Named<
@@ -2403,7 +2350,7 @@ pub type NestedInnerStructFmtSpec = Named<
 >;
 
 impl NestedInnerStructFmt {
-    # [doc = "specification constructor for `nested_inner_struct`."]
+    /// specification constructor for `nested_inner_struct`.
     pub open spec fn spec_inner() -> NestedInnerStructFmtSpec {
         Named(
             "nested_inner_struct",
@@ -2415,17 +2362,17 @@ impl NestedInnerStructFmt {
     }
 }
 
-# [doc = "named format combinator for `nested_inner_choice`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `nested_inner_choice`.
+#[derive(Clone, Copy)]
 pub struct NestedInnerChoiceFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl NestedInnerChoiceFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
-        AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
+        AOrBFmt.consistent(self.choice1.deep_view()) &&COrDFmt.consistent(self.choice2.deep_view())
     }
 
     pub closed spec fn choice1_spec(&self) -> AOrBSpec {
@@ -2446,7 +2393,7 @@ pub type NestedInnerChoiceFmtSpec = Named<
 >;
 
 impl NestedInnerChoiceFmt {
-    # [doc = "specification constructor for `nested_inner_choice`."]
+    /// specification constructor for `nested_inner_choice`.
     pub open spec fn spec_inner(choice1: AOrBSpec, choice2: COrDSpec) -> NestedInnerChoiceFmtSpec {
         Named(
             "nested_inner_choice",
@@ -2458,8 +2405,8 @@ impl NestedInnerChoiceFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_outer_and_local`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_outer_and_local`.
+#[derive(Clone, Copy)]
 pub struct CaptureOuterAndLocalFmt;
 
 pub type CaptureOuterAndLocalFmtSpec = Named<
@@ -2473,15 +2420,17 @@ pub type CaptureOuterAndLocalFmtSpec = Named<
 >;
 
 impl CaptureOuterAndLocalFmt {
-    # [doc = "specification constructor for `capture_outer_and_local`."]
+    /// specification constructor for `capture_outer_and_local`.
     pub open spec fn spec_inner() -> CaptureOuterAndLocalFmtSpec {
         Named(
             "capture_outer_and_local",
             Mapped {
                 inner: Bind(
                     Refined(U8, |x: u8| x >= 1),
-                    |frame_len: u8|
-                        ExactLen(frame_len, CaptureOuterAndLocalPayloadFmt::spec(frame_len)),
+                    |frame_len: u8| ExactLen(
+                        frame_len,
+                        CaptureOuterAndLocalPayloadFmt::spec(frame_len),
+                    ),
                 ),
                 mapper: BiMap(CaptureOuterAndLocalForward, CaptureOuterAndLocalReverse),
             },
@@ -2489,8 +2438,8 @@ impl CaptureOuterAndLocalFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_local_in_anon_struct`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_local_in_anon_struct`.
+#[derive(Clone, Copy)]
 pub struct CaptureLocalInAnonStructFmt;
 
 pub type CaptureLocalInAnonStructFmtSpec = Named<
@@ -2501,7 +2450,7 @@ pub type CaptureLocalInAnonStructFmtSpec = Named<
 >;
 
 impl CaptureLocalInAnonStructFmt {
-    # [doc = "specification constructor for `capture_local_in_anon_struct`."]
+    /// specification constructor for `capture_local_in_anon_struct`.
     pub open spec fn spec_inner() -> CaptureLocalInAnonStructFmtSpec {
         Named(
             "capture_local_in_anon_struct",
@@ -2513,17 +2462,17 @@ impl CaptureLocalInAnonStructFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
-        AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
+        AOrBFmt.consistent(self.choice1.deep_view()) &&COrDFmt.consistent(self.choice2.deep_view())
     }
 
     pub closed spec fn choice1_spec(&self) -> AOrBSpec {
@@ -2547,7 +2496,7 @@ pub type CaptureParamAndLocalFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalFmt {
-    # [doc = "specification constructor for `capture_param_and_local`."]
+    /// specification constructor for `capture_param_and_local`.
     pub open spec fn spec_inner(
         choice1: AOrBSpec,
         choice2: COrDSpec,
@@ -2562,8 +2511,8 @@ impl CaptureParamAndLocalFmt {
     }
 }
 
-# [doc = "named format combinator for `nested_inner_struct_val`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `nested_inner_struct_val`.
+#[derive(Clone, Copy)]
 pub struct NestedInnerStructValFmt;
 
 pub type NestedInnerStructValFmtSpec = Named<
@@ -2571,7 +2520,7 @@ pub type NestedInnerStructValFmtSpec = Named<
 >;
 
 impl NestedInnerStructValFmt {
-    # [doc = "specification constructor for `nested_inner_struct_val`."]
+    /// specification constructor for `nested_inner_struct_val`.
     pub open spec fn spec_inner() -> NestedInnerStructValFmtSpec {
         Named(
             "nested_inner_struct_val",
@@ -2583,14 +2532,14 @@ impl NestedInnerStructValFmt {
     }
 }
 
-# [doc = "named format combinator for `nested_inner_choice_x_a`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `nested_inner_choice_x_a`.
+#[derive(Clone, Copy)]
 pub struct NestedInnerChoiceXAFmt {
     choice2: COrD,
 }
 
 impl NestedInnerChoiceXAFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -2609,7 +2558,7 @@ pub type NestedInnerChoiceXAFmtSpec = Named<
 >;
 
 impl NestedInnerChoiceXAFmt {
-    # [doc = "specification constructor for `nested_inner_choice_x_a`."]
+    /// specification constructor for `nested_inner_choice_x_a`.
     pub open spec fn spec_inner(choice2: COrDSpec) -> NestedInnerChoiceXAFmtSpec {
         Named(
             "nested_inner_choice_x_a",
@@ -2624,17 +2573,17 @@ impl NestedInnerChoiceXAFmt {
     }
 }
 
-# [doc = "named format combinator for `nested_inner_choice_x`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `nested_inner_choice_x`.
+#[derive(Clone, Copy)]
 pub struct NestedInnerChoiceXFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl NestedInnerChoiceXFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
-        AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
+        AOrBFmt.consistent(self.choice1.deep_view()) &&COrDFmt.consistent(self.choice2.deep_view())
     }
 
     pub closed spec fn choice1_spec(&self) -> AOrBSpec {
@@ -2658,7 +2607,7 @@ pub type NestedInnerChoiceXFmtSpec = Named<
 >;
 
 impl NestedInnerChoiceXFmt {
-    # [doc = "specification constructor for `nested_inner_choice_x`."]
+    /// specification constructor for `nested_inner_choice_x`.
     pub open spec fn spec_inner(choice1: AOrBSpec, choice2: COrDSpec) -> NestedInnerChoiceXFmtSpec {
         Named(
             "nested_inner_choice_x",
@@ -2673,8 +2622,8 @@ impl NestedInnerChoiceXFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_outer_and_local_payload_body_choice1`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_outer_and_local_payload_body_choice1`.
+#[derive(Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyChoice1Fmt;
 
 pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named<
@@ -2688,7 +2637,7 @@ pub type CaptureOuterAndLocalPayloadBodyChoice1FmtSpec = Named<
 >;
 
 impl CaptureOuterAndLocalPayloadBodyChoice1Fmt {
-    # [doc = "specification constructor for `capture_outer_and_local_payload_body_choice1`."]
+    /// specification constructor for `capture_outer_and_local_payload_body_choice1`.
     pub open spec fn spec_inner() -> CaptureOuterAndLocalPayloadBodyChoice1FmtSpec {
         Named(
             "capture_outer_and_local_payload_body_choice1",
@@ -2703,15 +2652,15 @@ impl CaptureOuterAndLocalPayloadBodyChoice1Fmt {
     }
 }
 
-# [doc = "named format combinator for `capture_outer_and_local_payload_body`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_outer_and_local_payload_body`.
+#[derive(Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadBodyFmt {
     frame_len: u8,
     tag: u8,
 }
 
 impl CaptureOuterAndLocalPayloadBodyFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.frame_len >= 1
     }
@@ -2737,7 +2686,7 @@ pub type CaptureOuterAndLocalPayloadBodyFmtSpec = Named<
 >;
 
 impl CaptureOuterAndLocalPayloadBodyFmt {
-    # [doc = "specification constructor for `capture_outer_and_local_payload_body`."]
+    /// specification constructor for `capture_outer_and_local_payload_body`.
     pub open spec fn spec_inner(frame_len: u8, tag: u8) -> CaptureOuterAndLocalPayloadBodyFmtSpec {
         Named(
             "capture_outer_and_local_payload_body",
@@ -2755,14 +2704,14 @@ impl CaptureOuterAndLocalPayloadBodyFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_outer_and_local_payload`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_outer_and_local_payload`.
+#[derive(Clone, Copy)]
 pub struct CaptureOuterAndLocalPayloadFmt {
     frame_len: u8,
 }
 
 impl CaptureOuterAndLocalPayloadFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.frame_len >= 1
     }
@@ -2784,7 +2733,7 @@ pub type CaptureOuterAndLocalPayloadFmtSpec = Named<
 >;
 
 impl CaptureOuterAndLocalPayloadFmt {
-    # [doc = "specification constructor for `capture_outer_and_local_payload`."]
+    /// specification constructor for `capture_outer_and_local_payload`.
     pub open spec fn spec_inner(frame_len: u8) -> CaptureOuterAndLocalPayloadFmtSpec {
         Named(
             "capture_outer_and_local_payload",
@@ -2799,8 +2748,8 @@ impl CaptureOuterAndLocalPayloadFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value_choice0`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_local_in_anon_struct_wrapper_value_choice0`.
+#[derive(Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueChoice0Fmt;
 
 pub type CaptureLocalInAnonStructWrapperValueChoice0FmtSpec = Named<
@@ -2814,7 +2763,7 @@ pub type CaptureLocalInAnonStructWrapperValueChoice0FmtSpec = Named<
 >;
 
 impl CaptureLocalInAnonStructWrapperValueChoice0Fmt {
-    # [doc = "specification constructor for `capture_local_in_anon_struct_wrapper_value_choice0`."]
+    /// specification constructor for `capture_local_in_anon_struct_wrapper_value_choice0`.
     pub open spec fn spec_inner() -> CaptureLocalInAnonStructWrapperValueChoice0FmtSpec {
         Named(
             "capture_local_in_anon_struct_wrapper_value_choice0",
@@ -2829,14 +2778,14 @@ impl CaptureLocalInAnonStructWrapperValueChoice0Fmt {
     }
 }
 
-# [doc = "named format combinator for `capture_local_in_anon_struct_wrapper_value`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_local_in_anon_struct_wrapper_value`.
+#[derive(Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperValueFmt {
     tag: u8,
 }
 
 impl CaptureLocalInAnonStructWrapperValueFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -2861,7 +2810,7 @@ pub type CaptureLocalInAnonStructWrapperValueFmtSpec = Named<
 >;
 
 impl CaptureLocalInAnonStructWrapperValueFmt {
-    # [doc = "specification constructor for `capture_local_in_anon_struct_wrapper_value`."]
+    /// specification constructor for `capture_local_in_anon_struct_wrapper_value`.
     pub open spec fn spec_inner(tag: u8) -> CaptureLocalInAnonStructWrapperValueFmtSpec {
         Named(
             "capture_local_in_anon_struct_wrapper_value",
@@ -2879,8 +2828,8 @@ impl CaptureLocalInAnonStructWrapperValueFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_local_in_anon_struct_wrapper`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_local_in_anon_struct_wrapper`.
+#[derive(Clone, Copy)]
 pub struct CaptureLocalInAnonStructWrapperFmt;
 
 pub type CaptureLocalInAnonStructWrapperFmtSpec = Named<
@@ -2891,7 +2840,7 @@ pub type CaptureLocalInAnonStructWrapperFmtSpec = Named<
 >;
 
 impl CaptureLocalInAnonStructWrapperFmt {
-    # [doc = "specification constructor for `capture_local_in_anon_struct_wrapper`."]
+    /// specification constructor for `capture_local_in_anon_struct_wrapper`.
     pub open spec fn spec_inner() -> CaptureLocalInAnonStructWrapperFmtSpec {
         Named(
             "capture_local_in_anon_struct_wrapper",
@@ -2906,15 +2855,15 @@ impl CaptureLocalInAnonStructWrapperFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local_x_a_payload`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local_x_a_payload`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalXAPayloadFmt {
     choice2: COrD,
     len: u8,
 }
 
 impl CaptureParamAndLocalXAPayloadFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -2940,7 +2889,7 @@ pub type CaptureParamAndLocalXAPayloadFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalXAPayloadFmt {
-    # [doc = "specification constructor for `capture_param_and_local_x_a_payload`."]
+    /// specification constructor for `capture_param_and_local_x_a_payload`.
     pub open spec fn spec_inner(
         choice2: COrDSpec,
         len: u8,
@@ -2961,14 +2910,14 @@ impl CaptureParamAndLocalXAPayloadFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local_x_a`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local_x_a`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalXAFmt {
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalXAFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         COrDFmt.consistent(self.choice2.deep_view())
     }
@@ -2990,7 +2939,7 @@ pub type CaptureParamAndLocalXAFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalXAFmt {
-    # [doc = "specification constructor for `capture_param_and_local_x_a`."]
+    /// specification constructor for `capture_param_and_local_x_a`.
     pub open spec fn spec_inner(choice2: COrDSpec) -> CaptureParamAndLocalXAFmtSpec {
         Named(
             "capture_param_and_local_x_a",
@@ -3002,14 +2951,14 @@ impl CaptureParamAndLocalXAFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local_x_b_y`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local_x_b_y`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalXBYFmt {
     tag: u8,
 }
 
 impl CaptureParamAndLocalXBYFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         true
     }
@@ -3028,7 +2977,7 @@ pub type CaptureParamAndLocalXBYFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalXBYFmt {
-    # [doc = "specification constructor for `capture_param_and_local_x_b_y`."]
+    /// specification constructor for `capture_param_and_local_x_b_y`.
     pub open spec fn spec_inner(tag: u8) -> CaptureParamAndLocalXBYFmtSpec {
         Named(
             "capture_param_and_local_x_b_y",
@@ -3043,8 +2992,8 @@ impl CaptureParamAndLocalXBYFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local_x_b`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local_x_b`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalXBFmt;
 
 pub type CaptureParamAndLocalXBFmtSpec = Named<
@@ -3055,7 +3004,7 @@ pub type CaptureParamAndLocalXBFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalXBFmt {
-    # [doc = "specification constructor for `capture_param_and_local_x_b`."]
+    /// specification constructor for `capture_param_and_local_x_b`.
     pub open spec fn spec_inner() -> CaptureParamAndLocalXBFmtSpec {
         Named(
             "capture_param_and_local_x_b",
@@ -3067,17 +3016,17 @@ impl CaptureParamAndLocalXBFmt {
     }
 }
 
-# [doc = "named format combinator for `capture_param_and_local_x`."]
-# [derive (Clone, Copy)]
+/// named format combinator for `capture_param_and_local_x`.
+#[derive(Clone, Copy)]
 pub struct CaptureParamAndLocalXFmt {
     choice1: AOrB,
     choice2: COrD,
 }
 
 impl CaptureParamAndLocalXFmt {
-    # [verifier::type_invariant]
+    #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
-        AOrBFmt.consistent(self.choice1.deep_view()) && COrDFmt.consistent(self.choice2.deep_view())
+        AOrBFmt.consistent(self.choice1.deep_view()) &&COrDFmt.consistent(self.choice2.deep_view())
     }
 
     pub closed spec fn choice1_spec(&self) -> AOrBSpec {
@@ -3101,7 +3050,7 @@ pub type CaptureParamAndLocalXFmtSpec = Named<
 >;
 
 impl CaptureParamAndLocalXFmt {
-    # [doc = "specification constructor for `capture_param_and_local_x`."]
+    /// specification constructor for `capture_param_and_local_x`.
     pub open spec fn spec_inner(
         choice1: AOrBSpec,
         choice2: COrDSpec,
@@ -3128,7 +3077,7 @@ mod derived_specs {
     impl SpecParser for AOrBFmt {
         type PVal = AOrBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3145,7 +3094,7 @@ mod derived_specs {
     impl SpecSerializerDps for AOrBFmt {
         type SValue = AOrBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3154,7 +3103,7 @@ mod derived_specs {
     impl SpecSerializer for AOrBFmt {
         type SVal = AOrBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3163,7 +3112,7 @@ mod derived_specs {
     impl SpecByteLen for AOrBFmt {
         type T = AOrBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3172,7 +3121,7 @@ mod derived_specs {
     impl SpecParser for COrDFmt {
         type PVal = COrDSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3189,7 +3138,7 @@ mod derived_specs {
     impl SpecSerializerDps for COrDFmt {
         type SValue = COrDSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3198,7 +3147,7 @@ mod derived_specs {
     impl SpecSerializer for COrDFmt {
         type SVal = COrDSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3207,7 +3156,7 @@ mod derived_specs {
     impl SpecByteLen for COrDFmt {
         type T = COrDSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3216,7 +3165,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerStructFmt {
         type PVal = NestedInnerStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3233,7 +3182,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerStructFmt {
         type SValue = NestedInnerStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3242,7 +3191,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerStructFmt {
         type SVal = NestedInnerStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3251,7 +3200,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerStructFmt {
         type T = NestedInnerStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3260,7 +3209,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceFmt {
         type PVal = NestedInnerChoiceSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(ibuf)
         }
@@ -3277,7 +3226,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceFmt {
         type SValue = NestedInnerChoiceSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3286,7 +3235,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceFmt {
         type SVal = NestedInnerChoiceSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize(v)
         }
@@ -3295,7 +3244,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceFmt {
         type T = NestedInnerChoiceSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
@@ -3304,7 +3253,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalFmt {
         type PVal = CaptureOuterAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3321,7 +3270,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalFmt {
         type SValue = CaptureOuterAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3330,7 +3279,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalFmt {
         type SVal = CaptureOuterAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3339,7 +3288,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalFmt {
         type T = CaptureOuterAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3348,7 +3297,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructFmt {
         type PVal = CaptureLocalInAnonStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3365,7 +3314,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructFmt {
         type SValue = CaptureLocalInAnonStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3374,7 +3323,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructFmt {
         type SVal = CaptureLocalInAnonStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3383,7 +3332,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructFmt {
         type T = CaptureLocalInAnonStructSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3392,7 +3341,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalFmt {
         type PVal = CaptureParamAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(ibuf)
         }
@@ -3409,7 +3358,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalFmt {
         type SValue = CaptureParamAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3418,7 +3367,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalFmt {
         type SVal = CaptureParamAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize(v)
         }
@@ -3427,7 +3376,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalFmt {
         type T = CaptureParamAndLocalSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
@@ -3436,7 +3385,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerStructValFmt {
         type PVal = NestedInnerStructValSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3453,7 +3402,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerStructValFmt {
         type SValue = NestedInnerStructValSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3462,7 +3411,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerStructValFmt {
         type SVal = NestedInnerStructValSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3471,7 +3420,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerStructValFmt {
         type T = NestedInnerStructValSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3480,7 +3429,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceXAFmt {
         type PVal = NestedInnerChoiceXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice2_spec()).spec_parse(ibuf)
         }
@@ -3497,7 +3446,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceXAFmt {
         type SValue = NestedInnerChoiceXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3506,7 +3455,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceXAFmt {
         type SVal = NestedInnerChoiceXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec()).spec_serialize(v)
         }
@@ -3515,7 +3464,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceXAFmt {
         type T = NestedInnerChoiceXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice2_spec()).byte_len(v)
         }
@@ -3524,7 +3473,7 @@ mod derived_specs {
     impl SpecParser for NestedInnerChoiceXFmt {
         type PVal = NestedInnerChoiceXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(ibuf)
         }
@@ -3541,7 +3490,7 @@ mod derived_specs {
     impl SpecSerializerDps for NestedInnerChoiceXFmt {
         type SValue = NestedInnerChoiceXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3550,7 +3499,7 @@ mod derived_specs {
     impl SpecSerializer for NestedInnerChoiceXFmt {
         type SVal = NestedInnerChoiceXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize(v)
         }
@@ -3559,7 +3508,7 @@ mod derived_specs {
     impl SpecByteLen for NestedInnerChoiceXFmt {
         type T = NestedInnerChoiceXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
@@ -3568,7 +3517,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type PVal = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3585,7 +3534,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type SValue = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3594,7 +3543,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type SVal = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3603,7 +3552,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         type T = CaptureOuterAndLocalPayloadBodyChoice1Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3612,7 +3561,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadBodyFmt {
         type PVal = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.frame_len_spec(), self.tag_spec()).spec_parse(ibuf)
         }
@@ -3629,7 +3578,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadBodyFmt {
         type SValue = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.frame_len_spec(), self.tag_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3638,7 +3587,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadBodyFmt {
         type SVal = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.frame_len_spec(), self.tag_spec()).spec_serialize(v)
         }
@@ -3647,7 +3596,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadBodyFmt {
         type T = CaptureOuterAndLocalPayloadBodySpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.frame_len_spec(), self.tag_spec()).byte_len(v)
         }
@@ -3656,7 +3605,7 @@ mod derived_specs {
     impl SpecParser for CaptureOuterAndLocalPayloadFmt {
         type PVal = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.frame_len_spec()).spec_parse(ibuf)
         }
@@ -3673,7 +3622,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureOuterAndLocalPayloadFmt {
         type SValue = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.frame_len_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3682,7 +3631,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureOuterAndLocalPayloadFmt {
         type SVal = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.frame_len_spec()).spec_serialize(v)
         }
@@ -3691,7 +3640,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureOuterAndLocalPayloadFmt {
         type T = CaptureOuterAndLocalPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.frame_len_spec()).byte_len(v)
         }
@@ -3700,7 +3649,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type PVal = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3717,7 +3666,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type SValue = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3726,7 +3675,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type SVal = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3735,7 +3684,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         type T = CaptureLocalInAnonStructWrapperValueChoice0Spec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3744,7 +3693,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperValueFmt {
         type PVal = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.tag_spec()).spec_parse(ibuf)
         }
@@ -3761,7 +3710,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperValueFmt {
         type SValue = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.tag_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3770,7 +3719,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperValueFmt {
         type SVal = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.tag_spec()).spec_serialize(v)
         }
@@ -3779,7 +3728,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperValueFmt {
         type T = CaptureLocalInAnonStructWrapperValueSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.tag_spec()).byte_len(v)
         }
@@ -3788,7 +3737,7 @@ mod derived_specs {
     impl SpecParser for CaptureLocalInAnonStructWrapperFmt {
         type PVal = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3805,7 +3754,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureLocalInAnonStructWrapperFmt {
         type SValue = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3814,7 +3763,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureLocalInAnonStructWrapperFmt {
         type SVal = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3823,7 +3772,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureLocalInAnonStructWrapperFmt {
         type T = CaptureLocalInAnonStructWrapperSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -3832,7 +3781,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXAPayloadFmt {
         type PVal = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice2_spec(), self.len_spec()).spec_parse(ibuf)
         }
@@ -3849,7 +3798,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXAPayloadFmt {
         type SValue = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec(), self.len_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3858,7 +3807,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXAPayloadFmt {
         type SVal = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec(), self.len_spec()).spec_serialize(v)
         }
@@ -3867,7 +3816,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXAPayloadFmt {
         type T = CaptureParamAndLocalXAPayloadSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice2_spec(), self.len_spec()).byte_len(v)
         }
@@ -3876,7 +3825,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXAFmt {
         type PVal = CaptureParamAndLocalXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice2_spec()).spec_parse(ibuf)
         }
@@ -3893,7 +3842,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXAFmt {
         type SValue = CaptureParamAndLocalXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3902,7 +3851,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXAFmt {
         type SVal = CaptureParamAndLocalXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice2_spec()).spec_serialize(v)
         }
@@ -3911,7 +3860,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXAFmt {
         type T = CaptureParamAndLocalXASpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice2_spec()).byte_len(v)
         }
@@ -3920,7 +3869,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXBYFmt {
         type PVal = CaptureParamAndLocalXBYSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.tag_spec()).spec_parse(ibuf)
         }
@@ -3937,7 +3886,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXBYFmt {
         type SValue = CaptureParamAndLocalXBYSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.tag_spec()).spec_serialize_dps(v, obuf)
         }
@@ -3946,7 +3895,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXBYFmt {
         type SVal = CaptureParamAndLocalXBYSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.tag_spec()).spec_serialize(v)
         }
@@ -3955,7 +3904,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXBYFmt {
         type T = CaptureParamAndLocalXBYSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.tag_spec()).byte_len(v)
         }
@@ -3964,7 +3913,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXBFmt {
         type PVal = CaptureParamAndLocalXBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner().spec_parse(ibuf)
         }
@@ -3981,7 +3930,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXBFmt {
         type SValue = CaptureParamAndLocalXBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner().spec_serialize_dps(v, obuf)
         }
@@ -3990,7 +3939,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXBFmt {
         type SVal = CaptureParamAndLocalXBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner().spec_serialize(v)
         }
@@ -3999,7 +3948,7 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXBFmt {
         type T = CaptureParamAndLocalXBSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner().byte_len(v)
         }
@@ -4008,7 +3957,7 @@ mod derived_specs {
     impl SpecParser for CaptureParamAndLocalXFmt {
         type PVal = CaptureParamAndLocalXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_parse(ibuf)
         }
@@ -4025,7 +3974,7 @@ mod derived_specs {
     impl SpecSerializerDps for CaptureParamAndLocalXFmt {
         type SValue = CaptureParamAndLocalXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize_dps(v, obuf)
         }
@@ -4034,7 +3983,7 @@ mod derived_specs {
     impl SpecSerializer for CaptureParamAndLocalXFmt {
         type SVal = CaptureParamAndLocalXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).spec_serialize(v)
         }
@@ -4043,12 +3992,11 @@ mod derived_specs {
     impl SpecByteLen for CaptureParamAndLocalXFmt {
         type T = CaptureParamAndLocalXSpec;
 
-        # [verifier::opaque]
+        #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
             Self::spec_inner(self.choice1_spec(), self.choice2_spec()).byte_len(v)
         }
     }
-
 }
 
 // ============================================================
@@ -4056,7 +4004,6 @@ mod derived_specs {
 // ============================================================
 mod derived_proofs {
     use super::*;
-
     broadcast use {
         vest_lib::combinators::disjoint::disjointness_lemmas,
         AOrB::lemma_from_into,
@@ -4128,8 +4075,8 @@ mod derived_proofs {
             reveal(<AOrBFmt as SpecParser>::spec_parse);
             reveal(<AOrBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: AOrBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: AOrBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(AOrB::structural_valid(input));
                 AOrB::lemma_into_from(input);
             }
@@ -4141,8 +4088,8 @@ mod derived_proofs {
             reveal(<AOrBFmt as SpecParser>::spec_parse);
             reveal(<AOrBFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: AOrBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: AOrBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(AOrB::structural_valid(input));
                 AOrB::lemma_into_from(input);
             }
@@ -4185,8 +4132,8 @@ mod derived_proofs {
             reveal(<AOrBFmt as Consistency>::consistent);
             reveal(<AOrBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: AOrBSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: AOrBSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 AOrB::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4198,8 +4145,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<AOrBFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: AOrBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: AOrBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(AOrB::structural_valid(input));
                 AOrB::lemma_into_from(input);
             }
@@ -4253,8 +4200,8 @@ mod derived_proofs {
             reveal(<COrDFmt as SpecParser>::spec_parse);
             reveal(<COrDFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: COrDInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: COrDInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(COrD::structural_valid(input));
                 COrD::lemma_into_from(input);
             }
@@ -4266,8 +4213,8 @@ mod derived_proofs {
             reveal(<COrDFmt as SpecParser>::spec_parse);
             reveal(<COrDFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: COrDInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: COrDInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(COrD::structural_valid(input));
                 COrD::lemma_into_from(input);
             }
@@ -4310,8 +4257,8 @@ mod derived_proofs {
             reveal(<COrDFmt as Consistency>::consistent);
             reveal(<COrDFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: COrDSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: COrDSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 COrD::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4323,8 +4270,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<COrDFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: COrDInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: COrDInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 assert(COrD::structural_valid(input));
                 COrD::lemma_into_from(input);
             }
@@ -4378,8 +4325,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4390,8 +4337,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStructFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4433,8 +4380,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructFmt as Consistency>::consistent);
             reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: NestedInnerStructSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: NestedInnerStructSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 NestedInnerStructSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4446,8 +4393,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedInnerStructFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -4500,8 +4447,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4512,8 +4459,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4555,8 +4502,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceFmt as Consistency>::consistent);
             reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|output: NestedInnerChoiceSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: NestedInnerChoiceSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 NestedInnerChoiceSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4568,8 +4515,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedInnerChoiceFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -4622,8 +4569,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4634,8 +4581,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4677,8 +4624,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalFmt as Consistency>::consistent);
             reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureOuterAndLocalSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureOuterAndLocalSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureOuterAndLocalSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4690,8 +4637,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureOuterAndLocalFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -4744,8 +4691,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4756,8 +4703,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4799,8 +4746,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructFmt as Consistency>::consistent);
             reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureLocalInAnonStructSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureLocalInAnonStructSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureLocalInAnonStructSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4812,8 +4759,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -4866,8 +4813,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4878,8 +4825,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -4921,8 +4868,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|output: CaptureParamAndLocalSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -4934,8 +4881,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -4988,8 +4935,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructValFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructValInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructValInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructValSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5000,8 +4947,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructValFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerStructValFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructValInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructValInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructValSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5026,8 +4973,8 @@ mod derived_proofs {
             reveal(<NestedInnerStructValFmt as Consistency>::consistent);
             reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: NestedInnerStructValSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: NestedInnerStructValSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 NestedInnerStructValSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5039,8 +4986,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedInnerStructValFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: NestedInnerStructValInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerStructValInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerStructValSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5083,8 +5030,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXAFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceXAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXASpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5095,8 +5042,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXAFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceXAFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXASpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5138,8 +5085,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXAFmt as Consistency>::consistent);
             reveal(<NestedInnerChoiceXAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|output: NestedInnerChoiceXASpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: NestedInnerChoiceXASpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 NestedInnerChoiceXASpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5151,8 +5098,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedInnerChoiceXAFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXASpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5205,8 +5152,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceXFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5217,8 +5164,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXFmt as SpecParser>::spec_parse);
             reveal(<NestedInnerChoiceXFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5260,8 +5207,8 @@ mod derived_proofs {
             reveal(<NestedInnerChoiceXFmt as Consistency>::consistent);
             reveal(<NestedInnerChoiceXFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|output: NestedInnerChoiceXSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: NestedInnerChoiceXSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 NestedInnerChoiceXSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5273,8 +5220,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<NestedInnerChoiceXFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: NestedInnerChoiceXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: NestedInnerChoiceXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 NestedInnerChoiceXSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5327,8 +5274,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodyChoice1Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5339,8 +5286,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodyChoice1Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5351,7 +5298,7 @@ mod derived_proofs {
     impl NonTailFmt for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
@@ -5360,7 +5307,7 @@ mod derived_proofs {
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -5383,13 +5330,13 @@ mod derived_proofs {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser>::spec_parse);
             reveal(
-                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as Consistency>::consistent);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureOuterAndLocalPayloadBodyChoice1Spec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureOuterAndLocalPayloadBodyChoice1Spec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureOuterAndLocalPayloadBodyChoice1Spec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5401,8 +5348,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyChoice1Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodyChoice1Spec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5413,7 +5360,7 @@ mod derived_proofs {
     impl EquivSerializersGeneral for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(
-                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
@@ -5425,7 +5372,7 @@ mod derived_proofs {
     impl EquivSerializers for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(
-                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner();
@@ -5459,8 +5406,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.frame_len_spec(), self.tag_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadBodyInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodySpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5471,8 +5418,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.frame_len_spec(), self.tag_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadBodyInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodySpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5514,8 +5461,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as Consistency>::consistent);
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.frame_len_spec(), self.tag_spec());
-            assert forall|output: CaptureOuterAndLocalPayloadBodySpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureOuterAndLocalPayloadBodySpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureOuterAndLocalPayloadBodySpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5527,8 +5474,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.frame_len_spec(), self.tag_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadBodyInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadBodyInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadBodySpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5581,8 +5528,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.frame_len_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5593,8 +5540,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecParser>::spec_parse);
             reveal(<CaptureOuterAndLocalPayloadFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.frame_len_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5636,8 +5583,8 @@ mod derived_proofs {
             reveal(<CaptureOuterAndLocalPayloadFmt as Consistency>::consistent);
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.frame_len_spec());
-            assert forall|output: CaptureOuterAndLocalPayloadSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureOuterAndLocalPayloadSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureOuterAndLocalPayloadSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5649,8 +5596,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.frame_len_spec());
-            assert forall|input: CaptureOuterAndLocalPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureOuterAndLocalPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureOuterAndLocalPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5703,8 +5650,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueChoice0Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5715,8 +5662,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueChoice0Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5727,7 +5674,7 @@ mod derived_proofs {
     impl NonTailFmt for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             let fmt = Self::spec_inner();
             assert(fmt.serialize_dps_inv());
@@ -5736,7 +5683,7 @@ mod derived_proofs {
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -5748,7 +5695,7 @@ mod derived_proofs {
     impl GoodSerializer for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize
             );
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -5761,13 +5708,13 @@ mod derived_proofs {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecParser>::spec_parse);
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as Consistency>::consistent);
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureLocalInAnonStructWrapperValueChoice0Spec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureLocalInAnonStructWrapperValueChoice0Spec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureLocalInAnonStructWrapperValueChoice0Spec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5779,8 +5726,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueChoice0Inner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueChoice0Spec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5791,10 +5738,10 @@ mod derived_proofs {
     impl EquivSerializersGeneral for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize
             );
             let fmt = Self::spec_inner();
             assert(fmt.equiv_general_inv());
@@ -5805,10 +5752,10 @@ mod derived_proofs {
     impl EquivSerializers for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize
             );
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
@@ -5841,8 +5788,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureLocalInAnonStructWrapperValueInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5853,8 +5800,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureLocalInAnonStructWrapperValueInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5865,7 +5812,7 @@ mod derived_proofs {
     impl NonTailFmt for CaptureLocalInAnonStructWrapperValueFmt {
         proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps
             );
             let fmt = Self::spec_inner(self.tag_spec());
             assert(fmt.serialize_dps_inv());
@@ -5874,7 +5821,7 @@ mod derived_proofs {
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -5897,13 +5844,13 @@ mod derived_proofs {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecParser>::spec_parse);
             reveal(
-                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as Consistency>::consistent);
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|output: CaptureLocalInAnonStructWrapperValueSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureLocalInAnonStructWrapperValueSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureLocalInAnonStructWrapperValueSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -5915,8 +5862,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureLocalInAnonStructWrapperValueInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperValueInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperValueSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -5927,7 +5874,7 @@ mod derived_proofs {
     impl EquivSerializersGeneral for CaptureLocalInAnonStructWrapperValueFmt {
         proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -5939,7 +5886,7 @@ mod derived_proofs {
     impl EquivSerializers for CaptureLocalInAnonStructWrapperValueFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
             reveal(
-                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps,
+                <CaptureLocalInAnonStructWrapperValueFmt as SpecSerializerDps>::spec_serialize_dps
             );
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecSerializer>::spec_serialize);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -5973,8 +5920,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -5985,8 +5932,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecParser>::spec_parse);
             reveal(<CaptureLocalInAnonStructWrapperFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6028,8 +5975,8 @@ mod derived_proofs {
             reveal(<CaptureLocalInAnonStructWrapperFmt as Consistency>::consistent);
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureLocalInAnonStructWrapperSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureLocalInAnonStructWrapperSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureLocalInAnonStructWrapperSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6041,8 +5988,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureLocalInAnonStructWrapperInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureLocalInAnonStructWrapperInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureLocalInAnonStructWrapperSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6095,8 +6042,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec(), self.len_spec());
-            assert forall|input: CaptureParamAndLocalXAPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXAPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6107,8 +6054,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXAPayloadFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice2_spec(), self.len_spec());
-            assert forall|input: CaptureParamAndLocalXAPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXAPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6150,8 +6097,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAPayloadFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec(), self.len_spec());
-            assert forall|output: CaptureParamAndLocalXAPayloadSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalXAPayloadSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalXAPayloadSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6163,8 +6110,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice2_spec(), self.len_spec());
-            assert forall|input: CaptureParamAndLocalXAPayloadInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAPayloadInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXAPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6217,8 +6164,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXASpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6229,8 +6176,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXAFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXASpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6272,8 +6219,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXAFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|output: CaptureParamAndLocalXASpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalXASpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalXASpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6285,8 +6232,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalXAFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXAInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXAInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXASpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6339,8 +6286,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBYFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXBYFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureParamAndLocalXBYInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBYInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBYSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6351,8 +6298,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBYFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXBYFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureParamAndLocalXBYInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBYInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBYSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6394,8 +6341,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBYFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalXBYFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|output: CaptureParamAndLocalXBYSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalXBYSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalXBYSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6407,8 +6354,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalXBYFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.tag_spec());
-            assert forall|input: CaptureParamAndLocalXBYInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBYInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBYSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6461,8 +6408,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureParamAndLocalXBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6473,8 +6420,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXBFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureParamAndLocalXBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6516,8 +6463,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXBFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
-            assert forall|output: CaptureParamAndLocalXBSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalXBSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalXBSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6529,8 +6476,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalXBFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner();
-            assert forall|input: CaptureParamAndLocalXBInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXBInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXBSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6583,8 +6530,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6595,8 +6542,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXFmt as SpecParser>::spec_parse);
             reveal(<CaptureParamAndLocalXFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
@@ -6638,8 +6585,8 @@ mod derived_proofs {
             reveal(<CaptureParamAndLocalXFmt as Consistency>::consistent);
             reveal(<CaptureParamAndLocalXFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|output: CaptureParamAndLocalXSpec| # [trigger]
-                fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+            assert forall|output: CaptureParamAndLocalXSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
                 CaptureParamAndLocalXSpec::lemma_from_into(output);
             }
             assert(fmt.unambiguous());
@@ -6651,8 +6598,8 @@ mod derived_proofs {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
             reveal(<CaptureParamAndLocalXFmt as SpecParser>::spec_parse);
             let fmt = Self::spec_inner(self.choice1_spec(), self.choice2_spec());
-            assert forall|input: CaptureParamAndLocalXInner| # [trigger]
-                fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+            assert forall|input: CaptureParamAndLocalXInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
                 CaptureParamAndLocalXSpec::lemma_into_from(input);
             }
             assert(fmt.nonmal_inv());
@@ -6679,7 +6626,6 @@ mod derived_proofs {
             fmt.lemma_serialize_equiv_on_empty(v);
         }
     }
-
 }
 
 // ============================================================
@@ -6813,13 +6759,14 @@ mod exec_impls {
 
             let (n1, len) = (U32Le).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, val) = (ExactLen(
-                len,
-                Named("nested_inner_struct_val", NestedInnerStructValFmt),
-            )).parse(&rest)?;
+            let (n2, val) = (
+                ExactLen(len, Named("nested_inner_struct_val", NestedInnerStructValFmt))
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = NestedInnerStruct { len, val };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
@@ -6828,7 +6775,6 @@ mod exec_impls {
     impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerStruct<'i>> for NestedInnerStructFmt {
         fn serialize_into(&self, v: &NestedInnerStruct<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<NestedInnerStructFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerStructFmt as SpecByteLen>::byte_len);
             reveal(<NestedInnerStruct as DeepView>::deep_view);
@@ -6836,6 +6782,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerStruct { len, val } = v;
+
             U32Le.serialize_into(len, obuf);
             ExactLen(*len, NestedInnerStructValFmt).serialize_into(val, obuf);
 
@@ -6850,10 +6797,9 @@ mod exec_impls {
             reveal(NestedInnerStructSpec::into_structural);
             let NestedInnerStruct { len, val } = v;
             let l1 = (U32Le).prepare(len)?;
-            let l2 = (ExactLen(
-                *len,
-                Named("nested_inner_struct_val", NestedInnerStructValFmt),
-            )).prepare(val)?;
+            let l2 = (
+                ExactLen(*len, Named("nested_inner_struct_val", NestedInnerStructValFmt))
+            ).prepare(val)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -6883,13 +6829,17 @@ mod exec_impls {
                 self.choice2.lemma_deep_view();
             }
 
-            let (n1, x) = (Named(
-                "nested_inner_choice_x",
-                NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
-            )).parse(&rest)?;
+            let (n1, x) = (
+                Named(
+                    "nested_inner_choice_x",
+                    NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
+
             let final_v = NestedInnerChoice { x };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
@@ -6898,11 +6848,11 @@ mod exec_impls {
     impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerChoice> for NestedInnerChoiceFmt {
         fn serialize_into(&self, v: &NestedInnerChoice, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<NestedInnerChoiceFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerChoiceFmt as SpecByteLen>::byte_len);
             reveal(<NestedInnerChoice as DeepView>::deep_view);
             reveal(NestedInnerChoiceSpec::into_structural);
+
             proof {
                 use_type_invariant(self);
                 self.choice1.lemma_deep_view();
@@ -6912,6 +6862,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerChoice { x } = v;
+
             proof {
                 self.choice1.lemma_deep_view();
                 self.choice2.lemma_deep_view();
@@ -6943,10 +6894,12 @@ mod exec_impls {
                 self.choice2.lemma_deep_view();
             }
 
-            let l1 = (Named(
-                "nested_inner_choice_x",
-                NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
-            )).prepare(x)?;
+            let l1 = (
+                Named(
+                    "nested_inner_choice_x",
+                    NestedInnerChoiceXFmt { choice1: self.choice1, choice2: self.choice2 },
+                )
+            ).prepare(x)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -6966,32 +6919,36 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, frame_len) = (U8).parse(&rest)?;
+
             if !(frame_len >= 1) {
                 return Err(ParseError::predicate_failed());
             }
+
             let rest = rest.skip(n1);
-            let (n2, payload) = (ExactLen(
-                frame_len,
-                Named(
-                    "capture_outer_and_local_payload",
-                    CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
-                ),
-            )).parse(&rest)?;
+            let (n2, payload) = (
+                ExactLen(
+                    frame_len,
+                    Named(
+                        "capture_outer_and_local_payload",
+                        CaptureOuterAndLocalPayloadFmt { frame_len: frame_len },
+                    ),
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureOuterAndLocal { frame_len, payload };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureOuterAndLocal<'i>,
-    > for CaptureOuterAndLocalFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureOuterAndLocal<'i>>
+        for CaptureOuterAndLocalFmt
+    {
         fn serialize_into(&self, v: &CaptureOuterAndLocal<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureOuterAndLocalFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalFmt as SpecByteLen>::byte_len);
             reveal(<CaptureOuterAndLocal as DeepView>::deep_view);
@@ -6999,6 +6956,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocal { frame_len, payload } = v;
+
             U8.serialize_into(frame_len, obuf);
             ExactLen(
                 *frame_len,
@@ -7022,13 +6980,15 @@ mod exec_impls {
                     (U8).prepare(frame_len)
                 }
             }?;
-            let l2 = (ExactLen(
-                *frame_len,
-                Named(
-                    "capture_outer_and_local_payload",
-                    CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
-                ),
-            )).prepare(payload)?;
+            let l2 = (
+                ExactLen(
+                    *frame_len,
+                    Named(
+                        "capture_outer_and_local_payload",
+                        CaptureOuterAndLocalPayloadFmt { frame_len: *frame_len },
+                    ),
+                )
+            ).prepare(payload)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -7051,25 +7011,24 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
-            let (n1, wrapper) = (Named(
-                "capture_local_in_anon_struct_wrapper",
-                CaptureLocalInAnonStructWrapperFmt,
-            )).parse(&rest)?;
+            let (n1, wrapper) = (
+                Named("capture_local_in_anon_struct_wrapper", CaptureLocalInAnonStructWrapperFmt)
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
+
             let final_v = CaptureLocalInAnonStruct { wrapper };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureLocalInAnonStruct<'i>,
-    > for CaptureLocalInAnonStructFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureLocalInAnonStruct<'i>>
+        for CaptureLocalInAnonStructFmt
+    {
         fn serialize_into(&self, v: &CaptureLocalInAnonStruct<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureLocalInAnonStructFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureLocalInAnonStructFmt as SpecByteLen>::byte_len);
             reveal(<CaptureLocalInAnonStruct as DeepView>::deep_view);
@@ -7077,6 +7036,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStruct { wrapper } = v;
+
             CaptureLocalInAnonStructWrapperFmt.serialize_into(wrapper, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -7089,10 +7049,9 @@ mod exec_impls {
             reveal(<CaptureLocalInAnonStruct as DeepView>::deep_view);
             reveal(CaptureLocalInAnonStructSpec::into_structural);
             let CaptureLocalInAnonStruct { wrapper } = v;
-            let l1 = (Named(
-                "capture_local_in_anon_struct_wrapper",
-                CaptureLocalInAnonStructWrapperFmt,
-            )).prepare(wrapper)?;
+            let l1 = (
+                Named("capture_local_in_anon_struct_wrapper", CaptureLocalInAnonStructWrapperFmt)
+            ).prepare(wrapper)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -7122,29 +7081,32 @@ mod exec_impls {
                 self.choice2.lemma_deep_view();
             }
 
-            let (n1, x) = (Named(
-                "capture_param_and_local_x",
-                CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
-            )).parse(&rest)?;
+            let (n1, x) = (
+                Named(
+                    "capture_param_and_local_x",
+                    CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n1);
             let total_n = n1;
+
             let final_v = CaptureParamAndLocal { x };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocal<'i>,
-    > for CaptureParamAndLocalFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocal<'i>>
+        for CaptureParamAndLocalFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocal<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureParamAndLocalFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalFmt as SpecByteLen>::byte_len);
             reveal(<CaptureParamAndLocal as DeepView>::deep_view);
             reveal(CaptureParamAndLocalSpec::into_structural);
+
             proof {
                 use_type_invariant(self);
                 self.choice1.lemma_deep_view();
@@ -7154,6 +7116,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocal { x } = v;
+
             proof {
                 self.choice1.lemma_deep_view();
                 self.choice2.lemma_deep_view();
@@ -7185,10 +7148,12 @@ mod exec_impls {
                 self.choice2.lemma_deep_view();
             }
 
-            let l1 = (Named(
-                "capture_param_and_local_x",
-                CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
-            )).prepare(x)?;
+            let l1 = (
+                Named(
+                    "capture_param_and_local_x",
+                    CaptureParamAndLocalXFmt { choice1: self.choice1, choice2: self.choice2 },
+                )
+            ).prepare(x)?;
             let total_len = l1;
             Ok(total_len)
         }
@@ -7212,19 +7177,19 @@ mod exec_impls {
             let (n2, y) = (Tail).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = NestedInnerStructVal { x, y };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        NestedInnerStructVal<'i>,
-    > for NestedInnerStructValFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, NestedInnerStructVal<'i>>
+        for NestedInnerStructValFmt
+    {
         fn serialize_into(&self, v: &NestedInnerStructVal<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<NestedInnerStructValFmt as SpecSerializer>::spec_serialize);
             reveal(<NestedInnerStructValFmt as SpecByteLen>::byte_len);
             reveal(<NestedInnerStructVal as DeepView>::deep_view);
@@ -7232,6 +7197,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let NestedInnerStructVal { x, y } = v;
+
             U8.serialize_into(x, obuf);
             Tail.serialize_into(y, obuf);
 
@@ -7275,11 +7241,11 @@ mod exec_impls {
                 COrD::C => {
                     let (n, v) = (U8).parse(&rest)?;
                     (n, NestedInnerChoiceXA::C(v))
-                },
+                }
                 COrD::D => {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, NestedInnerChoiceXA::D(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
@@ -7306,11 +7272,11 @@ mod exec_impls {
             match (self.choice2, v) {
                 (COrD::C, NestedInnerChoiceXA::C(v)) => {
                     (U8).serialize_into(v, obuf);
-                },
+                }
                 (COrD::D, NestedInnerChoiceXA::D(v)) => {
                     (U16Le).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -7362,16 +7328,18 @@ mod exec_impls {
 
             let (n, v) = match self.choice1 {
                 AOrB::A => {
-                    let (n, v) = (Named(
-                        "nested_inner_choice_x_a",
-                        NestedInnerChoiceXAFmt { choice2: self.choice2 },
-                    )).parse(&rest)?;
+                    let (n, v) = (
+                        Named(
+                            "nested_inner_choice_x_a",
+                            NestedInnerChoiceXAFmt { choice2: self.choice2 },
+                        )
+                    ).parse(&rest)?;
                     (n, NestedInnerChoiceX::A(v))
-                },
+                }
                 AOrB::B => {
                     let (n, v) = (U32Le).parse(&rest)?;
                     (n, NestedInnerChoiceX::B(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
@@ -7400,11 +7368,11 @@ mod exec_impls {
             match (self.choice1, v) {
                 (AOrB::A, NestedInnerChoiceX::A(v)) => {
                     (NestedInnerChoiceXAFmt { choice2: self.choice2 }).serialize_into(v, obuf);
-                },
+                }
                 (AOrB::B, NestedInnerChoiceX::B(v)) => {
                     (U32Le).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -7428,10 +7396,13 @@ mod exec_impls {
             }
 
             match (self.choice1, v) {
-                (AOrB::A, NestedInnerChoiceX::A(v)) => (Named(
-                    "nested_inner_choice_x_a",
-                    NestedInnerChoiceXAFmt { choice2: self.choice2 },
-                )).prepare(v),
+                (AOrB::A, NestedInnerChoiceX::A(v)) =>
+                    (
+                        Named(
+                            "nested_inner_choice_x_a",
+                            NestedInnerChoiceXAFmt { choice2: self.choice2 },
+                        )
+                    ).prepare(v),
                 (AOrB::B, NestedInnerChoiceX::B(v)) => (U32Le).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
@@ -7456,23 +7427,23 @@ mod exec_impls {
             let (n2, items) = (Varied(count)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureOuterAndLocalPayloadBodyChoice1 { count, items };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureOuterAndLocalPayloadBodyChoice1<'i>,
-    > for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureOuterAndLocalPayloadBodyChoice1<'i>>
+        for CaptureOuterAndLocalPayloadBodyChoice1Fmt
+    {
         fn serialize_into(
             &self,
             v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>,
             obuf: &mut Output,
         ) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1Fmt as SpecByteLen>::byte_len);
             reveal(<CaptureOuterAndLocalPayloadBodyChoice1 as DeepView>::deep_view);
@@ -7480,6 +7451,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayloadBodyChoice1 { count, items } = v;
+
             U8.serialize_into(count, obuf);
             Varied(*count).serialize_into(*items, obuf);
 
@@ -7487,9 +7459,9 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Prepare<
-        CaptureOuterAndLocalPayloadBodyChoice1<'i>,
-    > for CaptureOuterAndLocalPayloadBodyChoice1Fmt {
+    impl<'i> Prepare<CaptureOuterAndLocalPayloadBodyChoice1<'i>>
+        for CaptureOuterAndLocalPayloadBodyChoice1Fmt
+    {
         fn prepare(&self, v: &CaptureOuterAndLocalPayloadBodyChoice1<'i>) -> Result<
             usize,
             PreSerializeError,
@@ -7523,24 +7495,25 @@ mod exec_impls {
                 0 => {
                     let (n, v) = (Varied((self.frame_len - 1))).parse(&rest)?;
                     (n, CaptureOuterAndLocalPayloadBody::Variant1(v))
-                },
+                }
                 _ => {
-                    let (n, v) = (Named(
-                        "capture_outer_and_local_payload_body_choice1",
-                        CaptureOuterAndLocalPayloadBodyChoice1Fmt,
-                    )).parse(&rest)?;
+                    let (n, v) = (
+                        Named(
+                            "capture_outer_and_local_payload_body_choice1",
+                            CaptureOuterAndLocalPayloadBodyChoice1Fmt,
+                        )
+                    ).parse(&rest)?;
                     (n, CaptureOuterAndLocalPayloadBody::Default(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureOuterAndLocalPayloadBody<'i>,
-    > for CaptureOuterAndLocalPayloadBodyFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureOuterAndLocalPayloadBody<'i>>
+        for CaptureOuterAndLocalPayloadBodyFmt
+    {
         fn serialize_into(&self, v: &CaptureOuterAndLocalPayloadBody<'i>, obuf: &mut Output) {
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalPayloadBodyFmt as SpecByteLen>::byte_len);
@@ -7555,11 +7528,11 @@ mod exec_impls {
             match (self.tag, v) {
                 (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) => {
                     (Varied((self.frame_len - 1))).serialize_into(*v, obuf);
-                },
+                }
                 (_, CaptureOuterAndLocalPayloadBody::Default(v)) => {
                     (CaptureOuterAndLocalPayloadBodyChoice1Fmt).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -7579,13 +7552,15 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) => (Varied(
-                    (self.frame_len - 1),
-                )).prepare(v),
-                (x, CaptureOuterAndLocalPayloadBody::Default(v)) if !(x == 0) => (Named(
-                    "capture_outer_and_local_payload_body_choice1",
-                    CaptureOuterAndLocalPayloadBodyChoice1Fmt,
-                )).prepare(v),
+                (0, CaptureOuterAndLocalPayloadBody::Variant1(v)) =>
+                    (Varied((self.frame_len - 1))).prepare(v),
+                (x, CaptureOuterAndLocalPayloadBody::Default(v)) if !(x == 0) =>
+                    (
+                        Named(
+                            "capture_outer_and_local_payload_body_choice1",
+                            CaptureOuterAndLocalPayloadBodyChoice1Fmt,
+                        )
+                    ).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
@@ -7610,29 +7585,32 @@ mod exec_impls {
 
             let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, body) = (Named(
-                "capture_outer_and_local_payload_body",
-                CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: tag },
-            )).parse(&rest)?;
+            let (n2, body) = (
+                Named(
+                    "capture_outer_and_local_payload_body",
+                    CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: tag },
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureOuterAndLocalPayload { tag, body };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureOuterAndLocalPayload<'i>,
-    > for CaptureOuterAndLocalPayloadFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureOuterAndLocalPayload<'i>>
+        for CaptureOuterAndLocalPayloadFmt
+    {
         fn serialize_into(&self, v: &CaptureOuterAndLocalPayload<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureOuterAndLocalPayloadFmt as SpecByteLen>::byte_len);
             reveal(<CaptureOuterAndLocalPayload as DeepView>::deep_view);
             reveal(CaptureOuterAndLocalPayloadSpec::into_structural);
+
             proof {
                 use_type_invariant(self);
             }
@@ -7640,7 +7618,9 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureOuterAndLocalPayload { tag, body } = v;
+
             U8.serialize_into(tag, obuf);
+
             CaptureOuterAndLocalPayloadBodyFmt {
                 frame_len: self.frame_len,
                 tag: *tag,
@@ -7661,10 +7641,12 @@ mod exec_impls {
 
             let CaptureOuterAndLocalPayload { tag, body } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (Named(
-                "capture_outer_and_local_payload_body",
-                CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag },
-            )).prepare(body)?;
+            let l2 = (
+                Named(
+                    "capture_outer_and_local_payload_body",
+                    CaptureOuterAndLocalPayloadBodyFmt { frame_len: self.frame_len, tag: *tag },
+                )
+            ).prepare(body)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -7688,25 +7670,25 @@ mod exec_impls {
             let (n2, bytes) = (Varied(len)).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureLocalInAnonStructWrapperValueChoice0<'i>,
-    > for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureLocalInAnonStructWrapperValueChoice0<'i>>
+        for CaptureLocalInAnonStructWrapperValueChoice0Fmt
+    {
         fn serialize_into(
             &self,
             v: &CaptureLocalInAnonStructWrapperValueChoice0<'i>,
             obuf: &mut Output,
         ) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(
-                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize,
+                <CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecSerializer>::spec_serialize
             );
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0Fmt as SpecByteLen>::byte_len);
             reveal(<CaptureLocalInAnonStructWrapperValueChoice0 as DeepView>::deep_view);
@@ -7714,6 +7696,7 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapperValueChoice0 { len, bytes } = v;
+
             U8.serialize_into(len, obuf);
             Varied(*len).serialize_into(*bytes, obuf);
 
@@ -7721,9 +7704,9 @@ mod exec_impls {
         }
     }
 
-    impl<'i> Prepare<
-        CaptureLocalInAnonStructWrapperValueChoice0<'i>,
-    > for CaptureLocalInAnonStructWrapperValueChoice0Fmt {
+    impl<'i> Prepare<CaptureLocalInAnonStructWrapperValueChoice0<'i>>
+        for CaptureLocalInAnonStructWrapperValueChoice0Fmt
+    {
         fn prepare(&self, v: &CaptureLocalInAnonStructWrapperValueChoice0<'i>) -> Result<
             usize,
             PreSerializeError,
@@ -7755,26 +7738,27 @@ mod exec_impls {
 
             let (n, v) = match self.tag {
                 0 => {
-                    let (n, v) = (Named(
-                        "capture_local_in_anon_struct_wrapper_value_choice0",
-                        CaptureLocalInAnonStructWrapperValueChoice0Fmt,
-                    )).parse(&rest)?;
+                    let (n, v) = (
+                        Named(
+                            "capture_local_in_anon_struct_wrapper_value_choice0",
+                            CaptureLocalInAnonStructWrapperValueChoice0Fmt,
+                        )
+                    ).parse(&rest)?;
                     (n, CaptureLocalInAnonStructWrapperValue::Variant1(v))
-                },
+                }
                 _ => {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, CaptureLocalInAnonStructWrapperValue::Default(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureLocalInAnonStructWrapperValue<'i>,
-    > for CaptureLocalInAnonStructWrapperValueFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureLocalInAnonStructWrapperValue<'i>>
+        for CaptureLocalInAnonStructWrapperValueFmt
+    {
         fn serialize_into(&self, v: &CaptureLocalInAnonStructWrapperValue<'i>, obuf: &mut Output) {
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureLocalInAnonStructWrapperValueFmt as SpecByteLen>::byte_len);
@@ -7789,20 +7773,20 @@ mod exec_impls {
             match (self.tag, v) {
                 (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => {
                     (CaptureLocalInAnonStructWrapperValueChoice0Fmt).serialize_into(v, obuf);
-                },
+                }
                 (_, CaptureLocalInAnonStructWrapperValue::Default(v)) => {
                     (U16Le).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
         }
     }
 
-    impl<'i> Prepare<
-        CaptureLocalInAnonStructWrapperValue<'i>,
-    > for CaptureLocalInAnonStructWrapperValueFmt {
+    impl<'i> Prepare<CaptureLocalInAnonStructWrapperValue<'i>>
+        for CaptureLocalInAnonStructWrapperValueFmt
+    {
         fn prepare(&self, v: &CaptureLocalInAnonStructWrapperValue<'i>) -> Result<
             usize,
             PreSerializeError,
@@ -7815,12 +7799,15 @@ mod exec_impls {
             }
 
             match (self.tag, v) {
-                (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) => (Named(
-                    "capture_local_in_anon_struct_wrapper_value_choice0",
-                    CaptureLocalInAnonStructWrapperValueChoice0Fmt,
-                )).prepare(v),
-                (x, CaptureLocalInAnonStructWrapperValue::Default(v)) if !(x == 0) => (
-                U16Le).prepare(v),
+                (0, CaptureLocalInAnonStructWrapperValue::Variant1(v)) =>
+                    (
+                        Named(
+                            "capture_local_in_anon_struct_wrapper_value_choice0",
+                            CaptureLocalInAnonStructWrapperValueChoice0Fmt,
+                        )
+                    ).prepare(v),
+                (x, CaptureLocalInAnonStructWrapperValue::Default(v)) if !(x == 0) =>
+                    (U16Le).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
@@ -7845,25 +7832,27 @@ mod exec_impls {
 
             let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, value) = (Named(
-                "capture_local_in_anon_struct_wrapper_value",
-                CaptureLocalInAnonStructWrapperValueFmt { tag: tag },
-            )).parse(&rest)?;
+            let (n2, value) = (
+                Named(
+                    "capture_local_in_anon_struct_wrapper_value",
+                    CaptureLocalInAnonStructWrapperValueFmt { tag: tag },
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureLocalInAnonStructWrapper { tag, value };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureLocalInAnonStructWrapper<'i>,
-    > for CaptureLocalInAnonStructWrapperFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureLocalInAnonStructWrapper<'i>>
+        for CaptureLocalInAnonStructWrapperFmt
+    {
         fn serialize_into(&self, v: &CaptureLocalInAnonStructWrapper<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureLocalInAnonStructWrapperFmt as SpecByteLen>::byte_len);
             reveal(<CaptureLocalInAnonStructWrapper as DeepView>::deep_view);
@@ -7871,7 +7860,9 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureLocalInAnonStructWrapper { tag, value } = v;
+
             U8.serialize_into(tag, obuf);
+
             CaptureLocalInAnonStructWrapperValueFmt { tag: *tag }.serialize_into(value, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -7888,10 +7879,12 @@ mod exec_impls {
             reveal(CaptureLocalInAnonStructWrapperSpec::into_structural);
             let CaptureLocalInAnonStructWrapper { tag, value } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (Named(
-                "capture_local_in_anon_struct_wrapper_value",
-                CaptureLocalInAnonStructWrapperValueFmt { tag: *tag },
-            )).prepare(value)?;
+            let l2 = (
+                Named(
+                    "capture_local_in_anon_struct_wrapper_value",
+                    CaptureLocalInAnonStructWrapperValueFmt { tag: *tag },
+                )
+            ).prepare(value)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -7920,21 +7913,20 @@ mod exec_impls {
                 COrD::C => {
                     let (n, v) = (Varied(self.len)).parse(&rest)?;
                     (n, CaptureParamAndLocalXAPayload::C(v))
-                },
+                }
                 COrD::D => {
                     let (n, v) = (Varied(self.len)).parse(&rest)?;
                     (n, CaptureParamAndLocalXAPayload::D(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocalXAPayload<'i>,
-    > for CaptureParamAndLocalXAPayloadFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocalXAPayload<'i>>
+        for CaptureParamAndLocalXAPayloadFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocalXAPayload<'i>, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXAPayloadFmt as SpecByteLen>::byte_len);
@@ -7954,11 +7946,11 @@ mod exec_impls {
             match (self.choice2, v) {
                 (COrD::C, CaptureParamAndLocalXAPayload::C(v)) => {
                     (Varied(self.len)).serialize_into(*v, obuf);
-                },
+                }
                 (COrD::D, CaptureParamAndLocalXAPayload::D(v)) => {
                     (Varied(self.len)).serialize_into(*v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -8010,33 +8002,37 @@ mod exec_impls {
 
             let (n1, len) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
+
             proof {
                 self.choice2.lemma_deep_view();
             }
 
-            let (n2, payload) = (Named(
-                "capture_param_and_local_x_a_payload",
-                CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: len },
-            )).parse(&rest)?;
+            let (n2, payload) = (
+                Named(
+                    "capture_param_and_local_x_a_payload",
+                    CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: len },
+                )
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureParamAndLocalXA { len, payload };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocalXA<'i>,
-    > for CaptureParamAndLocalXAFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocalXA<'i>>
+        for CaptureParamAndLocalXAFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocalXA<'i>, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureParamAndLocalXAFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXAFmt as SpecByteLen>::byte_len);
             reveal(<CaptureParamAndLocalXA as DeepView>::deep_view);
             reveal(CaptureParamAndLocalXASpec::into_structural);
+
             proof {
                 use_type_invariant(self);
                 self.choice2.lemma_deep_view();
@@ -8045,11 +8041,13 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXA { len, payload } = v;
+
             proof {
                 self.choice2.lemma_deep_view();
             }
 
             U8.serialize_into(len, obuf);
+
             CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len }.serialize_into(
                 payload,
                 obuf,
@@ -8075,10 +8073,12 @@ mod exec_impls {
             }
 
             let l1 = (U8).prepare(len)?;
-            let l2 = (Named(
-                "capture_param_and_local_x_a_payload",
-                CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len },
-            )).prepare(payload)?;
+            let l2 = (
+                Named(
+                    "capture_param_and_local_x_a_payload",
+                    CaptureParamAndLocalXAPayloadFmt { choice2: self.choice2, len: *len },
+                )
+            ).prepare(payload)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -8102,21 +8102,20 @@ mod exec_impls {
                 0 => {
                     let (n, v) = (U8).parse(&rest)?;
                     (n, CaptureParamAndLocalXBY::Variant1(v))
-                },
+                }
                 _ => {
                     let (n, v) = (U16Le).parse(&rest)?;
                     (n, CaptureParamAndLocalXBY::Default(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocalXBY,
-    > for CaptureParamAndLocalXBYFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocalXBY>
+        for CaptureParamAndLocalXBYFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocalXBY, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXBYFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXBYFmt as SpecByteLen>::byte_len);
@@ -8131,11 +8130,11 @@ mod exec_impls {
             match (self.tag, v) {
                 (0, CaptureParamAndLocalXBY::Variant1(v)) => {
                     (U8).serialize_into(v, obuf);
-                },
+                }
                 (_, CaptureParamAndLocalXBY::Default(v)) => {
                     (U16Le).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -8178,25 +8177,24 @@ mod exec_impls {
 
             let (n1, tag) = (U8).parse(&rest)?;
             let rest = rest.skip(n1);
-            let (n2, y) = (Named(
-                "capture_param_and_local_x_b_y",
-                CaptureParamAndLocalXBYFmt { tag: tag },
-            )).parse(&rest)?;
+            let (n2, y) = (
+                Named("capture_param_and_local_x_b_y", CaptureParamAndLocalXBYFmt { tag: tag })
+            ).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
+
             let final_v = CaptureParamAndLocalXB { tag, y };
+
             assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
             Ok((total_n, final_v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocalXB,
-    > for CaptureParamAndLocalXBFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocalXB>
+        for CaptureParamAndLocalXBFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocalXB, obuf: &mut Output) {
             broadcast use vest_lib::core::exec::output::outbuf_lemmas;
-
             reveal(<CaptureParamAndLocalXBFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXBFmt as SpecByteLen>::byte_len);
             reveal(<CaptureParamAndLocalXB as DeepView>::deep_view);
@@ -8204,7 +8202,9 @@ mod exec_impls {
             let ghost old_obuf = obuf@;
 
             let CaptureParamAndLocalXB { tag, y } = v;
+
             U8.serialize_into(tag, obuf);
+
             CaptureParamAndLocalXBYFmt { tag: *tag }.serialize_into(y, obuf);
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -8218,10 +8218,9 @@ mod exec_impls {
             reveal(CaptureParamAndLocalXBSpec::into_structural);
             let CaptureParamAndLocalXB { tag, y } = v;
             let l1 = (U8).prepare(tag)?;
-            let l2 = (Named(
-                "capture_param_and_local_x_b_y",
-                CaptureParamAndLocalXBYFmt { tag: *tag },
-            )).prepare(y)?;
+            let l2 = (
+                Named("capture_param_and_local_x_b_y", CaptureParamAndLocalXBYFmt { tag: *tag })
+            ).prepare(y)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
             Ok(total_len)
         }
@@ -8250,29 +8249,29 @@ mod exec_impls {
 
             let (n, v) = match self.choice1 {
                 AOrB::A => {
-                    let (n, v) = (Named(
-                        "capture_param_and_local_x_a",
-                        CaptureParamAndLocalXAFmt { choice2: self.choice2 },
-                    )).parse(&rest)?;
+                    let (n, v) = (
+                        Named(
+                            "capture_param_and_local_x_a",
+                            CaptureParamAndLocalXAFmt { choice2: self.choice2 },
+                        )
+                    ).parse(&rest)?;
                     (n, CaptureParamAndLocalX::A(v))
-                },
+                }
                 AOrB::B => {
-                    let (n, v) = (Named(
-                        "capture_param_and_local_x_b",
-                        CaptureParamAndLocalXBFmt,
-                    )).parse(&rest)?;
+                    let (n, v) = (
+                        Named("capture_param_and_local_x_b", CaptureParamAndLocalXBFmt)
+                    ).parse(&rest)?;
                     (n, CaptureParamAndLocalX::B(v))
-                },
+                }
             };
             assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
             Ok((n, v))
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<
-        Output,
-        CaptureParamAndLocalX<'i>,
-    > for CaptureParamAndLocalXFmt {
+    impl<Output: OutputBuf, 'i> Serializer<Output, CaptureParamAndLocalX<'i>>
+        for CaptureParamAndLocalXFmt
+    {
         fn serialize_into(&self, v: &CaptureParamAndLocalX<'i>, obuf: &mut Output) {
             reveal(<CaptureParamAndLocalXFmt as SpecSerializer>::spec_serialize);
             reveal(<CaptureParamAndLocalXFmt as SpecByteLen>::byte_len);
@@ -8294,11 +8293,11 @@ mod exec_impls {
             match (self.choice1, v) {
                 (AOrB::A, CaptureParamAndLocalX::A(v)) => {
                     (CaptureParamAndLocalXAFmt { choice2: self.choice2 }).serialize_into(v, obuf);
-                },
+                }
                 (AOrB::B, CaptureParamAndLocalX::B(v)) => {
                     (CaptureParamAndLocalXBFmt).serialize_into(v, obuf);
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
@@ -8322,19 +8321,18 @@ mod exec_impls {
             }
 
             match (self.choice1, v) {
-                (AOrB::A, CaptureParamAndLocalX::A(v)) => (Named(
-                    "capture_param_and_local_x_a",
-                    CaptureParamAndLocalXAFmt { choice2: self.choice2 },
-                )).prepare(v),
-                (AOrB::B, CaptureParamAndLocalX::B(v)) => (Named(
-                    "capture_param_and_local_x_b",
-                    CaptureParamAndLocalXBFmt,
-                )).prepare(v),
+                (AOrB::A, CaptureParamAndLocalX::A(v)) =>
+                    (
+                        Named(
+                            "capture_param_and_local_x_a",
+                            CaptureParamAndLocalXAFmt { choice2: self.choice2 },
+                        )
+                    ).prepare(v),
+                (AOrB::B, CaptureParamAndLocalX::B(v)) =>
+                    (Named("capture_param_and_local_x_b", CaptureParamAndLocalXBFmt)).prepare(v),
                 _ => Err(PreSerializeError::not_compliant(ComplianceErrorKind::InvalidTag)),
             }
         }
     }
-
 }
-
-} // verus!
+}

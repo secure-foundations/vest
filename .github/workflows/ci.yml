@@ -80,7 +80,7 @@ jobs:
 
       - name: Compile benchmarks with the workspace profile
         run: |
-          cargo bench --no-run -p vest_tests -p vest_dev --locked 2>&1 | tee "$RUNNER_TEMP/bench-build.log"
+          cargo bench --no-run -p vest_bench -p vest_dev --locked 2>&1 | tee "$RUNNER_TEMP/bench-build.log"
           if grep -qi "profile.*non root package.*ignored" "$RUNNER_TEMP/bench-build.log"; then
             echo "A benchmark profile outside the workspace root was ignored." >&2
             exit 1

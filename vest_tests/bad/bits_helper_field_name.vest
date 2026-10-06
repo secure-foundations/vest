@@ -1,0 +1,5 @@
+// `pack_flags` is the generated helper that packs this format.
+flags = bits {
+    pack_flags: u4,
+    m: u4,
+}

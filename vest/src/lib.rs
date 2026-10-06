@@ -69,7 +69,7 @@ pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>>
         Ok(mut ast) => {
             // elaborate the AST
             println!("🔨 Elaborating the AST...");
-            elab::elaborate(&mut ast);
+            let lifted_definitions = elab::elaborate(&mut ast);
 
             // type check the AST
             println!("🔍 Type checking...");
@@ -80,7 +80,9 @@ pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>>
 
                     println!("📝 Generating the verus file...");
                     let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
-                    let code = codegen::code_gen(&ir, &(&ctx).into());
+                    let mut ir_ctx: vestir::GlobalCtx = (&ctx).into();
+                    ir_ctx.lifted_definitions = lifted_definitions;
+                    let code = codegen::code_gen(&ir, &ir_ctx);
                     println!("👏 Done!");
 
                     Ok(code)

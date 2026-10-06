@@ -57,6 +57,7 @@ version is already installed.
 | `vest_asn1/`       | the ASN.1 frontend (not published to crates.io yet)                |
 | `vest_tests/`      | `.vest` files and their generated Rust                             |
 | `vest_asn1_tests/` | ASN.1 modules and their generated Rust                             |
+| `vest_bench/`      | runtime benchmarks, public corpora, and comparison baselines      |
 | `vest_dev/`        | dev examples of handwritten combinator formats and some benchmarks |
 | `guide/`           | the mdBook guide, plus tests that compile its snippets             |
 | `dev_docs/`        | internal design notes                                              |
@@ -70,10 +71,10 @@ with the help of it. We do ask a couple of things: 1. _Please disclose it in the
 
 - `vest` and `vest_asn1` are ordinary Rust and are checked with `rustfmt`:
   `cargo fmt -p vest -p vest_asn1 -- --check`.
-- Generated code under `vest_tests/src/` are formatted with a pinned
-  `verusfmt`, driven by the Makefile. A few of the largest files are
-  deliberately left unformatted because `verusfmt` stalls on them; the exclusion
-  list is in `vest_tests/Makefile`.
+- The Vest compiler lays out the code it generates itself
+  (`vest/src/codegen/pretty.rs`), so generated files need no formatter. The
+  hand-written `vest_tests/src/lib.rs` is formatted with a pinned `verusfmt`,
+  driven by the Makefile.
 - `vest_lib` is not auto-formatted. Please match the
   surrounding style.
 
@@ -85,6 +86,7 @@ Basic checks for formatting, linting, and tests:
 cargo fmt -p vest -p vest_asn1 -- --check
 cargo clippy -p vest -p vest_asn1 --all-targets --locked
 cargo test --workspace --locked
+cargo bench --no-run -p vest_bench --locked
 ```
 
 Regenerate code and the guide when the corresponding sources change:
@@ -116,9 +118,7 @@ cargo verus verify -p vest_asn1_tests --locked --check-toolchain -- --expand-err
 
 For the DSL, put the schema in `vest_tests/src/`, then add it to `VEST_FILES` in
 `vest_tests/Makefile`, declare the generated module in `vest_tests/src/lib.rs`,
-and add the generated `.rs` to `VERUSFMT_FILES` unless it is large enough to
-stall the formatter.
-Run `make -C vest_tests vest` and commit the result.
+and run `make -C vest_tests vest`, then commit the result.
 
 A schema that _should_ be rejected goes in `vest_tests/bad/` instead. `make -C vest_tests bad`
 checks that every one of them fails.

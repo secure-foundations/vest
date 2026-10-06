@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-2625125e.js";
+            window.path_to_searchindex_js = "../searchindex-1032325f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -225,6 +225,31 @@ the arm, and the value must match that arm.</p>
 </code></pre>
 <p>Every explicit byte pattern must have the same length as the dependency, and a
 final wildcard is required.</p>
+<h2 id="variant-names"><a class="header" href="#variant-names">Variant names</a></h2>
+<p>Each branch becomes a variant of the generated Rust enum. An enum-dependent
+choice names its variants after the enum’s, and its <code>_</code> branch <code>Default</code>.
+Integer and byte-string patterns have no name of their own, so a branch whose
+format is a named definition is named after that definition, and any other
+branch is <code>Variant1</code>, <code>Variant2</code>, … by position (<code>Default</code> for <code>_</code>):</p>
+<pre><code class="language-vest">request = {
+    id: u32,
+}
+
+reply = {
+    status: u8,
+}
+
+message = {
+    @magic: [u8; 2],
+    body: choose(@magic) {
+        [0x01, 0x02] =&gt; request,  // MessageBody::Request
+        [0x01, 0x03] =&gt; u16,      // MessageBody::Variant2
+        _ =&gt; reply,               // MessageBody::Reply
+    },
+}
+</code></pre>
+<p>If two branches invoke the same definition, both fall back to positional
+names.</p>
 <h2 id="non-dependent-ordered-choices"><a class="header" href="#non-dependent-ordered-choices">Non-dependent ordered choices</a></h2>
 <p>Without <code>(@dependency)</code>, there is no tag to dispatch on, so the branches are
 distinguished by their own content:</p>

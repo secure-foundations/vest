@@ -1,0 +1,5 @@
+// A bits parser binds its byte count as `n`.
+flags = bits {
+    n: u4,
+    m: u4,
+}

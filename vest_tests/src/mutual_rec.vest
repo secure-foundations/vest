@@ -10,7 +10,7 @@ list_kind = enum {
 
 expr = {
   @t: expr_kind,
-  v: choose(@t) {
+  value: choose(@t) {
     Num => u8,
     Group => list,
   },
@@ -18,7 +18,7 @@ expr = {
 
 list = {
   @t: list_kind,
-  v: choose(@t) {
+  value: choose(@t) {
     Nil => [u8; 0],
     Cons => {
        head: expr,
@@ -34,7 +34,7 @@ list = {
 // 
 // byte_list = {
 //   @t: byte_list_kind,
-//   v: choose(@t) {
+//   value: choose(@t) {
 //     Nil => [u8; 0],
 //     Cons => {
 //        head: u8,
