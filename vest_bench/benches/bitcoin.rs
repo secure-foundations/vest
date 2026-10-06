@@ -34,8 +34,17 @@ fn blocks() -> Vec<Vec<u8>> {
 fn parse(c: &mut Criterion) {
     let inputs = blocks();
     for input in &inputs {
-        assert_eq!(BlockFmt.parse(&&input[..]).unwrap().0, input.len());
-        bitcoin::Block::consensus_decode(&mut &input[..]).unwrap();
+        let (n, value) = BlockFmt.parse(&&input[..]).unwrap();
+        assert_eq!(n, input.len());
+        let mut remaining = &input[..];
+        let baseline = bitcoin::Block::consensus_decode(&mut remaining).unwrap();
+        assert!(remaining.is_empty());
+        let mut encoded = vec![0; BlockFmt.prepare(&value).unwrap()];
+        BlockFmt.serialize(&value, &mut encoded);
+        assert_eq!(&encoded, input);
+        encoded.clear();
+        baseline.consensus_encode(&mut encoded).unwrap();
+        assert_eq!(&encoded, input);
     }
     let bytes = inputs.iter().map(|input| input.len() as u64).sum();
     let mut group = c.benchmark_group("bitcoin/parse");
@@ -72,16 +81,24 @@ fn serialize(c: &mut Criterion) {
         .map(|value| BlockFmt.prepare(value).unwrap())
         .collect();
     let bytes = lengths.iter().map(|length| *length as u64).sum();
-    let mut vest_outputs: Vec<_> = lengths.iter().map(|length| vec![0; *length]).collect();
     let capacity = lengths.iter().copied().max().unwrap_or(0);
+    let mut vest_output = vec![0; capacity];
     let mut baseline_output = Vec::with_capacity(capacity);
+    for ((value, baseline), input) in vest_values.iter().zip(&baseline_values).zip(&inputs) {
+        let n = BlockFmt.prepare(value).unwrap();
+        BlockFmt.serialize(value, &mut vest_output[..n]);
+        assert_eq!(&vest_output[..n], &input[..]);
+        baseline_output.clear();
+        baseline.consensus_encode(&mut baseline_output).unwrap();
+        assert_eq!(&baseline_output, input);
+    }
     let mut group = c.benchmark_group("bitcoin/serialize");
     group.throughput(Throughput::Bytes(bytes));
     group.bench_function("Vest", |b| {
         b.iter(|| {
-            for (value, output) in vest_values.iter().zip(&mut vest_outputs) {
-                BlockFmt.serialize(value, black_box(output.as_mut_slice()));
-                black_box(&output);
+            for (value, length) in vest_values.iter().zip(&lengths) {
+                BlockFmt.serialize(black_box(value), black_box(&mut vest_output[..*length]));
+                black_box(&vest_output[..*length]);
             }
         })
     });

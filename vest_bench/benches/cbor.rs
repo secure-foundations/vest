@@ -10,6 +10,9 @@ use serde::Serialize;
 use vest_lib::cbor::CborFmt;
 use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 
+#[path = "support/cbor.rs"]
+mod checks;
+
 fn nested(depth: usize, seed: i64) -> Value {
     if depth == 0 {
         Value::Integer(seed.into())
@@ -119,6 +122,7 @@ fn decode_hex(text: &str) -> Vec<u8> {
         .bytes()
         .filter(|byte| !byte.is_ascii_whitespace())
         .collect();
+    assert_eq!(compact.len() % 2, 0, "odd-length hex input");
     compact
         .chunks_exact(2)
         .map(|pair| {
@@ -170,25 +174,24 @@ fn benchmark(
     name: &str,
     values: Vec<Value>,
     inputs: Vec<Vec<u8>>,
-    serde_baselines: bool,
+    baselines: Baselines,
 ) {
+    let serde_baselines = !matches!(baselines, Baselines::Tagged);
+    let cbor4ii_parse = matches!(baselines, Baselines::All);
     let format = CborFmt::<false>;
+    assert!(!inputs.is_empty());
+    assert_eq!(values.len(), inputs.len());
     for (expected, input) in values.iter().zip(&inputs) {
-        assert_eq!(
-            &ciborium::from_reader::<Value, _>(&input[..]).unwrap(),
-            expected
-        );
+        assert_eq!(&checks::ciborium_exact(input), expected);
         if serde_baselines {
-            assert_eq!(
-                &cbor4ii::serde::from_slice::<Value>(input).unwrap(),
-                expected
-            );
-            assert_eq!(
-                &minicbor_serde::from_slice::<Value>(input).unwrap(),
-                expected
-            );
+            if cbor4ii_parse {
+                assert_eq!(&checks::cbor4ii_exact(input), expected);
+            }
+            assert_eq!(&checks::minicbor_exact(input), expected);
         }
-        assert_eq!(format.parse(&&input[..]).unwrap().0, input.len());
+        let (n, value) = format.parse(&&input[..]).unwrap();
+        assert_eq!(n, input.len());
+        assert_eq!(&checks::semantic_value(&value), expected);
     }
     let input_bytes = inputs.iter().map(|input| input.len() as u64).sum();
     let mut group = c.benchmark_group(format!("cbor/{name}/parse"));
@@ -207,7 +210,7 @@ fn benchmark(
             }
         })
     });
-    if serde_baselines {
+    if cbor4ii_parse {
         group.bench_function("cbor4ii", |b| {
             b.iter(|| {
                 for input in &inputs {
@@ -215,6 +218,8 @@ fn benchmark(
                 }
             })
         });
+    }
+    if serde_baselines {
         group.bench_function("minicbor-serde", |b| {
             b.iter(|| {
                 for input in &inputs {
@@ -234,18 +239,35 @@ fn benchmark(
         .map(|value| format.prepare(value).unwrap())
         .collect();
     let output_bytes = lengths.iter().map(|length| *length as u64).sum();
-    let mut vest_outputs: Vec<_> = lengths.iter().map(|length| vec![0; *length]).collect();
     let capacity = lengths.iter().copied().max().unwrap_or(0);
+    let mut vest_output = vec![0; capacity];
     let mut ciborium_output = Vec::with_capacity(capacity);
     let mut cbor4ii_output = Vec::with_capacity(capacity);
     let mut minicbor_output = Vec::with_capacity(capacity);
+    for ((value, expected), length) in vest_values.iter().zip(&values).zip(&lengths) {
+        format.serialize(value, &mut vest_output[..*length]);
+        assert_eq!(&checks::ciborium_exact(&vest_output[..*length]), expected);
+        ciborium_output.clear();
+        ciborium::into_writer(expected, &mut ciborium_output).unwrap();
+        assert_eq!(&vest_output[..*length], &ciborium_output);
+        if serde_baselines {
+            cbor4ii_output.clear();
+            cbor4ii_output = cbor4ii::serde::to_vec(cbor4ii_output, expected).unwrap();
+            assert_eq!(&vest_output[..*length], &cbor4ii_output);
+            minicbor_output.clear();
+            expected
+                .serialize(&mut minicbor_serde::Serializer::new(&mut minicbor_output))
+                .unwrap();
+            assert_eq!(&vest_output[..*length], &minicbor_output);
+        }
+    }
     let mut group = c.benchmark_group(format!("cbor/{name}/serialize"));
     group.throughput(Throughput::Bytes(output_bytes));
     group.bench_function("Vest", |b| {
         b.iter(|| {
-            for (value, output) in vest_values.iter().zip(&mut vest_outputs) {
-                format.serialize(value, black_box(output.as_mut_slice()));
-                black_box(&output);
+            for (value, length) in vest_values.iter().zip(&lengths) {
+                format.serialize(black_box(value), black_box(&mut vest_output[..*length]));
+                black_box(&vest_output[..*length]);
             }
         })
     });
@@ -289,7 +311,15 @@ fn benchmark(
 fn synthetic(c: &mut Criterion) {
     let values = synthetic_values();
     let inputs = values.iter().map(malleable).collect();
-    benchmark(c, "synthetic", values, inputs, true);
+    // cbor4ii 1.2.3 leaves indefinite-string breaks unread. Do not report
+    // incomplete parsing as equivalent work; its serializer still qualifies.
+    benchmark(c, "synthetic", values, inputs, Baselines::Fragmented);
+}
+
+fn synthetic_definite(c: &mut Criterion) {
+    let values = synthetic_values();
+    let inputs = values.iter().map(canonical).collect();
+    benchmark(c, "synthetic_definite", values, inputs, Baselines::All);
 }
 
 fn cose(c: &mut Criterion) {
@@ -300,8 +330,14 @@ fn cose(c: &mut Criterion) {
         .collect();
     // COSE values use CBOR tags, which the serde bridges in cbor4ii and
     // minicbor-serde cannot preserve through ciborium's generic Value type.
-    benchmark(c, "cose", values, inputs, false);
+    benchmark(c, "cose", values, inputs, Baselines::Tagged);
 }
 
-criterion_group!(benches, synthetic, cose);
+enum Baselines {
+    All,
+    Fragmented,
+    Tagged,
+}
+
+criterion_group!(benches, synthetic, synthetic_definite, cose);
 criterion_main!(benches);

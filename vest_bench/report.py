@@ -189,6 +189,13 @@ def print_real_formats(measurements: Iterable[Measurement], selected: set[str]) 
         # silently reappear in a later report.
         if measurement.implementation.casefold() not in REAL_IMPLEMENTATIONS[suite]:
             continue
+        # cbor4ii 1.2.3 leaves indefinite-string breaks unread. Its old
+        # fragmented-input measurements do not pass our consumption check.
+        if (
+            parts == ("cbor", "synthetic", "parse")
+            and measurement.implementation.casefold() == "cbor4ii"
+        ):
+            continue
         groups.setdefault(parts, []).append(measurement)
 
     printed = False
