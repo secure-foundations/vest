@@ -6,7 +6,7 @@ It provides two benchmark families:
 - focused microformats compare Vest-generated codecs with hand-written Rust implementations that have the same value layout and wire behavior, and
 - real formats compare Vest-generated codecs with existing unverified Rust libraries for TLS, Bitcoin, CMS, and CBOR.
 
-Benchmark setup and corpus construction happen outside Criterion's timed loop. Every target validates that all compared implementations accept its corpus before measuring it, reuses serialization buffers, and reports byte throughput.
+Benchmark setup and corpus construction happen outside Criterion's timed loop. Every target validates its corpus before measuring it and reuses serialization buffers. Real formats report byte throughput; microformats report element throughput and latency.
 
 ## Benchmarks
 
@@ -16,7 +16,7 @@ Benchmark setup and corpus construction happen outside Criterion's timed loop. E
 | `tls` | 909 TLS 1.3 handshake messages captured from 16 public servers and Chrome, one group per message type | [Rustls 0.22](https://crates.io/crates/rustls/0.22.4)'s publicly exposed low-level (`internal`) message codec |
 | `bitcoin` | Four consecutive mainnet blocks (15,848 transactions), or an external block corpus | [`bitcoin`](https://crates.io/crates/bitcoin)'s consensus codec |
 | `cms` | Synthetic `ContentInfo` plus 304 real `SignedData` messages | `rasn-cms`, RustCrypto `cms`, and, for `ContentInfo`, `cryptographic-message-syntax` |
-| `cbor` | Synthetic general CBOR with non-deterministic encodings plus 49 IETF COSE vectors | `ciborium`, `cbor4ii`, and `minicbor-serde` where their generic value models support the corpus |
+| `cbor` | Synthetic fragmented and definite CBOR, plus 49 IETF COSE vectors | `ciborium`, `cbor4ii`, and `minicbor-serde` where their generic value models and consumption checks support the corpus |
 
 The TLS corpus was captured from live TLS 1.3 connections, and the Bitcoin
 corpus holds recent mainnet blocks. The CMS corpus combines NIST PKITS,
@@ -84,5 +84,14 @@ For real formats, forcing identical internal layouts would penalize libraries
 for ordinary API-design choices. Instead, every implementation parses the same
 bytes into its native type and serializes equivalent values. Input construction,
 parsing used to prepare serializer inputs, and output allocation are excluded
-from the timed loop. Vest serializes into exact-size reusable buffers; baseline
-buffers are likewise retained and reused whenever their API permits it.
+from the timed loop. Each serializer reuses one buffer sized for its largest
+message, rather than keeping a buffer per message.
+
+Two baseline limitations:
+
+- `cryptographic-message-syntax` 0.28.0 omits the `ContentInfo` `[0] EXPLICIT`
+  wrapper when encoding. The benchmark builds the correct wrapper with public
+  bcder combinators, including that work in the timed loop. Issue filed: https://github.com/indygreg/cryptography-rs/issues/99
+- `cbor4ii` 1.2.3 leaves indefinite-string break bytes unread. It is excluded
+  from fragmented-input parsing, but included in the separate `synthetic_definite`
+  comparison and in serialization, where the output checks pass. Issue filed: https://github.com/quininer/cbor4ii/issues/60
