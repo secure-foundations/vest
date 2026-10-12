@@ -3,7 +3,7 @@ VEST    := cargo run --locked --manifest-path ../Cargo.toml -p vest --
 FORMATS := flat table nest tlv varint bits bounded_list tail_list
 REAL_BENCHES := tls bitcoin cms cbor
 
-.PHONY: generate test smoke bench bench-formats bench-real report help all
+.PHONY: generate test smoke bench bench-formats bench-real report profile-cms help all
 
 # Regenerate every format module from its schema.
 generate:
@@ -43,10 +43,14 @@ bench-real:
 report:
 	@python3 -B scripts/report.py $(TARGETS) $(REPORT_ARGS)
 
+profile-cms:
+	python3 -B scripts/profile_cms.py $(PROFILE_ARGS)
+
 help:
 	@echo 'make test / smoke       validate codecs, scripts, and benchmark setup'
 	@echo 'make bench              run all comparisons and untimed allocation audits'
 	@echo 'make bench TARGETS=cms  run one family; RUN_ARGS="--offline --seed 1234"'
 	@echo 'make report             report the latest non-quick run without measuring'
+	@echo 'make profile-cms        split CMS sizing/validation from writing'
 
 all: generate test smoke bench
