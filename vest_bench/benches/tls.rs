@@ -10,16 +10,18 @@
 
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use rustls::internal::msgs::base::Payload;
 use rustls::internal::msgs::codec::Codec;
-use vest_bench::real;
+use vest_bench::corpora;
 use vest_lib::core::exec::parser::Parser;
 use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 use vest_tests::tls::HandshakeFmt;
 
-#[path = "support/tls.rs"]
+#[path = "shared/tls.rs"]
 mod checks;
+#[path = "shared/timing.rs"]
+mod harness;
 use checks::parse as parse_rustls;
 
 /// Benchmark groups, each with the corpus message kinds it measures. A
@@ -60,7 +62,7 @@ fn validate(name: &str, inputs: &[Vec<u8>]) {
 }
 
 fn parse(c: &mut Criterion) {
-    let corpus = real::tls_handshakes();
+    let corpus = corpora::tls_handshakes();
     for (name, kinds) in GROUPS {
         let inputs: Vec<Vec<u8>> = corpus
             .iter()
@@ -68,33 +70,27 @@ fn parse(c: &mut Criterion) {
             .map(|m| m.bytes.clone())
             .collect();
         validate(name, &inputs);
+        let mut payloads: Vec<_> = inputs.iter().cloned().map(Payload::new).collect();
         let bytes = inputs.iter().map(|input| input.len() as u64).sum();
+        harness::corpus_metadata(&format!("tls/{name}/parse"), inputs.len(), bytes);
         let mut group = c.benchmark_group(format!("tls/{name}/parse"));
         group.throughput(Throughput::Bytes(bytes));
         group.bench_function("Vest", |b| {
-            b.iter(|| {
-                for input in &inputs {
-                    black_box(HandshakeFmt.parse(black_box(&&input[..])).unwrap());
-                }
+            harness::retained(b, inputs.len(), |i| {
+                HandshakeFmt.parse(black_box(&&inputs[i][..])).unwrap()
             })
         });
         group.bench_function("Rustls", |b| {
-            b.iter_batched_ref(
-                || inputs.iter().cloned().map(Payload::new).collect::<Vec<_>>(),
-                |payloads| {
-                    for payload in payloads {
-                        black_box(parse_rustls(black_box(payload)));
-                    }
-                },
-                BatchSize::LargeInput,
-            )
+            harness::retained(b, payloads.len(), |i| {
+                parse_rustls(black_box(&mut payloads[i]))
+            })
         });
         group.finish();
     }
 }
 
 fn serialize(c: &mut Criterion) {
-    let corpus = real::tls_handshakes();
+    let corpus = corpora::tls_handshakes();
     for (name, kinds) in GROUPS {
         let inputs: Vec<&[u8]> = corpus
             .iter()
@@ -114,6 +110,7 @@ fn serialize(c: &mut Criterion) {
             .map(|value| HandshakeFmt.prepare(value).unwrap())
             .collect();
         let bytes = lengths.iter().map(|length| *length as u64).sum();
+        harness::corpus_metadata(&format!("tls/{name}/serialize"), inputs.len(), bytes);
         validate(
             name,
             &inputs
@@ -123,31 +120,28 @@ fn serialize(c: &mut Criterion) {
         );
         let capacity = lengths.iter().copied().max().unwrap();
         let mut vest_output = vec![0; capacity];
-        let mut baseline_output = Vec::with_capacity(capacity);
 
         let mut group = c.benchmark_group(format!("tls/{name}/serialize"));
         group.throughput(Throughput::Bytes(bytes));
         group.bench_function("Vest", |b| {
-            b.iter(|| {
-                for (value, length) in vest_values.iter().zip(&lengths) {
-                    let output = &mut vest_output[..*length];
-                    HandshakeFmt.serialize(black_box(value), black_box(output));
-                    black_box(&vest_output[..*length]);
+            harness::reused(b, || {
+                for value in &vest_values {
+                    let n = HandshakeFmt.prepare(black_box(value)).unwrap();
+                    HandshakeFmt.serialize(black_box(value), black_box(&mut vest_output[..n]));
+                    black_box(&vest_output[..n]);
                 }
             })
         });
         group.bench_function("Rustls", |b| {
-            b.iter(|| {
-                for value in &baseline_values {
-                    baseline_output.clear();
-                    black_box(value).encode(black_box(&mut baseline_output));
-                    black_box(&baseline_output);
-                }
+            harness::retained(b, baseline_values.len(), |i| {
+                let mut output = Vec::new();
+                black_box(&baseline_values[i]).encode(black_box(&mut output));
+                output
             })
         });
         group.finish();
     }
 }
 
-criterion_group!(benches, parse, serialize);
+criterion_group! { name = benches; config = harness::configuration(); targets = parse, serialize }
 criterion_main!(benches);

@@ -1,5 +1,4 @@
-//! Hand-written baselines: the fastest correct code a competent engineer would
-//! write for each wire format, with no verification machinery.
+//! Hand-written microformat codecs with matching value layouts and wire behavior.
 //!
 //! These are the comparison target, so they must be *fair*. Each one performs
 //! the same validation the generated parser does — every length is checked
@@ -28,7 +27,15 @@ pub fn parse_flat(b: &[u8]) -> Option<(usize, FlatRef<'_>)> {
     if b.len() < end {
         return None;
     }
-    Some((end, FlatRef { id, key, payload_len, payload: &b[44..end] }))
+    Some((
+        end,
+        FlatRef {
+            id,
+            key,
+            payload_len,
+            payload: &b[44..end],
+        },
+    ))
 }
 
 pub fn size_flat(v: &FlatRef<'_>) -> Option<usize> {
@@ -81,10 +88,21 @@ pub fn parse_table(b: &[u8]) -> Option<(usize, TableRef<'_>)> {
         if b.len() < end {
             return None;
         }
-        entries.push(EntryRef { key, value_len, value: &b[pos..end] });
+        entries.push(EntryRef {
+            key,
+            value_len,
+            value: &b[pos..end],
+        });
         pos = end;
     }
-    Some((pos, TableRef { id, entry_count, entries }))
+    Some((
+        pos,
+        TableRef {
+            id,
+            entry_count,
+            entries,
+        },
+    ))
 }
 
 pub fn size_table(v: &TableRef<'_>) -> Option<usize> {
@@ -192,7 +210,11 @@ pub fn parse_nest(b: &[u8]) -> Option<(usize, HNest8<'_>)> {
     if b.len() < end {
         return None;
     }
-    let l0 = HNest0 { id, len, payload: &b[pos..end] };
+    let l0 = HNest0 {
+        id,
+        len,
+        payload: &b[pos..end],
+    };
     pos = end;
 
     let f1 = read_ftr!(b, pos);
@@ -204,14 +226,49 @@ pub fn parse_nest(b: &[u8]) -> Option<(usize, HNest8<'_>)> {
     let f7 = read_ftr!(b, pos);
     let f8 = read_ftr!(b, pos);
 
-    let l1 = HNest1 { hdr: h1, inner: l0, ftr: f1 };
-    let l2 = HNest2 { hdr: h2, inner: l1, ftr: f2 };
-    let l3 = HNest3 { hdr: h3, inner: l2, ftr: f3 };
-    let l4 = HNest4 { hdr: h4, inner: l3, ftr: f4 };
-    let l5 = HNest5 { hdr: h5, inner: l4, ftr: f5 };
-    let l6 = HNest6 { hdr: h6, inner: l5, ftr: f6 };
-    let l7 = HNest7 { hdr: h7, inner: l6, ftr: f7 };
-    Some((pos, HNest8 { hdr: h8, inner: l7, ftr: f8 }))
+    let l1 = HNest1 {
+        hdr: h1,
+        inner: l0,
+        ftr: f1,
+    };
+    let l2 = HNest2 {
+        hdr: h2,
+        inner: l1,
+        ftr: f2,
+    };
+    let l3 = HNest3 {
+        hdr: h3,
+        inner: l2,
+        ftr: f3,
+    };
+    let l4 = HNest4 {
+        hdr: h4,
+        inner: l3,
+        ftr: f4,
+    };
+    let l5 = HNest5 {
+        hdr: h5,
+        inner: l4,
+        ftr: f5,
+    };
+    let l6 = HNest6 {
+        hdr: h6,
+        inner: l5,
+        ftr: f6,
+    };
+    let l7 = HNest7 {
+        hdr: h7,
+        inner: l6,
+        ftr: f7,
+    };
+    Some((
+        pos,
+        HNest8 {
+            hdr: h8,
+            inner: l7,
+            ftr: f8,
+        },
+    ))
 }
 
 pub fn size_nest(v: &HNest8<'_>) -> Option<usize> {
@@ -232,7 +289,9 @@ pub fn write_nest(v: &HNest8<'_>, out: &mut [u8]) {
     let l1 = &l2.inner;
     let l0 = &l1.inner;
     let mut pos = 0;
-    for h in [v.hdr, l7.hdr, l6.hdr, l5.hdr, l4.hdr, l3.hdr, l2.hdr, l1.hdr] {
+    for h in [
+        v.hdr, l7.hdr, l6.hdr, l5.hdr, l4.hdr, l3.hdr, l2.hdr, l1.hdr,
+    ] {
         out[pos..pos + 4].copy_from_slice(&h.to_be_bytes());
         pos += 4;
     }
@@ -243,7 +302,9 @@ pub fn write_nest(v: &HNest8<'_>, out: &mut [u8]) {
     let end = pos + l0.payload.len();
     out[pos..end].copy_from_slice(l0.payload);
     pos = end;
-    for f in [l1.ftr, l2.ftr, l3.ftr, l4.ftr, l5.ftr, l6.ftr, l7.ftr, v.ftr] {
+    for f in [
+        l1.ftr, l2.ftr, l3.ftr, l4.ftr, l5.ftr, l6.ftr, l7.ftr, v.ftr,
+    ] {
         out[pos..pos + 2].copy_from_slice(&f.to_be_bytes());
         pos += 2;
     }
@@ -308,7 +369,9 @@ pub fn parse_tlv(b: &[u8]) -> Option<(usize, HTlvMsg<'_>)> {
             if body_bytes.len() != 8 {
                 return None;
             }
-            HTlvBody::Ping(HTlvPing { nonce: u64::from_be_bytes(body_bytes[0..8].try_into().unwrap()) })
+            HTlvBody::Ping(HTlvPing {
+                nonce: u64::from_be_bytes(body_bytes[0..8].try_into().unwrap()),
+            })
         }
         HTlvKind::Data => {
             if body_bytes.len() < 4 {
@@ -462,7 +525,10 @@ pub fn parse_varint_list(b: &[u8]) -> Option<(usize, VarintListRef<'_>)> {
         if b.len() < end {
             return None;
         }
-        items.push(VarintItemRef { len, data: &b[pos..end] });
+        items.push(VarintItemRef {
+            len,
+            data: &b[pos..end],
+        });
         pos = end;
     }
     Some((pos, VarintListRef { count, items }))
@@ -591,7 +657,11 @@ fn parse_items(b: &[u8]) -> Option<Vec<ItemRef<'_>>> {
         if b.len() < end {
             return None;
         }
-        items.push(ItemRef { tag, len, body: &b[pos..end] });
+        items.push(ItemRef {
+            tag,
+            len,
+            body: &b[pos..end],
+        });
         pos = end;
     }
     Some(items)

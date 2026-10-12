@@ -1,165 +1,19 @@
 //! CMS benchmarks over a synthetic ContentInfo workload and three public corpora.
 
-use std::fs;
 use std::hint::black_box;
-use std::path::{Path, PathBuf};
 
-use bcder::{decode::Constructed, encode::Values, Mode};
+use bcder::{encode::Values, Mode};
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use der::{Decode, Encode};
 use vest_asn1_tests::generated_cms;
 use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 
-#[path = "support/cms.rs"]
+#[path = "shared/cms.rs"]
 mod checks;
+#[path = "shared/timing.rs"]
+mod harness;
 
-fn der_len(len: usize) -> Vec<u8> {
-    if len < 128 {
-        vec![len as u8]
-    } else {
-        let bytes = len.to_be_bytes();
-        let first = bytes.iter().position(|byte| *byte != 0).unwrap();
-        let mut out = vec![0x80 | (bytes.len() - first) as u8];
-        out.extend_from_slice(&bytes[first..]);
-        out
-    }
-}
-
-fn tlv(tag: u8, body: &[u8]) -> Vec<u8> {
-    let mut out = vec![tag];
-    out.extend_from_slice(&der_len(body.len()));
-    out.extend_from_slice(body);
-    out
-}
-
-fn synthetic_content_info() -> Vec<Vec<u8>> {
-    (0..1024usize)
-        .map(|seed| {
-            let payload: Vec<_> = (0..seed % 512)
-                .map(|i| (seed.wrapping_mul(29) ^ i.wrapping_mul(17)) as u8)
-                .collect();
-            let mut body = vec![
-                0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x07, 0x01,
-            ];
-            body.extend_from_slice(&tlv(0xa0, &tlv(0x04, &payload)));
-            tlv(0x30, &body)
-        })
-        .collect()
-}
-
-fn parse_bcder(input: &[u8]) -> cryptographic_message_syntax::asn1::rfc5652::ContentInfo {
-    Constructed::decode(input, Mode::Der, |cons| {
-        cons.take_sequence(cryptographic_message_syntax::asn1::rfc5652::ContentInfo::from_sequence)
-    })
-    .unwrap()
-}
-
-fn header(input: &[u8], offset: usize) -> Option<(usize, Option<usize>)> {
-    let mut pos = offset + 1;
-    if input.get(offset)? & 31 == 31 {
-        while input.get(pos)? & 0x80 != 0 {
-            pos += 1;
-        }
-        pos += 1;
-    }
-    let first = *input.get(pos)?;
-    pos += 1;
-    if first == 0x80 {
-        return Some((pos, None));
-    }
-    if first & 0x80 == 0 {
-        return Some((pos, Some(first as usize)));
-    }
-    let count = (first & 0x7f) as usize;
-    let mut len = 0usize;
-    for byte in input.get(pos..pos + count)? {
-        len = (len << 8) | *byte as usize;
-    }
-    Some((pos + count, Some(len)))
-}
-
-fn tlv_end(input: &[u8], offset: usize) -> Option<usize> {
-    let (start, len) = header(input, offset)?;
-    if let Some(len) = len {
-        return start.checked_add(len).filter(|end| *end <= input.len());
-    }
-    let mut pos = start;
-    loop {
-        if input.get(pos..pos + 2)? == [0, 0] {
-            return Some(pos + 2);
-        }
-        pos = tlv_end(input, pos)?;
-    }
-}
-
-fn signed_data(input: &[u8]) -> Option<&[u8]> {
-    let (outer, _) = header(input, 0)?;
-    let explicit = tlv_end(input, outer)?;
-    let (inner, _) = header(input, explicit)?;
-    let end = tlv_end(input, inner)?;
-    input.get(inner..end)
-}
-
-/// Raw eContent value bytes, including chunk TLVs for constructed strings.
-/// RustCrypto's ANY preserves these bytes rather than decoding OCTET STRING.
-fn econtent_body(input: &[u8]) -> Option<&[u8]> {
-    let (version, _) = header(input, 0)?;
-    let algorithms = tlv_end(input, version)?;
-    let encap = tlv_end(input, algorithms)?;
-    let (oid, len) = header(input, encap)?;
-    let explicit = tlv_end(input, oid)?;
-    if len.is_some_and(|len| explicit == oid + len) || input.get(explicit..explicit + 2)? == [0, 0]
-    {
-        return None;
-    }
-    assert_eq!(input[explicit], 0xa0);
-    let (octets, _) = header(input, explicit)?;
-    assert!(matches!(input[octets], 0x04 | 0x24));
-    let (body, len) = header(input, octets)?;
-    let end = len.map_or_else(
-        || tlv_end(input, octets).map(|end| end - 2),
-        |len| Some(body + len),
-    )?;
-    input.get(body..end)
-}
-
-fn visit_cms(dir: &Path, inputs: &mut Vec<Vec<u8>>) {
-    let mut paths: Vec<_> = fs::read_dir(dir)
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .collect();
-    paths.sort();
-    for path in paths {
-        if path.is_dir() {
-            visit_cms(&path, inputs);
-        } else if path.extension().is_some_and(|extension| extension == "cms") {
-            let file = fs::read(&path).unwrap();
-            let end = tlv_end(&file, 0).expect("complete CMS envelope");
-            // Some DSS files have zero padding after the envelope. This
-            // benchmark measures its SignedData, not the enclosing file.
-            assert!(
-                file[end..].iter().all(|byte| *byte == 0),
-                "{}: non-padding bytes after CMS envelope",
-                path.display()
-            );
-            let envelope = rustcrypto_cms::content_info::ContentInfo::from_ber(&file[..end])
-                .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-            assert_eq!(envelope.content_type.to_string(), "1.2.840.113549.1.7.2");
-            let value = signed_data(&file[..end]).expect("extract SignedData from CMS envelope");
-            rustcrypto_cms::signed_data::SignedData::from_ber(value).unwrap();
-            inputs.push(value.to_vec());
-        }
-    }
-}
-
-fn real_signed_data() -> Vec<Vec<u8>> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("corpora/cms");
-    let mut inputs = Vec::new();
-    visit_cms(&root.join("pkits"), &mut inputs);
-    visit_cms(&root.join("dss"), &mut inputs);
-    visit_cms(&root.join("rfc4134"), &mut inputs);
-    inputs
-}
+use checks::{econtent_body, parse_bcder, real_signed_data, synthetic_content_info};
 
 fn synthetic(c: &mut Criterion) {
     let inputs = synthetic_content_info();
@@ -191,41 +45,28 @@ fn synthetic(c: &mut Criterion) {
         assert_eq!(output, *input);
     }
     let bytes = inputs.iter().map(|input| input.len() as u64).sum();
+    harness::corpus_metadata("cms/content_info/parse", inputs.len(), bytes);
     let mut group = c.benchmark_group("cms/content_info/parse");
     group.throughput(Throughput::Bytes(bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(
-                    generated_cms::CONTENT_INFO::Fmt
-                        .parse(black_box(&&input[..]))
-                        .unwrap(),
-                );
-            }
+        harness::retained(b, inputs.len(), |i| {
+            generated_cms::CONTENT_INFO::Fmt
+                .parse(black_box(&&inputs[i][..]))
+                .unwrap()
         })
     });
     group.bench_function("rasn-cms", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(rasn::ber::decode::<rasn_cms::ContentInfo>(black_box(input)).unwrap());
-            }
+        harness::retained(b, inputs.len(), |i| {
+            rasn::ber::decode::<rasn_cms::ContentInfo>(black_box(&inputs[i])).unwrap()
         })
     });
     group.bench_function("RustCrypto-cms", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(
-                    rustcrypto_cms::content_info::ContentInfo::from_ber(black_box(input)).unwrap(),
-                );
-            }
+        harness::retained(b, inputs.len(), |i| {
+            rustcrypto_cms::content_info::ContentInfo::from_ber(black_box(&inputs[i])).unwrap()
         })
     });
     group.bench_function("cryptographic-message-syntax", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(parse_bcder(black_box(input)));
-            }
-        })
+        harness::retained(b, inputs.len(), |i| parse_bcder(black_box(&inputs[i])))
     });
     group.finish();
 }
@@ -255,6 +96,7 @@ fn synthetic_serialize(c: &mut Criterion) {
         .map(|value| generated_cms::CONTENT_INFO::Fmt.prepare(value).unwrap())
         .collect();
     let bytes = lengths.iter().map(|length| *length as u64).sum();
+    harness::corpus_metadata("cms/content_info/serialize", inputs.len(), bytes);
     let capacity = lengths.iter().copied().max().unwrap_or(0);
     let mut vest_output = vec![0; capacity];
     let mut rasn_output = Vec::with_capacity(capacity);
@@ -285,36 +127,38 @@ fn synthetic_serialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("cms/content_info/serialize");
     group.throughput(Throughput::Bytes(bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for (value, length) in vest_values.iter().zip(&lengths) {
+        harness::reused(b, || {
+            for value in &vest_values {
+                let n = generated_cms::CONTENT_INFO::Fmt
+                    .prepare(black_box(value))
+                    .unwrap();
                 generated_cms::CONTENT_INFO::Fmt
-                    .serialize(black_box(value), black_box(&mut vest_output[..*length]));
-                black_box(&vest_output[..*length]);
+                    .serialize(black_box(value), black_box(&mut vest_output[..n]));
+                black_box(&vest_output[..n]);
             }
         })
     });
     group.bench_function("rasn-cms", |b| {
-        b.iter(|| {
-            for value in &rasn_values {
-                rasn::der::encode_buf(black_box(value), &mut rasn_output).unwrap();
-                black_box(&rasn_output);
-            }
+        harness::retained(b, rasn_values.len(), |i| {
+            rasn::der::encode(black_box(&rasn_values[i])).unwrap()
         })
     });
     group.bench_function("RustCrypto-cms", |b| {
-        b.iter(|| {
+        harness::reused(b, || {
             for value in &rustcrypto_values {
-                black_box(value.encode_to_slice(&mut rustcrypto_output).unwrap());
+                let n = usize::try_from(black_box(value).encoded_len().unwrap()).unwrap();
+                black_box(value.encode_to_slice(&mut rustcrypto_output[..n]).unwrap());
             }
         })
     });
     group.bench_function("cryptographic-message-syntax", |b| {
-        b.iter(|| {
+        harness::reused(b, || {
             for value in &bcder_values {
+                let encoded = checks::bcder_content_info(black_box(value));
+                let n = encoded.encoded_len(Mode::Der);
                 bcder_output.clear();
-                checks::bcder_content_info(black_box(value))
-                    .write_encoded(Mode::Der, &mut bcder_output)
-                    .unwrap();
+                bcder_output.reserve(n);
+                encoded.write_encoded(Mode::Der, &mut bcder_output).unwrap();
                 black_box(&bcder_output);
             }
         })
@@ -366,33 +210,24 @@ fn real_parse(c: &mut Criterion) {
         );
     }
     let bytes = inputs.iter().map(|input| input.len() as u64).sum();
+    harness::corpus_metadata("cms/real_signed_data/parse", inputs.len(), bytes);
     let mut group = c.benchmark_group("cms/real_signed_data/parse");
     group.throughput(Throughput::Bytes(bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(
-                    generated_cms::SIGNED_DATA::Fmt
-                        .parse(black_box(&&input[..]))
-                        .unwrap(),
-                );
-            }
+        harness::retained(b, inputs.len(), |i| {
+            generated_cms::SIGNED_DATA::Fmt
+                .parse(black_box(&&inputs[i][..]))
+                .unwrap()
         })
     });
     group.bench_function("rasn-cms", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(rasn::ber::decode::<rasn_cms::SignedData>(black_box(input)).unwrap());
-            }
+        harness::retained(b, inputs.len(), |i| {
+            rasn::ber::decode::<rasn_cms::SignedData>(black_box(&inputs[i])).unwrap()
         })
     });
     group.bench_function("RustCrypto-cms", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(
-                    rustcrypto_cms::signed_data::SignedData::from_ber(black_box(input)).unwrap(),
-                );
-            }
+        harness::retained(b, inputs.len(), |i| {
+            rustcrypto_cms::signed_data::SignedData::from_ber(black_box(&inputs[i])).unwrap()
         })
     });
     group.finish();
@@ -427,6 +262,7 @@ fn real_serialize(c: &mut Criterion) {
         .map(|value| generated_cms::SIGNED_DATA::Fmt.prepare(value).unwrap())
         .collect();
     let bytes = lengths.iter().map(|length| *length as u64).sum();
+    harness::corpus_metadata("cms/real_signed_data/serialize", inputs.len(), bytes);
     let capacity = lengths.iter().copied().max().unwrap_or(0);
     let mut vest_output = vec![0; capacity];
     let mut rasn_output = Vec::with_capacity(capacity);
@@ -451,37 +287,33 @@ fn real_serialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("cms/real_signed_data/serialize");
     group.throughput(Throughput::Bytes(bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for (value, length) in vest_values.iter().zip(&lengths) {
+        harness::reused(b, || {
+            for value in &vest_values {
+                let n = generated_cms::SIGNED_DATA::Fmt
+                    .prepare(black_box(value))
+                    .unwrap();
                 generated_cms::SIGNED_DATA::Fmt
-                    .serialize(black_box(value), black_box(&mut vest_output[..*length]));
-                black_box(&vest_output[..*length]);
+                    .serialize(black_box(value), black_box(&mut vest_output[..n]));
+                black_box(&vest_output[..n]);
             }
         })
     });
     group.bench_function("rasn-cms", |b| {
-        b.iter(|| {
-            for value in &rasn_values {
-                rasn::der::encode_buf(black_box(value), &mut rasn_output).unwrap();
-                black_box(&rasn_output);
-            }
+        harness::retained(b, rasn_values.len(), |i| {
+            rasn::der::encode(black_box(&rasn_values[i])).unwrap()
         })
     });
     group.bench_function("RustCrypto-cms", |b| {
-        b.iter(|| {
+        harness::reused(b, || {
             for value in &rustcrypto_values {
-                black_box(value.encode_to_slice(&mut rustcrypto_output).unwrap());
+                let n = usize::try_from(black_box(value).encoded_len().unwrap()).unwrap();
+                black_box(value.encode_to_slice(&mut rustcrypto_output[..n]).unwrap());
             }
         })
     });
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    synthetic,
-    synthetic_serialize,
-    real_parse,
-    real_serialize
-);
+criterion_group! { name = benches; config = harness::configuration();
+targets = synthetic, synthetic_serialize, real_parse, real_serialize }
 criterion_main!(benches);

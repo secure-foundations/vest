@@ -39,6 +39,10 @@ extern crate std;
 /// An uninhabitable type used to represent impossible values (e.g., in [`combinators::Void`]).
 pub type Never = combinators::marker::exec::ExecNever;
 
+/// Whether runtime errors retain diagnostic traces (for tooling that checks build settings).
+#[doc(hidden)]
+pub const ERROR_TRACE_ENABLED: bool = cfg!(feature = "error-trace");
+
 pub mod asn1;
 #[cfg(feature = "alloc")]
 pub mod cbor;

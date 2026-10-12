@@ -64,6 +64,9 @@ jobs:
       - name: Run workspace tests
         run: cargo test --workspace --locked
 
+      - name: Test benchmark reporting and run integrity
+        run: python3 -B -m unittest discover -s vest_bench/scripts/tests -t vest_bench/scripts
+
       - name: Run error-path tests with the full format trace
         run: cargo test -p vest_tests --features error-trace --locked
 

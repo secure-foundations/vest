@@ -10,8 +10,10 @@ use serde::Serialize;
 use vest_lib::cbor::CborFmt;
 use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 
-#[path = "support/cbor.rs"]
+#[path = "shared/cbor.rs"]
 mod checks;
+#[path = "shared/timing.rs"]
+mod harness;
 
 fn nested(depth: usize, seed: i64) -> Value {
     if depth == 0 {
@@ -177,16 +179,16 @@ fn benchmark(
     baselines: Baselines,
 ) {
     let serde_baselines = !matches!(baselines, Baselines::Tagged);
-    let cbor4ii_parse = matches!(baselines, Baselines::All);
+    let cbor4ii_parse = !matches!(baselines, Baselines::Fragmented);
     let format = CborFmt::<false>;
     assert!(!inputs.is_empty());
     assert_eq!(values.len(), inputs.len());
     for (expected, input) in values.iter().zip(&inputs) {
         assert_eq!(&checks::ciborium_exact(input), expected);
+        if cbor4ii_parse {
+            assert_eq!(&checks::cbor4ii_exact(input), expected);
+        }
         if serde_baselines {
-            if cbor4ii_parse {
-                assert_eq!(&checks::cbor4ii_exact(input), expected);
-            }
             assert_eq!(&checks::minicbor_exact(input), expected);
         }
         let (n, value) = format.parse(&&input[..]).unwrap();
@@ -194,37 +196,35 @@ fn benchmark(
         assert_eq!(&checks::semantic_value(&value), expected);
     }
     let input_bytes = inputs.iter().map(|input| input.len() as u64).sum();
+    harness::corpus_metadata(&format!("cbor/{name}/parse"), inputs.len(), input_bytes);
     let mut group = c.benchmark_group(format!("cbor/{name}/parse"));
     group.throughput(Throughput::Bytes(input_bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(format.parse(black_box(&&input[..])).unwrap());
-            }
+        harness::retained(b, inputs.len(), |i| {
+            format.parse(black_box(&&inputs[i][..])).unwrap()
         })
     });
     group.bench_function("ciborium", |b| {
-        b.iter(|| {
-            for input in &inputs {
-                black_box(ciborium::from_reader::<Value, _>(black_box(&input[..])).unwrap());
-            }
+        let mut scratch = [0u8; 4096];
+        harness::retained(b, inputs.len(), |i| {
+            ciborium::de::from_reader_with_buffer::<Value, _>(
+                black_box(&inputs[i][..]),
+                &mut scratch,
+            )
+            .unwrap()
         })
     });
     if cbor4ii_parse {
         group.bench_function("cbor4ii", |b| {
-            b.iter(|| {
-                for input in &inputs {
-                    black_box(cbor4ii::serde::from_slice::<Value>(black_box(input)).unwrap());
-                }
+            harness::retained(b, inputs.len(), |i| {
+                checks::cbor4ii_parse(black_box(&inputs[i]))
             })
         });
     }
     if serde_baselines {
         group.bench_function("minicbor-serde", |b| {
-            b.iter(|| {
-                for input in &inputs {
-                    black_box(minicbor_serde::from_slice::<Value>(black_box(input)).unwrap());
-                }
+            harness::retained(b, inputs.len(), |i| {
+                minicbor_serde::from_slice::<Value>(black_box(&inputs[i])).unwrap()
             })
         });
     }
@@ -239,10 +239,15 @@ fn benchmark(
         .map(|value| format.prepare(value).unwrap())
         .collect();
     let output_bytes = lengths.iter().map(|length| *length as u64).sum();
+    harness::corpus_metadata(
+        &format!("cbor/{name}/serialize"),
+        inputs.len(),
+        output_bytes,
+    );
     let capacity = lengths.iter().copied().max().unwrap_or(0);
     let mut vest_output = vec![0; capacity];
     let mut ciborium_output = Vec::with_capacity(capacity);
-    let mut cbor4ii_output = Vec::with_capacity(capacity);
+    let cbor4ii_values: Vec<_> = values.iter().map(checks::cbor4ii_value).collect();
     let mut minicbor_output = Vec::with_capacity(capacity);
     for ((value, expected), length) in vest_values.iter().zip(&values).zip(&lengths) {
         format.serialize(value, &mut vest_output[..*length]);
@@ -250,10 +255,9 @@ fn benchmark(
         ciborium_output.clear();
         ciborium::into_writer(expected, &mut ciborium_output).unwrap();
         assert_eq!(&vest_output[..*length], &ciborium_output);
+        let native_output = checks::cbor4ii_encode(&checks::cbor4ii_value(expected));
+        assert_eq!(&vest_output[..*length], &native_output);
         if serde_baselines {
-            cbor4ii_output.clear();
-            cbor4ii_output = cbor4ii::serde::to_vec(cbor4ii_output, expected).unwrap();
-            assert_eq!(&vest_output[..*length], &cbor4ii_output);
             minicbor_output.clear();
             expected
                 .serialize(&mut minicbor_serde::Serializer::new(&mut minicbor_output))
@@ -264,44 +268,33 @@ fn benchmark(
     let mut group = c.benchmark_group(format!("cbor/{name}/serialize"));
     group.throughput(Throughput::Bytes(output_bytes));
     group.bench_function("Vest", |b| {
-        b.iter(|| {
-            for (value, length) in vest_values.iter().zip(&lengths) {
-                format.serialize(black_box(value), black_box(&mut vest_output[..*length]));
-                black_box(&vest_output[..*length]);
+        harness::reused(b, || {
+            for value in &vest_values {
+                let n = format.prepare(black_box(value)).unwrap();
+                format.serialize(black_box(value), black_box(&mut vest_output[..n]));
+                black_box(&vest_output[..n]);
             }
         })
     });
     group.bench_function("ciborium", |b| {
-        b.iter(|| {
-            for value in &values {
-                ciborium_output.clear();
-                ciborium::into_writer(black_box(value), &mut ciborium_output).unwrap();
-                black_box(&ciborium_output);
-            }
+        harness::retained(b, values.len(), |i| {
+            let mut output = Vec::new();
+            ciborium::into_writer(black_box(&values[i]), &mut output).unwrap();
+            output
+        })
+    });
+    group.bench_function("cbor4ii", |b| {
+        harness::retained(b, cbor4ii_values.len(), |i| {
+            checks::cbor4ii_encode(black_box(&cbor4ii_values[i]))
         })
     });
     if serde_baselines {
-        group.bench_function("cbor4ii", |b| {
-            b.iter(|| {
-                for value in &values {
-                    cbor4ii_output.clear();
-                    cbor4ii_output = cbor4ii::serde::to_vec(
-                        core::mem::take(&mut cbor4ii_output),
-                        black_box(value),
-                    )
-                    .unwrap();
-                    black_box(&cbor4ii_output);
-                }
-            })
-        });
         group.bench_function("minicbor-serde", |b| {
-            b.iter(|| {
-                for value in &values {
-                    minicbor_output.clear();
-                    let mut serializer = minicbor_serde::Serializer::new(&mut minicbor_output);
-                    black_box(value).serialize(&mut serializer).unwrap();
-                    black_box(&minicbor_output);
-                }
+            harness::retained(b, values.len(), |i| {
+                let mut output = Vec::new();
+                let mut serializer = minicbor_serde::Serializer::new(&mut output);
+                black_box(&values[i]).serialize(&mut serializer).unwrap();
+                output
             })
         });
     }
@@ -328,8 +321,7 @@ fn cose(c: &mut Criterion) {
         .iter()
         .map(|input| ciborium::from_reader(&input[..]).unwrap())
         .collect();
-    // COSE values use CBOR tags, which the serde bridges in cbor4ii and
-    // minicbor-serde cannot preserve through ciborium's generic Value type.
+    // cbor4ii's native value supports tags; the minicbor-serde bridge does not.
     benchmark(c, "cose", values, inputs, Baselines::Tagged);
 }
 
@@ -339,5 +331,6 @@ enum Baselines {
     Tagged,
 }
 
-criterion_group!(benches, synthetic, synthetic_definite, cose);
+criterion_group! { name = benches; config = harness::configuration();
+targets = synthetic, synthetic_definite, cose }
 criterion_main!(benches);

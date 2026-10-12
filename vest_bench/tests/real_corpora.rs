@@ -4,7 +4,7 @@
 //! the same bytes. The Bitcoin blocks are also checked against rust-bitcoin.
 
 use bitcoin::consensus::Decodable;
-use vest_bench::real::{self, Sender};
+use vest_bench::corpora::{self, Sender};
 use vest_lib::core::exec::parser::Parser;
 use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 use vest_tests::bitcoin::{BlockFmt, TxPayload};
@@ -49,7 +49,7 @@ fn assert_no_failures(what: &str, total: usize, failures: Vec<String>) {
 
 #[test]
 fn tls_handshake_messages_roundtrip() {
-    let corpus = real::tls_handshakes();
+    let corpus = corpora::tls_handshakes();
     let mut failures = Vec::new();
     for (i, m) in corpus.iter().enumerate() {
         let label = format!(
@@ -92,7 +92,7 @@ fn tls_handshake_messages_roundtrip() {
 
 #[test]
 fn tls_records_roundtrip() {
-    let corpus = real::tls_records();
+    let corpus = corpora::tls_records();
     let mut failures = Vec::new();
     for (i, r) in corpus.iter().enumerate() {
         let label = format!(
@@ -124,7 +124,7 @@ fn tls_records_roundtrip() {
 
 #[test]
 fn bitcoin_blocks_roundtrip_and_agree_with_rust_bitcoin() {
-    let corpus = real::bitcoin_blocks();
+    let corpus = corpora::bitcoin_blocks();
     let mut failures = Vec::new();
     for b in &corpus {
         let label = format!("block {}", b.height);
@@ -225,7 +225,7 @@ const EXPECTED_COVERAGE: &[&str] = &[
 #[test]
 fn tls_corpus_exercises_the_precise_bodies() {
     use std::collections::BTreeMap;
-    let corpus = real::tls_handshakes();
+    let corpus = corpora::tls_handshakes();
     let mut seen: BTreeMap<String, usize> = BTreeMap::new();
     let mut note = |key: String| *seen.entry(key).or_default() += 1;
     for m in &corpus {
