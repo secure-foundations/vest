@@ -263,6 +263,11 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceOfFmt<C> where
  {
     type PT = Vec<C::PT>;
 
+    fn min_byte_len(&self) -> usize {
+        // An empty value has an identifier and a length octet.
+        2
+    }
+
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()

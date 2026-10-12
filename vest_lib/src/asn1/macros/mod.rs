@@ -197,6 +197,10 @@ macro_rules! __impl_asn1_nominal_exec_borrowed {
         impl<'i> Parser<&'i [u8]> for $fmt {
             type PT = $value<'i>;
 
+            fn min_byte_len(&self) -> usize {
+                <_ as Parser<&'i [u8]>>::min_byte_len(&self.exec_inner())
+            }
+
             fn parse(&self, ibuf: &&'i [u8]) -> (result: PResult<Self::PT>) {
                 proof {
                     reveal(<$fmt as SpecParser>::spec_parse);
@@ -251,6 +255,10 @@ macro_rules! __impl_asn1_nominal_exec_owned {
 
         impl<'i> Parser<&'i [u8]> for $fmt {
             type PT = $value;
+
+            fn min_byte_len(&self) -> usize {
+                <_ as Parser<&'i [u8]>>::min_byte_len(&self.exec_inner())
+            }
 
             fn parse(&self, ibuf: &&'i [u8]) -> (result: PResult<Self::PT>) {
                 proof {

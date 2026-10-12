@@ -489,6 +489,11 @@ impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerOctetStringFmt<LIMIT> {
     type PT = Vec<u8>;
 
+    fn min_byte_len(&self) -> usize {
+        // An empty value has an identifier and a length octet.
+        2
+    }
+
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).parse(ibuf)
     }

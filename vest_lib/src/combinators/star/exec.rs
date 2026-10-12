@@ -20,6 +20,28 @@ use OutputBuf;
 verus! {
 
 #[cfg(feature = "alloc")]
+const MAX_INITIAL_BYTES: usize = 16_384;
+
+/// Bound speculative reservation in bytes.
+#[cfg(feature = "alloc")]
+fn initial_capacity<T>(estimated: usize) -> (cap: usize)
+    ensures
+        cap <= estimated,
+{
+    let size = core::mem::size_of::<T>();
+    if size == 0 {
+        0
+    } else {
+        let limit = MAX_INITIAL_BYTES / size;
+        if estimated < limit {
+            estimated
+        } else {
+            limit
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
 impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser<I> + Productive {
     type PT = Vec<Inner::PT>;
 
@@ -42,8 +64,8 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         let mut consumed: usize = 0;
         let mut remaining = total_len;
         let mut rest = ibuf.skip(0);
-        let mut values = Vec::new();
-        // Reserve the `Vec` capacity based on the minimum byte length of the inner parser.
+        // Unlike RepeatN, Star does not know the actual element count.
+        // We reserve the `Vec` capacity based on the minimum byte length of the inner parser.
         // Without reservation, the `Vec` is regrown several times per repetition,
         // which dominates the cost of parsing `[u8; @len] >>= Vec<..>`.
         let min_len = self.0.min_byte_len();
@@ -52,7 +74,8 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         } else {
             min_len
         };
-        values.reserve(remaining / per);
+        let estimate = remaining / per;
+        let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(estimate));
 
         while remaining > 0
             invariant
@@ -139,17 +162,14 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         let _total_len = ibuf.len();
         let mut consumed: usize = 0;
         let mut rest = ibuf.skip(0);
-        // The element count is known before the loop, so reserve once rather than
-        // letting `push` regrow the buffer element by element.
-        //
-        // The count could arrive on the wire, so it is capped at the remaining
-        // length of the input buffer to avoid over-allocation.
+        // The count may be attacker-controlled. Bound the initial allocation
+        // even when a short input claims many elements.
         let reserve = if count < _total_len {
             count
         } else {
             _total_len
         };
-        let mut values = Vec::with_capacity(reserve);
+        let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(reserve));
 
         for _i in 0..count
             invariant
@@ -571,3 +591,17 @@ impl<Inner, T, const N: usize> Prepare<[T; N]> for super::Array<N, Inner> where
 }
 
 } // verus!
+#[cfg(all(test, feature = "alloc"))]
+mod reservation_tests {
+    use super::initial_capacity;
+
+    #[test]
+    fn speculative_reservation_is_bounded_in_bytes() {
+        assert_eq!(initial_capacity::<u8>(32), 32);
+        assert_eq!(initial_capacity::<u8>(usize::MAX), 16_384);
+        assert_eq!(initial_capacity::<[u8; 832]>(309_417), 19);
+        assert_eq!(initial_capacity::<[u8; 32_768]>(usize::MAX), 0);
+        assert_eq!(initial_capacity::<()>(usize::MAX), 0);
+        assert_eq!(initial_capacity::<u64>(0), 0);
+    }
+}
