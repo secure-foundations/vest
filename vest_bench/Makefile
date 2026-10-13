@@ -1,50 +1,42 @@
 VEST    := cargo run --locked --manifest-path ../Cargo.toml -p vest --
 
-FORMATS := flat table nest tlv varint bits bounded_list tail_list
-REAL_BENCHES := tls bitcoin cms cbor
+.PHONY: help generate test smoke list bench report
 
-.PHONY: generate test smoke bench bench-formats bench-real report all
+help:
+	@echo "make generate   Regenerate the microformat codecs"
+	@echo "make test       Run release codec/corpus and Python tests"
+	@echo "make smoke      Validate every benchmark without measuring"
+	@echo "make list       List workloads, item counts, and input byte counts"
+	@echo "make bench      Measure the whole suite and audit allocations"
+	@echo "make report     Report the latest whole-suite, non-quick run"
+	@echo "TARGETS='tls micro/bits' selects complete-component ID prefixes."
+	@echo "LIST_ARGS, RUN_ARGS, REPORT_ARGS forward options to scripts/bench.py."
+	@echo "For a selected/quick run: make report REPORT_ARGS='--run /path/to/run'"
+	@echo "See README.md for settings, provenance, and profiling."
 
 # Regenerate every format module from its schema.
 generate:
-	@for f in $(FORMATS); do \
-		echo "  $$f"; \
-		$(VEST) formats/$$f.vest -o src/$$f.rs; \
+	@for schema in src/micro/*/*.vest; do \
+		echo "  $$schema"; \
+		$(VEST) "$$schema" -o "$$(dirname "$$schema")/generated.rs" || exit 1; \
 	done
 
-# Layout parity and wire compatibility against the hand-written baselines.
+# Release wire/corpus tests; layout parity is checked at compile time.
 test:
 	cargo test --locked --release
+	python3 -B -m unittest discover -s tests
 
 # Compile every benchmark and run its validation/setup once.
 smoke:
-	cargo bench --locked --no-run
-	@for b in formats $(REAL_BENCHES); do \
-		echo "== $$b =="; \
-		cargo bench --locked --bench $$b -- --test || exit 1; \
-	done
+	cargo bench --locked --benches -- --test
 
-# Run microformats and real formats.
-bench: bench-formats bench-real
+list:
+	@python3 -B scripts/bench.py list $(TARGETS) $(LIST_ARGS)
 
-# One process per microformat. Override FORMATS to measure a subset, e.g.
-#   make bench-formats FORMATS="bounded_list tail_list"
-bench-formats:
-	@for f in $(FORMATS); do \
-		echo "== $$f =="; \
-		cargo bench --locked --bench formats -- "$$f/" >/dev/null 2>&1 || exit 1; \
-	done
-	@$(MAKE) --no-print-directory report
-
-# One process per real-world benchmark family.
-bench-real:
-	@for b in $(REAL_BENCHES); do \
-		echo "== $$b =="; \
-		cargo bench --locked --bench $$b || exit 1; \
-	done
+# One recorded run, one implementation/group per process, randomized order.
+bench:
+	python3 -B scripts/bench.py run --allocations $(TARGETS) $(RUN_ARGS)
 
 # Reprint the collected results without re-measuring.
 report:
-	@python3 report.py $(TARGETS)
-
-all: generate test smoke bench
+	@python3 -B scripts/bench.py report $(TARGETS) $(REPORT_ARGS)

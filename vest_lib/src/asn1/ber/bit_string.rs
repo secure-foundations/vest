@@ -602,6 +602,11 @@ impl<'i> ParserRecBody<&'i [u8]> for BerBitStringRecBody {
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerBitStringFmt<LIMIT> {
     type PT = BitStringOwned;
 
+    fn min_byte_len(&self) -> usize {
+        // An empty value has an identifier and a length octet.
+        2
+    }
+
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).parse(ibuf)
     }

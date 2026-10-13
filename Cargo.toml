@@ -26,7 +26,3 @@ vest_lib = { path = "vest_lib", default-features = false }
 lto = "fat"
 opt-level = 3
 codegen-units = 1
-
-[profile.profiling]
-inherits = "release"
-debug = true

@@ -1,41 +1,18 @@
-//! The real-format corpora are captured protocol traffic, so parsing them
+//! The TLS and Bitcoin corpora are captured protocol traffic, so parsing them
 //! checks the Vest specifications against deployed implementations: every
 //! message must be accepted, consume exactly its bytes, and serialize back to
 //! the same bytes. The Bitcoin blocks are also checked against rust-bitcoin.
 
-use bitcoin::consensus::Decodable;
-use vest_bench::real::{self, Sender};
+use ::bitcoin::consensus::Decodable;
+use tls::Sender;
+use vest_bench::harness::roundtrip;
+use vest_bench::real::{bitcoin as corpus_bitcoin, tls};
 use vest_lib::core::exec::parser::Parser;
-use vest_lib::core::exec::serializer::{Prepare, SerializerExt};
 use vest_tests::bitcoin::{BlockFmt, TxPayload};
 use vest_tests::tls::{
     ClientHelloExtensionData, HandshakeFmt, HandshakeMsg, ServerHelloExtensionData, ShOrHrrPayload,
     TlsCiphertextFmt, TlsPlaintextFmt, TlsPlaintextFragment,
 };
-
-/// Parses `bytes` with `fmt`, requires that the parse consume every byte and
-/// that serializing the result reproduce `bytes`, and yields the value.
-macro_rules! roundtrip {
-    ($fmt:expr, $bytes:expr) => {{
-        let bytes: &[u8] = $bytes;
-        match $fmt.parse(&bytes) {
-            Err(e) => Err(format!("rejected: {e}")),
-            Ok((n, _)) if n != bytes.len() => Err(format!("consumed {n} of {} bytes", bytes.len())),
-            Ok((_, value)) => match $fmt.prepare(&value) {
-                Err(e) => Err(format!("prepare failed: {e:?}")),
-                Ok(len) => {
-                    let mut out = vec![0; len];
-                    $fmt.serialize(&value, out.as_mut_slice());
-                    if out == bytes {
-                        Ok(value)
-                    } else {
-                        Err("serialized bytes differ".to_owned())
-                    }
-                }
-            },
-        }
-    }};
-}
 
 fn assert_no_failures(what: &str, total: usize, failures: Vec<String>) {
     assert!(total > 0, "the {what} corpus is empty");
@@ -49,7 +26,7 @@ fn assert_no_failures(what: &str, total: usize, failures: Vec<String>) {
 
 #[test]
 fn tls_handshake_messages_roundtrip() {
-    let corpus = real::tls_handshakes();
+    let corpus = tls::tls_handshakes();
     let mut failures = Vec::new();
     for (i, m) in corpus.iter().enumerate() {
         let label = format!(
@@ -59,7 +36,7 @@ fn tls_handshake_messages_roundtrip() {
             m.message,
             m.bytes.len()
         );
-        match roundtrip!(HandshakeFmt, &m.bytes) {
+        match roundtrip(&HandshakeFmt, &m.bytes) {
             Err(e) => failures.push(format!("{label}: {e}")),
             Ok(value) => {
                 let parsed = match &value.msg {
@@ -92,7 +69,7 @@ fn tls_handshake_messages_roundtrip() {
 
 #[test]
 fn tls_records_roundtrip() {
-    let corpus = real::tls_records();
+    let corpus = tls::tls_records();
     let mut failures = Vec::new();
     for (i, r) in corpus.iter().enumerate() {
         let label = format!(
@@ -105,9 +82,9 @@ fn tls_records_roundtrip() {
         // Once keys are in use, every record's outer content type is
         // application_data (RFC 9846 Section 5.2); earlier records are plain.
         let result = if r.bytes[0] == 23 {
-            roundtrip!(TlsCiphertextFmt, &r.bytes).map(|_| ())
+            roundtrip(&TlsCiphertextFmt, &r.bytes).map(|_| ())
         } else {
-            roundtrip!(TlsPlaintextFmt, &r.bytes).and_then(|record| match record.fragment {
+            roundtrip(&TlsPlaintextFmt, &r.bytes).and_then(|record| match record.fragment {
                 TlsPlaintextFragment::Handshake(_) | TlsPlaintextFragment::ChangeCipherSpec(_) => {
                     Ok(())
                 }
@@ -124,7 +101,7 @@ fn tls_records_roundtrip() {
 
 #[test]
 fn bitcoin_blocks_roundtrip_and_agree_with_rust_bitcoin() {
-    let corpus = real::bitcoin_blocks();
+    let corpus = corpus_bitcoin::bitcoin_blocks();
     let mut failures = Vec::new();
     for b in &corpus {
         let label = format!("block {}", b.height);
@@ -143,7 +120,7 @@ fn bitcoin_blocks_roundtrip_and_agree_with_rust_bitcoin() {
             "{label}: witness commitment"
         );
 
-        match roundtrip!(BlockFmt, &b.bytes) {
+        match roundtrip(&BlockFmt, &b.bytes) {
             Err(e) => failures.push(format!("{label}: {e}")),
             Ok(block) => {
                 assert_eq!(
@@ -225,7 +202,7 @@ const EXPECTED_COVERAGE: &[&str] = &[
 #[test]
 fn tls_corpus_exercises_the_precise_bodies() {
     use std::collections::BTreeMap;
-    let corpus = real::tls_handshakes();
+    let corpus = tls::tls_handshakes();
     let mut seen: BTreeMap<String, usize> = BTreeMap::new();
     let mut note = |key: String| *seen.entry(key).or_default() += 1;
     for m in &corpus {

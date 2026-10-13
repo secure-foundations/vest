@@ -677,6 +677,11 @@ impl<'i> ParserRecBody<&'i [u8]> for BerAnyRecBody {
 impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerAnyFmt<LIMIT> {
     type PT = AnyOwned;
 
+    fn min_byte_len(&self) -> usize {
+        // An empty value has an identifier and a length octet.
+        2
+    }
+
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         match AnyFmt::<BER>.parse(ibuf) {
             Ok((n, value)) => {

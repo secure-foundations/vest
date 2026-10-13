@@ -64,6 +64,9 @@ jobs:
       - name: Run workspace tests
         run: cargo test --workspace --locked
 
+      - name: Test benchmark reporting and run integrity
+        run: python3 -B -m unittest discover -s vest_bench/tests
+
       - name: Run error-path tests with the full format trace
         run: cargo test -p vest_tests --features error-trace --locked
 
@@ -147,6 +150,10 @@ jobs:
 
       - name: Regenerate ASN.1 fixtures
         working-directory: vest_asn1_tests
+        run: make generate
+
+      - name: Regenerate benchmark microformats
+        working-directory: vest_bench
         run: make generate
 
       - name: Build and test the guide

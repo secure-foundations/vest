@@ -68,7 +68,7 @@ data or updated its keys.
 
 ## Validation
 
-`cargo test -p vest_bench --test real_corpora` checks that each message and
+`cargo test -p vest_bench --test corpora` checks that each message and
 record is accepted by the Vest specification in
 [`vest_tests/src/tls.vest`](../../../vest_tests/src/tls.vest), consumes all of
 its bytes, and re-serializes to the same bytes. The test also checks that the

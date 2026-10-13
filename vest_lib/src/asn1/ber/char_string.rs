@@ -456,6 +456,11 @@ impl<'i, C, const LIMIT: usize> Parser<&'i [u8]> for BerCharStringFmt<C, LIMIT> 
  {
     type PT = C::Owned;
 
+    fn min_byte_len(&self) -> usize {
+        // An empty value has an identifier and a length octet.
+        2
+    }
+
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         let (n, bytes) = BerOctetStringFmt::<LIMIT>(self.0).parse(ibuf)?;
         let value = self.1.decode_owned(bytes)?;

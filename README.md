@@ -47,7 +47,6 @@ Vest 2.0 is a substantial redesign. Existing users should read the [migration gu
 ## Benchmarks
 
 [`vest_bench`](vest_bench) contains reproducible Criterion benchmarks for Vest-generated parsers and serializers. It includes focused microformats that compare Vest with hand-written Rust implementations, and real-format benchmarks that compare Vest with open-source Rust libraries for TLS, Bitcoin, CMS, and CBOR.
-See the [benchmark guide](https://secure-foundations.github.io/vest/guide/benchmarks.html) for the benchmark design and commands.
 
 ## Getting in touch and reporting issues
 
