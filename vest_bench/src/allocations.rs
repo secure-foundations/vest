@@ -65,7 +65,7 @@ unsafe impl GlobalAlloc for CountingSystem {
     }
 }
 
-pub fn record(f: impl FnOnce()) {
+pub(crate) fn record(id: &str, f: impl FnOnce()) {
     // Disable counting on unwinding as well as on successful completion.
     struct Reset;
     impl Drop for Reset {
@@ -78,7 +78,15 @@ pub fn record(f: impl FnOnce()) {
     f();
     let counts = COUNTS.with(|c| c.get().unwrap());
     drop(reset);
-    if let Some(path) = std::env::var_os("VEST_BENCH_ALLOCATION_FILE") {
-        std::fs::write(path, serde_json::to_vec_pretty(&counts).unwrap()).unwrap();
+    if let Some(path) = std::env::var_os("VEST_BENCH_ALLOCATIONS") {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
+        let mut entry = serde_json::to_value(counts).unwrap();
+        entry["id"] = serde_json::Value::String(id.to_owned());
+        writeln!(file, "{entry}").unwrap();
     }
 }

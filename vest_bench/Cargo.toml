@@ -5,18 +5,16 @@ edition.workspace = true
 publish = false
 
 [features]
-default = ["std"]
-std = ["alloc", "vstd/std", "vest_lib/std"]
-alloc = ["vstd/alloc", "vest_lib/alloc"]
 # Use only for untimed allocation audits, never for performance measurements.
 allocation-counting = []
 
+[lib]
+bench = false
+
 [dependencies]
 base64 = "0.22.1"
-vstd.workspace = true
-vest_lib.workspace = true
-
-[dev-dependencies]
+vstd = { workspace = true, features = ["std"] }
+vest_lib = { workspace = true, features = ["std"] }
 bcder = "0.7.7"
 bitcoin = "0.32.100"
 cbor4ii = { version = "1.2.3", features = ["use_alloc", "half-f16"] }
@@ -36,7 +34,7 @@ vest_asn1_tests = { path = "../vest_asn1_tests" }
 vest_tests = { path = "../vest_tests" }
 
 [[bench]]
-name = "formats"
+name = "micro"
 harness = false
 
 [[bench]]
@@ -55,7 +53,5 @@ harness = false
 name = "cbor"
 harness = false
 
-# Not part of the verification corpus: these formats duplicate shapes already
-# covered by vest_tests, and the point of this crate is measurement.
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)"] }
