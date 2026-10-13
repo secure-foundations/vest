@@ -13,7 +13,7 @@ commitment.
 
 ## Validation
 
-`cargo test -p vest_bench --test real_corpora` checks that the Vest
+`cargo test -p vest_bench --test corpora` checks that the Vest
 specification in [`vest_tests/src/bitcoin.vest`](../../../vest_tests/src/bitcoin.vest)
 accepts each block, consumes all of its bytes, and re-serializes to the same
 bytes. It also checks that Vest agrees with rust-bitcoin on every
