@@ -14,6 +14,8 @@ use input::InputBuf;
 use vstd::arithmetic::power::*;
 use vstd::calc;
 use vstd::prelude::*;
+#[cfg(verus_only)]
+use vstd::std_specs::iter::IteratorSpec;
 
 verus! {
 
@@ -481,32 +483,29 @@ fn scan_base128_bytes<'a, const MINIMAL: bool>(ibuf: &&'a [u8]) -> (out: PResult
     Err(ParseError::unexpected_eof())
 }
 
+#[verifier::loop_isolation(false)]
 pub fn uint_from_base128(bytes: &[u8]) -> (result: UInt)
     requires
         bytes.len() <= BASE128_MAX_BYTES,
     ensures
         result as nat == nat_from_base128(bytes.deep_view()),
 {
-    let n = bytes.len();
     let mut acc: UInt = 0;
-    for i in 0..n
+    for &b in iter: bytes.iter()
         invariant
-            n == bytes.len(),
-            n <= BASE128_MAX_BYTES,
-            acc == nat_from_base128(bytes@.take(i as int)),
+            acc == nat_from_base128(bytes@[0..iter.index()]),
     {
-        let b = bytes[i];
         proof {
-            let prefix = bytes@.take(i as int);
+            let prefix = bytes@[0..iter.index()];
             let current = prefix.push(b);
-            assert(bytes@.take(i as int + 1) == current);
+            assert(bytes@[0..iter.index() + 1] == current);
             assert(current.drop_last() == prefix);
             lemma_nat_from_base128_bounds(current);
             lemma_uint64_shl7_or_is_base128(acc, b);
         }
         acc = (acc << 7usize) | ((b & PAYLOAD_MASK) as UInt);
     }
-    assert(bytes@.take(n as int) == bytes.deep_view());
+    assert(bytes@[0..bytes@.len() as int] == bytes.deep_view());
     acc
 }
 
@@ -537,41 +536,40 @@ pub fn uint_to_base128_in_place(v: UInt, obuf: &mut [u8])
     ensures
         final(obuf)@ == nat_to_base128(v as nat),
 {
-    let len = obuf.len();
+    let ghost len = obuf@.len();
 
     let ghost target = nat_to_base128(v as nat);
     proof {
         lemma_to_from_base128_roundtrip(v as nat);
         lemma_to_base128_props(v as nat);
-        assert(target.take(len as int) == target);
+        assert(target[0..len as int] == target);
     }
-    let mut pos = len;
     let mut current = v;
 
     // Write the base-128 digits from least significant to most significant, filling the
     // big-endian output slice from right to left.
-    while pos > 0
+    let bytes = obuf.iter_mut();
+    let ghost slots = bytes.remaining();
+    let reversed = bytes.rev();
+    proof {
+        vstd::std_specs::iter::rev_postcondition(bytes, reversed);
+    }
+    for byte in iter: reversed
         invariant
-            len == obuf.len(),
-            pos <= len,
-            current as nat == nat_from_base128(target.take(pos as int)),
-            obuf@.skip(pos as int) == target.skip(pos as int),
-        decreases pos,
+            iter.seq().len() == len,
+            current as nat == nat_from_base128(target[0..len as int - iter.index()]),
+            forall|j: int|
+                #![auto]
+                len as int - iter.index() <= j < len ==> *final(slots[j]) == target[j],
     {
-        let ghost old_buf = obuf@;
-        let ghost old_current = current;
-
-        pos -= 1;
-        let byte = (current & PAYLOAD_MASK as UInt) as u8;
-        obuf[pos] = byte;
-        current = current >> 7;
         proof {
-            lemma_uint_shr7_is_div128(old_current);
-            lemma_uint_low7_is_mod128(old_current);
-            assert(target[pos as int] < 128);
-            assert(target.take(pos as int + 1).drop_last() == target.take(pos as int));
-            assert(obuf@.skip(pos as int) == seq![byte] + old_buf.skip(pos as int + 1));
+            let pos = len as int - iter.index() - 1;
+            lemma_uint_shr7_is_div128(current);
+            lemma_uint_low7_is_mod128(current);
+            assert(target[0..pos + 1].drop_last() == target[0..pos]);
         }
+        *byte = (current & PAYLOAD_MASK as UInt) as u8;
+        current >>= 7;
     }
 }
 
@@ -762,11 +760,11 @@ impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, UInt> for Base12
         proof {
             old(obuf).lemma_same_destination_reflexive();
         }
-        for i in 0..num_bytes - 1
+        for &byte in iter: bytes[0..num_bytes - 1].iter()
             invariant
                 cont_bytes.len() == num_bytes - 1,
-                obuf@ == old(obuf)@ + cont_bytes.take(i as int),
-                forall|n| old(obuf).fits(i as nat + n) <==> #[trigger] obuf.fits(n),
+                obuf@ == old(obuf)@ + cont_bytes[0..iter.index()],
+                forall|n| old(obuf).fits(iter.index() as nat + n) <==> #[trigger] obuf.fits(n),
                 old(obuf).same_destination(obuf),
                 forall|j: int|
                     #![auto]
@@ -776,8 +774,7 @@ impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, UInt> for Base12
         {
             broadcast use crate::core::exec::output::outbuf_lemmas;
 
-            let b = bytes[i];
-            obuf.write_byte((b | CONTINUATION_MASK) as u8);
+            obuf.write_byte(byte | CONTINUATION_MASK);
         }
         obuf.write_byte(bytes[num_bytes - 1]);
         proof {

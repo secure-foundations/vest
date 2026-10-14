@@ -148,18 +148,10 @@ pub(super) open(super) spec fn bitstring_fmt<const DER: bool>() -> BitStringFmt<
     Mapped {
         inner: Refined(
             Pair(U8, Tail),
-            |r: (u8, Seq<u8>)|
-                {
-                    let (unused, bits) = r;
-                    BitStringSpec { unused, bits }.wf::<DER>()
-                },
+            |(unused, bits): (u8, Seq<u8>)| BitStringSpec { unused, bits }.wf::<DER>(),
         ),
         mapper: (
-            |r: (u8, Seq<u8>)|
-                {
-                    let (unused, bits) = r;
-                    BitStringSpec { unused, bits }
-                },
+            |(unused, bits): (u8, Seq<u8>)| BitStringSpec { unused, bits },
             |spec: BitStringSpec| (spec.unused, spec.bits),
         ),
     }

@@ -9,7 +9,10 @@ use crate::core::exec::{
 use crate::{
     combinators::{
         mapped::spec::FnSpecMapper,
-        uints::{exec::u16_to_be_bytes, spec::*},
+        uints::{
+            exec::{u16_from_be_bytes, u16_to_be_bytes},
+            spec::*,
+        },
         Mapped, Refined, Tail,
     },
     core::{proof::*, spec::*},
@@ -17,6 +20,8 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 use vstd::prelude::*;
+#[cfg(verus_only)]
+use vstd::std_specs::iter::IteratorSpec;
 use vstd::string::StrSliceExecFns;
 use OutputBuf;
 
@@ -356,8 +361,6 @@ mod derived_proofs {
 }
 
 /// Check that a byte slice is a valid BMPString without allocation.
-/// TODO: Verify this function while keeping it efficient and idiomatic.
-#[verifier::external_body]
 pub fn check_valid_bmp_string(bytes: &[u8]) -> (res: bool)
     ensures
         res == is_valid_bmp_string(bytes.deep_view()),
@@ -365,9 +368,26 @@ pub fn check_valid_bmp_string(bytes: &[u8]) -> (res: bool)
     if bytes.len() % 2 != 0 {
         return false;
     }
-    bytes.chunks_exact(2).map(|pair| u16::from_be_bytes([pair[0], pair[1]]) as u32).all(
-        |unit| char::from_u32(unit).is_some(),
-    )
+    let mut iter = 0..bytes.len() / 2;
+    let ghost indices = iter.remaining();
+    let valid = iter.all(
+        |i: usize| -> (valid: bool)
+            requires
+                i < bytes@.len() / 2,
+            ensures
+                valid == vstd::utf8::is_scalar(bmp_code_unit(bytes@, i as int)),
+            {
+                let unit = u16_from_be_bytes([bytes[2 * i], bytes[2 * i + 1]]) as u32;
+                super::utf8string::is_unicode_scalar(unit)
+            },
+    );
+    assert(bytes@ == bytes.deep_view());
+    // The range's elements are exactly the code-unit indices, for either `all` outcome.
+    assert forall|i: int| 0 <= i < indices.len() implies vstd::utf8::is_scalar(
+        bmp_code_unit(bytes@, indices[i] as int),
+    ) == vstd::utf8::is_scalar(#[trigger] bmp_code_unit(bytes@, i)) by {}
+
+    valid
 }
 
 /// Decode a byte slice into a String, assuming it contains a valid BMPString.
@@ -414,17 +434,16 @@ impl<Output: OutputBuf> Serializer<Output, BmpString> for super::BmpStringFmt {
         let value = v.inner.as_str();
 
         let ghost initial = obuf@;
-        let len = value.unicode_len();
-        for i in 0..len
+        let ghost len = value.deep_view().len();
+        for c in iter: value.chars()
             invariant
-                obuf@ == initial + encode_bmp_string(value.deep_view().take(i as int)),
-                forall|n| old(obuf).fits(2 * i as nat + n) <==> obuf.fits(n),
+                obuf@ == initial + encode_bmp_string(value.deep_view()[0..iter.index()]),
+                forall|n| old(obuf).fits(2 * iter.index() as nat + n) <==> obuf.fits(n),
                 old(obuf).same_destination(obuf),
         {
             proof {
-                old(obuf).lemma_fits_mono(2 * i as nat + 2, 2 * len as nat);
+                old(obuf).lemma_fits_mono(2 * iter.index() as nat + 2, 2 * len as nat);
             }
-            let c = value.get_char(i);
             let pair = u16_to_be_bytes(c as u16);
             obuf.write_bytes(&pair);
         }

@@ -113,16 +113,13 @@ pub fn is_valid_ia5_string(bytes: &[u8]) -> (res: bool)
     ensures
         res == is_valid_ia5_string_spec(bytes.deep_view()),
 {
-    for b in iter: bytes.iter()
-        invariant
-            forall|k: int| 0 <= k < iter.index() ==> #[trigger] bytes.deep_view()[k] <= 127,
-    {
-        if *b > 127 {
-            assert(bytes.deep_view()[iter.index()] > 127);
-            return false;
-        }
-    }
-    true
+    assert(bytes@ == bytes.deep_view());
+    bytes.iter().all(
+        |&b: &u8| -> (valid: bool)
+            ensures
+                valid == (b <= 127),
+            { b <= 127 },
+    )
 }
 
 type Ia5StringFmt = Mapped<

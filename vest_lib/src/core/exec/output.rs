@@ -83,20 +83,20 @@ pub trait OutputBuf: View<V = Seq<u8>> {
         broadcast use OutputBuf::lemma_same_destination_reflexive;
 
         let ghost initial_view = self@;
-        for i in 0..bytes.len()
+        for byte in iter: bytes.iter()
             invariant
-                self@ == initial_view + bytes@.take(i as int),
+                self@ == initial_view + bytes@[0..iter.index()],
                 old(self).fits(bytes@.len()),
-                forall|n| old(self).fits(i as nat + n) <==> #[trigger] self.fits(n),
+                forall|n| old(self).fits(iter.index() as nat + n) <==> #[trigger] self.fits(n),
                 old(self).same_destination(self),
         {
             broadcast use OutputBuf::lemma_same_destination_transitive;
 
             proof {
-                old(self).lemma_fits_mono(i as nat + 1, bytes@.len());
+                old(self).lemma_fits_mono(iter.index() as nat + 1, bytes@.len());
                 assert(self.fits(1));
             }
-            self.write_byte(bytes[i]);
+            self.write_byte(*byte);
         }
     }
 

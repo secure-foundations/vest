@@ -841,7 +841,7 @@ impl<'i> Parser<&'i [u8]> for Integer16Fmt {
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
         if ibuf.len() == 1 {
             let (n, v) = I8.parse(ibuf)?;
-            Ok((n, v as i16))
+            Ok((n, i16::from(v)))
         } else if ibuf.len() == 2 {
             let (n, v) = I16Be.parse(ibuf)?;
             if fits_i8(v) {
@@ -875,8 +875,8 @@ impl ByteLen<i8> for Integer8Fmt {
 
 impl<Output: OutputBuf> Serializer<Output, i16> for Integer16Fmt {
     fn serialize_into(&self, v: &i16, obuf: &mut Output) {
-        if fits_i8(*v) {
-            I8.serialize_into(&(*v as i8), obuf);
+        if let Ok(small) = i8::try_from(*v) {
+            I8.serialize_into(&small, obuf);
         } else {
             I16Be.serialize_into(v, obuf);
         }
@@ -885,8 +885,8 @@ impl<Output: OutputBuf> Serializer<Output, i16> for Integer16Fmt {
 
 impl Prepare<i16> for Integer16Fmt {
     fn prepare(&self, v: &i16) -> Result<usize, PreSerializeError> {
-        if fits_i8(*v) {
-            I8.prepare(&(*v as i8))
+        if let Ok(small) = i8::try_from(*v) {
+            I8.prepare(&small)
         } else {
             I16Be.prepare(v)
         }
@@ -895,8 +895,8 @@ impl Prepare<i16> for Integer16Fmt {
 
 impl ByteLen<i16> for Integer16Fmt {
     fn length(&self, v: &i16) -> usize {
-        if fits_i8(*v) {
-            I8.length(&(*v as i8))
+        if let Ok(small) = i8::try_from(*v) {
+            I8.length(&small)
         } else {
             I16Be.length(v)
         }

@@ -105,61 +105,36 @@ impl PrintableStringSpec {
     }
 }
 
-pub open spec fn is_printable_byte(b: u8) -> bool {
-    ||| (0x41 <= b <= 0x5a)  // A-Z
-    ||| (0x61 <= b <= 0x7a)  // a-z
-    ||| (0x30 <= b <= 0x39)  // 0-9
-    ||| b == 0x20  // space
-    ||| b == 0x27  // '
-    ||| b == 0x28  // (
-    ||| b == 0x29  // )
-    ||| b == 0x2b  // +
-    ||| b == 0x2c  // ,
-    ||| b == 0x2d  // -
-    ||| b == 0x2e  // .
-    ||| b == 0x2f  // /
-    ||| b == 0x3a  // :
-    ||| b == 0x3d  // =
-    ||| b == 0x3f  // ?
-
+/// Tests membership in PrintableString's ASCII repertoire.
+#[verifier::allow_in_spec]
+pub fn is_printable_byte(b: u8) -> bool
+    returns
+        matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9'
+            | b' ' | b'\'' | b'(' | b')' | b'+' | b',' | b'-' | b'.' | b'/'
+            | b':' | b'=' | b'?'),
+{
+    matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9'
+        | b' ' | b'\'' | b'(' | b')' | b'+' | b',' | b'-' | b'.' | b'/'
+        | b':' | b'=' | b'?')
 }
 
 pub open spec fn is_valid_printable_string_spec(bytes: Seq<u8>) -> bool {
     forall|i: int| 0 <= i < bytes.len() ==> is_printable_byte(#[trigger] bytes[i])
 }
 
+/// Checks PrintableString contents without allocation.
+#[verifier::allow_in_spec]
 pub fn is_valid_printable_string(bytes: &[u8]) -> (res: bool)
-    ensures
-        res == is_valid_printable_string_spec(bytes.deep_view()),
+    returns
+        is_valid_printable_string_spec(bytes.deep_view()),
 {
-    for b in iter: bytes.iter()
-        invariant
-            forall|k: int|
-                0 <= k < iter.index() ==> #[trigger] is_printable_byte(bytes.deep_view()[k]),
-    {
-        if !matches!(
-            b,
-            0x41..=0x5a | // A-Z
-            0x61..=0x7a | // a-z
-            0x30..=0x39 | // 0-9
-            0x20 |        // space
-            0x27 |        // '
-            0x28 |        // (
-            0x29 |        // )
-            0x2b |        // +
-            0x2c |        // ,
-            0x2d |        // -
-            0x2e |        // .
-            0x2f |        // /
-            0x3a |        // :
-            0x3d |        // =
-            0x3f          // ?
-        ) {
-            assert(!is_printable_byte(bytes.deep_view()[iter.index()]));
-            return false;
-        }
-    }
-    true
+    assert(bytes@ == bytes.deep_view());
+    bytes.iter().all(
+        |&b: &u8| -> (valid: bool)
+            ensures
+                valid == is_printable_byte(b),
+            { is_printable_byte(b) },
+    )
 }
 
 type PrintableStringFmt = Mapped<

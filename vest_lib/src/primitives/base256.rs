@@ -3,6 +3,8 @@
 use alloc::{vec, vec::Vec};
 use vstd::arithmetic::{div_mod::*, power::*, power2::*};
 use vstd::bits::*;
+#[cfg(verus_only)]
+use vstd::std_specs::iter::IteratorSpec;
 use vstd::{calc, prelude::*};
 
 verus! {
@@ -269,27 +271,22 @@ pub proof fn lemma_from_be_bytes_prepend(bytes: Seq<u8>, b: u8)
 
 /// Executable loop-based big-endian base-256 decoding into `usize`.
 /// Verified against the `nat_from_be_bytes` specification.
+#[verifier::loop_isolation(false)]
 pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
     requires
         bytes.len() <= size_of_usize(),
     ensures
         result as nat == nat_from_be_bytes(bytes.deep_view()),
 {
-    let n = bytes.len();
     let mut acc: usize = 0;
-    for i in 0..n
+    for &b in iter: bytes.iter()
         invariant
-            n == bytes.len(),
-            n <= size_of_usize(),
-            acc == nat_from_be_bytes(bytes@.take(i as int)),
+            acc == nat_from_be_bytes(bytes@[0..iter.index()]),
     {
-        let b = bytes[i];
         proof {
-            let prefix = bytes@.take(i as int);
-            let current = prefix.push(b);
-            assert(bytes@.take(i as int + 1) == current);
-            assert(current.drop_last() == prefix);
-            lemma_nat_from_be_bytes_fits_shr8(current);
+            let prefix = bytes@[0..iter.index() + 1];
+            assert(prefix.drop_last() == bytes@[0..iter.index()]);
+            lemma_nat_from_be_bytes_fits_shr8(prefix);
             if usize::BITS == 32 {
                 lemma_usize32_shl8_or_is_base256(acc, b);
             } else {
@@ -298,7 +295,7 @@ pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
         }
         acc = (acc << 8usize) | (b as usize);
     }
-    assert(bytes@.take(n as int) == bytes.deep_view());
+    assert(bytes@[0..bytes@.len() as int] == bytes.deep_view());
     acc
 }
 
@@ -344,40 +341,40 @@ pub fn usize_to_be_bytes_in_place(v: usize, obuf: &mut [u8])
     ensures
         final(obuf)@ == nat_to_be_bytes(v as nat),
 {
-    let len = obuf.len();
+    let ghost len = obuf@.len();
 
     let ghost target = nat_to_be_bytes(v as nat);
     proof {
         lemma_to_from_be_bytes_roundtrip(v as nat);  // nat_from_be_bytes(nat_to_be_bytes(v)) == v
-        assert(target.take(len as int) == target);
+        assert(target[0..len as int] == target);
     }
-    let mut pos = len;
     let mut current = v;
 
     // We write the bytes in Big-Endian order, starting from the last byte and moving backwards.
     // The loop invariant maintains that `current` is the remaining value to encode (the higher bytes),
     // and the suffix `obuf[pos..]` is the part of the output buffer that has already been filled with the correct bytes.
-    while pos > 0
+    let bytes = obuf.iter_mut();
+    let ghost slots = bytes.remaining();
+    let reversed = bytes.rev();
+    proof {
+        vstd::std_specs::iter::rev_postcondition(bytes, reversed);
+    }
+    for byte in iter: reversed
         invariant
-            len == obuf.len(),
-            pos <= len,
-            current as nat == nat_from_be_bytes(target.take(pos as int)),
-            obuf@.skip(pos as int) == target.skip(pos as int),
-        decreases pos,
+            iter.seq().len() == len,
+            current as nat == nat_from_be_bytes(target[0..len as int - iter.index()]),
+            forall|j: int|
+                #![auto]
+                len as int - iter.index() <= j < len ==> *final(slots[j]) == target[j],
     {
-        let ghost old_buf = obuf@;
-        let ghost old_current = current;
-
-        pos -= 1;
-        let byte = (current & 0xff) as u8;
-        obuf[pos] = byte;
-        current = current >> 8;
         proof {
-            lemma_usize_shr8_is_div256(old_current);
-            lemma_usize_low8_is_mod256(old_current);
-            assert(target.take(pos as int + 1).drop_last() == target.take(pos as int));
-            assert(obuf@.skip(pos as int) == seq![byte] + old_buf.skip(pos as int + 1));
+            let pos = len as int - iter.index() - 1;
+            lemma_usize_shr8_is_div256(current);
+            lemma_usize_low8_is_mod256(current);
+            assert(target[0..pos + 1].drop_last() == target[0..pos]);
         }
+        *byte = (current & 0xff) as u8;
+        current >>= 8;
     }
 }
 
@@ -440,31 +437,6 @@ pub fn u64_to_be_bytes_first(v: u64) -> (first: u8)
     }
 }
 
-#[verifier::external_body]
-fn bytes_needed(n: usize) -> (need: usize)
-    ensures
-        need == nat_to_be_bytes(n as nat).len(),
-{
-    let active_bits = match usize::BITS {
-        total @ 32 => total - (n as u32).leading_zeros(),
-        total @ 64 => total - (n as u64).leading_zeros(),
-        _ => 0,  // unreachable
-    };
-
-    if active_bits == 0 {
-        1
-    } else {
-        ((active_bits + 7) / 8) as usize
-    }
-}
-
-// Executable loop-based big-endian base-256 encoding from `usize`.
-// Verified against [`usize_to_be_bytes`].
-// pub fn usize_to_be_bytes_exec(mut v: usize, obuf: &mut Vec<u8>)
-//     ensures
-//         final(obuf)@ == old(obuf)@ + usize_to_be_bytes(v),
-//  {
-// }
 } // verus!
 #[cfg(all(test, feature = "alloc"))]
 mod tests {

@@ -25,6 +25,15 @@ pub type Utf8String<'a> = &'a str;
 #[cfg(feature = "alloc")]
 pub type Utf8StringOwned = String;
 
+/// Tests a Unicode scalar value without converting it to a `char`.
+#[verifier::allow_in_spec]
+pub(crate) fn is_unicode_scalar(value: u32) -> bool
+    returns
+        vstd::utf8::is_scalar(value),
+{
+    value <= 0x10ffff && !(0xd800 <= value && value <= 0xdfff)
+}
+
 #[verifier::external_body]
 pub fn is_valid_utf8(bytes: &[u8]) -> (res: bool)
     ensures

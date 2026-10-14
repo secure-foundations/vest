@@ -316,22 +316,23 @@ pub fn serialize_slice<Output, Inner, T>(inner: &Inner, values: &[T], obuf: &mut
     let ghost star = super::Star(*inner);
     let ghost mut consumed: nat = 0;
 
-    for i in 0..values.len()
+    for value in iter: values.iter()
         invariant
-            consumed + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
-            obuf@ == old(obuf)@ + spec_serialize_seq(inner, vs.take(i as int)),
+            consumed + star.byte_len(vs[iter.index()..]) == star.byte_len(vs),
+            obuf@ == old(obuf)@ + spec_serialize_seq(inner, vs[0..iter.index()]),
             forall|n| old(obuf).fits(consumed + n) <==> #[trigger] obuf.fits(n),
             old(obuf).same_destination(obuf),
     {
         proof {
+            let i = iter.index();
             let elem_len = inner.byte_len(vs[i as int]);
-            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
-            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
-            assert(vs.take(i + 1) == vs.take(i as int).push(vs[i as int]));
-            assert(vs.take(i as int).push(vs[i as int]).drop_last() == vs.take(i as int));
+            assert(vs[i..] == seq![vs[i]] + vs[i + 1..]);
+            star.lemma_byte_len_cons(vs[i], vs[i + 1..]);
+            assert(vs[0..i + 1] == vs[0..i].push(vs[i]));
+            assert(vs[0..i].push(vs[i]).drop_last() == vs[0..i]);
             consumed = consumed + elem_len;
         }
-        inner.serialize_into(&values[i], obuf);
+        inner.serialize_into(value, obuf);
     }
 }
 
@@ -351,15 +352,16 @@ pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
     let ghost star = super::Star(*fmt);
 
     let mut len = 0usize;
-    for i in 0..values.len()
+    for value in iter: values.iter()
         invariant
-            len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
+            len + star.byte_len(vs[iter.index()..]) == star.byte_len(vs),
     {
         proof {
-            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
-            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
+            let i = iter.index();
+            assert(vs[i..] == seq![vs[i]] + vs[i + 1..]);
+            star.lemma_byte_len_cons(vs[i], vs[i + 1..]);
         }
-        let l = fmt.length(&values[i]);
+        let l = fmt.length(value);
         len += l;
     }
     len
@@ -384,16 +386,17 @@ pub fn prepare_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (checked: Result<
     let ghost star = super::Star(*fmt);
 
     let mut len = 0usize;
-    for i in 0..values.len()
+    for value in iter: values.iter()
         invariant
-            forall|j: int| 0 <= j < i ==> fmt.consistent(#[trigger] vs[j]),
-            len + star.byte_len(vs.skip(i as int)) == star.byte_len(vs),
+            forall|j: int| 0 <= j < iter.index() ==> fmt.consistent(#[trigger] vs[j]),
+            len + star.byte_len(vs[iter.index()..]) == star.byte_len(vs),
     {
         proof {
-            assert(vs.skip(i as int) == seq![vs[i as int]] + vs.skip(i + 1));
-            star.lemma_byte_len_cons(vs[i as int], vs.skip(i + 1));
+            let i = iter.index();
+            assert(vs[i..] == seq![vs[i]] + vs[i + 1..]);
+            star.lemma_byte_len_cons(vs[i], vs[i + 1..]);
         }
-        let elem_len = fmt.prepare(&values[i])?;
+        let elem_len = fmt.prepare(value)?;
         match len.checked_add(elem_len) {
             Some(total) => len = total,
             None => return Err(PreSerializeError::length_too_large()),

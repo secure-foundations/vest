@@ -13,7 +13,10 @@ use crate::core::exec::{
 use crate::{
     combinators::{
         mapped::spec::FnSpecMapper,
-        uints::{exec::u32_to_be_bytes, spec::*},
+        uints::{
+            exec::{u32_from_be_bytes, u32_to_be_bytes},
+            spec::*,
+        },
         Mapped, Refined, Tail,
     },
     core::{proof::*, spec::*},
@@ -21,6 +24,8 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 use vstd::prelude::*;
+#[cfg(verus_only)]
+use vstd::std_specs::iter::IteratorSpec;
 #[cfg(feature = "alloc")]
 use vstd::string::StrSliceExecFns;
 use OutputBuf;
@@ -285,7 +290,6 @@ mod derived_proofs {
 }
 
 /// Check a UniversalString contents slice without allocation.
-#[verifier::external_body]
 pub fn check_valid_universal_string(bytes: &[u8]) -> (valid: bool)
     ensures
         valid == is_valid_universal_string(bytes.deep_view()),
@@ -293,9 +297,27 @@ pub fn check_valid_universal_string(bytes: &[u8]) -> (valid: bool)
     if bytes.len() % 4 != 0 {
         return false;
     }
-    bytes.chunks_exact(4).map(|word| u32::from_be_bytes([word[0], word[1], word[2], word[3]])).all(
-        |code| char::from_u32(code).is_some(),
-    )
+    let mut iter = 0..bytes.len() / 4;
+    let ghost indices = iter.remaining();
+    let valid = iter.all(
+        |i: usize| -> (valid: bool)
+            requires
+                i < bytes@.len() / 4,
+            ensures
+                valid == vstd::utf8::is_scalar(universal_code_point(bytes@, i as int)),
+            {
+                let code = u32_from_be_bytes(
+                    [bytes[4 * i], bytes[4 * i + 1], bytes[4 * i + 2], bytes[4 * i + 3]],
+                );
+                super::utf8string::is_unicode_scalar(code)
+            },
+    );
+    assert(bytes@ == bytes.deep_view());
+    // The range's elements are exactly the code-point indices, for either `all` outcome.
+    assert forall|i: int| 0 <= i < indices.len() implies vstd::utf8::is_scalar(
+        universal_code_point(bytes@, indices[i] as int),
+    ) == vstd::utf8::is_scalar(#[trigger] universal_code_point(bytes@, i)) by {}
+    valid
 }
 
 #[cfg(feature = "alloc")]
@@ -340,17 +362,16 @@ impl<Output: OutputBuf> Serializer<Output, UniversalString> for super::Universal
         let value = value.as_str();
 
         let ghost initial = obuf@;
-        let len = value.unicode_len();
-        for i in 0..len
+        let ghost len = value.deep_view().len();
+        for c in iter: value.chars()
             invariant
-                obuf@ == initial + encode_universal_string(value.deep_view().take(i as int)),
-                forall|n| old(obuf).fits(4 * i as nat + n) <==> obuf.fits(n),
+                obuf@ == initial + encode_universal_string(value.deep_view()[0..iter.index()]),
+                forall|n| old(obuf).fits(4 * iter.index() as nat + n) <==> obuf.fits(n),
                 old(obuf).same_destination(obuf),
         {
             proof {
-                old(obuf).lemma_fits_mono(4 * i as nat + 4, 4 * len as nat);
+                old(obuf).lemma_fits_mono(4 * iter.index() as nat + 4, 4 * len as nat);
             }
-            let c = value.get_char(i);
             let word = u32_to_be_bytes(c as u32);
             obuf.write_bytes(&word);
         }

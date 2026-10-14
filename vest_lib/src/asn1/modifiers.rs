@@ -554,26 +554,26 @@ pub open spec fn defaulted_fmt<Field: SpecByteLen, Rest: SpecByteLen, const DER:
     Mapped {
         inner: Refined(
             Optional(field, rest),
-            |pair: (Option<Field::T>, Rest::T)|
-                DER ==> (pair matches (Some(value), _) ==> value != default),
+            |(value, _): (Option<Field::T>, Rest::T)|
+                DER ==> (value matches Some(value) ==> value != default),
         ),
         mapper: (
-            |parsed: (Option<Field::T>, Rest::T)|
+            |(parsed, rest): (Option<Field::T>, Rest::T)|
                 (
-                    match parsed.0 {
+                    match parsed {
                         Some(value) => value,
                         None => default,
                     },
-                    parsed.1,
+                    rest,
                 ),
-            |value: (Field::T, Rest::T)|
+            |(value, rest): (Field::T, Rest::T)|
                 (
-                    if value.0 == default {
+                    if value == default {
                         None
                     } else {
-                        Some(value.0)
+                        Some(value)
                     },
-                    value.1,
+                    rest,
                 ),
         ),
     }

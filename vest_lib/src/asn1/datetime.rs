@@ -291,7 +291,10 @@ pub broadcast proof fn lemma_decimal4_roundtrip(value: u16)
         digits(#[trigger] decimal4_bytes(value)@, 0, 4),
         decimal4(decimal4_bytes(value)@, 0) == value,
 {
-    // Arithmetic normalization is discharged once here for all time formats.
+    let n = value as int;
+    assert(n == 10 * (n / 10) + n % 10);
+    assert(n / 10 == 10 * (n / 100) + (n / 10) % 10);
+    assert(n / 100 == 10 * (n / 1000) + (n / 100) % 10);
 }
 
 #[verifier::rlimit(50)]
@@ -318,16 +321,17 @@ pub fn is_digits(bytes: &[u8], start: usize, end: usize) -> bool
     returns
         digits(bytes@, start as int, end as int),
 {
-    for i in start..end
-        invariant
-            start <= i <= end <= bytes.len(),
-            forall|j: int| start <= j < i ==> ascii_digit(#[trigger] bytes@[j]),
-    {
-        if bytes[i] < ASCII_0 || bytes[i] > ASCII_9 {
-            return false;
-        }
+    let span = &bytes[start..end];
+    let valid = span.iter().all(
+        |&byte: &u8| -> (valid: bool)
+            ensures
+                valid == ascii_digit(byte),
+            { ASCII_0 <= byte && byte <= ASCII_9 },
+    );
+    assert forall|i: int| valid && start <= i < end implies ascii_digit(#[trigger] bytes@[i]) by {
+        assert(span@[i - start] == bytes@[i]);
     }
-    true
+    valid
 }
 
 #[verifier::allow_in_spec]

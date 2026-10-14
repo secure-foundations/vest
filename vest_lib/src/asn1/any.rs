@@ -43,7 +43,7 @@ pub open spec fn any_fmt<const DER: bool>() -> AnyInnerFmt<DER> {
         Mapped {
             inner: Pair(TagFmt, Bind(LengthFmt::<DER>, |len: usize| ExactLen(len, Tail))),
             mapper: (
-                |v: (Tag, (usize, Seq<u8>))| AnySpec { tag: v.0, content: v.1.1 },
+                |(tag, (_, content)): (Tag, (usize, Seq<u8>))| AnySpec { tag, content },
                 |v: AnySpec| (v.tag, (v.content.len() as usize, v.content)),
             ),
         },

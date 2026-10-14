@@ -732,40 +732,49 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
         self.0.exec_inv()
     }
 
+    #[verifier::loop_isolation(false)]
     fn prepare(&self, values: &[Elem]) -> (checked: Result<usize, PreSerializeError>) {
+        broadcast use vstd::std_specs::iter::zip_postcondition;
+        broadcast use vstd::std_specs::iter::skip_postcondition;
+
         reveal(<Star<_> as Consistency>::consistent);
         let total = Star(self.0).prepare(values)?;
-
-        for i in 0..values.len()
+        let pairs = values.iter().zip(values.iter().skip(1));
+        let count = pairs.len();
+        if count == 0 {
+            return Ok(total);
+        }
+        for (left, right) in iter: pairs
             invariant
+                iter.seq().len() == count,
+                count + 1 == values.len(),
                 <Self as Prepare<[Elem]>>::exec_inv(self),
                 forall|k: int|
                     0 <= k < values.deep_view().len() ==> self.0.consistent(
                         #[trigger] values.deep_view()[k],
                     ),
                 total == Star(self.0).byte_len(values.deep_view()),
-                set_of_values_sorted(self.0, values.deep_view().take(i as int)),
+                set_of_values_sorted(self.0, values.deep_view()[0..iter.index() + 1]),
         {
-            if i > 0 {
-                assert(self.0.consistent(values.deep_view()[i as int - 1]));
-                assert(self.0.consistent(values.deep_view()[i as int]));
-                if !self.0.der_leq(&values[i - 1], &values[i]) {
-                    return Err(
-                        PreSerializeError::custom("SET OF elements are not in canonical DER order"),
-                    );
-                }
+            assert(left.deep_view() == values.deep_view()[iter.index()]);
+            assert(right.deep_view() == values.deep_view()[iter.index() + 1]);
+            if !self.0.der_leq(left, right) {
+                return Err(
+                    PreSerializeError::custom("SET OF elements are not in canonical DER order"),
+                );
             }
             proof {
+                let i = iter.index() + 1;
                 let vs = values.deep_view();
                 let serialize = |v: C::T| self.0.spec_serialize(v);
-                let prefix_encodings = vs.take(i as int).map_values(serialize);
-                let current_encoding = serialize(vs[i as int]);
+                let prefix_encodings = vs[0..i].map_values(serialize);
+                let current_encoding = serialize(vs[i]);
                 lemma_der_encodings_sorted_push(prefix_encodings, current_encoding);
-                vs.lemma_map_take_succ(serialize, i as int);
+                vs.lemma_map_take_succ(serialize, i);
             }
         }
-        assert(values.deep_view().take(values.deep_view().len() as int) == values.deep_view());
 
+        assert(values.deep_view()[0..values.deep_view().len() as int] == values.deep_view());
         Ok(total)
     }
 }
