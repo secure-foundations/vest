@@ -1,33 +1,16 @@
 {
-  "version": "0.2026.09.06.8dea4a2",
-  "commit": "8dea4a2196ebf99449fe2f141a2fb30acae3f17c",
-  "rust": "1.98.0",
+  "version": "0.2026.10.04.426d8b0",
+  "commit": "426d8b01e7ffb910a36c15e1f870ff985bb61eef",
+  "rust": "1.98.1",
   "artifacts": {
     "arm64-macos": {
-      "sha256": "23be2e8113b50bc91729377d8ac032f658cc5187e389a319d8458f9c37b07b4a"
+      "sha256": "83cafc50284caea07fa8762df04b00cc0af441f25cdf1631d6c30987c65af446"
     },
     "x86-linux": {
-      "sha256": "13d01e134c0620c3b29770874707d16c33b3d227c843a489c8ceb744d43c0a16"
+      "sha256": "624018662868563a7bec0dd07be5e4dd0c3d61124b4b55105765884bf2d4d1a0"
     },
     "x86-macos": {
-      "sha256": "1befa1704a412fe3cfc7af8c90d2f75dd2c4963c9737d256d970ea93aeea3b69"
-    }
-  },
-  "z3": {
-    "version": "4.16.0",
-    "artifacts": {
-      "arm64-macos": {
-        "archive": "z3-4.16.0-arm64-osx-15.7.3.zip",
-        "sha256": "41828fa07d5cb77bfaee326e8e6dac074f26329c09c633f9e66012bb917cf8ae"
-      },
-      "x86-linux": {
-        "archive": "z3-4.16.0-x64-glibc-2.39.zip",
-        "sha256": "7288c49a5bd6dbafd7b0b0d1f65956b91672da24b08f09242919af159be3418e"
-      },
-      "x86-macos": {
-        "archive": "z3-4.16.0-x64-osx-15.7.3.zip",
-        "sha256": "d95519c4f3ed9393bb5f996e514c8f177bb148989bdfc32e95587f0307c4e7b0"
-      }
+      "sha256": "9b00357ee298a3b052038abc85c0be3129ab2821762fe8be5eb8dcbe37349f9c"
     }
   }
 }

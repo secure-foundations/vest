@@ -90,22 +90,6 @@ if [[ ! "$expected_checksum" =~ ^[0-9a-f]{64}$ ]]; then
   exit 1
 fi
 
-z3_version="$(python3 -c \
-  'import json, sys; print(json.load(open(sys.argv[1]))["z3"]["version"])' \
-  "$release_metadata" 2>/dev/null || true)"
-z3_archive="$(python3 -c \
-  'import json, sys; print(json.load(open(sys.argv[1]))["z3"]["artifacts"][sys.argv[2]]["archive"])' \
-  "$release_metadata" "$asset" 2>/dev/null || true)"
-z3_expected_checksum="$(python3 -c \
-  'import json, sys; print(json.load(open(sys.argv[1]))["z3"]["artifacts"][sys.argv[2]]["sha256"])' \
-  "$release_metadata" "$asset" 2>/dev/null || true)"
-if [[ ! "$z3_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ||
-      ! "$z3_archive" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.zip$ ||
-      ! "$z3_expected_checksum" =~ ^[0-9a-f]{64}$ ]]; then
-  echo "No valid Z3 fallback is recorded for $asset." >&2
-  exit 1
-fi
-
 if valid_install "$install_dir"; then
   install_toolchain "$install_dir"
   echo "Verus ${version} is already installed in $install_dir"
@@ -137,36 +121,6 @@ if [[ -z "$release_dir" ]]; then
   exit 1
 fi
 release_dir="$(dirname "$release_dir")"
-
-# Temporary compatibility for Verus releases whose binary archives omitted Z3.
-if [[ ! -x "$release_dir/z3" ]]; then
-  z3_url="https://github.com/Z3Prover/z3/releases/download/z3-$z3_version/$z3_archive"
-  echo "The Verus archive does not contain Z3; downloading $z3_archive..."
-  curl --proto '=https' --tlsv1.2 --fail --location \
-    --retry 5 --retry-delay 2 --retry-all-errors \
-    "$z3_url" -o "$tmp_dir/z3.zip"
-
-  z3_actual_checksum="$(shasum -a 256 "$tmp_dir/z3.zip" | awk '{ print $1 }')"
-  if [[ "$z3_actual_checksum" != "$z3_expected_checksum" ]]; then
-    echo "SHA-256 mismatch for $z3_archive." >&2
-    echo "Expected: $z3_expected_checksum" >&2
-    echo "Actual:   $z3_actual_checksum" >&2
-    exit 1
-  fi
-
-  unzip -q "$tmp_dir/z3.zip" -d "$tmp_dir/z3"
-  z3_binary="$(find "$tmp_dir/z3" -type f -path '*/bin/z3' -print -quit)"
-  if [[ -z "$z3_binary" ]]; then
-    echo "$z3_archive did not contain bin/z3." >&2
-    exit 1
-  fi
-  cp "$z3_binary" "$release_dir/z3"
-  chmod +x "$release_dir/z3"
-  if [[ "$("$release_dir/z3" --version)" != "Z3 version $z3_version - 64 bit" ]]; then
-    echo "The downloaded Z3 executable does not report version $z3_version." >&2
-    exit 1
-  fi
-fi
 
 if ! complete_install "$release_dir"; then
   echo "The downloaded archive is incomplete or does not match Verus ${version}." >&2

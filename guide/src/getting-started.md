@@ -15,7 +15,7 @@ generated code, add the following dependencies to `Cargo.toml`:
 
 ```console
 cargo add vest_lib
-cargo add vstd@=0.0.0-2026-09-06-0133 --no-default-features
+cargo add vstd@=0.0.0-2026-10-04-0306 --no-default-features
 ```
 
 which gives you:
@@ -23,7 +23,7 @@ which gives you:
 ```toml
 [dependencies]
 vest_lib = "0.2"
-vstd = { version = "=0.0.0-2026-09-06-0133", default-features = false }
+vstd = { version = "=0.0.0-2026-10-04-0306", default-features = false }
 ```
 
 Generated modules refer to `vstd` directly, so it has to be a direct dependency even when you are only compiling and running the executable Rust. The version has to be exact (we'll try to keep this doc up to date as much as possible): Verus and `vstd` move quickly, and each Vest release tracks one

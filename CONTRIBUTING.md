@@ -114,6 +114,16 @@ cargo verus verify -p vest_dev --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_asn1_tests --locked --check-toolchain -- --expand-errors --rlimit 100
 ```
 
+For a focused check, use `focus` rather than `verify`:
+
+```console
+cargo verus focus -p vest_lib --locked --check-toolchain -- --expand-errors --verify-module asn1::bmpstring
+```
+
+`focus` checks the selected crate or modules, not dependency proofs. Run `verify`
+for the full check before submitting a change. To bypass Cargo's cached result
+without editing files or cleaning, pass a new `--target-dir` before `--`.
+
 ## Adding a test `.vest` or `.asn1` file
 
 For the DSL, put the schema in `vest_tests/src/`, then add it to `VEST_FILES` in
@@ -140,6 +150,9 @@ workspace `Cargo.toml` together.
 `verus.json` needs the new version, commit, Rust version, and the SHA-256
 of all three platform archives. Then run the full verification matrix, since
 Verus upgrades can change proof results and performance.
+Update the getting-started guide's direct `vstd` dependency too.
+The release also bundles `verusdoc`; `scripts/build-docs.sh` uses it to rebuild
+the library's specifications and proofs alongside the guide.
 
 **Releasing.** Publish only from `main`, and tag with the exact manifest
 version: `vest_lib-vVERSION` or `vest-vVERSION`. The release workflow refuses a
