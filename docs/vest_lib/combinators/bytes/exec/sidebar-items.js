@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"fn":["_verus_external_fn_specification_1__60__32__38__32__39_a_32__91_T_59__32_N_93__32_as_32_TryFrom_32__60__32__38__32__39_a_32__91_T_93__32__62__32__62__32__58__58__32_try__from"],"struct":["ExTryFromSliceError"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/tlv.rs`."><title>tlv.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>tlv.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Generic ASN.1 tag-length-value wrappers for definite-length contents.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/tlv.rs`."><title>tlv.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.1 (48a229cea 2026-09-01)" data-channel="1.98.1" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>tlv.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Generic ASN.1 tag-length-value wrappers for definite-length contents.
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">use </span><span class="kw">crate</span>::asn1::{ASN1Fmt, LengthFmt, Tag, TagFmt};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::combinators::{
 <a href=#4 id=4 data-nosnippet>4</a>    bytes::ExactLen, length::AsLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, PrefixTagged,
@@ -225,188 +225,195 @@
 <a href=#225 id=225 data-nosnippet>225</a> {
 <a href=#226 id=226 data-nosnippet>226</a>    <span class="kw">type </span>PT = Content::PT;
 <a href=#227 id=227 data-nosnippet>227</a>
-<a href=#228 id=228 data-nosnippet>228</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
-<a href=#230 id=230 data-nosnippet>230</a>    }
-<a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#233 id=233 data-nosnippet>233</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
-<a href=#234 id=234 data-nosnippet>234</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SoundParser::lemma_parse_sound_value;
-<a href=#235 id=235 data-nosnippet>235</a>        broadcast <span class="kw">use </span><span class="kw">super</span>::tag::lemma_const_tag_fmt_exec_inv;
-<a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">let _ </span>= ibuf.len();
+<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">fn </span>min_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+<a href=#229 id=229 data-nosnippet>229</a>        <span class="comment">// Every TLV carries at least one identifier octet and one length octet
+<a href=#230 id=230 data-nosnippet>230</a>        // before its content. This is what lets `SET OF` and `SEQUENCE OF`
+<a href=#231 id=231 data-nosnippet>231</a>        // size their result.
+<a href=#232 id=232 data-nosnippet>232</a>        </span><span class="number">2usize</span>.saturating_add(<span class="self">self</span>.<span class="number">1</span>.min_byte_len())
+<a href=#233 id=233 data-nosnippet>233</a>    }
+<a href=#234 id=234 data-nosnippet>234</a>
+<a href=#235 id=235 data-nosnippet>235</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#236 id=236 data-nosnippet>236</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
+<a href=#237 id=237 data-nosnippet>237</a>    }
 <a href=#238 id=238 data-nosnippet>238</a>
-<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>(n1, _tag_val) = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)<span class="question-mark">?</span>;
-<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">let </span>rest = ibuf.skip(n1);
-<a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>(n2, len) = LengthFmt::&lt;DER&gt;.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
-<a href=#242 id=242 data-nosnippet>242</a>        <span class="kw">let </span>rest = rest.skip(n2);
-<a href=#243 id=243 data-nosnippet>243</a>        <span class="kw">let </span>(n3, val) = ExactLen(len, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>).parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
-<a href=#244 id=244 data-nosnippet>244</a>        <span class="prelude-val">Ok</span>((n1 + n2 + n3, val))
-<a href=#245 id=245 data-nosnippet>245</a>    }
-<a href=#246 id=246 data-nosnippet>246</a>}
-<a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a><span class="kw">impl</span>&lt;Output: OutputBuf, Content, T, <span class="kw">const </span>DER: bool&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>ASN1Fmt&lt;
-<a href=#249 id=249 data-nosnippet>249</a>    Content,
-<a href=#250 id=250 data-nosnippet>250</a>    DER,
-<a href=#251 id=251 data-nosnippet>251</a>&gt; <span class="kw">where </span>T: DeepView + <span class="question-mark">?</span>Sized, Content: SpecCombinator + Serializer&lt;Output, T&gt; + ByteLen&lt;T&gt; {
-<a href=#252 id=252 data-nosnippet>252</a>    <span class="attr">#[verifier::prophetic]
-<a href=#253 id=253 data-nosnippet>253</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#254 id=254 data-nosnippet>254</a>        &amp;&amp;&amp; &lt;<span class="kw">_ as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#255 id=255 data-nosnippet>255</a>        &amp;&amp;&amp; &lt;<span class="kw">_ as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#256 id=256 data-nosnippet>256</a>    }
-<a href=#257 id=257 data-nosnippet>257</a>
-<a href=#258 id=258 data-nosnippet>258</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#259 id=259 data-nosnippet>259</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
-<a href=#260 id=260 data-nosnippet>260</a>
-<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>ghost vv = v.deep_view();
-<a href=#262 id=262 data-nosnippet>262</a>        assert(<span class="self">self</span>.consistent(vv) == (<span class="self">self</span>.<span class="number">1</span>.byte_len(vv) <span class="kw">as </span>usize <span class="kw">as </span>nat == <span class="self">self</span>.<span class="number">1</span>.byte_len(vv)));
-<a href=#263 id=263 data-nosnippet>263</a>        assert(<span class="self">self</span>.<span class="number">1</span>.byte_len(vv) &lt;= usize::MAX);
-<a href=#264 id=264 data-nosnippet>264</a>        <span class="kw">let </span>len = <span class="self">self</span>.<span class="number">1</span>.length(v);
-<a href=#265 id=265 data-nosnippet>265</a>
-<a href=#266 id=266 data-nosnippet>266</a>        Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, obuf);
-<a href=#267 id=267 data-nosnippet>267</a>        LengthFmt::&lt;DER&gt;.serialize_into(<span class="kw-2">&amp;</span>len, obuf);
-<a href=#268 id=268 data-nosnippet>268</a>        <span class="self">self</span>.<span class="number">1</span>.serialize_into(v, obuf);
-<a href=#269 id=269 data-nosnippet>269</a>    }
-<a href=#270 id=270 data-nosnippet>270</a>}
-<a href=#271 id=271 data-nosnippet>271</a>
-<a href=#272 id=272 data-nosnippet>272</a><span class="kw">impl</span>&lt;Content, T, <span class="kw">const </span>DER: bool&gt; Prepare&lt;T&gt; <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; <span class="kw">where
-<a href=#273 id=273 data-nosnippet>273</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#274 id=274 data-nosnippet>274</a>    Content: SpecCombinator + Prepare&lt;T&gt;,
-<a href=#275 id=275 data-nosnippet>275</a> {
-<a href=#276 id=276 data-nosnippet>276</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
-<a href=#278 id=278 data-nosnippet>278</a>    }
-<a href=#279 id=279 data-nosnippet>279</a>
-<a href=#280 id=280 data-nosnippet>280</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#281 id=281 data-nosnippet>281</a>        broadcast <span class="kw">use </span><span class="kw">super</span>::tag::lemma_const_tag_fmt_exec_inv;
-<a href=#282 id=282 data-nosnippet>282</a>
-<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw">let </span>n1 = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).prepare(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)<span class="question-mark">?</span>;
-<a href=#284 id=284 data-nosnippet>284</a>        <span class="kw">let </span>n3 = <span class="self">self</span>.<span class="number">1</span>.prepare(v)<span class="question-mark">?</span>;
-<a href=#285 id=285 data-nosnippet>285</a>        <span class="kw">let </span>n2 = LengthFmt::&lt;DER&gt;.prepare(<span class="kw-2">&amp;</span>n3)<span class="question-mark">?</span>;
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="kw">let </span>_total_len = n1.checked_add(n2).ok_or(
-<a href=#287 id=287 data-nosnippet>287</a>            PreSerializeError::length_too_large(),
-<a href=#288 id=288 data-nosnippet>288</a>        )<span class="question-mark">?</span>.checked_add(n3).ok_or(PreSerializeError::length_too_large())<span class="question-mark">?</span>;
-<a href=#289 id=289 data-nosnippet>289</a>        <span class="prelude-val">Ok</span>(n1 + n2 + n3)
-<a href=#290 id=290 data-nosnippet>290</a>    }
-<a href=#291 id=291 data-nosnippet>291</a>}
-<a href=#292 id=292 data-nosnippet>292</a>
-<a href=#293 id=293 data-nosnippet>293</a><span class="kw">impl</span>&lt;Content, T, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;T&gt; <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; <span class="kw">where
-<a href=#294 id=294 data-nosnippet>294</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#295 id=295 data-nosnippet>295</a>    Content: SpecCombinator + ByteLen&lt;T&gt;,
-<a href=#296 id=296 data-nosnippet>296</a> {
-<a href=#297 id=297 data-nosnippet>297</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#298 id=298 data-nosnippet>298</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
-<a href=#299 id=299 data-nosnippet>299</a>    }
-<a href=#300 id=300 data-nosnippet>300</a>
-<a href=#301 id=301 data-nosnippet>301</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; usize {
-<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>n1 = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).length(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
-<a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">let </span>n3 = <span class="self">self</span>.<span class="number">1</span>.length(v);
-<a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">let </span>n2 = LengthFmt::&lt;DER&gt;.length(<span class="kw-2">&amp;</span>n3);
-<a href=#305 id=305 data-nosnippet>305</a>        n1 + n2 + n3
+<a href=#239 id=239 data-nosnippet>239</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#240 id=240 data-nosnippet>240</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
+<a href=#241 id=241 data-nosnippet>241</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SoundParser::lemma_parse_sound_value;
+<a href=#242 id=242 data-nosnippet>242</a>        broadcast <span class="kw">use </span><span class="kw">super</span>::tag::lemma_const_tag_fmt_exec_inv;
+<a href=#243 id=243 data-nosnippet>243</a>
+<a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">let _ </span>= ibuf.len();
+<a href=#245 id=245 data-nosnippet>245</a>
+<a href=#246 id=246 data-nosnippet>246</a>        <span class="kw">let </span>(n1, _tag_val) = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)<span class="question-mark">?</span>;
+<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">let </span>rest = ibuf.skip(n1);
+<a href=#248 id=248 data-nosnippet>248</a>        <span class="kw">let </span>(n2, len) = LengthFmt::&lt;DER&gt;.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
+<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>rest = rest.skip(n2);
+<a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">let </span>(n3, val) = ExactLen(len, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>).parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
+<a href=#251 id=251 data-nosnippet>251</a>        <span class="prelude-val">Ok</span>((n1 + n2 + n3, val))
+<a href=#252 id=252 data-nosnippet>252</a>    }
+<a href=#253 id=253 data-nosnippet>253</a>}
+<a href=#254 id=254 data-nosnippet>254</a>
+<a href=#255 id=255 data-nosnippet>255</a><span class="kw">impl</span>&lt;Output: OutputBuf, Content, T, <span class="kw">const </span>DER: bool&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>ASN1Fmt&lt;
+<a href=#256 id=256 data-nosnippet>256</a>    Content,
+<a href=#257 id=257 data-nosnippet>257</a>    DER,
+<a href=#258 id=258 data-nosnippet>258</a>&gt; <span class="kw">where </span>T: DeepView + <span class="question-mark">?</span>Sized, Content: SpecCombinator + Serializer&lt;Output, T&gt; + ByteLen&lt;T&gt; {
+<a href=#259 id=259 data-nosnippet>259</a>    <span class="attr">#[verifier::prophetic]
+<a href=#260 id=260 data-nosnippet>260</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#261 id=261 data-nosnippet>261</a>        &amp;&amp;&amp; &lt;<span class="kw">_ as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
+<a href=#262 id=262 data-nosnippet>262</a>        &amp;&amp;&amp; &lt;<span class="kw">_ as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
+<a href=#263 id=263 data-nosnippet>263</a>    }
+<a href=#264 id=264 data-nosnippet>264</a>
+<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#266 id=266 data-nosnippet>266</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
+<a href=#267 id=267 data-nosnippet>267</a>
+<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">let </span>ghost vv = v.deep_view();
+<a href=#269 id=269 data-nosnippet>269</a>        assert(<span class="self">self</span>.consistent(vv) == (<span class="self">self</span>.<span class="number">1</span>.byte_len(vv) <span class="kw">as </span>usize <span class="kw">as </span>nat == <span class="self">self</span>.<span class="number">1</span>.byte_len(vv)));
+<a href=#270 id=270 data-nosnippet>270</a>        assert(<span class="self">self</span>.<span class="number">1</span>.byte_len(vv) &lt;= usize::MAX);
+<a href=#271 id=271 data-nosnippet>271</a>        <span class="kw">let </span>len = <span class="self">self</span>.<span class="number">1</span>.length(v);
+<a href=#272 id=272 data-nosnippet>272</a>
+<a href=#273 id=273 data-nosnippet>273</a>        Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, obuf);
+<a href=#274 id=274 data-nosnippet>274</a>        LengthFmt::&lt;DER&gt;.serialize_into(<span class="kw-2">&amp;</span>len, obuf);
+<a href=#275 id=275 data-nosnippet>275</a>        <span class="self">self</span>.<span class="number">1</span>.serialize_into(v, obuf);
+<a href=#276 id=276 data-nosnippet>276</a>    }
+<a href=#277 id=277 data-nosnippet>277</a>}
+<a href=#278 id=278 data-nosnippet>278</a>
+<a href=#279 id=279 data-nosnippet>279</a><span class="kw">impl</span>&lt;Content, T, <span class="kw">const </span>DER: bool&gt; Prepare&lt;T&gt; <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; <span class="kw">where
+<a href=#280 id=280 data-nosnippet>280</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#281 id=281 data-nosnippet>281</a>    Content: SpecCombinator + Prepare&lt;T&gt;,
+<a href=#282 id=282 data-nosnippet>282</a> {
+<a href=#283 id=283 data-nosnippet>283</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#284 id=284 data-nosnippet>284</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
+<a href=#285 id=285 data-nosnippet>285</a>    }
+<a href=#286 id=286 data-nosnippet>286</a>
+<a href=#287 id=287 data-nosnippet>287</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#288 id=288 data-nosnippet>288</a>        broadcast <span class="kw">use </span><span class="kw">super</span>::tag::lemma_const_tag_fmt_exec_inv;
+<a href=#289 id=289 data-nosnippet>289</a>
+<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">let </span>n1 = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).prepare(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)<span class="question-mark">?</span>;
+<a href=#291 id=291 data-nosnippet>291</a>        <span class="kw">let </span>n3 = <span class="self">self</span>.<span class="number">1</span>.prepare(v)<span class="question-mark">?</span>;
+<a href=#292 id=292 data-nosnippet>292</a>        <span class="kw">let </span>n2 = LengthFmt::&lt;DER&gt;.prepare(<span class="kw-2">&amp;</span>n3)<span class="question-mark">?</span>;
+<a href=#293 id=293 data-nosnippet>293</a>        <span class="kw">let </span>_total_len = n1.checked_add(n2).ok_or(
+<a href=#294 id=294 data-nosnippet>294</a>            PreSerializeError::length_too_large(),
+<a href=#295 id=295 data-nosnippet>295</a>        )<span class="question-mark">?</span>.checked_add(n3).ok_or(PreSerializeError::length_too_large())<span class="question-mark">?</span>;
+<a href=#296 id=296 data-nosnippet>296</a>        <span class="prelude-val">Ok</span>(n1 + n2 + n3)
+<a href=#297 id=297 data-nosnippet>297</a>    }
+<a href=#298 id=298 data-nosnippet>298</a>}
+<a href=#299 id=299 data-nosnippet>299</a>
+<a href=#300 id=300 data-nosnippet>300</a><span class="kw">impl</span>&lt;Content, T, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;T&gt; <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; <span class="kw">where
+<a href=#301 id=301 data-nosnippet>301</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#302 id=302 data-nosnippet>302</a>    Content: SpecCombinator + ByteLen&lt;T&gt;,
+<a href=#303 id=303 data-nosnippet>303</a> {
+<a href=#304 id=304 data-nosnippet>304</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#305 id=305 data-nosnippet>305</a>        <span class="self">self</span>.<span class="number">1</span>.exec_inv()
 <a href=#306 id=306 data-nosnippet>306</a>    }
-<a href=#307 id=307 data-nosnippet>307</a>}
-<a href=#308 id=308 data-nosnippet>308</a>
-<a href=#309 id=309 data-nosnippet>309</a>} <span class="comment">// verus!
-<a href=#310 id=310 data-nosnippet>310</a>/*
-<a href=#311 id=311 data-nosnippet>311</a>*
-<a href=#312 id=312 data-nosnippet>312</a>some test functions
-<a href=#313 id=313 data-nosnippet>313</a>*/
-<a href=#314 id=314 data-nosnippet>314</a></span><span class="macro">verus!</span> {
+<a href=#307 id=307 data-nosnippet>307</a>
+<a href=#308 id=308 data-nosnippet>308</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; usize {
+<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>n1 = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).length(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">let </span>n3 = <span class="self">self</span>.<span class="number">1</span>.length(v);
+<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>n2 = LengthFmt::&lt;DER&gt;.length(<span class="kw-2">&amp;</span>n3);
+<a href=#312 id=312 data-nosnippet>312</a>        n1 + n2 + n3
+<a href=#313 id=313 data-nosnippet>313</a>    }
+<a href=#314 id=314 data-nosnippet>314</a>}
 <a href=#315 id=315 data-nosnippet>315</a>
-<a href=#316 id=316 data-nosnippet>316</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#317 id=317 data-nosnippet>317</a></span><span class="kw">fn </span>test_exec_asn1_fmt(buf: &amp;&amp;[u8]) -&gt; PResult&lt;bool&gt; {
-<a href=#318 id=318 data-nosnippet>318</a>    <span class="kw">use </span><span class="kw">super</span>::BoolFmt;
-<a href=#319 id=319 data-nosnippet>319</a>    <span class="kw">use super</span>::{BER, DER};
-<a href=#320 id=320 data-nosnippet>320</a>
-<a href=#321 id=321 data-nosnippet>321</a>    <span class="kw">let </span>asn_bool = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;DER&gt;);
-<a href=#322 id=322 data-nosnippet>322</a>    <span class="kw">let </span>(_n, v) = asn_bool.parse(buf)<span class="question-mark">?</span>;
-<a href=#323 id=323 data-nosnippet>323</a>    <span class="kw">if let </span><span class="prelude-val">Ok</span>(len) = asn_bool.prepare(<span class="kw-2">&amp;</span>v) {
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="kw">let </span><span class="kw-2">mut </span>obuf = <span class="macro">vec!</span>[<span class="number">0</span>; len];
-<a href=#325 id=325 data-nosnippet>325</a>        asn_bool.serialize(<span class="kw-2">&amp;</span>v, <span class="kw-2">&amp;mut </span>obuf);
-<a href=#326 id=326 data-nosnippet>326</a>
-<a href=#327 id=327 data-nosnippet>327</a>        proof {
-<a href=#328 id=328 data-nosnippet>328</a>            asn_bool.theorem_parse_serialize_roundtrip(buf@);
-<a href=#329 id=329 data-nosnippet>329</a>            assert(obuf@ == buf@.take(_n <span class="kw">as </span>int));
-<a href=#330 id=330 data-nosnippet>330</a>        }
-<a href=#331 id=331 data-nosnippet>331</a>    }
-<a href=#332 id=332 data-nosnippet>332</a>    <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Test function"</span>))
-<a href=#333 id=333 data-nosnippet>333</a>}
-<a href=#334 id=334 data-nosnippet>334</a>
-<a href=#335 id=335 data-nosnippet>335</a>} <span class="comment">// verus!
-<a href=#336 id=336 data-nosnippet>336</a></span><span class="attr">#[cfg(test)]
-<a href=#337 id=337 data-nosnippet>337</a></span><span class="kw">mod </span>tests {
-<a href=#338 id=338 data-nosnippet>338</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#339 id=339 data-nosnippet>339</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::bitstring::BitString;
-<a href=#340 id=340 data-nosnippet>340</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::{Class, TagNumber};
-<a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::{ASN1Fmt, BitStringFmt, BoolFmt, Tag};
-<a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::{BER, DER};
-<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">use </span><span class="kw">crate</span>::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
-<a href=#344 id=344 data-nosnippet>344</a>
-<a href=#345 id=345 data-nosnippet>345</a>    <span class="attr">#[test]
-<a href=#346 id=346 data-nosnippet>346</a>    </span><span class="kw">fn </span>test_asn1_bool_der_and_ber() {
-<a href=#347 id=347 data-nosnippet>347</a>        <span class="comment">// DER BoolFmt (canonical: TRUE must be 0xFF)
-<a href=#348 id=348 data-nosnippet>348</a>        </span><span class="kw">let </span>der_bool = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;DER&gt;);
-<a href=#349 id=349 data-nosnippet>349</a>
-<a href=#350 id=350 data-nosnippet>350</a>        <span class="comment">// Parse valid true
-<a href=#351 id=351 data-nosnippet>351</a>        </span><span class="kw">let </span>input_true = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0xFF</span>];
-<a href=#352 id=352 data-nosnippet>352</a>        <span class="kw">let </span>(n, val) = der_bool.parse(&amp;&amp;input_true[..]).unwrap();
-<a href=#353 id=353 data-nosnippet>353</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
-<a href=#354 id=354 data-nosnippet>354</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">true</span>);
-<a href=#355 id=355 data-nosnippet>355</a>
-<a href=#356 id=356 data-nosnippet>356</a>        <span class="comment">// Parse valid false
-<a href=#357 id=357 data-nosnippet>357</a>        </span><span class="kw">let </span>input_false = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x00</span>];
-<a href=#358 id=358 data-nosnippet>358</a>        <span class="kw">let </span>(n, val) = der_bool.parse(&amp;&amp;input_false[..]).unwrap();
-<a href=#359 id=359 data-nosnippet>359</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
-<a href=#360 id=360 data-nosnippet>360</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">false</span>);
-<a href=#361 id=361 data-nosnippet>361</a>
-<a href=#362 id=362 data-nosnippet>362</a>        <span class="comment">// Parse invalid/non-canonical true (0x01) under DER -&gt; should fail
-<a href=#363 id=363 data-nosnippet>363</a>        </span><span class="kw">let </span>input_noncanonical = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>];
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="macro">assert!</span>(der_bool.parse(&amp;&amp;input_noncanonical[..]).is_err());
-<a href=#365 id=365 data-nosnippet>365</a>
-<a href=#366 id=366 data-nosnippet>366</a>        <span class="comment">// BER BoolFmt (permits any non-zero byte for true)
-<a href=#367 id=367 data-nosnippet>367</a>        </span><span class="kw">let </span>ber_bool = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;BER&gt;);
-<a href=#368 id=368 data-nosnippet>368</a>        <span class="kw">let </span>(n, val) = ber_bool.parse(&amp;&amp;input_noncanonical[..]).unwrap();
-<a href=#369 id=369 data-nosnippet>369</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
-<a href=#370 id=370 data-nosnippet>370</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">true</span>);
-<a href=#371 id=371 data-nosnippet>371</a>
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="comment">// Serialize and check DER roundtrip
-<a href=#373 id=373 data-nosnippet>373</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; der_bool.prepare(<span class="kw-2">&amp;</span><span class="bool-val">true</span>).unwrap()];
-<a href=#374 id=374 data-nosnippet>374</a>        der_bool.serialize(<span class="kw-2">&amp;</span><span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>out);
-<a href=#375 id=375 data-nosnippet>375</a>        <span class="macro">assert_eq!</span>(out, input_true);
-<a href=#376 id=376 data-nosnippet>376</a>        <span class="macro">assert_eq!</span>(der_bool.prepare(<span class="kw-2">&amp;</span><span class="bool-val">true</span>), <span class="prelude-val">Ok</span>(<span class="number">3</span>));
-<a href=#377 id=377 data-nosnippet>377</a>        <span class="macro">assert_eq!</span>(der_bool.length(<span class="kw-2">&amp;</span><span class="bool-val">true</span>), <span class="number">3</span>);
-<a href=#378 id=378 data-nosnippet>378</a>    }
-<a href=#379 id=379 data-nosnippet>379</a>
-<a href=#380 id=380 data-nosnippet>380</a>    <span class="attr">#[test]
-<a href=#381 id=381 data-nosnippet>381</a>    </span><span class="kw">fn </span>test_asn1_bitstring_der_and_ber() {
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="comment">// DER BitString (requires trailing unused bits to be zero)
-<a href=#383 id=383 data-nosnippet>383</a>        </span><span class="kw">let </span>der_bitstring = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BIT_STRING, BitStringFmt::&lt;DER&gt;);
-<a href=#384 id=384 data-nosnippet>384</a>
-<a href=#385 id=385 data-nosnippet>385</a>        <span class="comment">// Valid BIT STRING: 4 unused bits, last byte 0xA0 (0b1010_0000)
-<a href=#386 id=386 data-nosnippet>386</a>        </span><span class="kw">let </span>input_valid = [<span class="number">0x03</span>, <span class="number">0x02</span>, <span class="number">0x04</span>, <span class="number">0xA0</span>];
-<a href=#387 id=387 data-nosnippet>387</a>        <span class="kw">let </span>(n, bs) = der_bitstring.parse(&amp;&amp;input_valid[..]).unwrap();
-<a href=#388 id=388 data-nosnippet>388</a>        <span class="macro">assert_eq!</span>(n, <span class="number">4</span>);
-<a href=#389 id=389 data-nosnippet>389</a>        <span class="macro">assert_eq!</span>(bs.unused(), <span class="number">4</span>);
-<a href=#390 id=390 data-nosnippet>390</a>        <span class="macro">assert_eq!</span>(bs.bits(), <span class="kw-2">&amp;</span>[<span class="number">0xA0</span>]);
+<a href=#316 id=316 data-nosnippet>316</a>} <span class="comment">// verus!
+<a href=#317 id=317 data-nosnippet>317</a>/*
+<a href=#318 id=318 data-nosnippet>318</a>*
+<a href=#319 id=319 data-nosnippet>319</a>some test functions
+<a href=#320 id=320 data-nosnippet>320</a>*/
+<a href=#321 id=321 data-nosnippet>321</a></span><span class="macro">verus!</span> {
+<a href=#322 id=322 data-nosnippet>322</a>
+<a href=#323 id=323 data-nosnippet>323</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#324 id=324 data-nosnippet>324</a></span><span class="kw">fn </span>test_exec_asn1_fmt(buf: &amp;&amp;[u8]) -&gt; PResult&lt;bool&gt; {
+<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">use </span><span class="kw">super</span>::BoolFmt;
+<a href=#326 id=326 data-nosnippet>326</a>    <span class="kw">use super</span>::{BER, DER};
+<a href=#327 id=327 data-nosnippet>327</a>
+<a href=#328 id=328 data-nosnippet>328</a>    <span class="kw">let </span>asn_bool = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;DER&gt;);
+<a href=#329 id=329 data-nosnippet>329</a>    <span class="kw">let </span>(_n, v) = asn_bool.parse(buf)<span class="question-mark">?</span>;
+<a href=#330 id=330 data-nosnippet>330</a>    <span class="kw">if let </span><span class="prelude-val">Ok</span>(len) = asn_bool.prepare(<span class="kw-2">&amp;</span>v) {
+<a href=#331 id=331 data-nosnippet>331</a>        <span class="kw">let </span><span class="kw-2">mut </span>obuf = <span class="macro">vec!</span>[<span class="number">0</span>; len];
+<a href=#332 id=332 data-nosnippet>332</a>        asn_bool.serialize(<span class="kw-2">&amp;</span>v, <span class="kw-2">&amp;mut </span>obuf);
+<a href=#333 id=333 data-nosnippet>333</a>
+<a href=#334 id=334 data-nosnippet>334</a>        proof {
+<a href=#335 id=335 data-nosnippet>335</a>            asn_bool.theorem_parse_serialize_roundtrip(buf@);
+<a href=#336 id=336 data-nosnippet>336</a>            assert(obuf@ == buf@.take(_n <span class="kw">as </span>int));
+<a href=#337 id=337 data-nosnippet>337</a>        }
+<a href=#338 id=338 data-nosnippet>338</a>    }
+<a href=#339 id=339 data-nosnippet>339</a>    <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Test function"</span>))
+<a href=#340 id=340 data-nosnippet>340</a>}
+<a href=#341 id=341 data-nosnippet>341</a>
+<a href=#342 id=342 data-nosnippet>342</a>} <span class="comment">// verus!
+<a href=#343 id=343 data-nosnippet>343</a></span><span class="attr">#[cfg(test)]
+<a href=#344 id=344 data-nosnippet>344</a></span><span class="kw">mod </span>tests {
+<a href=#345 id=345 data-nosnippet>345</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::bitstring::BitString;
+<a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::{Class, TagNumber};
+<a href=#348 id=348 data-nosnippet>348</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::{ASN1Fmt, BitStringFmt, BoolFmt, Tag};
+<a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::{BER, DER};
+<a href=#350 id=350 data-nosnippet>350</a>    <span class="kw">use </span><span class="kw">crate</span>::core::exec::{ByteLen, Parser, Prepare, SerializerExt};
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a>    <span class="attr">#[test]
+<a href=#353 id=353 data-nosnippet>353</a>    </span><span class="kw">fn </span>test_asn1_bool_der_and_ber() {
+<a href=#354 id=354 data-nosnippet>354</a>        <span class="comment">// DER BoolFmt (canonical: TRUE must be 0xFF)
+<a href=#355 id=355 data-nosnippet>355</a>        </span><span class="kw">let </span>der_bool = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;DER&gt;);
+<a href=#356 id=356 data-nosnippet>356</a>
+<a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// Parse valid true
+<a href=#358 id=358 data-nosnippet>358</a>        </span><span class="kw">let </span>input_true = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0xFF</span>];
+<a href=#359 id=359 data-nosnippet>359</a>        <span class="kw">let </span>(n, val) = der_bool.parse(&amp;&amp;input_true[..]).unwrap();
+<a href=#360 id=360 data-nosnippet>360</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
+<a href=#361 id=361 data-nosnippet>361</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">true</span>);
+<a href=#362 id=362 data-nosnippet>362</a>
+<a href=#363 id=363 data-nosnippet>363</a>        <span class="comment">// Parse valid false
+<a href=#364 id=364 data-nosnippet>364</a>        </span><span class="kw">let </span>input_false = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x00</span>];
+<a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">let </span>(n, val) = der_bool.parse(&amp;&amp;input_false[..]).unwrap();
+<a href=#366 id=366 data-nosnippet>366</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
+<a href=#367 id=367 data-nosnippet>367</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">false</span>);
+<a href=#368 id=368 data-nosnippet>368</a>
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// Parse invalid/non-canonical true (0x01) under DER -&gt; should fail
+<a href=#370 id=370 data-nosnippet>370</a>        </span><span class="kw">let </span>input_noncanonical = [<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>];
+<a href=#371 id=371 data-nosnippet>371</a>        <span class="macro">assert!</span>(der_bool.parse(&amp;&amp;input_noncanonical[..]).is_err());
+<a href=#372 id=372 data-nosnippet>372</a>
+<a href=#373 id=373 data-nosnippet>373</a>        <span class="comment">// BER BoolFmt (permits any non-zero byte for true)
+<a href=#374 id=374 data-nosnippet>374</a>        </span><span class="kw">let </span>ber_bool = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(TagFmt::BOOLEAN, BoolFmt::&lt;BER&gt;);
+<a href=#375 id=375 data-nosnippet>375</a>        <span class="kw">let </span>(n, val) = ber_bool.parse(&amp;&amp;input_noncanonical[..]).unwrap();
+<a href=#376 id=376 data-nosnippet>376</a>        <span class="macro">assert_eq!</span>(n, <span class="number">3</span>);
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="macro">assert_eq!</span>(val, <span class="bool-val">true</span>);
+<a href=#378 id=378 data-nosnippet>378</a>
+<a href=#379 id=379 data-nosnippet>379</a>        <span class="comment">// Serialize and check DER roundtrip
+<a href=#380 id=380 data-nosnippet>380</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; der_bool.prepare(<span class="kw-2">&amp;</span><span class="bool-val">true</span>).unwrap()];
+<a href=#381 id=381 data-nosnippet>381</a>        der_bool.serialize(<span class="kw-2">&amp;</span><span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>out);
+<a href=#382 id=382 data-nosnippet>382</a>        <span class="macro">assert_eq!</span>(out, input_true);
+<a href=#383 id=383 data-nosnippet>383</a>        <span class="macro">assert_eq!</span>(der_bool.prepare(<span class="kw-2">&amp;</span><span class="bool-val">true</span>), <span class="prelude-val">Ok</span>(<span class="number">3</span>));
+<a href=#384 id=384 data-nosnippet>384</a>        <span class="macro">assert_eq!</span>(der_bool.length(<span class="kw-2">&amp;</span><span class="bool-val">true</span>), <span class="number">3</span>);
+<a href=#385 id=385 data-nosnippet>385</a>    }
+<a href=#386 id=386 data-nosnippet>386</a>
+<a href=#387 id=387 data-nosnippet>387</a>    <span class="attr">#[test]
+<a href=#388 id=388 data-nosnippet>388</a>    </span><span class="kw">fn </span>test_asn1_bitstring_der_and_ber() {
+<a href=#389 id=389 data-nosnippet>389</a>        <span class="comment">// DER BitString (requires trailing unused bits to be zero)
+<a href=#390 id=390 data-nosnippet>390</a>        </span><span class="kw">let </span>der_bitstring = ASN1Fmt::&lt;<span class="kw">_</span>, DER&gt;(TagFmt::BIT_STRING, BitStringFmt::&lt;DER&gt;);
 <a href=#391 id=391 data-nosnippet>391</a>
-<a href=#392 id=392 data-nosnippet>392</a>        <span class="comment">// Invalid BIT STRING under DER: 4 unused bits, but last byte is 0xA1 (0b1010_0001) - final bit is 1, not 0
-<a href=#393 id=393 data-nosnippet>393</a>        </span><span class="kw">let </span>input_invalid = [<span class="number">0x03</span>, <span class="number">0x02</span>, <span class="number">0x04</span>, <span class="number">0xA1</span>];
-<a href=#394 id=394 data-nosnippet>394</a>        <span class="macro">assert!</span>(der_bitstring.parse(&amp;&amp;input_invalid[..]).is_err());
-<a href=#395 id=395 data-nosnippet>395</a>
-<a href=#396 id=396 data-nosnippet>396</a>        <span class="comment">// Under BER, non-zero trailing bits are permitted
-<a href=#397 id=397 data-nosnippet>397</a>        </span><span class="kw">let </span>ber_bitstring = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(TagFmt::BIT_STRING, BitStringFmt::&lt;BER&gt;);
-<a href=#398 id=398 data-nosnippet>398</a>        <span class="kw">let </span>(n, bs) = ber_bitstring.parse(&amp;&amp;input_invalid[..]).unwrap();
-<a href=#399 id=399 data-nosnippet>399</a>        <span class="macro">assert_eq!</span>(n, <span class="number">4</span>);
-<a href=#400 id=400 data-nosnippet>400</a>        <span class="macro">assert_eq!</span>(bs.unused(), <span class="number">4</span>);
-<a href=#401 id=401 data-nosnippet>401</a>        <span class="macro">assert_eq!</span>(bs.bits(), <span class="kw-2">&amp;</span>[<span class="number">0xA1</span>]);
+<a href=#392 id=392 data-nosnippet>392</a>        <span class="comment">// Valid BIT STRING: 4 unused bits, last byte 0xA0 (0b1010_0000)
+<a href=#393 id=393 data-nosnippet>393</a>        </span><span class="kw">let </span>input_valid = [<span class="number">0x03</span>, <span class="number">0x02</span>, <span class="number">0x04</span>, <span class="number">0xA0</span>];
+<a href=#394 id=394 data-nosnippet>394</a>        <span class="kw">let </span>(n, bs) = der_bitstring.parse(&amp;&amp;input_valid[..]).unwrap();
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="macro">assert_eq!</span>(n, <span class="number">4</span>);
+<a href=#396 id=396 data-nosnippet>396</a>        <span class="macro">assert_eq!</span>(bs.unused(), <span class="number">4</span>);
+<a href=#397 id=397 data-nosnippet>397</a>        <span class="macro">assert_eq!</span>(bs.bits(), <span class="kw-2">&amp;</span>[<span class="number">0xA0</span>]);
+<a href=#398 id=398 data-nosnippet>398</a>
+<a href=#399 id=399 data-nosnippet>399</a>        <span class="comment">// Invalid BIT STRING under DER: 4 unused bits, but last byte is 0xA1 (0b1010_0001) - final bit is 1, not 0
+<a href=#400 id=400 data-nosnippet>400</a>        </span><span class="kw">let </span>input_invalid = [<span class="number">0x03</span>, <span class="number">0x02</span>, <span class="number">0x04</span>, <span class="number">0xA1</span>];
+<a href=#401 id=401 data-nosnippet>401</a>        <span class="macro">assert!</span>(der_bitstring.parse(&amp;&amp;input_invalid[..]).is_err());
 <a href=#402 id=402 data-nosnippet>402</a>
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="comment">// Roundtrip serialization for DER BitString
-<a href=#404 id=404 data-nosnippet>404</a>        </span><span class="kw">let </span>valid_bs = BitString::new(<span class="number">4</span>, <span class="kw-2">&amp;</span>[<span class="number">0xA0</span>]);
-<a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; der_bitstring.prepare(<span class="kw-2">&amp;</span>valid_bs).unwrap()];
-<a href=#406 id=406 data-nosnippet>406</a>        der_bitstring.serialize(<span class="kw-2">&amp;</span>valid_bs, <span class="kw-2">&amp;mut </span>out);
-<a href=#407 id=407 data-nosnippet>407</a>        <span class="macro">assert_eq!</span>(out, input_valid);
-<a href=#408 id=408 data-nosnippet>408</a>        <span class="macro">assert_eq!</span>(der_bitstring.prepare(<span class="kw-2">&amp;</span>valid_bs), <span class="prelude-val">Ok</span>(<span class="number">4</span>));
-<a href=#409 id=409 data-nosnippet>409</a>        <span class="macro">assert_eq!</span>(der_bitstring.length(<span class="kw-2">&amp;</span>valid_bs), <span class="number">4</span>);
-<a href=#410 id=410 data-nosnippet>410</a>    }
-<a href=#411 id=411 data-nosnippet>411</a>}
+<a href=#403 id=403 data-nosnippet>403</a>        <span class="comment">// Under BER, non-zero trailing bits are permitted
+<a href=#404 id=404 data-nosnippet>404</a>        </span><span class="kw">let </span>ber_bitstring = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(TagFmt::BIT_STRING, BitStringFmt::&lt;BER&gt;);
+<a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">let </span>(n, bs) = ber_bitstring.parse(&amp;&amp;input_invalid[..]).unwrap();
+<a href=#406 id=406 data-nosnippet>406</a>        <span class="macro">assert_eq!</span>(n, <span class="number">4</span>);
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="macro">assert_eq!</span>(bs.unused(), <span class="number">4</span>);
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="macro">assert_eq!</span>(bs.bits(), <span class="kw-2">&amp;</span>[<span class="number">0xA1</span>]);
+<a href=#409 id=409 data-nosnippet>409</a>
+<a href=#410 id=410 data-nosnippet>410</a>        <span class="comment">// Roundtrip serialization for DER BitString
+<a href=#411 id=411 data-nosnippet>411</a>        </span><span class="kw">let </span>valid_bs = BitString::new(<span class="number">4</span>, <span class="kw-2">&amp;</span>[<span class="number">0xA0</span>]);
+<a href=#412 id=412 data-nosnippet>412</a>        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; der_bitstring.prepare(<span class="kw-2">&amp;</span>valid_bs).unwrap()];
+<a href=#413 id=413 data-nosnippet>413</a>        der_bitstring.serialize(<span class="kw-2">&amp;</span>valid_bs, <span class="kw-2">&amp;mut </span>out);
+<a href=#414 id=414 data-nosnippet>414</a>        <span class="macro">assert_eq!</span>(out, input_valid);
+<a href=#415 id=415 data-nosnippet>415</a>        <span class="macro">assert_eq!</span>(der_bitstring.prepare(<span class="kw-2">&amp;</span>valid_bs), <span class="prelude-val">Ok</span>(<span class="number">4</span>));
+<a href=#416 id=416 data-nosnippet>416</a>        <span class="macro">assert_eq!</span>(der_bitstring.length(<span class="kw-2">&amp;</span>valid_bs), <span class="number">4</span>);
+<a href=#417 id=417 data-nosnippet>417</a>    }
+<a href=#418 id=418 data-nosnippet>418</a>}
 </code></pre></div></section></main></body></html>

@@ -33,21 +33,21 @@ The sources, manifests, licenses, and selection rules for the corpora are under 
 
 <!-- benchmark-results:start -->
 
-Full results: [`2026-10-13.md`](results/2026-10-13.md).
+Full results: [`2026-10-14.md`](results/2026-10-14.md).
 
 | Setting | Value |
 | --- | --- |
-| Run | 20261013T004105Z-f99c375f |
+| Run | 20261014T023832Z-d0de44ce |
 | CPU | Apple M3 Pro |
 | RAM | 18 GiB |
 | Platform | macOS-27.0.1-arm64-arm-64bit-Mach-O |
 | Logical CPUs | 11 |
-| Compiler | rustc 1.97.1 (8bab26f4f 2026-07-14) |
-| Commit | 450a71641aff9fc1a1d68b8746f681e658970f3a |
+| Compiler | rustc 1.98.1 (48a229cea 2026-09-01) |
+| Commit | e8f9c0c1426652249002b0d60183c217392ff691 |
 | Uncommitted files | Yes |
-| Source/corpus SHA256 | 434212a696aec08a4a5f5008b4f20f92e4079bfd360e5e1e35d617ad4846f856 |
+| Source/corpus SHA256 | 94664535838b907f5a46bcbdf35ca633854d9474589f2b0fdcd19ac070049339 |
 | Sampling | 100 samples; 3 s warmup; 5 s target |
-| Process-order seed | 1234 |
+| Process-order seed | 3804991242 |
 | Coverage | 51 of 51 entries |
 | Allocator | std::alloc::System; counted separately, without timing |
 
@@ -59,122 +59,122 @@ Ratios are Vest/baseline throughput. 95% intervals describe within-run sampling 
 
 | Format | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- | --- |
-| `bits` | Vest | 3,868.4 [3,862.1–3,872.5] | — |
-| `bits` | hand-written | 5,315.8 [5,310.0–5,326.1] | 0.73× [0.73–0.73] |
-| `bounded_list` | Vest | 7,608.7 [7,592.2–7,644.5] | — |
-| `bounded_list` | hand-written | 8,220.7 [8,183.9–8,247.0] | 0.93× [0.92–0.93] |
-| `nest` | Vest | 16,613.6 [16,595.0–16,651.4] | — |
-| `nest` | hand-written | 21,806.7 [21,764.9–21,839.9] | 0.76× [0.76–0.76] |
-| `table` | Vest | 27,780.2 [27,734.2–27,814.1] | — |
-| `table` | hand-written | 28,113.9 [28,065.2–28,151.3] | 0.99× [0.99–0.99] |
+| `bits` | Vest | 3,640.0 [3,635.3–3,642.8] | — |
+| `bits` | hand-written | 4,991.8 [4,988.2–5,006.0] | 0.73× [0.73–0.73] |
+| `bounded_list` | Vest | 6,158.7 [6,114.3–6,186.5] | — |
+| `bounded_list` | hand-written | 6,581.8 [6,283.7–6,683.4] | 0.94× [0.92–0.98] |
+| `nest` | Vest | 15,582.0 [15,336.7–15,684.1] | — |
+| `nest` | hand-written | 20,685.9 [20,630.4–20,709.1] | 0.75× [0.74–0.76] |
+| `table` | Vest | 25,880.5 [25,824.1–25,937.0] | — |
+| `table` | hand-written | 26,180.7 [26,035.5–26,505.1] | 0.99× [0.98–0.99] |
 
 #### Serialize
 
 | Format | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- | --- |
-| `bits` | Vest | 5,472.0 [5,465.4–5,478.6] | — |
-| `bits` | hand-written | 5,656.5 [5,622.3–5,665.1] | 0.97× [0.97–0.97] |
-| `bounded_list` | Vest | 2,659.8 [2,644.0–2,680.8] | — |
-| `bounded_list` | hand-written | 2,488.1 [2,478.5–2,496.3] | 1.07× [1.06–1.08] |
-| `nest` | Vest | 25,896.7 [25,868.6–25,921.2] | — |
-| `nest` | hand-written | 19,735.9 [19,675.8–19,779.5] | 1.31× [1.31–1.32] |
-| `table` | Vest | 22,307.1 [22,286.0–22,347.6] | — |
-| `table` | hand-written | 21,074.9 [21,034.6–21,105.8] | 1.06× [1.06–1.06] |
+| `bits` | Vest | 5,294.9 [5,286.6–5,304.4] | — |
+| `bits` | hand-written | 5,667.4 [5,659.8–5,672.9] | 0.93× [0.93–0.94] |
+| `bounded_list` | Vest | 2,565.2 [2,560.1–2,572.7] | — |
+| `bounded_list` | hand-written | 2,308.2 [2,296.4–2,321.9] | 1.11× [1.11–1.12] |
+| `nest` | Vest | 25,429.2 [25,378.5–25,469.6] | — |
+| `nest` | hand-written | 15,860.9 [15,691.2–15,969.4] | 1.60× [1.59–1.62] |
+| `table` | Vest | 21,473.0 [21,439.4–21,506.5] | — |
+| `table` | hand-written | 19,770.7 [19,718.0–19,801.8] | 1.09× [1.08–1.09] |
 
 ### bitcoin/blocks/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 5,410.6 [5,404.7–5,425.5] | — |
-| rust-bitcoin | 1,631.0 [1,627.5–1,633.1] | 3.32× [3.31–3.33] |
+| Vest | 4,523.8 [4,497.1–4,541.0] | — |
+| rust-bitcoin | 1,512.5 [1,505.2–1,517.7] | 2.99× [2.97–3.01] |
 
 ### bitcoin/blocks/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 6,450.1 [6,433.2–6,477.2] | — |
-| rust-bitcoin | 5,311.5 [5,292.2–5,332.8] | 1.21× [1.21–1.22] |
+| Vest | 6,000.5 [5,984.6–6,015.8] | — |
+| rust-bitcoin | 5,139.5 [5,123.5–5,153.7] | 1.17× [1.16–1.17] |
 
 ### cbor/cose/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 663.7 [663.1–664.3] | — |
-| cbor4ii | 653.3 [652.5–654.4] | 1.02× [1.01–1.02] |
-| ciborium | 227.4 [227.2–227.6] | 2.92× [2.92–2.92] |
+| Vest | 644.8 [643.6–645.5] | — |
+| cbor4ii | 621.1 [618.6–622.8] | 1.04× [1.04–1.04] |
+| ciborium | 217.7 [217.4–218.0] | 2.96× [2.96–2.97] |
 
 ### cbor/cose/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 939.0 [937.1–939.9] | — |
-| cbor4ii | 477.3 [475.8–480.6] | 1.97× [1.95–1.97] |
-| ciborium | 431.9 [430.9–432.7] | 2.17× [2.17–2.18] |
+| Vest | 919.9 [917.0–923.1] | — |
+| cbor4ii | 473.0 [471.3–474.3] | 1.94× [1.94–1.95] |
+| ciborium | 409.7 [407.9–410.3] | 2.25× [2.24–2.26] |
 
 ### cbor/synthetic/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 517.3 [516.7–519.2] | — |
-| ciborium | 210.0 [209.7–210.3] | 2.46× [2.46–2.47] |
-| minicbor-serde | 493.2 [492.2–493.8] | 1.05× [1.05–1.05] |
+| Vest | 494.6 [493.8–495.0] | — |
+| ciborium | 192.4 [191.6–193.7] | 2.57× [2.55–2.58] |
+| minicbor-serde | 471.9 [471.2–472.7] | 1.05× [1.05–1.05] |
 
 ### cbor/synthetic/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 728.7 [726.4–730.4] | — |
-| cbor4ii | 491.1 [489.4–492.5] | 1.48× [1.48–1.49] |
-| ciborium | 394.2 [393.2–396.0] | 1.85× [1.84–1.86] |
-| minicbor-serde | 512.2 [511.3–514.3] | 1.42× [1.41–1.43] |
+| Vest | 688.5 [683.8–690.7] | — |
+| cbor4ii | 467.9 [466.3–469.6] | 1.47× [1.46–1.48] |
+| ciborium | 386.6 [386.0–387.1] | 1.78× [1.77–1.79] |
+| minicbor-serde | 488.5 [483.7–489.7] | 1.41× [1.40–1.42] |
 
 ### cms/content_info/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 4,620.9 [4,614.3–4,625.0] | — |
-| RustCrypto-cms | 2,831.5 [2,822.8–2,836.5] | 1.63× [1.63–1.64] |
-| cryptographic-message-syntax | 3,861.4 [3,856.5–3,867.6] | 1.20× [1.19–1.20] |
-| rasn-cms | 3,450.7 [3,444.4–3,453.4] | 1.34× [1.34–1.34] |
+| Vest | 4,434.9 [4,429.1–4,444.2] | — |
+| RustCrypto-cms | 2,895.9 [2,891.0–2,905.8] | 1.53× [1.53–1.54] |
+| cryptographic-message-syntax | 3,642.4 [3,636.0–3,647.8] | 1.22× [1.22–1.22] |
+| rasn-cms | 3,152.6 [3,137.8–3,180.2] | 1.41× [1.39–1.41] |
 
 ### cms/content_info/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 5,489.4 [5,465.5–5,505.2] | — |
-| RustCrypto-cms | 6,118.4 [6,090.3–6,136.4] | 0.90× [0.89–0.90] |
-| cryptographic-message-syntax | 18,269.1 [18,145.4–18,335.9] | 0.30× [0.30–0.30] |
-| rasn-cms | 1,133.4 [1,131.1–1,137.2] | 4.84× [4.82–4.86] |
+| Vest | 5,433.1 [5,417.0–5,441.3] | — |
+| RustCrypto-cms | 5,798.5 [5,788.3–5,819.1] | 0.94× [0.93–0.94] |
+| cryptographic-message-syntax | 16,144.3 [16,065.4–16,215.0] | 0.34× [0.33–0.34] |
+| rasn-cms | 1,077.3 [1,074.0–1,079.4] | 5.04× [5.03–5.06] |
 
 ### cms/real_signed_data/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 6,513.3 [6,491.5–6,523.6] | — |
-| RustCrypto-cms | 3,039.6 [3,031.9–3,043.3] | 2.14× [2.14–2.15] |
-| rasn-cms | 3,259.3 [3,249.9–3,270.1] | 2.00× [1.99–2.01] |
+| Vest | 5,875.9 [5,856.2–5,895.3] | — |
+| RustCrypto-cms | 2,735.6 [2,716.1–2,744.4] | 2.15× [2.14–2.16] |
+| rasn-cms | 2,893.2 [2,856.1–2,954.3] | 2.03× [1.99–2.06] |
 
 ### cms/real_signed_data/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 3,297.4 [3,285.6–3,312.7] | — |
-| RustCrypto-cms | 5,410.1 [5,388.6–5,422.7] | 0.61× [0.61–0.61] |
-| rasn-cms | 1,296.0 [1,291.2–1,301.5] | 2.54× [2.53–2.56] |
+| Vest | 2,673.6 [2,665.7–2,679.9] | — |
+| RustCrypto-cms | 5,056.9 [5,032.4–5,069.2] | 0.53× [0.53–0.53] |
+| rasn-cms | 1,141.2 [1,130.7–1,163.4] | 2.34× [2.30–2.37] |
 
 ### tls/handshakes/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 7,980.2 [7,965.6–7,987.6] | — |
-| Rustls | 3,729.4 [3,726.4–3,734.2] | 2.14× [2.14–2.14] |
+| Vest | 7,310.7 [7,244.7–7,403.0] | — |
+| Rustls | 3,494.5 [3,490.0–3,498.9] | 2.09× [2.07–2.12] |
 
 ### tls/handshakes/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 10,922.2 [10,898.1–10,940.4] | — |
-| Rustls | 3,916.4 [3,906.4–3,922.5] | 2.79× [2.78–2.80] |
+| Vest | 10,925.9 [10,849.1–11,007.3] | — |
+| Rustls | 3,636.2 [3,631.8–3,642.7] | 3.00× [2.98–3.03] |
 
 
 <!-- benchmark-results:end -->

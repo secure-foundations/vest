@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/ber/sequence.rs`."><title>sequence.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/ber/</div>sequence.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! BER SEQUENCE combinators.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/ber/sequence.rs`."><title>sequence.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.1 (48a229cea 2026-09-01)" data-channel="1.98.1" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/ber/</div>sequence.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! BER SEQUENCE combinators.
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">use </span><span class="kw">crate</span>::asn1::{ASN1Fmt, BerLength, BerLengthFmt, Class, Tag, TagFmt, BER};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::combinators::{
 <a href=#4 id=4 data-nosnippet>4</a>    bytes::ExactLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, Pair, PrefixTagged, Sum,
@@ -261,85 +261,90 @@
 <a href=#261 id=261 data-nosnippet>261</a> {
 <a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">type </span>PT = C::PT;
 <a href=#263 id=263 data-nosnippet>263</a>
-<a href=#264 id=264 data-nosnippet>264</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#265 id=265 data-nosnippet>265</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.exec_inv()
-<a href=#266 id=266 data-nosnippet>266</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.safe_inv()
-<a href=#267 id=267 data-nosnippet>267</a>    }
+<a href=#264 id=264 data-nosnippet>264</a>    <span class="kw">fn </span>min_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+<a href=#265 id=265 data-nosnippet>265</a>        <span class="comment">// An empty value has an identifier and a length octet.
+<a href=#266 id=266 data-nosnippet>266</a>        </span><span class="number">2
+<a href=#267 id=267 data-nosnippet>267</a>    </span>}
 <a href=#268 id=268 data-nosnippet>268</a>
-<a href=#269 id=269 data-nosnippet>269</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#270 id=270 data-nosnippet>270</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
-<a href=#271 id=271 data-nosnippet>271</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::lemma_const_tag_fmt_exec_inv;
-<a href=#272 id=272 data-nosnippet>272</a>
-<a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">let _ </span>= ibuf.len();
-<a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">let </span>(tag_len, _tag) = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)<span class="question-mark">?</span>;
-<a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">let </span>after_tag = ibuf.skip(tag_len);
-<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw">let </span>(length_len, length) = BerLengthFmt.parse(<span class="kw-2">&amp;</span>after_tag)<span class="question-mark">?</span>;
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="kw">let </span>content = after_tag.skip(length_len);
-<a href=#278 id=278 data-nosnippet>278</a>
-<a href=#279 id=279 data-nosnippet>279</a>        <span class="kw">let </span>(content_len, value) = <span class="kw">match </span>length {
-<a href=#280 id=280 data-nosnippet>280</a>            BerLength::Definite(len) =&gt; ExactLen(len, <span class="self">self</span>.<span class="number">1</span>).parse(<span class="kw-2">&amp;</span>content)<span class="question-mark">?</span>,
-<a href=#281 id=281 data-nosnippet>281</a>            BerLength::Indefinite =&gt; {
-<a href=#282 id=282 data-nosnippet>282</a>                <span class="kw">let </span>framed = Pair(<span class="self">self</span>.<span class="number">1</span>, EOC);
-<a href=#283 id=283 data-nosnippet>283</a>                proof {
-<a href=#284 id=284 data-nosnippet>284</a>                    <span class="kw">crate</span>::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(
-<a href=#285 id=285 data-nosnippet>285</a>                        <span class="kw-2">&amp;</span>EOC,
-<a href=#286 id=286 data-nosnippet>286</a>                    );
-<a href=#287 id=287 data-nosnippet>287</a>                    <span class="kw">crate</span>::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(
-<a href=#288 id=288 data-nosnippet>288</a>                        <span class="kw-2">&amp;</span>framed,
-<a href=#289 id=289 data-nosnippet>289</a>                    );
-<a href=#290 id=290 data-nosnippet>290</a>                }
-<a href=#291 id=291 data-nosnippet>291</a>                parse_discard_eoc(<span class="kw-2">&amp;</span>framed, <span class="kw-2">&amp;</span>content)<span class="question-mark">?
-<a href=#292 id=292 data-nosnippet>292</a>            </span>},
-<a href=#293 id=293 data-nosnippet>293</a>        };
-<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>total = tag_len + length_len + content_len;
-<a href=#295 id=295 data-nosnippet>295</a>        assert(<span class="self">self</span>.spec_parse(ibuf@) == <span class="prelude-val">Some</span>((total <span class="kw">as </span>int, value.deep_view())));
-<a href=#296 id=296 data-nosnippet>296</a>        <span class="prelude-val">Ok</span>((total, value))
-<a href=#297 id=297 data-nosnippet>297</a>    }
-<a href=#298 id=298 data-nosnippet>298</a>}
-<a href=#299 id=299 data-nosnippet>299</a>
-<a href=#300 id=300 data-nosnippet>300</a><span class="kw">impl</span>&lt;Output: OutputBuf, C, T&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
-<a href=#301 id=301 data-nosnippet>301</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#302 id=302 data-nosnippet>302</a>    C: SpecCombinator + Serializer&lt;Output, T&gt; + ByteLen&lt;T&gt; + Copy,
-<a href=#303 id=303 data-nosnippet>303</a> {
-<a href=#304 id=304 data-nosnippet>304</a>    <span class="attr">#[verifier::prophetic]
-<a href=#305 id=305 data-nosnippet>305</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#306 id=306 data-nosnippet>306</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#307 id=307 data-nosnippet>307</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#308 id=308 data-nosnippet>308</a>    }
-<a href=#309 id=309 data-nosnippet>309</a>
-<a href=#310 id=310 data-nosnippet>310</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
-<a href=#312 id=312 data-nosnippet>312</a>        normalized.serialize_into(value, obuf);
+<a href=#269 id=269 data-nosnippet>269</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#270 id=270 data-nosnippet>270</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.exec_inv()
+<a href=#271 id=271 data-nosnippet>271</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.safe_inv()
+<a href=#272 id=272 data-nosnippet>272</a>    }
+<a href=#273 id=273 data-nosnippet>273</a>
+<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#275 id=275 data-nosnippet>275</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
+<a href=#276 id=276 data-nosnippet>276</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::lemma_const_tag_fmt_exec_inv;
+<a href=#277 id=277 data-nosnippet>277</a>
+<a href=#278 id=278 data-nosnippet>278</a>        <span class="kw">let _ </span>= ibuf.len();
+<a href=#279 id=279 data-nosnippet>279</a>        <span class="kw">let </span>(tag_len, _tag) = Const(TagFmt, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)<span class="question-mark">?</span>;
+<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>after_tag = ibuf.skip(tag_len);
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>(length_len, length) = BerLengthFmt.parse(<span class="kw-2">&amp;</span>after_tag)<span class="question-mark">?</span>;
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>content = after_tag.skip(length_len);
+<a href=#283 id=283 data-nosnippet>283</a>
+<a href=#284 id=284 data-nosnippet>284</a>        <span class="kw">let </span>(content_len, value) = <span class="kw">match </span>length {
+<a href=#285 id=285 data-nosnippet>285</a>            BerLength::Definite(len) =&gt; ExactLen(len, <span class="self">self</span>.<span class="number">1</span>).parse(<span class="kw-2">&amp;</span>content)<span class="question-mark">?</span>,
+<a href=#286 id=286 data-nosnippet>286</a>            BerLength::Indefinite =&gt; {
+<a href=#287 id=287 data-nosnippet>287</a>                <span class="kw">let </span>framed = Pair(<span class="self">self</span>.<span class="number">1</span>, EOC);
+<a href=#288 id=288 data-nosnippet>288</a>                proof {
+<a href=#289 id=289 data-nosnippet>289</a>                    <span class="kw">crate</span>::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+<a href=#290 id=290 data-nosnippet>290</a>                        <span class="kw-2">&amp;</span>EOC,
+<a href=#291 id=291 data-nosnippet>291</a>                    );
+<a href=#292 id=292 data-nosnippet>292</a>                    <span class="kw">crate</span>::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+<a href=#293 id=293 data-nosnippet>293</a>                        <span class="kw-2">&amp;</span>framed,
+<a href=#294 id=294 data-nosnippet>294</a>                    );
+<a href=#295 id=295 data-nosnippet>295</a>                }
+<a href=#296 id=296 data-nosnippet>296</a>                parse_discard_eoc(<span class="kw-2">&amp;</span>framed, <span class="kw-2">&amp;</span>content)<span class="question-mark">?
+<a href=#297 id=297 data-nosnippet>297</a>            </span>},
+<a href=#298 id=298 data-nosnippet>298</a>        };
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">let </span>total = tag_len + length_len + content_len;
+<a href=#300 id=300 data-nosnippet>300</a>        assert(<span class="self">self</span>.spec_parse(ibuf@) == <span class="prelude-val">Some</span>((total <span class="kw">as </span>int, value.deep_view())));
+<a href=#301 id=301 data-nosnippet>301</a>        <span class="prelude-val">Ok</span>((total, value))
+<a href=#302 id=302 data-nosnippet>302</a>    }
+<a href=#303 id=303 data-nosnippet>303</a>}
+<a href=#304 id=304 data-nosnippet>304</a>
+<a href=#305 id=305 data-nosnippet>305</a><span class="kw">impl</span>&lt;Output: OutputBuf, C, T&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
+<a href=#306 id=306 data-nosnippet>306</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#307 id=307 data-nosnippet>307</a>    C: SpecCombinator + Serializer&lt;Output, T&gt; + ByteLen&lt;T&gt; + Copy,
+<a href=#308 id=308 data-nosnippet>308</a> {
+<a href=#309 id=309 data-nosnippet>309</a>    <span class="attr">#[verifier::prophetic]
+<a href=#310 id=310 data-nosnippet>310</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#311 id=311 data-nosnippet>311</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
+<a href=#312 id=312 data-nosnippet>312</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
 <a href=#313 id=313 data-nosnippet>313</a>    }
-<a href=#314 id=314 data-nosnippet>314</a>}
-<a href=#315 id=315 data-nosnippet>315</a>
-<a href=#316 id=316 data-nosnippet>316</a><span class="kw">impl</span>&lt;C, T&gt; Prepare&lt;T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
-<a href=#317 id=317 data-nosnippet>317</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#318 id=318 data-nosnippet>318</a>    C: SpecCombinator + Prepare&lt;T&gt; + Copy,
-<a href=#319 id=319 data-nosnippet>319</a> {
-<a href=#320 id=320 data-nosnippet>320</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#321 id=321 data-nosnippet>321</a>        &lt;C <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#322 id=322 data-nosnippet>322</a>    }
-<a href=#323 id=323 data-nosnippet>323</a>
-<a href=#324 id=324 data-nosnippet>324</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#325 id=325 data-nosnippet>325</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
-<a href=#326 id=326 data-nosnippet>326</a>        normalized.prepare(value)
+<a href=#314 id=314 data-nosnippet>314</a>
+<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
+<a href=#317 id=317 data-nosnippet>317</a>        normalized.serialize_into(value, obuf);
+<a href=#318 id=318 data-nosnippet>318</a>    }
+<a href=#319 id=319 data-nosnippet>319</a>}
+<a href=#320 id=320 data-nosnippet>320</a>
+<a href=#321 id=321 data-nosnippet>321</a><span class="kw">impl</span>&lt;C, T&gt; Prepare&lt;T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
+<a href=#322 id=322 data-nosnippet>322</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#323 id=323 data-nosnippet>323</a>    C: SpecCombinator + Prepare&lt;T&gt; + Copy,
+<a href=#324 id=324 data-nosnippet>324</a> {
+<a href=#325 id=325 data-nosnippet>325</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#326 id=326 data-nosnippet>326</a>        &lt;C <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
 <a href=#327 id=327 data-nosnippet>327</a>    }
-<a href=#328 id=328 data-nosnippet>328</a>}
-<a href=#329 id=329 data-nosnippet>329</a>
-<a href=#330 id=330 data-nosnippet>330</a><span class="kw">impl</span>&lt;C, T&gt; ByteLen&lt;T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
-<a href=#331 id=331 data-nosnippet>331</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#332 id=332 data-nosnippet>332</a>    C: SpecCombinator + ByteLen&lt;T&gt; + Copy,
-<a href=#333 id=333 data-nosnippet>333</a> {
-<a href=#334 id=334 data-nosnippet>334</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#335 id=335 data-nosnippet>335</a>        &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#336 id=336 data-nosnippet>336</a>    }
-<a href=#337 id=337 data-nosnippet>337</a>
-<a href=#338 id=338 data-nosnippet>338</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
-<a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
-<a href=#340 id=340 data-nosnippet>340</a>        normalized.length(value)
+<a href=#328 id=328 data-nosnippet>328</a>
+<a href=#329 id=329 data-nosnippet>329</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#330 id=330 data-nosnippet>330</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
+<a href=#331 id=331 data-nosnippet>331</a>        normalized.prepare(value)
+<a href=#332 id=332 data-nosnippet>332</a>    }
+<a href=#333 id=333 data-nosnippet>333</a>}
+<a href=#334 id=334 data-nosnippet>334</a>
+<a href=#335 id=335 data-nosnippet>335</a><span class="kw">impl</span>&lt;C, T&gt; ByteLen&lt;T&gt; <span class="kw">for </span>BerSequenceFmt&lt;C&gt; <span class="kw">where
+<a href=#336 id=336 data-nosnippet>336</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#337 id=337 data-nosnippet>337</a>    C: SpecCombinator + ByteLen&lt;T&gt; + Copy,
+<a href=#338 id=338 data-nosnippet>338</a> {
+<a href=#339 id=339 data-nosnippet>339</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#340 id=340 data-nosnippet>340</a>        &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
 <a href=#341 id=341 data-nosnippet>341</a>    }
-<a href=#342 id=342 data-nosnippet>342</a>}
-<a href=#343 id=343 data-nosnippet>343</a>
-<a href=#344 id=344 data-nosnippet>344</a>} <span class="comment">// verus!
+<a href=#342 id=342 data-nosnippet>342</a>
+<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
+<a href=#344 id=344 data-nosnippet>344</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;<span class="kw">_</span>, BER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>);
+<a href=#345 id=345 data-nosnippet>345</a>        normalized.length(value)
+<a href=#346 id=346 data-nosnippet>346</a>    }
+<a href=#347 id=347 data-nosnippet>347</a>}
+<a href=#348 id=348 data-nosnippet>348</a>
+<a href=#349 id=349 data-nosnippet>349</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

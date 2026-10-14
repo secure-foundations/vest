@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1032325f.js";
+            window.path_to_searchindex_js = "searchindex-57801029.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -228,12 +228,12 @@ source code for the combinator library, the DSL compiler, the ASN.1 library and 
 <p>That puts the <code>vest</code> compiler on your <code>PATH</code>. In the crate that will hold the
 generated code, add the following dependencies to <code>Cargo.toml</code>:</p>
 <pre><code class="language-console">cargo add vest_lib
-cargo add vstd@=0.0.0-2026-09-06-0133 --no-default-features
+cargo add vstd@=0.0.0-2026-10-04-0306 --no-default-features
 </code></pre>
 <p>which gives you:</p>
 <pre><code class="language-toml">[dependencies]
 vest_lib = "0.2"
-vstd = { version = "=0.0.0-2026-09-06-0133", default-features = false }
+vstd = { version = "=0.0.0-2026-10-04-0306", default-features = false }
 </code></pre>
 <p>Generated modules refer to <code>vstd</code> directly, so it has to be a direct dependency even when you are only compiling and running the executable Rust. The version has to be exact (we’ll try to keep this doc up to date as much as possible): Verus and <code>vstd</code> move quickly, and each Vest release tracks one
 release of each.</p>
