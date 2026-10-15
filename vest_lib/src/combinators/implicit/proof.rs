@@ -27,7 +27,7 @@ impl<Head, Tail> SPRoundTripDps for super::Implicit<Head, Tail> where
         self.0.lemma_serialize_dps_len(key, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
-            assert(serialized.skip(n0) == next_buf);
+            assert(serialized[n0..] == next_buf);
         }
     }
 }
@@ -54,26 +54,26 @@ impl<Head, Tail> NonMalleable for super::Implicit<Head, Tail> where
                     let (n2a, k2) = self.0.spec_parse(buf2)->0;
                     let body1 = self.1.apply(k1);
                     let body2 = self.1.apply(k2);
-                    let (n1b, v) = body1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, v) = body2.spec_parse(buf2.skip(n2a))->0;
+                    let (n1b, v) = body1.spec_parse(buf1[n1a..])->0;
+                    let (n2b, v) = body2.spec_parse(buf2[n2a..])->0;
                     self.0.lemma_parse_sound_value(buf1);
                     self.0.lemma_parse_sound_value(buf2);
-                    body1.lemma_parse_sound_value(buf1.skip(n1a));
-                    body2.lemma_parse_sound_value(buf2.skip(n2a));
+                    body1.lemma_parse_sound_value(buf1[n1a..]);
+                    body2.lemma_parse_sound_value(buf2[n2a..]);
                     self.1.lemma_recover_consistent(k1, v);
                     self.1.lemma_recover_consistent(k2, v);
                     assert(k1 == k2 && body1 == body2);
                     let body = body1;
                     self.0.lemma_parse_safe(buf1);
                     self.0.lemma_parse_safe(buf2);
-                    body.lemma_parse_safe(buf1.skip(n1a));
-                    body.lemma_parse_safe(buf2.skip(n2a));
+                    body.lemma_parse_safe(buf1[n1a..]);
+                    body.lemma_parse_safe(buf2[n2a..]);
                     self.0.lemma_parse_non_malleable(buf1, buf2);
-                    body.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+                    body.lemma_parse_non_malleable(buf1[n1a..], buf2[n2a..]);
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
-                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
+                    assert(buf1[0..n1] == buf2[0..n2]) by {
+                        assert(buf1[0..n1] == buf1[0..n1a] + buf1[n1a..][0..n1b]);
+                        assert(buf2[0..n2] == buf2[0..n2a] + buf2[n2a..][0..n2b]);
                     }
                 }
             }
@@ -98,20 +98,20 @@ impl<Head, Tail> NoLookAhead for super::Implicit<Head, Tail> where
 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
                         let body = self.1.apply(key);
-                        if let Some((n2, _v2)) = body.spec_parse(i1.skip(n1)) {
+                        if let Some((n2, _v2)) = body.spec_parse(i1[n1..]) {
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
-                            body.lemma_parse_safe(i1.skip(n1));
-                            assert(i2.take(n1) == i1.take(n1));
+                            body.lemma_parse_safe(i1[n1..]);
+                            assert(i2[0..n1] == i1[0..n1]);
                             self.0.lemma_no_lookahead(i1, i2);
-                            assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
+                            assert(i2[n1..][0..n2] == i1[n1..][0..n2]) by {
                                 lemma_take_skip(i1, n1, n2);
                                 lemma_take_skip(i2, n1, n2);
                             };
-                            body.lemma_no_lookahead(i1.skip(n1), i2.skip(n1));
+                            body.lemma_no_lookahead(i1[n1..], i2[n1..]);
                             assert(self.spec_parse(i2) == Some((n, v)));
                         }
                     }
@@ -135,13 +135,13 @@ impl<Head, Tail> Productive for super::Implicit<Head, Tail> where
         if let Some((n, v)) = self.spec_parse(s) {
             let (n1, key) = self.0.spec_parse(s)->0;
             let next = self.1.apply(key);
-            let (n2, _val) = next.spec_parse(s.skip(n1))->0;
+            let (n2, _val) = next.spec_parse(s[n1..])->0;
             self.0.lemma_parse_safe(s);
-            next.lemma_parse_safe(s.skip(n1));
+            next.lemma_parse_safe(s[n1..]);
             if self.0.productive_inv() {
                 self.0.lemma_productive(s);
             } else {
-                next.lemma_productive(s.skip(n1));
+                next.lemma_productive(s[n1..]);
             }
         }
     }

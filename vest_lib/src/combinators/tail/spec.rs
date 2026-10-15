@@ -203,9 +203,9 @@ impl<A, B> SpecParser for super::PairRev<A, B> where
             None
         } else {
             let prefix = ibuf.len() - B::static_byte_len();
-            match self.1.spec_parse(ibuf.take(prefix)) {
+            match self.1.spec_parse(ibuf[0..prefix]) {
                 Some((n1, v1)) if n1 == prefix => {
-                    match self.0.spec_parse(ibuf.skip(prefix)) {
+                    match self.0.spec_parse(ibuf[prefix..]) {
                         Some((n2, v2)) if n2 == B::static_byte_len() => Some((n1 + n2, (v1, v2))),
                         _ => None,
                     }
@@ -244,16 +244,16 @@ impl<A, B> SoundParser for super::PairRev<A, B> where
     proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
         if ibuf.len() >= B::static_byte_len() {
             let prefix = ibuf.len() - B::static_byte_len();
-            self.0.lemma_parse_sound_consumption(ibuf.skip(prefix));
-            self.1.lemma_parse_sound_consumption(ibuf.take(prefix));
+            self.0.lemma_parse_sound_consumption(ibuf[prefix..]);
+            self.1.lemma_parse_sound_consumption(ibuf[0..prefix]);
         }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if ibuf.len() >= B::static_byte_len() {
             let prefix = ibuf.len() - B::static_byte_len();
-            self.0.lemma_parse_sound_value(ibuf.skip(prefix));
-            self.1.lemma_parse_sound_value(ibuf.take(prefix));
+            self.0.lemma_parse_sound_value(ibuf[prefix..]);
+            self.1.lemma_parse_sound_value(ibuf[0..prefix]);
         }
     }
 }

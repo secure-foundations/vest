@@ -215,11 +215,11 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     self.1.lemma_parse_non_malleable(chunk1, chunk2);
                     assert(n1 == n1a && n2 == n2a);
-                    assert(chunk1.take(n1a) == chunk2.take(n2a));
-                    assert(chunk1.take(n1a) == chunk1);
-                    assert(chunk2.take(n2a) == chunk2);
+                    assert(chunk1[0..n1a] == chunk2[0..n2a]);
+                    assert(chunk1[0..n1a] == chunk1);
+                    assert(chunk2[0..n2a] == chunk2);
                     assert(chunk1 == chunk2);
-                    assert(buf1.take(n1a) == buf2.take(n2a));
+                    assert(buf1[0..n1a] == buf2[0..n2a]);
                 }
             }
         }
@@ -237,7 +237,7 @@ impl<A, Then> NoLookAhead for super::AndThen<A, Then> where
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     self.0.lemma_no_lookahead(i1, i2);
                 }
             }

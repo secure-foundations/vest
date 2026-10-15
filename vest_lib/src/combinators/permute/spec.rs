@@ -710,7 +710,7 @@ impl<
 // than re-expanding the whole factorial tree at each use site.
 //
 // The equality has to hold at *every* input, not just the caller's: `Pair` runs its second
-// component on a suffix (`ibuf.skip(n)`), so a pointwise fact about the caller's `ibuf` alone
+// component on a suffix (`ibuf[n..]`), so a pointwise fact about the caller's `ibuf` alone
 // would never apply to the nested occurrences.
 
 /// `Permute3` denotes the same parser whether its components are owned or borrowed.

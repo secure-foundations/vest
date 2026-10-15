@@ -118,7 +118,7 @@ For `Repeat`:
             #![auto]
             0 <= i < vs.len() ==> self.inner.unambiguous(
                 vs[i],
-                self.rfold_serialize_dps(vs.skip(i + 1), obuf),
+                self.rfold_serialize_dps(vs[i + 1..], obuf),
             )
     }
 ```

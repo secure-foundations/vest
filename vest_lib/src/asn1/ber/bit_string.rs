@@ -427,14 +427,14 @@ fn flatten_bit_string_segments(segments: Vec<BitStringOwned>) -> (flat: BitStrin
         invariant
             segments.deep_view() == segment_views,
             bit_views == segment_views.map(|_i: int, segment: BitStringSpec| segment.bits),
-            bits@ == bit_views.take(i as int).flatten(),
+            bits@ == bit_views[0..i].flatten(),
     {
         let segment_bits = segments[i].bits();
         proof {
-            let prefix = bit_views.take(i as int);
+            let prefix = bit_views[0..i];
             prefix.lemma_flatten_push(segment_bits@);
             assert(bit_views[i as int] == segment_bits@);
-            assert(bit_views.take(i as int + 1) == prefix.push(segment_bits@));
+            assert(bit_views[0..i + 1] == prefix.push(segment_bits@));
         }
         bits.extend_from_slice(segment_bits);
     }

@@ -333,7 +333,7 @@ fn test_exec_asn1_fmt(buf: &&[u8]) -> PResult<bool> {
 
         proof {
             asn_bool.theorem_parse_serialize_roundtrip(buf@);
-            assert(obuf@ == buf@.take(_n as int));
+            assert(obuf@ == buf@[0.._n]);
         }
     }
     Err(ParseError::custom("Test function"))

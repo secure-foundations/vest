@@ -411,7 +411,7 @@ pub open spec fn generalized_time_value(bytes: Seq<u8>) -> Option<GeneralizedTim
     let fraction = if main_end == zone_start {
         Seq::empty()
     } else {
-        bytes.subrange(main_end as int + 1, zone_start as int)
+        bytes[main_end + 1..zone_start]
     };
     if zone_start == bytes.len() || bytes[zone_start as int] == 0x5a {
         Some(
@@ -751,10 +751,8 @@ proof fn lemma_generalized_time_encoded_fraction<const DER: bool>(value: General
         if generalized_time_main_end(value) == generalized_time_zone_start(value) {
             value.fraction.len() == 0
         } else {
-            generalized_time_bytes(value).subrange(
-                generalized_time_main_end(value) as int + 1,
-                generalized_time_zone_start(value) as int,
-            ) == value.fraction
+            generalized_time_bytes(value)[generalized_time_main_end(value)
+                + 1..generalized_time_zone_start(value)] == value.fraction
         },
 {
     let prefix = generalized_time_prefix(value);
@@ -767,7 +765,7 @@ proof fn lemma_generalized_time_encoded_fraction<const DER: bool>(value: General
     if value.fraction.len() == 0 {
     } else {
         assert(fraction == seq![0x2eu8] + value.fraction);
-        assert_seqs_equal!(bytes.subrange(main_end as int + 1, zone_start as int) == value.fraction, i => {
+        assert_seqs_equal!(bytes[main_end + 1.. zone_start] == value.fraction, i => {
             assert(bytes[main_end as int + 1 + i] == fraction[1 + i]);
             assert(fraction[1 + i] == value.fraction[i]);
         });
@@ -1013,8 +1011,8 @@ mod derived_proofs {
                 if value1 == value2 {
                     assert(buf1 == generalized_time_bytes(value1));
                     assert(buf2 == generalized_time_bytes(value2));
-                    assert(buf1.take(n1) == buf1);
-                    assert(buf2.take(n2) == buf2);
+                    assert(buf1[0..n1] == buf1);
+                    assert(buf2[0..n2] == buf2);
                 }
             }
         }

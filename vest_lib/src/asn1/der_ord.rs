@@ -247,14 +247,14 @@ impl DerOrd<Tag> for TagFmt {
     }
 
     open spec fn der_remaining(&self, tag: Tag, state: TagDerState) -> Seq<u8> {
-        self.spec_serialize(tag).skip(state.pos as int)
+        self.spec_serialize(tag)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, tag: Tag, state: TagDerState) -> bool {
         &&& state.pos <= state.len
         &&& state.len <= state.bytes@.len()
         &&& state.len == self.spec_serialize(tag).len()
-        &&& state.bytes@.take(state.len as int) == self.spec_serialize(tag)
+        &&& state.bytes@[0..state.len] == self.spec_serialize(tag)
     }
 
     fn der_start(&self, t: &Tag) -> (state: TagDerState) {
@@ -295,14 +295,14 @@ impl DerOrd<usize> for LengthFmt<true> {
     }
 
     open spec fn der_remaining(&self, value: usize, state: LengthDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: usize, state: LengthDerState) -> bool {
         &&& state.pos <= state.len
         &&& state.len <= 9
         &&& state.len == self.spec_serialize(value).len()
-        &&& state.bytes@.take(state.len as int) == self.spec_serialize(value)
+        &&& state.bytes@[0..state.len] == self.spec_serialize(value)
     }
 
     fn der_start(&self, l: &usize) -> (state: LengthDerState) {
@@ -358,14 +358,14 @@ impl DerOrd<u64> for Base128Fmt<true> {
     }
 
     open spec fn der_remaining(&self, value: u64, state: Base128DerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: u64, state: Base128DerState) -> bool {
         &&& state.pos <= state.len
         &&& state.len <= state.bytes@.len()
         &&& state.len == self.spec_serialize(value).len()
-        &&& state.bytes@.take(state.len as int) == self.spec_serialize(value)
+        &&& state.bytes@[0..state.len] == self.spec_serialize(value)
     }
 
     fn der_start(&self, i: &u64) -> (state: Base128DerState) {
@@ -623,13 +623,13 @@ impl DerOrd<i16> for Integer16Fmt {
     }
 
     open spec fn der_remaining(&self, value: i16, state: Integer16DerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: i16, state: Integer16DerState) -> bool {
         &&& state.pos <= state.len <= 2
         &&& state.len == self.spec_serialize(value).len()
-        &&& state.bytes@.take(state.len as int) == self.spec_serialize(value)
+        &&& state.bytes@[0..state.len] == self.spec_serialize(value)
     }
 
     fn der_start(&self, i: &i16) -> (state: Integer16DerState) {
@@ -692,7 +692,7 @@ impl DerOrd<UtcTime> for UtcTimeFmt<true> {
     }
 
     open spec fn der_remaining(&self, value: UtcTime, state: UtcTimeDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: UtcTime, state: UtcTimeDerState) -> bool {
@@ -752,7 +752,7 @@ impl<'a> DerOrd<GeneralizedTime<'a>> for GeneralizedTimeFmt<true> {
         value: GeneralizedTimeSpec,
         state: GeneralizedTimeDerState,
     ) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(
@@ -839,7 +839,7 @@ impl<'a> DerOrd<Integer<'a>> for IntegerFmt {
     }
 
     open spec fn der_remaining(&self, value: int, state: IntegerDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: int, state: IntegerDerState) -> bool {
@@ -848,7 +848,7 @@ impl<'a> DerOrd<Integer<'a>> for IntegerFmt {
         &&& state.small == (i64::MIN as int <= value <= i64::MAX as int)
         &&& state.small ==> {
             &&& state.len <= 9
-            &&& state.bytes@.take(state.len as int) == self.spec_serialize(value)
+            &&& state.bytes@[0..state.len] == self.spec_serialize(value)
         }
     }
 
@@ -955,7 +955,7 @@ impl DerOrd<[u8]> for Tail {
     }
 
     open spec fn der_remaining(&self, value: Seq<u8>, state: BytesDerState) -> Seq<u8> {
-        value.skip(state.pos as int)
+        value[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: Seq<u8>, state: BytesDerState) -> bool {
@@ -989,7 +989,7 @@ impl<'a> DerOrd<&'a [u8]> for Tail {
     }
 
     open spec fn der_remaining(&self, value: Seq<u8>, state: BytesDerState) -> Seq<u8> {
-        value.skip(state.pos as int)
+        value[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: Seq<u8>, state: BytesDerState) -> bool {
@@ -1028,7 +1028,7 @@ impl<'a> DerOrd<Real<'a, true>> for RealFmt<true> {
     }
 
     open spec fn der_remaining(&self, value: Seq<u8>, state: BytesDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: Seq<u8>, state: BytesDerState) -> bool {
@@ -1067,7 +1067,7 @@ impl<'a> DerOrd<&'a str> for Utf8StringFmt {
     }
 
     open spec fn der_remaining(&self, value: Seq<char>, state: BytesDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: Seq<char>, state: BytesDerState) -> bool {
@@ -1106,7 +1106,7 @@ impl<'a> DerOrd<PrintableString<'a>> for PrintableStringFmt {
     }
 
     open spec fn der_remaining(&self, value: PrintableStringSpec, state: BytesDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: PrintableStringSpec, state: BytesDerState) -> bool {
@@ -1147,7 +1147,7 @@ impl<'a> DerOrd<Ia5String<'a>> for Ia5StringFmt {
     }
 
     open spec fn der_remaining(&self, value: Ia5StringSpec, state: BytesDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: Ia5StringSpec, state: BytesDerState) -> bool {
@@ -1188,7 +1188,7 @@ impl<'a> DerOrd<TeletexString<'a>> for TeletexStringFmt {
     }
 
     open spec fn der_remaining(&self, value: TeletexStringSpec, state: BytesDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(state.pos as int)
+        self.spec_serialize(value)[state.pos..]
     }
 
     open spec fn der_state_valid(&self, value: TeletexStringSpec, state: BytesDerState) -> bool {
@@ -1814,7 +1814,7 @@ impl<A, T> DerOrd<Vec<T>> for Star<A> where T: DeepView, A: DerOrd<T> + Copy {
         if state.index < vs.len() {
             self.0.der_remaining(vs[state.index as int], state.current) + Star(
                 self.0,
-            ).spec_serialize(vs.skip(state.index as int + 1))
+            ).spec_serialize(vs[state.index + 1..])
         } else {
             Seq::empty()
         }
@@ -1842,7 +1842,7 @@ impl<A, T> DerOrd<Vec<T>> for Star<A> where T: DeepView, A: DerOrd<T> + Copy {
                 let vv = v.deep_view();
                 Star(self.0).lemma_spec_serialize_suffix_step(vv, 0);
                 assert(self.0.der_remaining(vv[0], state.current) == self.0.spec_serialize(vv[0]));
-                assert(vv.skip(0) == vv);
+                assert(vv[0..] == vv);
             }
             state
         };
@@ -2057,7 +2057,7 @@ impl DerOrd<BmpString> for BmpStringFmt {
     }
 
     open spec fn der_remaining(&self, value: BmpStringSpec, state: BmpStringDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(bmp_string_der_position(state) as int)
+        self.spec_serialize(value)[bmp_string_der_position(state)..]
     }
 
     open spec fn der_state_valid(&self, value: BmpStringSpec, state: BmpStringDerState) -> bool {
@@ -2123,7 +2123,7 @@ impl DerOrd<UniversalString> for UniversalStringFmt {
     }
 
     open spec fn der_remaining(&self, value: Seq<char>, state: UniversalStringDerState) -> Seq<u8> {
-        self.spec_serialize(value).skip(universal_string_der_position(state) as int)
+        self.spec_serialize(value)[universal_string_der_position(state)..]
     }
 
     open spec fn der_state_valid(&self, value: Seq<char>, state: UniversalStringDerState) -> bool {

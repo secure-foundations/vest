@@ -276,10 +276,7 @@ pub broadcast proof fn lemma_decimal2_canonical(bytes: Seq<u8>, pos: usize)
         pos + 2 <= bytes.len(),
         digits(bytes, pos as int, pos as int + 2),
     ensures
-        #[trigger] decimal2_bytes(decimal2(bytes, pos))@ == bytes.subrange(
-            pos as int,
-            pos as int + 2,
-        ),
+        #[trigger] decimal2_bytes(decimal2(bytes, pos))@ == bytes[pos..pos + 2],
 {
 }
 
@@ -304,7 +301,7 @@ pub proof fn lemma_decimal4_canonical(bytes: Seq<u8>, pos: usize)
         pos + 4 <= bytes.len(),
         digits(bytes, pos as int, pos as int + 4),
     ensures
-        decimal4_bytes(decimal4(bytes, pos))@ == bytes.subrange(pos as int, pos as int + 4),
+        decimal4_bytes(decimal4(bytes, pos))@ == bytes[pos..pos + 4],
 {
     lemma_decimal2_canonical(bytes, pos);
     lemma_decimal2_canonical(bytes, (pos as int + 2) as usize);

@@ -15,8 +15,8 @@ pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](slice: &mut [T], mi
     requires
         mid <= old(slice)@.len(),
     ensures
-        ret.0@ == old(slice)@.take(mid as int),
-        ret.1@ == old(slice)@.skip(mid as int),
+        ret.0@ == old(slice)@[0..mid],
+        ret.1@ == old(slice)@[mid..],
         final(slice)@ == final(ret.0)@ + final(ret.1)@,
 ;
 
@@ -128,7 +128,7 @@ impl View for OutputSlice<'_> {
     type V = Seq<u8>;
 
     open spec fn view(&self) -> Self::V {
-        self.obuf@.take(self.pos as int)
+        self.obuf@[0..self.pos]
     }
 }
 

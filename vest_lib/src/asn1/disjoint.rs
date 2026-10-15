@@ -938,7 +938,7 @@ impl<Field: HasAsn1Start, Rest: HasAsn1Start> HasAsn1Start for Optional<Field, R
         self.1.lemma_parse_implies_asn1_start(input);
         if self.spec_parse(input) is Some {
             if self.0.spec_parse(input) is None {
-                assert(input.skip(0) == input);
+                assert(input[0..] == input);
             }
             lemma_input_starts_with_union(input, self.0.asn1_start(), self.1.asn1_start());
         }

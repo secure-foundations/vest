@@ -42,7 +42,7 @@ impl<A: NoLookAhead, Pred: SpecPred<A::PVal>> NoLookAhead for super::Refined<A, 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     assert(self.no_lookahead_inv());
                     self.0.lemma_no_lookahead(i1, i2);
                     assert(self.0.spec_parse(i2) == Some((n, v)));
@@ -123,7 +123,7 @@ impl<Inner: NoLookAhead> NoLookAhead for super::Const<Inner, Inner::PVal> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     self.0.lemma_no_lookahead(i1, i2);
                 }
             }
@@ -191,7 +191,7 @@ impl<const N: usize> NoLookAhead for super::Const<Fixed::<N>, [u8; N]> {
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     self.0.lemma_no_lookahead(i1, i2);
                 }
             }

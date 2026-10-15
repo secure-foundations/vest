@@ -157,7 +157,7 @@ pub trait PSRoundTrip where
         requires
             self.ps_roundtrip_inv(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf.take(n),
+            self.spec_parse(ibuf) matches Some((n, v)) ==> self.spec_serialize(v) == ibuf[0..n],
     ;
 
     proof fn corollary_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>)
@@ -166,7 +166,7 @@ pub trait PSRoundTrip where
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>
-            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+            v1 == v2 ==> buf1[0..n1] == buf2[0..n2],
     {
         self.theorem_parse_serialize_roundtrip(buf1);
         self.theorem_parse_serialize_roundtrip(buf2);
@@ -189,7 +189,7 @@ impl<C: SPRoundTrip + NonMalleable + SoundParser> PSRoundTrip for C {
 
             // By non-malleability: both parses return v, so serialized is equal to the input prefix
             c.lemma_parse_non_malleable(ibuf, serialized);
-            assert(ibuf.take(n) == serialized);
+            assert(ibuf[0..n] == serialized);
         }
     }
 }
@@ -213,7 +213,7 @@ pub trait NonMalleable: SafeParser {
         ensures
             self.spec_parse(buf1) matches Some((n1, v1)) ==>
             self.spec_parse(buf2) matches Some((n2, v2)) ==>
-            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+            v1 == v2 ==> buf1[0..n1] == buf2[0..n2],
     ;
 }
 
@@ -235,7 +235,7 @@ pub trait NoLookAhead: SafeParser {
             self.no_lookahead_inv(),
         ensures
             self.spec_parse(i1) matches Some((n, v)) ==>
-            0 <= n <= i2.len() ==> i2.take(n) == i1.take(n) ==>
+            0 <= n <= i2.len() ==> i2[0..n] == i1[0..n] ==>
             self.spec_parse(i2) == Some((n, v)),
     ;
 
@@ -250,7 +250,7 @@ pub trait NoLookAhead: SafeParser {
         if let Some((n, v)) = self.spec_parse(i1) {
             self.lemma_parse_safe(i1);
             assert(0 <= n <= (i1 + i2).len());
-            assert(i1.take(n) == (i1 + i2).take(n));
+            assert(i1[0..n] == (i1 + i2)[0..n]);
         }
     }
 }

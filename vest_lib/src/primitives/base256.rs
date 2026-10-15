@@ -295,7 +295,7 @@ pub fn usize_from_be_bytes_exec(bytes: &[u8]) -> (result: usize)
         }
         acc = (acc << 8usize) | (b as usize);
     }
-    assert(bytes@[0..bytes@.len() as int] == bytes.deep_view());
+    assert(bytes@[0..bytes@.len()] == bytes.deep_view());
     acc
 }
 
@@ -346,7 +346,7 @@ pub fn usize_to_be_bytes_in_place(v: usize, obuf: &mut [u8])
     let ghost target = nat_to_be_bytes(v as nat);
     proof {
         lemma_to_from_be_bytes_roundtrip(v as nat);  // nat_from_be_bytes(nat_to_be_bytes(v)) == v
-        assert(target[0..len as int] == target);
+        assert(target[0..len] == target);
     }
     let mut current = v;
 
@@ -362,7 +362,7 @@ pub fn usize_to_be_bytes_in_place(v: usize, obuf: &mut [u8])
     for byte in iter: reversed
         invariant
             iter.seq().len() == len,
-            current as nat == nat_from_be_bytes(target[0..len as int - iter.index()]),
+            current as nat == nat_from_be_bytes(target[0..len - iter.index()]),
             forall|j: int|
                 #![auto]
                 len as int - iter.index() <= j < len ==> *final(slots[j]) == target[j],

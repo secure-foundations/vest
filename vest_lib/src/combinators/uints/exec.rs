@@ -204,7 +204,7 @@ impl Parser<&[u8]> for super::U16Le {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U16_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U16_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U16_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1]];
         let value = u16_from_le_bytes(bytes);
@@ -246,7 +246,7 @@ impl Parser<&[u8]> for super::U16Be {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U16_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U16_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U16_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1]];
         let value = u16_from_be_bytes(bytes);
@@ -287,7 +287,7 @@ impl Parser<&[u8]> for super::U24Le {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U24_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U24_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U24_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1], chunk[2]];
         let value = u24_from_le_bytes(bytes);
@@ -332,7 +332,7 @@ impl Parser<&[u8]> for super::U24Be {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U24_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U24_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U24_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1], chunk[2]];
         let value = u24_from_be_bytes(bytes);
@@ -377,7 +377,7 @@ impl Parser<&[u8]> for super::U32Le {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U32_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U32_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U32_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1], chunk[2], chunk[3]];
         let value = u32_from_le_bytes(bytes);
@@ -418,7 +418,7 @@ impl Parser<&[u8]> for super::U32Be {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U32_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U32_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U32_BYTE_LEN]);
 
         let bytes = [chunk[0], chunk[1], chunk[2], chunk[3]];
         let value = u32_from_be_bytes(bytes);
@@ -459,7 +459,7 @@ impl Parser<&[u8]> for super::U64Le {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U64_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U64_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U64_BYTE_LEN]);
 
         let bytes = [
             chunk[0],
@@ -509,7 +509,7 @@ impl Parser<&[u8]> for super::U64Be {
         broadcast use lemma_array_from_seq_roundtrip;
 
         let (n, chunk) = Fixed::<U64_BYTE_LEN>.parse(ibuf)?;
-        assert(chunk@ == ibuf@.take(U64_BYTE_LEN as int));
+        assert(chunk@ == ibuf@[0..U64_BYTE_LEN]);
 
         let bytes = [
             chunk[0],

@@ -22,7 +22,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
         self.0.lemma_serialize_dps_len(v.0, serialized1);
         if let Some((n0, v0)) = self.0.spec_parse(serialized0) {
             assert(n0 == serialized0.len() - serialized1.len());
-            assert(serialized0.skip(n0) == serialized1);
+            assert(serialized0[n0..] == serialized1);
         }
     }
 }
@@ -46,19 +46,19 @@ impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Pair<A, B> {
                 if v1 == v2 {
                     let (n1a, a1) = self.0.spec_parse(buf1)->0;
                     let (n2a, a2) = self.0.spec_parse(buf2)->0;
-                    let (n1b, b1) = self.1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, b2) = self.1.spec_parse(buf2.skip(n2a))->0;
+                    let (n1b, b1) = self.1.spec_parse(buf1[n1a..])->0;
+                    let (n2b, b2) = self.1.spec_parse(buf2[n2a..])->0;
                     assert(self.nonmal_inv());
                     self.0.lemma_parse_safe(buf1);
                     self.0.lemma_parse_safe(buf2);
-                    self.1.lemma_parse_safe(buf1.skip(n1a));
-                    self.1.lemma_parse_safe(buf2.skip(n2a));
+                    self.1.lemma_parse_safe(buf1[n1a..]);
+                    self.1.lemma_parse_safe(buf2[n2a..]);
                     self.0.lemma_parse_non_malleable(buf1, buf2);
-                    self.1.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+                    self.1.lemma_parse_non_malleable(buf1[n1a..], buf2[n2a..]);
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
-                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
+                    assert(buf1[0..n1] == buf2[0..n2]) by {
+                        assert(buf1[0..n1] == buf1[0..n1a] + buf1[n1a..][0..n1b]);
+                        assert(buf2[0..n2] == buf2[0..n2a] + buf2[n2a..][0..n2b]);
                     }
                 }
             }
@@ -72,7 +72,7 @@ pub(crate) proof fn lemma_take_skip<T>(s: Seq<T>, n1: int, n2: int)
         0 <= n2,
         n1 + n2 <= s.len(),
     ensures
-        s.take(n1 + n2).skip(n1) == s.skip(n1).take(n2),
+        s[0..n1 + n2][n1..] == s[n1..][0..n2],
 {
 }
 
@@ -87,20 +87,20 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Pair<A, B> {
 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     if let Some((n1, v1)) = self.0.spec_parse(i1) {
-                        if let Some((n2, v2)) = self.1.spec_parse(i1.skip(n1)) {
+                        if let Some((n2, v2)) = self.1.spec_parse(i1[n1..]) {
                             assert(self.no_lookahead_inv());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
-                            self.1.lemma_parse_safe(i1.skip(n1));
-                            assert(i2.take(n1) == i1.take(n1));
+                            self.1.lemma_parse_safe(i1[n1..]);
+                            assert(i2[0..n1] == i1[0..n1]);
                             self.0.lemma_no_lookahead(i1, i2);
-                            assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
+                            assert(i2[n1..][0..n2] == i1[n1..][0..n2]) by {
                                 lemma_take_skip(i1, n1, n2);
                                 lemma_take_skip(i2, n1, n2);
                             };
-                            self.1.lemma_no_lookahead(i1.skip(n1), i2.skip(n1));
+                            self.1.lemma_no_lookahead(i1[n1..], i2[n1..]);
                         }
                     }
                 }
@@ -118,13 +118,13 @@ impl<A: Productive, B: Productive> Productive for super::Pair<A, B> {
     proof fn lemma_productive(&self, s: Seq<u8>) {
         if let Some((n, _v)) = self.spec_parse(s) {
             let (n1, _v1) = self.0.spec_parse(s)->0;
-            let (n2, _v2) = self.1.spec_parse(s.skip(n1))->0;
+            let (n2, _v2) = self.1.spec_parse(s[n1..])->0;
             self.0.lemma_parse_safe(s);
-            self.1.lemma_parse_safe(s.skip(n1));
+            self.1.lemma_parse_safe(s[n1..]);
             if self.0.productive_inv() {
                 self.0.lemma_productive(s);
             } else {
-                self.1.lemma_productive(s.skip(n1));
+                self.1.lemma_productive(s[n1..]);
             }
         }
     }
@@ -202,7 +202,7 @@ impl<A, B> SPRoundTripDps for super::Bind<A, B> where
         self.0.lemma_serialize_dps_len(key, next_buf);
         if let Some((n0, _)) = self.0.spec_parse(serialized) {
             assert(n0 == serialized.len() - next_buf.len());
-            assert(serialized.skip(n0) == next_buf);
+            assert(serialized[n0..] == next_buf);
         }
     }
 }
@@ -224,21 +224,21 @@ impl<A, B> NoLookAhead for super::Bind<A, B> where
 
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     if let Some((n1, key)) = self.0.spec_parse(i1) {
                         let next = self.1.spec_map(key);
-                        if let Some((n2, _val)) = next.spec_parse(i1.skip(n1)) {
+                        if let Some((n2, _val)) = next.spec_parse(i1[n1..]) {
                             assert(self.no_lookahead_inv());
                             self.lemma_parse_safe(i1);
                             self.0.lemma_parse_safe(i1);
-                            next.lemma_parse_safe(i1.skip(n1));
-                            assert(i2.take(n1) == i1.take(n1));
+                            next.lemma_parse_safe(i1[n1..]);
+                            assert(i2[0..n1] == i1[0..n1]);
                             self.0.lemma_no_lookahead(i1, i2);
-                            assert(i2.skip(n1).take(n2) == i1.skip(n1).take(n2)) by {
+                            assert(i2[n1..][0..n2] == i1[n1..][0..n2]) by {
                                 lemma_take_skip(i1, n1, n2);
                                 lemma_take_skip(i2, n1, n2);
                             };
-                            next.lemma_no_lookahead(i1.skip(n1), i2.skip(n1));
+                            next.lemma_no_lookahead(i1[n1..], i2[n1..]);
                             assert(self.spec_parse(i2) == Some((n, v)));
                         }
                     }
@@ -269,20 +269,20 @@ impl<A, B> NonMalleable for super::Bind<A, B> where
                     let (n2a, key2) = self.0.spec_parse(buf2)->0;
                     let next1 = self.1.spec_map(key1);
                     let next2 = self.1.spec_map(key2);
-                    let (n1b, _val) = next1.spec_parse(buf1.skip(n1a))->0;
-                    let (n2b, _val) = next2.spec_parse(buf2.skip(n2a))->0;
+                    let (n1b, _val) = next1.spec_parse(buf1[n1a..])->0;
+                    let (n2b, _val) = next2.spec_parse(buf2[n2a..])->0;
                     assert(key1 == key2 && next1 == next2);
                     let next = next1;
                     self.0.lemma_parse_safe(buf1);
                     self.0.lemma_parse_safe(buf2);
-                    next.lemma_parse_safe(buf1.skip(n1a));
-                    next.lemma_parse_safe(buf2.skip(n2a));
+                    next.lemma_parse_safe(buf1[n1a..]);
+                    next.lemma_parse_safe(buf2[n2a..]);
                     self.0.lemma_parse_non_malleable(buf1, buf2);
-                    next.lemma_parse_non_malleable(buf1.skip(n1a), buf2.skip(n2a));
+                    next.lemma_parse_non_malleable(buf1[n1a..], buf2[n2a..]);
                     assert(n1 == n1a + n1b && n2 == n2a + n2b);
-                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
+                    assert(buf1[0..n1] == buf2[0..n2]) by {
+                        assert(buf1[0..n1] == buf1[0..n1a] + buf1[n1a..][0..n1b]);
+                        assert(buf2[0..n2] == buf2[0..n2a] + buf2[n2a..][0..n2b]);
                     }
                 }
             }
@@ -304,13 +304,13 @@ impl<A, B> Productive for super::Bind<A, B> where
         if let Some((n, v)) = self.spec_parse(s) {
             let (n1, key) = self.0.spec_parse(s)->0;
             let next = self.1.spec_map(key);
-            let (n2, _val) = next.spec_parse(s.skip(n1))->0;
+            let (n2, _val) = next.spec_parse(s[n1..])->0;
             self.0.lemma_parse_safe(s);
-            next.lemma_parse_safe(s.skip(n1));
+            next.lemma_parse_safe(s[n1..]);
             if self.0.productive_inv() {
                 self.0.lemma_productive(s);
             } else {
-                next.lemma_productive(s.skip(n1));
+                next.lemma_productive(s[n1..]);
             }
         }
     }

@@ -402,12 +402,12 @@ proof fn lemma_star_parse_rec_from_scan(ibuf: Seq<u8>, n: int)
     ensures
         Star(Refined(U8, |b: u8| b & CONTINUATION_MASK != 0)).parse_rec(ibuf) == (
             n - 1,
-            ibuf.take(n - 1),
+            ibuf[0..n - 1],
         ),
     decreases n,
 {
     if n > 1 {
-        lemma_star_parse_rec_from_scan(ibuf.skip(1), (n - 1) as int);
+        lemma_star_parse_rec_from_scan(ibuf[1..], (n - 1) as int);
     }
 }
 
@@ -418,7 +418,7 @@ fn scan_base128_bytes<'a, const MINIMAL: bool>(ibuf: &&'a [u8]) -> (out: PResult
             let scanned = bytes.deep_view();
             &&& 0 < n <= BASE128_MAX_BYTES
             &&& n <= ibuf@.len()
-            &&& scanned == ibuf@.take(n as int)
+            &&& scanned == ibuf@[0..n]
             &&& base128_fmt::<MINIMAL>().inner.spec_parse(ibuf@) == Some(
                 (n as int, (scanned.drop_last(), scanned.last())),
             )
@@ -505,7 +505,7 @@ pub fn uint_from_base128(bytes: &[u8]) -> (result: UInt)
         }
         acc = (acc << 7usize) | ((b & PAYLOAD_MASK) as UInt);
     }
-    assert(bytes@[0..bytes@.len() as int] == bytes.deep_view());
+    assert(bytes@[0..bytes@.len()] == bytes.deep_view());
     acc
 }
 
@@ -542,7 +542,7 @@ pub fn uint_to_base128_in_place(v: UInt, obuf: &mut [u8])
     proof {
         lemma_to_from_base128_roundtrip(v as nat);
         lemma_to_base128_props(v as nat);
-        assert(target[0..len as int] == target);
+        assert(target[0..len] == target);
     }
     let mut current = v;
 
@@ -557,7 +557,7 @@ pub fn uint_to_base128_in_place(v: UInt, obuf: &mut [u8])
     for byte in iter: reversed
         invariant
             iter.seq().len() == len,
-            current as nat == nat_from_base128(target[0..len as int - iter.index()]),
+            current as nat == nat_from_base128(target[0..len - iter.index()]),
             forall|j: int|
                 #![auto]
                 len as int - iter.index() <= j < len ==> *final(slots[j]) == target[j],
@@ -751,10 +751,10 @@ impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, UInt> for Base12
         uint_to_base128_in_place(*v, encoded);
 
         proof {
-            assert(bytes@.take(num_bytes as int) == nat_to_base128(*v as nat));
+            assert(bytes@[0..num_bytes] == nat_to_base128(*v as nat));
             lemma_base128_fmt_byte_len::<MINIMAL>(*v);
         }
-        let ghost cont_bytes = bytes@.take(num_bytes as int).drop_last().map_values(
+        let ghost cont_bytes = bytes@[0..num_bytes].drop_last().map_values(
             |b: u8| b | CONTINUATION_MASK,
         );
         proof {
@@ -768,9 +768,8 @@ impl<Output: OutputBuf, const MINIMAL: bool> Serializer<Output, UInt> for Base12
                 old(obuf).same_destination(obuf),
                 forall|j: int|
                     #![auto]
-                    0 <= j < cont_bytes.len() ==> cont_bytes[j] == bytes@.take(
-                        num_bytes as int,
-                    ).drop_last()[j] | CONTINUATION_MASK,
+                    0 <= j < cont_bytes.len() ==> cont_bytes[j]
+                        == bytes@[0..num_bytes].drop_last()[j] | CONTINUATION_MASK,
         {
             broadcast use crate::core::exec::output::outbuf_lemmas;
 

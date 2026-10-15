@@ -136,7 +136,7 @@ proof fn lemma_parse_length_nested_braces(ibuf: Seq<u8>)
     decreases ibuf.len(),
 {
     if ibuf.len() >= 2 {
-        let rem = ibuf.skip(2);
+        let rem = ibuf[2..];
         lemma_parse_length_nested_braces(rem);
     }
 }
@@ -147,7 +147,7 @@ proof fn lemma_parse_wf_nested_braces(ibuf: Seq<u8>)
     decreases ibuf.len(),
 {
     if ibuf.len() >= 2 {
-        let rem = ibuf.skip(2);
+        let rem = ibuf[2..];
         lemma_parse_wf_nested_braces(rem);
     }
 }
@@ -158,7 +158,7 @@ proof fn lemma_parse_sound_consumption_nested_braces(ibuf: Seq<u8>)
     decreases ibuf.len(),
 {
     if ibuf.len() >= 2 {
-        let rem = ibuf.skip(2);
+        let rem = ibuf[2..];
         lemma_parse_sound_consumption_nested_braces(rem);
     }
 }
@@ -169,7 +169,7 @@ proof fn lemma_parse_productive_nested_braces(ibuf: Seq<u8>)
     decreases ibuf.len(),
 {
     if ibuf.len() >= 2 {
-        let rem = ibuf.skip(2);
+        let rem = ibuf[2..];
         lemma_parse_productive_nested_braces(rem);
     }
 }
@@ -340,7 +340,7 @@ impl<A: ProductiveParser, B: ProductiveParser, const CHECK: bool> ProductivePars
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);
         if let Some((n1, _)) = self.a.spec_parse(ibuf) {
-            let rem = ibuf.skip(n1);
+            let rem = ibuf[n1..];
             self.b.lemma_parse_productive(rem);
         }
     }
@@ -355,7 +355,7 @@ impl<A: ProductiveParser, B: ProductiveParser, const CHECK: bool> ProductivePars
     proof fn lemma_parse_productive(tracked &self, ibuf: Seq<u8>) {
         self.a.lemma_parse_productive(ibuf);
         if let Some((n1, _v1)) = self.a.spec_parse(ibuf) {
-            let rem = ibuf.skip(n1);
+            let rem = ibuf[n1..];
             self.b.lemma_parse_productive(rem);
         }
     }

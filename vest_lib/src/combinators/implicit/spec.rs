@@ -21,7 +21,7 @@ impl<Head, Tail> SpecParser for Implicit<Head, Tail> where
         match self.0.spec_parse(ibuf) {
             Some((n1, key)) => {
                 let body = self.1.apply(key);
-                match body.spec_parse(ibuf.skip(n1)) {
+                match body.spec_parse(ibuf[n1..]) {
                     Some((n2, value)) => Some((n1 + n2, value)),
                     None => None,
                 }
@@ -57,7 +57,7 @@ impl<Head, Tail> SafeParser for Implicit<Head, Tail> where
         self.0.lemma_parse_safe(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_safe(ibuf.skip(n1));
+            body.lemma_parse_safe(ibuf[n1..]);
         }
     }
 }
@@ -77,9 +77,9 @@ impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
         self.0.lemma_parse_sound_consumption(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_sound_consumption(ibuf.skip(n1));
-            body.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((n2, value)) = body.spec_parse(ibuf.skip(n1)) {
+            body.lemma_parse_sound_consumption(ibuf[n1..]);
+            body.lemma_parse_sound_value(ibuf[n1..]);
+            if let Some((n2, value)) = body.spec_parse(ibuf[n1..]) {
                 self.1.lemma_recover_consistent(key, value);
                 assert(self.1.recover(value) == key);
                 assert(self.byte_len(value) == self.0.byte_len(key) + body.byte_len(value));
@@ -91,8 +91,8 @@ impl<Head, Tail> SoundParser for Implicit<Head, Tail> where
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let body = self.1.apply(key);
-            body.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((_n2, value)) = body.spec_parse(ibuf.skip(n1)) {
+            body.lemma_parse_sound_value(ibuf[n1..]);
+            if let Some((_n2, value)) = body.spec_parse(ibuf[n1..]) {
                 self.1.lemma_recover_consistent(key, value);
                 assert(self.1.recover(value) == key);
                 assert(self.consistent(value));

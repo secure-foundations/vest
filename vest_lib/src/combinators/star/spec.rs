@@ -19,7 +19,7 @@ proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
     if vs.len() == 0 {
     } else {
         let v0 = vs[0];
-        let rest = vs.skip(1);
+        let rest = vs[1..];
         let k = A::static_byte_len();
         assert(vs == seq![v0] + rest);
         star.lemma_byte_len_cons(v0, rest);
@@ -46,7 +46,7 @@ proof fn lemma_value_seq_byte_len<A: ValueByteLen>(inner: A, vs: Seq<A::T>)
     if vs.len() == 0 {
     } else {
         let v0 = vs[0];
-        let rest = vs.skip(1);
+        let rest = vs[1..];
         let g = |acc: nat, elem: A::T| acc + A::value_byte_len(elem);
 
         assert(vs == seq![v0] + rest);
@@ -83,7 +83,7 @@ proof fn lemma_seq_min_max_byte_len<A: MinMaxByteLen>(inner: A, vs: Seq<A::T>)
     if vs.len() == 0 {
     } else {
         let v0 = vs[0];
-        let rest = vs.skip(1);
+        let rest = vs[1..];
         assert(vs == seq![v0] + rest);
         inner.lemma_min_max_byte_len(v0);
         lemma_seq_min_max_byte_len(inner, rest);
@@ -103,7 +103,7 @@ impl<A: SpecParser> super::Star<A> {
     {
         match self.0.spec_parse(ibuf) {
             Some((n, v)) if 0 < n <= ibuf.len() => {
-                let (n_rest, vs) = self.parse_rec(ibuf.skip(n));
+                let (n_rest, vs) = self.parse_rec(ibuf[n..]);
                 (n + n_rest, seq![v] + vs)
             },
             _ => (0, Seq::empty()),
@@ -123,7 +123,7 @@ impl<A: SpecByteLen> super::Star<A> {
         (seq![v] + vs).lemma_fold_left_alt(0, f);
         vs.lemma_fold_left_alt(self.0.byte_len(v), f);
         lemma_fold_left_accumulate_nat(vs, self.0.byte_len(v), f);
-        assert((seq![v] + vs).skip(1) == vs);
+        assert((seq![v] + vs)[1..] == vs);
     }
 }
 
@@ -142,7 +142,7 @@ impl<A: SpecSerializer + Copy> super::Star<A> {
         let values = seq![first] + rest;
         assert(values.len() > 0);
         assert(values[0] == first);
-        assert(values.skip(1) =~= rest);
+        assert(values[1..] =~= rest);
         assert forall|acc: Seq<u8>, x: Seq<u8>, y: A::SVal| #[trigger]
             f(acc + x, y) == acc + #[trigger] f(x, y) by {}
         values.lemma_fold_left_alt(Seq::empty(), f);
@@ -155,12 +155,12 @@ impl<A: SpecSerializer + Copy> super::Star<A> {
         requires
             0 <= i < vs.len(),
         ensures
-            self.spec_serialize(vs.skip(i)) == self.0.spec_serialize(vs[i]) + self.spec_serialize(
-                vs.skip(i + 1),
+            self.spec_serialize(vs[i..]) == self.0.spec_serialize(vs[i]) + self.spec_serialize(
+                vs[i + 1..],
             ),
     {
-        assert(vs.skip(i) =~= seq![vs[i]] + vs.skip(i + 1));
-        self.lemma_spec_serialize_cons(vs[i], vs.skip(i + 1));
+        assert(vs[i..] =~= seq![vs[i]] + vs[i + 1..]);
+        self.lemma_spec_serialize_cons(vs[i], vs[i + 1..]);
     }
 }
 
@@ -175,7 +175,7 @@ impl<A: SafeParser> super::Star<A> {
         self.0.lemma_parse_safe(ibuf);
         if let Some((n, v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
-                self.lemma_parse_rec_length(ibuf.skip(n));
+                self.lemma_parse_rec_length(ibuf[n..]);
             }
         }
     }
@@ -193,7 +193,7 @@ impl<A: SoundParser> super::Star<A> {
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n, v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
-                self.lemma_parse_rec_consistent(ibuf.skip(n));
+                self.lemma_parse_rec_consistent(ibuf[n..]);
             }
         }
     }
@@ -209,8 +209,8 @@ impl<A: SoundParser> super::Star<A> {
         self.0.lemma_parse_sound_consumption(ibuf);
         if let Some((n, v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
-                let (n_rest, vs) = self.parse_rec(ibuf.skip(n));
-                self.lemma_parse_rec_byte_len(ibuf.skip(n));
+                let (n_rest, vs) = self.parse_rec(ibuf[n..]);
+                self.lemma_parse_rec_byte_len(ibuf[n..]);
                 self.lemma_byte_len_cons(v, vs);
             }
         }
@@ -284,7 +284,7 @@ impl<A: NonTailFmt> super::Star<A> {
         if vs.len() == 0 {
             assert(self.rfold_serialize_dps(vs, obuf) == Seq::empty() + obuf);
         } else {
-            let rest = vs.skip(1);
+            let rest = vs[1..];
             let rest_buf = self.rfold_serialize_dps(rest, obuf);
 
             // induction
@@ -345,7 +345,7 @@ impl<A> NonTailFmt for super::Star<A> where A: NonTailFmt {
         if vs.len() == 0 {
         } else {
             let v0 = vs[0];
-            let rest = vs.skip(1);
+            let rest = vs[1..];
             let rest_buf = self.rfold_serialize_dps(rest, obuf);
             // base
             self.0.lemma_serialize_dps_len(v0, rest_buf);
@@ -408,7 +408,7 @@ impl<C: SpecParser, N: AsLen> super::RepeatN<C, N> {
             Some((0, Seq::empty()))
         } else {
             match self.1.spec_parse(ibuf) {
-                Some((n0, v0)) => match self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+                Some((n0, v0)) => match self.parse_n_rec((count - 1) as nat, ibuf[n0..]) {
                     Some((n1, vs1)) => Some((n0 + n1, seq![v0] + vs1)),
                     None => None,
                 },
@@ -425,7 +425,7 @@ impl<C: SpecParser, N: AsLen> super::RepeatN<C, N> {
         if count == 0 {
         } else {
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
-                self.lemma_parse_n_rec_count((count - 1) as nat, ibuf.skip(n0));
+                self.lemma_parse_n_rec_count((count - 1) as nat, ibuf[n0..]);
             }
         }
     }
@@ -467,7 +467,7 @@ impl<C: SafeParser, N: AsLen> super::RepeatN<C, N> {
         } else {
             self.1.lemma_parse_safe(ibuf);
             if let Some((n0, _v0)) = self.1.spec_parse(ibuf) {
-                self.lemma_parse_n_len_bound((count - 1) as nat, ibuf.skip(n0));
+                self.lemma_parse_n_len_bound((count - 1) as nat, ibuf[n0..]);
             }
         }
     }
@@ -488,8 +488,8 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
         } else {
             self.1.lemma_parse_sound_consumption(ibuf);
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
-                self.lemma_parse_n_byte_len((count - 1) as nat, ibuf.skip(n0));
-                if let Some((n1, vs1)) = self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+                self.lemma_parse_n_byte_len((count - 1) as nat, ibuf[n0..]);
+                if let Some((n1, vs1)) = self.parse_n_rec((count - 1) as nat, ibuf[n0..]) {
                     let star = super::Star(self.1);
                     star.lemma_byte_len_cons(v0, vs1);
                 }
@@ -512,7 +512,7 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
         } else {
             self.1.lemma_parse_sound_value(ibuf);
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
-                self.lemma_parse_n_consistent((count - 1) as nat, ibuf.skip(n0));
+                self.lemma_parse_n_consistent((count - 1) as nat, ibuf[n0..]);
             }
         }
     }

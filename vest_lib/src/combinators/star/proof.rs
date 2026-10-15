@@ -26,7 +26,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
             assert(self.0.spec_parse(obuf) is None);
         } else {
             let v = vs[0];
-            let rest = vs.skip(1);
+            let rest = vs[1..];
             let rest_buf = self.spec_serialize_dps(rest, obuf);
             let serialized = self.spec_serialize_dps(vs, obuf);
             assert(serialized == self.0.spec_serialize_dps(v, rest_buf));
@@ -43,7 +43,7 @@ impl<A> super::Star<A> where A: SPRoundTripDps + NonTailFmt {
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
             assert(self.0.spec_parse(serialized) == Some((n0, v)));
-            assert(serialized.skip(n0) == rest_buf);
+            assert(serialized[n0..] == rest_buf);
 
             if 0 < n0 <= serialized.len() {
                 assert(self.spec_parse(rest_buf) == Some(self.parse_rec(rest_buf)));
@@ -80,7 +80,7 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
             ({
                 let (n1, v1) = self.parse_rec(buf1);
                 let (n2, v2) = self.parse_rec(buf2);
-                v1 == v2 ==> buf1.take(n1) == buf2.take(n2)
+                v1 == v2 ==> buf1[0..n1] == buf2[0..n2]
             }),
         decreases buf1.len(),
     {
@@ -91,8 +91,8 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
             match (self.0.spec_parse(buf1), self.0.spec_parse(buf2)) {
                 (Some((m1, a1)), Some((m2, a2))) => {
                     if 0 < m1 <= buf1.len() && 0 < m2 <= buf2.len() {
-                        let (n1_rest, rest1) = self.parse_rec(buf1.skip(m1));
-                        let (n2_rest, rest2) = self.parse_rec(buf2.skip(m2));
+                        let (n1_rest, rest1) = self.parse_rec(buf1[m1..]);
+                        let (n2_rest, rest2) = self.parse_rec(buf2[m2..]);
 
                         assert(n1 == m1 + n1_rest);
                         assert(n2 == m2 + n2_rest);
@@ -103,25 +103,25 @@ impl<A: NonMalleable + SafeParser> super::Star<A> {
                             assert(a1 == v1[0] && a2 == v2[0]);
                         }
                         assert(rest1 == rest2) by {
-                            assert(rest1 == v1.skip(1));
-                            assert(rest2 == v2.skip(1));
+                            assert(rest1 == v1[1..]);
+                            assert(rest2 == v2[1..]);
                         }
 
                         // base
                         self.0.lemma_parse_non_malleable(buf1, buf2);
-                        assert(buf1.take(m1) == buf2.take(m2));
+                        assert(buf1[0..m1] == buf2[0..m2]);
 
                         // induction
                         assert(self.safe_inv());
-                        self.lemma_parse_non_malleable_rec(buf1.skip(m1), buf2.skip(m2));
-                        assert(buf1.skip(m1).take(n1_rest) == buf2.skip(m2).take(n2_rest));
+                        self.lemma_parse_non_malleable_rec(buf1[m1..], buf2[m2..]);
+                        assert(buf1[m1..][0..n1_rest] == buf2[m2..][0..n2_rest]);
 
-                        // need to show buf1.take(n1) == buf2.take(n2)
+                        // need to show buf1[0..n1] == buf2[0..n2]
                         assert(self.safe_inv());
-                        self.lemma_parse_safe(buf1.skip(m1));
-                        self.lemma_parse_safe(buf2.skip(m2));
-                        assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(n1_rest));
-                        assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(n2_rest));
+                        self.lemma_parse_safe(buf1[m1..]);
+                        self.lemma_parse_safe(buf2[m2..]);
+                        assert(buf1[0..n1] == buf1[0..m1] + buf1[m1..][0..n1_rest]);
+                        assert(buf2[0..n2] == buf2[0..m2] + buf2[m2..][0..n2_rest]);
                     }
                 },
                 _ => {},
@@ -158,11 +158,11 @@ impl<A: NoLookAhead> super::Star<A> {
         requires
             self.safe_inv(),
             self.0.no_lookahead_inv(),
-            parser_fails_on(self.0, i2.skip(self.parse_rec(i1).0)),
+            parser_fails_on(self.0, i2[self.parse_rec(i1).0..]),
         ensures
             ({
                 let r = self.parse_rec(i1);
-                0 <= r.0 <= i2.len() ==> i2.take(r.0) == i1.take(r.0) ==> self.parse_rec(i2) == r
+                0 <= r.0 <= i2.len() ==> i2[0..r.0] == i1[0..r.0] ==> self.parse_rec(i2) == r
             }),
         decreases i1.len(),
     {
@@ -173,21 +173,21 @@ impl<A: NoLookAhead> super::Star<A> {
         let (n, vs) = self.parse_rec(i1);
         match self.0.spec_parse(i1) {
             Some((m, v)) if 0 < m <= i1.len() => {
-                let i1_rest = i1.skip(m);
-                let i2_rest = i2.skip(m);
+                let i1_rest = i1[m..];
+                let i2_rest = i2[m..];
                 let (n_rest, vs_rest) = self.parse_rec(i1_rest);
                 assert(self.safe_inv());
                 self.lemma_parse_safe(i1_rest);
                 if 0 <= n <= i2.len() {
-                    if i2.take(n) == i1.take(n) {
-                        assert(i2.take(m) == i1.take(m));
+                    if i2[0..n] == i1[0..n] {
+                        assert(i2[0..m] == i1[0..m]);
                         assert(self.0.safe_inv());
                         self.0.lemma_no_lookahead(i1, i2);
-                        assert(i2_rest.take(n_rest) == i1_rest.take(n_rest)) by {
+                        assert(i2_rest[0..n_rest] == i1_rest[0..n_rest]) by {
                             lemma_take_skip(i1, m, n_rest);
                             lemma_take_skip(i2, m, n_rest);
                         };
-                        assert(parser_fails_on(self.0, i2_rest.skip(n_rest))) by {
+                        assert(parser_fails_on(self.0, i2_rest[n_rest..])) by {
                             broadcast use vstd::seq_lib::lemma_seq_skip_of_skip;
 
                         };
@@ -215,7 +215,7 @@ impl<A> super::Star<A> where A: EquivSerializersGeneral {
         if vs.len() == 0 {
         } else {
             let v0 = vs[0];
-            let rest = vs.skip(1);
+            let rest = vs[1..];
 
             let rest_foldr = self.rfold_serialize_dps(rest, obuf);
             let rest_foldl = rest.fold_left(Seq::empty(), f);
@@ -340,7 +340,7 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
         if count == 0 {
         } else {
             let v0 = vs[0];
-            let rest = vs.skip(1);
+            let rest = vs[1..];
             let rest_buf = self.spec_serialize_dps(rest, obuf);
             let serialized = self.spec_serialize_dps(vs, obuf);
 
@@ -351,7 +351,7 @@ impl<C, N> super::RepeatN<C, N> where C: SPRoundTripDps + NonTailFmt, N: AsLen {
             self.1.lemma_serialize_dps_len(v0, rest_buf);
 
             let n0 = (serialized.len() - rest_buf.len()) as int;
-            assert(serialized.skip(n0) == rest_buf);
+            assert(serialized[n0..] == rest_buf);
         }
     }
 }
@@ -377,7 +377,7 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
         ensures
             self.parse_n_rec(count, buf1) matches Some((n1, v1)) ==>
             self.parse_n_rec(count, buf2) matches Some((n2, v2)) ==>
-            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+            v1 == v2 ==> buf1[0..n1] == buf2[0..n2],
         decreases count,
     {
         broadcast use vstd::seq_lib::group_seq_properties;
@@ -389,8 +389,8 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
                     if v1 == v2 {
                         let (m1, a1) = self.1.spec_parse(buf1)->0;
                         let (m2, a2) = self.1.spec_parse(buf2)->0;
-                        let (r1, rest1) = self.parse_n_rec((count - 1) as nat, buf1.skip(m1))->0;
-                        let (r2, rest2) = self.parse_n_rec((count - 1) as nat, buf2.skip(m2))->0;
+                        let (r1, rest1) = self.parse_n_rec((count - 1) as nat, buf1[m1..])->0;
+                        let (r2, rest2) = self.parse_n_rec((count - 1) as nat, buf2[m2..])->0;
                         assert(v1 == seq![a1] + rest1);
                         assert(v2 == seq![a2] + rest2);
                         assert(a1 == a2) by {
@@ -398,24 +398,24 @@ impl<C: NonMalleable, N: AsLen> super::RepeatN<C, N> {
                             assert(a2 == v2[0]);
                         }
                         assert(rest1 == rest2) by {
-                            assert(rest1 == v1.skip(1));
-                            assert(rest2 == v2.skip(1));
+                            assert(rest1 == v1[1..]);
+                            assert(rest2 == v2[1..]);
                         }
 
                         self.1.lemma_parse_safe(buf1);
                         self.1.lemma_parse_safe(buf2);
-                        self.lemma_parse_n_len_bound((count - 1) as nat, buf1.skip(m1));
-                        self.lemma_parse_n_len_bound((count - 1) as nat, buf2.skip(m2));
+                        self.lemma_parse_n_len_bound((count - 1) as nat, buf1[m1..]);
+                        self.lemma_parse_n_len_bound((count - 1) as nat, buf2[m2..]);
                         self.1.lemma_parse_non_malleable(buf1, buf2);
-                        assert(buf1.take(m1) == buf2.take(m2));
+                        assert(buf1[0..m1] == buf2[0..m2]);
 
-                        self.lemma_parse_non_malleable_rec((count - 1) as nat, buf1.skip(m1), buf2.skip(m2));
-                        assert(buf1.skip(m1).take(r1) == buf2.skip(m2).take(r2));
+                        self.lemma_parse_non_malleable_rec((count - 1) as nat, buf1[m1..], buf2[m2..]);
+                        assert(buf1[m1..][0..r1] == buf2[m2..][0..r2]);
 
                         assert(n1 == m1 + r1);
                         assert(n2 == m2 + r2);
-                        assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(r1));
-                        assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(r2));
+                        assert(buf1[0..n1] == buf1[0..m1] + buf1[m1..][0..r1]);
+                        assert(buf2[0..n2] == buf2[0..m2] + buf2[m2..][0..r2]);
                     }
                 }
             }
@@ -441,8 +441,8 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
             self.1.safe_inv(),
             self.1.no_lookahead_inv(),
         ensures
-            self.parse_n_rec(count, i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
-                == i1.take(n) ==> self.parse_n_rec(count, i2) == Some((n, v)),
+            self.parse_n_rec(count, i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2[0..n]
+                == i1[0..n] ==> self.parse_n_rec(count, i2) == Some((n, v)),
         decreases count,
     {
         use crate::combinators::tuple::proof::lemma_take_skip;
@@ -452,21 +452,21 @@ impl<C: NoLookAhead, N: AsLen> super::RepeatN<C, N> {
         } else {
             if let Some((n, v)) = self.parse_n_rec(count, i1) {
                 if 0 <= n <= i2.len() {
-                    if i2.take(n) == i1.take(n) {
+                    if i2[0..n] == i1[0..n] {
                         let (m, a) = self.1.spec_parse(i1)->0;
-                        let (r, rest) = self.parse_n_rec((count - 1) as nat, i1.skip(m))->0;
+                        let (r, rest) = self.parse_n_rec((count - 1) as nat, i1[m..])->0;
                         assert(v == seq![a] + rest);
                         assert(n == m + r);
                         self.1.lemma_parse_safe(i1);
-                        self.lemma_parse_n_len_bound((count - 1) as nat, i1.skip(m));
+                        self.lemma_parse_n_len_bound((count - 1) as nat, i1[m..]);
                         assert(0 <= m <= n);
-                        assert(i2.take(m) == i1.take(m));
+                        assert(i2[0..m] == i1[0..m]);
                         self.1.lemma_no_lookahead(i1, i2);
-                        assert(i2.skip(m).take(r) == i1.skip(m).take(r)) by {
+                        assert(i2[m..][0..r] == i1[m..][0..r]) by {
                             lemma_take_skip(i1, m, r);
                             lemma_take_skip(i2, m, r);
                         };
-                        self.lemma_no_lookahead_rec((count - 1) as nat, i1.skip(m), i2.skip(m));
+                        self.lemma_no_lookahead_rec((count - 1) as nat, i1[m..], i2[m..]);
                     }
                 }
             }
@@ -492,7 +492,7 @@ impl<A: SpecParser> super::Star<A> {
     {
         if let Some((n, _v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
-                self.lemma_parse_rec_nonnegative(ibuf.skip(n));
+                self.lemma_parse_rec_nonnegative(ibuf[n..]);
             }
         }
     }
@@ -510,9 +510,9 @@ impl<C: Productive, N: AsLen> super::RepeatN<C, N> {
     {
         if let Some((n0, _v0)) = self.1.spec_parse(ibuf) {
             self.1.lemma_productive(ibuf);
-            if let Some((n1, _rest)) = self.parse_n_rec((count - 1) as nat, ibuf.skip(n0)) {
+            if let Some((n1, _rest)) = self.parse_n_rec((count - 1) as nat, ibuf[n0..]) {
                 if count - 1 > 0 {
-                    self.lemma_parse_n_positive((count - 1) as nat, ibuf.skip(n0));
+                    self.lemma_parse_n_positive((count - 1) as nat, ibuf[n0..]);
                     assert(n1 > 0);
                 } else {
                     assert(n1 == 0);
@@ -645,7 +645,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
         let n0 = serialized0.len() - serialized1.len();
         star.lemma_serialize_dps_prepend(v.0, serialized1);
         star.lemma_serialize_dps_len(v.0, serialized1);
-        assert(serialized0.skip(n0) == serialized1);
+        assert(serialized0[n0..] == serialized1);
     }
 }
 
@@ -681,17 +681,17 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Repeat<A, B> {
         self.lemma_parse_safe(i1);
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     if let Some((n0, v0)) = star.spec_parse(i1) {
-                        if let Some((n1, v1)) = self.1.spec_parse(i1.skip(n0)) {
+                        if let Some((n1, v1)) = self.1.spec_parse(i1[n0..]) {
                             star.lemma_parse_safe(i1);
-                            self.1.lemma_parse_safe(i1.skip(n0));
-                            assert(i2.take(n0) == i1.take(n0));
-                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+                            self.1.lemma_parse_safe(i1[n0..]);
+                            assert(i2[0..n0] == i1[0..n0]);
+                            assert(i2[n0..][0..n1] == i1[n0..][0..n1]) by {
                                 lemma_take_skip(i1, n0, n1);
                                 lemma_take_skip(i2, n0, n1);
                             };
-                            self.1.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+                            self.1.lemma_no_lookahead(i1[n0..], i2[n0..]);
                             assert(disjoint_domains(self.0, self.1));
                             star.lemma_parse_rec_no_lookahead_conditional(i1, i2);
                         }
@@ -712,9 +712,9 @@ impl<A: SafeParser, B: Productive> Productive for super::Repeat<A, B> {
         let star = super::Star(self.0);
         if let Some((n, _v)) = self.spec_parse(s) {
             let (n0, _vs) = star.spec_parse(s)->0;
-            let (n1, _b) = self.1.spec_parse(s.skip(n0))->0;
+            let (n1, _b) = self.1.spec_parse(s[n0..])->0;
             star.lemma_parse_rec_nonnegative(s);
-            self.1.lemma_productive(s.skip(n0));
+            self.1.lemma_productive(s[n0..]);
             assert(n1 > 0);
             assert(n == n0 + n1);
             assert(n > 0);

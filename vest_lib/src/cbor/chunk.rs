@@ -155,13 +155,13 @@ pub fn flatten_byte_chunks(chunks: Vec<&[u8]>) -> (flat: Vec<u8>)
     let mut flat = Vec::new();
     for i in 0..chunks.len()
         invariant
-            flat.deep_view() == chunk_views.take(i as int).flatten(),
+            flat.deep_view() == chunk_views[0..i].flatten(),
     {
         let chunk = chunks[i];
         proof {
-            let prefix = chunk_views.take(i as int);
+            let prefix = chunk_views[0..i];
             prefix.lemma_flatten_push(chunk.deep_view());
-            assert(chunk_views.take(i as int + 1) == prefix.push(chunk.deep_view()));
+            assert(chunk_views[0..i + 1] == prefix.push(chunk.deep_view()));
         }
         flat.extend_from_slice(chunk);
     }
@@ -205,15 +205,15 @@ pub fn flatten_text_chunks(chunks: Vec<&str>) -> (flat: String)
     let mut bytes = Vec::new();
     for i in 0..chunks.len()
         invariant
-            bytes.deep_view() == byte_views.take(i as int).flatten(),
+            bytes.deep_view() == byte_views[0..i].flatten(),
     {
         let chunk = chunks[i];
         let chunk_bytes = chunk.as_bytes();
         proof {
-            let prefix = byte_views.take(i as int);
+            let prefix = byte_views[0..i];
             prefix.lemma_flatten_push(chunk_bytes.deep_view());
             assert(chunk_bytes.deep_view() == vstd::utf8::encode_utf8(chunk.deep_view()));
-            assert(byte_views.take(i as int + 1) == prefix.push(chunk_bytes.deep_view()));
+            assert(byte_views[0..i + 1] == prefix.push(chunk_bytes.deep_view()));
         }
         bytes.extend_from_slice(chunk_bytes);
     }

@@ -338,14 +338,14 @@ fn flatten_octet_segments(segments: Vec<Vec<u8>>) -> (flat: Vec<u8>)
     for i in 0..segments.len()
         invariant
             segments.deep_view() == segment_views,
-            flat@ == segment_views.take(i as int).flatten(),
+            flat@ == segment_views[0..i].flatten(),
     {
         let segment = &segments[i];
         proof {
-            let prefix = segment_views.take(i as int);
+            let prefix = segment_views[0..i];
             prefix.lemma_flatten_push(segment@);
             assert(segment_views[i as int] == segment@);
-            assert(segment_views.take(i as int + 1) == prefix.push(segment@));
+            assert(segment_views[0..i + 1] == prefix.push(segment@));
         }
         flat.extend_from_slice(&segment);
     }

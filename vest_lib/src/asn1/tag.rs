@@ -1044,7 +1044,7 @@ fn test_exec_const_fmt(buf: &&[u8]) -> PResult<u16> {
         const_u16_fmt.serialize(&v, &mut obuf);
         proof {
             const_u16_fmt.theorem_parse_serialize_roundtrip(buf@);
-            assert(obuf@ == buf@.take(n as int));
+            assert(obuf@ == buf@[0..n]);
         }
     }
     Err(ParseError::custom("Test function, not meant to succeed"))
@@ -1062,7 +1062,7 @@ fn test_exec_tag_fmt(buf: &&[u8]) -> PResult<Tag> {
 
         proof {
             asn_bool_tag_fmt.theorem_parse_serialize_roundtrip(buf@);
-            assert(obuf@ == buf@.take(n as int));
+            assert(obuf@ == buf@[0..n]);
         }
     }
     Err(ParseError::custom("Test function, not meant to succeed"))

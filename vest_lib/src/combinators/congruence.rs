@@ -617,7 +617,7 @@ pub proof fn lemma_star_parse_rec_congruence<A: SpecParser, B: SpecParser<PVal =
 {
     if let Some((n, _v)) = a.spec_parse(ibuf) {
         if 0 < n <= ibuf.len() {
-            lemma_star_parse_rec_congruence(a, b, ibuf.skip(n));
+            lemma_star_parse_rec_congruence(a, b, ibuf[n..]);
         }
     }
 }
@@ -682,7 +682,7 @@ pub proof fn lemma_repeat_n_parse_n_rec_congruence<
     } else {
         assert(a.1.spec_parse(ibuf) == b.1.spec_parse(ibuf));
         if let Some((n0, _)) = a.1.spec_parse(ibuf) {
-            lemma_repeat_n_parse_n_rec_congruence(a, b, (count - 1) as nat, ibuf.skip(n0));
+            lemma_repeat_n_parse_n_rec_congruence(a, b, (count - 1) as nat, ibuf[n0..]);
         }
     }
 }

@@ -10,7 +10,7 @@ impl<A, B> SpecParser for super::Pair<A, B> where A: SpecParser, B: SpecParser {
 
     open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.0.spec_parse(ibuf) {
-            Some((n1, v1)) => match self.1.spec_parse(ibuf.skip(n1)) {
+            Some((n1, v1)) => match self.1.spec_parse(ibuf[n1..]) {
                 Some((n2, v2)) => Some((n1 + n2, (v1, v2))),
                 None => None,
             },
@@ -37,7 +37,7 @@ impl<A, B> SafeParser for super::Pair<A, B> where A: SafeParser, B: SafeParser {
         assert(self.safe_inv());
         self.0.lemma_parse_safe(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_safe(ibuf.skip(n1));
+            self.1.lemma_parse_safe(ibuf[n1..]);
         }
     }
 }
@@ -52,7 +52,7 @@ impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParse
         assert(self.sound_inv());
         self.0.lemma_parse_sound_consumption(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_sound_consumption(ibuf.skip(n1));
+            self.1.lemma_parse_sound_consumption(ibuf[n1..]);
         }
     }
 
@@ -60,7 +60,7 @@ impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParse
         assert(self.sound_inv());
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_sound_value(ibuf.skip(n1));
+            self.1.lemma_parse_sound_value(ibuf[n1..]);
         }
     }
 }
@@ -179,7 +179,7 @@ impl<A, B> SpecParser for super::Bind<A, B> where
         match self.0.spec_parse(ibuf) {
             Some((n1, key)) => {
                 let next = self.1.spec_map(key);
-                match next.spec_parse(ibuf.skip(n1)) {
+                match next.spec_parse(ibuf[n1..]) {
                     Some((n2, val)) => Some((n1 + n2, (key, val))),
                     None => None,
                 }
@@ -217,7 +217,7 @@ impl<A, B> SafeParser for super::Bind<A, B> where
         self.0.lemma_parse_safe(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let next = self.1.spec_map(key);
-            next.lemma_parse_safe(ibuf.skip(n1));
+            next.lemma_parse_safe(ibuf[n1..]);
         }
     }
 }
@@ -237,9 +237,9 @@ impl<A, B> SoundParser for super::Bind<A, B> where
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let next = self.1.spec_map(key);
-            next.lemma_parse_sound_consumption(ibuf.skip(n1));
-            next.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((_n2, val)) = next.spec_parse(ibuf.skip(n1)) {
+            next.lemma_parse_sound_consumption(ibuf[n1..]);
+            next.lemma_parse_sound_value(ibuf[n1..]);
+            if let Some((_n2, val)) = next.spec_parse(ibuf[n1..]) {
                 assert(self.byte_len((key, val)) == self.0.byte_len(key) + next.byte_len(val));
             }
         }
@@ -249,8 +249,8 @@ impl<A, B> SoundParser for super::Bind<A, B> where
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
             let next = self.1.spec_map(key);
-            next.lemma_parse_sound_value(ibuf.skip(n1));
-            if let Some((_n2, val)) = next.spec_parse(ibuf.skip(n1)) {
+            next.lemma_parse_sound_value(ibuf[n1..]);
+            if let Some((_n2, val)) = next.spec_parse(ibuf[n1..]) {
                 assert(self.consistent((key, val)));
             }
         }

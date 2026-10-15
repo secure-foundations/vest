@@ -63,7 +63,7 @@ impl<Inner, M> NoLookAhead for super::Mapped<Inner, M> where
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     assert(self.safe_inv());
                     assert(self.no_lookahead_inv());
                     self.inner.lemma_no_lookahead(i1, i2);
@@ -219,7 +219,7 @@ impl<Inner, M, MRev> NoLookAhead for super::Mapped<Inner, BiMap<M, MRev>> where
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     assert(self.safe_inv());
                     assert(self.no_lookahead_inv());
                     self.inner.lemma_no_lookahead(i1, i2);

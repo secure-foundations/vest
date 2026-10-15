@@ -240,9 +240,9 @@ proof fn test_large_format_with_berbools() {
                 assert(n1 == n2 == n3);
 
                 // But all byte prefixes are different
-                assert(buf1.take(n1)[1] == 0x01u8);
-                assert(buf2.take(n2)[1] == 0xFFu8);
-                assert(buf3.take(n3)[1] == 0x42u8);
+                assert(buf1[0..n1][1] == 0x01u8);
+                assert(buf2[0..n2][1] == 0xFFu8);
+                assert(buf3[0..n3][1] == 0x42u8);
             }
         }
     }

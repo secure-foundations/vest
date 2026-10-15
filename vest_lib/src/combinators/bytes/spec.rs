@@ -35,7 +35,7 @@ impl<const N: usize> SpecParser for super::Fixed<N> {
         if ibuf.len() < N as int {
             None
         } else {
-            Some((N as int, ibuf.take(N as int)))
+            Some((N as int, ibuf[0..N]))
         }
     }
 }
@@ -139,7 +139,7 @@ impl<Len: AsLen> SpecParser for super::Varied<Len> {
         if ibuf.len() < self.0.as_nat() {
             None
         } else {
-            Some((self.0.as_nat() as int, ibuf.take(self.0.as_nat() as int)))
+            Some((self.0.as_nat() as int, ibuf[0..self.0.as_nat()]))
         }
     }
 }

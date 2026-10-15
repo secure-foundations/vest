@@ -37,12 +37,12 @@ impl<A: NoLookAhead> super::Opt<A> {
             self.0.no_lookahead_inv(),
             parser_fails_on(self.0, i1) ==> parser_fails_on(self.0, i2),
         ensures
-            self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
-                == i1.take(n) ==> self.spec_parse(i2) == Some((n, v)),
+            self.spec_parse(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2[0..n] == i1[0..n]
+                ==> self.spec_parse(i2) == Some((n, v)),
     {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     if let Some((n0, v0)) = self.0.spec_parse(i1) {
                         self.0.lemma_no_lookahead(i1, i2);
                     } else {
@@ -124,7 +124,7 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
         let n0 = serialized0.len() - serialized1.len();
         opt.lemma_serialize_dps_prepend(v.0, serialized1);
         opt.lemma_serialize_dps_len(v.0, serialized1);
-        assert(serialized0.skip(n0) == serialized1);
+        assert(serialized0[n0..] == serialized1);
     }
 }
 
@@ -159,21 +159,21 @@ impl<A: NoLookAhead, B: NoLookAhead> NoLookAhead for super::Optional<A, B> {
         let opt = super::Opt(self.0);
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     assert(self.safe_inv());
                     if let Some((n0, a)) = self.0.spec_parse(i1) {
-                        if let Some((n1, b)) = self.1.spec_parse(i1.skip(n0)) {
+                        if let Some((n1, b)) = self.1.spec_parse(i1[n0..]) {
                             assert(opt.safe_inv());
                             assert(self.1.safe_inv());
                             opt.lemma_parse_safe(i1);
-                            self.1.lemma_parse_safe(i1.skip(n0));
-                            assert(i2.take(n0) == i1.take(n0));
+                            self.1.lemma_parse_safe(i1[n0..]);
+                            assert(i2[0..n0] == i1[0..n0]);
                             opt.lemma_opt_no_lookahead(i1, i2);
-                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+                            assert(i2[n0..][0..n1] == i1[n0..][0..n1]) by {
                                 lemma_take_skip(i1, n0, n1);
                                 lemma_take_skip(i2, n0, n1);
                             };
-                            self.1.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+                            self.1.lemma_no_lookahead(i1[n0..], i2[n0..]);
                         }
                     } else if let Some((n1, b)) = self.1.spec_parse(i1) {
                         assert(disjoint_domains(self.0, self.1));
@@ -194,9 +194,9 @@ impl<A: Productive, B: Productive> Productive for super::Optional<A, B> {
     proof fn lemma_productive(&self, s: Seq<u8>) {
         if let Some((n, _v)) = self.spec_parse(s) {
             let (n1, _v1) = super::Opt(self.0).spec_parse(s)->0;
-            let (n2, _v2) = self.1.spec_parse(s.skip(n1))->0;
+            let (n2, _v2) = self.1.spec_parse(s[n1..])->0;
             super::Opt(self.0).lemma_parse_safe(s);
-            self.1.lemma_productive(s.skip(n1));
+            self.1.lemma_productive(s[n1..]);
         }
     }
 }

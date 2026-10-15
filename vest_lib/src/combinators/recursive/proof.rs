@@ -21,8 +21,8 @@ pub open spec fn sp_roundtrip_dps<T>(
 /// Functional version of [`NoLookAhead`] for parsers.
 pub open spec fn no_lookahead_parser<T>(parser: ParserFnSpec<T>) -> bool {
     forall|i1: Seq<u8>, i2: Seq<u8>|
-        (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2.take(n)
-            == i1.take(n) ==> #[trigger] parser(i2) == Some((n, v)))
+        (#[trigger] parser(i1) matches Some((n, v)) ==> 0 <= n <= i2.len() ==> i2[0..n] == i1[0..n]
+            ==> #[trigger] parser(i2) == Some((n, v)))
 }
 
 pub open spec fn parser_pair_some<T>(
@@ -43,7 +43,7 @@ pub open spec fn parser_pair_some<T>(
 pub open spec fn non_malleable_parser<T>(parser: ParserFnSpec<T>) -> bool {
     forall|buf1: Seq<u8>, buf2: Seq<u8>| #[trigger]
         parser_pair_some(parser, buf1, buf2) matches Some(((n1, v1), (n2, v2))) ==> v1 == v2
-            ==> buf1.take(n1) == buf2.take(n2)
+            ==> buf1[0..n1] == buf2[0..n2]
 }
 
 impl<SpecP, Cnstcy, Blen> NonMalleable for ParserSpecs<SpecP, Cnstcy, Blen> where
@@ -66,7 +66,7 @@ impl<SpecP, Cnstcy, Blen> NonMalleable for ParserSpecs<SpecP, Cnstcy, Blen> wher
                     assert(self.nonmal_inv());
                     assert(parser_pair_some(p_fn, buf1, buf2) == Some(((n1, v1), (n2, v2))));
                     assert(non_malleable_parser(p_fn));
-                    assert(buf1.take(n1) == buf2.take(n2));
+                    assert(buf1[0..n1] == buf2[0..n2]);
                 }
             }
         }
@@ -107,7 +107,7 @@ impl<T> NoLookAhead for BundledSpecs<T> {
         let (_, _, p, _, _) = *self;
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     assert(no_lookahead_parser(p));
                     assert(p(i1) == Some((n, v)));
                     assert(p(i2) == Some((n, v)));
@@ -354,7 +354,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         ensures
             Self::spec_parse_gas(&self.0, gas, param, buf1) == Some((n1, v1)) ==>
             Self::spec_parse_gas(&self.0, gas, param, buf2) == Some((n2, v2)) ==>
-            v1 == v2 ==> buf1.take(n1) == buf2.take(n2),
+            v1 == v2 ==> buf1[0..n1] == buf2[0..n2],
         decreases gas,
     {
         if !(Self::spec_parse_gas(&self.0, gas, param, buf1) == Some((n1, v1))) {
@@ -391,7 +391,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         assert forall|p: Body::Param, rem1: Seq<u8>, rem2: Seq<u8>| #[trigger]
             parser_pair_some(callback(p).2, rem1, rem2) matches Some(((nn1, vv1), (nn2, vv2)))
-                ==> vv1 == vv2 ==> rem1.take(nn1) == rem2.take(nn2) by {
+                ==> vv1 == vv2 ==> rem1[0..nn1] == rem2[0..nn2] by {
             if let Some(((nn1, vv1), (nn2, vv2))) = parser_pair_some(callback(p).2, rem1, rem2) {
                 if vv1 == vv2 {
                     self.non_malleable_by_induction((gas - 1) as nat, p, rem1, rem2, nn1, nn2, vv1, vv2);
@@ -626,7 +626,7 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         requires
             Self::spec_parse_gas(&self.0, gas, param, i1) == Some((n, v)),
             0 <= n <= i2.len(),
-            i2.take(n) == i1.take(n),
+            i2[0..n] == i1[0..n],
         ensures
             Self::spec_parse_gas(&self.0, gas, param, i2) == Some((n, v)),
         decreases gas,
@@ -642,11 +642,9 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
 
         assert forall|p: Body::Param, j1: Seq<u8>, j2: Seq<u8>|
             (#[trigger] callback(p).2(j1) matches Some((nn, vv)) ==> 0 <= nn <= j2.len()
-                ==> j2.take(nn) == j1.take(nn) ==> #[trigger] callback(p).2(j2) == Some(
-                (nn, vv),
-            )) by {
+                ==> j2[0..nn] == j1[0..nn] ==> #[trigger] callback(p).2(j2) == Some((nn, vv))) by {
             if let Some((nn, vv)) = callback(p).2(j1) {
-                if 0 <= nn && nn <= j2.len() && j2.take(nn) == j1.take(nn) {
+                if 0 <= nn && nn <= j2.len() && j2[0..nn] == j1[0..nn] {
                     self.no_lookahead_by_induction((gas - 1) as nat, p, j1, j2, nn, vv);
                 }
             }
@@ -681,7 +679,7 @@ impl<const LIMIT: usize, Body, Param> NoLookAhead for super::FixWith<LIMIT, Body
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(i1) {
             if 0 <= n <= i2.len() {
-                if i2.take(n) == i1.take(n) {
+                if i2[0..n] == i1[0..n] {
                     self.no_lookahead_by_induction(LIMIT as nat, self.1.deep_view(), i1, i2, n, v);
                 }
             }

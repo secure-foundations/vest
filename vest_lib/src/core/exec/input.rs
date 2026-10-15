@@ -26,7 +26,7 @@ pub trait InputBuf: InputSlice + Sized {
         requires
             0 <= i as int <= j as int <= self@.len(),
         ensures
-            sliced@ == self@.subrange(i as int, j as int),
+            sliced@ == self@[i..j],
             sliced.deep_view() == sliced@,
     ;
 
@@ -35,7 +35,7 @@ pub trait InputBuf: InputSlice + Sized {
         requires
             n as int <= self@.len(),
         ensures
-            taken@ == self@.take(n as int),
+            taken@ == self@[0..n],
             taken.deep_view() == taken@,
     {
         self.subrange(0, n)
@@ -46,7 +46,7 @@ pub trait InputBuf: InputSlice + Sized {
         requires
             n as int <= self@.len(),
         ensures
-            skipped@ == self@.skip(n as int),
+            skipped@ == self@[n..],
             skipped.deep_view() == skipped@,
     {
         self.subrange(n, self.len())

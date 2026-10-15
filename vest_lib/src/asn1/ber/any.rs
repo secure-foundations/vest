@@ -216,7 +216,7 @@ impl<C: SpecParser> SpecParser for Capture<C> {
 
     open spec fn spec_parse(&self, input: Seq<u8>) -> Option<(int, Self::PVal)> {
         match self.0.spec_parse(input) {
-            Some((n, value)) => Some((n, Captured { value, encoded: input.take(n) })),
+            Some((n, value)) => Some((n, Captured { value, encoded: input[0..n] })),
             None => None,
         }
     }
@@ -559,14 +559,14 @@ fn flatten_captured_any_contents(children: Vec<CapturedAnyOwned>) -> (content: V
         invariant
             children.deep_view() == child_views,
             encoded_views == child_views.map(|_i: int, child: Captured<AnySpec>| child.encoded),
-            content.deep_view() == encoded_views.take(i as int).flatten(),
+            content.deep_view() == encoded_views[0..i].flatten(),
     {
         let encoded = children[i].encoded.as_slice();
         proof {
-            let prefix = encoded_views.take(i as int);
+            let prefix = encoded_views[0..i];
             prefix.lemma_flatten_push(encoded.deep_view());
             assert(encoded_views[i as int] == encoded.deep_view());
-            assert(encoded_views.take(i as int + 1) == prefix.push(encoded.deep_view()));
+            assert(encoded_views[0..i + 1] == prefix.push(encoded.deep_view()));
         }
         content.extend_from_slice(encoded);
     }

@@ -52,7 +52,7 @@ pub open spec fn der_octets_drop_head(bytes: Seq<u8>) -> Seq<u8> {
     if bytes.len() == 0 {
         bytes
     } else {
-        bytes.skip(1)
+        bytes[1..]
     }
 }
 
@@ -149,12 +149,12 @@ pub proof fn lemma_der_encodings_sorted_take(encodings: Seq<Seq<u8>>, n: int)
         der_encodings_sorted(encodings),
         0 <= n <= encodings.len(),
     ensures
-        der_encodings_sorted(encodings.take(n)),
+        der_encodings_sorted(encodings[0..n]),
 {
     assert forall|i: int, j: int|
-        0 <= i < j < encodings.take(n).len() implies #[trigger] der_octets_leq(
-        encodings.take(n)[i],
-        encodings.take(n)[j],
+        0 <= i < j < encodings[0..n].len() implies #[trigger] der_octets_leq(
+        encodings[0..n][i],
+        encodings[0..n][j],
     ) by {
         lemma_der_encodings_sorted_index(encodings, i, j);
     }
@@ -215,9 +215,9 @@ impl<C: SpecParser> SetOfFmt<C> {
         } else {
             match self.0.spec_parse(ibuf) {
                 Some((n, v)) if 0 < n <= ibuf.len() && der_encodings_sorted(
-                    previous.push(ibuf.take(n)),
+                    previous.push(ibuf[0..n]),
                 ) => {
-                    match self.parse_ordered(ibuf.skip(n), previous.push(ibuf.take(n))) {
+                    match self.parse_ordered(ibuf[n..], previous.push(ibuf[0..n])) {
                         Some(values) => Some(seq![v] + values),
                         None => None,
                     }
@@ -244,14 +244,14 @@ impl<C: SoundParser> SetOfFmt<C> {
         if ibuf.len() > 0 {
             match self.0.spec_parse(ibuf) {
                 Some((n, value)) if 0 < n <= ibuf.len() && der_encodings_sorted(
-                    previous.push(ibuf.take(n)),
+                    previous.push(ibuf[0..n]),
                 ) => {
                     self.0.lemma_parse_sound_consumption(ibuf);
-                    self.lemma_parse_ordered_byte_len(ibuf.skip(n), previous.push(ibuf.take(n)));
+                    self.lemma_parse_ordered_byte_len(ibuf[n..], previous.push(ibuf[0..n]));
 
                     if let Some(rest_values) = self.parse_ordered(
-                        ibuf.skip(n),
-                        previous.push(ibuf.take(n)),
+                        ibuf[n..],
+                        previous.push(ibuf[0..n]),
                     ) {
                         Star(self.0).lemma_byte_len_cons(value, rest_values);
                     }
@@ -283,23 +283,22 @@ impl<C: SoundParser + PSRoundTrip> SetOfFmt<C> {
         if ibuf.len() > 0 {
             match self.0.spec_parse(ibuf) {
                 Some((n, value)) if 0 < n <= ibuf.len() && der_encodings_sorted(
-                    previous.push(ibuf.take(n)),
+                    previous.push(ibuf[0..n]),
                 ) => {
                     self.0.lemma_parse_sound_value(ibuf);
                     self.0.theorem_parse_serialize_roundtrip(ibuf);
-                    self.lemma_parse_ordered_consistent(ibuf.skip(n), previous.push(ibuf.take(n)));
+                    self.lemma_parse_ordered_consistent(ibuf[n..], previous.push(ibuf[0..n]));
 
                     if let Some(rest_values) = self.parse_ordered(
-                        ibuf.skip(n),
-                        previous.push(ibuf.take(n)),
+                        ibuf[n..],
+                        previous.push(ibuf[0..n]),
                     ) {
                         let values = seq![value] + rest_values;
                         let serialize = |v: C::PVal| self.0.spec_serialize(v);
-                        assert(values.map_values(serialize) == seq![ibuf.take(n)]
+                        assert(values.map_values(serialize) == seq![ibuf[0..n]]
                             + rest_values.map_values(serialize));
-                        assert(previous + values.map_values(serialize) == previous.push(
-                            ibuf.take(n),
-                        ) + rest_values.map_values(serialize));
+                        assert(previous + values.map_values(serialize) == previous.push(ibuf[0..n])
+                            + rest_values.map_values(serialize));
                     }
                 },
                 _ => {},
@@ -335,27 +334,27 @@ impl<C: NonMalleable> SetOfFmt<C> {
                 if values1 == values2 && values1.len() > 0 {
                     let (n1, value1) = self.0.spec_parse(buf1)->0;
                     let (n2, value2) = self.0.spec_parse(buf2)->0;
-                    let rest1 = self.parse_ordered(buf1.skip(n1), previous1.push(buf1.take(n1)))->0;
-                    let rest2 = self.parse_ordered(buf2.skip(n2), previous2.push(buf2.take(n2)))->0;
+                    let rest1 = self.parse_ordered(buf1[n1..], previous1.push(buf1[0..n1]))->0;
+                    let rest2 = self.parse_ordered(buf2[n2..], previous2.push(buf2[0..n2]))->0;
 
                     assert(value1 == value2) by {
                         assert(value1 == values1[0]);
                         assert(value2 == values2[0]);
                     }
                     assert(rest1 == rest2) by {
-                        assert(rest1 == values1.skip(1));
-                        assert(rest2 == values2.skip(1));
+                        assert(rest1 == values1[1..]);
+                        assert(rest2 == values2[1..]);
                     }
 
                     self.0.lemma_parse_non_malleable(buf1, buf2);
                     self.lemma_parse_ordered_non_malleable(
-                        buf1.skip(n1),
-                        previous1.push(buf1.take(n1)),
-                        buf2.skip(n2),
-                        previous2.push(buf2.take(n2)),
+                        buf1[n1..],
+                        previous1.push(buf1[0..n1]),
+                        buf2[n2..],
+                        previous2.push(buf2[0..n2]),
                     );
-                    assert(buf1 == buf1.take(n1) + buf1.skip(n1));
-                    assert(buf2 == buf2.take(n2) + buf2.skip(n2));
+                    assert(buf1 == buf1[0..n1] + buf1[n1..]);
+                    assert(buf2 == buf2[0..n2] + buf2[n2..]);
                 }
             }
         }
@@ -386,11 +385,11 @@ impl<C> SetOfFmt<C> where
 
         let encodings = values.map_values(|v: C::T| self.0.spec_serialize(v));
         lemma_der_encodings_sorted_take(previous + encodings, previous.len() as int);
-        assert((previous + encodings).take(previous.len() as int) == previous);
+        assert((previous + encodings)[0..previous.len()] == previous);
         assert(der_encodings_sorted(previous));
         if values.len() > 0 {
             let value = values[0];
-            let rest = values.skip(1);
+            let rest = values[1..];
             let rest_buf = Star(self.0).spec_serialize_dps(rest, Seq::empty());
             let serialized = Star(self.0).spec_serialize_dps(values, Seq::empty());
             let n = self.0.byte_len(value) as int;
@@ -405,11 +404,11 @@ impl<C> SetOfFmt<C> where
             self.0.lemma_serialize_dps_len(value, rest_buf);
             self.0.lemma_serialize_equiv(value, rest_buf);
             self.0.lemma_productive(serialized);
-            assert(serialized.take(n) == self.0.spec_serialize(value));
-            assert(serialized.skip(n) == rest_buf);
+            assert(serialized[0..n] == self.0.spec_serialize(value));
+            assert(serialized[n..] == rest_buf);
 
             lemma_der_encodings_sorted_take(previous + encodings, previous.len() as int + 1);
-            assert((previous + encodings).take(previous.len() as int + 1) == previous.push(
+            assert((previous + encodings)[0..previous.len() + 1] == previous.push(
                 self.0.spec_serialize(value),
             ));
             assert(previous.push(self.0.spec_serialize(value)) + rest.map_values(
@@ -582,20 +581,20 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
 {
     let mut left = 0usize;
     let mut right = 0usize;
-    assert(a.deep_view().skip(0) == a.deep_view());
-    assert(b.deep_view().skip(0) == b.deep_view());
+    assert(a.deep_view()[0..] == a.deep_view());
+    assert(b.deep_view()[0..] == b.deep_view());
     while left < a.len() || right < b.len()
         invariant
             left <= a.len(),
             right <= b.len(),
             der_octets_leq(a.deep_view(), b.deep_view()) == der_octets_leq(
-                a.deep_view().skip(left as int),
-                b.deep_view().skip(right as int),
+                a.deep_view()[left..],
+                b.deep_view()[right..],
             ),
         decreases a.len() - left + b.len() - right,
     {
-        let ghost old_left = a.deep_view().skip(left as int);
-        let ghost old_right = b.deep_view().skip(right as int);
+        let ghost old_left = a.deep_view()[left..];
+        let ghost old_right = b.deep_view()[right..];
         proof {
             lemma_der_octets_leq_step(old_left, old_right);
         }
@@ -621,8 +620,8 @@ pub fn der_leq(a: &[u8], b: &[u8]) -> (leq: bool)
         if right < b.len() {
             right += 1;
         }
-        assert(der_octets_drop_head(old_left) == a.deep_view().skip(left as int));
-        assert(der_octets_drop_head(old_right) == b.deep_view().skip(right as int));
+        assert(der_octets_drop_head(old_left) == a.deep_view()[left..]);
+        assert(der_octets_drop_head(old_right) == b.deep_view()[right..]);
     }
     true
 }
@@ -674,7 +673,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOfFmt<C> where
             let encoding = &rest[0..n];
 
             proof {
-                assert(encoding.deep_view() == rest@.take(n as int));
+                assert(encoding.deep_view() == rest@[0..n]);
                 lemma_der_encodings_sorted_push(encodings.deep_view(), encoding.deep_view());
             }
             if encodings.len() > 0 {
@@ -690,7 +689,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOfFmt<C> where
             rest = &rest[n..rest.len()];
             consumed += n;
 
-            assert(encodings.deep_view() == old_encodings.push(old_rest.take(n as int)));
+            assert(encodings.deep_view() == old_encodings.push(old_rest[0..n]));
         }
 
         Ok((consumed, values))
@@ -774,7 +773,7 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
             }
         }
 
-        assert(values.deep_view()[0..values.deep_view().len() as int] == values.deep_view());
+        assert(values.deep_view()[0..values.deep_view().len()] == values.deep_view());
         Ok(total)
     }
 }

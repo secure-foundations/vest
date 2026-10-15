@@ -94,11 +94,11 @@ impl<A, B> SPRoundTripDps for super::PairRev<A, B> where
         self.1.theorem_serialize_dps_parse_roundtrip(v.0, serialized1);
         self.1.lemma_serialize_dps_prepend(v.0, serialized1);
         self.1.lemma_serialize_dps_len(v.0, serialized1);
-        assert(serialized0.take(n1).take(n1) == serialized0.take(n1));
-        self.1.lemma_no_lookahead(serialized0, serialized0.take(n1));
-        assert(self.1.spec_parse(serialized0.take(n1)) == Some((n1, v.0)));
+        assert(serialized0[0..n1][0..n1] == serialized0[0..n1]);
+        self.1.lemma_no_lookahead(serialized0, serialized0[0..n1]);
+        assert(self.1.spec_parse(serialized0[0..n1]) == Some((n1, v.0)));
 
-        assert(self.0.spec_parse(serialized0.skip(n1)) == Some((n2, v.1)));
+        assert(self.0.spec_parse(serialized0[n1..]) == Some((n2, v.1)));
         assert(self.spec_parse(serialized0) == Some((n1 + n2, v)));
     }
 }
@@ -120,26 +120,26 @@ impl<A, B> NonMalleable for super::PairRev<A, B> where
                 if v1 == v2 {
                     let prefix1 = buf1.len() - B::static_byte_len();
                     let prefix2 = buf2.len() - B::static_byte_len();
-                    self.1.lemma_parse_non_malleable(buf1.take(prefix1), buf2.take(prefix2));
-                    self.0.lemma_parse_non_malleable(buf1.skip(prefix1), buf2.skip(prefix2));
+                    self.1.lemma_parse_non_malleable(buf1[0..prefix1], buf2[0..prefix2]);
+                    self.0.lemma_parse_non_malleable(buf1[prefix1..], buf2[prefix2..]);
 
-                    let (n1b, b1) = self.0.spec_parse(buf1.skip(prefix1))->0;
-                    let (n2b, b2) = self.0.spec_parse(buf2.skip(prefix2))->0;
-                    let (n1a, a1) = self.1.spec_parse(buf1.take(prefix1))->0;
-                    let (n2a, a2) = self.1.spec_parse(buf2.take(prefix2))->0;
+                    let (n1b, b1) = self.0.spec_parse(buf1[prefix1..])->0;
+                    let (n2b, b2) = self.0.spec_parse(buf2[prefix2..])->0;
+                    let (n1a, a1) = self.1.spec_parse(buf1[0..prefix1])->0;
+                    let (n2a, a2) = self.1.spec_parse(buf2[0..prefix2])->0;
                     assert(prefix1 == n1a && prefix2 == n2a);
                     assert(n1 == buf1.len() && n2 == buf2.len());
 
-                    self.0.lemma_parse_safe(buf1.skip(prefix1));
-                    self.0.lemma_parse_safe(buf2.skip(prefix2));
-                    self.1.lemma_parse_safe(buf1.take(prefix1));
-                    self.1.lemma_parse_safe(buf2.take(prefix2));
+                    self.0.lemma_parse_safe(buf1[prefix1..]);
+                    self.0.lemma_parse_safe(buf2[prefix2..]);
+                    self.1.lemma_parse_safe(buf1[0..prefix1]);
+                    self.1.lemma_parse_safe(buf2[0..prefix2]);
 
-                    assert(buf1.take(n1) == buf2.take(n2)) by {
-                        assert(buf1.take(n1) == buf1.take(n1a) + buf1.skip(n1a).take(n1b));
-                        assert(buf2.take(n2) == buf2.take(n2a) + buf2.skip(n2a).take(n2b));
-                        assert(buf1.take(prefix1).take(n1a) == buf1.take(n1a));
-                        assert(buf2.take(prefix2).take(n2a) == buf2.take(n2a));
+                    assert(buf1[0..n1] == buf2[0..n2]) by {
+                        assert(buf1[0..n1] == buf1[0..n1a] + buf1[n1a..][0..n1b]);
+                        assert(buf2[0..n2] == buf2[0..n2a] + buf2[n2a..][0..n2b]);
+                        assert(buf1[0..prefix1][0..n1a] == buf1[0..n1a]);
+                        assert(buf2[0..prefix2][0..n2a] == buf2[0..n2a]);
                     }
                 }
             }
@@ -158,14 +158,14 @@ impl<A: Productive, B: StaticByteLen + SafeParser<PVal = B::T>> Productive for s
     proof fn lemma_productive(&self, s: Seq<u8>) {
         if let Some((n, _v)) = self.spec_parse(s) {
             let prefix = s.len() - B::static_byte_len();
-            let (n1, _a) = self.1.spec_parse(s.take(prefix))->0;
-            let (n2, _b) = self.0.spec_parse(s.skip(prefix))->0;
+            let (n1, _a) = self.1.spec_parse(s[0..prefix])->0;
+            let (n2, _b) = self.0.spec_parse(s[prefix..])->0;
             assert(n == n1 + n2);
             if B::static_byte_len() > 0 {
                 assert(n2 == B::static_byte_len());
                 assert(n2 > 0);
             } else {
-                self.1.lemma_productive(s.take(prefix));
+                self.1.lemma_productive(s[0..prefix]);
                 assert(n1 > 0);
             }
             assert(n > 0);

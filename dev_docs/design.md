@@ -202,14 +202,14 @@ We modify the round-trip theorems accordingly.
 -        ensures
 -            self.spec_parse(buf) matches Some((n, v)) ==> {
 -                &&& self.wf(v)
--                &&& self.spec_serialize(v) == buf.take(n)
+-                &&& self.spec_serialize(v) == buf[0..n]
 -            },
 -    ;
 +    proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>, obuf: Seq<u8>)
 +        ensures
 +            self.spec_parse(ibuf) matches Some((n, v)) ==> {
 +                &&& self.wf(v)
-+                &&& self.spec_serialize(v, obuf) == ibuf.take(n) + obuf
++                &&& self.spec_serialize(v, obuf) == ibuf[0..n] + obuf
 +            },
 +    ;
 ```
