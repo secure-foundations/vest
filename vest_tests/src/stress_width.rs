@@ -106,30 +106,6 @@ impl DeepView for StructWidth16 {
     }
 }
 
-impl StructWidth16 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().field0 == self.field0.deep_view(),
-            self.deep_view().field1 == self.field1.deep_view(),
-            self.deep_view().field2 == self.field2.deep_view(),
-            self.deep_view().field3 == self.field3.deep_view(),
-            self.deep_view().field4 == self.field4.deep_view(),
-            self.deep_view().field5 == self.field5.deep_view(),
-            self.deep_view().field6 == self.field6.deep_view(),
-            self.deep_view().field7 == self.field7.deep_view(),
-            self.deep_view().field8 == self.field8.deep_view(),
-            self.deep_view().field9 == self.field9.deep_view(),
-            self.deep_view().field10 == self.field10.deep_view(),
-            self.deep_view().field11 == self.field11.deep_view(),
-            self.deep_view().field12 == self.field12.deep_view(),
-            self.deep_view().field13 == self.field13.deep_view(),
-            self.deep_view().field14 == self.field14.deep_view(),
-            self.deep_view().field15 == self.field15.deep_view(),
-    {
-        reveal(<StructWidth16 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `choice_width64`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ChoiceWidth64 {
@@ -429,81 +405,6 @@ impl DeepView for ChoiceWidth64 {
     }
 }
 
-impl ChoiceWidth64 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    ChoiceWidth64::Variant0(v) => ChoiceWidth64Spec::Variant0(v.deep_view()),
-                    ChoiceWidth64::Variant1(v) => ChoiceWidth64Spec::Variant1(v.deep_view()),
-                    ChoiceWidth64::Variant2(v) => ChoiceWidth64Spec::Variant2(v.deep_view()),
-                    ChoiceWidth64::Variant3(v) => ChoiceWidth64Spec::Variant3(v.deep_view()),
-                    ChoiceWidth64::Variant4(v) => ChoiceWidth64Spec::Variant4(v.deep_view()),
-                    ChoiceWidth64::Variant5(v) => ChoiceWidth64Spec::Variant5(v.deep_view()),
-                    ChoiceWidth64::Variant6(v) => ChoiceWidth64Spec::Variant6(v.deep_view()),
-                    ChoiceWidth64::Variant7(v) => ChoiceWidth64Spec::Variant7(v.deep_view()),
-                    ChoiceWidth64::Variant8(v) => ChoiceWidth64Spec::Variant8(v.deep_view()),
-                    ChoiceWidth64::Variant9(v) => ChoiceWidth64Spec::Variant9(v.deep_view()),
-                    ChoiceWidth64::Variant10(v) => ChoiceWidth64Spec::Variant10(v.deep_view()),
-                    ChoiceWidth64::Variant11(v) => ChoiceWidth64Spec::Variant11(v.deep_view()),
-                    ChoiceWidth64::Variant12(v) => ChoiceWidth64Spec::Variant12(v.deep_view()),
-                    ChoiceWidth64::Variant13(v) => ChoiceWidth64Spec::Variant13(v.deep_view()),
-                    ChoiceWidth64::Variant14(v) => ChoiceWidth64Spec::Variant14(v.deep_view()),
-                    ChoiceWidth64::Variant15(v) => ChoiceWidth64Spec::Variant15(v.deep_view()),
-                    ChoiceWidth64::Variant16(v) => ChoiceWidth64Spec::Variant16(v.deep_view()),
-                    ChoiceWidth64::Variant17(v) => ChoiceWidth64Spec::Variant17(v.deep_view()),
-                    ChoiceWidth64::Variant18(v) => ChoiceWidth64Spec::Variant18(v.deep_view()),
-                    ChoiceWidth64::Variant19(v) => ChoiceWidth64Spec::Variant19(v.deep_view()),
-                    ChoiceWidth64::Variant20(v) => ChoiceWidth64Spec::Variant20(v.deep_view()),
-                    ChoiceWidth64::Variant21(v) => ChoiceWidth64Spec::Variant21(v.deep_view()),
-                    ChoiceWidth64::Variant22(v) => ChoiceWidth64Spec::Variant22(v.deep_view()),
-                    ChoiceWidth64::Variant23(v) => ChoiceWidth64Spec::Variant23(v.deep_view()),
-                    ChoiceWidth64::Variant24(v) => ChoiceWidth64Spec::Variant24(v.deep_view()),
-                    ChoiceWidth64::Variant25(v) => ChoiceWidth64Spec::Variant25(v.deep_view()),
-                    ChoiceWidth64::Variant26(v) => ChoiceWidth64Spec::Variant26(v.deep_view()),
-                    ChoiceWidth64::Variant27(v) => ChoiceWidth64Spec::Variant27(v.deep_view()),
-                    ChoiceWidth64::Variant28(v) => ChoiceWidth64Spec::Variant28(v.deep_view()),
-                    ChoiceWidth64::Variant29(v) => ChoiceWidth64Spec::Variant29(v.deep_view()),
-                    ChoiceWidth64::Variant30(v) => ChoiceWidth64Spec::Variant30(v.deep_view()),
-                    ChoiceWidth64::Variant31(v) => ChoiceWidth64Spec::Variant31(v.deep_view()),
-                    ChoiceWidth64::Variant32(v) => ChoiceWidth64Spec::Variant32(v.deep_view()),
-                    ChoiceWidth64::Variant33(v) => ChoiceWidth64Spec::Variant33(v.deep_view()),
-                    ChoiceWidth64::Variant34(v) => ChoiceWidth64Spec::Variant34(v.deep_view()),
-                    ChoiceWidth64::Variant35(v) => ChoiceWidth64Spec::Variant35(v.deep_view()),
-                    ChoiceWidth64::Variant36(v) => ChoiceWidth64Spec::Variant36(v.deep_view()),
-                    ChoiceWidth64::Variant37(v) => ChoiceWidth64Spec::Variant37(v.deep_view()),
-                    ChoiceWidth64::Variant38(v) => ChoiceWidth64Spec::Variant38(v.deep_view()),
-                    ChoiceWidth64::Variant39(v) => ChoiceWidth64Spec::Variant39(v.deep_view()),
-                    ChoiceWidth64::Variant40(v) => ChoiceWidth64Spec::Variant40(v.deep_view()),
-                    ChoiceWidth64::Variant41(v) => ChoiceWidth64Spec::Variant41(v.deep_view()),
-                    ChoiceWidth64::Variant42(v) => ChoiceWidth64Spec::Variant42(v.deep_view()),
-                    ChoiceWidth64::Variant43(v) => ChoiceWidth64Spec::Variant43(v.deep_view()),
-                    ChoiceWidth64::Variant44(v) => ChoiceWidth64Spec::Variant44(v.deep_view()),
-                    ChoiceWidth64::Variant45(v) => ChoiceWidth64Spec::Variant45(v.deep_view()),
-                    ChoiceWidth64::Variant46(v) => ChoiceWidth64Spec::Variant46(v.deep_view()),
-                    ChoiceWidth64::Variant47(v) => ChoiceWidth64Spec::Variant47(v.deep_view()),
-                    ChoiceWidth64::Variant48(v) => ChoiceWidth64Spec::Variant48(v.deep_view()),
-                    ChoiceWidth64::Variant49(v) => ChoiceWidth64Spec::Variant49(v.deep_view()),
-                    ChoiceWidth64::Variant50(v) => ChoiceWidth64Spec::Variant50(v.deep_view()),
-                    ChoiceWidth64::Variant51(v) => ChoiceWidth64Spec::Variant51(v.deep_view()),
-                    ChoiceWidth64::Variant52(v) => ChoiceWidth64Spec::Variant52(v.deep_view()),
-                    ChoiceWidth64::Variant53(v) => ChoiceWidth64Spec::Variant53(v.deep_view()),
-                    ChoiceWidth64::Variant54(v) => ChoiceWidth64Spec::Variant54(v.deep_view()),
-                    ChoiceWidth64::Variant55(v) => ChoiceWidth64Spec::Variant55(v.deep_view()),
-                    ChoiceWidth64::Variant56(v) => ChoiceWidth64Spec::Variant56(v.deep_view()),
-                    ChoiceWidth64::Variant57(v) => ChoiceWidth64Spec::Variant57(v.deep_view()),
-                    ChoiceWidth64::Variant58(v) => ChoiceWidth64Spec::Variant58(v.deep_view()),
-                    ChoiceWidth64::Variant59(v) => ChoiceWidth64Spec::Variant59(v.deep_view()),
-                    ChoiceWidth64::Variant60(v) => ChoiceWidth64Spec::Variant60(v.deep_view()),
-                    ChoiceWidth64::Variant61(v) => ChoiceWidth64Spec::Variant61(v.deep_view()),
-                    ChoiceWidth64::Variant62(v) => ChoiceWidth64Spec::Variant62(v.deep_view()),
-                    ChoiceWidth64::Variant63(v) => ChoiceWidth64Spec::Variant63(v.deep_view()),
-                },
-    {
-        reveal(<ChoiceWidth64 as DeepView>::deep_view);
-    }
-}
-
 // ============================================================
 // Structural Mappers
 // ============================================================
@@ -594,36 +495,6 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> Struc
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(StructWidth16Spec::from_structural);
-        reveal(StructWidth16Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self {
-                        field0,
-                        field1,
-                        field2,
-                        field3,
-                        field4,
-                        field5,
-                        field6,
-                        field7,
-                        field8,
-                        field9,
-                        field10,
-                        field11,
-                        field12,
-                        field13,
-                        field14,
-                        field15,
-                    } =>
-                        (field0, (field1, (field2, (field3, (field4, (field5, (field6, (field7,
-                            (field8, (field9, (field10, (field11, (field12, (field13,
-                            (field14, field15))))))))))))))),
-                },
-    {
         reveal(StructWidth16Spec::into_structural);
     }
 }
@@ -1138,79 +1009,6 @@ impl<
             R(R(R(R(R(R(_)))))) => {}
         }
     }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::Variant0(value) => L(L(L(L(L(L(value)))))),
-                    Self::Variant1(value) => L(L(L(L(L(R(value)))))),
-                    Self::Variant2(value) => L(L(L(L(R(L(value)))))),
-                    Self::Variant3(value) => L(L(L(L(R(R(value)))))),
-                    Self::Variant4(value) => L(L(L(R(L(L(value)))))),
-                    Self::Variant5(value) => L(L(L(R(L(R(value)))))),
-                    Self::Variant6(value) => L(L(L(R(R(L(value)))))),
-                    Self::Variant7(value) => L(L(L(R(R(R(value)))))),
-                    Self::Variant8(value) => L(L(R(L(L(L(value)))))),
-                    Self::Variant9(value) => L(L(R(L(L(R(value)))))),
-                    Self::Variant10(value) => L(L(R(L(R(L(value)))))),
-                    Self::Variant11(value) => L(L(R(L(R(R(value)))))),
-                    Self::Variant12(value) => L(L(R(R(L(L(value)))))),
-                    Self::Variant13(value) => L(L(R(R(L(R(value)))))),
-                    Self::Variant14(value) => L(L(R(R(R(L(value)))))),
-                    Self::Variant15(value) => L(L(R(R(R(R(value)))))),
-                    Self::Variant16(value) => L(R(L(L(L(L(value)))))),
-                    Self::Variant17(value) => L(R(L(L(L(R(value)))))),
-                    Self::Variant18(value) => L(R(L(L(R(L(value)))))),
-                    Self::Variant19(value) => L(R(L(L(R(R(value)))))),
-                    Self::Variant20(value) => L(R(L(R(L(L(value)))))),
-                    Self::Variant21(value) => L(R(L(R(L(R(value)))))),
-                    Self::Variant22(value) => L(R(L(R(R(L(value)))))),
-                    Self::Variant23(value) => L(R(L(R(R(R(value)))))),
-                    Self::Variant24(value) => L(R(R(L(L(L(value)))))),
-                    Self::Variant25(value) => L(R(R(L(L(R(value)))))),
-                    Self::Variant26(value) => L(R(R(L(R(L(value)))))),
-                    Self::Variant27(value) => L(R(R(L(R(R(value)))))),
-                    Self::Variant28(value) => L(R(R(R(L(L(value)))))),
-                    Self::Variant29(value) => L(R(R(R(L(R(value)))))),
-                    Self::Variant30(value) => L(R(R(R(R(L(value)))))),
-                    Self::Variant31(value) => L(R(R(R(R(R(value)))))),
-                    Self::Variant32(value) => R(L(L(L(L(L(value)))))),
-                    Self::Variant33(value) => R(L(L(L(L(R(value)))))),
-                    Self::Variant34(value) => R(L(L(L(R(L(value)))))),
-                    Self::Variant35(value) => R(L(L(L(R(R(value)))))),
-                    Self::Variant36(value) => R(L(L(R(L(L(value)))))),
-                    Self::Variant37(value) => R(L(L(R(L(R(value)))))),
-                    Self::Variant38(value) => R(L(L(R(R(L(value)))))),
-                    Self::Variant39(value) => R(L(L(R(R(R(value)))))),
-                    Self::Variant40(value) => R(L(R(L(L(L(value)))))),
-                    Self::Variant41(value) => R(L(R(L(L(R(value)))))),
-                    Self::Variant42(value) => R(L(R(L(R(L(value)))))),
-                    Self::Variant43(value) => R(L(R(L(R(R(value)))))),
-                    Self::Variant44(value) => R(L(R(R(L(L(value)))))),
-                    Self::Variant45(value) => R(L(R(R(L(R(value)))))),
-                    Self::Variant46(value) => R(L(R(R(R(L(value)))))),
-                    Self::Variant47(value) => R(L(R(R(R(R(value)))))),
-                    Self::Variant48(value) => R(R(L(L(L(L(value)))))),
-                    Self::Variant49(value) => R(R(L(L(L(R(value)))))),
-                    Self::Variant50(value) => R(R(L(L(R(L(value)))))),
-                    Self::Variant51(value) => R(R(L(L(R(R(value)))))),
-                    Self::Variant52(value) => R(R(L(R(L(L(value)))))),
-                    Self::Variant53(value) => R(R(L(R(L(R(value)))))),
-                    Self::Variant54(value) => R(R(L(R(R(L(value)))))),
-                    Self::Variant55(value) => R(R(L(R(R(R(value)))))),
-                    Self::Variant56(value) => R(R(R(L(L(L(value)))))),
-                    Self::Variant57(value) => R(R(R(L(L(R(value)))))),
-                    Self::Variant58(value) => R(R(R(L(R(L(value)))))),
-                    Self::Variant59(value) => R(R(R(L(R(R(value)))))),
-                    Self::Variant60(value) => R(R(R(R(L(L(value)))))),
-                    Self::Variant61(value) => R(R(R(R(L(R(value)))))),
-                    Self::Variant62(value) => R(R(R(R(R(L(value)))))),
-                    Self::Variant63(value) => R(R(R(R(R(R(value)))))),
-                },
-    {
-        reveal(ChoiceWidth64Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1659,7 +1457,11 @@ mod derived_specs {
         type Val = StructWidth16Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.field0, (v.field1, (v.field2, (v.field3, (v.field4, (v.field5, (v.field6,
+                    (v.field7, (v.field8, (v.field9, (v.field10, (v.field11, (v.field12, (v.field13,
+                    (v.field14, v.field15)))))))))))))))
+            )
         }
     }
 
@@ -1686,7 +1488,11 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.field0, (v.field1, (v.field2, (v.field3, (v.field4, (v.field5, (v.field6,
+                    (v.field7, (v.field8, (v.field9, (v.field10, (v.field11, (v.field12, (v.field13,
+                    (v.field14, v.field15)))))))))))))))
+            )
         }
     }
 
@@ -1703,7 +1509,74 @@ mod derived_specs {
         type Val = ChoiceWidth64Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                match v {
+                    ChoiceWidth64Spec::Variant0(item) => L(L(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant1(item) => L(L(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant2(item) => L(L(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant3(item) => L(L(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant4(item) => L(L(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant5(item) => L(L(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant6(item) => L(L(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant7(item) => L(L(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant8(item) => L(L(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant9(item) => L(L(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant10(item) => L(L(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant11(item) => L(L(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant12(item) => L(L(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant13(item) => L(L(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant14(item) => L(L(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant15(item) => L(L(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant16(item) => L(R(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant17(item) => L(R(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant18(item) => L(R(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant19(item) => L(R(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant20(item) => L(R(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant21(item) => L(R(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant22(item) => L(R(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant23(item) => L(R(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant24(item) => L(R(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant25(item) => L(R(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant26(item) => L(R(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant27(item) => L(R(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant28(item) => L(R(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant29(item) => L(R(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant30(item) => L(R(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant31(item) => L(R(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant32(item) => R(L(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant33(item) => R(L(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant34(item) => R(L(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant35(item) => R(L(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant36(item) => R(L(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant37(item) => R(L(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant38(item) => R(L(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant39(item) => R(L(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant40(item) => R(L(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant41(item) => R(L(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant42(item) => R(L(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant43(item) => R(L(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant44(item) => R(L(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant45(item) => R(L(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant46(item) => R(L(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant47(item) => R(L(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant48(item) => R(R(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant49(item) => R(R(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant50(item) => R(R(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant51(item) => R(R(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant52(item) => R(R(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant53(item) => R(R(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant54(item) => R(R(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant55(item) => R(R(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant56(item) => R(R(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant57(item) => R(R(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant58(item) => R(R(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant59(item) => R(R(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant60(item) => R(R(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant61(item) => R(R(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant62(item) => R(R(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant63(item) => R(R(R(R(R(R(item)))))),
+                }
+            )
         }
     }
 
@@ -1730,7 +1603,74 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                match v {
+                    ChoiceWidth64Spec::Variant0(item) => L(L(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant1(item) => L(L(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant2(item) => L(L(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant3(item) => L(L(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant4(item) => L(L(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant5(item) => L(L(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant6(item) => L(L(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant7(item) => L(L(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant8(item) => L(L(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant9(item) => L(L(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant10(item) => L(L(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant11(item) => L(L(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant12(item) => L(L(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant13(item) => L(L(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant14(item) => L(L(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant15(item) => L(L(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant16(item) => L(R(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant17(item) => L(R(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant18(item) => L(R(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant19(item) => L(R(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant20(item) => L(R(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant21(item) => L(R(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant22(item) => L(R(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant23(item) => L(R(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant24(item) => L(R(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant25(item) => L(R(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant26(item) => L(R(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant27(item) => L(R(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant28(item) => L(R(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant29(item) => L(R(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant30(item) => L(R(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant31(item) => L(R(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant32(item) => R(L(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant33(item) => R(L(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant34(item) => R(L(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant35(item) => R(L(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant36(item) => R(L(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant37(item) => R(L(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant38(item) => R(L(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant39(item) => R(L(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant40(item) => R(L(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant41(item) => R(L(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant42(item) => R(L(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant43(item) => R(L(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant44(item) => R(L(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant45(item) => R(L(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant46(item) => R(L(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant47(item) => R(L(R(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant48(item) => R(R(L(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant49(item) => R(R(L(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant50(item) => R(R(L(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant51(item) => R(R(L(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant52(item) => R(R(L(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant53(item) => R(R(L(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant54(item) => R(R(L(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant55(item) => R(R(L(R(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant56(item) => R(R(R(L(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant57(item) => R(R(R(L(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant58(item) => R(R(R(L(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant59(item) => R(R(R(L(R(R(item)))))),
+                    ChoiceWidth64Spec::Variant60(item) => R(R(R(R(L(L(item)))))),
+                    ChoiceWidth64Spec::Variant61(item) => R(R(R(R(L(R(item)))))),
+                    ChoiceWidth64Spec::Variant62(item) => R(R(R(R(R(L(item)))))),
+                    ChoiceWidth64Spec::Variant63(item) => R(R(R(R(R(R(item)))))),
+                }
+            )
         }
     }
 }
@@ -1770,6 +1710,7 @@ mod derived_proofs {
 
     impl SoundParser for StructWidth16Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
             reveal(<StructWidth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1782,6 +1723,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
             reveal(<StructWidth16Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1803,6 +1745,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<StructWidth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1813,6 +1756,7 @@ mod derived_proofs {
 
     impl GoodSerializer for StructWidth16Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecSerializer>::spec_serialize);
             reveal(<StructWidth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1823,6 +1767,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for StructWidth16Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
             reveal(<StructWidth16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<StructWidth16Fmt as Consistency>::consistent);
@@ -1870,6 +1815,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for StructWidth16Fmt {
+        open spec fn static_byte_len() -> nat {
+            16 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<StructWidth16Fmt as SpecByteLen>::byte_len);
+            reveal(StructWidth16Spec::into_structural);
+        }
+    }
+
     impl SafeParser for ChoiceWidth64Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
@@ -1892,6 +1848,7 @@ mod derived_proofs {
 
     impl SoundParser for ChoiceWidth64Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
             reveal(<ChoiceWidth64Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1904,6 +1861,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
             reveal(<ChoiceWidth64Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1925,6 +1883,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceWidth64Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1935,6 +1894,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ChoiceWidth64Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceWidth64Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1945,6 +1905,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ChoiceWidth64Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
             reveal(<ChoiceWidth64Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceWidth64Fmt as Consistency>::consistent);
@@ -1989,6 +1950,83 @@ mod derived_proofs {
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for ChoiceWidth64Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<ChoiceWidth64Fmt as SpecByteLen>::byte_len);
+            reveal(ChoiceWidth64Spec::into_structural);
+            match v {
+                ChoiceWidth64Spec::Variant0(_) => {}
+                ChoiceWidth64Spec::Variant1(_) => {}
+                ChoiceWidth64Spec::Variant2(_) => {}
+                ChoiceWidth64Spec::Variant3(_) => {}
+                ChoiceWidth64Spec::Variant4(_) => {}
+                ChoiceWidth64Spec::Variant5(_) => {}
+                ChoiceWidth64Spec::Variant6(_) => {}
+                ChoiceWidth64Spec::Variant7(_) => {}
+                ChoiceWidth64Spec::Variant8(_) => {}
+                ChoiceWidth64Spec::Variant9(_) => {}
+                ChoiceWidth64Spec::Variant10(_) => {}
+                ChoiceWidth64Spec::Variant11(_) => {}
+                ChoiceWidth64Spec::Variant12(_) => {}
+                ChoiceWidth64Spec::Variant13(_) => {}
+                ChoiceWidth64Spec::Variant14(_) => {}
+                ChoiceWidth64Spec::Variant15(_) => {}
+                ChoiceWidth64Spec::Variant16(_) => {}
+                ChoiceWidth64Spec::Variant17(_) => {}
+                ChoiceWidth64Spec::Variant18(_) => {}
+                ChoiceWidth64Spec::Variant19(_) => {}
+                ChoiceWidth64Spec::Variant20(_) => {}
+                ChoiceWidth64Spec::Variant21(_) => {}
+                ChoiceWidth64Spec::Variant22(_) => {}
+                ChoiceWidth64Spec::Variant23(_) => {}
+                ChoiceWidth64Spec::Variant24(_) => {}
+                ChoiceWidth64Spec::Variant25(_) => {}
+                ChoiceWidth64Spec::Variant26(_) => {}
+                ChoiceWidth64Spec::Variant27(_) => {}
+                ChoiceWidth64Spec::Variant28(_) => {}
+                ChoiceWidth64Spec::Variant29(_) => {}
+                ChoiceWidth64Spec::Variant30(_) => {}
+                ChoiceWidth64Spec::Variant31(_) => {}
+                ChoiceWidth64Spec::Variant32(_) => {}
+                ChoiceWidth64Spec::Variant33(_) => {}
+                ChoiceWidth64Spec::Variant34(_) => {}
+                ChoiceWidth64Spec::Variant35(_) => {}
+                ChoiceWidth64Spec::Variant36(_) => {}
+                ChoiceWidth64Spec::Variant37(_) => {}
+                ChoiceWidth64Spec::Variant38(_) => {}
+                ChoiceWidth64Spec::Variant39(_) => {}
+                ChoiceWidth64Spec::Variant40(_) => {}
+                ChoiceWidth64Spec::Variant41(_) => {}
+                ChoiceWidth64Spec::Variant42(_) => {}
+                ChoiceWidth64Spec::Variant43(_) => {}
+                ChoiceWidth64Spec::Variant44(_) => {}
+                ChoiceWidth64Spec::Variant45(_) => {}
+                ChoiceWidth64Spec::Variant46(_) => {}
+                ChoiceWidth64Spec::Variant47(_) => {}
+                ChoiceWidth64Spec::Variant48(_) => {}
+                ChoiceWidth64Spec::Variant49(_) => {}
+                ChoiceWidth64Spec::Variant50(_) => {}
+                ChoiceWidth64Spec::Variant51(_) => {}
+                ChoiceWidth64Spec::Variant52(_) => {}
+                ChoiceWidth64Spec::Variant53(_) => {}
+                ChoiceWidth64Spec::Variant54(_) => {}
+                ChoiceWidth64Spec::Variant55(_) => {}
+                ChoiceWidth64Spec::Variant56(_) => {}
+                ChoiceWidth64Spec::Variant57(_) => {}
+                ChoiceWidth64Spec::Variant58(_) => {}
+                ChoiceWidth64Spec::Variant59(_) => {}
+                ChoiceWidth64Spec::Variant60(_) => {}
+                ChoiceWidth64Spec::Variant61(_) => {}
+                ChoiceWidth64Spec::Variant62(_) => {}
+                ChoiceWidth64Spec::Variant63(_) => {}
+            }
         }
     }
 }

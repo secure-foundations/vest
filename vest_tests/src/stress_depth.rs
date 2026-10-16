@@ -41,15 +41,6 @@ impl DeepView for Depth0 {
     }
 }
 
-impl Depth0 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth0 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth1`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth1 {
@@ -69,15 +60,6 @@ impl DeepView for Depth1 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth1Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth1 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth1 as DeepView>::deep_view);
     }
 }
 
@@ -103,15 +85,6 @@ impl DeepView for Depth2 {
     }
 }
 
-impl Depth2 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth2 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth3`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth3 {
@@ -131,15 +104,6 @@ impl DeepView for Depth3 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth3Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth3 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth3 as DeepView>::deep_view);
     }
 }
 
@@ -165,15 +129,6 @@ impl DeepView for Depth4 {
     }
 }
 
-impl Depth4 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth4 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth5`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth5 {
@@ -193,15 +148,6 @@ impl DeepView for Depth5 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth5Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth5 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth5 as DeepView>::deep_view);
     }
 }
 
@@ -227,15 +173,6 @@ impl DeepView for Depth6 {
     }
 }
 
-impl Depth6 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth6 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth7`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth7 {
@@ -255,15 +192,6 @@ impl DeepView for Depth7 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth7Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth7 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth7 as DeepView>::deep_view);
     }
 }
 
@@ -289,15 +217,6 @@ impl DeepView for Depth8 {
     }
 }
 
-impl Depth8 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth8 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth9`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth9 {
@@ -317,15 +236,6 @@ impl DeepView for Depth9 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth9Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth9 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth9 as DeepView>::deep_view);
     }
 }
 
@@ -351,15 +261,6 @@ impl DeepView for Depth10 {
     }
 }
 
-impl Depth10 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth10 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth11`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth11 {
@@ -379,15 +280,6 @@ impl DeepView for Depth11 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth11Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth11 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth11 as DeepView>::deep_view);
     }
 }
 
@@ -413,15 +305,6 @@ impl DeepView for Depth12 {
     }
 }
 
-impl Depth12 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth12 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth13`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth13 {
@@ -441,15 +324,6 @@ impl DeepView for Depth13 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth13Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth13 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth13 as DeepView>::deep_view);
     }
 }
 
@@ -475,15 +349,6 @@ impl DeepView for Depth14 {
     }
 }
 
-impl Depth14 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth14 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth15`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth15 {
@@ -506,15 +371,6 @@ impl DeepView for Depth15 {
     }
 }
 
-impl Depth15 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth15 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `depth16`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Depth16 {
@@ -534,15 +390,6 @@ impl DeepView for Depth16 {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         Depth16Spec { value: self.value.deep_view() }
-    }
-}
-
-impl Depth16 {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<Depth16 as DeepView>::deep_view);
     }
 }
 
@@ -575,16 +422,6 @@ impl<T0> Depth0Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth0Spec::from_structural);
-        reveal(Depth0Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth0Spec::into_structural);
     }
 }
@@ -642,16 +479,6 @@ impl<T0> Depth1Spec<T0> {
         reveal(Depth1Spec::from_structural);
         reveal(Depth1Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth1Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -705,16 +532,6 @@ impl<T0> Depth2Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth2Spec::from_structural);
-        reveal(Depth2Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth2Spec::into_structural);
     }
 }
@@ -772,16 +589,6 @@ impl<T0> Depth3Spec<T0> {
         reveal(Depth3Spec::from_structural);
         reveal(Depth3Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth3Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -835,16 +642,6 @@ impl<T0> Depth4Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth4Spec::from_structural);
-        reveal(Depth4Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth4Spec::into_structural);
     }
 }
@@ -902,16 +699,6 @@ impl<T0> Depth5Spec<T0> {
         reveal(Depth5Spec::from_structural);
         reveal(Depth5Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth5Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -965,16 +752,6 @@ impl<T0> Depth6Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth6Spec::from_structural);
-        reveal(Depth6Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth6Spec::into_structural);
     }
 }
@@ -1032,16 +809,6 @@ impl<T0> Depth7Spec<T0> {
         reveal(Depth7Spec::from_structural);
         reveal(Depth7Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth7Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1095,16 +862,6 @@ impl<T0> Depth8Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth8Spec::from_structural);
-        reveal(Depth8Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth8Spec::into_structural);
     }
 }
@@ -1162,16 +919,6 @@ impl<T0> Depth9Spec<T0> {
         reveal(Depth9Spec::from_structural);
         reveal(Depth9Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth9Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1225,16 +972,6 @@ impl<T0> Depth10Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth10Spec::from_structural);
-        reveal(Depth10Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth10Spec::into_structural);
     }
 }
@@ -1292,16 +1029,6 @@ impl<T0> Depth11Spec<T0> {
         reveal(Depth11Spec::from_structural);
         reveal(Depth11Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth11Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1355,16 +1082,6 @@ impl<T0> Depth12Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth12Spec::from_structural);
-        reveal(Depth12Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth12Spec::into_structural);
     }
 }
@@ -1422,16 +1139,6 @@ impl<T0> Depth13Spec<T0> {
         reveal(Depth13Spec::from_structural);
         reveal(Depth13Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth13Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1485,16 +1192,6 @@ impl<T0> Depth14Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth14Spec::from_structural);
-        reveal(Depth14Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth14Spec::into_structural);
     }
 }
@@ -1552,16 +1249,6 @@ impl<T0> Depth15Spec<T0> {
         reveal(Depth15Spec::from_structural);
         reveal(Depth15Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
-        reveal(Depth15Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1615,16 +1302,6 @@ impl<T0> Depth16Spec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Depth16Spec::from_structural);
-        reveal(Depth16Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value } => value,
-                },
-    {
         reveal(Depth16Spec::into_structural);
     }
 }
@@ -1915,7 +1592,7 @@ mod derived_specs {
         type Val = Depth0Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -1942,7 +1619,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -1959,7 +1636,7 @@ mod derived_specs {
         type Val = Depth1Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -1986,7 +1663,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2003,7 +1680,7 @@ mod derived_specs {
         type Val = Depth2Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2030,7 +1707,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2047,7 +1724,7 @@ mod derived_specs {
         type Val = Depth3Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2074,7 +1751,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2091,7 +1768,7 @@ mod derived_specs {
         type Val = Depth4Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2118,7 +1795,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2135,7 +1812,7 @@ mod derived_specs {
         type Val = Depth5Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2162,7 +1839,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2179,7 +1856,7 @@ mod derived_specs {
         type Val = Depth6Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2206,7 +1883,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2223,7 +1900,7 @@ mod derived_specs {
         type Val = Depth7Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2250,7 +1927,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2267,7 +1944,7 @@ mod derived_specs {
         type Val = Depth8Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2294,7 +1971,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2311,7 +1988,7 @@ mod derived_specs {
         type Val = Depth9Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2338,7 +2015,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2355,7 +2032,7 @@ mod derived_specs {
         type Val = Depth10Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2382,7 +2059,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2399,7 +2076,7 @@ mod derived_specs {
         type Val = Depth11Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2426,7 +2103,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2443,7 +2120,7 @@ mod derived_specs {
         type Val = Depth12Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2470,7 +2147,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2487,7 +2164,7 @@ mod derived_specs {
         type Val = Depth13Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2514,7 +2191,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2531,7 +2208,7 @@ mod derived_specs {
         type Val = Depth14Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2558,7 +2235,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2575,7 +2252,7 @@ mod derived_specs {
         type Val = Depth15Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2602,7 +2279,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 
@@ -2619,7 +2296,7 @@ mod derived_specs {
         type Val = Depth16Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.value)
         }
     }
 
@@ -2646,7 +2323,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.value)
         }
     }
 }
@@ -2716,6 +2393,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth0Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth0Spec::into_structural);
             reveal(<Depth0Fmt as SpecParser>::spec_parse);
             reveal(<Depth0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2728,6 +2406,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth0Spec::into_structural);
             reveal(<Depth0Fmt as SpecParser>::spec_parse);
             reveal(<Depth0Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2749,6 +2428,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth0Spec::into_structural);
             reveal(<Depth0Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2759,6 +2439,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth0Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth0Spec::into_structural);
             reveal(<Depth0Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2769,6 +2450,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth0Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth0Spec::into_structural);
             reveal(<Depth0Fmt as SpecParser>::spec_parse);
             reveal(<Depth0Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth0Fmt as Consistency>::consistent);
@@ -2816,6 +2498,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth0Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth0Fmt as SpecByteLen>::byte_len);
+            reveal(Depth0Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth1Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth1Fmt as SpecParser>::spec_parse);
@@ -2838,6 +2531,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth1Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth1Spec::into_structural);
             reveal(<Depth1Fmt as SpecParser>::spec_parse);
             reveal(<Depth1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2850,6 +2544,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth1Spec::into_structural);
             reveal(<Depth1Fmt as SpecParser>::spec_parse);
             reveal(<Depth1Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2871,6 +2566,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth1Spec::into_structural);
             reveal(<Depth1Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2881,6 +2577,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth1Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth1Spec::into_structural);
             reveal(<Depth1Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2891,6 +2588,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth1Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth1Spec::into_structural);
             reveal(<Depth1Fmt as SpecParser>::spec_parse);
             reveal(<Depth1Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth1Fmt as Consistency>::consistent);
@@ -2938,6 +2636,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth1Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth1Fmt as SpecByteLen>::byte_len);
+            reveal(Depth1Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth2Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth2Fmt as SpecParser>::spec_parse);
@@ -2960,6 +2669,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth2Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth2Spec::into_structural);
             reveal(<Depth2Fmt as SpecParser>::spec_parse);
             reveal(<Depth2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2972,6 +2682,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth2Spec::into_structural);
             reveal(<Depth2Fmt as SpecParser>::spec_parse);
             reveal(<Depth2Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2993,6 +2704,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth2Spec::into_structural);
             reveal(<Depth2Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3003,6 +2715,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth2Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth2Spec::into_structural);
             reveal(<Depth2Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3013,6 +2726,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth2Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth2Spec::into_structural);
             reveal(<Depth2Fmt as SpecParser>::spec_parse);
             reveal(<Depth2Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth2Fmt as Consistency>::consistent);
@@ -3060,6 +2774,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth2Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth2Fmt as SpecByteLen>::byte_len);
+            reveal(Depth2Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth3Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth3Fmt as SpecParser>::spec_parse);
@@ -3082,6 +2807,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth3Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth3Spec::into_structural);
             reveal(<Depth3Fmt as SpecParser>::spec_parse);
             reveal(<Depth3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3094,6 +2820,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth3Spec::into_structural);
             reveal(<Depth3Fmt as SpecParser>::spec_parse);
             reveal(<Depth3Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3115,6 +2842,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth3Spec::into_structural);
             reveal(<Depth3Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3125,6 +2853,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth3Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth3Spec::into_structural);
             reveal(<Depth3Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3135,6 +2864,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth3Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth3Spec::into_structural);
             reveal(<Depth3Fmt as SpecParser>::spec_parse);
             reveal(<Depth3Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth3Fmt as Consistency>::consistent);
@@ -3182,6 +2912,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth3Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth3Fmt as SpecByteLen>::byte_len);
+            reveal(Depth3Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth4Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth4Fmt as SpecParser>::spec_parse);
@@ -3204,6 +2945,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth4Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth4Spec::into_structural);
             reveal(<Depth4Fmt as SpecParser>::spec_parse);
             reveal(<Depth4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3216,6 +2958,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth4Spec::into_structural);
             reveal(<Depth4Fmt as SpecParser>::spec_parse);
             reveal(<Depth4Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3237,6 +2980,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth4Spec::into_structural);
             reveal(<Depth4Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3247,6 +2991,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth4Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth4Spec::into_structural);
             reveal(<Depth4Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3257,6 +3002,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth4Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth4Spec::into_structural);
             reveal(<Depth4Fmt as SpecParser>::spec_parse);
             reveal(<Depth4Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth4Fmt as Consistency>::consistent);
@@ -3304,6 +3050,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth4Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth4Fmt as SpecByteLen>::byte_len);
+            reveal(Depth4Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth5Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth5Fmt as SpecParser>::spec_parse);
@@ -3326,6 +3083,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth5Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth5Spec::into_structural);
             reveal(<Depth5Fmt as SpecParser>::spec_parse);
             reveal(<Depth5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3338,6 +3096,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth5Spec::into_structural);
             reveal(<Depth5Fmt as SpecParser>::spec_parse);
             reveal(<Depth5Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3359,6 +3118,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth5Spec::into_structural);
             reveal(<Depth5Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3369,6 +3129,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth5Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth5Spec::into_structural);
             reveal(<Depth5Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3379,6 +3140,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth5Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth5Spec::into_structural);
             reveal(<Depth5Fmt as SpecParser>::spec_parse);
             reveal(<Depth5Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth5Fmt as Consistency>::consistent);
@@ -3426,6 +3188,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth5Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth5Fmt as SpecByteLen>::byte_len);
+            reveal(Depth5Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth6Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth6Fmt as SpecParser>::spec_parse);
@@ -3448,6 +3221,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth6Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth6Spec::into_structural);
             reveal(<Depth6Fmt as SpecParser>::spec_parse);
             reveal(<Depth6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3460,6 +3234,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth6Spec::into_structural);
             reveal(<Depth6Fmt as SpecParser>::spec_parse);
             reveal(<Depth6Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3481,6 +3256,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth6Spec::into_structural);
             reveal(<Depth6Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3491,6 +3267,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth6Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth6Spec::into_structural);
             reveal(<Depth6Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3501,6 +3278,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth6Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth6Spec::into_structural);
             reveal(<Depth6Fmt as SpecParser>::spec_parse);
             reveal(<Depth6Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth6Fmt as Consistency>::consistent);
@@ -3548,6 +3326,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth6Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth6Fmt as SpecByteLen>::byte_len);
+            reveal(Depth6Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth7Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth7Fmt as SpecParser>::spec_parse);
@@ -3570,6 +3359,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth7Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth7Spec::into_structural);
             reveal(<Depth7Fmt as SpecParser>::spec_parse);
             reveal(<Depth7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3582,6 +3372,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth7Spec::into_structural);
             reveal(<Depth7Fmt as SpecParser>::spec_parse);
             reveal(<Depth7Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3603,6 +3394,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth7Spec::into_structural);
             reveal(<Depth7Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3613,6 +3405,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth7Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth7Spec::into_structural);
             reveal(<Depth7Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3623,6 +3416,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth7Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth7Spec::into_structural);
             reveal(<Depth7Fmt as SpecParser>::spec_parse);
             reveal(<Depth7Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth7Fmt as Consistency>::consistent);
@@ -3670,6 +3464,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth7Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth7Fmt as SpecByteLen>::byte_len);
+            reveal(Depth7Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth8Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth8Fmt as SpecParser>::spec_parse);
@@ -3692,6 +3497,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth8Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth8Spec::into_structural);
             reveal(<Depth8Fmt as SpecParser>::spec_parse);
             reveal(<Depth8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3704,6 +3510,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth8Spec::into_structural);
             reveal(<Depth8Fmt as SpecParser>::spec_parse);
             reveal(<Depth8Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3725,6 +3532,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth8Spec::into_structural);
             reveal(<Depth8Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3735,6 +3543,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth8Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth8Spec::into_structural);
             reveal(<Depth8Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3745,6 +3554,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth8Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth8Spec::into_structural);
             reveal(<Depth8Fmt as SpecParser>::spec_parse);
             reveal(<Depth8Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth8Fmt as Consistency>::consistent);
@@ -3792,6 +3602,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth8Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth8Fmt as SpecByteLen>::byte_len);
+            reveal(Depth8Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth9Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth9Fmt as SpecParser>::spec_parse);
@@ -3814,6 +3635,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth9Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth9Spec::into_structural);
             reveal(<Depth9Fmt as SpecParser>::spec_parse);
             reveal(<Depth9Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3826,6 +3648,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth9Spec::into_structural);
             reveal(<Depth9Fmt as SpecParser>::spec_parse);
             reveal(<Depth9Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3847,6 +3670,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth9Spec::into_structural);
             reveal(<Depth9Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth9Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3857,6 +3681,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth9Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth9Spec::into_structural);
             reveal(<Depth9Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth9Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3867,6 +3692,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth9Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth9Spec::into_structural);
             reveal(<Depth9Fmt as SpecParser>::spec_parse);
             reveal(<Depth9Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth9Fmt as Consistency>::consistent);
@@ -3914,6 +3740,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth9Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth9Fmt as SpecByteLen>::byte_len);
+            reveal(Depth9Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth10Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth10Fmt as SpecParser>::spec_parse);
@@ -3936,6 +3773,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth10Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth10Spec::into_structural);
             reveal(<Depth10Fmt as SpecParser>::spec_parse);
             reveal(<Depth10Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3948,6 +3786,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth10Spec::into_structural);
             reveal(<Depth10Fmt as SpecParser>::spec_parse);
             reveal(<Depth10Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3969,6 +3808,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth10Spec::into_structural);
             reveal(<Depth10Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth10Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3979,6 +3819,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth10Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth10Spec::into_structural);
             reveal(<Depth10Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth10Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3989,6 +3830,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth10Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth10Spec::into_structural);
             reveal(<Depth10Fmt as SpecParser>::spec_parse);
             reveal(<Depth10Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth10Fmt as Consistency>::consistent);
@@ -4036,6 +3878,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth10Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth10Fmt as SpecByteLen>::byte_len);
+            reveal(Depth10Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth11Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth11Fmt as SpecParser>::spec_parse);
@@ -4058,6 +3911,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth11Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth11Spec::into_structural);
             reveal(<Depth11Fmt as SpecParser>::spec_parse);
             reveal(<Depth11Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4070,6 +3924,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth11Spec::into_structural);
             reveal(<Depth11Fmt as SpecParser>::spec_parse);
             reveal(<Depth11Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4091,6 +3946,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth11Spec::into_structural);
             reveal(<Depth11Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth11Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4101,6 +3957,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth11Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth11Spec::into_structural);
             reveal(<Depth11Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth11Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4111,6 +3968,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth11Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth11Spec::into_structural);
             reveal(<Depth11Fmt as SpecParser>::spec_parse);
             reveal(<Depth11Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth11Fmt as Consistency>::consistent);
@@ -4158,6 +4016,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth11Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth11Fmt as SpecByteLen>::byte_len);
+            reveal(Depth11Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth12Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth12Fmt as SpecParser>::spec_parse);
@@ -4180,6 +4049,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth12Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth12Spec::into_structural);
             reveal(<Depth12Fmt as SpecParser>::spec_parse);
             reveal(<Depth12Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4192,6 +4062,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth12Spec::into_structural);
             reveal(<Depth12Fmt as SpecParser>::spec_parse);
             reveal(<Depth12Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4213,6 +4084,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth12Spec::into_structural);
             reveal(<Depth12Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth12Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4223,6 +4095,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth12Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth12Spec::into_structural);
             reveal(<Depth12Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth12Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4233,6 +4106,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth12Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth12Spec::into_structural);
             reveal(<Depth12Fmt as SpecParser>::spec_parse);
             reveal(<Depth12Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth12Fmt as Consistency>::consistent);
@@ -4280,6 +4154,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth12Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth12Fmt as SpecByteLen>::byte_len);
+            reveal(Depth12Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth13Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth13Fmt as SpecParser>::spec_parse);
@@ -4302,6 +4187,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth13Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth13Spec::into_structural);
             reveal(<Depth13Fmt as SpecParser>::spec_parse);
             reveal(<Depth13Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4314,6 +4200,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth13Spec::into_structural);
             reveal(<Depth13Fmt as SpecParser>::spec_parse);
             reveal(<Depth13Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4335,6 +4222,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth13Spec::into_structural);
             reveal(<Depth13Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth13Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4345,6 +4233,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth13Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth13Spec::into_structural);
             reveal(<Depth13Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth13Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4355,6 +4244,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth13Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth13Spec::into_structural);
             reveal(<Depth13Fmt as SpecParser>::spec_parse);
             reveal(<Depth13Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth13Fmt as Consistency>::consistent);
@@ -4402,6 +4292,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth13Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth13Fmt as SpecByteLen>::byte_len);
+            reveal(Depth13Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth14Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth14Fmt as SpecParser>::spec_parse);
@@ -4424,6 +4325,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth14Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth14Spec::into_structural);
             reveal(<Depth14Fmt as SpecParser>::spec_parse);
             reveal(<Depth14Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4436,6 +4338,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth14Spec::into_structural);
             reveal(<Depth14Fmt as SpecParser>::spec_parse);
             reveal(<Depth14Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4457,6 +4360,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth14Spec::into_structural);
             reveal(<Depth14Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth14Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4467,6 +4371,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth14Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth14Spec::into_structural);
             reveal(<Depth14Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth14Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4477,6 +4382,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth14Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth14Spec::into_structural);
             reveal(<Depth14Fmt as SpecParser>::spec_parse);
             reveal(<Depth14Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth14Fmt as Consistency>::consistent);
@@ -4524,6 +4430,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth14Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth14Fmt as SpecByteLen>::byte_len);
+            reveal(Depth14Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth15Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth15Fmt as SpecParser>::spec_parse);
@@ -4546,6 +4463,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth15Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth15Spec::into_structural);
             reveal(<Depth15Fmt as SpecParser>::spec_parse);
             reveal(<Depth15Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4558,6 +4476,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth15Spec::into_structural);
             reveal(<Depth15Fmt as SpecParser>::spec_parse);
             reveal(<Depth15Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4579,6 +4498,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth15Spec::into_structural);
             reveal(<Depth15Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth15Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4589,6 +4509,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth15Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth15Spec::into_structural);
             reveal(<Depth15Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth15Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4599,6 +4520,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth15Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth15Spec::into_structural);
             reveal(<Depth15Fmt as SpecParser>::spec_parse);
             reveal(<Depth15Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth15Fmt as Consistency>::consistent);
@@ -4646,6 +4568,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for Depth15Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth15Fmt as SpecByteLen>::byte_len);
+            reveal(Depth15Spec::into_structural);
+        }
+    }
+
     impl SafeParser for Depth16Fmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<Depth16Fmt as SpecParser>::spec_parse);
@@ -4668,6 +4601,7 @@ mod derived_proofs {
 
     impl SoundParser for Depth16Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Depth16Spec::into_structural);
             reveal(<Depth16Fmt as SpecParser>::spec_parse);
             reveal(<Depth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4680,6 +4614,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Depth16Spec::into_structural);
             reveal(<Depth16Fmt as SpecParser>::spec_parse);
             reveal(<Depth16Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -4701,6 +4636,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Depth16Spec::into_structural);
             reveal(<Depth16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4711,6 +4647,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Depth16Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Depth16Spec::into_structural);
             reveal(<Depth16Fmt as SpecSerializer>::spec_serialize);
             reveal(<Depth16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -4721,6 +4658,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Depth16Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Depth16Spec::into_structural);
             reveal(<Depth16Fmt as SpecParser>::spec_parse);
             reveal(<Depth16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Depth16Fmt as Consistency>::consistent);
@@ -4765,6 +4703,17 @@ mod derived_proofs {
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for Depth16Fmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<Depth16Fmt as SpecByteLen>::byte_len);
+            reveal(Depth16Spec::into_structural);
         }
     }
 }

@@ -132,6 +132,11 @@ impl<const N: usize> ValueByteLen for super::Fixed<N> {
     }
 }
 
+impl<const N: usize> BytesCombinator for super::Fixed<N> {
+    proof fn lemma_byte_len_is_buf_len(&self, buf: Seq<u8>) {
+    }
+}
+
 impl<Len: AsLen> SpecParser for super::Varied<Len> {
     type PVal = Seq<u8>;
 
@@ -366,6 +371,16 @@ impl<Inner: ValueByteLen, Len: AsLen> ValueByteLen for super::ExactLen<Inner, Le
     }
 }
 
+impl<Inner: StaticByteLen, Len: AsLen> StaticByteLen for super::ExactLen<Inner, Len> {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.1.lemma_static_len_matches_byte_len(v);
+    }
+}
+
 impl<A, Then> SpecParser for super::AndThen<A, Then> where
     A: SpecParser<PVal = Seq<u8>>,
     Then: SpecParser,
@@ -564,6 +579,21 @@ impl<A, Then> ValueByteLen for super::AndThen<A, Then> where
 
     proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
         self.1.lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<A, Then> StaticByteLen for super::AndThen<A, Then> where
+    A: BytesCombinator + StaticByteLen,
+    Then: Consistency + SpecByteLen<T = Then::Val>,
+ {
+    open spec fn static_byte_len() -> nat {
+        A::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        let chunk = choose|chunk: Seq<u8>|
+            self.0.consistent(chunk) && self.0.byte_len(chunk) == self.1.byte_len(v);
+        self.0.lemma_static_len_matches_byte_len(chunk);
     }
 }
 

@@ -49,17 +49,6 @@ impl<'i> DeepView for BoundedItem<'i> {
     }
 }
 
-impl<'i> BoundedItem<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().tag == self.tag.deep_view(),
-            self.deep_view().len == self.len.deep_view(),
-            self.deep_view().body == self.body.deep_view(),
-    {
-        reveal(<BoundedItem as DeepView>::deep_view);
-    }
-}
-
 /// data type for `bounded_list`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BoundedList<'i> {
@@ -81,16 +70,6 @@ impl<'i> DeepView for BoundedList<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         BoundedListSpec { byte_len: self.byte_len.deep_view(), items: self.items.deep_view() }
-    }
-}
-
-impl<'i> BoundedList<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().byte_len == self.byte_len.deep_view(),
-            self.deep_view().items == self.items.deep_view(),
-    {
-        reveal(<BoundedList as DeepView>::deep_view);
     }
 }
 
@@ -123,16 +102,6 @@ impl<T0, T1, T2> BoundedItemSpec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(BoundedItemSpec::from_structural);
-        reveal(BoundedItemSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { tag, len, body } => (tag, (len, body)),
-                },
-    {
         reveal(BoundedItemSpec::into_structural);
     }
 }
@@ -188,16 +157,6 @@ impl<T0, T1> BoundedListSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(BoundedListSpec::from_structural);
-        reveal(BoundedListSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { byte_len, items } => (byte_len, items),
-                },
-    {
         reveal(BoundedListSpec::into_structural);
     }
 }
@@ -300,7 +259,7 @@ mod derived_specs {
         type Val = BoundedItemSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.tag, (v.len, v.body)))
         }
     }
 
@@ -327,7 +286,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.tag, (v.len, v.body)))
         }
     }
 
@@ -344,7 +303,7 @@ mod derived_specs {
         type Val = BoundedListSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.byte_len, v.items))
         }
     }
 
@@ -371,7 +330,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.byte_len, v.items))
         }
     }
 }
@@ -411,6 +370,7 @@ mod derived_proofs {
 
     impl SoundParser for BoundedItemFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
             reveal(<BoundedItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -423,6 +383,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
             reveal(<BoundedItemFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -444,6 +405,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BoundedItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -454,6 +416,7 @@ mod derived_proofs {
 
     impl GoodSerializer for BoundedItemFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecSerializer>::spec_serialize);
             reveal(<BoundedItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -464,6 +427,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for BoundedItemFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
             reveal(<BoundedItemFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BoundedItemFmt as Consistency>::consistent);
@@ -533,6 +497,7 @@ mod derived_proofs {
 
     impl SoundParser for BoundedListFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
             reveal(<BoundedListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -545,6 +510,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
             reveal(<BoundedListFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -566,6 +532,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BoundedListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -576,6 +543,7 @@ mod derived_proofs {
 
     impl GoodSerializer for BoundedListFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecSerializer>::spec_serialize);
             reveal(<BoundedListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -586,6 +554,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for BoundedListFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
             reveal(<BoundedListFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BoundedListFmt as Consistency>::consistent);

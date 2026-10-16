@@ -1,0 +1,2941 @@
+#![allow(warnings)]
+use vest_lib::combinators::mapped::spec::*;
+use vest_lib::combinators::*;
+use vest_lib::combinators::recursive::*;
+use Sum::Inl as L;
+use Sum::Inr as R;
+use vest_lib::Never;
+use vest_lib::core::exec::input::{InputBuf, InputSlice};
+use vest_lib::core::exec::output::OutputBuf;
+use vest_lib::core::exec::parser::*;
+use vest_lib::core::exec::serializer::*;
+use vest_lib::core::exec::ParseError;
+use vest_lib::core::exec::bytes_eq;
+use vest_lib::core::{proof::*, spec::*};
+use vest_lib::primitives::btcvarint::VarInt;
+use vest_lib::primitives::leb128::ULeb128;
+use vstd::prelude::*;
+verus! {
+// ============================================================
+// Data Types
+// ============================================================
+/// data type for `triple`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Triple {
+    pub a: u8,
+    pub b: [u8; 2],
+    pub c: u64,
+}
+
+#[verifier::ext_equal]
+pub struct TripleSpec<T0 = u8, T1 = Seq<u8>, T2 = u64> {
+    pub a: T0,
+    pub b: T1,
+    pub c: T2,
+}
+
+pub type TripleInner = (u8, (Seq<u8>, u64));
+
+impl DeepView for Triple {
+    type V = TripleSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        TripleSpec { a: self.a.deep_view(), b: self.b.deep_view(), c: self.c.deep_view() }
+    }
+}
+
+/// data type for `triple_alias`.
+pub type TripleAlias = Triple;
+pub type TripleAliasSpec = TripleSpec;
+
+/// data type for `message`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Message<'i> {
+    pub length: u16,
+    pub payload: &'i [u8],
+}
+
+#[verifier::ext_equal]
+pub struct MessageSpec<T0 = u16, T1 = Seq<u8>> {
+    pub length: T0,
+    pub payload: T1,
+}
+
+pub type MessageInner = (u16, Seq<u8>);
+
+impl<'i> DeepView for Message<'i> {
+    type V = MessageSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        MessageSpec { length: self.length.deep_view(), payload: self.payload.deep_view() }
+    }
+}
+
+/// data type for `samples`.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Samples {
+    pub count: u16,
+    pub values: Vec<u16>,
+}
+
+#[verifier::ext_equal]
+pub struct SamplesSpec<T0 = u16, T1 = Seq<u16>> {
+    pub count: T0,
+    pub values: T1,
+}
+
+pub type SamplesInner = (u16, Seq<u16>);
+
+impl DeepView for Samples {
+    type V = SamplesSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        SamplesSpec { count: self.count.deep_view(), values: self.values.deep_view() }
+    }
+}
+
+/// data type for `fixed_choice`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum FixedChoice {
+    Low(u8),
+    High(u8),
+}
+
+#[verifier::ext_equal]
+pub enum FixedChoiceSpec<T0 = u8, T1 = u8> {
+    Low(T0),
+    High(T1),
+}
+
+pub type FixedChoiceInner = Sum<u8, u8>;
+
+impl DeepView for FixedChoice {
+    type V = FixedChoiceSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        match self {
+            FixedChoice::Low(v) => FixedChoiceSpec::Low(v.deep_view()),
+            FixedChoice::High(v) => FixedChoiceSpec::High(v.deep_view()),
+        }
+    }
+}
+
+/// data type for `variable_choice`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum VariableChoice {
+    Short(u8),
+    Long(u16),
+}
+
+#[verifier::ext_equal]
+pub enum VariableChoiceSpec<T0 = u8, T1 = u16> {
+    Short(T0),
+    Long(T1),
+}
+
+pub type VariableChoiceInner = Sum<u8, u16>;
+
+impl DeepView for VariableChoice {
+    type V = VariableChoiceSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        match self {
+            VariableChoice::Short(v) => VariableChoiceSpec::Short(v.deep_view()),
+            VariableChoice::Long(v) => VariableChoiceSpec::Long(v.deep_view()),
+        }
+    }
+}
+
+/// data type for `envelope`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Envelope<'i> {
+    pub kind: u8,
+    pub message: Message<'i>,
+}
+
+#[verifier::ext_equal]
+pub struct EnvelopeSpec<T0 = u8, T1 = MessageSpec> {
+    pub kind: T0,
+    pub message: T1,
+}
+
+pub type EnvelopeInner = (u8, MessageSpec);
+
+impl<'i> DeepView for Envelope<'i> {
+    type V = EnvelopeSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        EnvelopeSpec { kind: self.kind.deep_view(), message: self.message.deep_view() }
+    }
+}
+
+/// data type for `bounded`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Bounded<'i> {
+    pub payload: &'i [u8],
+}
+
+#[verifier::ext_equal]
+pub struct BoundedSpec<T0 = Seq<u8>> {
+    pub payload: T0,
+}
+
+pub type BoundedInner = Seq<u8>;
+
+impl<'i> DeepView for Bounded<'i> {
+    type V = BoundedSpec;
+
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        BoundedSpec { payload: self.payload.deep_view() }
+    }
+}
+
+/// data type for `fixed_window`.
+pub type FixedWindow<'i> = &'i [u8];
+pub type FixedWindowSpec = Seq<u8>;
+
+// ============================================================
+// Structural Mappers
+// ============================================================
+impl<T0, T1, T2> TripleSpec<T0, T1, T2> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, T2))) -> Self {
+        let (a, (b, c)) = input;
+        Self { a, b, c }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, T2)) {
+        let Self { a, b, c } = self;
+        (a, (b, c))
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(TripleSpec::from_structural);
+        reveal(TripleSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, (T1, T2)))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(TripleSpec::from_structural);
+        reveal(TripleSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct TripleForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct TripleReverse;
+
+impl SpecMap for TripleForward {
+    type Input = TripleInner;
+    type Output = TripleSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        TripleSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for TripleReverse {
+    type Input = TripleSpec;
+    type Output = TripleInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> MessageSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (length, payload) = input;
+        Self { length, payload }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { length, payload } = self;
+        (length, payload)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(MessageSpec::from_structural);
+        reveal(MessageSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(MessageSpec::from_structural);
+        reveal(MessageSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct MessageForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct MessageReverse;
+
+impl SpecMap for MessageForward {
+    type Input = MessageInner;
+    type Output = MessageSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        MessageSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for MessageReverse {
+    type Input = MessageSpec;
+    type Output = MessageInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> SamplesSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (count, values) = input;
+        Self { count, values }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { count, values } = self;
+        (count, values)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(SamplesSpec::from_structural);
+        reveal(SamplesSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(SamplesSpec::from_structural);
+        reveal(SamplesSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct SamplesForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct SamplesReverse;
+
+impl SpecMap for SamplesForward {
+    type Input = SamplesInner;
+    type Output = SamplesSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        SamplesSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for SamplesReverse {
+    type Input = SamplesSpec;
+    type Output = SamplesInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> FixedChoiceSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Low(value),
+            R(value) => Self::High(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Low(value) => L(value),
+            Self::High(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(FixedChoiceSpec::from_structural);
+        reveal(FixedChoiceSpec::into_structural);
+        match self {
+            Self::Low(_) => {}
+            Self::High(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(FixedChoiceSpec::from_structural);
+        reveal(FixedChoiceSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct FixedChoiceForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct FixedChoiceReverse;
+
+impl SpecMap for FixedChoiceForward {
+    type Input = FixedChoiceInner;
+    type Output = FixedChoiceSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        FixedChoiceSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for FixedChoiceReverse {
+    type Input = FixedChoiceSpec;
+    type Output = FixedChoiceInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> VariableChoiceSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: Sum<T0, T1>) -> Self {
+        match input {
+            L(value) => Self::Short(value),
+            R(value) => Self::Long(value),
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> Sum<T0, T1> {
+        match self {
+            Self::Short(value) => L(value),
+            Self::Long(value) => R(value),
+        }
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(VariableChoiceSpec::from_structural);
+        reveal(VariableChoiceSpec::into_structural);
+        match self {
+            Self::Short(_) => {}
+            Self::Long(_) => {}
+        }
+    }
+
+    pub broadcast proof fn lemma_into_from(input: Sum<T0, T1>)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(VariableChoiceSpec::from_structural);
+        reveal(VariableChoiceSpec::into_structural);
+        match input {
+            L(_) => {}
+            R(_) => {}
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct VariableChoiceForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct VariableChoiceReverse;
+
+impl SpecMap for VariableChoiceForward {
+    type Input = VariableChoiceInner;
+    type Output = VariableChoiceSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        VariableChoiceSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for VariableChoiceReverse {
+    type Input = VariableChoiceSpec;
+    type Output = VariableChoiceInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0, T1> EnvelopeSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, T1)) -> Self {
+        let (kind, message) = input;
+        Self { kind, message }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, T1) {
+        let Self { kind, message } = self;
+        (kind, message)
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(EnvelopeSpec::from_structural);
+        reveal(EnvelopeSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: (T0, T1))
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(EnvelopeSpec::from_structural);
+        reveal(EnvelopeSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct EnvelopeForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct EnvelopeReverse;
+
+impl SpecMap for EnvelopeForward {
+    type Input = EnvelopeInner;
+    type Output = EnvelopeSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        EnvelopeSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for EnvelopeReverse {
+    type Input = EnvelopeSpec;
+    type Output = EnvelopeInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<T0> BoundedSpec<T0> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: T0) -> Self {
+        let payload = input;
+        Self { payload }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> T0 {
+        let Self { payload } = self;
+        payload
+    }
+
+    pub broadcast proof fn lemma_from_into(self)
+        ensures
+            #[trigger] Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(BoundedSpec::from_structural);
+        reveal(BoundedSpec::into_structural);
+    }
+
+    pub broadcast proof fn lemma_into_from(input: T0)
+        ensures
+            #[trigger] Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(BoundedSpec::from_structural);
+        reveal(BoundedSpec::into_structural);
+    }
+}
+
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct BoundedForward;
+#[derive(Clone, Copy)]
+#[doc(hidden)]
+pub struct BoundedReverse;
+
+impl SpecMap for BoundedForward {
+    type Input = BoundedInner;
+    type Output = BoundedSpec;
+
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        BoundedSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for BoundedReverse {
+    type Input = BoundedSpec;
+    type Output = BoundedInner;
+
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+// ============================================================
+// Format Specifications
+// ============================================================
+/// named format combinator for `triple`.
+#[derive(Clone, Copy)]
+pub struct TripleFmt;
+
+pub type TripleFmtSpec = Named<
+    Mapped<Pair<U8, Pair<Const<Fixed<2>, [u8; 2]>, U64Le>>, BiMap<TripleForward, TripleReverse>>,
+>;
+
+impl TripleFmt {
+    /// specification constructor for `triple`.
+    pub open spec fn spec_inner() -> TripleFmtSpec {
+        Named(
+            "triple",
+            Mapped {
+                inner: Pair(U8, Pair(Const(Fixed::<2>, [0x55u8, 0x77u8]), U64Le)),
+                mapper: BiMap(TripleForward, TripleReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `triple_alias`.
+#[derive(Clone, Copy)]
+pub struct TripleAliasFmt;
+
+pub type TripleAliasFmtSpec = Named<TripleFmt>;
+
+impl TripleAliasFmt {
+    /// specification constructor for `triple_alias`.
+    pub open spec fn spec_inner() -> TripleAliasFmtSpec {
+        Named("triple_alias", TripleFmt)
+    }
+}
+
+/// named format combinator for `message`.
+#[derive(Clone, Copy)]
+pub struct MessageFmt;
+
+pub type MessageFmtSpec = Named<
+    Mapped<Bind<U16Le, spec_fn(u16) -> Varied<u16>>, BiMap<MessageForward, MessageReverse>>,
+>;
+
+impl MessageFmt {
+    /// specification constructor for `message`.
+    pub open spec fn spec_inner() -> MessageFmtSpec {
+        Named(
+            "message",
+            Mapped {
+                inner: Bind(U16Le, |length: u16| Varied(length)),
+                mapper: BiMap(MessageForward, MessageReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `samples`.
+#[derive(Clone, Copy)]
+pub struct SamplesFmt;
+
+pub type SamplesFmtSpec = Named<
+    Mapped<Bind<U16Le, spec_fn(u16) -> RepeatN<U16Le, u16>>, BiMap<SamplesForward, SamplesReverse>>,
+>;
+
+impl SamplesFmt {
+    /// specification constructor for `samples`.
+    pub open spec fn spec_inner() -> SamplesFmtSpec {
+        Named(
+            "samples",
+            Mapped {
+                inner: Bind(U16Le, |count: u16| RepeatN(count, U16Le)),
+                mapper: BiMap(SamplesForward, SamplesReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `fixed_choice`.
+#[derive(Clone, Copy)]
+pub struct FixedChoiceFmt;
+
+pub type FixedChoiceFmtSpec = Named<
+    Mapped<
+        Choice<Refined<U8, PredFnSpec<u8>>, Refined<U8, PredFnSpec<u8>>>,
+        BiMap<FixedChoiceForward, FixedChoiceReverse>,
+    >,
+>;
+
+impl FixedChoiceFmt {
+    /// specification constructor for `fixed_choice`.
+    pub open spec fn spec_inner() -> FixedChoiceFmtSpec {
+        Named(
+            "fixed_choice",
+            Mapped {
+                inner: Choice(
+                    Refined(U8, |x: u8| x >= 0 &&x <= 127),
+                    Refined(U8, |x: u8| x >= 128 &&x <= 255),
+                ),
+                mapper: BiMap(FixedChoiceForward, FixedChoiceReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `variable_choice`.
+#[derive(Clone, Copy)]
+pub struct VariableChoiceFmt;
+
+pub type VariableChoiceFmtSpec = Named<
+    Mapped<
+        Choice<PrefixTagged<U8, u8, U8>, PrefixTagged<U8, u8, U16Le>>,
+        BiMap<VariableChoiceForward, VariableChoiceReverse>,
+    >,
+>;
+
+impl VariableChoiceFmt {
+    /// specification constructor for `variable_choice`.
+    pub open spec fn spec_inner() -> VariableChoiceFmtSpec {
+        Named(
+            "variable_choice",
+            Mapped {
+                inner: Choice(PrefixTagged(U8, 1, U8), PrefixTagged(U8, 2, U16Le)),
+                mapper: BiMap(VariableChoiceForward, VariableChoiceReverse),
+            },
+        )
+    }
+}
+
+/// named format combinator for `envelope`.
+#[derive(Clone, Copy)]
+pub struct EnvelopeFmt;
+
+pub type EnvelopeFmtSpec = Named<
+    Mapped<Pair<U8, MessageFmt>, BiMap<EnvelopeForward, EnvelopeReverse>>,
+>;
+
+impl EnvelopeFmt {
+    /// specification constructor for `envelope`.
+    pub open spec fn spec_inner() -> EnvelopeFmtSpec {
+        Named(
+            "envelope",
+            Mapped { inner: Pair(U8, MessageFmt), mapper: BiMap(EnvelopeForward, EnvelopeReverse) },
+        )
+    }
+}
+
+/// named format combinator for `bounded`.
+#[derive(Clone, Copy)]
+pub struct BoundedFmt {
+    length: u16,
+}
+
+impl BoundedFmt {
+    #[verifier::type_invariant]
+    spec fn wf(&self) -> bool {
+        true
+    }
+
+    pub closed spec fn length_spec(&self) -> u16 {
+        self.length.deep_view()
+    }
+
+    pub closed spec fn spec(length: u16) -> Self {
+        BoundedFmt { length }
+    }
+}
+
+pub type BoundedFmtSpec = Named<Mapped<Varied<u16>, BiMap<BoundedForward, BoundedReverse>>>;
+
+impl BoundedFmt {
+    /// specification constructor for `bounded`.
+    pub open spec fn spec_inner(length: u16) -> BoundedFmtSpec {
+        Named(
+            "bounded",
+            Mapped { inner: Varied(length), mapper: BiMap(BoundedForward, BoundedReverse) },
+        )
+    }
+}
+
+/// named format combinator for `fixed_window`.
+#[derive(Clone, Copy)]
+pub struct FixedWindowFmt;
+
+pub type FixedWindowFmtSpec = Named<ExactLen<Tail, u8>>;
+
+impl FixedWindowFmt {
+    /// specification constructor for `fixed_window`.
+    pub open spec fn spec_inner() -> FixedWindowFmtSpec {
+        Named("fixed_window", ExactLen(3, Tail))
+    }
+}
+
+// ============================================================
+// Derived Parser, Serializer, Length, and Consistency Specifications
+// ============================================================
+mod derived_specs {
+    use super::*;
+
+    impl SpecParser for TripleFmt {
+        type PVal = TripleSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for TripleFmt {
+        type Val = TripleSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent((v.a, (v.b, v.c)))
+        }
+    }
+
+    impl SpecSerializerDps for TripleFmt {
+        type SValue = TripleSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for TripleFmt {
+        type SVal = TripleSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for TripleFmt {
+        type T = TripleSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len((v.a, (v.b, v.c)))
+        }
+    }
+
+    impl SpecParser for TripleAliasFmt {
+        type PVal = TripleAliasSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for TripleAliasFmt {
+        type Val = TripleAliasSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for TripleAliasFmt {
+        type SValue = TripleAliasSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for TripleAliasFmt {
+        type SVal = TripleAliasSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for TripleAliasFmt {
+        type T = TripleAliasSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+
+    impl SpecParser for MessageFmt {
+        type PVal = MessageSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for MessageFmt {
+        type Val = MessageSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent((v.length, v.payload))
+        }
+    }
+
+    impl SpecSerializerDps for MessageFmt {
+        type SValue = MessageSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for MessageFmt {
+        type SVal = MessageSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for MessageFmt {
+        type T = MessageSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len((v.length, v.payload))
+        }
+    }
+
+    impl SpecParser for SamplesFmt {
+        type PVal = SamplesSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for SamplesFmt {
+        type Val = SamplesSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent((v.count, v.values))
+        }
+    }
+
+    impl SpecSerializerDps for SamplesFmt {
+        type SValue = SamplesSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for SamplesFmt {
+        type SVal = SamplesSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for SamplesFmt {
+        type T = SamplesSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len((v.count, v.values))
+        }
+    }
+
+    impl SpecParser for FixedChoiceFmt {
+        type PVal = FixedChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for FixedChoiceFmt {
+        type Val = FixedChoiceSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent(
+                match v {
+                    FixedChoiceSpec::Low(item) => L(item),
+                    FixedChoiceSpec::High(item) => R(item),
+                }
+            )
+        }
+    }
+
+    impl SpecSerializerDps for FixedChoiceFmt {
+        type SValue = FixedChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for FixedChoiceFmt {
+        type SVal = FixedChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for FixedChoiceFmt {
+        type T = FixedChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len(
+                match v {
+                    FixedChoiceSpec::Low(item) => L(item),
+                    FixedChoiceSpec::High(item) => R(item),
+                }
+            )
+        }
+    }
+
+    impl SpecParser for VariableChoiceFmt {
+        type PVal = VariableChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for VariableChoiceFmt {
+        type Val = VariableChoiceSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent(
+                match v {
+                    VariableChoiceSpec::Short(item) => L(item),
+                    VariableChoiceSpec::Long(item) => R(item),
+                }
+            )
+        }
+    }
+
+    impl SpecSerializerDps for VariableChoiceFmt {
+        type SValue = VariableChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for VariableChoiceFmt {
+        type SVal = VariableChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for VariableChoiceFmt {
+        type T = VariableChoiceSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len(
+                match v {
+                    VariableChoiceSpec::Short(item) => L(item),
+                    VariableChoiceSpec::Long(item) => R(item),
+                }
+            )
+        }
+    }
+
+    impl SpecParser for EnvelopeFmt {
+        type PVal = EnvelopeSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for EnvelopeFmt {
+        type Val = EnvelopeSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().1.inner.consistent((v.kind, v.message))
+        }
+    }
+
+    impl SpecSerializerDps for EnvelopeFmt {
+        type SValue = EnvelopeSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for EnvelopeFmt {
+        type SVal = EnvelopeSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for EnvelopeFmt {
+        type T = EnvelopeSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().1.inner.byte_len((v.kind, v.message))
+        }
+    }
+
+    impl SpecParser for BoundedFmt {
+        type PVal = BoundedSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner(self.length_spec()).spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for BoundedFmt {
+        type Val = BoundedSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner(self.length_spec()).1.inner.consistent(v.payload)
+        }
+    }
+
+    impl SpecSerializerDps for BoundedFmt {
+        type SValue = BoundedSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner(self.length_spec()).spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for BoundedFmt {
+        type SVal = BoundedSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner(self.length_spec()).spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for BoundedFmt {
+        type T = BoundedSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner(self.length_spec()).1.inner.byte_len(v.payload)
+        }
+    }
+
+    impl SpecParser for FixedWindowFmt {
+        type PVal = FixedWindowSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
+            Self::spec_inner().spec_parse(ibuf)
+        }
+    }
+
+    impl Consistency for FixedWindowFmt {
+        type Val = FixedWindowSpec;
+
+        open spec fn consistent(&self, v: Self::Val) -> bool {
+            Self::spec_inner().consistent(v)
+        }
+    }
+
+    impl SpecSerializerDps for FixedWindowFmt {
+        type SValue = FixedWindowSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
+            Self::spec_inner().spec_serialize_dps(v, obuf)
+        }
+    }
+
+    impl SpecSerializer for FixedWindowFmt {
+        type SVal = FixedWindowSpec;
+
+        #[verifier::opaque]
+        open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
+            Self::spec_inner().spec_serialize(v)
+        }
+    }
+
+    impl SpecByteLen for FixedWindowFmt {
+        type T = FixedWindowSpec;
+
+        #[verifier::opaque]
+        open spec fn byte_len(&self, v: Self::T) -> nat {
+            Self::spec_inner().byte_len(v)
+        }
+    }
+}
+
+// ============================================================
+// Proven Format Properties
+// ============================================================
+mod derived_proofs {
+    use super::*;
+    broadcast use {
+        vest_lib::combinators::disjoint::disjointness_lemmas,
+        TripleSpec::lemma_from_into,
+        TripleSpec::lemma_into_from,
+        MessageSpec::lemma_from_into,
+        MessageSpec::lemma_into_from,
+        SamplesSpec::lemma_from_into,
+        SamplesSpec::lemma_into_from,
+        FixedChoiceSpec::lemma_from_into,
+        FixedChoiceSpec::lemma_into_from,
+        VariableChoiceSpec::lemma_from_into,
+        VariableChoiceSpec::lemma_into_from,
+        EnvelopeSpec::lemma_from_into,
+        EnvelopeSpec::lemma_into_from,
+        BoundedSpec::lemma_from_into,
+        BoundedSpec::lemma_into_from,
+    };
+
+    impl SafeParser for TripleFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for TripleFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for TripleFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TripleSpec::into_structural);
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: TripleInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TripleSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TripleSpec::into_structural);
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            reveal(<TripleFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: TripleInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TripleSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for TripleFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<TripleFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TripleSpec::into_structural);
+            reveal(<TripleFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for TripleFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TripleSpec::into_structural);
+            reveal(<TripleFmt as SpecSerializer>::spec_serialize);
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for TripleFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TripleSpec::into_structural);
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            reveal(<TripleFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleFmt as Consistency>::consistent);
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: TripleSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                TripleSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for TripleFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: TripleInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                TripleSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for TripleFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<TripleFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for TripleFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<TripleFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for TripleFmt {
+        open spec fn static_byte_len() -> nat {
+            11 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            reveal(TripleSpec::into_structural);
+        }
+    }
+
+    impl SafeParser for TripleAliasFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for TripleAliasFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for TripleAliasFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            reveal(<TripleAliasFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for TripleAliasFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for TripleAliasFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<TripleAliasFmt as SpecSerializer>::spec_serialize);
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for TripleAliasFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            reveal(<TripleAliasFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleAliasFmt as Consistency>::consistent);
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for TripleAliasFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for TripleAliasFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<TripleAliasFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleAliasFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for TripleAliasFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<TripleAliasFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<TripleAliasFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for TripleAliasFmt {
+        open spec fn static_byte_len() -> nat {
+            11 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+        }
+    }
+
+    impl SafeParser for MessageFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for MessageFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for MessageFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(MessageSpec::into_structural);
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: MessageInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MessageSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(MessageSpec::into_structural);
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            reveal(<MessageFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: MessageInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MessageSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for MessageFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<MessageFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(MessageSpec::into_structural);
+            reveal(<MessageFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for MessageFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(MessageSpec::into_structural);
+            reveal(<MessageFmt as SpecSerializer>::spec_serialize);
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for MessageFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(MessageSpec::into_structural);
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            reveal(<MessageFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<MessageFmt as Consistency>::consistent);
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: MessageSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                MessageSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for MessageFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: MessageInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                MessageSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for MessageFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<MessageFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<MessageFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for MessageFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<MessageFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<MessageFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for SamplesFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for SamplesFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for SamplesFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(SamplesSpec::into_structural);
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: SamplesInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SamplesSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(SamplesSpec::into_structural);
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            reveal(<SamplesFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: SamplesInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SamplesSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for SamplesFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<SamplesFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(SamplesSpec::into_structural);
+            reveal(<SamplesFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for SamplesFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(SamplesSpec::into_structural);
+            reveal(<SamplesFmt as SpecSerializer>::spec_serialize);
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for SamplesFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(SamplesSpec::into_structural);
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            reveal(<SamplesFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SamplesFmt as Consistency>::consistent);
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: SamplesSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                SamplesSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for SamplesFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: SamplesInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                SamplesSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for SamplesFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<SamplesFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SamplesFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for SamplesFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<SamplesFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<SamplesFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for FixedChoiceFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for FixedChoiceFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for FixedChoiceFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: FixedChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            reveal(<FixedChoiceFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: FixedChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for FixedChoiceFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
+            reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for FixedChoiceFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(FixedChoiceSpec::into_structural);
+            reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for FixedChoiceFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedChoiceFmt as Consistency>::consistent);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: FixedChoiceSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                FixedChoiceSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for FixedChoiceFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: FixedChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                FixedChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for FixedChoiceFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for FixedChoiceFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for FixedChoiceFmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(FixedChoiceSpec::into_structural);
+            match v {
+                FixedChoiceSpec::Low(_) => {}
+                FixedChoiceSpec::High(_) => {}
+            }
+        }
+    }
+
+    impl SafeParser for VariableChoiceFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for VariableChoiceFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for VariableChoiceFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(VariableChoiceSpec::into_structural);
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: VariableChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                VariableChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(VariableChoiceSpec::into_structural);
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            reveal(<VariableChoiceFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: VariableChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                VariableChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for VariableChoiceFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<VariableChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(VariableChoiceSpec::into_structural);
+            reveal(<VariableChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for VariableChoiceFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(VariableChoiceSpec::into_structural);
+            reveal(<VariableChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for VariableChoiceFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(VariableChoiceSpec::into_structural);
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            reveal(<VariableChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<VariableChoiceFmt as Consistency>::consistent);
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: VariableChoiceSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                VariableChoiceSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for VariableChoiceFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: VariableChoiceInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                VariableChoiceSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for VariableChoiceFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<VariableChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<VariableChoiceFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for VariableChoiceFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<VariableChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<VariableChoiceFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for EnvelopeFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for EnvelopeFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for EnvelopeFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(EnvelopeSpec::into_structural);
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|input: EnvelopeInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnvelopeSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(EnvelopeSpec::into_structural);
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            reveal(<EnvelopeFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert forall|input: EnvelopeInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnvelopeSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for EnvelopeFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<EnvelopeFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(EnvelopeSpec::into_structural);
+            reveal(<EnvelopeFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for EnvelopeFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(EnvelopeSpec::into_structural);
+            reveal(<EnvelopeFmt as SpecSerializer>::spec_serialize);
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for EnvelopeFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(EnvelopeSpec::into_structural);
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            reveal(<EnvelopeFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<EnvelopeFmt as Consistency>::consistent);
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert forall|output: EnvelopeSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                EnvelopeSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for EnvelopeFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert forall|input: EnvelopeInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                EnvelopeSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for EnvelopeFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<EnvelopeFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<EnvelopeFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for EnvelopeFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<EnvelopeFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<EnvelopeFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for BoundedFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            Self::spec_inner(self.length_spec()).lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for BoundedFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner(self.length_spec()).productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for BoundedFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BoundedSpec::into_structural);
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert forall|input: BoundedInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BoundedSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BoundedSpec::into_structural);
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            reveal(<BoundedFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert forall|input: BoundedInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BoundedSpec::lemma_into_from(input);
+            }
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for BoundedFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<BoundedFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BoundedSpec::into_structural);
+            reveal(<BoundedFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for BoundedFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BoundedSpec::into_structural);
+            reveal(<BoundedFmt as SpecSerializer>::spec_serialize);
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for BoundedFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BoundedSpec::into_structural);
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            reveal(<BoundedFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BoundedFmt as Consistency>::consistent);
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert forall|output: BoundedSpec|
+                #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
+                BoundedSpec::lemma_from_into(output);
+            }
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for BoundedFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert forall|input: BoundedInner|
+                #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
+                BoundedSpec::lemma_into_from(input);
+            }
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for BoundedFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<BoundedFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BoundedFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for BoundedFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<BoundedFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<BoundedFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner(self.length_spec());
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl SafeParser for FixedWindowFmt {
+        proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            Self::spec_inner().lemma_parse_safe(ibuf);
+        }
+    }
+
+    impl Productive for FixedWindowFmt {
+        open spec fn productive_inv(&self) -> bool {
+            Self::spec_inner().productive_inv()
+        }
+
+        proof fn lemma_productive(&self, s: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.productive_inv());
+            fmt.lemma_productive(s);
+        }
+    }
+
+    impl SoundParser for FixedWindowFmt {
+        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_consumption(ibuf);
+        }
+
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            reveal(<FixedWindowFmt as Consistency>::consistent);
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl NonTailFmt for FixedWindowFmt {
+        proof fn lemma_serialize_dps_prepend(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecSerializerDps>::spec_serialize_dps);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_prepend(v, obuf);
+        }
+
+        proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_dps_inv());
+            fmt.lemma_serialize_dps_len(v, obuf);
+        }
+    }
+
+    impl GoodSerializer for FixedWindowFmt {
+        proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(<FixedWindowFmt as SpecSerializer>::spec_serialize);
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.serialize_inv());
+            fmt.lemma_serialize_len(v);
+        }
+    }
+
+    impl SPRoundTripDps for FixedWindowFmt {
+        proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            reveal(<FixedWindowFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedWindowFmt as Consistency>::consistent);
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            let fmt = Self::spec_inner();
+            assert(fmt.unambiguous());
+            fmt.theorem_serialize_dps_parse_roundtrip(v, obuf);
+        }
+    }
+
+    impl NonMalleable for FixedWindowFmt {
+        proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            let fmt = Self::spec_inner();
+            assert(fmt.nonmal_inv());
+            fmt.lemma_parse_non_malleable(buf1, buf2);
+        }
+    }
+
+    impl EquivSerializersGeneral for FixedWindowFmt {
+        proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+            reveal(<FixedWindowFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedWindowFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_general_inv());
+            fmt.lemma_serialize_equiv(v, obuf);
+        }
+    }
+
+    impl EquivSerializers for FixedWindowFmt {
+        proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
+            reveal(<FixedWindowFmt as SpecSerializerDps>::spec_serialize_dps);
+            reveal(<FixedWindowFmt as SpecSerializer>::spec_serialize);
+            let fmt = Self::spec_inner();
+            assert(fmt.equiv_inv());
+            fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for FixedWindowFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+        }
+    }
+}
+
+// ============================================================
+// Executable Implementations
+// ============================================================
+mod exec_impls {
+    use super::*;
+
+    impl<'i> Parser<&'i [u8]> for TripleFmt {
+        type PT = Triple;
+
+        fn min_byte_len(&self) -> usize {
+            11
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<TripleFmt as SpecParser>::spec_parse);
+            reveal(<Triple as DeepView>::deep_view);
+            reveal(TripleSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, a) = (U8).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, b) = Const(Fixed::<2>, [0x55, 0x77]).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let (n3, c) = (U64Le).parse(&rest)?;
+            let rest = rest.skip(n3);
+            let total_n = n1 + n2 + n3;
+
+            let final_v = Triple { a, b, c };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Triple> for TripleFmt {
+        fn serialize_into(&self, v: &Triple, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<TripleFmt as SpecSerializer>::spec_serialize);
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            reveal(<Triple as DeepView>::deep_view);
+            reveal(TripleSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Triple { a, b, c } = v;
+
+            U8.serialize_into(a, obuf);
+            Fixed::<2>.serialize_into(b, obuf);
+            U64Le.serialize_into(c, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Triple> for TripleFmt {
+        fn prepare(&self, v: &Triple) -> Result<usize, PreSerializeError> {
+            reveal(<TripleFmt as SpecByteLen>::byte_len);
+            reveal(<Triple as DeepView>::deep_view);
+            reveal(TripleSpec::into_structural);
+            let Triple { a, b, c } = v;
+            let l1 = (U8).prepare(a)?;
+            let l2 = (Const(Fixed::<2>, [0x55, 0x77])).prepare(b)?;
+            let l3 = (U64Le).prepare(c)?;
+            let total_len = l1
+                .checked_add(l2)
+                .ok_or(PreSerializeError::length_too_large())?
+                .checked_add(l3)
+                .ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for TripleAliasFmt {
+        type PT = TripleAlias;
+
+        fn min_byte_len(&self) -> usize {
+            11
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<TripleAliasFmt as SpecParser>::spec_parse);
+            reveal(<TripleAlias as DeepView>::deep_view);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = Named("triple", TripleFmt).parse(ibuf)?;
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, TripleAlias> for TripleAliasFmt {
+        fn serialize_into(&self, v: &TripleAlias, obuf: &mut Output) {
+            reveal(<TripleAliasFmt as SpecSerializer>::spec_serialize);
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            reveal(<TripleAlias as DeepView>::deep_view);
+            let ghost old_obuf = obuf@;
+
+            TripleFmt.serialize_into(v, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<TripleAlias> for TripleAliasFmt {
+        fn prepare(&self, v: &TripleAlias) -> Result<usize, PreSerializeError> {
+            reveal(<TripleAliasFmt as SpecByteLen>::byte_len);
+            reveal(<TripleAlias as DeepView>::deep_view);
+            Named("triple", TripleFmt).prepare(v)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for MessageFmt {
+        type PT = Message<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<MessageFmt as SpecParser>::spec_parse);
+            reveal(<Message as DeepView>::deep_view);
+            reveal(MessageSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, length) = (U16Le).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, payload) = (Varied(length)).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+
+            let final_v = Message { length, payload };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Message<'i>> for MessageFmt {
+        fn serialize_into(&self, v: &Message<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<MessageFmt as SpecSerializer>::spec_serialize);
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            reveal(<Message as DeepView>::deep_view);
+            reveal(MessageSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Message { length, payload } = v;
+
+            U16Le.serialize_into(length, obuf);
+            Varied(*length).serialize_into(*payload, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Message<'i>> for MessageFmt {
+        fn prepare(&self, v: &Message<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<MessageFmt as SpecByteLen>::byte_len);
+            reveal(<Message as DeepView>::deep_view);
+            reveal(MessageSpec::into_structural);
+            let Message { length, payload } = v;
+            let l1 = (U16Le).prepare(length)?;
+            let l2 = (Varied(*length)).prepare(payload)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for SamplesFmt {
+        type PT = Samples;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<SamplesFmt as SpecParser>::spec_parse);
+            reveal(<Samples as DeepView>::deep_view);
+            reveal(SamplesSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, count) = (U16Le).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, values) = (RepeatN(count, U16Le)).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+
+            let final_v = Samples { count, values };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Samples> for SamplesFmt {
+        fn serialize_into(&self, v: &Samples, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<SamplesFmt as SpecSerializer>::spec_serialize);
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            reveal(<Samples as DeepView>::deep_view);
+            reveal(SamplesSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Samples { count, values } = v;
+
+            U16Le.serialize_into(count, obuf);
+            RepeatN(*count, U16Le).serialize_into(values, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Samples> for SamplesFmt {
+        fn prepare(&self, v: &Samples) -> Result<usize, PreSerializeError> {
+            reveal(<SamplesFmt as SpecByteLen>::byte_len);
+            reveal(<Samples as DeepView>::deep_view);
+            reveal(SamplesSpec::into_structural);
+            let Samples { count, values } = v;
+            let l1 = (U16Le).prepare(count)?;
+            let l2 = (RepeatN(*count, U16Le)).prepare(values)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for FixedChoiceFmt {
+        type PT = FixedChoice;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = match (U8).parse(&rest) {
+                Ok((n, va)) if va >= 0 &&va <= 127 => {
+                    Ok((n, FixedChoice::Low(va)))
+                }
+                _ =>
+                    match (U8).parse(&rest) {
+                        Ok((n, va)) if va >= 128 &&va <= 255 => {
+                            Ok((n, FixedChoice::High(va)))
+                        }
+                        _ => Err(ParseError::invalid_choice()),
+                    },
+            }?;
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, FixedChoice> for FixedChoiceFmt {
+        fn serialize_into(&self, v: &FixedChoice, obuf: &mut Output) {
+            reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            match v {
+                FixedChoice::Low(v) => {
+                    (U8).serialize_into(v, obuf);
+                }
+                FixedChoice::High(v) => {
+                    (U8).serialize_into(v, obuf);
+                }
+            }
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<FixedChoice> for FixedChoiceFmt {
+        fn prepare(&self, v: &FixedChoice) -> Result<usize, PreSerializeError> {
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<FixedChoice as DeepView>::deep_view);
+            reveal(FixedChoiceSpec::into_structural);
+            match v {
+                FixedChoice::Low(v) => {
+                    if !(*v >= 0 &&*v <= 127) {
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U8).prepare(v)
+                    }
+                }
+                FixedChoice::High(v) => {
+                    if !(*v >= 128 &&*v <= 255) {
+                        Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed))
+                    } else {
+                        (U8).prepare(v)
+                    }
+                }
+            }
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for VariableChoiceFmt {
+        type PT = VariableChoice;
+
+        fn min_byte_len(&self) -> usize {
+            2
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<VariableChoiceFmt as SpecParser>::spec_parse);
+            reveal(<VariableChoice as DeepView>::deep_view);
+            reveal(VariableChoiceSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = match (PrefixTagged(U8, 1, U8)).parse(&rest) {
+                Ok((n, va)) => {
+                    Ok((n, VariableChoice::Short(va)))
+                }
+                _ =>
+                    match (PrefixTagged(U8, 2, U16Le)).parse(&rest) {
+                        Ok((n, va)) => {
+                            Ok((n, VariableChoice::Long(va)))
+                        }
+                        _ => Err(ParseError::invalid_choice()),
+                    },
+            }?;
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, VariableChoice> for VariableChoiceFmt {
+        fn serialize_into(&self, v: &VariableChoice, obuf: &mut Output) {
+            reveal(<VariableChoiceFmt as SpecSerializer>::spec_serialize);
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<VariableChoice as DeepView>::deep_view);
+            reveal(VariableChoiceSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            match v {
+                VariableChoice::Short(v) => {
+                    (PrefixTagged(U8, 1, U8)).serialize_into(v, obuf);
+                }
+                VariableChoice::Long(v) => {
+                    (PrefixTagged(U8, 2, U16Le)).serialize_into(v, obuf);
+                }
+            }
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<VariableChoice> for VariableChoiceFmt {
+        fn prepare(&self, v: &VariableChoice) -> Result<usize, PreSerializeError> {
+            reveal(<VariableChoiceFmt as SpecByteLen>::byte_len);
+            reveal(<VariableChoice as DeepView>::deep_view);
+            reveal(VariableChoiceSpec::into_structural);
+            match v {
+                VariableChoice::Short(v) => (PrefixTagged(U8, 1, U8)).prepare(v),
+                VariableChoice::Long(v) => (PrefixTagged(U8, 2, U16Le)).prepare(v),
+            }
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for EnvelopeFmt {
+        type PT = Envelope<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            3
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<EnvelopeFmt as SpecParser>::spec_parse);
+            reveal(<Envelope as DeepView>::deep_view);
+            reveal(EnvelopeSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n1, kind) = (U8).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let (n2, message) = (Named("message", MessageFmt)).parse(&rest)?;
+            let rest = rest.skip(n2);
+            let total_n = n1 + n2;
+
+            let final_v = Envelope { kind, message };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Envelope<'i>> for EnvelopeFmt {
+        fn serialize_into(&self, v: &Envelope<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<EnvelopeFmt as SpecSerializer>::spec_serialize);
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            reveal(<Envelope as DeepView>::deep_view);
+            reveal(EnvelopeSpec::into_structural);
+            let ghost old_obuf = obuf@;
+
+            let Envelope { kind, message } = v;
+
+            U8.serialize_into(kind, obuf);
+            MessageFmt.serialize_into(message, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Envelope<'i>> for EnvelopeFmt {
+        fn prepare(&self, v: &Envelope<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<EnvelopeFmt as SpecByteLen>::byte_len);
+            reveal(<Envelope as DeepView>::deep_view);
+            reveal(EnvelopeSpec::into_structural);
+            let Envelope { kind, message } = v;
+            let l1 = (U8).prepare(kind)?;
+            let l2 = (Named("message", MessageFmt)).prepare(message)?;
+            let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for BoundedFmt {
+        type PT = Bounded<'i>;
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
+            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
+
+            reveal(<BoundedFmt as SpecParser>::spec_parse);
+            reveal(<Bounded as DeepView>::deep_view);
+            reveal(BoundedSpec::from_structural);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            proof {
+                use_type_invariant(self);
+            }
+
+            let (n1, payload) = (Varied(self.length)).parse(&rest)?;
+            let rest = rest.skip(n1);
+            let total_n = n1;
+
+            let final_v = Bounded { payload };
+
+            assert(self.spec_parse(ibuf@) == Some((total_n as int, final_v.deep_view())));
+            Ok((total_n, final_v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, Bounded<'i>> for BoundedFmt {
+        fn serialize_into(&self, v: &Bounded<'i>, obuf: &mut Output) {
+            broadcast use vest_lib::core::exec::output::outbuf_lemmas;
+            reveal(<BoundedFmt as SpecSerializer>::spec_serialize);
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            reveal(<Bounded as DeepView>::deep_view);
+            reveal(BoundedSpec::into_structural);
+
+            proof {
+                use_type_invariant(self);
+            }
+
+            let ghost old_obuf = obuf@;
+
+            let Bounded { payload } = v;
+
+            Varied(self.length).serialize_into(*payload, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<Bounded<'i>> for BoundedFmt {
+        fn prepare(&self, v: &Bounded<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<BoundedFmt as SpecByteLen>::byte_len);
+            reveal(<Bounded as DeepView>::deep_view);
+            reveal(BoundedSpec::into_structural);
+            proof {
+                use_type_invariant(self);
+            }
+
+            let Bounded { payload } = v;
+            let l1 = (Varied(self.length)).prepare(payload)?;
+            let total_len = l1;
+            Ok(total_len)
+        }
+    }
+
+    impl<'i> Parser<&'i [u8]> for FixedWindowFmt {
+        type PT = FixedWindow<'i>;
+
+        fn min_byte_len(&self) -> usize {
+            3
+        }
+
+        fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
+            reveal(<FixedWindowFmt as SpecParser>::spec_parse);
+            let _ = ibuf.len();
+            let rest = *ibuf;
+
+            let (n, v) = ExactLen(3usize, Tail).parse(ibuf)?;
+            assert(self.spec_parse(ibuf@) == Some((n as int, v.deep_view())));
+            Ok((n, v))
+        }
+    }
+
+    impl<Output: OutputBuf, 'i> Serializer<Output, FixedWindow<'i>> for FixedWindowFmt {
+        fn serialize_into(&self, v: &FixedWindow<'i>, obuf: &mut Output) {
+            reveal(<FixedWindowFmt as SpecSerializer>::spec_serialize);
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            let ghost old_obuf = obuf@;
+
+            ExactLen(3usize, Tail).serialize_into(v, obuf);
+
+            assert(obuf@ == old_obuf + self.spec_serialize(v.deep_view()));
+        }
+    }
+
+    impl<'i> Prepare<FixedWindow<'i>> for FixedWindowFmt {
+        fn prepare(&self, v: &FixedWindow<'i>) -> Result<usize, PreSerializeError> {
+            reveal(<FixedWindowFmt as SpecByteLen>::byte_len);
+            (ExactLen(3usize, Tail)).prepare(v)
+        }
+    }
+}
+}

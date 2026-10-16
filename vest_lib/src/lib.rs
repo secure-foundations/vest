@@ -49,4 +49,5 @@ pub mod cbor;
 pub mod combinators;
 pub mod core;
 pub mod macros;
+pub mod prelude;
 pub mod primitives;

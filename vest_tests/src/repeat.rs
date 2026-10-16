@@ -43,16 +43,6 @@ impl<'i> DeepView for OpaqueU16<'i> {
     }
 }
 
-impl<'i> OpaqueU16<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<OpaqueU16 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `responder_id`.
 pub type ResponderId<'i> = OpaqueU16<'i>;
 pub type ResponderIdSpec = OpaqueU16Spec;
@@ -81,16 +71,6 @@ impl<'i> DeepView for ResponderIdList<'i> {
     }
 }
 
-impl<'i> ResponderIdList<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().list == self.list.deep_view(),
-    {
-        reveal(<ResponderIdList as DeepView>::deep_view);
-    }
-}
-
 /// data type for `repeat_fix`.
 pub type RepeatFix = [u16; 32];
 pub type RepeatFixSpec = Seq<u16>;
@@ -116,16 +96,6 @@ impl<'i> DeepView for RepeatDyn<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         RepeatDynSpec { l: self.l.deep_view(), data: self.data.deep_view() }
-    }
-}
-
-impl<'i> RepeatDyn<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<RepeatDyn as DeepView>::deep_view);
     }
 }
 
@@ -158,16 +128,6 @@ impl<T0, T1> OpaqueU16Spec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(OpaqueU16Spec::from_structural);
-        reveal(OpaqueU16Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { l, data } => (l, data),
-                },
-    {
         reveal(OpaqueU16Spec::into_structural);
     }
 }
@@ -225,16 +185,6 @@ impl<T0, T1> ResponderIdListSpec<T0, T1> {
         reveal(ResponderIdListSpec::from_structural);
         reveal(ResponderIdListSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { l, list } => (l, list),
-                },
-    {
-        reveal(ResponderIdListSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -288,16 +238,6 @@ impl<T0, T1> RepeatDynSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(RepeatDynSpec::from_structural);
-        reveal(RepeatDynSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { l, data } => (l, data),
-                },
-    {
         reveal(RepeatDynSpec::into_structural);
     }
 }
@@ -453,7 +393,7 @@ mod derived_specs {
         type Val = OpaqueU16Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.l, v.data))
         }
     }
 
@@ -480,7 +420,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.l, v.data))
         }
     }
 
@@ -541,7 +481,7 @@ mod derived_specs {
         type Val = ResponderIdListSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.l, v.list))
         }
     }
 
@@ -568,7 +508,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.l, v.list))
         }
     }
 
@@ -629,7 +569,7 @@ mod derived_specs {
         type Val = RepeatDynSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.l, v.data))
         }
     }
 
@@ -656,7 +596,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.l, v.data))
         }
     }
 }
@@ -698,6 +638,7 @@ mod derived_proofs {
 
     impl SoundParser for OpaqueU16Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(OpaqueU16Spec::into_structural);
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -710,6 +651,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(OpaqueU16Spec::into_structural);
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -731,6 +673,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(OpaqueU16Spec::into_structural);
             reveal(<OpaqueU16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -741,6 +684,7 @@ mod derived_proofs {
 
     impl GoodSerializer for OpaqueU16Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(OpaqueU16Spec::into_structural);
             reveal(<OpaqueU16Fmt as SpecSerializer>::spec_serialize);
             reveal(<OpaqueU16Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -751,6 +695,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for OpaqueU16Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(OpaqueU16Spec::into_structural);
             reveal(<OpaqueU16Fmt as SpecParser>::spec_parse);
             reveal(<OpaqueU16Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<OpaqueU16Fmt as Consistency>::consistent);
@@ -926,6 +871,7 @@ mod derived_proofs {
 
     impl SoundParser for ResponderIdListFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ResponderIdListSpec::into_structural);
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -938,6 +884,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ResponderIdListSpec::into_structural);
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdListFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -959,6 +906,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ResponderIdListSpec::into_structural);
             reveal(<ResponderIdListFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -969,6 +917,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ResponderIdListFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ResponderIdListSpec::into_structural);
             reveal(<ResponderIdListFmt as SpecSerializer>::spec_serialize);
             reveal(<ResponderIdListFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -979,6 +928,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ResponderIdListFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ResponderIdListSpec::into_structural);
             reveal(<ResponderIdListFmt as SpecParser>::spec_parse);
             reveal(<ResponderIdListFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ResponderIdListFmt as Consistency>::consistent);
@@ -1132,6 +1082,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for RepeatFixFmt {
+        open spec fn static_byte_len() -> nat {
+            64 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<RepeatFixFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for RepeatDynFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
@@ -1154,6 +1114,7 @@ mod derived_proofs {
 
     impl SoundParser for RepeatDynFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(RepeatDynSpec::into_structural);
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1166,6 +1127,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(RepeatDynSpec::into_structural);
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDynFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1187,6 +1149,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(RepeatDynSpec::into_structural);
             reveal(<RepeatDynFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1197,6 +1160,7 @@ mod derived_proofs {
 
     impl GoodSerializer for RepeatDynFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(RepeatDynSpec::into_structural);
             reveal(<RepeatDynFmt as SpecSerializer>::spec_serialize);
             reveal(<RepeatDynFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1207,6 +1171,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for RepeatDynFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(RepeatDynSpec::into_structural);
             reveal(<RepeatDynFmt as SpecParser>::spec_parse);
             reveal(<RepeatDynFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<RepeatDynFmt as Consistency>::consistent);
@@ -1342,6 +1307,7 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ResponderIdFmt as SpecParser>::spec_parse);
+            reveal(<ResponderId as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1355,6 +1321,7 @@ mod exec_impls {
         fn serialize_into(&self, v: &ResponderId<'i>, obuf: &mut Output) {
             reveal(<ResponderIdFmt as SpecSerializer>::spec_serialize);
             reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
+            reveal(<ResponderId as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             OpaqueU16Fmt.serialize_into(v, obuf);
@@ -1366,6 +1333,7 @@ mod exec_impls {
     impl<'i> Prepare<ResponderId<'i>> for ResponderIdFmt {
         fn prepare(&self, v: &ResponderId<'i>) -> Result<usize, PreSerializeError> {
             reveal(<ResponderIdFmt as SpecByteLen>::byte_len);
+            reveal(<ResponderId as DeepView>::deep_view);
             Named("opaque_u16", OpaqueU16Fmt).prepare(v)
         }
     }

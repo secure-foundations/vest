@@ -1022,6 +1022,7 @@ impl<'a> Analysis<'a> {
             .map(|member| self.render_member_spec_param_args(member))
             .unwrap_or_default();
         self.gen_derived_spec_impls(
+            name,
             &fmt_id,
             &quote! { <const LIMIT: usize> },
             &quote! { <LIMIT> },
@@ -1522,44 +1523,23 @@ impl<'a> Analysis<'a> {
     fn gen_recursive_exec_wrappers(&self, member: &SccMember) -> String {
         let fmt_ident = format_ident!("{}", self.info(&member.name).names.fmt);
         let exec_ty = self.render_nominal_type(&member.name, TypeMode::Exec);
-        let view_certificates = member
-            .param_defns
-            .iter()
-            .filter_map(|param| match param {
-                crate::vestir::ParamDefn::Dependent { name, combinator }
-                    if self.has_identity_view_certificate(combinator) =>
-                {
-                    let field = format_ident!("{}", scc_param_field_name(name, combinator));
-                    Some(quote! { self.#field.lemma_deep_view(); })
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        let view_proof = if view_certificates.is_empty() {
-            quote! {}
-        } else {
-            quote! { proof { #(#view_certificates)* } }
-        };
         render_ts(quote! {
             impl<'i, const LIMIT: usize> Parser<&'i [u8]> for #fmt_ident<LIMIT> {
                 type PT = #exec_ty;
 
                 fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-                    #view_proof
                     self.parse_gas(LIMIT, ibuf)
                 }
             }
 
             impl<Output: OutputBuf, 'i, const LIMIT: usize> Serializer<Output, #exec_ty> for #fmt_ident<LIMIT> {
                 fn serialize_into(&self, v: &#exec_ty, obuf: &mut Output) {
-                    #view_proof
                     self.serialize_gas(LIMIT, v, obuf);
                 }
             }
 
             impl<'i, const LIMIT: usize> Prepare<#exec_ty> for #fmt_ident<LIMIT> {
                 fn prepare(&self, v: &#exec_ty) -> Result<usize, PreSerializeError> {
-                    #view_proof
                     self.prepare_gas(LIMIT, v)
                 }
             }

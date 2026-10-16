@@ -43,16 +43,6 @@ impl DeepView for Header {
     }
 }
 
-impl Header {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().len == self.len.deep_view(),
-            self.deep_view().flags == self.flags.deep_view(),
-    {
-        reveal(<Header as DeepView>::deep_view);
-    }
-}
-
 /// data type for `primitive_sizes`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PrimitiveSizes<'i> {
@@ -77,16 +67,6 @@ impl<'i> DeepView for PrimitiveSizes<'i> {
     }
 }
 
-impl<'i> PrimitiveSizes<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().byte == self.byte.deep_view(),
-            self.deep_view().word == self.word.deep_view(),
-    {
-        reveal(<PrimitiveSizes as DeepView>::deep_view);
-    }
-}
-
 /// data type for `named_size`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct NamedSize<'i> {
@@ -106,15 +86,6 @@ impl<'i> DeepView for NamedSize<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         NamedSizeSpec { bytes: self.bytes.deep_view() }
-    }
-}
-
-impl<'i> NamedSize<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<NamedSize as DeepView>::deep_view);
     }
 }
 
@@ -141,15 +112,6 @@ impl<'i> DeepView for AliasSize<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         AliasSizeSpec { bytes: self.bytes.deep_view() }
-    }
-}
-
-impl<'i> AliasSize<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<AliasSize as DeepView>::deep_view);
     }
 }
 
@@ -180,19 +142,6 @@ impl DeepView for FixedChoice {
     }
 }
 
-impl FixedChoice {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    FixedChoice::Variant1(v) => FixedChoiceSpec::Variant1(v.deep_view()),
-                    FixedChoice::Default(v) => FixedChoiceSpec::Default(v.deep_view()),
-                },
-    {
-        reveal(<FixedChoice as DeepView>::deep_view);
-    }
-}
-
 /// data type for `choice_format_size`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ChoiceFormatSize<'i> {
@@ -212,15 +161,6 @@ impl<'i> DeepView for ChoiceFormatSize<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ChoiceFormatSizeSpec { bytes: self.bytes.deep_view() }
-    }
-}
-
-impl<'i> ChoiceFormatSize<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<ChoiceFormatSize as DeepView>::deep_view);
     }
 }
 
@@ -252,16 +192,6 @@ impl<'i> DeepView for ChoiceArraysFolded<'i> {
     }
 }
 
-impl<'i> ChoiceArraysFolded<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().tag == self.tag.deep_view(),
-            self.deep_view().body == self.body.deep_view(),
-    {
-        reveal(<ChoiceArraysFolded as DeepView>::deep_view);
-    }
-}
-
 /// data type for `size_arith`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct SizeArith<'i> {
@@ -281,15 +211,6 @@ impl<'i> DeepView for SizeArith<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         SizeArithSpec { bytes: self.bytes.deep_view() }
-    }
-}
-
-impl<'i> SizeArith<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<SizeArith as DeepView>::deep_view);
     }
 }
 
@@ -315,15 +236,6 @@ impl<'i> DeepView for SimpleSub<'i> {
     }
 }
 
-impl<'i> SimpleSub<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<SimpleSub as DeepView>::deep_view);
-    }
-}
-
 /// data type for `multi_arith`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MultiArith<'i> {
@@ -343,15 +255,6 @@ impl<'i> DeepView for MultiArith<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         MultiArithSpec { body: self.body.deep_view() }
-    }
-}
-
-impl<'i> MultiArith<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().body == self.body.deep_view(),
-    {
-        reveal(<MultiArith as DeepView>::deep_view);
     }
 }
 
@@ -377,15 +280,6 @@ impl<'i> DeepView for ParenExpr<'i> {
     }
 }
 
-impl<'i> ParenExpr<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<ParenExpr as DeepView>::deep_view);
-    }
-}
-
 /// data type for `mixed_const`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MixedConst<'i> {
@@ -408,15 +302,6 @@ impl<'i> DeepView for MixedConst<'i> {
     }
 }
 
-impl<'i> MixedConst<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<MixedConst as DeepView>::deep_view);
-    }
-}
-
 /// data type for `payload_with_header`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PayloadWithHeader<'i> {
@@ -436,15 +321,6 @@ impl<'i> DeepView for PayloadWithHeader<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         PayloadWithHeaderSpec { data: self.data.deep_view() }
-    }
-}
-
-impl<'i> PayloadWithHeader<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().data == self.data.deep_view(),
-    {
-        reveal(<PayloadWithHeader as DeepView>::deep_view);
     }
 }
 
@@ -481,23 +357,6 @@ impl DeepView for ChoiceArraysFoldedBody {
     }
 }
 
-impl ChoiceArraysFoldedBody {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    ChoiceArraysFoldedBody::Variant1(v) =>
-                        ChoiceArraysFoldedBodySpec::Variant1(v.deep_view()),
-                    ChoiceArraysFoldedBody::Variant2(v) =>
-                        ChoiceArraysFoldedBodySpec::Variant2(v.deep_view()),
-                    ChoiceArraysFoldedBody::Default(v) =>
-                        ChoiceArraysFoldedBodySpec::Default(v.deep_view()),
-                },
-    {
-        reveal(<ChoiceArraysFoldedBody as DeepView>::deep_view);
-    }
-}
-
 // ============================================================
 // Structural Mappers
 // ============================================================
@@ -527,16 +386,6 @@ impl<T0, T1> HeaderSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(HeaderSpec::from_structural);
-        reveal(HeaderSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { len, flags } => (len, flags),
-                },
-    {
         reveal(HeaderSpec::into_structural);
     }
 }
@@ -594,16 +443,6 @@ impl<T0, T1> PrimitiveSizesSpec<T0, T1> {
         reveal(PrimitiveSizesSpec::from_structural);
         reveal(PrimitiveSizesSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { byte, word } => (byte, word),
-                },
-    {
-        reveal(PrimitiveSizesSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -659,16 +498,6 @@ impl<T0> NamedSizeSpec<T0> {
         reveal(NamedSizeSpec::from_structural);
         reveal(NamedSizeSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { bytes } => bytes,
-                },
-    {
-        reveal(NamedSizeSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -722,16 +551,6 @@ impl<T0> AliasSizeSpec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(AliasSizeSpec::from_structural);
-        reveal(AliasSizeSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { bytes } => bytes,
-                },
-    {
         reveal(AliasSizeSpec::into_structural);
     }
 }
@@ -801,17 +620,6 @@ impl<T0, T1> FixedChoiceSpec<T0, T1> {
             R(_) => {}
         }
     }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::Variant1(value) => L(value),
-                    Self::Default(value) => R(value),
-                },
-    {
-        reveal(FixedChoiceSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -865,16 +673,6 @@ impl<T0> ChoiceFormatSizeSpec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(ChoiceFormatSizeSpec::from_structural);
-        reveal(ChoiceFormatSizeSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { bytes } => bytes,
-                },
-    {
         reveal(ChoiceFormatSizeSpec::into_structural);
     }
 }
@@ -932,16 +730,6 @@ impl<T0, T1> ChoiceArraysFoldedSpec<T0, T1> {
         reveal(ChoiceArraysFoldedSpec::from_structural);
         reveal(ChoiceArraysFoldedSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { tag, body } => (tag, body),
-                },
-    {
-        reveal(ChoiceArraysFoldedSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -995,16 +783,6 @@ impl<T0> SizeArithSpec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(SizeArithSpec::from_structural);
-        reveal(SizeArithSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { bytes } => bytes,
-                },
-    {
         reveal(SizeArithSpec::into_structural);
     }
 }
@@ -1062,16 +840,6 @@ impl<T0> SimpleSubSpec<T0> {
         reveal(SimpleSubSpec::from_structural);
         reveal(SimpleSubSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { data } => data,
-                },
-    {
-        reveal(SimpleSubSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1125,16 +893,6 @@ impl<T0> MultiArithSpec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(MultiArithSpec::from_structural);
-        reveal(MultiArithSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { body } => body,
-                },
-    {
         reveal(MultiArithSpec::into_structural);
     }
 }
@@ -1192,16 +950,6 @@ impl<T0> ParenExprSpec<T0> {
         reveal(ParenExprSpec::from_structural);
         reveal(ParenExprSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { data } => data,
-                },
-    {
-        reveal(ParenExprSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1257,16 +1005,6 @@ impl<T0> MixedConstSpec<T0> {
         reveal(MixedConstSpec::from_structural);
         reveal(MixedConstSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { data } => data,
-                },
-    {
-        reveal(MixedConstSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1320,16 +1058,6 @@ impl<T0> PayloadWithHeaderSpec<T0> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(PayloadWithHeaderSpec::from_structural);
-        reveal(PayloadWithHeaderSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { data } => data,
-                },
-    {
         reveal(PayloadWithHeaderSpec::into_structural);
     }
 }
@@ -1402,18 +1130,6 @@ impl<T0, T1, T2> ChoiceArraysFoldedBodySpec<T0, T1, T2> {
             R(L(_)) => {}
             R(R(_)) => {}
         }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::Variant1(value) => L(value),
-                    Self::Variant2(value) => R(L(value)),
-                    Self::Default(value) => R(R(value)),
-                },
-    {
-        reveal(ChoiceArraysFoldedBodySpec::into_structural);
     }
 }
 
@@ -1918,7 +1634,7 @@ mod derived_specs {
         type Val = HeaderSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.len, v.flags))
         }
     }
 
@@ -1945,7 +1661,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.len, v.flags))
         }
     }
 
@@ -1962,7 +1678,7 @@ mod derived_specs {
         type Val = PrimitiveSizesSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.byte, v.word))
         }
     }
 
@@ -1989,7 +1705,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.byte, v.word))
         }
     }
 
@@ -2006,7 +1722,7 @@ mod derived_specs {
         type Val = NamedSizeSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.bytes)
         }
     }
 
@@ -2033,7 +1749,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.bytes)
         }
     }
 
@@ -2094,7 +1810,7 @@ mod derived_specs {
         type Val = AliasSizeSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.bytes)
         }
     }
 
@@ -2121,7 +1837,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.bytes)
         }
     }
 
@@ -2138,7 +1854,12 @@ mod derived_specs {
         type Val = FixedChoiceSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.tag_spec()).consistent(v)
+            Self::spec_inner(self.tag_spec()).1.inner.consistent(
+                match v {
+                    FixedChoiceSpec::Variant1(item) => L(item),
+                    FixedChoiceSpec::Default(item) => R(item),
+                }
+            )
         }
     }
 
@@ -2165,7 +1886,12 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.tag_spec()).byte_len(v)
+            Self::spec_inner(self.tag_spec()).1.inner.byte_len(
+                match v {
+                    FixedChoiceSpec::Variant1(item) => L(item),
+                    FixedChoiceSpec::Default(item) => R(item),
+                }
+            )
         }
     }
 
@@ -2182,7 +1908,7 @@ mod derived_specs {
         type Val = ChoiceFormatSizeSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.bytes)
         }
     }
 
@@ -2209,7 +1935,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.bytes)
         }
     }
 
@@ -2270,7 +1996,7 @@ mod derived_specs {
         type Val = ChoiceArraysFoldedSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.tag, v.body))
         }
     }
 
@@ -2297,7 +2023,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.tag, v.body))
         }
     }
 
@@ -2314,7 +2040,7 @@ mod derived_specs {
         type Val = SizeArithSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(v.bytes)
         }
     }
 
@@ -2341,7 +2067,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(v.bytes)
         }
     }
 
@@ -2358,7 +2084,7 @@ mod derived_specs {
         type Val = SimpleSubSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.len_spec()).consistent(v)
+            Self::spec_inner(self.len_spec()).1.inner.consistent(v.data)
         }
     }
 
@@ -2385,7 +2111,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.len_spec()).byte_len(v)
+            Self::spec_inner(self.len_spec()).1.inner.byte_len(v.data)
         }
     }
 
@@ -2402,7 +2128,7 @@ mod derived_specs {
         type Val = MultiArithSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.total_spec(), self.hdr_len_spec()).consistent(v)
+            Self::spec_inner(self.total_spec(), self.hdr_len_spec()).1.inner.consistent(v.body)
         }
     }
 
@@ -2429,7 +2155,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.total_spec(), self.hdr_len_spec()).byte_len(v)
+            Self::spec_inner(self.total_spec(), self.hdr_len_spec()).1.inner.byte_len(v.body)
         }
     }
 
@@ -2446,7 +2172,7 @@ mod derived_specs {
         type Val = ParenExprSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).consistent(v)
+            Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).1.inner.consistent(v.data)
         }
     }
 
@@ -2476,7 +2202,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).byte_len(v)
+            Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec()).1.inner.byte_len(v.data)
         }
     }
 
@@ -2493,7 +2219,7 @@ mod derived_specs {
         type Val = MixedConstSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.len_spec()).consistent(v)
+            Self::spec_inner(self.len_spec()).1.inner.consistent(v.data)
         }
     }
 
@@ -2520,7 +2246,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.len_spec()).byte_len(v)
+            Self::spec_inner(self.len_spec()).1.inner.byte_len(v.data)
         }
     }
 
@@ -2537,7 +2263,7 @@ mod derived_specs {
         type Val = PayloadWithHeaderSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.hdr_spec()).consistent(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.consistent(v.data)
         }
     }
 
@@ -2564,7 +2290,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.hdr_spec()).byte_len(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.byte_len(v.data)
         }
     }
 
@@ -2580,7 +2306,13 @@ mod derived_specs {
         type Val = ChoiceArraysFoldedBodySpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.tag_spec()).consistent(v)
+            Self::spec_inner(self.tag_spec()).1.inner.consistent(
+                match v {
+                    ChoiceArraysFoldedBodySpec::Variant1(item) => L(item),
+                    ChoiceArraysFoldedBodySpec::Variant2(item) => R(L(item)),
+                    ChoiceArraysFoldedBodySpec::Default(item) => R(R(item)),
+                }
+            )
         }
     }
 
@@ -2604,7 +2336,13 @@ mod derived_specs {
         type T = ChoiceArraysFoldedBodySpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.tag_spec()).byte_len(v)
+            Self::spec_inner(self.tag_spec()).1.inner.byte_len(
+                match v {
+                    ChoiceArraysFoldedBodySpec::Variant1(item) => L(item),
+                    ChoiceArraysFoldedBodySpec::Variant2(item) => R(L(item)),
+                    ChoiceArraysFoldedBodySpec::Default(item) => R(R(item)),
+                }
+            )
         }
     }
 }
@@ -2668,6 +2406,7 @@ mod derived_proofs {
 
     impl SoundParser for HeaderFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(HeaderSpec::into_structural);
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2680,6 +2419,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(HeaderSpec::into_structural);
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             reveal(<HeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2701,6 +2441,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(HeaderSpec::into_structural);
             reveal(<HeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2711,6 +2452,7 @@ mod derived_proofs {
 
     impl GoodSerializer for HeaderFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(HeaderSpec::into_structural);
             reveal(<HeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<HeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2721,6 +2463,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for HeaderFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(HeaderSpec::into_structural);
             reveal(<HeaderFmt as SpecParser>::spec_parse);
             reveal(<HeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<HeaderFmt as Consistency>::consistent);
@@ -2768,6 +2511,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for HeaderFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<HeaderFmt as SpecByteLen>::byte_len);
+            reveal(HeaderSpec::into_structural);
+        }
+    }
+
     impl SafeParser for PrimitiveSizesFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
@@ -2790,6 +2544,7 @@ mod derived_proofs {
 
     impl SoundParser for PrimitiveSizesFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(PrimitiveSizesSpec::into_structural);
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2802,6 +2557,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(PrimitiveSizesSpec::into_structural);
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             reveal(<PrimitiveSizesFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2823,6 +2579,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(PrimitiveSizesSpec::into_structural);
             reveal(<PrimitiveSizesFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2833,6 +2590,7 @@ mod derived_proofs {
 
     impl GoodSerializer for PrimitiveSizesFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(PrimitiveSizesSpec::into_structural);
             reveal(<PrimitiveSizesFmt as SpecSerializer>::spec_serialize);
             reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2843,6 +2601,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for PrimitiveSizesFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(PrimitiveSizesSpec::into_structural);
             reveal(<PrimitiveSizesFmt as SpecParser>::spec_parse);
             reveal(<PrimitiveSizesFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PrimitiveSizesFmt as Consistency>::consistent);
@@ -2890,6 +2649,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for PrimitiveSizesFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<PrimitiveSizesFmt as SpecByteLen>::byte_len);
+            reveal(PrimitiveSizesSpec::into_structural);
+        }
+    }
+
     impl SafeParser for NamedSizeFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
@@ -2912,6 +2682,7 @@ mod derived_proofs {
 
     impl SoundParser for NamedSizeFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(NamedSizeSpec::into_structural);
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2924,6 +2695,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(NamedSizeSpec::into_structural);
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             reveal(<NamedSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2945,6 +2717,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(NamedSizeSpec::into_structural);
             reveal(<NamedSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2955,6 +2728,7 @@ mod derived_proofs {
 
     impl GoodSerializer for NamedSizeFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(NamedSizeSpec::into_structural);
             reveal(<NamedSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2965,6 +2739,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for NamedSizeFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(NamedSizeSpec::into_structural);
             reveal(<NamedSizeFmt as SpecParser>::spec_parse);
             reveal(<NamedSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<NamedSizeFmt as Consistency>::consistent);
@@ -3009,6 +2784,17 @@ mod derived_proofs {
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for NamedSizeFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<NamedSizeFmt as SpecByteLen>::byte_len);
+            reveal(NamedSizeSpec::into_structural);
         }
     }
 
@@ -3118,6 +2904,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for HeaderAliasFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for AliasSizeFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
@@ -3140,6 +2936,7 @@ mod derived_proofs {
 
     impl SoundParser for AliasSizeFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(AliasSizeSpec::into_structural);
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3152,6 +2949,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(AliasSizeSpec::into_structural);
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             reveal(<AliasSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3173,6 +2971,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(AliasSizeSpec::into_structural);
             reveal(<AliasSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3183,6 +2982,7 @@ mod derived_proofs {
 
     impl GoodSerializer for AliasSizeFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(AliasSizeSpec::into_structural);
             reveal(<AliasSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3193,6 +2993,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for AliasSizeFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(AliasSizeSpec::into_structural);
             reveal(<AliasSizeFmt as SpecParser>::spec_parse);
             reveal(<AliasSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<AliasSizeFmt as Consistency>::consistent);
@@ -3240,6 +3041,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for AliasSizeFmt {
+        open spec fn static_byte_len() -> nat {
+            3 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<AliasSizeFmt as SpecByteLen>::byte_len);
+            reveal(AliasSizeSpec::into_structural);
+        }
+    }
+
     impl SafeParser for FixedChoiceFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
@@ -3262,6 +3074,7 @@ mod derived_proofs {
 
     impl SoundParser for FixedChoiceFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -3274,6 +3087,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             reveal(<FixedChoiceFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -3295,6 +3109,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
             reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -3305,6 +3120,7 @@ mod derived_proofs {
 
     impl GoodSerializer for FixedChoiceFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(FixedChoiceSpec::into_structural);
             reveal(<FixedChoiceFmt as SpecSerializer>::spec_serialize);
             reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -3315,6 +3131,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for FixedChoiceFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(FixedChoiceSpec::into_structural);
             reveal(<FixedChoiceFmt as SpecParser>::spec_parse);
             reveal(<FixedChoiceFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<FixedChoiceFmt as Consistency>::consistent);
@@ -3362,6 +3179,21 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for FixedChoiceFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<FixedChoiceFmt as SpecByteLen>::byte_len);
+            reveal(FixedChoiceSpec::into_structural);
+            match v {
+                FixedChoiceSpec::Variant1(_) => {}
+                FixedChoiceSpec::Default(_) => {}
+            }
+        }
+    }
+
     impl SafeParser for ChoiceFormatSizeFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
@@ -3384,6 +3216,7 @@ mod derived_proofs {
 
     impl SoundParser for ChoiceFormatSizeFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceFormatSizeSpec::into_structural);
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3396,6 +3229,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceFormatSizeSpec::into_structural);
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             reveal(<ChoiceFormatSizeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3417,6 +3251,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoiceFormatSizeSpec::into_structural);
             reveal(<ChoiceFormatSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3427,6 +3262,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ChoiceFormatSizeFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoiceFormatSizeSpec::into_structural);
             reveal(<ChoiceFormatSizeFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3437,6 +3273,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ChoiceFormatSizeFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoiceFormatSizeSpec::into_structural);
             reveal(<ChoiceFormatSizeFmt as SpecParser>::spec_parse);
             reveal(<ChoiceFormatSizeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceFormatSizeFmt as Consistency>::consistent);
@@ -3481,6 +3318,17 @@ mod derived_proofs {
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for ChoiceFormatSizeFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<ChoiceFormatSizeFmt as SpecByteLen>::byte_len);
+            reveal(ChoiceFormatSizeSpec::into_structural);
         }
     }
 
@@ -3590,6 +3438,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for ChoiceTagFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<ChoiceTagFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for ChoiceArraysFoldedFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
@@ -3612,6 +3470,8 @@ mod derived_proofs {
 
     impl SoundParser for ChoiceArraysFoldedFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3624,6 +3484,8 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             reveal(<ChoiceArraysFoldedFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3645,6 +3507,8 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             reveal(<ChoiceArraysFoldedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3655,6 +3519,8 @@ mod derived_proofs {
 
     impl GoodSerializer for ChoiceArraysFoldedFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             reveal(<ChoiceArraysFoldedFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3665,6 +3531,8 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ChoiceArraysFoldedFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             reveal(<ChoiceArraysFoldedFmt as SpecParser>::spec_parse);
             reveal(<ChoiceArraysFoldedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoiceArraysFoldedFmt as Consistency>::consistent);
@@ -3734,6 +3602,7 @@ mod derived_proofs {
 
     impl SoundParser for SizeArithFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(SizeArithSpec::into_structural);
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3746,6 +3615,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(SizeArithSpec::into_structural);
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             reveal(<SizeArithFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3767,6 +3637,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(SizeArithSpec::into_structural);
             reveal(<SizeArithFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3777,6 +3648,7 @@ mod derived_proofs {
 
     impl GoodSerializer for SizeArithFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(SizeArithSpec::into_structural);
             reveal(<SizeArithFmt as SpecSerializer>::spec_serialize);
             reveal(<SizeArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3787,6 +3659,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for SizeArithFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(SizeArithSpec::into_structural);
             reveal(<SizeArithFmt as SpecParser>::spec_parse);
             reveal(<SizeArithFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<SizeArithFmt as Consistency>::consistent);
@@ -3834,6 +3707,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for SizeArithFmt {
+        open spec fn static_byte_len() -> nat {
+            4 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<SizeArithFmt as SpecByteLen>::byte_len);
+            reveal(SizeArithSpec::into_structural);
+        }
+    }
+
     impl SafeParser for SimpleSubFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
@@ -3856,6 +3740,7 @@ mod derived_proofs {
 
     impl SoundParser for SimpleSubFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(SimpleSubSpec::into_structural);
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -3868,6 +3753,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(SimpleSubSpec::into_structural);
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             reveal(<SimpleSubFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.len_spec());
@@ -3889,6 +3775,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(SimpleSubSpec::into_structural);
             reveal(<SimpleSubFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -3899,6 +3786,7 @@ mod derived_proofs {
 
     impl GoodSerializer for SimpleSubFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(SimpleSubSpec::into_structural);
             reveal(<SimpleSubFmt as SpecSerializer>::spec_serialize);
             reveal(<SimpleSubFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -3909,6 +3797,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for SimpleSubFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(SimpleSubSpec::into_structural);
             reveal(<SimpleSubFmt as SpecParser>::spec_parse);
             reveal(<SimpleSubFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<SimpleSubFmt as Consistency>::consistent);
@@ -3978,6 +3867,7 @@ mod derived_proofs {
 
     impl SoundParser for MultiArithFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(MultiArithSpec::into_structural);
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
@@ -3990,6 +3880,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(MultiArithSpec::into_structural);
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             reveal(<MultiArithFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
@@ -4011,6 +3902,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(MultiArithSpec::into_structural);
             reveal(<MultiArithFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
@@ -4021,6 +3913,7 @@ mod derived_proofs {
 
     impl GoodSerializer for MultiArithFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(MultiArithSpec::into_structural);
             reveal(<MultiArithFmt as SpecSerializer>::spec_serialize);
             reveal(<MultiArithFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.total_spec(), self.hdr_len_spec());
@@ -4031,6 +3924,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for MultiArithFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(MultiArithSpec::into_structural);
             reveal(<MultiArithFmt as SpecParser>::spec_parse);
             reveal(<MultiArithFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MultiArithFmt as Consistency>::consistent);
@@ -4100,6 +3994,7 @@ mod derived_proofs {
 
     impl SoundParser for ParenExprFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ParenExprSpec::into_structural);
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
@@ -4112,6 +4007,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ParenExprSpec::into_structural);
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             reveal(<ParenExprFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
@@ -4133,6 +4029,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ParenExprSpec::into_structural);
             reveal(<ParenExprFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
@@ -4143,6 +4040,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ParenExprFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ParenExprSpec::into_structural);
             reveal(<ParenExprFmt as SpecSerializer>::spec_serialize);
             reveal(<ParenExprFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.a_spec(), self.b_spec(), self.c_spec());
@@ -4153,6 +4051,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ParenExprFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ParenExprSpec::into_structural);
             reveal(<ParenExprFmt as SpecParser>::spec_parse);
             reveal(<ParenExprFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ParenExprFmt as Consistency>::consistent);
@@ -4222,6 +4121,7 @@ mod derived_proofs {
 
     impl SoundParser for MixedConstFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(MixedConstSpec::into_structural);
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -4234,6 +4134,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(MixedConstSpec::into_structural);
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             reveal(<MixedConstFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.len_spec());
@@ -4255,6 +4156,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(MixedConstSpec::into_structural);
             reveal(<MixedConstFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -4265,6 +4167,7 @@ mod derived_proofs {
 
     impl GoodSerializer for MixedConstFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(MixedConstSpec::into_structural);
             reveal(<MixedConstFmt as SpecSerializer>::spec_serialize);
             reveal(<MixedConstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.len_spec());
@@ -4275,6 +4178,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for MixedConstFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(MixedConstSpec::into_structural);
             reveal(<MixedConstFmt as SpecParser>::spec_parse);
             reveal(<MixedConstFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MixedConstFmt as Consistency>::consistent);
@@ -4344,6 +4248,7 @@ mod derived_proofs {
 
     impl SoundParser for PayloadWithHeaderFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -4356,6 +4261,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -4377,6 +4283,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -4387,6 +4294,7 @@ mod derived_proofs {
 
     impl GoodSerializer for PayloadWithHeaderFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -4397,6 +4305,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for PayloadWithHeaderFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PayloadWithHeaderFmt as Consistency>::consistent);
@@ -4464,6 +4373,7 @@ mod derived_proofs {
 
     impl<'i> SoundParser for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let fmt = Self::spec_inner(self.tag_spec());
             assert forall|input: ChoiceArraysFoldedBodyInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
@@ -4474,6 +4384,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let fmt = Self::spec_inner(self.tag_spec());
             assert forall|input: ChoiceArraysFoldedBodyInner|
                 #[trigger] fmt.1.inner.consistent(input) implies fmt.1.mapper.lossless(input) by {
@@ -4492,6 +4403,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let fmt = Self::spec_inner(self.tag_spec());
             assert(fmt.serialize_dps_inv());
             fmt.lemma_serialize_dps_len(v, obuf);
@@ -4500,6 +4412,7 @@ mod derived_proofs {
 
     impl<'i> GoodSerializer for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let fmt = Self::spec_inner(self.tag_spec());
             assert(fmt.serialize_inv());
             fmt.lemma_serialize_len(v);
@@ -4508,6 +4421,7 @@ mod derived_proofs {
 
     impl<'i> SPRoundTripDps for ChoiceArraysFoldedBodyFmt<'i> {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let fmt = Self::spec_inner(self.tag_spec());
             assert forall|output: ChoiceArraysFoldedBodySpec|
                 #[trigger] fmt.1.consistent(output) implies fmt.1.mapper.sound(output) by {
@@ -4752,6 +4666,7 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<HeaderAliasFmt as SpecParser>::spec_parse);
+            reveal(<HeaderAlias as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -4765,6 +4680,7 @@ mod exec_impls {
         fn serialize_into(&self, v: &HeaderAlias, obuf: &mut Output) {
             reveal(<HeaderAliasFmt as SpecSerializer>::spec_serialize);
             reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
+            reveal(<HeaderAlias as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             HeaderFmt.serialize_into(v, obuf);
@@ -4776,6 +4692,7 @@ mod exec_impls {
     impl<'i> Prepare<HeaderAlias> for HeaderAliasFmt {
         fn prepare(&self, v: &HeaderAlias) -> Result<usize, PreSerializeError> {
             reveal(<HeaderAliasFmt as SpecByteLen>::byte_len);
+            reveal(<HeaderAlias as DeepView>::deep_view);
             Named("header", HeaderFmt).prepare(v)
         }
     }
@@ -5024,6 +4941,7 @@ mod exec_impls {
             let _ = ibuf.len();
             let rest = *ibuf;
 
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let (n1, tag) = (Named("choice_tag", ChoiceTagFmt)).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, body) = (
@@ -5048,6 +4966,7 @@ mod exec_impls {
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             reveal(<ChoiceArraysFolded as DeepView>::deep_view);
             reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let ghost old_obuf = obuf@;
 
             let ChoiceArraysFolded { tag, body } = v;
@@ -5065,6 +4984,7 @@ mod exec_impls {
             reveal(<ChoiceArraysFoldedFmt as SpecByteLen>::byte_len);
             reveal(<ChoiceArraysFolded as DeepView>::deep_view);
             reveal(ChoiceArraysFoldedSpec::into_structural);
+            reveal(ChoiceArraysFoldedBodySpec::into_structural);
             let ChoiceArraysFolded { tag, body } = v;
             let l1 = (Named("choice_tag", ChoiceTagFmt)).prepare(tag)?;
             let l2 = (
@@ -5414,8 +5334,8 @@ mod exec_impls {
             }
 
             proof {
-                self.hdr.lemma_deep_view_fields();
-                self.hdr.deep_view().lemma_into_structural_fields();
+                reveal(<Header as DeepView>::deep_view);
+                reveal(HeaderSpec::into_structural);
             }
 
             let (n1, data) = (Varied((self.hdr.len - 3))).parse(&rest)?;
@@ -5443,12 +5363,12 @@ mod exec_impls {
 
             let ghost old_obuf = obuf@;
 
-            let PayloadWithHeader { data } = v;
-
             proof {
-                self.hdr.lemma_deep_view_fields();
-                self.hdr.deep_view().lemma_into_structural_fields();
+                reveal(<Header as DeepView>::deep_view);
+                reveal(HeaderSpec::into_structural);
             }
+
+            let PayloadWithHeader { data } = v;
 
             Varied((self.hdr.len - 3)).serialize_into(*data, obuf);
 
@@ -5465,12 +5385,12 @@ mod exec_impls {
                 use_type_invariant(self);
             }
 
-            let PayloadWithHeader { data } = v;
             proof {
-                self.hdr.lemma_deep_view_fields();
-                self.hdr.deep_view().lemma_into_structural_fields();
+                reveal(<Header as DeepView>::deep_view);
+                reveal(HeaderSpec::into_structural);
             }
 
+            let PayloadWithHeader { data } = v;
             let l1 = (Varied((self.hdr.len - 3))).prepare(data)?;
             let total_len = l1;
             Ok(total_len)

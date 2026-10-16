@@ -1,6 +1,9 @@
 //! Executable serializer traits.
 use crate::core::exec::output::*;
-use crate::core::spec::{Consistency, GoodSerializer, SpecByteLen, SpecSerializer};
+use crate::core::spec::{
+    Consistency, GoodSerializer, MinMaxByteLen, SpecByteLen, SpecSerializer, StaticByteLen,
+    ValueByteLen,
+};
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -275,6 +278,40 @@ impl<S: SpecByteLen> SpecByteLen for &S {
 
     open spec fn byte_len(&self, v: Self::T) -> nat {
         (*self).byte_len(v)
+    }
+}
+
+impl<S: StaticByteLen> StaticByteLen for &S {
+    open spec fn static_byte_len() -> nat {
+        S::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        (*self).lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<S: ValueByteLen> ValueByteLen for &S {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        S::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        (*self).lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<S: MinMaxByteLen> MinMaxByteLen for &S {
+    open spec fn min(&self) -> nat {
+        (*self).min()
+    }
+
+    open spec fn max(&self) -> nat {
+        (*self).max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        (*self).lemma_min_max_byte_len(v);
     }
 }
 

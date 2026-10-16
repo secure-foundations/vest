@@ -263,6 +263,7 @@ impl<'a> Analysis<'a> {
         let wrapper_call_args = self.wrapper_spec_call_args(param_defns);
 
         self.gen_derived_spec_impls(
+            name,
             &fmt_ident,
             &wrapper_generics,
             &wrapper_generics,
@@ -373,6 +374,7 @@ impl<'a> Analysis<'a> {
 
     pub(crate) fn gen_derived_spec_impls(
         &self,
+        name: &str,
         fmt_ident: &proc_macro2::Ident,
         impl_generics: &TokenStream,
         type_generics: &TokenStream,
@@ -384,6 +386,8 @@ impl<'a> Analysis<'a> {
         } else {
             quote! {}
         };
+        let consistency = self.model_spec_body(name, wrapper_call_args, "consistent");
+        let byte_len = self.model_spec_body(name, wrapper_call_args, "byte_len");
 
         render_ts(quote! {
             impl #impl_generics SpecParser for #fmt_ident #type_generics {
@@ -399,7 +403,7 @@ impl<'a> Analysis<'a> {
                 type Val = #top_value_ty;
 
                 open spec fn consistent(&self, v: Self::Val) -> bool {
-                    Self::spec_inner(#(#wrapper_call_args),*).consistent(v)
+                    #consistency
                 }
             }
 
@@ -426,7 +430,7 @@ impl<'a> Analysis<'a> {
 
                 #opaque
                 open spec fn byte_len(&self, v: Self::T) -> nat {
-                    Self::spec_inner(#(#wrapper_call_args),*).byte_len(v)
+                    #byte_len
                 }
             }
         })
@@ -477,12 +481,7 @@ impl<'a> Analysis<'a> {
             })
             .collect::<Vec<_>>();
         // see if all params are "self view"
-        let can_use_wrapper_fmt = self
-            .param_defns_for(&invocation.func)
-            .iter()
-            .all(|p| match p {
-                ParamDefn::Dependent { combinator, .. } => self.combinator_is_selfview(combinator),
-            });
+        let can_use_wrapper_fmt = self.uses_nominal_spec(&invocation.func);
         let expr = if args.is_empty() {
             quote! { #fmt_ident }
         } else if can_use_wrapper_fmt {

@@ -2,6 +2,7 @@ mod common;
 mod datatypes;
 mod execs;
 mod pretty;
+mod projections;
 mod proofs;
 mod recursive;
 mod specs;

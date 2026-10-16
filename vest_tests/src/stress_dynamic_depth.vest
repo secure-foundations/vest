@@ -1,0 +1,17 @@
+dynamic_depth0 = { @length: u16, payload: [u8; @length], }
+dynamic_depth1 = { value: dynamic_depth0, }
+dynamic_depth2 = { value: dynamic_depth1, }
+dynamic_depth3 = { value: dynamic_depth2, }
+dynamic_depth4 = { value: dynamic_depth3, }
+dynamic_depth5 = { value: dynamic_depth4, }
+dynamic_depth6 = { value: dynamic_depth5, }
+dynamic_depth7 = { value: dynamic_depth6, }
+dynamic_depth8 = { value: dynamic_depth7, }
+dynamic_depth9 = { value: dynamic_depth8, }
+dynamic_depth10 = { value: dynamic_depth9, }
+dynamic_depth11 = { value: dynamic_depth10, }
+dynamic_depth12 = { value: dynamic_depth11, }
+dynamic_depth13 = { value: dynamic_depth12, }
+dynamic_depth14 = { value: dynamic_depth13, }
+dynamic_depth15 = { value: dynamic_depth14, }
+dynamic_depth16 = { value: dynamic_depth15, }

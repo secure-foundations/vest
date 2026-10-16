@@ -27,6 +27,7 @@ impl<'a> Analysis<'a> {
         let equiv_general =
             self.gen_equiv_general_impl(&fmt_ident, &generics, &generics, &inner_expr, opaque);
         let equiv = self.gen_equiv_impl(&fmt_ident, &generics, &generics, &inner_expr, opaque);
+        let static_length = self.gen_static_length_impl(name, param_defns);
         let reveal_ty = &fmt_ident;
 
         let sound = quote! {
@@ -90,6 +91,7 @@ impl<'a> Analysis<'a> {
             #non_malleable
             #equiv_general
             #equiv
+            #static_length
         })
     }
 
@@ -202,6 +204,7 @@ impl<'a> Analysis<'a> {
             TokenStream::new()
         };
         let equiv = self.gen_equiv_impl(&fmt_ident, &generics, &type_generics, &inner_expr, opaque);
+        let static_length = self.gen_static_length_impl(name, param_defns);
 
         render_ts(quote! {
             #safe
@@ -213,7 +216,53 @@ impl<'a> Analysis<'a> {
             #non_malleable
             #equiv_general
             #equiv
+            #static_length
         })
+    }
+
+    fn gen_static_length_impl(&self, name: &str, params: &[ParamDefn]) -> TokenStream {
+        let Some(size) = self.ctx.static_sizes.get(name) else {
+            return TokenStream::new();
+        };
+        let format = format_ident!("{}", self.info(name).names.fmt);
+        let spec = format_ident!("{}", self.info(name).names.spec);
+        let exec = format_ident!("{}", self.info(name).names.exec);
+        let generics = self.wrapper_generics(params);
+        let size = proc_macro2::Literal::usize_unsuffixed(*size);
+        let conversion = match self.definition(name) {
+            crate::vestir::Definition::StructDef { .. }
+            | crate::vestir::Definition::ChoiceDef { .. } => {
+                quote! { reveal(#spec::into_structural); }
+            }
+            crate::vestir::Definition::EnumDef { .. } => {
+                quote! { reveal(#exec::into_structural); }
+            }
+            _ => TokenStream::new(),
+        };
+        let cases = match self.definition(name) {
+            crate::vestir::Definition::ChoiceDef { combinator, .. } => {
+                let arms = self
+                    .choice_variant_names(combinator)
+                    .into_iter()
+                    .map(|variant| {
+                        let variant = format_ident!("{}", variant);
+                        quote! { #spec::#variant(_) => {}, }
+                    });
+                quote! { match v { #(#arms)* } }
+            }
+            _ => TokenStream::new(),
+        };
+        quote! {
+            impl #generics StaticByteLen for #format #generics {
+                open spec fn static_byte_len() -> nat { #size as nat }
+
+                proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+                    reveal(<#format as SpecByteLen>::byte_len);
+                    #conversion
+                    #cases
+                }
+            }
+        }
     }
 
     pub(crate) fn gen_productive_impl(
@@ -279,6 +328,7 @@ impl<'a> Analysis<'a> {
         opaque: bool,
         mapper_certificate: &TokenStream,
     ) -> TokenStream {
+        let reveal_projection = self.model_projection_reveal(fmt_ident);
         let reveal_ty = quote! { #fmt_ident #type_generics };
         let reveal_spec_parse = if opaque {
             quote! { reveal(<#reveal_ty as SpecParser>::spec_parse); }
@@ -298,6 +348,7 @@ impl<'a> Analysis<'a> {
         quote! {
             impl #impl_generics SoundParser for #fmt_ident #type_generics {
                 proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+                    #reveal_projection
                     #reveal_spec_parse
                     #reveal_byte_len
                     let fmt = #inner_expr;
@@ -307,6 +358,7 @@ impl<'a> Analysis<'a> {
                 }
 
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+                    #reveal_projection
                     #reveal_spec_parse
                     #reveal_consistent
                     let fmt = #inner_expr;
@@ -326,6 +378,7 @@ impl<'a> Analysis<'a> {
         inner_expr: &TokenStream,
         opaque: bool,
     ) -> TokenStream {
+        let reveal_projection = self.model_projection_reveal(fmt_ident);
         let reveal_ty = quote! { #fmt_ident #type_generics };
         let reveal_serialize_dps = if opaque {
             quote! { reveal(<#reveal_ty as SpecSerializerDps>::spec_serialize_dps); }
@@ -347,6 +400,7 @@ impl<'a> Analysis<'a> {
                 }
 
                 proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+                    #reveal_projection
                     #reveal_serialize_dps
                     #reveal_byte_len
                     let fmt = #inner_expr;
@@ -365,6 +419,7 @@ impl<'a> Analysis<'a> {
         inner_expr: &TokenStream,
         opaque: bool,
     ) -> TokenStream {
+        let reveal_projection = self.model_projection_reveal(fmt_ident);
         let reveal_ty = quote! { #fmt_ident #type_generics };
         let reveal_serialize = if opaque {
             quote! { reveal(<#reveal_ty as SpecSerializer>::spec_serialize); }
@@ -379,6 +434,7 @@ impl<'a> Analysis<'a> {
         quote! {
             impl #impl_generics GoodSerializer for #fmt_ident #type_generics {
                 proof fn lemma_serialize_len(&self, v: Self::SVal) {
+                    #reveal_projection
                     #reveal_serialize
                     #reveal_byte_len
                     let fmt = #inner_expr;
@@ -398,6 +454,7 @@ impl<'a> Analysis<'a> {
         opaque: bool,
         mapper_certificate: &TokenStream,
     ) -> TokenStream {
+        let reveal_projection = self.model_projection_reveal(fmt_ident);
         let reveal_ty = quote! { #fmt_ident #type_generics };
         let reveal_spec_parse = if opaque {
             quote! { reveal(<#reveal_ty as SpecParser>::spec_parse); }
@@ -422,6 +479,7 @@ impl<'a> Analysis<'a> {
         quote! {
             impl #impl_generics SPRoundTripDps for #fmt_ident #type_generics {
                 proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+                    #reveal_projection
                     #reveal_spec_parse
                     #reveal_serialize_dps
                     #reveal_consistent

@@ -35,18 +35,8 @@ pub type BitsHeaderInner = u16;
 impl DeepView for BitsHeader {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl BitsHeader {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<BitsHeader as DeepView>::deep_view);
     }
 }
 
@@ -104,22 +94,6 @@ impl<'i> DeepView for BitsPacket<'i> {
     }
 }
 
-impl<'i> BitsPacket<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().total_len == self.total_len.deep_view(),
-            self.deep_view().ident == self.ident.deep_view(),
-            self.deep_view().ttl == self.ttl.deep_view(),
-            self.deep_view().proto == self.proto.deep_view(),
-            self.deep_view().checksum == self.checksum.deep_view(),
-            self.deep_view().src == self.src.deep_view(),
-            self.deep_view().dst == self.dst.deep_view(),
-    {
-        reveal(<BitsPacket as DeepView>::deep_view);
-    }
-}
-
 // ============================================================
 // Structural Mappers
 // ============================================================
@@ -149,17 +123,6 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7> BitsPacketSpec<T0, T1, T2, T3, T4, T5, T6, 
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(BitsPacketSpec::from_structural);
-        reveal(BitsPacketSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, total_len, ident, ttl, proto, checksum, src, dst } =>
-                        (hdr, (total_len, (ident, (ttl, (proto, (checksum, (src, dst))))))),
-                },
-    {
         reveal(BitsPacketSpec::into_structural);
     }
 }
@@ -424,7 +387,9 @@ mod derived_specs {
         type Val = BitsPacketSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.hdr, (v.total_len, (v.ident, (v.ttl, (v.proto, (v.checksum, (v.src, v.dst)))))))
+            )
         }
     }
 
@@ -451,7 +416,9 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.hdr, (v.total_len, (v.ident, (v.ttl, (v.proto, (v.checksum, (v.src, v.dst)))))))
+            )
         }
     }
 }
@@ -575,6 +542,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for BitsHeaderFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<BitsHeaderFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for BitsPacketFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
@@ -597,6 +574,7 @@ mod derived_proofs {
 
     impl SoundParser for BitsPacketFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
             reveal(<BitsPacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -609,6 +587,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
             reveal(<BitsPacketFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -630,6 +609,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BitsPacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -640,6 +620,7 @@ mod derived_proofs {
 
     impl GoodSerializer for BitsPacketFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecSerializer>::spec_serialize);
             reveal(<BitsPacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -650,6 +631,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for BitsPacketFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
             reveal(<BitsPacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BitsPacketFmt as Consistency>::consistent);
@@ -696,6 +678,17 @@ mod derived_proofs {
             fmt.lemma_serialize_equiv_on_empty(v);
         }
     }
+
+    impl StaticByteLen for BitsPacketFmt {
+        open spec fn static_byte_len() -> nat {
+            18 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<BitsPacketFmt as SpecByteLen>::byte_len);
+            reveal(BitsPacketSpec::into_structural);
+        }
+    }
 }
 
 // ============================================================
@@ -713,7 +706,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<BitsHeaderFmt as SpecParser>::spec_parse);
-            reveal(<BitsHeader as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -729,7 +721,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &BitsHeader, obuf: &mut Output) {
             reveal(<BitsHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<BitsHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<BitsHeader as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let BitsHeader { version, ihl, dscp, ecn } = *v;
@@ -743,7 +734,6 @@ mod exec_impls {
     impl<'i> Prepare<BitsHeader> for BitsHeaderFmt {
         fn prepare(&self, v: &BitsHeader) -> Result<usize, PreSerializeError> {
             reveal(<BitsHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<BitsHeader as DeepView>::deep_view);
             let BitsHeader { version, ihl, dscp, ecn } = *v;
             if !(bits_header_bounds(version, ihl, dscp, ecn)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -771,11 +761,6 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("bits_header", BitsHeaderFmt)).parse(&rest)?;
-
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let rest = rest.skip(n1);
             let (n2, total_len) = (U16Be).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -811,10 +796,6 @@ mod exec_impls {
 
             let BitsPacket { hdr, total_len, ident, ttl, proto, checksum, src, dst } = v;
 
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             BitsHeaderFmt.serialize_into(hdr, obuf);
             U16Be.serialize_into(total_len, obuf);
             U16Be.serialize_into(ident, obuf);
@@ -834,10 +815,6 @@ mod exec_impls {
             reveal(<BitsPacket as DeepView>::deep_view);
             reveal(BitsPacketSpec::into_structural);
             let BitsPacket { hdr, total_len, ident, ttl, proto, checksum, src, dst } = v;
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let l1 = (Named("bits_header", BitsHeaderFmt)).prepare(hdr)?;
             let l2 = (U16Be).prepare(total_len)?;
             let l3 = (U16Be).prepare(ident)?;

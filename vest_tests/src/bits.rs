@@ -33,18 +33,8 @@ pub type VersionIhlInner = u8;
 impl DeepView for VersionIhl {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl VersionIhl {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<VersionIhl as DeepView>::deep_view);
     }
 }
 
@@ -63,18 +53,8 @@ pub type CrossByteSpanInner = u16;
 impl DeepView for CrossByteSpan {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl CrossByteSpan {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<CrossByteSpan as DeepView>::deep_view);
     }
 }
 
@@ -94,18 +74,8 @@ pub type PayloadKindInner = Sum<u8, u8>;
 impl DeepView for PayloadKind {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl PayloadKind {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<PayloadKind as DeepView>::deep_view);
     }
 }
 
@@ -127,18 +97,8 @@ pub type PacketHeaderInner = u16;
 impl DeepView for PacketHeader {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl PacketHeader {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<PacketHeader as DeepView>::deep_view);
     }
 }
 
@@ -166,16 +126,6 @@ impl<'i> DeepView for ChoicePacket<'i> {
     }
 }
 
-impl<'i> ChoicePacket<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().payload == self.payload.deep_view(),
-    {
-        reveal(<ChoicePacket as DeepView>::deep_view);
-    }
-}
-
 /// data type for `closed_payload_kind`.
 #[repr(u8)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, StructuralEq)]
@@ -191,18 +141,8 @@ pub type ClosedPayloadKindInner = u8;
 impl DeepView for ClosedPayloadKind {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl ClosedPayloadKind {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<ClosedPayloadKind as DeepView>::deep_view);
     }
 }
 
@@ -224,18 +164,8 @@ pub type ClosedPacketHeaderInner = u16;
 impl DeepView for ClosedPacketHeader {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl ClosedPacketHeader {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<ClosedPacketHeader as DeepView>::deep_view);
     }
 }
 
@@ -260,16 +190,6 @@ impl<'i> DeepView for ClosedChoicePacket<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         ClosedChoicePacketSpec { hdr: self.hdr.deep_view(), payload: self.payload.deep_view() }
-    }
-}
-
-impl<'i> ClosedChoicePacket<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().payload == self.payload.deep_view(),
-    {
-        reveal(<ClosedChoicePacket as DeepView>::deep_view);
     }
 }
 
@@ -306,22 +226,6 @@ impl<'i> DeepView for ChoicePacketPayload<'i> {
     }
 }
 
-impl<'i> ChoicePacketPayload<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    ChoicePacketPayload::Raw(v) => ChoicePacketPayloadSpec::Raw(v.deep_view()),
-                    ChoicePacketPayload::Words(v) => ChoicePacketPayloadSpec::Words(v.deep_view()),
-                    ChoicePacketPayload::Tiny(v) => ChoicePacketPayloadSpec::Tiny(v.deep_view()),
-                    ChoicePacketPayload::Default(v) =>
-                        ChoicePacketPayloadSpec::Default(v.deep_view()),
-                },
-    {
-        reveal(<ChoicePacketPayload as DeepView>::deep_view);
-    }
-}
-
 /// data type for `closed_choice_packet_payload`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ClosedChoicePacketPayload<'i> {
@@ -351,23 +255,6 @@ impl<'i> DeepView for ClosedChoicePacketPayload<'i> {
             ClosedChoicePacketPayload::Tiny(v) =>
                 ClosedChoicePacketPayloadSpec::Tiny(v.deep_view()),
         }
-    }
-}
-
-impl<'i> ClosedChoicePacketPayload<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    ClosedChoicePacketPayload::Raw(v) =>
-                        ClosedChoicePacketPayloadSpec::Raw(v.deep_view()),
-                    ClosedChoicePacketPayload::Words(v) =>
-                        ClosedChoicePacketPayloadSpec::Words(v.deep_view()),
-                    ClosedChoicePacketPayload::Tiny(v) =>
-                        ClosedChoicePacketPayloadSpec::Tiny(v.deep_view()),
-                },
-    {
-        reveal(<ClosedChoicePacketPayload as DeepView>::deep_view);
     }
 }
 
@@ -494,16 +381,6 @@ impl<T0, T1> ChoicePacketSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(ChoicePacketSpec::from_structural);
-        reveal(ChoicePacketSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, payload } => (hdr, payload),
-                },
-    {
         reveal(ChoicePacketSpec::into_structural);
     }
 }
@@ -645,16 +522,6 @@ impl<T0, T1> ClosedChoicePacketSpec<T0, T1> {
         reveal(ClosedChoicePacketSpec::from_structural);
         reveal(ClosedChoicePacketSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, payload } => (hdr, payload),
-                },
-    {
-        reveal(ClosedChoicePacketSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -730,19 +597,6 @@ impl<T0, T1, T2, T3> ChoicePacketPayloadSpec<T0, T1, T2, T3> {
             R(R(_)) => {}
         }
     }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::Raw(value) => L(L(value)),
-                    Self::Words(value) => L(R(value)),
-                    Self::Tiny(value) => R(L(value)),
-                    Self::Default(value) => R(R(value)),
-                },
-    {
-        reveal(ChoicePacketPayloadSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -813,18 +667,6 @@ impl<T0, T1, T2> ClosedChoicePacketPayloadSpec<T0, T1, T2> {
             R(L(_)) => {}
             R(R(_)) => {}
         }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::Raw(value) => L(value),
-                    Self::Words(value) => R(L(value)),
-                    Self::Tiny(value) => R(R(value)),
-                },
-    {
-        reveal(ClosedChoicePacketPayloadSpec::into_structural);
     }
 }
 
@@ -1697,7 +1539,7 @@ mod derived_specs {
         type Val = ChoicePacketSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, v.payload))
         }
     }
 
@@ -1724,7 +1566,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, v.payload))
         }
     }
 
@@ -1785,7 +1627,7 @@ mod derived_specs {
         type Val = ClosedChoicePacketSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, v.payload))
         }
     }
 
@@ -1812,7 +1654,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, v.payload))
         }
     }
 
@@ -1829,7 +1671,14 @@ mod derived_specs {
         type Val = ChoicePacketPayloadSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.hdr_spec()).consistent(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.consistent(
+                match v {
+                    ChoicePacketPayloadSpec::Raw(item) => L(L(item)),
+                    ChoicePacketPayloadSpec::Words(item) => L(R(item)),
+                    ChoicePacketPayloadSpec::Tiny(item) => R(L(item)),
+                    ChoicePacketPayloadSpec::Default(item) => R(R(item)),
+                }
+            )
         }
     }
 
@@ -1856,7 +1705,14 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.hdr_spec()).byte_len(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.byte_len(
+                match v {
+                    ChoicePacketPayloadSpec::Raw(item) => L(L(item)),
+                    ChoicePacketPayloadSpec::Words(item) => L(R(item)),
+                    ChoicePacketPayloadSpec::Tiny(item) => R(L(item)),
+                    ChoicePacketPayloadSpec::Default(item) => R(R(item)),
+                }
+            )
         }
     }
 
@@ -1873,7 +1729,13 @@ mod derived_specs {
         type Val = ClosedChoicePacketPayloadSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.hdr_spec()).consistent(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.consistent(
+                match v {
+                    ClosedChoicePacketPayloadSpec::Raw(item) => L(item),
+                    ClosedChoicePacketPayloadSpec::Words(item) => R(L(item)),
+                    ClosedChoicePacketPayloadSpec::Tiny(item) => R(R(item)),
+                }
+            )
         }
     }
 
@@ -1900,7 +1762,13 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.hdr_spec()).byte_len(v)
+            Self::spec_inner(self.hdr_spec()).1.inner.byte_len(
+                match v {
+                    ClosedChoicePacketPayloadSpec::Raw(item) => L(item),
+                    ClosedChoicePacketPayloadSpec::Words(item) => R(L(item)),
+                    ClosedChoicePacketPayloadSpec::Tiny(item) => R(R(item)),
+                }
+            )
         }
     }
 }
@@ -2034,6 +1902,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for VersionIhlFmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for CrossByteSpanFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
@@ -2139,6 +2017,16 @@ mod derived_proofs {
             let fmt = Self::spec_inner();
             assert(fmt.equiv_inv());
             fmt.lemma_serialize_equiv_on_empty(v);
+        }
+    }
+
+    impl StaticByteLen for CrossByteSpanFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
         }
     }
 
@@ -2250,6 +2138,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for PacketHeaderFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for ChoicePacketFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
@@ -2272,6 +2170,7 @@ mod derived_proofs {
 
     impl SoundParser for ChoicePacketFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2284,6 +2183,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2305,6 +2205,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2315,6 +2216,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ChoicePacketFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2325,6 +2227,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ChoicePacketFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketFmt as Consistency>::consistent);
@@ -2486,6 +2389,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for ClosedPacketHeaderFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for ClosedChoicePacketFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
@@ -2508,6 +2421,7 @@ mod derived_proofs {
 
     impl SoundParser for ClosedChoicePacketFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2520,6 +2434,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2541,6 +2456,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2551,6 +2467,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ClosedChoicePacketFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2561,6 +2478,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ClosedChoicePacketFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketFmt as Consistency>::consistent);
@@ -2630,6 +2548,7 @@ mod derived_proofs {
 
     impl SoundParser for ChoicePacketPayloadFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2642,6 +2561,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2663,6 +2583,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2673,6 +2594,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ChoicePacketPayloadFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2683,6 +2605,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ChoicePacketPayloadFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ChoicePacketPayloadFmt as Consistency>::consistent);
@@ -2752,6 +2675,7 @@ mod derived_proofs {
 
     impl SoundParser for ClosedChoicePacketPayloadFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2764,6 +2688,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2785,6 +2710,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2795,6 +2721,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ClosedChoicePacketPayloadFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.hdr_spec());
@@ -2805,6 +2732,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ClosedChoicePacketPayloadFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ClosedChoicePacketPayloadFmt as Consistency>::consistent);
@@ -2864,7 +2792,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<VersionIhlFmt as SpecParser>::spec_parse);
-            reveal(<VersionIhl as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2880,7 +2807,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &VersionIhl, obuf: &mut Output) {
             reveal(<VersionIhlFmt as SpecSerializer>::spec_serialize);
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
-            reveal(<VersionIhl as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let VersionIhl { version, ihl } = *v;
@@ -2894,7 +2820,6 @@ mod exec_impls {
     impl<'i> Prepare<VersionIhl> for VersionIhlFmt {
         fn prepare(&self, v: &VersionIhl) -> Result<usize, PreSerializeError> {
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
-            reveal(<VersionIhl as DeepView>::deep_view);
             let VersionIhl { version, ihl } = *v;
             if !(version_ihl_bounds(version, ihl)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -2913,7 +2838,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
-            reveal(<CrossByteSpan as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2929,7 +2853,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &CrossByteSpan, obuf: &mut Output) {
             reveal(<CrossByteSpanFmt as SpecSerializer>::spec_serialize);
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
-            reveal(<CrossByteSpan as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let CrossByteSpan { prefix, span, suffix } = *v;
@@ -2943,7 +2866,6 @@ mod exec_impls {
     impl<'i> Prepare<CrossByteSpan> for CrossByteSpanFmt {
         fn prepare(&self, v: &CrossByteSpan) -> Result<usize, PreSerializeError> {
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
-            reveal(<CrossByteSpan as DeepView>::deep_view);
             let CrossByteSpan { prefix, span, suffix } = *v;
             if !(cross_byte_span_bounds(prefix, span, suffix)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -2962,7 +2884,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
-            reveal(<PacketHeader as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -2985,7 +2906,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &PacketHeader, obuf: &mut Output) {
             reveal(<PacketHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<PacketHeader as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let PacketHeader { kind, count, len } = *v;
@@ -2999,7 +2919,6 @@ mod exec_impls {
     impl<'i> Prepare<PacketHeader> for PacketHeaderFmt {
         fn prepare(&self, v: &PacketHeader) -> Result<usize, PreSerializeError> {
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<PacketHeader as DeepView>::deep_view);
             let PacketHeader { kind, count, len } = *v;
             if !(packet_header_bounds(payload_kind_to_bits(kind), count, len)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -3033,17 +2952,7 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("packet_header", PacketHeaderFmt)).parse(&rest)?;
-
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let rest = rest.skip(n1);
-
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let (n2, payload) = (
                 Named("choice_packet_payload", ChoicePacketPayloadFmt { hdr: hdr })
             ).parse(&rest)?;
@@ -3068,10 +2977,6 @@ mod exec_impls {
 
             let ChoicePacket { hdr, payload } = v;
 
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             PacketHeaderFmt.serialize_into(hdr, obuf);
 
             ChoicePacketPayloadFmt { hdr: *hdr }.serialize_into(payload, obuf);
@@ -3086,10 +2991,6 @@ mod exec_impls {
             reveal(<ChoicePacket as DeepView>::deep_view);
             reveal(ChoicePacketSpec::into_structural);
             let ChoicePacket { hdr, payload } = v;
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let l1 = (Named("packet_header", PacketHeaderFmt)).prepare(hdr)?;
             let l2 = (
                 Named("choice_packet_payload", ChoicePacketPayloadFmt { hdr: *hdr })
@@ -3108,7 +3009,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
-            reveal(<ClosedPacketHeader as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -3134,7 +3034,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &ClosedPacketHeader, obuf: &mut Output) {
             reveal(<ClosedPacketHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<ClosedPacketHeader as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let ClosedPacketHeader { kind, count, len } = *v;
@@ -3148,7 +3047,6 @@ mod exec_impls {
     impl<'i> Prepare<ClosedPacketHeader> for ClosedPacketHeaderFmt {
         fn prepare(&self, v: &ClosedPacketHeader) -> Result<usize, PreSerializeError> {
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
-            reveal(<ClosedPacketHeader as DeepView>::deep_view);
             let ClosedPacketHeader { kind, count, len } = *v;
             if !(closed_packet_header_bounds(closed_payload_kind_to_bits(kind), count, len)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -3188,17 +3086,7 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("closed_packet_header", ClosedPacketHeaderFmt)).parse(&rest)?;
-
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let rest = rest.skip(n1);
-
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let (n2, payload) = (
                 Named("closed_choice_packet_payload", ClosedChoicePacketPayloadFmt { hdr: hdr })
             ).parse(&rest)?;
@@ -3225,10 +3113,6 @@ mod exec_impls {
 
             let ClosedChoicePacket { hdr, payload } = v;
 
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             ClosedPacketHeaderFmt.serialize_into(hdr, obuf);
 
             ClosedChoicePacketPayloadFmt { hdr: *hdr }.serialize_into(payload, obuf);
@@ -3243,10 +3127,6 @@ mod exec_impls {
             reveal(<ClosedChoicePacket as DeepView>::deep_view);
             reveal(ClosedChoicePacketSpec::into_structural);
             let ClosedChoicePacket { hdr, payload } = v;
-            proof {
-                hdr.lemma_deep_view();
-            }
-
             let l1 = (Named("closed_packet_header", ClosedPacketHeaderFmt)).prepare(hdr)?;
             let l2 = (
                 Named("closed_choice_packet_payload", ClosedChoicePacketPayloadFmt { hdr: *hdr })
@@ -3268,11 +3148,6 @@ mod exec_impls {
 
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
-            }
-
-            proof {
-                self.hdr.lemma_deep_view();
             }
 
             let (n, v) = match self.hdr.kind {
@@ -3308,14 +3183,9 @@ mod exec_impls {
             reveal(ChoicePacketPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
-
-            proof {
-                self.hdr.lemma_deep_view();
-            }
 
             match (self.hdr.kind, v) {
                 (PayloadKind::Raw, ChoicePacketPayload::Raw(v)) => {
@@ -3344,11 +3214,6 @@ mod exec_impls {
             reveal(ChoicePacketPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
-            }
-
-            proof {
-                self.hdr.lemma_deep_view();
             }
 
             match (self.hdr.kind, v) {
@@ -3378,11 +3243,6 @@ mod exec_impls {
 
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
-            }
-
-            proof {
-                self.hdr.lemma_deep_view();
             }
 
             let (n, v) = match self.hdr.kind {
@@ -3414,14 +3274,9 @@ mod exec_impls {
             reveal(ClosedChoicePacketPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
-
-            proof {
-                self.hdr.lemma_deep_view();
-            }
 
             match (self.hdr.kind, v) {
                 (ClosedPayloadKind::Raw, ClosedChoicePacketPayload::Raw(v)) => {
@@ -3447,11 +3302,6 @@ mod exec_impls {
             reveal(ClosedChoicePacketPayloadSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.hdr.lemma_deep_view();
-            }
-
-            proof {
-                self.hdr.lemma_deep_view();
             }
 
             match (self.hdr.kind, v) {

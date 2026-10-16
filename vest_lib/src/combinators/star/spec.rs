@@ -7,14 +7,16 @@ use vstd::prelude::*;
 
 verus! {
 
-proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
+/// The byte length of fixed-width elements is their count times their fixed width.
+pub broadcast proof fn lemma_star_static_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
     requires
-        forall|i: int| 0 <= i < vs.len() ==> #[trigger] inner.consistent(vs[i]),
+        super::Star(inner).consistent(vs),
     ensures
-        (super::Star(inner)).byte_len(vs) == vs.len() * A::static_byte_len(),
+        #[trigger] super::Star(inner).byte_len(vs) == vs.len() * A::static_byte_len(),
     decreases vs.len(),
 {
     let star = super::Star(inner);
+    reveal(<super::Star::<_> as Consistency>::consistent);
     reveal(<super::Star::<_> as SpecByteLen>::byte_len);
     if vs.len() == 0 {
     } else {
@@ -24,7 +26,7 @@ proof fn lemma_static_seq_byte_len<A: StaticByteLen>(inner: A, vs: Seq<A::T>)
         assert(vs == seq![v0] + rest);
         star.lemma_byte_len_cons(v0, rest);
         inner.lemma_static_len_matches_byte_len(v0);
-        lemma_static_seq_byte_len(inner, rest);
+        lemma_star_static_byte_len(inner, rest);
         assert(k + rest.len() * k == (rest.len() + 1) * k) by (nonlinear_arith);
     }
 }
@@ -382,7 +384,6 @@ impl<A: GoodSerializer> GoodSerializer for super::Star<A> {
 impl<A: SpecByteLen> SpecByteLen for super::Star<A> {
     type T = Seq<A::T>;
 
-    #[verifier::opaque]
     open spec fn byte_len(&self, v: Self::T) -> nat {
         v.fold_left(0, |acc: nat, elem| acc + self.0.byte_len(elem))
     }
@@ -732,7 +733,7 @@ impl<const N: usize, C: StaticByteLen> StaticByteLen for super::Array<N, C> {
         let star = super::Star(self.0);
         reveal(<super::Star::<_> as Consistency>::consistent);
         reveal(<super::Star::<_> as SpecByteLen>::byte_len);
-        lemma_static_seq_byte_len(star.0, v);
+        lemma_star_static_byte_len(star.0, v);
         assert(self.byte_len(v) == star.byte_len(v));
         assert(v.len() == N as nat);
         assert(self.byte_len(v) == v.len() * C::static_byte_len());

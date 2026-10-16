@@ -63,18 +63,8 @@ pub type TstTagInner = Sum<u8, u8>;
 impl DeepView for TstTag {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl TstTag {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<TstTag as DeepView>::deep_view);
     }
 }
 
@@ -105,16 +95,6 @@ impl<'i> DeepView for Mydata<'i> {
     }
 }
 
-impl<'i> Mydata<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().foo == self.foo.deep_view(),
-            self.deep_view().bar == self.bar.deep_view(),
-    {
-        reveal(<Mydata as DeepView>::deep_view);
-    }
-}
-
 /// data type for `tst`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Tst<'i> {
@@ -136,16 +116,6 @@ impl<'i> DeepView for Tst<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TstSpec { tag: self.tag.deep_view(), mydata: self.mydata.deep_view() }
-    }
-}
-
-impl<'i> Tst<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().tag == self.tag.deep_view(),
-            self.deep_view().mydata == self.mydata.deep_view(),
-    {
-        reveal(<Tst as DeepView>::deep_view);
     }
 }
 
@@ -241,32 +211,6 @@ impl DeepView for PairStress {
             f17: self.f17.deep_view(),
             f18: self.f18.deep_view(),
         }
-    }
-}
-
-impl PairStress {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().f1 == self.f1.deep_view(),
-            self.deep_view().f2 == self.f2.deep_view(),
-            self.deep_view().f3 == self.f3.deep_view(),
-            self.deep_view().f4 == self.f4.deep_view(),
-            self.deep_view().f5 == self.f5.deep_view(),
-            self.deep_view().f6 == self.f6.deep_view(),
-            self.deep_view().f7 == self.f7.deep_view(),
-            self.deep_view().f8 == self.f8.deep_view(),
-            self.deep_view().f9 == self.f9.deep_view(),
-            self.deep_view().f10 == self.f10.deep_view(),
-            self.deep_view().f11 == self.f11.deep_view(),
-            self.deep_view().f12 == self.f12.deep_view(),
-            self.deep_view().f13 == self.f13.deep_view(),
-            self.deep_view().f14 == self.f14.deep_view(),
-            self.deep_view().f15 == self.f15.deep_view(),
-            self.deep_view().f16 == self.f16.deep_view(),
-            self.deep_view().f17 == self.f17.deep_view(),
-            self.deep_view().f18 == self.f18.deep_view(),
-    {
-        reveal(<PairStress as DeepView>::deep_view);
     }
 }
 
@@ -438,49 +382,6 @@ impl<'i> DeepView for TstMydata<'i> {
             TstMydata::C30(v) => TstMydataSpec::C30(v.deep_view()),
             TstMydata::Default(v) => TstMydataSpec::Default(v.deep_view()),
         }
-    }
-}
-
-impl<'i> TstMydata<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    TstMydata::C0(v) => TstMydataSpec::C0(v.deep_view()),
-                    TstMydata::C1(v) => TstMydataSpec::C1(v.deep_view()),
-                    TstMydata::C2(v) => TstMydataSpec::C2(v.deep_view()),
-                    TstMydata::C3(v) => TstMydataSpec::C3(v.deep_view()),
-                    TstMydata::C4(v) => TstMydataSpec::C4(v.deep_view()),
-                    TstMydata::C5(v) => TstMydataSpec::C5(v.deep_view()),
-                    TstMydata::C6(v) => TstMydataSpec::C6(v.deep_view()),
-                    TstMydata::C7(v) => TstMydataSpec::C7(v.deep_view()),
-                    TstMydata::C8(v) => TstMydataSpec::C8(v.deep_view()),
-                    TstMydata::C9(v) => TstMydataSpec::C9(v.deep_view()),
-                    TstMydata::C10(v) => TstMydataSpec::C10(v.deep_view()),
-                    TstMydata::C11(v) => TstMydataSpec::C11(v.deep_view()),
-                    TstMydata::C12(v) => TstMydataSpec::C12(v.deep_view()),
-                    TstMydata::C13(v) => TstMydataSpec::C13(v.deep_view()),
-                    TstMydata::C14(v) => TstMydataSpec::C14(v.deep_view()),
-                    TstMydata::C15(v) => TstMydataSpec::C15(v.deep_view()),
-                    TstMydata::C16(v) => TstMydataSpec::C16(v.deep_view()),
-                    TstMydata::C17(v) => TstMydataSpec::C17(v.deep_view()),
-                    TstMydata::C18(v) => TstMydataSpec::C18(v.deep_view()),
-                    TstMydata::C19(v) => TstMydataSpec::C19(v.deep_view()),
-                    TstMydata::C20(v) => TstMydataSpec::C20(v.deep_view()),
-                    TstMydata::C21(v) => TstMydataSpec::C21(v.deep_view()),
-                    TstMydata::C22(v) => TstMydataSpec::C22(v.deep_view()),
-                    TstMydata::C23(v) => TstMydataSpec::C23(v.deep_view()),
-                    TstMydata::C24(v) => TstMydataSpec::C24(v.deep_view()),
-                    TstMydata::C25(v) => TstMydataSpec::C25(v.deep_view()),
-                    TstMydata::C26(v) => TstMydataSpec::C26(v.deep_view()),
-                    TstMydata::C27(v) => TstMydataSpec::C27(v.deep_view()),
-                    TstMydata::C28(v) => TstMydataSpec::C28(v.deep_view()),
-                    TstMydata::C29(v) => TstMydataSpec::C29(v.deep_view()),
-                    TstMydata::C30(v) => TstMydataSpec::C30(v.deep_view()),
-                    TstMydata::Default(v) => TstMydataSpec::Default(v.deep_view()),
-                },
-    {
-        reveal(<TstMydata as DeepView>::deep_view);
     }
 }
 
@@ -752,16 +653,6 @@ impl<T0, T1> MydataSpec<T0, T1> {
         reveal(MydataSpec::from_structural);
         reveal(MydataSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { foo, bar } => (foo, bar),
-                },
-    {
-        reveal(MydataSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -815,16 +706,6 @@ impl<T0, T1> TstSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TstSpec::from_structural);
-        reveal(TstSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { tag, mydata } => (tag, mydata),
-                },
-    {
         reveal(TstSpec::into_structural);
     }
 }
@@ -927,37 +808,6 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, 
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(PairStressSpec::from_structural);
-        reveal(PairStressSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self {
-                        f1,
-                        f2,
-                        f3,
-                        f4,
-                        f5,
-                        f6,
-                        f7,
-                        f8,
-                        f9,
-                        f10,
-                        f11,
-                        f12,
-                        f13,
-                        f14,
-                        f15,
-                        f16,
-                        f17,
-                        f18,
-                    } =>
-                        (f1, (f2, (f3, (f4, (f5, (f6, (f7, (f8, (f9, (f10, (f11, (f12, (f13, (f14,
-                            (f15, (f16, (f17, f18))))))))))))))))),
-                },
-    {
         reveal(PairStressSpec::into_structural);
     }
 }
@@ -1243,47 +1093,6 @@ impl<
             R(R(R(R(L(_))))) => {}
             R(R(R(R(R(_))))) => {}
         }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::C0(value) => L(L(L(L(L(value))))),
-                    Self::C1(value) => L(L(L(L(R(value))))),
-                    Self::C2(value) => L(L(L(R(L(value))))),
-                    Self::C3(value) => L(L(L(R(R(value))))),
-                    Self::C4(value) => L(L(R(L(L(value))))),
-                    Self::C5(value) => L(L(R(L(R(value))))),
-                    Self::C6(value) => L(L(R(R(L(value))))),
-                    Self::C7(value) => L(L(R(R(R(value))))),
-                    Self::C8(value) => L(R(L(L(L(value))))),
-                    Self::C9(value) => L(R(L(L(R(value))))),
-                    Self::C10(value) => L(R(L(R(L(value))))),
-                    Self::C11(value) => L(R(L(R(R(value))))),
-                    Self::C12(value) => L(R(R(L(L(value))))),
-                    Self::C13(value) => L(R(R(L(R(value))))),
-                    Self::C14(value) => L(R(R(R(L(value))))),
-                    Self::C15(value) => L(R(R(R(R(value))))),
-                    Self::C16(value) => R(L(L(L(L(value))))),
-                    Self::C17(value) => R(L(L(L(R(value))))),
-                    Self::C18(value) => R(L(L(R(L(value))))),
-                    Self::C19(value) => R(L(L(R(R(value))))),
-                    Self::C20(value) => R(L(R(L(L(value))))),
-                    Self::C21(value) => R(L(R(L(R(value))))),
-                    Self::C22(value) => R(L(R(R(L(value))))),
-                    Self::C23(value) => R(L(R(R(R(value))))),
-                    Self::C24(value) => R(R(L(L(L(value))))),
-                    Self::C25(value) => R(R(L(L(R(value))))),
-                    Self::C26(value) => R(R(L(R(L(value))))),
-                    Self::C27(value) => R(R(L(R(R(value))))),
-                    Self::C28(value) => R(R(R(L(L(value))))),
-                    Self::C29(value) => R(R(R(L(R(value))))),
-                    Self::C30(value) => R(R(R(R(L(value))))),
-                    Self::Default(value) => R(R(R(R(R(value))))),
-                },
-    {
-        reveal(TstMydataSpec::into_structural);
     }
 }
 
@@ -1721,7 +1530,7 @@ mod derived_specs {
         type Val = MydataSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.foo, v.bar))
         }
     }
 
@@ -1748,7 +1557,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.foo, v.bar))
         }
     }
 
@@ -1765,7 +1574,7 @@ mod derived_specs {
         type Val = TstSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.tag, v.mydata))
         }
     }
 
@@ -1792,7 +1601,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.tag, v.mydata))
         }
     }
 
@@ -1809,7 +1618,10 @@ mod derived_specs {
         type Val = PairStressSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.f1, (v.f2, (v.f3, (v.f4, (v.f5, (v.f6, (v.f7, (v.f8, (v.f9, (v.f10, (v.f11,
+                    (v.f12, (v.f13, (v.f14, (v.f15, (v.f16, (v.f17, v.f18)))))))))))))))))
+            )
         }
     }
 
@@ -1836,7 +1648,10 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.f1, (v.f2, (v.f3, (v.f4, (v.f5, (v.f6, (v.f7, (v.f8, (v.f9, (v.f10, (v.f11,
+                    (v.f12, (v.f13, (v.f14, (v.f15, (v.f16, (v.f17, v.f18)))))))))))))))))
+            )
         }
     }
 
@@ -1853,7 +1668,42 @@ mod derived_specs {
         type Val = TstMydataSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.tag_spec()).consistent(v)
+            Self::spec_inner(self.tag_spec()).1.inner.consistent(
+                match v {
+                    TstMydataSpec::C0(item) => L(L(L(L(L(item))))),
+                    TstMydataSpec::C1(item) => L(L(L(L(R(item))))),
+                    TstMydataSpec::C2(item) => L(L(L(R(L(item))))),
+                    TstMydataSpec::C3(item) => L(L(L(R(R(item))))),
+                    TstMydataSpec::C4(item) => L(L(R(L(L(item))))),
+                    TstMydataSpec::C5(item) => L(L(R(L(R(item))))),
+                    TstMydataSpec::C6(item) => L(L(R(R(L(item))))),
+                    TstMydataSpec::C7(item) => L(L(R(R(R(item))))),
+                    TstMydataSpec::C8(item) => L(R(L(L(L(item))))),
+                    TstMydataSpec::C9(item) => L(R(L(L(R(item))))),
+                    TstMydataSpec::C10(item) => L(R(L(R(L(item))))),
+                    TstMydataSpec::C11(item) => L(R(L(R(R(item))))),
+                    TstMydataSpec::C12(item) => L(R(R(L(L(item))))),
+                    TstMydataSpec::C13(item) => L(R(R(L(R(item))))),
+                    TstMydataSpec::C14(item) => L(R(R(R(L(item))))),
+                    TstMydataSpec::C15(item) => L(R(R(R(R(item))))),
+                    TstMydataSpec::C16(item) => R(L(L(L(L(item))))),
+                    TstMydataSpec::C17(item) => R(L(L(L(R(item))))),
+                    TstMydataSpec::C18(item) => R(L(L(R(L(item))))),
+                    TstMydataSpec::C19(item) => R(L(L(R(R(item))))),
+                    TstMydataSpec::C20(item) => R(L(R(L(L(item))))),
+                    TstMydataSpec::C21(item) => R(L(R(L(R(item))))),
+                    TstMydataSpec::C22(item) => R(L(R(R(L(item))))),
+                    TstMydataSpec::C23(item) => R(L(R(R(R(item))))),
+                    TstMydataSpec::C24(item) => R(R(L(L(L(item))))),
+                    TstMydataSpec::C25(item) => R(R(L(L(R(item))))),
+                    TstMydataSpec::C26(item) => R(R(L(R(L(item))))),
+                    TstMydataSpec::C27(item) => R(R(L(R(R(item))))),
+                    TstMydataSpec::C28(item) => R(R(R(L(L(item))))),
+                    TstMydataSpec::C29(item) => R(R(R(L(R(item))))),
+                    TstMydataSpec::C30(item) => R(R(R(R(L(item))))),
+                    TstMydataSpec::Default(item) => R(R(R(R(R(item))))),
+                }
+            )
         }
     }
 
@@ -1880,7 +1730,42 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.tag_spec()).byte_len(v)
+            Self::spec_inner(self.tag_spec()).1.inner.byte_len(
+                match v {
+                    TstMydataSpec::C0(item) => L(L(L(L(L(item))))),
+                    TstMydataSpec::C1(item) => L(L(L(L(R(item))))),
+                    TstMydataSpec::C2(item) => L(L(L(R(L(item))))),
+                    TstMydataSpec::C3(item) => L(L(L(R(R(item))))),
+                    TstMydataSpec::C4(item) => L(L(R(L(L(item))))),
+                    TstMydataSpec::C5(item) => L(L(R(L(R(item))))),
+                    TstMydataSpec::C6(item) => L(L(R(R(L(item))))),
+                    TstMydataSpec::C7(item) => L(L(R(R(R(item))))),
+                    TstMydataSpec::C8(item) => L(R(L(L(L(item))))),
+                    TstMydataSpec::C9(item) => L(R(L(L(R(item))))),
+                    TstMydataSpec::C10(item) => L(R(L(R(L(item))))),
+                    TstMydataSpec::C11(item) => L(R(L(R(R(item))))),
+                    TstMydataSpec::C12(item) => L(R(R(L(L(item))))),
+                    TstMydataSpec::C13(item) => L(R(R(L(R(item))))),
+                    TstMydataSpec::C14(item) => L(R(R(R(L(item))))),
+                    TstMydataSpec::C15(item) => L(R(R(R(R(item))))),
+                    TstMydataSpec::C16(item) => R(L(L(L(L(item))))),
+                    TstMydataSpec::C17(item) => R(L(L(L(R(item))))),
+                    TstMydataSpec::C18(item) => R(L(L(R(L(item))))),
+                    TstMydataSpec::C19(item) => R(L(L(R(R(item))))),
+                    TstMydataSpec::C20(item) => R(L(R(L(L(item))))),
+                    TstMydataSpec::C21(item) => R(L(R(L(R(item))))),
+                    TstMydataSpec::C22(item) => R(L(R(R(L(item))))),
+                    TstMydataSpec::C23(item) => R(L(R(R(R(item))))),
+                    TstMydataSpec::C24(item) => R(R(L(L(L(item))))),
+                    TstMydataSpec::C25(item) => R(R(L(L(R(item))))),
+                    TstMydataSpec::C26(item) => R(R(L(R(L(item))))),
+                    TstMydataSpec::C27(item) => R(R(L(R(R(item))))),
+                    TstMydataSpec::C28(item) => R(R(R(L(L(item))))),
+                    TstMydataSpec::C29(item) => R(R(R(L(R(item))))),
+                    TstMydataSpec::C30(item) => R(R(R(R(L(item))))),
+                    TstMydataSpec::Default(item) => R(R(R(R(R(item))))),
+                }
+            )
         }
     }
 }
@@ -2029,6 +1914,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for TstTagFmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<TstTagFmt as SpecByteLen>::byte_len);
+            reveal(TstTag::into_structural);
+        }
+    }
+
     impl SafeParser for MydataFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<MydataFmt as SpecParser>::spec_parse);
@@ -2051,6 +1947,7 @@ mod derived_proofs {
 
     impl SoundParser for MydataFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecParser>::spec_parse);
             reveal(<MydataFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2063,6 +1960,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecParser>::spec_parse);
             reveal(<MydataFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2084,6 +1982,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MydataFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2094,6 +1993,7 @@ mod derived_proofs {
 
     impl GoodSerializer for MydataFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecSerializer>::spec_serialize);
             reveal(<MydataFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2104,6 +2004,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for MydataFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecParser>::spec_parse);
             reveal(<MydataFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<MydataFmt as Consistency>::consistent);
@@ -2151,6 +2052,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for MydataFmt {
+        open spec fn static_byte_len() -> nat {
+            4 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<MydataFmt as SpecByteLen>::byte_len);
+            reveal(MydataSpec::into_structural);
+        }
+    }
+
     impl SafeParser for TstFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<TstFmt as SpecParser>::spec_parse);
@@ -2173,6 +2085,7 @@ mod derived_proofs {
 
     impl SoundParser for TstFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecParser>::spec_parse);
             reveal(<TstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2185,6 +2098,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecParser>::spec_parse);
             reveal(<TstFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2199,6 +2113,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TstFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecSerializer>::spec_serialize);
             reveal(<TstFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2209,6 +2124,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TstFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecParser>::spec_parse);
             reveal(<TstFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TstFmt as Consistency>::consistent);
@@ -2268,6 +2184,7 @@ mod derived_proofs {
 
     impl SoundParser for PairStressFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecParser>::spec_parse);
             reveal(<PairStressFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2280,6 +2197,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecParser>::spec_parse);
             reveal(<PairStressFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2301,6 +2219,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PairStressFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2311,6 +2230,7 @@ mod derived_proofs {
 
     impl GoodSerializer for PairStressFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecSerializer>::spec_serialize);
             reveal(<PairStressFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2321,6 +2241,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for PairStressFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecParser>::spec_parse);
             reveal(<PairStressFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<PairStressFmt as Consistency>::consistent);
@@ -2368,6 +2289,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for PairStressFmt {
+        open spec fn static_byte_len() -> nat {
+            22 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<PairStressFmt as SpecByteLen>::byte_len);
+            reveal(PairStressSpec::into_structural);
+        }
+    }
+
     impl SafeParser for TstMydataFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
@@ -2390,6 +2322,7 @@ mod derived_proofs {
 
     impl SoundParser for TstMydataFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
             reveal(<TstMydataFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -2402,6 +2335,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
             reveal(<TstMydataFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -2416,6 +2350,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TstMydataFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecSerializer>::spec_serialize);
             reveal(<TstMydataFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.tag_spec());
@@ -2426,6 +2361,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TstMydataFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
             reveal(<TstMydataFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TstMydataFmt as Consistency>::consistent);
@@ -2475,7 +2411,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<TstTagFmt as SpecParser>::spec_parse);
-            reveal(<TstTag as DeepView>::deep_view);
             reveal(TstTag::from_structural);
             let _ = ibuf.len();
             let rest = *ibuf;
@@ -2524,7 +2459,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &TstTag, obuf: &mut Output) {
             reveal(<TstTagFmt as SpecSerializer>::spec_serialize);
             reveal(<TstTagFmt as SpecByteLen>::byte_len);
-            reveal(<TstTag as DeepView>::deep_view);
             reveal(TstTag::into_structural);
             let ghost old_obuf = obuf@;
 
@@ -2571,7 +2505,6 @@ mod exec_impls {
     impl<'i> Prepare<TstTag> for TstTagFmt {
         fn prepare(&self, v: &TstTag) -> Result<usize, PreSerializeError> {
             reveal(<TstTagFmt as SpecByteLen>::byte_len);
-            reveal(<TstTag as DeepView>::deep_view);
             reveal(TstTag::into_structural);
             let tag = match *v {
                 TstTag::C0 => 0,
@@ -2718,17 +2651,7 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, tag) = (Named("tst_tag", TstTagFmt)).parse(&rest)?;
-
-            proof {
-                tag.lemma_deep_view();
-            }
-
             let rest = rest.skip(n1);
-
-            proof {
-                tag.lemma_deep_view();
-            }
-
             let (n2, mydata) = (Named("tst_mydata", TstMydataFmt { tag: tag })).parse(&rest)?;
             let rest = rest.skip(n2);
             let total_n = n1 + n2;
@@ -2751,10 +2674,6 @@ mod exec_impls {
 
             let Tst { tag, mydata } = v;
 
-            proof {
-                tag.lemma_deep_view();
-            }
-
             TstTagFmt.serialize_into(tag, obuf);
 
             TstMydataFmt { tag: *tag }.serialize_into(mydata, obuf);
@@ -2769,10 +2688,6 @@ mod exec_impls {
             reveal(<Tst as DeepView>::deep_view);
             reveal(TstSpec::into_structural);
             let Tst { tag, mydata } = v;
-            proof {
-                tag.lemma_deep_view();
-            }
-
             let l1 = (Named("tst_tag", TstTagFmt)).prepare(tag)?;
             let l2 = (Named("tst_mydata", TstMydataFmt { tag: *tag })).prepare(mydata)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;
@@ -3029,11 +2944,6 @@ mod exec_impls {
 
             proof {
                 use_type_invariant(self);
-                self.tag.lemma_deep_view();
-            }
-
-            proof {
-                self.tag.lemma_deep_view();
             }
 
             let (n, v) = match self.tag {
@@ -3180,14 +3090,9 @@ mod exec_impls {
             reveal(TstMydataSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.tag.lemma_deep_view();
             }
 
             let ghost old_obuf = obuf@;
-
-            proof {
-                self.tag.lemma_deep_view();
-            }
 
             match (self.tag, v) {
                 (TstTag::C0, TstMydata::C0(v)) => {
@@ -3301,11 +3206,6 @@ mod exec_impls {
             reveal(TstMydataSpec::into_structural);
             proof {
                 use_type_invariant(self);
-                self.tag.lemma_deep_view();
-            }
-
-            proof {
-                self.tag.lemma_deep_view();
             }
 
             match (self.tag, v) {

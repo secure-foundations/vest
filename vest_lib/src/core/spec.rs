@@ -71,11 +71,11 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
     }
 
     /// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)
+    broadcast proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)
         requires
             self.sound_inv(),
         ensures
-            self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
+            #[trigger] self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
 
     /// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
@@ -187,11 +187,11 @@ pub trait StaticByteLen: SpecByteLen + Consistency<Val = Self::T> {
     spec fn static_byte_len() -> nat;
 
     /// Bridge between the dynamic byte-length view and the static one.
-    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T)
+    broadcast proof fn lemma_static_len_matches_byte_len(&self, v: Self::T)
         requires
             self.consistent(v),
         ensures
-            self.byte_len(v) == Self::static_byte_len(),
+            #[trigger] self.byte_len(v) == Self::static_byte_len(),
     ;
 }
 
@@ -289,9 +289,7 @@ pub trait GoodSerializer: SpecByteLen + SpecSerializer<SVal = Self::T> {
         requires
             self.serialize_inv(),
         ensures
-            #![trigger self.spec_serialize(v)]
-            #![trigger self.byte_len(v)]
-            self.spec_serialize(v).len() == self.byte_len(v),
+            #[trigger] self.spec_serialize(v).len() == self.byte_len(v),
     ;
 }
 

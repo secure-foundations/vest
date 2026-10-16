@@ -66,6 +66,40 @@ impl<Inner: SpecByteLen> SpecByteLen for Ref<Inner> {
     }
 }
 
+impl<Inner: StaticByteLen> StaticByteLen for Ref<Inner> {
+    open spec fn static_byte_len() -> nat {
+        Inner::static_byte_len()
+    }
+
+    proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_static_len_matches_byte_len(v);
+    }
+}
+
+impl<Inner: ValueByteLen> ValueByteLen for Ref<Inner> {
+    open spec fn value_byte_len(v: Self::T) -> nat {
+        Inner::value_byte_len(v)
+    }
+
+    proof fn lemma_value_len_matches_byte_len(&self, v: Self::T) {
+        self.0.lemma_value_len_matches_byte_len(v);
+    }
+}
+
+impl<Inner: MinMaxByteLen> MinMaxByteLen for Ref<Inner> {
+    open spec fn min(&self) -> nat {
+        self.0.min()
+    }
+
+    open spec fn max(&self) -> nat {
+        self.0.max()
+    }
+
+    proof fn lemma_min_max_byte_len(&self, v: Self::T) {
+        self.0.lemma_min_max_byte_len(v);
+    }
+}
+
 impl<Inner: SafeParser> SafeParser for Ref<Inner> {
     open spec fn safe_inv(&self) -> bool {
         self.0.safe_inv()

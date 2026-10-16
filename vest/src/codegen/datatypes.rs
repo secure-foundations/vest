@@ -228,11 +228,6 @@ impl<'a> Analysis<'a> {
                 quote! { #id: self.#id.deep_view() }
             })
             .collect();
-        let deep_view_field_ensures = spec_field_idents
-            .iter()
-            .map(|ident| quote! { self.deep_view().#ident == self.#ident.deep_view() })
-            .collect::<Vec<_>>();
-
         let deep_view_impl = quote! {
             impl #exec_lifetime DeepView for #exec_ident #exec_lifetime {
                 type V = #spec_ident;
@@ -242,14 +237,6 @@ impl<'a> Analysis<'a> {
                 }
             }
 
-            impl #exec_lifetime #exec_ident #exec_lifetime {
-                pub proof fn lemma_deep_view_fields(&self)
-                    ensures
-                        #(#deep_view_field_ensures,)*
-                {
-                    reveal(<#exec_ident as DeepView>::deep_view);
-                }
-            }
         };
 
         let structural_ty = tuple_chain(
@@ -290,14 +277,6 @@ impl<'a> Analysis<'a> {
                     reveal(#spec_ident::into_structural);
                 }
 
-                pub proof fn lemma_into_structural_fields(self)
-                    ensures
-                        Self::into_structural(self) == match self {
-                            Self { #(#spec_field_idents),* } => #structural_expr,
-                        },
-                {
-                    reveal(#spec_ident::into_structural);
-                }
             }
 
             #[derive(Clone, Copy)]
@@ -454,16 +433,8 @@ impl<'a> Analysis<'a> {
         let deep_view_impl = quote! {
             impl DeepView for #exec_ident {
                 type V = Self;
-                #[verifier::opaque]
                 open spec fn deep_view(&self) -> Self::V {
                     *self
-                }
-            }
-            impl #exec_ident {
-                pub proof fn lemma_deep_view(&self)
-                    ensures self.deep_view() == *self,
-                {
-                    reveal(<#exec_ident as DeepView>::deep_view);
                 }
             }
         };
@@ -584,16 +555,6 @@ impl<'a> Analysis<'a> {
                 }
             }
 
-            impl #exec_generics #exec_ident #exec_generics {
-                pub proof fn lemma_deep_view_fields(&self)
-                    ensures
-                        self.deep_view() == match self {
-                            #(#deep_view_arms)*
-                        },
-                {
-                    reveal(<#exec_ident as DeepView>::deep_view);
-                }
-            }
         };
 
         let generic_sum_ty = self.render_choice_sum_type(
@@ -654,14 +615,6 @@ impl<'a> Analysis<'a> {
                     match input { #(#input_proof_arms)* }
                 }
 
-                pub proof fn lemma_into_structural_variant(self)
-                    ensures
-                        Self::into_structural(self) == match self {
-                            #(#into_arms)*
-                        },
-                {
-                    reveal(#spec_ident::into_structural);
-                }
             }
 
             #[derive(Clone, Copy)]
@@ -919,17 +872,8 @@ impl<'a> Analysis<'a> {
             pub type #inner_ident = #inner_ty;
             impl DeepView for #exec_ident {
                 type V = Self;
-                #[verifier::opaque]
                 open spec fn deep_view(&self) -> Self::V {
                     *self
-                }
-            }
-
-            impl #exec_ident {
-                pub proof fn lemma_deep_view(&self)
-                    ensures self.deep_view() == *self,
-                {
-                    reveal(<#exec_ident as DeepView>::deep_view);
                 }
             }
             #[cfg(not(verus_keep_ghost))]

@@ -49,17 +49,6 @@ impl<'i> DeepView for Nest0<'i> {
     }
 }
 
-impl<'i> Nest0<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().id == self.id.deep_view(),
-            self.deep_view().len == self.len.deep_view(),
-            self.deep_view().payload == self.payload.deep_view(),
-    {
-        reveal(<Nest0 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `nest1`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Nest1<'i> {
@@ -87,17 +76,6 @@ impl<'i> DeepView for Nest1<'i> {
             inner: self.inner.deep_view(),
             ftr: self.ftr.deep_view(),
         }
-    }
-}
-
-impl<'i> Nest1<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest1 as DeepView>::deep_view);
     }
 }
 
@@ -131,17 +109,6 @@ impl<'i> DeepView for Nest2<'i> {
     }
 }
 
-impl<'i> Nest2<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest2 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `nest3`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Nest3<'i> {
@@ -169,17 +136,6 @@ impl<'i> DeepView for Nest3<'i> {
             inner: self.inner.deep_view(),
             ftr: self.ftr.deep_view(),
         }
-    }
-}
-
-impl<'i> Nest3<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest3 as DeepView>::deep_view);
     }
 }
 
@@ -213,17 +169,6 @@ impl<'i> DeepView for Nest4<'i> {
     }
 }
 
-impl<'i> Nest4<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest4 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `nest5`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Nest5<'i> {
@@ -251,17 +196,6 @@ impl<'i> DeepView for Nest5<'i> {
             inner: self.inner.deep_view(),
             ftr: self.ftr.deep_view(),
         }
-    }
-}
-
-impl<'i> Nest5<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest5 as DeepView>::deep_view);
     }
 }
 
@@ -295,17 +229,6 @@ impl<'i> DeepView for Nest6<'i> {
     }
 }
 
-impl<'i> Nest6<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest6 as DeepView>::deep_view);
-    }
-}
-
 /// data type for `nest7`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Nest7<'i> {
@@ -333,17 +256,6 @@ impl<'i> DeepView for Nest7<'i> {
             inner: self.inner.deep_view(),
             ftr: self.ftr.deep_view(),
         }
-    }
-}
-
-impl<'i> Nest7<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest7 as DeepView>::deep_view);
     }
 }
 
@@ -377,17 +289,6 @@ impl<'i> DeepView for Nest8<'i> {
     }
 }
 
-impl<'i> Nest8<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().hdr == self.hdr.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().ftr == self.ftr.deep_view(),
-    {
-        reveal(<Nest8 as DeepView>::deep_view);
-    }
-}
-
 // ============================================================
 // Structural Mappers
 // ============================================================
@@ -417,16 +318,6 @@ impl<T0, T1, T2> Nest0Spec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Nest0Spec::from_structural);
-        reveal(Nest0Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { id, len, payload } => (id, (len, payload)),
-                },
-    {
         reveal(Nest0Spec::into_structural);
     }
 }
@@ -484,16 +375,6 @@ impl<T0, T1, T2> Nest1Spec<T0, T1, T2> {
         reveal(Nest1Spec::from_structural);
         reveal(Nest1Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
-        reveal(Nest1Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -547,16 +428,6 @@ impl<T0, T1, T2> Nest2Spec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Nest2Spec::from_structural);
-        reveal(Nest2Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
         reveal(Nest2Spec::into_structural);
     }
 }
@@ -614,16 +485,6 @@ impl<T0, T1, T2> Nest3Spec<T0, T1, T2> {
         reveal(Nest3Spec::from_structural);
         reveal(Nest3Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
-        reveal(Nest3Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -677,16 +538,6 @@ impl<T0, T1, T2> Nest4Spec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Nest4Spec::from_structural);
-        reveal(Nest4Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
         reveal(Nest4Spec::into_structural);
     }
 }
@@ -744,16 +595,6 @@ impl<T0, T1, T2> Nest5Spec<T0, T1, T2> {
         reveal(Nest5Spec::from_structural);
         reveal(Nest5Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
-        reveal(Nest5Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -807,16 +648,6 @@ impl<T0, T1, T2> Nest6Spec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Nest6Spec::from_structural);
-        reveal(Nest6Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
         reveal(Nest6Spec::into_structural);
     }
 }
@@ -874,16 +705,6 @@ impl<T0, T1, T2> Nest7Spec<T0, T1, T2> {
         reveal(Nest7Spec::from_structural);
         reveal(Nest7Spec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
-        reveal(Nest7Spec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -937,16 +758,6 @@ impl<T0, T1, T2> Nest8Spec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(Nest8Spec::from_structural);
-        reveal(Nest8Spec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { hdr, inner, ftr } => (hdr, (inner, ftr)),
-                },
-    {
         reveal(Nest8Spec::into_structural);
     }
 }
@@ -1190,7 +1001,7 @@ mod derived_specs {
         type Val = Nest0Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.id, (v.len, v.payload)))
         }
     }
 
@@ -1217,7 +1028,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.id, (v.len, v.payload)))
         }
     }
 
@@ -1234,7 +1045,7 @@ mod derived_specs {
         type Val = Nest1Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1261,7 +1072,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1278,7 +1089,7 @@ mod derived_specs {
         type Val = Nest2Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1305,7 +1116,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1322,7 +1133,7 @@ mod derived_specs {
         type Val = Nest3Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1349,7 +1160,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1366,7 +1177,7 @@ mod derived_specs {
         type Val = Nest4Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1393,7 +1204,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1410,7 +1221,7 @@ mod derived_specs {
         type Val = Nest5Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1437,7 +1248,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1454,7 +1265,7 @@ mod derived_specs {
         type Val = Nest6Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1481,7 +1292,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1498,7 +1309,7 @@ mod derived_specs {
         type Val = Nest7Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1525,7 +1336,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1542,7 +1353,7 @@ mod derived_specs {
         type Val = Nest8Spec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.hdr, (v.inner, v.ftr)))
         }
     }
 
@@ -1569,7 +1380,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.hdr, (v.inner, v.ftr)))
         }
     }
 }
@@ -1623,6 +1434,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest0Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest0Spec::into_structural);
             reveal(<Nest0Fmt as SpecParser>::spec_parse);
             reveal(<Nest0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1635,6 +1447,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest0Spec::into_structural);
             reveal(<Nest0Fmt as SpecParser>::spec_parse);
             reveal(<Nest0Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1656,6 +1469,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest0Spec::into_structural);
             reveal(<Nest0Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1666,6 +1480,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest0Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest0Spec::into_structural);
             reveal(<Nest0Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest0Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1676,6 +1491,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest0Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest0Spec::into_structural);
             reveal(<Nest0Fmt as SpecParser>::spec_parse);
             reveal(<Nest0Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest0Fmt as Consistency>::consistent);
@@ -1745,6 +1561,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest1Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest1Spec::into_structural);
             reveal(<Nest1Fmt as SpecParser>::spec_parse);
             reveal(<Nest1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1757,6 +1574,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest1Spec::into_structural);
             reveal(<Nest1Fmt as SpecParser>::spec_parse);
             reveal(<Nest1Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1778,6 +1596,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest1Spec::into_structural);
             reveal(<Nest1Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1788,6 +1607,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest1Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest1Spec::into_structural);
             reveal(<Nest1Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest1Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1798,6 +1618,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest1Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest1Spec::into_structural);
             reveal(<Nest1Fmt as SpecParser>::spec_parse);
             reveal(<Nest1Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest1Fmt as Consistency>::consistent);
@@ -1867,6 +1688,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest2Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest2Spec::into_structural);
             reveal(<Nest2Fmt as SpecParser>::spec_parse);
             reveal(<Nest2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1879,6 +1701,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest2Spec::into_structural);
             reveal(<Nest2Fmt as SpecParser>::spec_parse);
             reveal(<Nest2Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1900,6 +1723,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest2Spec::into_structural);
             reveal(<Nest2Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1910,6 +1734,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest2Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest2Spec::into_structural);
             reveal(<Nest2Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest2Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1920,6 +1745,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest2Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest2Spec::into_structural);
             reveal(<Nest2Fmt as SpecParser>::spec_parse);
             reveal(<Nest2Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest2Fmt as Consistency>::consistent);
@@ -1989,6 +1815,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest3Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest3Spec::into_structural);
             reveal(<Nest3Fmt as SpecParser>::spec_parse);
             reveal(<Nest3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2001,6 +1828,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest3Spec::into_structural);
             reveal(<Nest3Fmt as SpecParser>::spec_parse);
             reveal(<Nest3Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2022,6 +1850,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest3Spec::into_structural);
             reveal(<Nest3Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2032,6 +1861,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest3Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest3Spec::into_structural);
             reveal(<Nest3Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest3Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2042,6 +1872,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest3Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest3Spec::into_structural);
             reveal(<Nest3Fmt as SpecParser>::spec_parse);
             reveal(<Nest3Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest3Fmt as Consistency>::consistent);
@@ -2111,6 +1942,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest4Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest4Spec::into_structural);
             reveal(<Nest4Fmt as SpecParser>::spec_parse);
             reveal(<Nest4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2123,6 +1955,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest4Spec::into_structural);
             reveal(<Nest4Fmt as SpecParser>::spec_parse);
             reveal(<Nest4Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2144,6 +1977,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest4Spec::into_structural);
             reveal(<Nest4Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2154,6 +1988,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest4Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest4Spec::into_structural);
             reveal(<Nest4Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest4Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2164,6 +1999,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest4Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest4Spec::into_structural);
             reveal(<Nest4Fmt as SpecParser>::spec_parse);
             reveal(<Nest4Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest4Fmt as Consistency>::consistent);
@@ -2233,6 +2069,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest5Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest5Spec::into_structural);
             reveal(<Nest5Fmt as SpecParser>::spec_parse);
             reveal(<Nest5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2245,6 +2082,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest5Spec::into_structural);
             reveal(<Nest5Fmt as SpecParser>::spec_parse);
             reveal(<Nest5Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2266,6 +2104,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest5Spec::into_structural);
             reveal(<Nest5Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2276,6 +2115,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest5Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest5Spec::into_structural);
             reveal(<Nest5Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest5Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2286,6 +2126,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest5Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest5Spec::into_structural);
             reveal(<Nest5Fmt as SpecParser>::spec_parse);
             reveal(<Nest5Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest5Fmt as Consistency>::consistent);
@@ -2355,6 +2196,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest6Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest6Spec::into_structural);
             reveal(<Nest6Fmt as SpecParser>::spec_parse);
             reveal(<Nest6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2367,6 +2209,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest6Spec::into_structural);
             reveal(<Nest6Fmt as SpecParser>::spec_parse);
             reveal(<Nest6Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2388,6 +2231,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest6Spec::into_structural);
             reveal(<Nest6Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2398,6 +2242,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest6Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest6Spec::into_structural);
             reveal(<Nest6Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest6Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2408,6 +2253,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest6Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest6Spec::into_structural);
             reveal(<Nest6Fmt as SpecParser>::spec_parse);
             reveal(<Nest6Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest6Fmt as Consistency>::consistent);
@@ -2477,6 +2323,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest7Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest7Spec::into_structural);
             reveal(<Nest7Fmt as SpecParser>::spec_parse);
             reveal(<Nest7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2489,6 +2336,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest7Spec::into_structural);
             reveal(<Nest7Fmt as SpecParser>::spec_parse);
             reveal(<Nest7Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2510,6 +2358,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest7Spec::into_structural);
             reveal(<Nest7Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2520,6 +2369,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest7Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest7Spec::into_structural);
             reveal(<Nest7Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest7Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2530,6 +2380,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest7Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest7Spec::into_structural);
             reveal(<Nest7Fmt as SpecParser>::spec_parse);
             reveal(<Nest7Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest7Fmt as Consistency>::consistent);
@@ -2599,6 +2450,7 @@ mod derived_proofs {
 
     impl SoundParser for Nest8Fmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(Nest8Spec::into_structural);
             reveal(<Nest8Fmt as SpecParser>::spec_parse);
             reveal(<Nest8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2611,6 +2463,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(Nest8Spec::into_structural);
             reveal(<Nest8Fmt as SpecParser>::spec_parse);
             reveal(<Nest8Fmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2632,6 +2485,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(Nest8Spec::into_structural);
             reveal(<Nest8Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2642,6 +2496,7 @@ mod derived_proofs {
 
     impl GoodSerializer for Nest8Fmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(Nest8Spec::into_structural);
             reveal(<Nest8Fmt as SpecSerializer>::spec_serialize);
             reveal(<Nest8Fmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2652,6 +2507,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for Nest8Fmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(Nest8Spec::into_structural);
             reveal(<Nest8Fmt as SpecParser>::spec_parse);
             reveal(<Nest8Fmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<Nest8Fmt as Consistency>::consistent);

@@ -49,17 +49,6 @@ impl<'i> DeepView for TableEntry<'i> {
     }
 }
 
-impl<'i> TableEntry<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().key == self.key.deep_view(),
-            self.deep_view().value_len == self.value_len.deep_view(),
-            self.deep_view().value == self.value.deep_view(),
-    {
-        reveal(<TableEntry as DeepView>::deep_view);
-    }
-}
-
 /// data type for `table`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Table<'i> {
@@ -87,17 +76,6 @@ impl<'i> DeepView for Table<'i> {
             entry_count: self.entry_count.deep_view(),
             entries: self.entries.deep_view(),
         }
-    }
-}
-
-impl<'i> Table<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().id == self.id.deep_view(),
-            self.deep_view().entry_count == self.entry_count.deep_view(),
-            self.deep_view().entries == self.entries.deep_view(),
-    {
-        reveal(<Table as DeepView>::deep_view);
     }
 }
 
@@ -130,16 +108,6 @@ impl<T0, T1, T2> TableEntrySpec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TableEntrySpec::from_structural);
-        reveal(TableEntrySpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { key, value_len, value } => (key, (value_len, value)),
-                },
-    {
         reveal(TableEntrySpec::into_structural);
     }
 }
@@ -195,16 +163,6 @@ impl<T0, T1, T2> TableSpec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TableSpec::from_structural);
-        reveal(TableSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { id, entry_count, entries } => (id, (entry_count, entries)),
-                },
-    {
         reveal(TableSpec::into_structural);
     }
 }
@@ -307,7 +265,7 @@ mod derived_specs {
         type Val = TableEntrySpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.key, (v.value_len, v.value)))
         }
     }
 
@@ -334,7 +292,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.key, (v.value_len, v.value)))
         }
     }
 
@@ -351,7 +309,7 @@ mod derived_specs {
         type Val = TableSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.id, (v.entry_count, v.entries)))
         }
     }
 
@@ -378,7 +336,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.id, (v.entry_count, v.entries)))
         }
     }
 }
@@ -418,6 +376,7 @@ mod derived_proofs {
 
     impl SoundParser for TableEntryFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
             reveal(<TableEntryFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -430,6 +389,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
             reveal(<TableEntryFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -451,6 +411,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TableEntryFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -461,6 +422,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TableEntryFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecSerializer>::spec_serialize);
             reveal(<TableEntryFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -471,6 +433,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TableEntryFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
             reveal(<TableEntryFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TableEntryFmt as Consistency>::consistent);
@@ -540,6 +503,7 @@ mod derived_proofs {
 
     impl SoundParser for TableFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecParser>::spec_parse);
             reveal(<TableFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -552,6 +516,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecParser>::spec_parse);
             reveal(<TableFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -573,6 +538,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TableFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -583,6 +549,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TableFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecSerializer>::spec_serialize);
             reveal(<TableFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -593,6 +560,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TableFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecParser>::spec_parse);
             reveal(<TableFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TableFmt as Consistency>::consistent);

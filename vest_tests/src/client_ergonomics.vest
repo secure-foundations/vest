@@ -1,0 +1,38 @@
+triple = {
+    a: u8,
+    const b: [u8; 2] = [0x55, 0x77],
+    c: u64,
+}
+
+triple_alias = triple
+
+message = {
+    @length: u16,
+    payload: [u8; @length],
+}
+
+samples = {
+    @count: u16,
+    values: [u16; @count],
+}
+
+fixed_choice = choose {
+    Low(u8 | 0..127),
+    High(u8 | 128..255),
+}
+
+variable_choice = choose {
+    Short(wrap(u8 = 1, u8)),
+    Long(wrap(u8 = 2, u16)),
+}
+
+envelope = {
+    kind: u8,
+    message: message,
+}
+
+bounded(@length: u16) = {
+    payload: [u8; @length],
+}
+
+fixed_window = [u8; 3] >>= Tail

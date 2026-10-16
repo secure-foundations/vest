@@ -15,7 +15,6 @@ const SPINOFF_PROVER_THRESHOLD: usize = 16;
 struct ExecScaffold {
     use_spinoff_prover: bool,
     is_struct: bool,
-    has_opaque_deep_view: bool,
     has_structural_mapper: bool,
 }
 
@@ -56,6 +55,7 @@ impl<'a> Analysis<'a> {
         };
 
         let mut out = CodeWriter::new();
+        let opaque_value_view = self.has_opaque_value_view(name);
 
         // --- Parser impl ---
         {
@@ -83,7 +83,7 @@ impl<'a> Analysis<'a> {
                         w.blank_line();
                     }
                     w.reveal_stmt(&format!("<{} as SpecParser>::spec_parse", reveal_fmt));
-                    if scaffold.has_opaque_deep_view {
+                    if opaque_value_view {
                         w.reveal_stmt(&format!("<{} as DeepView>::deep_view", reveal_exec_ty));
                     }
                     if scaffold.has_structural_mapper {
@@ -92,7 +92,8 @@ impl<'a> Analysis<'a> {
                     w.line("let _ = ibuf.len();");
                     w.line("let rest = *ibuf;");
                     w.blank_line();
-                    self.emit_param_invariant_opening(w, name, param_defns);
+                    self.emit_param_invariant_opening(w, param_defns);
+                    self.emit_unsealed_projection_reveals(w, name);
                     emit_parser(w);
                 });
             });
@@ -126,7 +127,7 @@ impl<'a> Analysis<'a> {
                                 reveal_fmt
                             ));
                             w.reveal_stmt(&format!("<{} as SpecByteLen>::byte_len", reveal_fmt));
-                            if scaffold.has_opaque_deep_view {
+                            if opaque_value_view {
                                 w.reveal_stmt(&format!(
                                     "<{} as DeepView>::deep_view",
                                     reveal_exec_ty
@@ -135,7 +136,8 @@ impl<'a> Analysis<'a> {
                             if scaffold.has_structural_mapper {
                                 w.reveal_stmt(&format!("{}::into_structural", structural_ty));
                             }
-                            self.emit_param_invariant_opening(w, name, param_defns);
+                            self.emit_param_invariant_opening(w, param_defns);
+                            self.emit_unsealed_projection_reveals(w, name);
                             w.line("let ghost old_obuf = obuf@;");
                             w.blank_line();
                             emit_serializer(w);
@@ -159,16 +161,13 @@ impl<'a> Analysis<'a> {
                         w.line("#[verifier::spinoff_prover]");
                     }
                     w.block(
-                        format!(
-                            "fn prepare(&self, v: &{}) -> Result<usize, PreSerializeError>",
-                            exec_ty_str
-                        ),
+                        format!("fn prepare(&self, v: &{}) -> Result<usize, PreSerializeError>", exec_ty_str),
                         |w| {
                             if needs_tail_and_then_lemma {
                                 w.line("broadcast use vest_lib::combinators::bytes::spec::tail_and_then_lemmas;");
                             }
                             w.reveal_stmt(&format!("<{} as SpecByteLen>::byte_len", reveal_fmt));
-                            if scaffold.has_opaque_deep_view {
+                            if opaque_value_view {
                                 w.reveal_stmt(&format!(
                                     "<{} as DeepView>::deep_view",
                                     reveal_exec_ty
@@ -177,7 +176,8 @@ impl<'a> Analysis<'a> {
                             if scaffold.has_structural_mapper {
                                 w.reveal_stmt(&format!("{}::into_structural", structural_ty));
                             }
-                            self.emit_param_invariant_opening(w, name, param_defns);
+                            self.emit_param_invariant_opening(w, param_defns);
+                            self.emit_unsealed_projection_reveals(w, name);
                             emit_prepare(w);
                         },
                     );
@@ -189,37 +189,28 @@ impl<'a> Analysis<'a> {
         out.finish()
     }
 
-    fn emit_param_invariant_opening(
-        &self,
-        w: &mut CodeWriter,
-        owner_name: &str,
-        param_defns: &[ParamDefn],
-    ) {
+    fn emit_param_invariant_opening(&self, w: &mut CodeWriter, param_defns: &[ParamDefn]) {
         if param_defns.is_empty() {
             return;
         }
         w.block("proof", |w| {
             w.line("use_type_invariant(self);");
-            for param in param_defns {
-                let ParamDefn::Dependent { name, combinator } = param;
-                if matches!(
-                    self.invoked_definition(combinator),
-                    Some(vestir::Definition::EnumDef { .. })
-                        | Some(vestir::Definition::BitsDef { .. })
-                ) {
-                    let field = if self.recursive_member_for(owner_name).is_some() {
-                        match combinator {
-                            Combinator::Invocation(invocation) => invocation.func.as_str(),
-                            _ => name.as_str(),
-                        }
-                    } else {
-                        name.as_str()
-                    };
-                    w.line(format!("self.{}.lemma_deep_view();", field));
-                }
-            }
         });
         w.blank_line();
+    }
+
+    fn emit_unsealed_projection_reveals(&self, w: &mut CodeWriter, name: &str) {
+        for child in self.unsealed_projection_dependencies(name) {
+            if matches!(
+                self.definition(&child),
+                vestir::Definition::StructDef { .. } | vestir::Definition::ChoiceDef { .. }
+            ) {
+                w.reveal_stmt(&format!(
+                    "{}::into_structural",
+                    self.info(&child).names.spec
+                ));
+            }
+        }
     }
 
     fn resolve_dep(&self, name: &str, param_defns: &[ParamDefn]) -> TokenStream {
@@ -311,51 +302,14 @@ impl<'a> Analysis<'a> {
         }
     }
 
-    pub(crate) fn has_identity_view_certificate(&self, combinator: &Combinator) -> bool {
-        matches!(
-            self.invoked_definition(combinator),
-            Some(vestir::Definition::EnumDef { .. }) | Some(vestir::Definition::BitsDef { .. })
-        )
-    }
-
-    fn emit_identity_view_certificate(
+    fn emit_dependency_reveals(
         &self,
         w: &mut CodeWriter,
-        value: &str,
-        combinator: &Combinator,
-    ) {
-        if self.has_identity_view_certificate(combinator) {
-            w.block("proof", |w| {
-                w.line(format!("{}.lemma_deep_view();", value));
-            });
-        }
-    }
-
-    fn emit_const_identity_view_certificate(
-        &self,
-        w: &mut CodeWriter,
-        value: &str,
-        combinator: &ConstCombinator,
-    ) {
-        if matches!(
-            self.ctx.resolve_const(combinator),
-            ConstCombinator::ConstEnum(_)
-        ) {
-            w.block("proof", |w| {
-                w.line(format!("{}.lemma_deep_view();", value));
-            });
-        }
-    }
-
-    fn emit_deep_view_projection_lemmas(
-        &self,
-        w: &mut CodeWriter,
-        owner_name: &str,
         dependencies: &[String],
         local_fields: Option<&StructCombinator>,
         param_defns: &[ParamDefn],
     ) {
-        let mut calls = Vec::<String>::new();
+        let mut reveals = Vec::<String>::new();
         for dependency in dependencies {
             let mut parts = dependency.split('.');
             let Some(root) = parts.next() else { continue };
@@ -379,41 +333,20 @@ impl<'a> Analysis<'a> {
             let Some(mut current) = local.or(parameter) else {
                 continue;
             };
-            let is_local = local_fields.is_some_and(|fields| {
-                fields.0.iter().any(|field| match field {
-                    StructField::Dependent { label, .. }
-                    | StructField::Ordinary { label, .. }
-                    | StructField::Const { label, .. } => label == root,
-                })
-            });
-            let mut expression = if is_local {
-                root.to_string()
-            } else {
-                let field = if self.recursive_member_for(owner_name).is_some() {
-                    match &current {
-                        Combinator::Invocation(invocation) => invocation.func.as_str(),
-                        _ => root,
-                    }
-                } else {
-                    root
-                };
-                format!("self.{}", field)
-            };
-
-            loop {
-                let Some(definition) = self.invoked_definition(&current) else {
-                    break;
-                };
+            while let Some(definition) = self.invoked_definition(&current) {
                 match definition {
-                    vestir::Definition::StructDef { combinator, .. } => {
-                        let call = format!("{}.lemma_deep_view_fields();", expression);
-                        if !calls.contains(&call) {
-                            calls.push(call);
-                        }
-                        let call =
-                            format!("{}.deep_view().lemma_into_structural_fields();", expression);
-                        if !calls.contains(&call) {
-                            calls.push(call);
+                    vestir::Definition::StructDef {
+                        name, combinator, ..
+                    } => {
+                        let exec_ty = &self.info(name).names.exec;
+                        let spec_ty = &self.info(name).names.spec;
+                        for definition in [
+                            format!("<{} as DeepView>::deep_view", exec_ty),
+                            format!("{}::into_structural", spec_ty),
+                        ] {
+                            if !reveals.contains(&definition) {
+                                reveals.push(definition);
+                            }
                         }
                         let Some(field_name) = parts.next() else {
                             break;
@@ -429,22 +362,17 @@ impl<'a> Analysis<'a> {
                         }) else {
                             break;
                         };
-                        expression.push('.');
-                        expression.push_str(field_name);
                         current = next;
                     }
-                    vestir::Definition::ChoiceDef { .. } => {
-                        let call = format!("{}.lemma_deep_view_fields();", expression);
-                        if !calls.contains(&call) {
-                            calls.push(call);
+                    vestir::Definition::ChoiceDef { name, .. } => {
+                        let exec_ty = &self.info(name).names.exec;
+                        let definition = format!("<{} as DeepView>::deep_view", exec_ty);
+                        if !reveals.contains(&definition) {
+                            reveals.push(definition);
                         }
                         break;
                     }
                     vestir::Definition::EnumDef { .. } | vestir::Definition::BitsDef { .. } => {
-                        let call = format!("{}.lemma_deep_view();", expression);
-                        if !calls.contains(&call) {
-                            calls.push(call);
-                        }
                         break;
                     }
                     _ => break,
@@ -452,10 +380,10 @@ impl<'a> Analysis<'a> {
             }
         }
 
-        if !calls.is_empty() {
+        if !reveals.is_empty() {
             w.block("proof", |w| {
-                for call in calls {
-                    w.line(call);
+                for definition in reveals {
+                    w.reveal_stmt(&definition);
                 }
             });
             w.blank_line();
@@ -508,7 +436,6 @@ impl<'a> Analysis<'a> {
             ExecScaffold {
                 use_spinoff_prover: use_spinoff,
                 is_struct: true,
-                has_opaque_deep_view: true,
                 has_structural_mapper: true,
             },
         )
@@ -535,7 +462,6 @@ impl<'a> Analysis<'a> {
             },
             ExecScaffold {
                 use_spinoff_prover: use_spinoff,
-                has_opaque_deep_view: true,
                 has_structural_mapper: true,
                 ..ExecScaffold::default()
             },
@@ -561,7 +487,6 @@ impl<'a> Analysis<'a> {
                 self.emit_enum_prepare_body(w, name, combinator);
             },
             ExecScaffold {
-                has_opaque_deep_view: true,
                 has_structural_mapper: true,
                 ..ExecScaffold::default()
             },
@@ -589,7 +514,6 @@ impl<'a> Analysis<'a> {
             },
             ExecScaffold {
                 use_spinoff_prover: use_spinoff,
-                has_opaque_deep_view: true,
                 ..ExecScaffold::default()
             },
         )
@@ -748,26 +672,20 @@ impl<'a> Analysis<'a> {
             super::recursive::RecExecParamAccess,
         )>,
     ) {
+        let mut dependencies = Vec::new();
+        for field in &s.0 {
+            if let StructField::Dependent { combinator, .. }
+            | StructField::Ordinary { combinator, .. } = field
+            {
+                Self::collect_combinator_dependencies(combinator, &mut dependencies);
+            }
+        }
+        self.emit_dependency_reveals(w, &dependencies, Some(s), param_defns);
         match op {
             Op::Parse => {
                 let mut sizes = Vec::new();
                 let mut seen_recursive = false;
                 for (idx, field) in s.0.iter().enumerate() {
-                    let mut dependencies = Vec::new();
-                    match field {
-                        StructField::Dependent { combinator, .. }
-                        | StructField::Ordinary { combinator, .. } => {
-                            Self::collect_combinator_dependencies(combinator, &mut dependencies);
-                        }
-                        StructField::Const { .. } => {}
-                    }
-                    self.emit_deep_view_projection_lemmas(
-                        w,
-                        name,
-                        &dependencies,
-                        Some(s),
-                        param_defns,
-                    );
                     let n_var = format!("n{}", idx + 1);
                     match field {
                         StructField::Const { label, combinator } => {
@@ -790,7 +708,6 @@ impl<'a> Analysis<'a> {
                                     &["&rest"],
                                     Some("?;"),
                                 );
-                                self.emit_const_identity_view_certificate(w, label, combinator);
                                 let c_val_str = render_ts(quote! { #c_val });
                                 w.line(format!(
                                     "if !({} == {}) {{ return Err(ParseError::predicate_failed()); }}",
@@ -810,7 +727,6 @@ impl<'a> Analysis<'a> {
                                     &["&rest"],
                                     Some("?;"),
                                 );
-                                self.emit_const_identity_view_certificate(w, label, combinator);
                             }
                         }
                         StructField::Dependent { label, combinator }
@@ -874,7 +790,6 @@ impl<'a> Analysis<'a> {
                             w.push_multiline(render_ts(quote! {
                                 let (#n_ident, #label_ident) = #parse_expr?;
                             }));
-                            self.emit_identity_view_certificate(w, label, combinator);
                             if let Some(pred) =
                                 self.gen_constraint_pred(combinator, quote! { #label_ident })
                             {
@@ -928,29 +843,6 @@ impl<'a> Analysis<'a> {
                 let exec_ident = format_ident!("{}", self.info(name).names.exec);
                 let struct_field_names = struct_field_name_strings(&s.0);
                 w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
-                for field in &s.0 {
-                    if let StructField::Const { label, combinator } = field {
-                        self.emit_const_identity_view_certificate(w, label, combinator);
-                    }
-                }
-                let mut dependencies = Vec::new();
-                for field in &s.0 {
-                    if let StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } = field
-                    {
-                        Self::collect_combinator_dependencies(combinator, &mut dependencies);
-                    }
-                    match field {
-                        StructField::Dependent { label, combinator }
-                        | StructField::Ordinary { label, combinator }
-                            if self.has_identity_view_certificate(combinator) =>
-                        {
-                            dependencies.push(label.clone());
-                        }
-                        _ => {}
-                    }
-                }
-                self.emit_deep_view_projection_lemmas(w, name, &dependencies, Some(s), param_defns);
 
                 for field in &s.0 {
                     match field {
@@ -1010,29 +902,6 @@ impl<'a> Analysis<'a> {
                 let exec_ident = format_ident!("{}", self.info(name).names.exec);
                 let struct_field_names = struct_field_name_strings(&s.0);
                 w.record_destructure_stmt(&exec_ident.to_string(), &struct_field_names, "v");
-                for field in &s.0 {
-                    if let StructField::Const { label, combinator } = field {
-                        self.emit_const_identity_view_certificate(w, label, combinator);
-                    }
-                }
-                let mut dependencies = Vec::new();
-                for field in &s.0 {
-                    if let StructField::Dependent { combinator, .. }
-                    | StructField::Ordinary { combinator, .. } = field
-                    {
-                        Self::collect_combinator_dependencies(combinator, &mut dependencies);
-                    }
-                    match field {
-                        StructField::Dependent { label, combinator }
-                        | StructField::Ordinary { label, combinator }
-                            if self.has_identity_view_certificate(combinator) =>
-                        {
-                            dependencies.push(label.clone());
-                        }
-                        _ => {}
-                    }
-                }
-                self.emit_deep_view_projection_lemmas(w, name, &dependencies, Some(s), param_defns);
 
                 let mut lens = Vec::new();
                 let mut seen_recursive = false;
@@ -1257,7 +1126,7 @@ impl<'a> Analysis<'a> {
         for (_, combinator) in &c.choices {
             Self::collect_combinator_dependencies(combinator, &mut dependencies);
         }
-        self.emit_deep_view_projection_lemmas(w, name, &dependencies, None, param_defns);
+        self.emit_dependency_reveals(w, &dependencies, None, param_defns);
 
         let exec_ident = format_ident!("{}", self.info(name).names.exec);
         let variant_names = self.choice_variant_names(c);
@@ -2255,11 +2124,16 @@ impl<'a> Analysis<'a> {
     ) -> TokenStream {
         match self.ctx.resolve_alias(lhs) {
             Combinator::Bytes(bytes) => {
-                let len_expr = self.render_length_expr_with(
-                    &bytes.len,
-                    &|name| self.resolve_dep_for_mode(name, param_defns, mode),
-                    None,
-                );
+                let len_expr = if let Some(n) = self.eval_const_length_expr(&bytes.len) {
+                    let n = proc_macro2::Literal::usize_suffixed(n);
+                    quote! { #n }
+                } else {
+                    self.render_length_expr_with(
+                        &bytes.len,
+                        &|name| self.resolve_dep_for_mode(name, param_defns, mode),
+                        None,
+                    )
+                };
                 let inner_expr = self.render_exec_combinator_expr_impl(
                     rhs,
                     param_defns,

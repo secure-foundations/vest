@@ -81,24 +81,6 @@ impl<'i> DeepView for InternalNames<'i> {
     }
 }
 
-impl<'i> InternalNames<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().n == self.n.deep_view(),
-            self.deep_view().l == self.l.deep_view(),
-            self.deep_view().raw == self.raw.deep_view(),
-            self.deep_view().packed == self.packed.deep_view(),
-            self.deep_view().inner == self.inner.deep_view(),
-            self.deep_view().total == self.total.deep_view(),
-            self.deep_view().total_len == self.total_len.deep_view(),
-            self.deep_view().final_v == self.final_v.deep_view(),
-            self.deep_view().x == self.x.deep_view(),
-            self.deep_view().tag == self.tag.deep_view(),
-    {
-        reveal(<InternalNames as DeepView>::deep_view);
-    }
-}
-
 /// data type for `bit_names`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]
@@ -114,18 +96,8 @@ pub type BitNamesInner = u8;
 impl DeepView for BitNames {
     type V = Self;
 
-    #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         *self
-    }
-}
-
-impl BitNames {
-    pub proof fn lemma_deep_view(&self)
-        ensures
-            self.deep_view() == *self,
-    {
-        reveal(<BitNames as DeepView>::deep_view);
     }
 }
 
@@ -153,16 +125,6 @@ impl DeepView for WithBits {
     }
 }
 
-impl WithBits {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().flags == self.flags.deep_view(),
-            self.deep_view().total_len == self.total_len.deep_view(),
-    {
-        reveal(<WithBits as DeepView>::deep_view);
-    }
-}
-
 /// data type for `counted`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Counted<'i> {
@@ -187,16 +149,6 @@ impl<'i> DeepView for Counted<'i> {
     }
 }
 
-impl<'i> Counted<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().items == self.items.deep_view(),
-            self.deep_view().final_v == self.final_v.deep_view(),
-    {
-        reveal(<Counted as DeepView>::deep_view);
-    }
-}
-
 /// data type for `uses_counted`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct UsesCounted<'i> {
@@ -218,16 +170,6 @@ impl<'i> DeepView for UsesCounted<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         UsesCountedSpec { n: self.n.deep_view(), body: self.body.deep_view() }
-    }
-}
-
-impl<'i> UsesCounted<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().n == self.n.deep_view(),
-            self.deep_view().body == self.body.deep_view(),
-    {
-        reveal(<UsesCounted as DeepView>::deep_view);
     }
 }
 
@@ -276,18 +218,6 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> InternalNamesSpec<
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(InternalNamesSpec::from_structural);
-        reveal(InternalNamesSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { n, l, raw, packed, inner, total, total_len, final_v, x, tag } =>
-                        (n, (l, (raw, (packed, (inner, (total, (total_len, (final_v,
-                            (x, tag))))))))),
-                },
-    {
         reveal(InternalNamesSpec::into_structural);
     }
 }
@@ -345,16 +275,6 @@ impl<T0, T1> WithBitsSpec<T0, T1> {
         reveal(WithBitsSpec::from_structural);
         reveal(WithBitsSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { flags, total_len } => (flags, total_len),
-                },
-    {
-        reveal(WithBitsSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -410,16 +330,6 @@ impl<T0, T1> CountedSpec<T0, T1> {
         reveal(CountedSpec::from_structural);
         reveal(CountedSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { items, final_v } => (items, final_v),
-                },
-    {
-        reveal(CountedSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -473,16 +383,6 @@ impl<T0, T1> UsesCountedSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(UsesCountedSpec::from_structural);
-        reveal(UsesCountedSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { n, body } => (n, body),
-                },
-    {
         reveal(UsesCountedSpec::into_structural);
     }
 }
@@ -769,7 +669,10 @@ mod derived_specs {
         type Val = InternalNamesSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.n, (v.l, (v.raw, (v.packed, (v.inner, (v.total, (v.total_len, (v.final_v,
+                    (v.x, v.tag)))))))))
+            )
         }
     }
 
@@ -796,7 +699,10 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.n, (v.l, (v.raw, (v.packed, (v.inner, (v.total, (v.total_len, (v.final_v,
+                    (v.x, v.tag)))))))))
+            )
         }
     }
 
@@ -857,7 +763,7 @@ mod derived_specs {
         type Val = WithBitsSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.flags, v.total_len))
         }
     }
 
@@ -884,7 +790,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.flags, v.total_len))
         }
     }
 
@@ -901,7 +807,7 @@ mod derived_specs {
         type Val = CountedSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.n_spec()).consistent(v)
+            Self::spec_inner(self.n_spec()).1.inner.consistent((v.items, v.final_v))
         }
     }
 
@@ -928,7 +834,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.n_spec()).byte_len(v)
+            Self::spec_inner(self.n_spec()).1.inner.byte_len((v.items, v.final_v))
         }
     }
 
@@ -945,7 +851,7 @@ mod derived_specs {
         type Val = UsesCountedSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.n, v.body))
         }
     }
 
@@ -972,7 +878,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.n, v.body))
         }
     }
 }
@@ -1016,6 +922,7 @@ mod derived_proofs {
 
     impl SoundParser for InternalNamesFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(InternalNamesSpec::into_structural);
             reveal(<InternalNamesFmt as SpecParser>::spec_parse);
             reveal(<InternalNamesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1028,6 +935,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(InternalNamesSpec::into_structural);
             reveal(<InternalNamesFmt as SpecParser>::spec_parse);
             reveal(<InternalNamesFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1049,6 +957,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(InternalNamesSpec::into_structural);
             reveal(<InternalNamesFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<InternalNamesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1059,6 +968,7 @@ mod derived_proofs {
 
     impl GoodSerializer for InternalNamesFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(InternalNamesSpec::into_structural);
             reveal(<InternalNamesFmt as SpecSerializer>::spec_serialize);
             reveal(<InternalNamesFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1069,6 +979,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for InternalNamesFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(InternalNamesSpec::into_structural);
             reveal(<InternalNamesFmt as SpecParser>::spec_parse);
             reveal(<InternalNamesFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<InternalNamesFmt as Consistency>::consistent);
@@ -1224,6 +1135,16 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for BitNamesFmt {
+        open spec fn static_byte_len() -> nat {
+            1 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<BitNamesFmt as SpecByteLen>::byte_len);
+        }
+    }
+
     impl SafeParser for WithBitsFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<WithBitsFmt as SpecParser>::spec_parse);
@@ -1246,6 +1167,7 @@ mod derived_proofs {
 
     impl SoundParser for WithBitsFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(WithBitsSpec::into_structural);
             reveal(<WithBitsFmt as SpecParser>::spec_parse);
             reveal(<WithBitsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1258,6 +1180,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(WithBitsSpec::into_structural);
             reveal(<WithBitsFmt as SpecParser>::spec_parse);
             reveal(<WithBitsFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1279,6 +1202,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(WithBitsSpec::into_structural);
             reveal(<WithBitsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WithBitsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1289,6 +1213,7 @@ mod derived_proofs {
 
     impl GoodSerializer for WithBitsFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(WithBitsSpec::into_structural);
             reveal(<WithBitsFmt as SpecSerializer>::spec_serialize);
             reveal(<WithBitsFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1299,6 +1224,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for WithBitsFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(WithBitsSpec::into_structural);
             reveal(<WithBitsFmt as SpecParser>::spec_parse);
             reveal(<WithBitsFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WithBitsFmt as Consistency>::consistent);
@@ -1346,6 +1272,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for WithBitsFmt {
+        open spec fn static_byte_len() -> nat {
+            2 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<WithBitsFmt as SpecByteLen>::byte_len);
+            reveal(WithBitsSpec::into_structural);
+        }
+    }
+
     impl SafeParser for CountedFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<CountedFmt as SpecParser>::spec_parse);
@@ -1368,6 +1305,7 @@ mod derived_proofs {
 
     impl SoundParser for CountedFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(CountedSpec::into_structural);
             reveal(<CountedFmt as SpecParser>::spec_parse);
             reveal(<CountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.n_spec());
@@ -1380,6 +1318,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(CountedSpec::into_structural);
             reveal(<CountedFmt as SpecParser>::spec_parse);
             reveal(<CountedFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.n_spec());
@@ -1401,6 +1340,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(CountedSpec::into_structural);
             reveal(<CountedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<CountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.n_spec());
@@ -1411,6 +1351,7 @@ mod derived_proofs {
 
     impl GoodSerializer for CountedFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(CountedSpec::into_structural);
             reveal(<CountedFmt as SpecSerializer>::spec_serialize);
             reveal(<CountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.n_spec());
@@ -1421,6 +1362,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for CountedFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(CountedSpec::into_structural);
             reveal(<CountedFmt as SpecParser>::spec_parse);
             reveal(<CountedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<CountedFmt as Consistency>::consistent);
@@ -1490,6 +1432,7 @@ mod derived_proofs {
 
     impl SoundParser for UsesCountedFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(UsesCountedSpec::into_structural);
             reveal(<UsesCountedFmt as SpecParser>::spec_parse);
             reveal(<UsesCountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1502,6 +1445,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(UsesCountedSpec::into_structural);
             reveal(<UsesCountedFmt as SpecParser>::spec_parse);
             reveal(<UsesCountedFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -1523,6 +1467,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(UsesCountedSpec::into_structural);
             reveal(<UsesCountedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<UsesCountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1533,6 +1478,7 @@ mod derived_proofs {
 
     impl GoodSerializer for UsesCountedFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(UsesCountedSpec::into_structural);
             reveal(<UsesCountedFmt as SpecSerializer>::spec_serialize);
             reveal(<UsesCountedFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1543,6 +1489,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for UsesCountedFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(UsesCountedSpec::into_structural);
             reveal(<UsesCountedFmt as SpecParser>::spec_parse);
             reveal(<UsesCountedFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<UsesCountedFmt as Consistency>::consistent);
@@ -1724,7 +1671,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             reveal(<BitNamesFmt as SpecParser>::spec_parse);
-            reveal(<BitNames as DeepView>::deep_view);
             let _ = ibuf.len();
             let rest = *ibuf;
 
@@ -1740,7 +1686,6 @@ mod exec_impls {
         fn serialize_into(&self, v: &BitNames, obuf: &mut Output) {
             reveal(<BitNamesFmt as SpecSerializer>::spec_serialize);
             reveal(<BitNamesFmt as SpecByteLen>::byte_len);
-            reveal(<BitNames as DeepView>::deep_view);
             let ghost old_obuf = obuf@;
 
             let BitNames { raw, packed, x } = *v;
@@ -1754,7 +1699,6 @@ mod exec_impls {
     impl<'i> Prepare<BitNames> for BitNamesFmt {
         fn prepare(&self, v: &BitNames) -> Result<usize, PreSerializeError> {
             reveal(<BitNamesFmt as SpecByteLen>::byte_len);
-            reveal(<BitNames as DeepView>::deep_view);
             let BitNames { raw, packed, x } = *v;
             if !(bit_names_bounds(raw, packed, x)) {
                 return Err(PreSerializeError::not_compliant(ComplianceErrorKind::PredicateFailed));
@@ -1782,11 +1726,6 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, flags) = (Named("bit_names", BitNamesFmt)).parse(&rest)?;
-
-            proof {
-                flags.lemma_deep_view();
-            }
-
             let rest = rest.skip(n1);
             let (n2, total_len) = (U8).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -1810,10 +1749,6 @@ mod exec_impls {
 
             let WithBits { flags, total_len } = v;
 
-            proof {
-                flags.lemma_deep_view();
-            }
-
             BitNamesFmt.serialize_into(flags, obuf);
             U8.serialize_into(total_len, obuf);
 
@@ -1827,10 +1762,6 @@ mod exec_impls {
             reveal(<WithBits as DeepView>::deep_view);
             reveal(WithBitsSpec::into_structural);
             let WithBits { flags, total_len } = v;
-            proof {
-                flags.lemma_deep_view();
-            }
-
             let l1 = (Named("bit_names", BitNamesFmt)).prepare(flags)?;
             let l2 = (U8).prepare(total_len)?;
             let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?;

@@ -58,20 +58,6 @@ impl<'i> DeepView for BlockHeader<'i> {
     }
 }
 
-impl<'i> BlockHeader<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().version == self.version.deep_view(),
-            self.deep_view().previous_block_hash == self.previous_block_hash.deep_view(),
-            self.deep_view().merkle_root_hash == self.merkle_root_hash.deep_view(),
-            self.deep_view().timestamp == self.timestamp.deep_view(),
-            self.deep_view().bits == self.bits.deep_view(),
-            self.deep_view().nonce == self.nonce.deep_view(),
-    {
-        reveal(<BlockHeader as DeepView>::deep_view);
-    }
-}
-
 /// data type for `block`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Block<'i> {
@@ -102,17 +88,6 @@ impl<'i> DeepView for Block<'i> {
     }
 }
 
-impl<'i> Block<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().header == self.header.deep_view(),
-            self.deep_view().transaction_count == self.transaction_count.deep_view(),
-            self.deep_view().transactions == self.transactions.deep_view(),
-    {
-        reveal(<Block as DeepView>::deep_view);
-    }
-}
-
 /// data type for `tx`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Tx<'i> {
@@ -140,17 +115,6 @@ impl<'i> DeepView for Tx<'i> {
             marker_or_input_count: self.marker_or_input_count.deep_view(),
             payload: self.payload.deep_view(),
         }
-    }
-}
-
-impl<'i> Tx<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().version == self.version.deep_view(),
-            self.deep_view().marker_or_input_count == self.marker_or_input_count.deep_view(),
-            self.deep_view().payload == self.payload.deep_view(),
-    {
-        reveal(<Tx as DeepView>::deep_view);
     }
 }
 
@@ -205,21 +169,6 @@ impl<'i> DeepView for TxWithWitness<'i> {
     }
 }
 
-impl<'i> TxWithWitness<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().flag == self.flag.deep_view(),
-            self.deep_view().input_count == self.input_count.deep_view(),
-            self.deep_view().inputs == self.inputs.deep_view(),
-            self.deep_view().output_count == self.output_count.deep_view(),
-            self.deep_view().outputs == self.outputs.deep_view(),
-            self.deep_view().witnesses == self.witnesses.deep_view(),
-            self.deep_view().lock_time == self.lock_time.deep_view(),
-    {
-        reveal(<TxWithWitness as DeepView>::deep_view);
-    }
-}
-
 /// data type for `tx_without_witness`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TxWithoutWitness<'i> {
@@ -258,18 +207,6 @@ impl<'i> DeepView for TxWithoutWitness<'i> {
     }
 }
 
-impl<'i> TxWithoutWitness<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().inputs == self.inputs.deep_view(),
-            self.deep_view().output_count == self.output_count.deep_view(),
-            self.deep_view().outputs == self.outputs.deep_view(),
-            self.deep_view().lock_time == self.lock_time.deep_view(),
-    {
-        reveal(<TxWithoutWitness as DeepView>::deep_view);
-    }
-}
-
 /// data type for `lock_time`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LockTime {
@@ -294,19 +231,6 @@ impl DeepView for LockTime {
             LockTime::BlockHeight(v) => LockTimeSpec::BlockHeight(v.deep_view()),
             LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
         }
-    }
-}
-
-impl LockTime {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    LockTime::BlockHeight(v) => LockTimeSpec::BlockHeight(v.deep_view()),
-                    LockTime::Timestamp(v) => LockTimeSpec::Timestamp(v.deep_view()),
-                },
-    {
-        reveal(<LockTime as DeepView>::deep_view);
     }
 }
 
@@ -340,17 +264,6 @@ impl<'i> DeepView for Txin<'i> {
     }
 }
 
-impl<'i> Txin<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().previous_output == self.previous_output.deep_view(),
-            self.deep_view().script_sig == self.script_sig.deep_view(),
-            self.deep_view().sequence == self.sequence.deep_view(),
-    {
-        reveal(<Txin as DeepView>::deep_view);
-    }
-}
-
 /// data type for `outpoint`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Outpoint<'i> {
@@ -378,16 +291,6 @@ impl<'i> DeepView for Outpoint<'i> {
     }
 }
 
-impl<'i> Outpoint<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().transaction_hash == self.transaction_hash.deep_view(),
-            self.deep_view().output_index == self.output_index.deep_view(),
-    {
-        reveal(<Outpoint as DeepView>::deep_view);
-    }
-}
-
 /// data type for `txout`.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Txout<'i> {
@@ -409,16 +312,6 @@ impl<'i> DeepView for Txout<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         TxoutSpec { value: self.value.deep_view(), script_pubkey: self.script_pubkey.deep_view() }
-    }
-}
-
-impl<'i> Txout<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().value == self.value.deep_view(),
-            self.deep_view().script_pubkey == self.script_pubkey.deep_view(),
-    {
-        reveal(<Txout as DeepView>::deep_view);
     }
 }
 
@@ -446,16 +339,6 @@ impl<'i> DeepView for Script<'i> {
     }
 }
 
-impl<'i> Script<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().length == self.length.deep_view(),
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<Script as DeepView>::deep_view);
-    }
-}
-
 /// data type for `witness`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Witness<'i> {
@@ -477,16 +360,6 @@ impl<'i> DeepView for Witness<'i> {
     #[verifier::opaque]
     open spec fn deep_view(&self) -> Self::V {
         WitnessSpec { item_count: self.item_count.deep_view(), items: self.items.deep_view() }
-    }
-}
-
-impl<'i> Witness<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().item_count == self.item_count.deep_view(),
-            self.deep_view().items == self.items.deep_view(),
-    {
-        reveal(<Witness as DeepView>::deep_view);
     }
 }
 
@@ -514,16 +387,6 @@ impl<'i> DeepView for WitnessItem<'i> {
     }
 }
 
-impl<'i> WitnessItem<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view().length == self.length.deep_view(),
-            self.deep_view().bytes == self.bytes.deep_view(),
-    {
-        reveal(<WitnessItem as DeepView>::deep_view);
-    }
-}
-
 /// data type for `tx_payload`.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TxPayload<'i> {
@@ -548,20 +411,6 @@ impl<'i> DeepView for TxPayload<'i> {
             TxPayload::TxWithWitness(v) => TxPayloadSpec::TxWithWitness(v.deep_view()),
             TxPayload::TxWithoutWitness(v) => TxPayloadSpec::TxWithoutWitness(v.deep_view()),
         }
-    }
-}
-
-impl<'i> TxPayload<'i> {
-    pub proof fn lemma_deep_view_fields(&self)
-        ensures
-            self.deep_view()
-                == match self {
-                    TxPayload::TxWithWitness(v) => TxPayloadSpec::TxWithWitness(v.deep_view()),
-                    TxPayload::TxWithoutWitness(v) =>
-                        TxPayloadSpec::TxWithoutWitness(v.deep_view()),
-                },
-    {
-        reveal(<TxPayload as DeepView>::deep_view);
     }
 }
 
@@ -595,25 +444,6 @@ impl<T0, T1, T2, T3, T4, T5> BlockHeaderSpec<T0, T1, T2, T3, T4, T5> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(BlockHeaderSpec::from_structural);
-        reveal(BlockHeaderSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self {
-                        version,
-                        previous_block_hash,
-                        merkle_root_hash,
-                        timestamp,
-                        bits,
-                        nonce,
-                    } =>
-                        (version, (previous_block_hash, (merkle_root_hash, (timestamp,
-                            (bits, nonce))))),
-                },
-    {
         reveal(BlockHeaderSpec::into_structural);
     }
 }
@@ -671,17 +501,6 @@ impl<T0, T1, T2> BlockSpec<T0, T1, T2> {
         reveal(BlockSpec::from_structural);
         reveal(BlockSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { header, transaction_count, transactions } =>
-                        (header, (transaction_count, transactions)),
-                },
-    {
-        reveal(BlockSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -735,17 +554,6 @@ impl<T0, T1, T2> TxSpec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TxSpec::from_structural);
-        reveal(TxSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { version, marker_or_input_count, payload } =>
-                        (version, (marker_or_input_count, payload)),
-                },
-    {
         reveal(TxSpec::into_structural);
     }
 }
@@ -804,26 +612,6 @@ impl<T0, T1, T2, T3, T4, T5, T6> TxWithWitnessSpec<T0, T1, T2, T3, T4, T5, T6> {
         reveal(TxWithWitnessSpec::from_structural);
         reveal(TxWithWitnessSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self {
-                        flag,
-                        input_count,
-                        inputs,
-                        output_count,
-                        outputs,
-                        witnesses,
-                        lock_time,
-                    } =>
-                        (flag, (input_count, (inputs, (output_count, (outputs,
-                            (witnesses, lock_time)))))),
-                },
-    {
-        reveal(TxWithWitnessSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -877,17 +665,6 @@ impl<T0, T1, T2, T3> TxWithoutWitnessSpec<T0, T1, T2, T3> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TxWithoutWitnessSpec::from_structural);
-        reveal(TxWithoutWitnessSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { inputs, output_count, outputs, lock_time } =>
-                        (inputs, (output_count, (outputs, lock_time))),
-                },
-    {
         reveal(TxWithoutWitnessSpec::into_structural);
     }
 }
@@ -957,17 +734,6 @@ impl<T0, T1> LockTimeSpec<T0, T1> {
             R(_) => {}
         }
     }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::BlockHeight(value) => L(value),
-                    Self::Timestamp(value) => R(value),
-                },
-    {
-        reveal(LockTimeSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1021,17 +787,6 @@ impl<T0, T1, T2> TxinSpec<T0, T1, T2> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TxinSpec::from_structural);
-        reveal(TxinSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { previous_output, script_sig, sequence } =>
-                        (previous_output, (script_sig, sequence)),
-                },
-    {
         reveal(TxinSpec::into_structural);
     }
 }
@@ -1089,16 +844,6 @@ impl<T0, T1> OutpointSpec<T0, T1> {
         reveal(OutpointSpec::from_structural);
         reveal(OutpointSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { transaction_hash, output_index } => (transaction_hash, output_index),
-                },
-    {
-        reveal(OutpointSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1152,16 +897,6 @@ impl<T0, T1> TxoutSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(TxoutSpec::from_structural);
-        reveal(TxoutSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { value, script_pubkey } => (value, script_pubkey),
-                },
-    {
         reveal(TxoutSpec::into_structural);
     }
 }
@@ -1219,16 +954,6 @@ impl<T0, T1> ScriptSpec<T0, T1> {
         reveal(ScriptSpec::from_structural);
         reveal(ScriptSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { length, bytes } => (length, bytes),
-                },
-    {
-        reveal(ScriptSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1284,16 +1009,6 @@ impl<T0, T1> WitnessSpec<T0, T1> {
         reveal(WitnessSpec::from_structural);
         reveal(WitnessSpec::into_structural);
     }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { item_count, items } => (item_count, items),
-                },
-    {
-        reveal(WitnessSpec::into_structural);
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -1347,16 +1062,6 @@ impl<T0, T1> WitnessItemSpec<T0, T1> {
             #[trigger] Self::into_structural(Self::from_structural(input)) == input,
     {
         reveal(WitnessItemSpec::from_structural);
-        reveal(WitnessItemSpec::into_structural);
-    }
-
-    pub proof fn lemma_into_structural_fields(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self { length, bytes } => (length, bytes),
-                },
-    {
         reveal(WitnessItemSpec::into_structural);
     }
 }
@@ -1425,17 +1130,6 @@ impl<T0, T1> TxPayloadSpec<T0, T1> {
             L(_) => {}
             R(_) => {}
         }
-    }
-
-    pub proof fn lemma_into_structural_variant(self)
-        ensures
-            Self::into_structural(self)
-                == match self {
-                    Self::TxWithWitness(value) => L(value),
-                    Self::TxWithoutWitness(value) => R(value),
-                },
-    {
-        reveal(TxPayloadSpec::into_structural);
     }
 }
 
@@ -1872,7 +1566,10 @@ mod derived_specs {
         type Val = BlockHeaderSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.version, (v.previous_block_hash, (v.merkle_root_hash, (v.timestamp,
+                    (v.bits, v.nonce)))))
+            )
         }
     }
 
@@ -1899,7 +1596,10 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.version, (v.previous_block_hash, (v.merkle_root_hash, (v.timestamp,
+                    (v.bits, v.nonce)))))
+            )
         }
     }
 
@@ -1916,7 +1616,7 @@ mod derived_specs {
         type Val = BlockSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.header, (v.transaction_count, v.transactions)))
         }
     }
 
@@ -1943,7 +1643,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.header, (v.transaction_count, v.transactions)))
         }
     }
 
@@ -1960,7 +1660,7 @@ mod derived_specs {
         type Val = TxSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.version, (v.marker_or_input_count, v.payload)))
         }
     }
 
@@ -1987,7 +1687,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.version, (v.marker_or_input_count, v.payload)))
         }
     }
 
@@ -2004,7 +1704,10 @@ mod derived_specs {
         type Val = TxWithWitnessSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                (v.flag, (v.input_count, (v.inputs, (v.output_count, (v.outputs,
+                    (v.witnesses, v.lock_time))))))
+            )
         }
     }
 
@@ -2031,7 +1734,10 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                (v.flag, (v.input_count, (v.inputs, (v.output_count, (v.outputs,
+                    (v.witnesses, v.lock_time))))))
+            )
         }
     }
 
@@ -2048,7 +1754,9 @@ mod derived_specs {
         type Val = TxWithoutWitnessSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.input_count_spec()).consistent(v)
+            Self::spec_inner(self.input_count_spec()).1.inner.consistent(
+                (v.inputs, (v.output_count, (v.outputs, v.lock_time)))
+            )
         }
     }
 
@@ -2075,7 +1783,9 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.input_count_spec()).byte_len(v)
+            Self::spec_inner(self.input_count_spec()).1.inner.byte_len(
+                (v.inputs, (v.output_count, (v.outputs, v.lock_time)))
+            )
         }
     }
 
@@ -2092,7 +1802,12 @@ mod derived_specs {
         type Val = LockTimeSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent(
+                match v {
+                    LockTimeSpec::BlockHeight(item) => L(item),
+                    LockTimeSpec::Timestamp(item) => R(item),
+                }
+            )
         }
     }
 
@@ -2119,7 +1834,12 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len(
+                match v {
+                    LockTimeSpec::BlockHeight(item) => L(item),
+                    LockTimeSpec::Timestamp(item) => R(item),
+                }
+            )
         }
     }
 
@@ -2136,7 +1856,7 @@ mod derived_specs {
         type Val = TxinSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.previous_output, (v.script_sig, v.sequence)))
         }
     }
 
@@ -2163,7 +1883,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.previous_output, (v.script_sig, v.sequence)))
         }
     }
 
@@ -2180,7 +1900,7 @@ mod derived_specs {
         type Val = OutpointSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.transaction_hash, v.output_index))
         }
     }
 
@@ -2207,7 +1927,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.transaction_hash, v.output_index))
         }
     }
 
@@ -2224,7 +1944,7 @@ mod derived_specs {
         type Val = TxoutSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.value, v.script_pubkey))
         }
     }
 
@@ -2251,7 +1971,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.value, v.script_pubkey))
         }
     }
 
@@ -2268,7 +1988,7 @@ mod derived_specs {
         type Val = ScriptSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.length, v.bytes))
         }
     }
 
@@ -2295,7 +2015,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.length, v.bytes))
         }
     }
 
@@ -2312,7 +2032,7 @@ mod derived_specs {
         type Val = WitnessSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.item_count, v.items))
         }
     }
 
@@ -2339,7 +2059,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.item_count, v.items))
         }
     }
 
@@ -2356,7 +2076,7 @@ mod derived_specs {
         type Val = WitnessItemSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner().consistent(v)
+            Self::spec_inner().1.inner.consistent((v.length, v.bytes))
         }
     }
 
@@ -2383,7 +2103,7 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner().byte_len(v)
+            Self::spec_inner().1.inner.byte_len((v.length, v.bytes))
         }
     }
 
@@ -2400,7 +2120,12 @@ mod derived_specs {
         type Val = TxPayloadSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            Self::spec_inner(self.marker_or_input_count_spec()).consistent(v)
+            Self::spec_inner(self.marker_or_input_count_spec()).1.inner.consistent(
+                match v {
+                    TxPayloadSpec::TxWithWitness(item) => L(item),
+                    TxPayloadSpec::TxWithoutWitness(item) => R(item),
+                }
+            )
         }
     }
 
@@ -2427,7 +2152,12 @@ mod derived_specs {
 
         #[verifier::opaque]
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            Self::spec_inner(self.marker_or_input_count_spec()).byte_len(v)
+            Self::spec_inner(self.marker_or_input_count_spec()).1.inner.byte_len(
+                match v {
+                    TxPayloadSpec::TxWithWitness(item) => L(item),
+                    TxPayloadSpec::TxWithoutWitness(item) => R(item),
+                }
+            )
         }
     }
 }
@@ -2489,6 +2219,7 @@ mod derived_proofs {
 
     impl SoundParser for BlockHeaderFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BlockHeaderSpec::into_structural);
             reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
             reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2501,6 +2232,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BlockHeaderSpec::into_structural);
             reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
             reveal(<BlockHeaderFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2522,6 +2254,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BlockHeaderSpec::into_structural);
             reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2532,6 +2265,7 @@ mod derived_proofs {
 
     impl GoodSerializer for BlockHeaderFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BlockHeaderSpec::into_structural);
             reveal(<BlockHeaderFmt as SpecSerializer>::spec_serialize);
             reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2542,6 +2276,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for BlockHeaderFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BlockHeaderSpec::into_structural);
             reveal(<BlockHeaderFmt as SpecParser>::spec_parse);
             reveal(<BlockHeaderFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BlockHeaderFmt as Consistency>::consistent);
@@ -2589,6 +2324,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for BlockHeaderFmt {
+        open spec fn static_byte_len() -> nat {
+            80 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<BlockHeaderFmt as SpecByteLen>::byte_len);
+            reveal(BlockHeaderSpec::into_structural);
+        }
+    }
+
     impl SafeParser for BlockFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<BlockFmt as SpecParser>::spec_parse);
@@ -2611,6 +2357,7 @@ mod derived_proofs {
 
     impl SoundParser for BlockFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(BlockSpec::into_structural);
             reveal(<BlockFmt as SpecParser>::spec_parse);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2623,6 +2370,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(BlockSpec::into_structural);
             reveal(<BlockFmt as SpecParser>::spec_parse);
             reveal(<BlockFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2644,6 +2392,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(BlockSpec::into_structural);
             reveal(<BlockFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2654,6 +2403,7 @@ mod derived_proofs {
 
     impl GoodSerializer for BlockFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(BlockSpec::into_structural);
             reveal(<BlockFmt as SpecSerializer>::spec_serialize);
             reveal(<BlockFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2664,6 +2414,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for BlockFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(BlockSpec::into_structural);
             reveal(<BlockFmt as SpecParser>::spec_parse);
             reveal(<BlockFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<BlockFmt as Consistency>::consistent);
@@ -2733,6 +2484,7 @@ mod derived_proofs {
 
     impl SoundParser for TxFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxSpec::into_structural);
             reveal(<TxFmt as SpecParser>::spec_parse);
             reveal(<TxFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2745,6 +2497,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxSpec::into_structural);
             reveal(<TxFmt as SpecParser>::spec_parse);
             reveal(<TxFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2766,6 +2519,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxSpec::into_structural);
             reveal(<TxFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2776,6 +2530,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxSpec::into_structural);
             reveal(<TxFmt as SpecSerializer>::spec_serialize);
             reveal(<TxFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2786,6 +2541,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxSpec::into_structural);
             reveal(<TxFmt as SpecParser>::spec_parse);
             reveal(<TxFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxFmt as Consistency>::consistent);
@@ -2855,6 +2611,7 @@ mod derived_proofs {
 
     impl SoundParser for TxWithWitnessFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxWithWitnessSpec::into_structural);
             reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2867,6 +2624,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxWithWitnessSpec::into_structural);
             reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithWitnessFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -2888,6 +2646,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxWithWitnessSpec::into_structural);
             reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2898,6 +2657,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxWithWitnessFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxWithWitnessSpec::into_structural);
             reveal(<TxWithWitnessFmt as SpecSerializer>::spec_serialize);
             reveal(<TxWithWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2908,6 +2668,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxWithWitnessFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxWithWitnessSpec::into_structural);
             reveal(<TxWithWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxWithWitnessFmt as Consistency>::consistent);
@@ -2977,6 +2738,7 @@ mod derived_proofs {
 
     impl SoundParser for TxWithoutWitnessFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxWithoutWitnessSpec::into_structural);
             reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.input_count_spec());
@@ -2989,6 +2751,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxWithoutWitnessSpec::into_structural);
             reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithoutWitnessFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.input_count_spec());
@@ -3010,6 +2773,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxWithoutWitnessSpec::into_structural);
             reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.input_count_spec());
@@ -3020,6 +2784,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxWithoutWitnessFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxWithoutWitnessSpec::into_structural);
             reveal(<TxWithoutWitnessFmt as SpecSerializer>::spec_serialize);
             reveal(<TxWithoutWitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.input_count_spec());
@@ -3030,6 +2795,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxWithoutWitnessFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxWithoutWitnessSpec::into_structural);
             reveal(<TxWithoutWitnessFmt as SpecParser>::spec_parse);
             reveal(<TxWithoutWitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxWithoutWitnessFmt as Consistency>::consistent);
@@ -3099,6 +2865,7 @@ mod derived_proofs {
 
     impl SoundParser for LockTimeFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(LockTimeSpec::into_structural);
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3111,6 +2878,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(LockTimeSpec::into_structural);
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTimeFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3132,6 +2900,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(LockTimeSpec::into_structural);
             reveal(<LockTimeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3142,6 +2911,7 @@ mod derived_proofs {
 
     impl GoodSerializer for LockTimeFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(LockTimeSpec::into_structural);
             reveal(<LockTimeFmt as SpecSerializer>::spec_serialize);
             reveal(<LockTimeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3152,6 +2922,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for LockTimeFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(LockTimeSpec::into_structural);
             reveal(<LockTimeFmt as SpecParser>::spec_parse);
             reveal(<LockTimeFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<LockTimeFmt as Consistency>::consistent);
@@ -3199,6 +2970,21 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for LockTimeFmt {
+        open spec fn static_byte_len() -> nat {
+            4 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<LockTimeFmt as SpecByteLen>::byte_len);
+            reveal(LockTimeSpec::into_structural);
+            match v {
+                LockTimeSpec::BlockHeight(_) => {}
+                LockTimeSpec::Timestamp(_) => {}
+            }
+        }
+    }
+
     impl SafeParser for TxinFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<TxinFmt as SpecParser>::spec_parse);
@@ -3221,6 +3007,7 @@ mod derived_proofs {
 
     impl SoundParser for TxinFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxinSpec::into_structural);
             reveal(<TxinFmt as SpecParser>::spec_parse);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3233,6 +3020,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxinSpec::into_structural);
             reveal(<TxinFmt as SpecParser>::spec_parse);
             reveal(<TxinFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3254,6 +3042,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxinSpec::into_structural);
             reveal(<TxinFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3264,6 +3053,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxinFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxinSpec::into_structural);
             reveal(<TxinFmt as SpecSerializer>::spec_serialize);
             reveal(<TxinFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3274,6 +3064,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxinFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxinSpec::into_structural);
             reveal(<TxinFmt as SpecParser>::spec_parse);
             reveal(<TxinFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxinFmt as Consistency>::consistent);
@@ -3343,6 +3134,7 @@ mod derived_proofs {
 
     impl SoundParser for OutpointFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(OutpointSpec::into_structural);
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3355,6 +3147,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(OutpointSpec::into_structural);
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             reveal(<OutpointFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3376,6 +3169,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(OutpointSpec::into_structural);
             reveal(<OutpointFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3386,6 +3180,7 @@ mod derived_proofs {
 
     impl GoodSerializer for OutpointFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(OutpointSpec::into_structural);
             reveal(<OutpointFmt as SpecSerializer>::spec_serialize);
             reveal(<OutpointFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3396,6 +3191,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for OutpointFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(OutpointSpec::into_structural);
             reveal(<OutpointFmt as SpecParser>::spec_parse);
             reveal(<OutpointFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<OutpointFmt as Consistency>::consistent);
@@ -3443,6 +3239,17 @@ mod derived_proofs {
         }
     }
 
+    impl StaticByteLen for OutpointFmt {
+        open spec fn static_byte_len() -> nat {
+            36 as nat
+        }
+
+        proof fn lemma_static_len_matches_byte_len(&self, v: Self::T) {
+            reveal(<OutpointFmt as SpecByteLen>::byte_len);
+            reveal(OutpointSpec::into_structural);
+        }
+    }
+
     impl SafeParser for TxoutFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             reveal(<TxoutFmt as SpecParser>::spec_parse);
@@ -3465,6 +3272,7 @@ mod derived_proofs {
 
     impl SoundParser for TxoutFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxoutSpec::into_structural);
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3477,6 +3285,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxoutSpec::into_structural);
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             reveal(<TxoutFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3498,6 +3307,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxoutSpec::into_structural);
             reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3508,6 +3318,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxoutFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxoutSpec::into_structural);
             reveal(<TxoutFmt as SpecSerializer>::spec_serialize);
             reveal(<TxoutFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3518,6 +3329,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxoutFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxoutSpec::into_structural);
             reveal(<TxoutFmt as SpecParser>::spec_parse);
             reveal(<TxoutFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxoutFmt as Consistency>::consistent);
@@ -3587,6 +3399,7 @@ mod derived_proofs {
 
     impl SoundParser for ScriptFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(ScriptSpec::into_structural);
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3599,6 +3412,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(ScriptSpec::into_structural);
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             reveal(<ScriptFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3620,6 +3434,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(ScriptSpec::into_structural);
             reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3630,6 +3445,7 @@ mod derived_proofs {
 
     impl GoodSerializer for ScriptFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(ScriptSpec::into_structural);
             reveal(<ScriptFmt as SpecSerializer>::spec_serialize);
             reveal(<ScriptFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3640,6 +3456,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for ScriptFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(ScriptSpec::into_structural);
             reveal(<ScriptFmt as SpecParser>::spec_parse);
             reveal(<ScriptFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<ScriptFmt as Consistency>::consistent);
@@ -3709,6 +3526,7 @@ mod derived_proofs {
 
     impl SoundParser for WitnessFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(WitnessSpec::into_structural);
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3721,6 +3539,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(WitnessSpec::into_structural);
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             reveal(<WitnessFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3742,6 +3561,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(WitnessSpec::into_structural);
             reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3752,6 +3572,7 @@ mod derived_proofs {
 
     impl GoodSerializer for WitnessFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(WitnessSpec::into_structural);
             reveal(<WitnessFmt as SpecSerializer>::spec_serialize);
             reveal(<WitnessFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3762,6 +3583,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for WitnessFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(WitnessSpec::into_structural);
             reveal(<WitnessFmt as SpecParser>::spec_parse);
             reveal(<WitnessFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WitnessFmt as Consistency>::consistent);
@@ -3831,6 +3653,7 @@ mod derived_proofs {
 
     impl SoundParser for WitnessItemFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(WitnessItemSpec::into_structural);
             reveal(<WitnessItemFmt as SpecParser>::spec_parse);
             reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3843,6 +3666,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(WitnessItemSpec::into_structural);
             reveal(<WitnessItemFmt as SpecParser>::spec_parse);
             reveal(<WitnessItemFmt as Consistency>::consistent);
             let fmt = Self::spec_inner();
@@ -3864,6 +3688,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(WitnessItemSpec::into_structural);
             reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3874,6 +3699,7 @@ mod derived_proofs {
 
     impl GoodSerializer for WitnessItemFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(WitnessItemSpec::into_structural);
             reveal(<WitnessItemFmt as SpecSerializer>::spec_serialize);
             reveal(<WitnessItemFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3884,6 +3710,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for WitnessItemFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(WitnessItemSpec::into_structural);
             reveal(<WitnessItemFmt as SpecParser>::spec_parse);
             reveal(<WitnessItemFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<WitnessItemFmt as Consistency>::consistent);
@@ -3953,6 +3780,7 @@ mod derived_proofs {
 
     impl SoundParser for TxPayloadFmt {
         proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            reveal(TxPayloadSpec::into_structural);
             reveal(<TxPayloadFmt as SpecParser>::spec_parse);
             reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.marker_or_input_count_spec());
@@ -3965,6 +3793,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            reveal(TxPayloadSpec::into_structural);
             reveal(<TxPayloadFmt as SpecParser>::spec_parse);
             reveal(<TxPayloadFmt as Consistency>::consistent);
             let fmt = Self::spec_inner(self.marker_or_input_count_spec());
@@ -3986,6 +3815,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_len(&self, v: Self::SValue, obuf: Seq<u8>) {
+            reveal(TxPayloadSpec::into_structural);
             reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.marker_or_input_count_spec());
@@ -3996,6 +3826,7 @@ mod derived_proofs {
 
     impl GoodSerializer for TxPayloadFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
+            reveal(TxPayloadSpec::into_structural);
             reveal(<TxPayloadFmt as SpecSerializer>::spec_serialize);
             reveal(<TxPayloadFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner(self.marker_or_input_count_spec());
@@ -4006,6 +3837,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for TxPayloadFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
+            reveal(TxPayloadSpec::into_structural);
             reveal(<TxPayloadFmt as SpecParser>::spec_parse);
             reveal(<TxPayloadFmt as SpecSerializerDps>::spec_serialize_dps);
             reveal(<TxPayloadFmt as Consistency>::consistent);
