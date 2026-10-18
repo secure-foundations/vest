@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-57801029.js";
+            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -179,18 +179,16 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="generated-rust-code"><a class="header" href="#generated-rust-code">Generated Rust Code</a></h1>
-<p>Vest emits one user-facing value type and one format type for each named DSL
-definition. It also emits specification, proof, and executable helpers/trait implementations. The
-helpers are public to ease the codegen plumbing,
-but application
-code normally needs only the value and format types.</p>
-<p>For this definition:</p>
+<p>This page is the reference for the Rust/Verus code that Vest emits from a DSL definition.
+It first takes a complete tour of a generated file, then covers
+the API for calling the generated code and for reasoning about it in Verus.</p>
+<p>We’ll use a variable-length message format as the running example. The DSL definition is</p>
 <pre><code class="language-vest">message = {
     @length: u16,
     payload: [u8; @length],
 }
 </code></pre>
-<p>the user-facing types are:</p>
+<p>Compiling <code>src/message.vest</code> to <code>src/message.rs</code> gives these two user-facing types:</p>
 <pre><code class="language-rust ignore">#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Message&lt;'i&gt; {
     pub length: u16,
@@ -198,9 +196,12 @@ pub struct Message&lt;'i&gt; {
 }
 
 pub struct MessageFmt;</code></pre>
-<h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
-<p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble, cut
-into six banner-delimited sections:</p>
+<p>If you are only interested in invoking the generated code, you can skip ahead to
+<a href="#calling-the-generated-code">Calling the generated code</a>.</p>
+<h2 id="inside-the-generated-file"><a class="header" href="#inside-the-generated-file">Inside the generated file</a></h2>
+<h3 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h3>
+<p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble. It is
+divided into six sections:</p>
 <pre><code class="language-rust ignore">use vest_lib::combinators::*;            // fixed preamble, identical in every file
 use vest_lib::core::exec::parser::*;
 // ...
@@ -226,38 +227,37 @@ verus! {
 // ============================================================
 
 } // verus!</code></pre>
-<p>A file with nine definitions emits
-all nine value types, then all nine nominal format types, then all the derived
-specifications, and so on.
-Because the nominal format types (e.g., <code>MessageFmt</code>) are what the user actually interacts with,
-the last three sections are wrapped in private
-modules (<code>derived_specs</code>, <code>derived_proofs</code>, <code>exec_impls</code>).</p>
-<p>The compiler lays out the code it emits itself, in the style of <code>rustfmt</code> with
-lines of at most 100 columns, so generated files need no separate formatting
-pass.</p>
-<h2 id="data-types"><a class="header" href="#data-types">Data Types</a></h2>
-<p>Per definition, alongside the <code>Message</code> shown above, Vest emits a nominal abstract value type
-(<code>MessageSpec</code>) and a structural representation (<code>MessageInner</code>), plus the
-<code>DeepView</code> impl that converts between the executable value and the abstract value.</p>
+<p>Each section covers every definition in the file. A file with nine definitions
+emits all nine value types, then all nine nominal format types, then all the
+derived specifications, and so on. The last three sections only implement
+traits for the format types, so they are wrapped in private modules
+(<code>derived_specs</code>, <code>derived_proofs</code>, and <code>exec_impls</code>).</p>
+<p>The compiler pretty prints its output in the style of <code>rustfmt</code>/<code>verusfmt</code>, so generated files need no separate formatting pass
+(in fact, <code>verusfmt</code> would hang on those deeply nested combinator expressions that the compiler emits).</p>
+<h3 id="data-types"><a class="header" href="#data-types">Data Types</a></h3>
+<p>Besides <code>Message</code>, Vest emits an abstract value type (<code>MessageSpec</code>), a
+structural representation (<code>MessageInner</code>), and a <code>DeepView</code> implementation
+that maps the executable value to its abstract value:</p>
 <pre><code class="language-rust ignore">#[verifier::ext_equal]
 pub struct MessageSpec&lt;T0 = u16, T1 = Seq&lt;u8&gt;&gt; {   // abstract view of Message
     pub length: T0,
     pub payload: T1,
 }
 
-pub type MessageInner = (u16, Seq&lt;u8&gt;);           // what the combinator tree yields
+pub type MessageInner = (u16, Seq&lt;u8&gt;);           // what the Vest combinators operate on
 
 impl&lt;'i&gt; DeepView for Message&lt;'i&gt; {               // exec value -&gt; abstract value
     type V = MessageSpec;
     #[verifier::opaque]
     open spec fn deep_view(&amp;self) -&gt; Self::V { /* field-wise */ }
 }</code></pre>
-<h2 id="structural-mappers"><a class="header" href="#structural-mappers">Structural Mappers</a></h2>
-<p>The combinator tree yields the structural representation (<code>MessageInner</code>), and
-the user-facing specification value is the nominal <code>MessageSpec</code>. This section
-holds, for every definition, the conversions between the two and two empty
-structs (<code>MessageForward</code> and <code>MessageReverse</code>) that name that bijection for the
-<code>Mapped</code> combinator:</p>
+<p><code>MessageSpec</code> has the same fields as <code>Message</code>, but the borrowed payload becomes
+a <code>Seq&lt;u8&gt;</code>. Vest specs and proofs talk about these abstract values.</p>
+<h3 id="structural-mappers"><a class="header" href="#structural-mappers">Structural Mappers</a></h3>
+<p>The <code>vest_lib</code> combinators operate on the structural representation (<code>MessageInner</code>),
+while the “view” of <code>Message</code> is the more ergonomic nominal type <code>MessageSpec</code>.
+This section converts between the two. It also declares two empty structs, <code>MessageForward</code> and
+<code>MessageReverse</code>, which name the conversion for the <code>Mapped</code> combinator:</p>
 <pre><code class="language-rust ignore">impl&lt;T0, T1&gt; MessageSpec&lt;T0, T1&gt; {                // abstract value &lt;-&gt; nested tuple
     #[verifier::opaque] pub open spec fn from_structural(input: (T0, T1)) -&gt; Self { /* .. */ }
     #[verifier::opaque] pub open spec fn into_structural(self) -&gt; (T0, T1) { /* .. */ }
@@ -268,10 +268,11 @@ structs (<code>MessageForward</code> and <code>MessageReverse</code>) that name 
 // The bijection between the structural tuple and the nominal abstract value
 #[doc(hidden)] pub struct MessageForward;
 #[doc(hidden)] pub struct MessageReverse;</code></pre>
-<p>For a <code>choose</code>, the same set appears with <code>enum</code> instead of <code>struct</code>, and
+<p>For a <code>choose</code>, the same items appear with <code>enum</code> instead of <code>struct</code>, and
 <code>MessageInner</code> becomes nested <code>Sum</code>s rather than a nested tuple.</p>
-<h2 id="format-specifications"><a class="header" href="#format-specifications">Format Specifications</a></h2>
-<p>This section is the format combinator representation (defined in <code>vest_lib</code>) of the DSL definition.</p>
+<h3 id="format-specifications"><a class="header" href="#format-specifications">Format Specifications</a></h3>
+<p><code>spec_inner()</code> describes the DSL definition as a tree of <code>vest_lib</code> format
+combinators:</p>
 <pre><code class="language-rust ignore">pub type MessageFmtSpec =
     Named&lt;Mapped&lt;Bind&lt;U16Le, spec_fn(u16) -&gt; Varied&lt;u16&gt;&gt;, BiMap&lt;MessageForward, MessageReverse&gt;&gt;&gt;;
 
@@ -283,20 +284,24 @@ impl MessageFmt {
         })
     }
 }</code></pre>
-<p>Note how each DSL construct has a corresponding shape in the combinator representation (<code>@length: u16</code> becomes <code>Bind(U16Le, |length: u16| ...)</code>, <code>[u8; @length]</code> becomes <code>Varied(length)</code>, etc.). The <code>Named</code> wrapper is what gives the format a human-readable name for error reporting.</p>
-<h2 id="derived-specifications"><a class="header" href="#derived-specifications">Derived Specifications</a></h2>
-<p>Because <code>spec_inner()</code> is a combinator tree composed of <code>vest_lib</code> format combinators, we can <em>derive</em> the formal specifications of the format from it.</p>
+<p>Each DSL construct has a matching combinator: <code>@length: u16</code> becomes
+<code>Bind(U16Le, |length: u16| ...)</code>, and <code>[u8; @length]</code> becomes <code>Varied(length)</code>.
+The <code>Named</code> wrapper gives the format a human-readable name for error reporting.</p>
+<h3 id="derived-specifications"><a class="header" href="#derived-specifications">Derived Specifications</a></h3>
+<p>Because <code>spec_inner()</code> is built from <code>vest_lib</code> combinators, the format’s formal
+specifications can be <em>derived</em> from it:</p>
 <pre><code class="language-rust ignore">impl SpecParser        for MessageFmt { type PVal   = MessageSpec; /* spec_parse */ }
 impl Consistency       for MessageFmt { type Val    = MessageSpec; /* consistent */ }
 impl SpecSerializer    for MessageFmt { type SVal   = MessageSpec; /* spec_serialize */ }
 impl SpecByteLen       for MessageFmt { type T      = MessageSpec; /* byte_len */ }</code></pre>
-<p>Every method body is literally <code>Self::spec_inner().&lt;method name&gt;(..)</code>.
-Most of them are marked
-<code>#[verifier::opaque]</code> so enclosing formats cannot see their inner definitions.
-This opacity is what keeps verification cost
-from exploding as formats grow in size and complexity.</p>
-<h2 id="proven-format-properties"><a class="header" href="#proven-format-properties">Proven Format Properties</a></h2>
-<p>Likewise, the proofs of format properties are <em>mostly</em> derived from <code>spec_inner()</code>.</p>
+<p>For <code>MessageFmt</code>, the parser, serializer, and byte-length specs are marked
+<code>#[verifier::opaque]</code>, while value consistency spec is transparent. Together with the
+opaque <code>deep_view</code>, these define what a verified client can see by default.
+A proof can reveal the public length calculation without opening the structural conversion or the
+parser and serializer specs, as we’ll see in
+<a href="#concrete-fields-and-byte-lengths">Concrete fields and byte lengths</a>.</p>
+<h3 id="proven-format-properties"><a class="header" href="#proven-format-properties">Proven Format Properties</a></h3>
+<p>The proofs of format properties are also <em>mostly</em> derived from <code>spec_inner()</code>:</p>
 <pre><code class="language-rust ignore">broadcast use {
     vest_lib::combinators::disjoint::disjointness_lemmas,
     MessageSpec::lemma_from_into,
@@ -306,14 +311,28 @@ from exploding as formats grow in size and complexity.</p>
 impl SafeParser  for MessageFmt { /* .. */ }
 impl Productive  for MessageFmt { /* .. */ }
 impl SoundParser for MessageFmt { /* .. */ }
-impl SPRoundTrip for MessageFmt { /* .. */ }
+impl SPRoundTripDps for MessageFmt { /* .. */ }
 impl NonMalleable for MessageFmt { /* .. */ }
 // ...plus more auxiliary proof traits, depending on the format</code></pre>
 <p>Each proof reveals the opaque specifications it needs, then hands off to the
-corresponding lemma on <code>spec_inner()</code>. <code>disjointness_lemmas</code> is a broadcast group of lemmas that compositionally establish the non-ambiguity of certain format combinators, which is a prerequisite for serialize-then-parse round trips.</p>
-<h2 id="executable-implementations"><a class="header" href="#executable-implementations">Executable Implementations</a></h2>
-<p>Finally, the executable implementations of <code>Parser</code>, <code>Serializer</code>, and <code>Prepare</code> are emitted.
-Here, the implementations are <em>not</em> derived from <code>spec_inner()</code>; they are written in idiomatic imperative Rust to ensure performance and avoid unnecessary combinator overhead.</p>
+corresponding lemma on <code>spec_inner()</code>. <code>disjointness_lemmas</code> is a broadcast
+group of lemmas that compositionally establish that certain combinators are
+unambiguous, which serialize-then-parse roundtrips require.</p>
+<p>You won’t find emitted implementations of <code>SPRoundTrip</code>, <code>PSRoundTrip</code>, or
+<code>NonAmbiguous</code>: the library derives them once-and-for-all from the generated proof traits through
+blanket implementations. Together, these traits provide the theorems that client
+proofs call:</p>
+<ul>
+<li><code>theorem_serialize_parse_roundtrip</code> comes from <code>SPRoundTrip</code>.</li>
+<li><code>theorem_parse_serialize_roundtrip</code> comes from <code>PSRoundTrip</code>.</li>
+<li><code>lemma_parse_non_malleable</code> comes from <code>NonMalleable</code>.</li>
+<li><code>lemma_serialize_injective</code> comes from <code>NonAmbiguous</code>.</li>
+</ul>
+<h3 id="executable-implementations"><a class="header" href="#executable-implementations">Executable Implementations</a></h3>
+<p>Finally, the file implements the executable <code>Parser</code>, <code>Serializer</code>, and
+<code>Prepare</code> traits. These implementations are <em>not</em> derived from <code>spec_inner()</code>.
+They are written as idiomatic imperative Rust, which keeps them fast and avoids
+any potential combinator overhead:</p>
 <pre><code class="language-rust ignore">impl&lt;'i&gt; Parser&lt;&amp;'i [u8]&gt; for MessageFmt {
     type PT = Message&lt;'i&gt;;
     fn parse(&amp;self, ibuf: &amp;&amp;'i [u8]) -&gt; PResult&lt;Self::PT&gt; { /* .. */ }
@@ -326,32 +345,156 @@ impl&lt;Output: OutputBuf, 'i&gt; Serializer&lt;Output, Message&lt;'i&gt;&gt; fo
 impl&lt;'i&gt; Prepare&lt;Message&lt;'i&gt;&gt; for MessageFmt {
     fn prepare(&amp;self, v: &amp;Message&lt;'i&gt;) -&gt; Result&lt;usize, PreSerializeError&gt; { /* .. */ }
 }</code></pre>
-<p><code>parse</code> walks the fields, advancing a cursor and propagating failure with <code>?</code>,
-then assembles the value and asserts it matches <code>spec_parse</code>:</p>
+<p><code>parse</code> walks the fields, advancing a cursor and propagating failure with <code>?</code>.
+It then assembles the value and asserts that it matches <code>spec_parse</code>:</p>
 <pre><code class="language-rust ignore">let (n1, length)  = U16Le.parse(&amp;rest)?;
 let rest          = rest.skip(n1);
 let (n2, payload) = Varied(length).parse(&amp;rest)?;
 // ...
 Ok((n1 + n2, Message { length, payload }))</code></pre>
-<p><code>serialize_into</code> mirrors it — it traverses the value and writes each field directly in-place to the outbuf buffer. <code>prepare</code> similarly walks the value, checking that each field is valid and summing the lengths.</p>
-<h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
-<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
+<p><code>serialize_into</code> walks the same fields, writing each one directly into the output
+buffer. <code>prepare</code> walks them to check consistency and add up their lengths.</p>
+<h2 id="calling-the-generated-code"><a class="header" href="#calling-the-generated-code">Calling the generated code</a></h2>
+<p>From ordinary Rust, you call these implementations through traits in
+<code>vest_lib::core::exec</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Call</th><th>Trait</th><th>What it does</th></tr>
+</thead>
+<tbody>
+<tr><td><code>MessageFmt.parse(&amp;input)</code></td><td><code>Parser</code></td><td>Parses a prefix of <code>input</code> and returns <code>(consumed, value)</code>. Byte fields such as <code>payload</code> borrow from <code>input</code>.</td></tr>
+<tr><td><code>MessageFmt.prepare(&amp;value)</code></td><td><code>Prepare</code></td><td>Checks that <code>value</code> is consistent with the format (here, that <code>length</code> equals the payload size) and returns its exact wire length.</td></tr>
+<tr><td><code>MessageFmt.serialize(&amp;value, &amp;mut output)</code></td><td><code>SerializerExt</code></td><td>Writes a consistent value into a buffer of exactly that length, without failing or allocating.</td></tr>
+<tr><td><code>MessageFmt.serialize_with_vec(&amp;value, &amp;mut vec)</code></td><td><code>SerializerExt</code></td><td>Appends a consistent value to a growable <code>Vec&lt;u8&gt;</code>, which may reallocate. To avoid growth, reserve the length returned by <code>prepare</code> first.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Neither serializer rechecks consistency, so unverified code must call <code>prepare</code>
+first; see <a href="../getting-started.html#serializing-a-message">Serializing a message</a>.</p>
+<p>Failures return a <code>ParseError</code> or a <code>PreSerializeError</code>. Each records the kind
+of failure and the innermost named format that reported it. Enable
+<code>vest_lib</code>’s <code>error-trace</code> feature to also keep the trace of enclosing formats.</p>
+<h2 id="reasoning-about-generated-values"><a class="header" href="#reasoning-about-generated-values">Reasoning about generated values</a></h2>
+<p>We’ve seen that the <a href="../getting-started.html#using-vest-from-verified-rust">getting-started example</a>
+proves a value serialze-parse roundtrip. This section further covers:</p>
+<ul>
+<li>what each executable API guarantees,</li>
+<li>how to prove facts about fields and lengths,</li>
+<li>and which theorems relate parsing and serialization.</li>
+</ul>
+<p>The examples belong inside a <code>verus!</code> block. They use <code>crate::message::*</code> and
+<code>vest_lib::prelude::*</code>. The prelude brings the executable APIs, specification
+and proof traits, format combinators, and the Verus prelude into scope.</p>
+<h3 id="values-and-api-contracts"><a class="header" href="#values-and-api-contracts">Values and API contracts</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>API</th><th>Pre/post-conditions</th></tr>
+</thead>
+<tbody>
+<tr><td><code>parse(&amp;input)</code></td><td>It behaves exactly like <code>spec_parse(input@)</code> (on both success and failure).</td></tr>
+<tr><td><code>prepare(&amp;value)</code></td><td>On <code>Ok(n)</code>, <code>value</code> is consistent with the format and <code>n == byte_len(value.deep_view())</code>.</td></tr>
+<tr><td><code>serialize(&amp;value, &amp;mut output)</code></td><td>Requires value consistency and an exactly sized buffer; afterward, <code>output@ == spec_serialize(value.deep_view())</code>.</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>vest_lib</code>’s broadcast group <code>basic_lemmas</code> covers some basic useful facts about byte buffers and serialization lengths, which apply automatically when <code>vest_lib::prelude::*</code> is in scope.</p>
+<p>For more facts about parsed values, enable <code>parser_lemmas</code> in the function or proof that needs them:</p>
+<pre><code class="language-rust ignore">broadcast use parser_lemmas;</code></pre>
+<p>These lemmas tell Verus three things about a successful parse: it stays within the input buffer,
+it produces a value consistent with the format, and it consumes exactly that value’s
+<code>byte_len</code>. Roundtrip and non-malleability theorems still have to be called
+explicitly.</p>
+<h3 id="concrete-fields-and-byte-lengths"><a class="header" href="#concrete-fields-and-byte-lengths">Concrete fields and byte lengths</a></h3>
+<p>To prove facts about individual fields or concrete lengths, use Verus’s <code>reveal</code> to open the view and length definitions.
+This function builds a message, serializes it, parses it back, and proves the
+exact length and field values:</p>
+<pre><code class="language-rust ignore">fn check_message() -&gt; Result&lt;(), PreSerializeError&gt; {
+    let value = Message { length: 3, payload: &amp;[0xCA, 0xFE, 0x42] };
+    proof {
+        reveal(&lt;Message as DeepView&gt;::deep_view);
+        reveal(&lt;MessageFmt as SpecByteLen&gt;::byte_len);
+    }
+    let len = MessageFmt.prepare(&amp;value)?;
+    assert(len == 5); // 2 length bytes + 3 payload bytes
 
-let input: &amp;[u8] = &amp;[3, 0, b'a', b'b', b'c'];
-let (consumed, message) = MessageFmt.parse(&amp;input).unwrap();
-assert_eq!(consumed, 5);
-assert_eq!(message.payload, b"abc");
+    let mut output = vec![0u8; len];
+    MessageFmt.serialize(&amp;value, &amp;mut output);
+    proof {
+        MessageFmt.theorem_serialize_parse_roundtrip(value.deep_view());
+    }
+    let (consumed, parsed) = MessageFmt.parse(&amp;output.as_slice()).unwrap();
+    assert(consumed == 5);
+    assert(parsed.length == 3);
+    assert(parsed.payload@ == seq![0xCAu8, 0xFE, 0x42]);
+    Ok(())
+}</code></pre>
+<p>The first <code>reveal</code> connects the Rust fields to their logical counterparts, and
+the second exposes the length calculation. Without either one, Verus can’t prove
+the assertions. The roundtrip theorem says that <code>parsed</code> has the same deep view
+as <code>value</code>, and the revealed view turns that into the concrete field values.</p>
+<p>Both definitions are opaque by default, which keeps proofs about deeply nested
+formats manageable. Here, only the public view and length are opened. The parser
+and serializer specifications stay closed, and the internal structural representation
+never needs to be revealed.</p>
+<p>For a nested format, reveal a child type’s view only when you need to reason about that child’s
+fields; its format specifications can stay closed.</p>
+<p><em>Fixed-length</em> formats need even less proof code. When the compiler can determine
+a fixed length, it emits a verified <code>StaticByteLen</code> implementation for the format.
+For example, compile these definitions to
+<code>src/lengths.rs</code>:</p>
+<pre><code class="language-vest">triple = {
+    a: u8,
+    const b: [u8; 2] = [0x55, 0x77],
+    c: u64,
+}
 
-let length = MessageFmt.prepare(&amp;message).unwrap();
-let mut output = vec![0u8; length];
-MessageFmt.serialize(&amp;message, &amp;mut output);</code></pre>
-<p><code>parse</code> returns the consumed prefix length and the value; it need not consume
-the whole input unless the format says so. Errors carry a <code>ParseErrorKind</code> along with the static identifier provided to the <code>Name</code> combinator. When the <code>alloc</code> feature is enabled, the error also builds a trace of the enclosing formats, which is useful for debugging.</p>
-<!--with allocation enabled the `Named` wrappers build a trace of the enclosing
-formats.-->
-<p>The <code>SerializerExt</code> trait provides two convenience methods for serializing values into a buffer: <code>serialize</code> and <code>serialize_with_vec</code>.
-<code>serialize</code> writes into an exactly sized
-slice and <code>serialize_with_vec</code> appends to a growable <code>Vec&lt;u8&gt;</code>. In both cases, the length of the buffer can be obtained from <code>prepare</code> to provably avoid (re)allocation.</p>
+samples = {
+    @count: u16,
+    values: [u16; @count],
+}
+</code></pre>
+<p>Here, a prepared <code>Triple</code> takes 11 bytes (<code>1 + 2 + 8</code>), and proving it needs no reveals:</p>
+<pre><code class="language-rust ignore">fn fixed_length(value: &amp;Triple) -&gt; Result&lt;usize, PreSerializeError&gt; {
+    let len = TripleFmt.prepare(value)?;
+    assert(len == 11);
+    Ok(len)
+}</code></pre>
+<p><code>Samples</code> has a variable length, but each element is a fixed-width <code>u16</code>. After
+the usual reveals, we can assert that the length is <code>2 + 2 * count</code>:</p>
+<pre><code class="language-rust ignore">fn samples_length(value: &amp;Samples) -&gt; Result&lt;usize, PreSerializeError&gt; {
+    proof {
+        reveal(&lt;Samples as DeepView&gt;::deep_view);
+        reveal(&lt;SamplesFmt as SpecByteLen&gt;::byte_len);
+    }
+    let len = SamplesFmt.prepare(value)?;
+    assert(len == 2 + 2 * value.values@.len());
+    Ok(len)
+}</code></pre>
+<p><code>vest_lib</code> also provides the <code>ByteLen::length</code> API for infallable length calculation, but the DSL doesn’t
+currently generate it. Unlike <code>prepare</code>, <code>length</code> doesn’t check consistency, and
+it needs a proof that the length fits in <code>usize</code>.</p>
+<h3 id="roundtrips-and-non-malleability"><a class="header" href="#roundtrips-and-non-malleability">Roundtrips and non-malleability</a></h3>
+<p>The getting-started example proves facts in the direction of value –&gt; bytes –&gt; value, leveraging <code>theorem_serialize_parse_roundtrip</code>.
+<code>theorem_parse_serialize_roundtrip</code> goes the other way, from bytes –&gt; value –&gt; bytes. It is useful for re-encoding a message:</p>
+<pre><code class="language-rust ignore">fn reencode(input: &amp;[u8]) -&gt; Result&lt;Vec&lt;u8&gt;, ParseError&gt; {
+    broadcast use parser_lemmas;
+
+    let (consumed, value) = MessageFmt.parse(&amp;input)?;
+    let mut output = vec![0u8; consumed];
+    MessageFmt.serialize(&amp;value, &amp;mut output);
+    proof {
+        MessageFmt.theorem_parse_serialize_roundtrip(input@);
+    }
+    assert(output@ == input@[0..consumed]);
+    Ok(output)
+}</code></pre>
+<p>Note that no <code>prepare</code> is needed here. <code>parser_lemmas</code> already establish that <code>value</code> is
+consistent with the format and that <code>consumed</code> is its exact length. The equality covers only the consumed prefix.
+It also inherently requires non-malleability: a malleable format, such as ASN.1 BER, may accept
+several encodings of the same value during parsing and serialize it to a different binary form.</p>
+<p>See the <a href="../../vest_lib/core/proof/index.html">proof traits</a> in <code>vest_lib</code> for more details on the roundtrip and non-malleability theorems.</p>
 
                     </main>
 

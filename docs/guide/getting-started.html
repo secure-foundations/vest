@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-57801029.js";
+            window.path_to_searchindex_js = "searchindex-17413ca6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -179,64 +179,191 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
-<p>This tutorial shows how to install Vest, define a simple tag-length-value (TLV) format in the DSL, compile it to Rust, parse a message in that format, and serialize a value according to the format.</p>
-<h2 id="install"><a class="header" href="#install">Install</a></h2>
-<p>Prerequisites: a stable Rust toolchain with <code>cargo</code> and <code>rustc</code> on your <code>PATH</code>.</p>
+<p>In this tutorial, we’ll use Vest to build a parser and a serializer for
+a small binary message format. Along the way, we’ll see the typical workflow for using Vest:</p>
+<ul>
+<li>describing a binary format in the Vest DSL,</li>
+<li>compiling the DSL format to Rust,</li>
+<li>parsing raw bytes into Rust values,</li>
+<li>serializing Rust values into bytes,</li>
+<li>and (for verified clients) checking and using the proofs that come with the generated code.</li>
+</ul>
+<p>We assume the reader has some basic familiarity with Rust, but no prior knowledge of
+<a href="https://github.com/verus-lang/verus">Verus</a>, the program verifier used by Vest.</p>
+<h2 id="what-were-building"><a class="header" href="#what-were-building">What we’re building</a></h2>
+<p>Many data formats encode messages as <a href="https://en.wikipedia.org/wiki/Type–length–value"><em>tag-length-value</em></a>
+(TLV) structures. In a TLV,
+a tag says what kind of message follows, a length says how many bytes it takes,
+and the rest of the message is interpreted according to the tag.
+Our format follows this pattern: it’s a tiny protocol that a sensor might use to
+report to a server. Every message starts with a fixed three-byte header followed by a variable-length body:</p>
+<pre><code class="language-text"> byte 0     bytes 1-2          the next `len` bytes
++--------+------------------+--------------------------+
+|  tag   |       len        |         content          |
++--------+------------------+--------------------------+
+  1 byte   16-bit integer,     interpreted according
+           little-endian            to the tag
+</code></pre>
+<p>There are three kinds of messages:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Tag</th><th>Message</th><th>Content</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Hello</td><td><code>version</code> (1 byte) and <code>mac</code> (the sensor’s 6-byte MAC address)</td></tr>
+<tr><td>2</td><td>Reading</td><td><code>sensor</code> (1 byte), <code>value</code> (16-bit integer), and <code>timestamp</code> (32-bit Unix time)</td></tr>
+<tr><td>3</td><td>Log</td><td><code>level</code> (1 byte) and <code>text</code> (every remaining content byte)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Note that there are two implicit dependencies/constraints concealed in the above informal format description.
+First, the content’s structure depends on the tag: a <code>Hello</code> message has a different layout than a <code>Reading</code> or a <code>Log</code>.
+Second, the content’s byte length must agree with <code>len</code> exactly: a <code>Reading</code>, for example, always has <code>len = 7</code> (1 + 2 + 4 bytes).</p>
+<p>A hand-written parser for this seemingly simple format can easily go wrong.
+It might forget to check <code>len</code> against the input it actually received, let a message body
+read past its declared length, or silently accept a tag it doesn’t know. A hand-written
+serializer can also easily write a <code>len</code> that doesn’t match the content.
+We’ll see how Vest takes care of each of these for us.</p>
+<h2 id="setting-up"><a class="header" href="#setting-up">Setting up</a></h2>
+<h3 id="install-the-compiler"><a class="header" href="#install-the-compiler">Install the compiler</a></h3>
+<p>You’ll need a stable Rust toolchain with <code>cargo</code> and <code>rustc</code> on your <code>PATH</code>.
+Install the Vest DSL compiler from crates.io:</p>
 <pre><code class="language-console">cargo install vest
 </code></pre>
-<p>That puts the <code>vest</code> compiler on your <code>PATH</code>. In the crate that will hold the
-generated code, add the following dependencies to <code>Cargo.toml</code>:</p>
-<pre><code class="language-console">cargo add vest_lib
+<p>This puts <code>vest</code> on your <code>PATH</code>. You can run <code>vest --version</code> to check that it worked.</p>
+<h3 id="create-a-project"><a class="header" href="#create-a-project">Create a project</a></h3>
+<p>Next, let’s create a new Rust project and add Verus and Vest as dependencies:</p>
+<pre><code class="language-console">cargo new msg-demo
+cd msg-demo
+cargo add vest_lib
 cargo add vstd@=0.0.0-2026-10-04-0306 --no-default-features
 </code></pre>
-<p>which gives you:</p>
+<p>Your <code>Cargo.toml</code> should now contain something like this:</p>
 <pre><code class="language-toml">[dependencies]
 vest_lib = "0.2"
 vstd = { version = "=0.0.0-2026-10-04-0306", default-features = false }
 </code></pre>
-<p>Generated modules refer to <code>vstd</code> directly, so it has to be a direct dependency even when you are only compiling and running the executable Rust. The version has to be exact (we’ll try to keep this doc up to date as much as possible): Verus and <code>vstd</code> move quickly, and each Vest release tracks one
-release of each.</p>
-<p><code>vest_lib</code> has three configurations — the default <code>std</code>,
-<code>alloc</code> alone for <code>no_std</code> with a heap, and neither for <code>core</code>-only. See
-<a href="library/features.html">Feature configurations</a>.</p>
-<h2 id="describe-a-format"><a class="header" href="#describe-a-format">Describe a format</a></h2>
-<p>Let’s define a simple Tag-length-value (TLV) format in the Vest DSL, which is the shape underneath most network protocols. A tag says what
-follows, a length delimits it, and the body is interpreted according to the tag.</p>
-<p>Create <code>msg.vest</code>:</p>
+<blockquote>
+<p><strong><code>vest_lib</code> and <code>vstd</code>:</strong> <code>vest_lib</code> is Vest’s combinator library underlying the generated code.
+It provides the parser and serializer building blocks, together with their specifications and proofs.
+<code>vstd</code> is the Verus standard library that <code>vest_lib</code> depends on.</p>
+</blockquote>
+<blockquote>
+<p>To avoid subtle version mismatch issues, it’s advised to use the exact version shown above: Verus and <code>vstd</code> move quickly,
+and each Vest release tracks one release of Verus. We’ll keep this page up to date as new versions come out.</p>
+</blockquote>
+<p><code>vest_lib</code> supports <code>no_std</code> (<code>core</code>-only and <code>alloc</code>), so you can use it in embedded or kernel code.
+See <a href="library/features.html">Feature configurations</a>.</p>
+<h2 id="writing-your-first-format"><a class="header" href="#writing-your-first-format">Writing your first format</a></h2>
+<p>Vest formats live in <code>.vest</code> files. We’ll write <code>msg.vest</code> in the project’s root
+directory, building it one piece at a time.</p>
+<h3 id="the-tag-an-enum"><a class="header" href="#the-tag-an-enum">The tag: an enum</a></h3>
+<p>Let’s start with the tag:</p>
 <pre><code class="language-vest">msg_type = enum {
-  Msg1 = 1,
-  Msg2 = 2,
-  Msg3 = 3,
+  Hello = 1,
+  Reading = 2,
+  Log = 3,
+}
+</code></pre>
+<p>Every format definition has the shape <code>name = format</code>. Here, <code>msg_type</code> is an <em>enum</em>:
+a named set of variants, each with a numeric value. The values are the bytes that appear on the wire.
+Vest picks the smallest unsigned integer type that holds every value, so this tag takes exactly
+one byte. To force a specific integer type, use integer literals with type suffixes like <code>1u8</code> or <code>2u16</code> for the variants.</p>
+<p>This enum is <em>closed</em>: the generated parser rejects every other byte value, such
+as 4, as an invalid tag. If your protocol
+needs to keep unknown tags around instead, add <code>...</code> after the variants to make
+the enum <a href="dsl/enums.html#open-enums">open</a>.</p>
+<h3 id="the-content-three-structs"><a class="header" href="#the-content-three-structs">The content: three structs</a></h3>
+<p>Now let’s describe the three kinds of content from the table above:</p>
+<pre><code class="language-vest">hello = {
+    version: u8,
+    mac: [u8; 6],
+}
+reading = {
+    sensor: u8,
+    value: u16,
+    timestamp: u32,
+}
+log = {
+    level: u8,
+    text: Tail,
+}
+</code></pre>
+<p>Each definition describes a <em>struct</em>: named fields laid out <em>back to back</em> on
+the wire, with no padding in between. We’ve used three kinds of building blocks:</p>
+<ul>
+<li><code>u8</code>, <code>u16</code>, and <code>u32</code> are unsigned integers of 1, 2, and 4 bytes.</li>
+<li><code>[u8; 6]</code> is exactly six raw bytes: here, a MAC address.</li>
+<li><code>Tail</code> means “whatever is left.” In <code>log</code>, the <code>text</code> field takes all the
+bytes that remain after <code>level</code>.</li>
+</ul>
+<h3 id="the-message-putting-it-together"><a class="header" href="#the-message-putting-it-together">The message: putting it together</a></h3>
+<p>Finally, the message itself:</p>
+<pre><code class="language-vest ignore">msg = {
+  @tag: msg_type,
+  @len: u16,
+  content: [u8; @len] &gt;&gt;= choose(@tag) {
+    Hello =&gt; hello,
+    Reading =&gt; reading,
+    Log =&gt; log,
+  },
+}
+</code></pre>
+<p>Let’s decode it line by line:</p>
+<ul>
+<li><code>@tag: msg_type</code> specifies the tag with the enum format we defined earlier. The <code>@</code> marks
+<code>tag</code> as a <em>dependency</em>, which means that later fields can refer to its value
+as <code>@tag</code>. It’s otherwise the same as an ordinary field: it’s on the wire, and it will be
+part of the Rust value type that gets generated.</li>
+<li><code>@len: u16</code> specifies the 16-bit length as an unsigned integer, which is also a dependency.</li>
+<li><code>[u8; @len]</code> carves out exactly <code>len</code> bytes of input for the content.</li>
+<li><code>&gt;&gt;=</code>, read as “and then,” parses those bytes (and only those bytes) in <code>[u8; @len]</code>, with the
+format on its right-hand side. We’ll see its role in serialization later.</li>
+<li><code>choose(@tag) { ... }</code> picks that format based on the tag: a <code>Hello</code> tag selects the <code>hello</code> format, and so on.</li>
+</ul>
+<p>The <code>&gt;&gt;=</code> operator is important: it “separates” the content from the rest of the input.
+The content format only ever sees the
+<code>len</code> bytes carved out for it, so it can’t read past the end of its message.
+It also has to use all of them: leftover bytes are a parsing error.</p>
+<h3 id="byte-order"><a class="header" href="#byte-order">Byte order</a></h3>
+<p>Our protocol spec said that <code>len</code> is little-endian. That’s Vest’s default, so we
+don’t need to write anything. For a big-endian protocol, put <code>!BIG_ENDIAN</code> at
+the top of the file; it applies to <em>every definition</em> in the file. See
+<a href="dsl/lexical.html#byte-order">Byte order</a> for details.</p>
+<h3 id="the-complete-file"><a class="header" href="#the-complete-file">The complete file</a></h3>
+<pre><code class="language-vest">msg_type = enum {
+  Hello = 1,
+  Reading = 2,
+  Log = 3,
 }
 
-msg1 = { a: u8, b: u16, c: [u8; 3], data: Tail, }
-msg2 = { a: u8, b: u16, c: u32, }
-msg3 = { data: [u8; 6], }
+hello = {
+    version: u8,
+    mac: [u8; 6],
+}
+reading = {
+    sensor: u8,
+    value: u16,
+    timestamp: u32,
+}
+log = {
+    level: u8,
+    text: Tail,
+}
 
 msg = {
   @tag: msg_type,
   @len: u16,
   content: [u8; @len] &gt;&gt;= choose(@tag) {
-    Msg1 =&gt; msg1,
-    Msg2 =&gt; msg2,
-    Msg3 =&gt; msg3,
+    Hello =&gt; hello,
+    Reading =&gt; reading,
+    Log =&gt; log,
   },
 }
 </code></pre>
-<p>The syntax is mostly self-explanatory, akin to those of Rust.
-There are a few things to notice inside the <code>msg</code> definition:</p>
-<ul>
-<li><code>@tag</code> and <code>@len</code> are field <em>dependencies</em>.
-The <code>@</code> prefix lets later fields refer
-to them. They are still ordinary fields of the generated struct, and of course still
-bytes on the wire. <code>@</code> only signals that they are used in later format expressions.</li>
-<li><code>[u8; @len]</code> carves out exactly <code>len</code> bytes.</li>
-<li><code>&gt;&gt;= choose(@tag)</code> then reparses <em>that region</em> with the format chosen by <code>tag</code>. Because the
-region is bounded first, a body that tries to read past its length would fail. We will see what it means for serialization shortly.</li>
-</ul>
-<p>Integers are little-endian by default.
-Add <code>!BIG_ENDIAN</code> at the top of the file to switch to big-endian.</p>
-<h2 id="generate-rust"><a class="header" href="#generate-rust">Generate Rust</a></h2>
+<h2 id="generating-rust"><a class="header" href="#generating-rust">Generating Rust</a></h2>
+<p>Now let’s compile the format to a Rust module and save it in <code>src/msg.rs</code>.</p>
 <pre><code class="language-console">$ vest msg.vest -o src/msg.rs
 📜 Parsing the vest file...
 🔨 Elaborating the AST...
@@ -244,17 +371,26 @@ Add <code>!BIG_ENDIAN</code> at the top of the file to switch to big-endian.</p>
 📝 Generating the verus file...
 👏 Done!
 </code></pre>
-<p>Without <code>-o</code>, the compiler writes next to the input and replaces its extension, so <code>msg.vest</code> becomes <code>msg.rs</code>.
-The generated module is a normal Rust file, so you can <code>mod msg;</code> it and use it like any other module.</p>
-<p>See <a href="dsl/cli.html#generating-from-buildrs">here</a> for how to automate this process in <code>build.rs</code> so that the generated code is always up to date.</p>
-<p>The DSL compiler emits one value type per definition, plus a zero-sized format type carrying the parser, serializer, and proofs:</p>
-<pre><code class="language-rust ignore">pub enum MsgType { Msg1 = 1, Msg2 = 2, Msg3 = 3 }
+<p>The generated module is a normal Rust file. To use it, declare it at the top of
+<code>src/main.rs</code>:</p>
+<pre><code class="language-rust ignore">mod msg;</code></pre>
+<blockquote>
+<p><strong>Tip:</strong> Instead of rerunning the compiler by hand whenever the format
+changes, you can <a href="dsl/cli.html#generating-from-buildrs">call it from <code>build.rs</code></a>
+to keep the generated code up to date automatically.</p>
+</blockquote>
+<h3 id="what-got-generated"><a class="header" href="#what-got-generated">What got generated?</a></h3>
+<p>If you open <code>src/msg.rs</code>, you’ll find that it’s quite long (but hopefully still readable!).
+That’s because it contains specifications and proofs as well as executable code. The parts you’ll
+interact with are a Rust value type for each definition, plus a <em>format type</em> that
+does the parsing and serializing:</p>
+<pre><code class="language-rust ignore">pub enum MsgType { Hello = 1, Reading = 2, Log = 3 }
 
-pub struct Msg1&lt;'i&gt; { pub a: u8, pub b: u16, pub c: &amp;'i [u8], pub data: &amp;'i [u8] }
-pub struct Msg2      { pub a: u8, pub b: u16, pub c: u32 }
-pub struct Msg3&lt;'i&gt;  { pub data: &amp;'i [u8] }
+pub struct Hello&lt;'i&gt; { pub version: u8, pub mac: &amp;'i [u8] }
+pub struct Reading   { pub sensor: u8, pub value: u16, pub timestamp: u32 }
+pub struct Log&lt;'i&gt;   { pub level: u8, pub text: &amp;'i [u8] }
 
-pub enum MsgContent&lt;'i&gt; { Msg1(Msg1&lt;'i&gt;), Msg2(Msg2), Msg3(Msg3&lt;'i&gt;) }
+pub enum MsgContent&lt;'i&gt; { Hello(Hello&lt;'i&gt;), Reading(Reading), Log(Log&lt;'i&gt;) }
 
 pub struct Msg&lt;'i&gt; {
     pub tag: MsgType,
@@ -262,92 +398,244 @@ pub struct Msg&lt;'i&gt; {
     pub content: MsgContent&lt;'i&gt;,
 }
 
-pub struct MsgFmt;   // the format: parser + serializer + proofs
+// carries the executable parser, serializer, as well as the specs and proofs for the `msg` format
+pub struct MsgFmt;
 
-// ... specifications, proofs, and executable APIs</code></pre>
-<h2 id="checking-the-proofs-highly-recommended"><a class="header" href="#checking-the-proofs-highly-recommended">Checking the proofs (highly recommended)</a></h2>
-<p>Technically, <em>you do not need to install Verus to use Vest</em>, especially if you are working with unverified Rust and just want to parse and serialize things more safely.
-However, Vest-generated code comes with specifications and proofs that establish the correctness and security of the parser and serializer.
-It is therefore highly recommended to use Verus to automatically check the proofs (rather than trusting the DSL compiler)
-to ensure that the generated code indeed satisfies the <a href="guarantees.html">desired properties</a>.</p>
-<p>Each Vest release tracks one exact Verus
-release, recorded in
+// ... specifications, proofs, and the implementations of the APIs</code></pre>
+<p>There’s a few things to note:</p>
+<ul>
+<li>Names follow Rust conventions: <code>msg_type</code> becomes <code>MsgType</code>, and <code>msg</code> becomes <code>Msg</code>.</li>
+<li>Byte fields such as <code>mac: [u8; 6]</code> and <code>text: Tail</code> become <code>&amp;'i [u8]</code> (byte slices)
+that <em>borrow</em> from the input buffer, so parsing them is zero-copy.</li>
+<li>Integer fields such as <code>value: u16</code> and <code>timestamp: u32</code> become native Rust integers, so
+parsing them would perform “small” copies. Vest does this because
+<ol>
+<li>integers might be mis-aligned in wire and attempting to read them directly would be <code>unsafe</code>, and</li>
+<li>integer types are small and cheap enough to copy (<code>size_of::&lt;u16&gt;()</code> is 2 bytes, while <code>size_of::&lt;&amp;u16&gt;()</code> is 8 or 4 bytes)</li>
+</ol>
+</li>
+<li>The <code>choose</code> becomes a Rust enum, <code>MsgContent</code>, named after the struct and the
+field it appears in. Each variant holds one of our content structs.</li>
+<li>Each named definition gets its own <em>format type</em>, such as <code>ReadingFmt</code>. This is a zero-sized type
+that implements certain traits to provide the parser, serializer, as well as the specifications and proofs for that format.
+In this tutorial, we’ll only need <code>MsgFmt</code>, which handles the whole message.</li>
+</ul>
+<p>The <a href="dsl/mapping.html">Construct-to-Rust mapping</a> shows how every DSL construct corresponds to a Rust type.</p>
+<h2 id="parsing-a-message"><a class="header" href="#parsing-a-message">Parsing a message</a></h2>
+<p>Now it’s time to parse some bytes! Replace the contents of <code>src/main.rs</code> with this program:</p>
+<pre><code class="language-rust ignore">mod msg;
+
+use msg::*;
+use vest_lib::core::exec::Parser;
+
+fn main() {
+    let wire: &amp;[u8] = &amp;[
+        0x02,                   // tag       = 2 (Reading)
+        0x07, 0x00,             // len       = 7
+        0x03,                   // sensor    = 3
+        0x66, 0x08,             // value     = 2150 (0x0866)
+        0x00, 0xF1, 0x53, 0x65, // timestamp = 1700000000 (0x6553F100)
+    ];
+
+    let (consumed, msg) = MsgFmt.parse(&amp;wire).unwrap();
+    println!("consumed {consumed} bytes: {msg:?}");
+}</code></pre>
+<p>Notice the byte order: because integers are little-endian, <code>value = 0x0866</code> is
+stored as <code>66 08</code>, with the least significant byte first.</p>
+<p>Run it with <code>cargo run</code>, and you should see:</p>
+<pre><code class="language-text">consumed 10 bytes: Msg { tag: Reading, len: 7, content: Reading(Reading { sensor: 3, value: 2150, timestamp: 1700000000 }) }
+</code></pre>
+<p><code>parse</code> returns a pair when it succeeds: how many bytes it consumed, and the parsed value.
+In general, Vest doesn’t require full consumption of the input. If
+you’re reading messages from a stream, the count tells you where the next
+message begins.</p>
+<p>The parsed value is an ordinary Rust value, so you can inspect it however you
+like:</p>
+<pre><code class="language-rust ignore">assert_eq!(consumed, 10);
+assert_eq!(msg.tag, MsgType::Reading);
+assert_eq!(msg.len, 7);
+assert_eq!(msg.content, MsgContent::Reading(Reading { sensor: 3, value: 2150, timestamp: 1700000000 }));</code></pre>
+<h3 id="try-breaking-the-parser"><a class="header" href="#try-breaking-the-parser">Try breaking the parser</a></h3>
+<p>Let’s poke at the parser with some bad input. We’ll make a mutable copy of the
+message, change it, and parse it again:</p>
+<pre><code class="language-rust ignore">let mut bad = wire.to_vec();
+bad[0] = 0x04; // not a valid tag
+println!("{:?}", MsgFmt.parse(&amp;bad.as_slice()));</code></pre>
+<p>Here’s what happens for this change and a few others:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Change to <code>bad</code></th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td><code>bad[0] = 0x04</code> (an unknown tag)</td><td><code>Err(ParseError { kind: InvalidTag, failed_format: Some("msg_type") })</code></td></tr>
+<tr><td><code>bad[1] = 0x06</code> (a <code>len</code> too short for a <code>reading</code>)</td><td><code>Err(ParseError { kind: UnexpectedEof, failed_format: Some("reading") })</code></td></tr>
+<tr><td><code>bad[1] = 0x08</code> and <code>bad.push(0xFF)</code> (one byte more than a <code>reading</code> actually consumes)</td><td><code>Err(ParseError { kind: LengthMismatch, failed_format: None })</code></td></tr>
+<tr><td><code>bad.truncate(8)</code> (a message cut short)</td><td><code>Err(ParseError { kind: UnexpectedEof, failed_format: None })</code></td></tr>
+<tr><td><code>bad.extend([0xFF, 0xFF])</code> (extra bytes after the message)</td><td><code>Ok(...)</code>, with <code>consumed</code> still 10</td></tr>
+</tbody>
+</table>
+</div>
+<p>Every malformed input produced an error that the caller can handle.
+In fact, no input can make the parser panic, read out of bounds, or loop forever: these are among
+the properties <a href="guarantees.html">Vest proves</a>.</p>
+<h2 id="serializing-a-message"><a class="header" href="#serializing-a-message">Serializing a message</a></h2>
+<p>In Vest, serializing a value according to a binary format normally takes two steps:</p>
+<ol>
+<li><code>prepare</code> checks that the value is fully compliant with the format and computes how
+many bytes it will take on the wire.</li>
+<li><code>serialize</code> writes the value into a buffer of exactly that size.</li>
+</ol>
+<p>Let’s first bring the relevant traits into scope:</p>
+<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};</code></pre>
+<p>Then serialize the message we just parsed:</p>
+<pre><code class="language-rust ignore">let len = MsgFmt.prepare(&amp;msg).unwrap(); // might fail if the value is inconsistent with the format or the length is too large
+let mut output = vec![0u8; len];
+MsgFmt.serialize(&amp;msg, &amp;mut output);
+assert_eq!(output, wire);</code></pre>
+<p>We get back exactly the bytes we started with.</p>
+<p>Why does Vest separate preparation from serialization? There are several key benefits:</p>
+<ol>
+<li><em>Infalliable-serialization</em>: It allows the caller to check for potential errors (such as a value that doesn’t satisfy the format’s constraints or integer overflows) before allocating a buffer. A fallable serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.</li>
+<li><em>Zero-reallocation</em>: It allows the caller to pre-allocate a buffer of the (provably) correct size, which can be more efficient than growing a buffer during serialization.</li>
+</ol>
+<blockquote>
+<p><strong>Always call <code>prepare</code> first.</strong> Because <code>serialize</code> is designed to be infalliable,
+it doesn’t recheck the value or the
+buffer size; it relies on what <code>prepare</code> has already established. In ordinary
+Rust, nothing enforces this. If you skip <code>prepare</code>, an inconsistent value
+produces bytes that won’t parse, and a buffer that’s too small is undefined
+behavior. In verified code, Verus prevents you from calling <code>serialize</code> without first establishing those proof obligations.</p>
+</blockquote>
+<h3 id="building-a-message-from-scratch"><a class="header" href="#building-a-message-from-scratch">Building a message from scratch</a></h3>
+<p>Apart from parsed values, we can also build the same message by hand and serialize it:</p>
+<pre><code class="language-rust ignore">let fresh = Msg {
+    tag: MsgType::Reading,
+    len: 7, // sensor + value + timestamp = 1 + 2 + 4 bytes
+    content: MsgContent::Reading(Reading { sensor: 3, value: 2150, timestamp: 1700000000 }),
+};
+
+let len = MsgFmt.prepare(&amp;fresh).unwrap();
+assert_eq!(len, 10); // 3 header bytes + 7 content bytes
+
+let mut output = vec![0u8; len];
+MsgFmt.serialize(&amp;fresh, &amp;mut output);
+assert_eq!(output, wire); // the same bytes we parsed earlier</code></pre>
+<h3 id="when-prepare-fails"><a class="header" href="#when-prepare-fails">When <code>prepare</code> fails</a></h3>
+<p>What if a value breaks the format’s constraints?</p>
+<pre><code class="language-rust ignore">let wrong_len = Msg { len: 99, ..fresh };
+println!("{:?}", MsgFmt.prepare(&amp;wrong_len));</code></pre>
+<p><code>prepare</code> refuses:</p>
+<pre><code class="language-text">Err(PreSerializeError { kind: NotCompliant(LengthInconsistent), failed_format: None })
+</code></pre>
+<p>A tag that doesn’t match the content is rejected too:</p>
+<pre><code class="language-rust ignore">let wrong_tag = Msg { tag: MsgType::Log, ..fresh }; // the content is a Reading
+println!("{:?}", MsgFmt.prepare(&amp;wrong_tag));</code></pre>
+<pre><code class="language-text">Err(PreSerializeError { kind: NotCompliant(InvalidTag), failed_format: Some("msg_content") })
+</code></pre>
+<p>Here, format dependencies work in the opposite direction. When parsing, <code>@tag</code> and
+<code>@len</code> <em>decide</em> how to read the content. When serializing, they are
+<em>constraints</em> that the value has to satisfy, and <code>prepare</code> is where Vest checks
+them. Without that check, you could send a header that misdescribes its content,
+and the receiver would misread the message.</p>
+<h2 id="checking-the-proofs-recommended"><a class="header" href="#checking-the-proofs-recommended">Checking the proofs (recommended)</a></h2>
+<p>So far, we’ve used <code>src/msg.rs</code> as ordinary Rust. The file also contains
+<em>specifications</em> of what the parser and serializer should do, together with
+<em>proofs</em> that they are functionally correct and secure with respect to the specification.</p>
+<p>Technically, you don’t need Verus to use Vest. If you’re working in unverified Rust and just
+want to parse and serialize more safely, you can stop here. Still, we highly
+recommend checking the proofs with Verus. That way, you don’t have to trust the
+Vest DSL compiler: Verus confirms that the generated code really satisfies the
+<a href="guarantees.html">promised properties</a>.</p>
+<p>Each Vest release works with one exact Verus release, recorded in
 <a href="https://github.com/secure-foundations/vest/blob/main/verus.json"><code>verus.json</code></a>.
 Follow the <a href="https://github.com/verus-lang/verus/blob/main/INSTALL.md">Verus installation instructions</a>
-and match that version, or let the script in the Vest repository install it for you:</p>
+for that version, or let a script from the Vest repository install it for you:</p>
 <pre><code class="language-console">git clone https://github.com/secure-foundations/vest.git
 ./vest/scripts/install-verus.sh
 export PATH="$PWD/vest/.verus:$PATH"
 </code></pre>
-<p>Then verify <em>your crate</em>, the one holding the generated module:</p>
-<pre><code class="language-console">cd my-project
-cargo verus verify
+<p>Next, add this section to your crate’s <code>Cargo.toml</code> so that <code>cargo verus</code> knows
+to verify it:</p>
+<pre><code class="language-toml">[package.metadata.verus]
+verify = true
 </code></pre>
-<p>Verus checks every specification and proof in <code>src/msg.rs</code>, so a successful run means that the guarantees hold for your format and the generated parser and serializer.</p>
-<h2 id="parse"><a class="header" href="#parse">Parse</a></h2>
-<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
-use crate::msg::*;
-
-let wire: &amp;[u8] = &amp;[
-    0x02,                               // tag = Msg2
-    0x07, 0x00,                         // len = 7
-    0xAA,                               // a
-    0xBB, 0xCC,                         // b
-    0xDD, 0xEE, 0xFF, 0x11,             // c
-];
-
-let (consumed, msg) = MsgFmt.parse(&amp;wire).unwrap();
-assert_eq!(consumed, 10);
-assert_eq!(msg.tag, MsgType::Msg2);
-assert_eq!(msg.len, 7);
-assert!(matches!(msg.content, MsgContent::Msg2(_)));</code></pre>
-<p><code>parse</code> returns the parsed value and how many bytes it consumed, so a caller reading a stream knows
-where the next message begins (it does not mandate that the input slice end exactly at the message boundary). The <code>msg</code> value in the example copies and re-interprets the wire bytes because <code>msg2</code> only contains fixed-size integers (where “zero-copy” pointers to the input buffer would be even less efficient).
-For larger payloads, Vest uses borrowed slices to avoid unnecessary copies/allocations.</p>
-<h2 id="serialize-and-beyond"><a class="header" href="#serialize-and-beyond">Serialize (and beyond)</a></h2>
-<p>Serializing in Vest is two steps.
-The standard way is to call <code>prepare</code> first, which dynamically checks that the value is valid (we will see what that means) and returns the exact wire length of the serialized representation.
-Then you allocate a buffer of that length and call <code>serialize</code> to write into it. This two-step process allows Vest to serialize without failing, nor allocating memory during serialization.</p>
-<p>Using the <code>msg</code> value from the parse example:</p>
-<pre><code class="language-rust ignore">let len = MsgFmt.prepare(&amp;msg).unwrap();
-let mut output = vec![0u8; len];
-MsgFmt.serialize(&amp;msg, &amp;mut output);
-assert_eq!(output.as_slice(), wire);</code></pre>
-<p>Now build a new <code>msg</code> from scratch:</p>
-<pre><code class="language-rust ignore">let msg = Msg {
-    tag: MsgType::Msg2,
-    len: 7, // u8 + u16 + u32 = 1 + 2 + 4 = 7
-    content: MsgContent::Msg2(Msg2 { a: 0xAA, b: 0xBBCC, c: 0xDDEEFF11 }),
-};
-
-let len = MsgFmt.prepare(&amp;msg).unwrap();   // 10</code></pre>
-<p>A wrong <code>len</code> is rejected by <code>prepare</code>:</p>
-<pre><code class="language-rust ignore">let bad = Msg {
-    tag: MsgType::Msg2,
-    len: 99, // wrong length for the content
-    content: MsgContent::Msg2(Msg2 { a: 0xAA, b: 0xBBCC, c: 0xDDEEFF11 }),
-};
-
-assert!(MsgFmt.prepare(&amp;bad).is_err());</code></pre>
-<p>This would produce an error like:</p>
-<pre><code class="language-text">PreSerializeError { kind: NotCompliant(LengthInconsistent), .. }
+<p>Then, from your project directory, run:</p>
+<pre><code class="language-console">cargo verus verify
 </code></pre>
-<p>This is the field dependency being enforced in the <em>other</em> direction.
-Unlike for parsing, where <code>@len</code> determines how many bytes to read subsequently,
-a dependency
-like <code>@len</code> is
-a constraint the value must satisfy before serialization, and <code>prepare</code> is where that is checked.</p>
-<!--Finally, for verified code, you can statically prove that a value is valid and its length is less than some bound, and then call `length` and `serialize` without dynamic validity checks nor integer overflow checks. -->
-<h2 id="what-was-proven"><a class="header" href="#what-was-proven">What was proven</a></h2>
-<p>The generated module carries proofs that, among other things, parsing/serializing is memory and arithmetically safe, panic-free, and
-terminating; and that a successful parse reconstructs the original serialized value and consumes exactly as many bytes as the value would serialize to.
-See <a href="guarantees.html">What Vest proves</a> for a complete list of properties.</p>
+<p>Verus checks in order <code>vstd</code>, <code>vest_lib</code>, and then your crate, which can take a minute or
+two. Each one prints a line like this:</p>
+<pre><code class="language-text">verification results:: 121 verified, 0 errors
+</code></pre>
+<p>When you see <code>0</code> verification errors, all of the proofs in the generated module
+have been checked, and congrats that Vest’s guarantees hold for your format and its generated
+parser and serializer.</p>
+<h2 id="using-vest-from-verified-rust"><a class="header" href="#using-vest-from-verified-rust">Using Vest from verified Rust</a></h2>
+<p>So far, we’ve called the generated code from ordinary Rust. If your application
+is also verified with Verus, it can go one step further and use Vest’s theorems
+in its own proofs. Real applications can be more complex, but here’s a small
+example: a function that proves that parsing a serialized value gives back the
+original value.</p>
+<pre><code class="language-rust ignore">use crate::msg::*; // Vest-generated module
+use vest_lib::prelude::*; // Bring the `vest_lib` specification and proof traits into scope
+
+verus! {
+
+fn roundtrip(value: &amp;Msg&lt;'_&gt;) -&gt; Result&lt;(), PreSerializeError&gt; {
+    let len = MsgFmt.prepare(value)?;
+    let mut output = vec![0u8; len];
+    MsgFmt.serialize(value, &amp;mut output);
+
+    proof {
+        MsgFmt.theorem_serialize_parse_roundtrip(value.deep_view()); // invoke Vest-provided theorem in Verus's proof block
+    }
+    let (consumed, parsed) = MsgFmt.parse(&amp;output.as_slice()).unwrap();
+    assert(consumed == len); // Verus assertion
+    assert(parsed.deep_view() == value.deep_view());
+    Ok(())
+}
+
+} // verus!</code></pre>
+<p>Let’s walk through it:</p>
+<ol>
+<li><code>prepare</code> checks that the value is consistent with the format and tells us
+exactly how much space to allocate for the serialized output, just like before.</li>
+<li><code>serialize</code> fills that space with the value’s binary encoding. Here, Verus
+verifies that the value is consistent and the buffer is large enough (because we just called <code>prepare</code>).</li>
+<li>The <code>proof</code> block calls Vest’s roundtrip theorem. It tells Verus that
+parsing <code>output</code> (the serialized <code>value</code>) succeeds, consumes all <code>len</code> bytes, and returns the same
+logical contents. That’s enough for Verus to prove both <code>assert</code>s, and to
+prove that the <code>unwrap</code> can never panic.</li>
+</ol>
+<p>Note that the <code>proof</code> block and the Verus <code>assert(...)</code> statements are checked at compile time and add no work
+at run time. Use Rust’s <code>assert!(...)</code> if you also want a check at run time.</p>
+<p>In the above example, we used Vest’s theorem to reason about the values abstractly/symbolically.
+To prove more subtle facts about particular fields, or to work out concrete serialized lengths, see
+<a href="dsl/generated-api.html#reasoning-about-generated-values">Reasoning about generated values</a>.</p>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>Congratulations, you’ve built and verified your first Vest format! Along the
+way, you’ve seen how to:</p>
+<ul>
+<li>describe a binary format with enums, structs, dependencies (<code>@</code>), bounded
+regions (<code>[u8; @len] &gt;&gt;= ...</code>), and choices (<code>choose</code>);</li>
+<li>compile it with <code>vest</code> and use the generated types from Rust;</li>
+<li>parse with <code>parse</code>, which returns the parsed value and how many bytes it
+consumed when successful, or an error when it fails;</li>
+<li>serialize with <code>prepare</code> followed by <code>serialize</code>, and in particular, how
+<code>prepare</code> efficiently checks that the value is consistent with the format and computes the
+exact number of bytes needed for serialization;</li>
+<li>check the generated proofs with <code>cargo verus verify</code>, and use Vest’s theorems
+in your own verified code.</li>
+</ul>
 <h2 id="where-next"><a class="header" href="#where-next">Where next</a></h2>
 <ul>
-<li><a href="dsl/reference.html">Language reference</a> — every format construct, and the current limitations.</li>
-<li><a href="dsl/generated-api.html">Generated Rust Code</a> — the full shape of what comes out of the compiler.</li>
-<li><a href="troubleshooting.html">Troubleshooting</a> — what the common errors mean.</li>
-<li><a href="asn1/index.html">ASN.1 frontend</a> — generate DER or BER from an ASN.1 module instead of writing a <code>.vest</code> file.</li>
+<li><a href="guarantees.html">What Vest proves</a>: Vest’s formal guarantees in detail.</li>
+<li><a href="dsl/reference.html">Language reference</a>: every format construct in the Vest DSL, and the
+current limitations.</li>
+<li><a href="dsl/generated-api.html">Generated Rust Code</a>: the full shape of what comes out of the DSL compiler,
+including more of the generated API and reasoning about values in Verus proofs.</li>
+<li><a href="asn1/index.html">ASN.1 compiler</a>: generate DER or BER codecs from an ASN.1
+module instead of writing a <code>.vest</code> file.</li>
 </ul>
 
                     </main>
