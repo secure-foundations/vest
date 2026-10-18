@@ -32,13 +32,14 @@ If you are only interested in invoking the generated code, you can skip ahead to
 
 ### The shape of an emitted file
 
+The file starts with a comment identifying the `vest` compiler version and
+warning against manual edits: change the `.vest` source and regenerate instead.
 The whole module is a single `verus!` block behind a fixed `use` preamble. It is
 divided into six sections:
 
 ```rust,ignore
-use vest_lib::combinators::*;            // fixed preamble, identical in every file
-use vest_lib::core::exec::parser::*;
-// ...
+use vest_lib::prelude::*;                // common APIs, combinators, and Verus prelude
+// ...additional imports for generated mapping and recursion helpers
 verus! {
 
 // ============================================================

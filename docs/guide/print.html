@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8077ba59.js";
+            window.path_to_searchindex_js = "searchindex-7cc7b63f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -1559,11 +1559,12 @@ pub struct MessageFmt;</code></pre>
 <a href="#calling-the-generated-code">Calling the generated code</a>.</p>
 <h2 id="inside-the-generated-file"><a class="header" href="#inside-the-generated-file">Inside the generated file</a></h2>
 <h3 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h3>
-<p>The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble. It is
+<p>The file starts with a comment identifying the <code>vest</code> compiler version and
+warning against manual edits: change the <code>.vest</code> source and regenerate instead.
+The whole module is a single <code>verus!</code> block behind a fixed <code>use</code> preamble. It is
 divided into six sections:</p>
-<pre><code class="language-rust ignore">use vest_lib::combinators::*;            // fixed preamble, identical in every file
-use vest_lib::core::exec::parser::*;
-// ...
+<pre><code class="language-rust ignore">use vest_lib::prelude::*;                // common APIs, combinators, and Verus prelude
+// ...additional imports for generated mapping and recursion helpers
 verus! {
 
 // ============================================================
