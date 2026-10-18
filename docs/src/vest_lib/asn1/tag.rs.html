@@ -1044,7 +1044,7 @@
 <a href=#1044 id=1044 data-nosnippet>1044</a>        const_u16_fmt.serialize(<span class="kw-2">&amp;</span>v, <span class="kw-2">&amp;mut </span>obuf);
 <a href=#1045 id=1045 data-nosnippet>1045</a>        proof {
 <a href=#1046 id=1046 data-nosnippet>1046</a>            const_u16_fmt.theorem_parse_serialize_roundtrip(buf@);
-<a href=#1047 id=1047 data-nosnippet>1047</a>            assert(obuf@ == buf@.take(n <span class="kw">as </span>int));
+<a href=#1047 id=1047 data-nosnippet>1047</a>            assert(obuf@ == buf@[<span class="number">0</span>..n]);
 <a href=#1048 id=1048 data-nosnippet>1048</a>        }
 <a href=#1049 id=1049 data-nosnippet>1049</a>    }
 <a href=#1050 id=1050 data-nosnippet>1050</a>    <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Test function, not meant to succeed"</span>))
@@ -1062,7 +1062,7 @@
 <a href=#1062 id=1062 data-nosnippet>1062</a>
 <a href=#1063 id=1063 data-nosnippet>1063</a>        proof {
 <a href=#1064 id=1064 data-nosnippet>1064</a>            asn_bool_tag_fmt.theorem_parse_serialize_roundtrip(buf@);
-<a href=#1065 id=1065 data-nosnippet>1065</a>            assert(obuf@ == buf@.take(n <span class="kw">as </span>int));
+<a href=#1065 id=1065 data-nosnippet>1065</a>            assert(obuf@ == buf@[<span class="number">0</span>..n]);
 <a href=#1066 id=1066 data-nosnippet>1066</a>        }
 <a href=#1067 id=1067 data-nosnippet>1067</a>    }
 <a href=#1068 id=1068 data-nosnippet>1068</a>    <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Test function, not meant to succeed"</span>))

@@ -2,8 +2,8 @@
     fmt: &amp;<a class="struct" href="../../../combinators/choice/struct.Choice.html" title="struct vest_lib::combinators::choice::Choice">Choice</a>&lt;A, B&gt;,
 )<div class="where">where
     Output: <a class="trait" href="../output/trait.OutputBuf.html" title="trait vest_lib::core::exec::output::OutputBuf">OutputBuf</a>,
-    TA: DeepView,
-    TB: DeepView,
+    TA: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>,
+    TB: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>,
     A: <a class="trait" href="../serializer/trait.Serializer.html" title="trait vest_lib::core::exec::serializer::Serializer">Serializer</a>&lt;Output, TA&gt;,
     B: <a class="trait" href="../serializer/trait.Serializer.html" title="trait vest_lib::core::exec::serializer::Serializer">Serializer</a>&lt;Output, TB&gt;,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>(fmt.<span class="number">0</span>.exec_inv() &amp;&amp; fmt.<span class="number">1</span>.exec_inv()) ==&gt; fmt.exec_inv(),</code></pre></div>
 

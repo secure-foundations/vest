@@ -938,7 +938,7 @@
 <a href=#938 id=938 data-nosnippet>938</a>        <span class="self">self</span>.<span class="number">1</span>.lemma_parse_implies_asn1_start(input);
 <a href=#939 id=939 data-nosnippet>939</a>        <span class="kw">if </span><span class="self">self</span>.spec_parse(input) is <span class="prelude-val">Some </span>{
 <a href=#940 id=940 data-nosnippet>940</a>            <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.spec_parse(input) is <span class="prelude-val">None </span>{
-<a href=#941 id=941 data-nosnippet>941</a>                assert(input.skip(<span class="number">0</span>) == input);
+<a href=#941 id=941 data-nosnippet>941</a>                assert(input[<span class="number">0</span>..] == input);
 <a href=#942 id=942 data-nosnippet>942</a>            }
 <a href=#943 id=943 data-nosnippet>943</a>            lemma_input_starts_with_union(input, <span class="self">self</span>.<span class="number">0</span>.asn1_start(), <span class="self">self</span>.<span class="number">1</span>.asn1_start());
 <a href=#944 id=944 data-nosnippet>944</a>        }

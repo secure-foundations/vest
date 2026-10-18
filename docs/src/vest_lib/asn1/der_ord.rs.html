@@ -247,14 +247,14 @@
 <a href=#247 id=247 data-nosnippet>247</a>    }
 <a href=#248 id=248 data-nosnippet>248</a>
 <a href=#249 id=249 data-nosnippet>249</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: Tag, state: TagDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#250 id=250 data-nosnippet>250</a>        <span class="self">self</span>.spec_serialize(tag).skip(state.pos <span class="kw">as </span>int)
+<a href=#250 id=250 data-nosnippet>250</a>        <span class="self">self</span>.spec_serialize(tag)[state.pos..]
 <a href=#251 id=251 data-nosnippet>251</a>    }
 <a href=#252 id=252 data-nosnippet>252</a>
 <a href=#253 id=253 data-nosnippet>253</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: Tag, state: TagDerState) -&gt; bool {
 <a href=#254 id=254 data-nosnippet>254</a>        &amp;&amp;&amp; state.pos &lt;= state.len
 <a href=#255 id=255 data-nosnippet>255</a>        &amp;&amp;&amp; state.len &lt;= state.bytes@.len()
 <a href=#256 id=256 data-nosnippet>256</a>        &amp;&amp;&amp; state.len == <span class="self">self</span>.spec_serialize(tag).len()
-<a href=#257 id=257 data-nosnippet>257</a>        &amp;&amp;&amp; state.bytes@.take(state.len <span class="kw">as </span>int) == <span class="self">self</span>.spec_serialize(tag)
+<a href=#257 id=257 data-nosnippet>257</a>        &amp;&amp;&amp; state.bytes@[<span class="number">0</span>..state.len] == <span class="self">self</span>.spec_serialize(tag)
 <a href=#258 id=258 data-nosnippet>258</a>    }
 <a href=#259 id=259 data-nosnippet>259</a>
 <a href=#260 id=260 data-nosnippet>260</a>    <span class="kw">fn </span>der_start(<span class="kw-2">&amp;</span><span class="self">self</span>, t: <span class="kw-2">&amp;</span>Tag) -&gt; (state: TagDerState) {
@@ -295,14 +295,14 @@
 <a href=#295 id=295 data-nosnippet>295</a>    }
 <a href=#296 id=296 data-nosnippet>296</a>
 <a href=#297 id=297 data-nosnippet>297</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: usize, state: LengthDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#298 id=298 data-nosnippet>298</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#298 id=298 data-nosnippet>298</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#299 id=299 data-nosnippet>299</a>    }
 <a href=#300 id=300 data-nosnippet>300</a>
 <a href=#301 id=301 data-nosnippet>301</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: usize, state: LengthDerState) -&gt; bool {
 <a href=#302 id=302 data-nosnippet>302</a>        &amp;&amp;&amp; state.pos &lt;= state.len
 <a href=#303 id=303 data-nosnippet>303</a>        &amp;&amp;&amp; state.len &lt;= <span class="number">9
 <a href=#304 id=304 data-nosnippet>304</a>        </span>&amp;&amp;&amp; state.len == <span class="self">self</span>.spec_serialize(value).len()
-<a href=#305 id=305 data-nosnippet>305</a>        &amp;&amp;&amp; state.bytes@.take(state.len <span class="kw">as </span>int) == <span class="self">self</span>.spec_serialize(value)
+<a href=#305 id=305 data-nosnippet>305</a>        &amp;&amp;&amp; state.bytes@[<span class="number">0</span>..state.len] == <span class="self">self</span>.spec_serialize(value)
 <a href=#306 id=306 data-nosnippet>306</a>    }
 <a href=#307 id=307 data-nosnippet>307</a>
 <a href=#308 id=308 data-nosnippet>308</a>    <span class="kw">fn </span>der_start(<span class="kw-2">&amp;</span><span class="self">self</span>, l: <span class="kw-2">&amp;</span>usize) -&gt; (state: LengthDerState) {
@@ -358,14 +358,14 @@
 <a href=#358 id=358 data-nosnippet>358</a>    }
 <a href=#359 id=359 data-nosnippet>359</a>
 <a href=#360 id=360 data-nosnippet>360</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: u64, state: Base128DerState) -&gt; Seq&lt;u8&gt; {
-<a href=#361 id=361 data-nosnippet>361</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#361 id=361 data-nosnippet>361</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#362 id=362 data-nosnippet>362</a>    }
 <a href=#363 id=363 data-nosnippet>363</a>
 <a href=#364 id=364 data-nosnippet>364</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: u64, state: Base128DerState) -&gt; bool {
 <a href=#365 id=365 data-nosnippet>365</a>        &amp;&amp;&amp; state.pos &lt;= state.len
 <a href=#366 id=366 data-nosnippet>366</a>        &amp;&amp;&amp; state.len &lt;= state.bytes@.len()
 <a href=#367 id=367 data-nosnippet>367</a>        &amp;&amp;&amp; state.len == <span class="self">self</span>.spec_serialize(value).len()
-<a href=#368 id=368 data-nosnippet>368</a>        &amp;&amp;&amp; state.bytes@.take(state.len <span class="kw">as </span>int) == <span class="self">self</span>.spec_serialize(value)
+<a href=#368 id=368 data-nosnippet>368</a>        &amp;&amp;&amp; state.bytes@[<span class="number">0</span>..state.len] == <span class="self">self</span>.spec_serialize(value)
 <a href=#369 id=369 data-nosnippet>369</a>    }
 <a href=#370 id=370 data-nosnippet>370</a>
 <a href=#371 id=371 data-nosnippet>371</a>    <span class="kw">fn </span>der_start(<span class="kw-2">&amp;</span><span class="self">self</span>, i: <span class="kw-2">&amp;</span>u64) -&gt; (state: Base128DerState) {
@@ -623,13 +623,13 @@
 <a href=#623 id=623 data-nosnippet>623</a>    }
 <a href=#624 id=624 data-nosnippet>624</a>
 <a href=#625 id=625 data-nosnippet>625</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: i16, state: Integer16DerState) -&gt; Seq&lt;u8&gt; {
-<a href=#626 id=626 data-nosnippet>626</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#626 id=626 data-nosnippet>626</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#627 id=627 data-nosnippet>627</a>    }
 <a href=#628 id=628 data-nosnippet>628</a>
 <a href=#629 id=629 data-nosnippet>629</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: i16, state: Integer16DerState) -&gt; bool {
 <a href=#630 id=630 data-nosnippet>630</a>        &amp;&amp;&amp; state.pos &lt;= state.len &lt;= <span class="number">2
 <a href=#631 id=631 data-nosnippet>631</a>        </span>&amp;&amp;&amp; state.len == <span class="self">self</span>.spec_serialize(value).len()
-<a href=#632 id=632 data-nosnippet>632</a>        &amp;&amp;&amp; state.bytes@.take(state.len <span class="kw">as </span>int) == <span class="self">self</span>.spec_serialize(value)
+<a href=#632 id=632 data-nosnippet>632</a>        &amp;&amp;&amp; state.bytes@[<span class="number">0</span>..state.len] == <span class="self">self</span>.spec_serialize(value)
 <a href=#633 id=633 data-nosnippet>633</a>    }
 <a href=#634 id=634 data-nosnippet>634</a>
 <a href=#635 id=635 data-nosnippet>635</a>    <span class="kw">fn </span>der_start(<span class="kw-2">&amp;</span><span class="self">self</span>, i: <span class="kw-2">&amp;</span>i16) -&gt; (state: Integer16DerState) {
@@ -692,7 +692,7 @@
 <a href=#692 id=692 data-nosnippet>692</a>    }
 <a href=#693 id=693 data-nosnippet>693</a>
 <a href=#694 id=694 data-nosnippet>694</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: UtcTime, state: UtcTimeDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#695 id=695 data-nosnippet>695</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#695 id=695 data-nosnippet>695</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#696 id=696 data-nosnippet>696</a>    }
 <a href=#697 id=697 data-nosnippet>697</a>
 <a href=#698 id=698 data-nosnippet>698</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: UtcTime, state: UtcTimeDerState) -&gt; bool {
@@ -752,7 +752,7 @@
 <a href=#752 id=752 data-nosnippet>752</a>        value: GeneralizedTimeSpec,
 <a href=#753 id=753 data-nosnippet>753</a>        state: GeneralizedTimeDerState,
 <a href=#754 id=754 data-nosnippet>754</a>    ) -&gt; Seq&lt;u8&gt; {
-<a href=#755 id=755 data-nosnippet>755</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#755 id=755 data-nosnippet>755</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#756 id=756 data-nosnippet>756</a>    }
 <a href=#757 id=757 data-nosnippet>757</a>
 <a href=#758 id=758 data-nosnippet>758</a>    open spec <span class="kw">fn </span>der_state_valid(
@@ -839,7 +839,7 @@
 <a href=#839 id=839 data-nosnippet>839</a>    }
 <a href=#840 id=840 data-nosnippet>840</a>
 <a href=#841 id=841 data-nosnippet>841</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: int, state: IntegerDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#842 id=842 data-nosnippet>842</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#842 id=842 data-nosnippet>842</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#843 id=843 data-nosnippet>843</a>    }
 <a href=#844 id=844 data-nosnippet>844</a>
 <a href=#845 id=845 data-nosnippet>845</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: int, state: IntegerDerState) -&gt; bool {
@@ -848,7 +848,7 @@
 <a href=#848 id=848 data-nosnippet>848</a>        &amp;&amp;&amp; state.small == (i64::MIN <span class="kw">as </span>int &lt;= value &lt;= i64::MAX <span class="kw">as </span>int)
 <a href=#849 id=849 data-nosnippet>849</a>        &amp;&amp;&amp; state.small ==&gt; {
 <a href=#850 id=850 data-nosnippet>850</a>            &amp;&amp;&amp; state.len &lt;= <span class="number">9
-<a href=#851 id=851 data-nosnippet>851</a>            </span>&amp;&amp;&amp; state.bytes@.take(state.len <span class="kw">as </span>int) == <span class="self">self</span>.spec_serialize(value)
+<a href=#851 id=851 data-nosnippet>851</a>            </span>&amp;&amp;&amp; state.bytes@[<span class="number">0</span>..state.len] == <span class="self">self</span>.spec_serialize(value)
 <a href=#852 id=852 data-nosnippet>852</a>        }
 <a href=#853 id=853 data-nosnippet>853</a>    }
 <a href=#854 id=854 data-nosnippet>854</a>
@@ -955,7 +955,7 @@
 <a href=#955 id=955 data-nosnippet>955</a>    }
 <a href=#956 id=956 data-nosnippet>956</a>
 <a href=#957 id=957 data-nosnippet>957</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#958 id=958 data-nosnippet>958</a>        value.skip(state.pos <span class="kw">as </span>int)
+<a href=#958 id=958 data-nosnippet>958</a>        value[state.pos..]
 <a href=#959 id=959 data-nosnippet>959</a>    }
 <a href=#960 id=960 data-nosnippet>960</a>
 <a href=#961 id=961 data-nosnippet>961</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; bool {
@@ -989,7 +989,7 @@
 <a href=#989 id=989 data-nosnippet>989</a>    }
 <a href=#990 id=990 data-nosnippet>990</a>
 <a href=#991 id=991 data-nosnippet>991</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#992 id=992 data-nosnippet>992</a>        value.skip(state.pos <span class="kw">as </span>int)
+<a href=#992 id=992 data-nosnippet>992</a>        value[state.pos..]
 <a href=#993 id=993 data-nosnippet>993</a>    }
 <a href=#994 id=994 data-nosnippet>994</a>
 <a href=#995 id=995 data-nosnippet>995</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; bool {
@@ -1028,7 +1028,7 @@
 <a href=#1028 id=1028 data-nosnippet>1028</a>    }
 <a href=#1029 id=1029 data-nosnippet>1029</a>
 <a href=#1030 id=1030 data-nosnippet>1030</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#1031 id=1031 data-nosnippet>1031</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#1031 id=1031 data-nosnippet>1031</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#1032 id=1032 data-nosnippet>1032</a>    }
 <a href=#1033 id=1033 data-nosnippet>1033</a>
 <a href=#1034 id=1034 data-nosnippet>1034</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;u8&gt;, state: BytesDerState) -&gt; bool {
@@ -1067,7 +1067,7 @@
 <a href=#1067 id=1067 data-nosnippet>1067</a>    }
 <a href=#1068 id=1068 data-nosnippet>1068</a>
 <a href=#1069 id=1069 data-nosnippet>1069</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;char&gt;, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#1070 id=1070 data-nosnippet>1070</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#1070 id=1070 data-nosnippet>1070</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#1071 id=1071 data-nosnippet>1071</a>    }
 <a href=#1072 id=1072 data-nosnippet>1072</a>
 <a href=#1073 id=1073 data-nosnippet>1073</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;char&gt;, state: BytesDerState) -&gt; bool {
@@ -1106,7 +1106,7 @@
 <a href=#1106 id=1106 data-nosnippet>1106</a>    }
 <a href=#1107 id=1107 data-nosnippet>1107</a>
 <a href=#1108 id=1108 data-nosnippet>1108</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: PrintableStringSpec, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#1109 id=1109 data-nosnippet>1109</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#1109 id=1109 data-nosnippet>1109</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#1110 id=1110 data-nosnippet>1110</a>    }
 <a href=#1111 id=1111 data-nosnippet>1111</a>
 <a href=#1112 id=1112 data-nosnippet>1112</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: PrintableStringSpec, state: BytesDerState) -&gt; bool {
@@ -1147,7 +1147,7 @@
 <a href=#1147 id=1147 data-nosnippet>1147</a>    }
 <a href=#1148 id=1148 data-nosnippet>1148</a>
 <a href=#1149 id=1149 data-nosnippet>1149</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Ia5StringSpec, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#1150 id=1150 data-nosnippet>1150</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#1150 id=1150 data-nosnippet>1150</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#1151 id=1151 data-nosnippet>1151</a>    }
 <a href=#1152 id=1152 data-nosnippet>1152</a>
 <a href=#1153 id=1153 data-nosnippet>1153</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Ia5StringSpec, state: BytesDerState) -&gt; bool {
@@ -1188,7 +1188,7 @@
 <a href=#1188 id=1188 data-nosnippet>1188</a>    }
 <a href=#1189 id=1189 data-nosnippet>1189</a>
 <a href=#1190 id=1190 data-nosnippet>1190</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: TeletexStringSpec, state: BytesDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#1191 id=1191 data-nosnippet>1191</a>        <span class="self">self</span>.spec_serialize(value).skip(state.pos <span class="kw">as </span>int)
+<a href=#1191 id=1191 data-nosnippet>1191</a>        <span class="self">self</span>.spec_serialize(value)[state.pos..]
 <a href=#1192 id=1192 data-nosnippet>1192</a>    }
 <a href=#1193 id=1193 data-nosnippet>1193</a>
 <a href=#1194 id=1194 data-nosnippet>1194</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: TeletexStringSpec, state: BytesDerState) -&gt; bool {
@@ -1814,7 +1814,7 @@
 <a href=#1814 id=1814 data-nosnippet>1814</a>        <span class="kw">if </span>state.index &lt; vs.len() {
 <a href=#1815 id=1815 data-nosnippet>1815</a>            <span class="self">self</span>.<span class="number">0</span>.der_remaining(vs[state.index <span class="kw">as </span>int], state.current) + Star(
 <a href=#1816 id=1816 data-nosnippet>1816</a>                <span class="self">self</span>.<span class="number">0</span>,
-<a href=#1817 id=1817 data-nosnippet>1817</a>            ).spec_serialize(vs.skip(state.index <span class="kw">as </span>int + <span class="number">1</span>))
+<a href=#1817 id=1817 data-nosnippet>1817</a>            ).spec_serialize(vs[state.index + <span class="number">1</span>..])
 <a href=#1818 id=1818 data-nosnippet>1818</a>        } <span class="kw">else </span>{
 <a href=#1819 id=1819 data-nosnippet>1819</a>            Seq::empty()
 <a href=#1820 id=1820 data-nosnippet>1820</a>        }
@@ -1842,7 +1842,7 @@
 <a href=#1842 id=1842 data-nosnippet>1842</a>                <span class="kw">let </span>vv = v.deep_view();
 <a href=#1843 id=1843 data-nosnippet>1843</a>                Star(<span class="self">self</span>.<span class="number">0</span>).lemma_spec_serialize_suffix_step(vv, <span class="number">0</span>);
 <a href=#1844 id=1844 data-nosnippet>1844</a>                assert(<span class="self">self</span>.<span class="number">0</span>.der_remaining(vv[<span class="number">0</span>], state.current) == <span class="self">self</span>.<span class="number">0</span>.spec_serialize(vv[<span class="number">0</span>]));
-<a href=#1845 id=1845 data-nosnippet>1845</a>                assert(vv.skip(<span class="number">0</span>) == vv);
+<a href=#1845 id=1845 data-nosnippet>1845</a>                assert(vv[<span class="number">0</span>..] == vv);
 <a href=#1846 id=1846 data-nosnippet>1846</a>            }
 <a href=#1847 id=1847 data-nosnippet>1847</a>            state
 <a href=#1848 id=1848 data-nosnippet>1848</a>        };
@@ -2057,7 +2057,7 @@
 <a href=#2057 id=2057 data-nosnippet>2057</a>    }
 <a href=#2058 id=2058 data-nosnippet>2058</a>
 <a href=#2059 id=2059 data-nosnippet>2059</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: BmpStringSpec, state: BmpStringDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#2060 id=2060 data-nosnippet>2060</a>        <span class="self">self</span>.spec_serialize(value).skip(bmp_string_der_position(state) <span class="kw">as </span>int)
+<a href=#2060 id=2060 data-nosnippet>2060</a>        <span class="self">self</span>.spec_serialize(value)[bmp_string_der_position(state)..]
 <a href=#2061 id=2061 data-nosnippet>2061</a>    }
 <a href=#2062 id=2062 data-nosnippet>2062</a>
 <a href=#2063 id=2063 data-nosnippet>2063</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: BmpStringSpec, state: BmpStringDerState) -&gt; bool {
@@ -2123,7 +2123,7 @@
 <a href=#2123 id=2123 data-nosnippet>2123</a>    }
 <a href=#2124 id=2124 data-nosnippet>2124</a>
 <a href=#2125 id=2125 data-nosnippet>2125</a>    open spec <span class="kw">fn </span>der_remaining(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;char&gt;, state: UniversalStringDerState) -&gt; Seq&lt;u8&gt; {
-<a href=#2126 id=2126 data-nosnippet>2126</a>        <span class="self">self</span>.spec_serialize(value).skip(universal_string_der_position(state) <span class="kw">as </span>int)
+<a href=#2126 id=2126 data-nosnippet>2126</a>        <span class="self">self</span>.spec_serialize(value)[universal_string_der_position(state)..]
 <a href=#2127 id=2127 data-nosnippet>2127</a>    }
 <a href=#2128 id=2128 data-nosnippet>2128</a>
 <a href=#2129 id=2129 data-nosnippet>2129</a>    open spec <span class="kw">fn </span>der_state_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Seq&lt;char&gt;, state: UniversalStringDerState) -&gt; bool {

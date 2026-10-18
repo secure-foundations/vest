@@ -6,7 +6,7 @@
         ) matches <span class="prelude-val">Some</span>(
             (n, v),
         ) ==&gt; <span class="number">0 </span>&lt;= n &lt;= i2.len()
-            ==&gt; (i2.take(n) == i1.take(n) ==&gt; <span class="attr">#[trigger] </span>parser(i2) == <span class="prelude-val">Some</span>((n, v))))
+            ==&gt; (i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] ==&gt; <span class="attr">#[trigger] </span>parser(i2) == <span class="prelude-val">Some</span>((n, v))))
     }
 }</code></pre></div>
 

@@ -427,14 +427,14 @@
 <a href=#427 id=427 data-nosnippet>427</a>        invariant
 <a href=#428 id=428 data-nosnippet>428</a>            segments.deep_view() == segment_views,
 <a href=#429 id=429 data-nosnippet>429</a>            bit_views == segment_views.map(|_i: int, segment: BitStringSpec| segment.bits),
-<a href=#430 id=430 data-nosnippet>430</a>            bits@ == bit_views.take(i <span class="kw">as </span>int).flatten(),
+<a href=#430 id=430 data-nosnippet>430</a>            bits@ == bit_views[<span class="number">0</span>..i].flatten(),
 <a href=#431 id=431 data-nosnippet>431</a>    {
 <a href=#432 id=432 data-nosnippet>432</a>        <span class="kw">let </span>segment_bits = segments[i].bits();
 <a href=#433 id=433 data-nosnippet>433</a>        proof {
-<a href=#434 id=434 data-nosnippet>434</a>            <span class="kw">let </span>prefix = bit_views.take(i <span class="kw">as </span>int);
+<a href=#434 id=434 data-nosnippet>434</a>            <span class="kw">let </span>prefix = bit_views[<span class="number">0</span>..i];
 <a href=#435 id=435 data-nosnippet>435</a>            prefix.lemma_flatten_push(segment_bits@);
 <a href=#436 id=436 data-nosnippet>436</a>            assert(bit_views[i <span class="kw">as </span>int] == segment_bits@);
-<a href=#437 id=437 data-nosnippet>437</a>            assert(bit_views.take(i <span class="kw">as </span>int + <span class="number">1</span>) == prefix.push(segment_bits@));
+<a href=#437 id=437 data-nosnippet>437</a>            assert(bit_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(segment_bits@));
 <a href=#438 id=438 data-nosnippet>438</a>        }
 <a href=#439 id=439 data-nosnippet>439</a>        bits.extend_from_slice(segment_bits);
 <a href=#440 id=440 data-nosnippet>440</a>    }

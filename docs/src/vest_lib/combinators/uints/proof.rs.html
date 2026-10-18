@@ -21,8 +21,8 @@
 <a href=#21 id=21 data-nosnippet>21</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#22 id=22 data-nosnippet>22</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#23 id=23 data-nosnippet>23</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#24 id=24 data-nosnippet>24</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
-<a href=#25 id=25 data-nosnippet>25</a>                    assert(i2.take(<span class="number">1int</span>)[<span class="number">0</span>] == i1.take(<span class="number">1int</span>)[<span class="number">0</span>]);
+<a href=#24 id=24 data-nosnippet>24</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
+<a href=#25 id=25 data-nosnippet>25</a>                    assert(i2[<span class="number">0</span>..<span class="number">1int</span>][<span class="number">0</span>] == i1[<span class="number">0</span>..<span class="number">1int</span>][<span class="number">0</span>]);
 <a href=#26 id=26 data-nosnippet>26</a>                    assert(<span class="self">self</span>.spec_parse(i2) == <span class="prelude-val">Some</span>((n, v)));
 <a href=#27 id=27 data-nosnippet>27</a>                }
 <a href=#28 id=28 data-nosnippet>28</a>            }

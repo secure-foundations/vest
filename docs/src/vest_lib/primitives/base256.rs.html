@@ -295,7 +295,7 @@
 <a href=#295 id=295 data-nosnippet>295</a>        }
 <a href=#296 id=296 data-nosnippet>296</a>        acc = (acc &lt;&lt; <span class="number">8usize</span>) | (b <span class="kw">as </span>usize);
 <a href=#297 id=297 data-nosnippet>297</a>    }
-<a href=#298 id=298 data-nosnippet>298</a>    assert(bytes@[<span class="number">0</span>..bytes@.len() <span class="kw">as </span>int] == bytes.deep_view());
+<a href=#298 id=298 data-nosnippet>298</a>    assert(bytes@[<span class="number">0</span>..bytes@.len()] == bytes.deep_view());
 <a href=#299 id=299 data-nosnippet>299</a>    acc
 <a href=#300 id=300 data-nosnippet>300</a>}
 <a href=#301 id=301 data-nosnippet>301</a>
@@ -346,7 +346,7 @@
 <a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">let </span>ghost target = nat_to_be_bytes(v <span class="kw">as </span>nat);
 <a href=#347 id=347 data-nosnippet>347</a>    proof {
 <a href=#348 id=348 data-nosnippet>348</a>        lemma_to_from_be_bytes_roundtrip(v <span class="kw">as </span>nat);  <span class="comment">// nat_from_be_bytes(nat_to_be_bytes(v)) == v
-<a href=#349 id=349 data-nosnippet>349</a>        </span>assert(target[<span class="number">0</span>..len <span class="kw">as </span>int] == target);
+<a href=#349 id=349 data-nosnippet>349</a>        </span>assert(target[<span class="number">0</span>..len] == target);
 <a href=#350 id=350 data-nosnippet>350</a>    }
 <a href=#351 id=351 data-nosnippet>351</a>    <span class="kw">let </span><span class="kw-2">mut </span>current = v;
 <a href=#352 id=352 data-nosnippet>352</a>
@@ -362,7 +362,7 @@
 <a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">for </span>byte <span class="kw">in </span>iter: reversed
 <a href=#363 id=363 data-nosnippet>363</a>        invariant
 <a href=#364 id=364 data-nosnippet>364</a>            iter.seq().len() == len,
-<a href=#365 id=365 data-nosnippet>365</a>            current <span class="kw">as </span>nat == nat_from_be_bytes(target[<span class="number">0</span>..len <span class="kw">as </span>int - iter.index()]),
+<a href=#365 id=365 data-nosnippet>365</a>            current <span class="kw">as </span>nat == nat_from_be_bytes(target[<span class="number">0</span>..len - iter.index()]),
 <a href=#366 id=366 data-nosnippet>366</a>            forall|j: int|
 <a href=#367 id=367 data-nosnippet>367</a>                <span class="attr">#![auto]
 <a href=#368 id=368 data-nosnippet>368</a>                </span>len <span class="kw">as </span>int - iter.index() &lt;= j &lt; len ==&gt; <span class="kw-2">*</span><span class="kw">final</span>(slots[j]) == target[j],

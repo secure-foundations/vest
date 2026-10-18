@@ -411,7 +411,7 @@
 <a href=#411 id=411 data-nosnippet>411</a>    <span class="kw">let </span>fraction = <span class="kw">if </span>main_end == zone_start {
 <a href=#412 id=412 data-nosnippet>412</a>        Seq::empty()
 <a href=#413 id=413 data-nosnippet>413</a>    } <span class="kw">else </span>{
-<a href=#414 id=414 data-nosnippet>414</a>        bytes.subrange(main_end <span class="kw">as </span>int + <span class="number">1</span>, zone_start <span class="kw">as </span>int)
+<a href=#414 id=414 data-nosnippet>414</a>        bytes[main_end + <span class="number">1</span>..zone_start]
 <a href=#415 id=415 data-nosnippet>415</a>    };
 <a href=#416 id=416 data-nosnippet>416</a>    <span class="kw">if </span>zone_start == bytes.len() || bytes[zone_start <span class="kw">as </span>int] == <span class="number">0x5a </span>{
 <a href=#417 id=417 data-nosnippet>417</a>        <span class="prelude-val">Some</span>(
@@ -751,353 +751,351 @@
 <a href=#751 id=751 data-nosnippet>751</a>        <span class="kw">if </span>generalized_time_main_end(value) == generalized_time_zone_start(value) {
 <a href=#752 id=752 data-nosnippet>752</a>            value.fraction.len() == <span class="number">0
 <a href=#753 id=753 data-nosnippet>753</a>        </span>} <span class="kw">else </span>{
-<a href=#754 id=754 data-nosnippet>754</a>            generalized_time_bytes(value).subrange(
-<a href=#755 id=755 data-nosnippet>755</a>                generalized_time_main_end(value) <span class="kw">as </span>int + <span class="number">1</span>,
-<a href=#756 id=756 data-nosnippet>756</a>                generalized_time_zone_start(value) <span class="kw">as </span>int,
-<a href=#757 id=757 data-nosnippet>757</a>            ) == value.fraction
-<a href=#758 id=758 data-nosnippet>758</a>        },
-<a href=#759 id=759 data-nosnippet>759</a>{
-<a href=#760 id=760 data-nosnippet>760</a>    <span class="kw">let </span>prefix = generalized_time_prefix(value);
-<a href=#761 id=761 data-nosnippet>761</a>    <span class="kw">let </span>fraction = generalized_time_fraction(value);
-<a href=#762 id=762 data-nosnippet>762</a>    <span class="kw">let </span>suffix = generalized_time_suffix(value);
-<a href=#763 id=763 data-nosnippet>763</a>    <span class="kw">let </span>bytes = prefix + fraction + suffix;
-<a href=#764 id=764 data-nosnippet>764</a>    <span class="kw">let </span>main_end = generalized_time_main_end(value);
-<a href=#765 id=765 data-nosnippet>765</a>    <span class="kw">let </span>zone_start: usize = (main_end + fraction.len()) <span class="kw">as </span>usize;
-<a href=#766 id=766 data-nosnippet>766</a>
-<a href=#767 id=767 data-nosnippet>767</a>    <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
-<a href=#768 id=768 data-nosnippet>768</a>    } <span class="kw">else </span>{
-<a href=#769 id=769 data-nosnippet>769</a>        assert(fraction == <span class="macro">seq!</span>[<span class="number">0x2eu8</span>] + value.fraction);
-<a href=#770 id=770 data-nosnippet>770</a>        <span class="macro">assert_seqs_equal!</span>(bytes.subrange(main_end <span class="kw">as </span>int + <span class="number">1</span>, zone_start <span class="kw">as </span>int) == value.fraction, i =&gt; {
-<a href=#771 id=771 data-nosnippet>771</a>            assert(bytes[main_end <span class="kw">as </span>int + <span class="number">1 </span>+ i] == fraction[<span class="number">1 </span>+ i]);
-<a href=#772 id=772 data-nosnippet>772</a>            assert(fraction[<span class="number">1 </span>+ i] == value.fraction[i]);
-<a href=#773 id=773 data-nosnippet>773</a>        });
-<a href=#774 id=774 data-nosnippet>774</a>        assert(digits(bytes, main_end <span class="kw">as </span>int + <span class="number">1</span>, zone_start <span class="kw">as </span>int)) by {
-<a href=#775 id=775 data-nosnippet>775</a>            assert forall|i: int| main_end &lt;= i &lt; zone_start - <span class="number">1 </span>implies ascii_digit(
-<a href=#776 id=776 data-nosnippet>776</a>                <span class="attr">#[trigger] </span>bytes[i + <span class="number">1</span>],
-<a href=#777 id=777 data-nosnippet>777</a>            ) by {
-<a href=#778 id=778 data-nosnippet>778</a>                assert(bytes[i + <span class="number">1</span>] == value.fraction[i - main_end]);
-<a href=#779 id=779 data-nosnippet>779</a>            }
-<a href=#780 id=780 data-nosnippet>780</a>        }
-<a href=#781 id=781 data-nosnippet>781</a>        assert(generalized_fraction_wf::&lt;DER&gt;(bytes, main_end, zone_start));
-<a href=#782 id=782 data-nosnippet>782</a>    }
-<a href=#783 id=783 data-nosnippet>783</a>}
-<a href=#784 id=784 data-nosnippet>784</a>
-<a href=#785 id=785 data-nosnippet>785</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
-<a href=#786 id=786 data-nosnippet>786</a></span>proof <span class="kw">fn </span>lemma_generalized_time_encoded_zone&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
-<a href=#787 id=787 data-nosnippet>787</a>    requires
-<a href=#788 id=788 data-nosnippet>788</a>        <span class="kw">if </span>DER {
-<a href=#789 id=789 data-nosnippet>789</a>            value.der_wf()
-<a href=#790 id=790 data-nosnippet>790</a>        } <span class="kw">else </span>{
-<a href=#791 id=791 data-nosnippet>791</a>            value.wf()
-<a href=#792 id=792 data-nosnippet>792</a>        },
-<a href=#793 id=793 data-nosnippet>793</a>        generalized_time_len(value) &lt;= usize::MAX,
-<a href=#794 id=794 data-nosnippet>794</a>    ensures
-<a href=#795 id=795 data-nosnippet>795</a>        generalized_zone_start(generalized_time_bytes(value)) == generalized_time_zone_start(value),
-<a href=#796 id=796 data-nosnippet>796</a>        generalized_zone_wf::&lt;DER&gt;(
-<a href=#797 id=797 data-nosnippet>797</a>            generalized_time_bytes(value),
-<a href=#798 id=798 data-nosnippet>798</a>            generalized_time_zone_start(value),
-<a href=#799 id=799 data-nosnippet>799</a>        ),
-<a href=#800 id=800 data-nosnippet>800</a>        (generalized_time_zone_start(value) == generalized_time_bytes(value).len()) &lt;==&gt; value.zone
-<a href=#801 id=801 data-nosnippet>801</a>            == TimeZone::Local,
-<a href=#802 id=802 data-nosnippet>802</a>        value.zone == TimeZone::Utc ==&gt; generalized_time_bytes(value)[generalized_time_zone_start(
-<a href=#803 id=803 data-nosnippet>803</a>            value,
-<a href=#804 id=804 data-nosnippet>804</a>        ) <span class="kw">as </span>int] == <span class="number">0x5a</span>,
-<a href=#805 id=805 data-nosnippet>805</a>{
-<a href=#806 id=806 data-nosnippet>806</a>}
-<a href=#807 id=807 data-nosnippet>807</a>
-<a href=#808 id=808 data-nosnippet>808</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
-<a href=#809 id=809 data-nosnippet>809</a></span>proof <span class="kw">fn </span>lemma_generalized_time_encoded_layout&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
-<a href=#810 id=810 data-nosnippet>810</a>    requires
-<a href=#811 id=811 data-nosnippet>811</a>        <span class="kw">if </span>DER {
-<a href=#812 id=812 data-nosnippet>812</a>            value.der_wf()
-<a href=#813 id=813 data-nosnippet>813</a>        } <span class="kw">else </span>{
-<a href=#814 id=814 data-nosnippet>814</a>            value.wf()
-<a href=#815 id=815 data-nosnippet>815</a>        },
-<a href=#816 id=816 data-nosnippet>816</a>        generalized_time_len(value) &lt;= usize::MAX,
-<a href=#817 id=817 data-nosnippet>817</a>    ensures
-<a href=#818 id=818 data-nosnippet>818</a>        generalized_time_bytes_wf::&lt;DER&gt;(generalized_time_bytes(value)),
-<a href=#819 id=819 data-nosnippet>819</a>        generalized_main_end(generalized_time_bytes(value), generalized_time_zone_start(value))
-<a href=#820 id=820 data-nosnippet>820</a>            == generalized_time_main_end(value),
-<a href=#821 id=821 data-nosnippet>821</a>{
-<a href=#822 id=822 data-nosnippet>822</a>    lemma_generalized_time_encoded_prefix(value);
-<a href=#823 id=823 data-nosnippet>823</a>    lemma_generalized_time_encoded_fraction::&lt;DER&gt;(value);
-<a href=#824 id=824 data-nosnippet>824</a>    lemma_generalized_time_encoded_zone::&lt;DER&gt;(value);
-<a href=#825 id=825 data-nosnippet>825</a>}
-<a href=#826 id=826 data-nosnippet>826</a>
-<a href=#827 id=827 data-nosnippet>827</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
-<a href=#828 id=828 data-nosnippet>828</a></span><span class="kw">pub </span>proof <span class="kw">fn </span>lemma_generalized_time_encode_roundtrip&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
-<a href=#829 id=829 data-nosnippet>829</a>    requires
-<a href=#830 id=830 data-nosnippet>830</a>        <span class="kw">if </span>DER {
-<a href=#831 id=831 data-nosnippet>831</a>            value.der_wf()
-<a href=#832 id=832 data-nosnippet>832</a>        } <span class="kw">else </span>{
-<a href=#833 id=833 data-nosnippet>833</a>            value.wf()
-<a href=#834 id=834 data-nosnippet>834</a>        },
-<a href=#835 id=835 data-nosnippet>835</a>        generalized_time_len(value) &lt;= usize::MAX,
-<a href=#836 id=836 data-nosnippet>836</a>    ensures
-<a href=#837 id=837 data-nosnippet>837</a>        generalized_time_wf::&lt;DER&gt;(generalized_time_bytes(value)),
-<a href=#838 id=838 data-nosnippet>838</a>        generalized_time_value(generalized_time_bytes(value)) == <span class="prelude-val">Some</span>(value),
-<a href=#839 id=839 data-nosnippet>839</a>        generalized_time_bytes(value).len() == generalized_time_len(value),
-<a href=#840 id=840 data-nosnippet>840</a>{
-<a href=#841 id=841 data-nosnippet>841</a>    lemma_generalized_time_encoded_layout::&lt;DER&gt;(value);
-<a href=#842 id=842 data-nosnippet>842</a>    lemma_generalized_time_encoded_prefix(value);
-<a href=#843 id=843 data-nosnippet>843</a>    lemma_generalized_time_encoded_fraction::&lt;DER&gt;(value);
-<a href=#844 id=844 data-nosnippet>844</a>    lemma_generalized_time_encoded_zone::&lt;DER&gt;(value);
-<a href=#845 id=845 data-nosnippet>845</a>}
-<a href=#846 id=846 data-nosnippet>846</a>
-<a href=#847 id=847 data-nosnippet>847</a><span class="attr">#[verifier::rlimit(<span class="number">100</span>)]
-<a href=#848 id=848 data-nosnippet>848</a></span><span class="kw">pub </span>proof <span class="kw">fn </span>lemma_der_generalized_time_canonical(bytes: Seq&lt;u8&gt;)
-<a href=#849 id=849 data-nosnippet>849</a>    requires
-<a href=#850 id=850 data-nosnippet>850</a>        generalized_time_wf::&lt;<span class="bool-val">true</span>&gt;(bytes),
-<a href=#851 id=851 data-nosnippet>851</a>    ensures
-<a href=#852 id=852 data-nosnippet>852</a>        generalized_time_bytes(generalized_time_value(bytes).unwrap()) == bytes,
-<a href=#853 id=853 data-nosnippet>853</a>{
-<a href=#854 id=854 data-nosnippet>854</a>    lemma_decimal4_canonical(bytes, <span class="number">0</span>);
-<a href=#855 id=855 data-nosnippet>855</a>    lemma_decimal2_canonical(bytes, <span class="number">4</span>);
-<a href=#856 id=856 data-nosnippet>856</a>    lemma_decimal2_canonical(bytes, <span class="number">6</span>);
-<a href=#857 id=857 data-nosnippet>857</a>    lemma_decimal2_canonical(bytes, <span class="number">8</span>);
-<a href=#858 id=858 data-nosnippet>858</a>    lemma_decimal2_canonical(bytes, <span class="number">10</span>);
-<a href=#859 id=859 data-nosnippet>859</a>    lemma_decimal2_canonical(bytes, <span class="number">12</span>);
-<a href=#860 id=860 data-nosnippet>860</a>}
-<a href=#861 id=861 data-nosnippet>861</a>
-<a href=#862 id=862 data-nosnippet>862</a><span class="kw">mod </span>derived_specs {
-<a href=#863 id=863 data-nosnippet>863</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#864 id=864 data-nosnippet>864</a>
-<a href=#865 id=865 data-nosnippet>865</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#866 id=866 data-nosnippet>866</a>        <span class="kw">type </span>PVal = GeneralizedTimeSpec;
-<a href=#867 id=867 data-nosnippet>867</a>
-<a href=#868 id=868 data-nosnippet>868</a>        open spec <span class="kw">fn </span>spec_parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;(int, <span class="self">Self</span>::PVal)&gt; {
-<a href=#869 id=869 data-nosnippet>869</a>            <span class="kw">if </span>generalized_time_wf::&lt;DER&gt;(ibuf) {
-<a href=#870 id=870 data-nosnippet>870</a>                <span class="prelude-val">Some</span>((ibuf.len() <span class="kw">as </span>int, generalized_time_value(ibuf).unwrap()))
-<a href=#871 id=871 data-nosnippet>871</a>            } <span class="kw">else </span>{
-<a href=#872 id=872 data-nosnippet>872</a>                <span class="prelude-val">None
-<a href=#873 id=873 data-nosnippet>873</a>            </span>}
-<a href=#874 id=874 data-nosnippet>874</a>        }
-<a href=#875 id=875 data-nosnippet>875</a>    }
-<a href=#876 id=876 data-nosnippet>876</a>
-<a href=#877 id=877 data-nosnippet>877</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; Consistency <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#878 id=878 data-nosnippet>878</a>        <span class="kw">type </span>Val = GeneralizedTimeSpec;
-<a href=#879 id=879 data-nosnippet>879</a>
-<a href=#880 id=880 data-nosnippet>880</a>        open spec <span class="kw">fn </span>consistent(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::Val) -&gt; bool {
-<a href=#881 id=881 data-nosnippet>881</a>            (<span class="kw">if </span>DER {
-<a href=#882 id=882 data-nosnippet>882</a>                value.der_wf()
-<a href=#883 id=883 data-nosnippet>883</a>            } <span class="kw">else </span>{
-<a href=#884 id=884 data-nosnippet>884</a>                value.wf()
-<a href=#885 id=885 data-nosnippet>885</a>            }) &amp;&amp; generalized_time_len(value) &lt;= usize::MAX
-<a href=#886 id=886 data-nosnippet>886</a>        }
-<a href=#887 id=887 data-nosnippet>887</a>    }
-<a href=#888 id=888 data-nosnippet>888</a>
-<a href=#889 id=889 data-nosnippet>889</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecSerializerDps <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#890 id=890 data-nosnippet>890</a>        <span class="kw">type </span>SValue = GeneralizedTimeSpec;
-<a href=#891 id=891 data-nosnippet>891</a>
-<a href=#892 id=892 data-nosnippet>892</a>        open spec <span class="kw">fn </span>spec_serialize_dps(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) -&gt; Seq&lt;u8&gt; {
-<a href=#893 id=893 data-nosnippet>893</a>            generalized_time_bytes(value)
-<a href=#894 id=894 data-nosnippet>894</a>        }
-<a href=#895 id=895 data-nosnippet>895</a>    }
-<a href=#896 id=896 data-nosnippet>896</a>
-<a href=#897 id=897 data-nosnippet>897</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecSerializer <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#898 id=898 data-nosnippet>898</a>        <span class="kw">type </span>SVal = GeneralizedTimeSpec;
-<a href=#899 id=899 data-nosnippet>899</a>
-<a href=#900 id=900 data-nosnippet>900</a>        open spec <span class="kw">fn </span>spec_serialize(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) -&gt; Seq&lt;u8&gt; {
-<a href=#901 id=901 data-nosnippet>901</a>            generalized_time_bytes(value)
-<a href=#902 id=902 data-nosnippet>902</a>        }
-<a href=#903 id=903 data-nosnippet>903</a>    }
-<a href=#904 id=904 data-nosnippet>904</a>
-<a href=#905 id=905 data-nosnippet>905</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecByteLen <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#906 id=906 data-nosnippet>906</a>        <span class="kw">type </span>T = GeneralizedTimeSpec;
-<a href=#907 id=907 data-nosnippet>907</a>
-<a href=#908 id=908 data-nosnippet>908</a>        open spec <span class="kw">fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::T) -&gt; nat {
-<a href=#909 id=909 data-nosnippet>909</a>            generalized_time_len(value)
-<a href=#910 id=910 data-nosnippet>910</a>        }
-<a href=#911 id=911 data-nosnippet>911</a>    }
+<a href=#754 id=754 data-nosnippet>754</a>            generalized_time_bytes(value)[generalized_time_main_end(value)
+<a href=#755 id=755 data-nosnippet>755</a>                + <span class="number">1</span>..generalized_time_zone_start(value)] == value.fraction
+<a href=#756 id=756 data-nosnippet>756</a>        },
+<a href=#757 id=757 data-nosnippet>757</a>{
+<a href=#758 id=758 data-nosnippet>758</a>    <span class="kw">let </span>prefix = generalized_time_prefix(value);
+<a href=#759 id=759 data-nosnippet>759</a>    <span class="kw">let </span>fraction = generalized_time_fraction(value);
+<a href=#760 id=760 data-nosnippet>760</a>    <span class="kw">let </span>suffix = generalized_time_suffix(value);
+<a href=#761 id=761 data-nosnippet>761</a>    <span class="kw">let </span>bytes = prefix + fraction + suffix;
+<a href=#762 id=762 data-nosnippet>762</a>    <span class="kw">let </span>main_end = generalized_time_main_end(value);
+<a href=#763 id=763 data-nosnippet>763</a>    <span class="kw">let </span>zone_start: usize = (main_end + fraction.len()) <span class="kw">as </span>usize;
+<a href=#764 id=764 data-nosnippet>764</a>
+<a href=#765 id=765 data-nosnippet>765</a>    <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
+<a href=#766 id=766 data-nosnippet>766</a>    } <span class="kw">else </span>{
+<a href=#767 id=767 data-nosnippet>767</a>        assert(fraction == <span class="macro">seq!</span>[<span class="number">0x2eu8</span>] + value.fraction);
+<a href=#768 id=768 data-nosnippet>768</a>        <span class="macro">assert_seqs_equal!</span>(bytes[main_end + <span class="number">1</span>.. zone_start] == value.fraction, i =&gt; {
+<a href=#769 id=769 data-nosnippet>769</a>            assert(bytes[main_end <span class="kw">as </span>int + <span class="number">1 </span>+ i] == fraction[<span class="number">1 </span>+ i]);
+<a href=#770 id=770 data-nosnippet>770</a>            assert(fraction[<span class="number">1 </span>+ i] == value.fraction[i]);
+<a href=#771 id=771 data-nosnippet>771</a>        });
+<a href=#772 id=772 data-nosnippet>772</a>        assert(digits(bytes, main_end <span class="kw">as </span>int + <span class="number">1</span>, zone_start <span class="kw">as </span>int)) by {
+<a href=#773 id=773 data-nosnippet>773</a>            assert forall|i: int| main_end &lt;= i &lt; zone_start - <span class="number">1 </span>implies ascii_digit(
+<a href=#774 id=774 data-nosnippet>774</a>                <span class="attr">#[trigger] </span>bytes[i + <span class="number">1</span>],
+<a href=#775 id=775 data-nosnippet>775</a>            ) by {
+<a href=#776 id=776 data-nosnippet>776</a>                assert(bytes[i + <span class="number">1</span>] == value.fraction[i - main_end]);
+<a href=#777 id=777 data-nosnippet>777</a>            }
+<a href=#778 id=778 data-nosnippet>778</a>        }
+<a href=#779 id=779 data-nosnippet>779</a>        assert(generalized_fraction_wf::&lt;DER&gt;(bytes, main_end, zone_start));
+<a href=#780 id=780 data-nosnippet>780</a>    }
+<a href=#781 id=781 data-nosnippet>781</a>}
+<a href=#782 id=782 data-nosnippet>782</a>
+<a href=#783 id=783 data-nosnippet>783</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
+<a href=#784 id=784 data-nosnippet>784</a></span>proof <span class="kw">fn </span>lemma_generalized_time_encoded_zone&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
+<a href=#785 id=785 data-nosnippet>785</a>    requires
+<a href=#786 id=786 data-nosnippet>786</a>        <span class="kw">if </span>DER {
+<a href=#787 id=787 data-nosnippet>787</a>            value.der_wf()
+<a href=#788 id=788 data-nosnippet>788</a>        } <span class="kw">else </span>{
+<a href=#789 id=789 data-nosnippet>789</a>            value.wf()
+<a href=#790 id=790 data-nosnippet>790</a>        },
+<a href=#791 id=791 data-nosnippet>791</a>        generalized_time_len(value) &lt;= usize::MAX,
+<a href=#792 id=792 data-nosnippet>792</a>    ensures
+<a href=#793 id=793 data-nosnippet>793</a>        generalized_zone_start(generalized_time_bytes(value)) == generalized_time_zone_start(value),
+<a href=#794 id=794 data-nosnippet>794</a>        generalized_zone_wf::&lt;DER&gt;(
+<a href=#795 id=795 data-nosnippet>795</a>            generalized_time_bytes(value),
+<a href=#796 id=796 data-nosnippet>796</a>            generalized_time_zone_start(value),
+<a href=#797 id=797 data-nosnippet>797</a>        ),
+<a href=#798 id=798 data-nosnippet>798</a>        (generalized_time_zone_start(value) == generalized_time_bytes(value).len()) &lt;==&gt; value.zone
+<a href=#799 id=799 data-nosnippet>799</a>            == TimeZone::Local,
+<a href=#800 id=800 data-nosnippet>800</a>        value.zone == TimeZone::Utc ==&gt; generalized_time_bytes(value)[generalized_time_zone_start(
+<a href=#801 id=801 data-nosnippet>801</a>            value,
+<a href=#802 id=802 data-nosnippet>802</a>        ) <span class="kw">as </span>int] == <span class="number">0x5a</span>,
+<a href=#803 id=803 data-nosnippet>803</a>{
+<a href=#804 id=804 data-nosnippet>804</a>}
+<a href=#805 id=805 data-nosnippet>805</a>
+<a href=#806 id=806 data-nosnippet>806</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
+<a href=#807 id=807 data-nosnippet>807</a></span>proof <span class="kw">fn </span>lemma_generalized_time_encoded_layout&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
+<a href=#808 id=808 data-nosnippet>808</a>    requires
+<a href=#809 id=809 data-nosnippet>809</a>        <span class="kw">if </span>DER {
+<a href=#810 id=810 data-nosnippet>810</a>            value.der_wf()
+<a href=#811 id=811 data-nosnippet>811</a>        } <span class="kw">else </span>{
+<a href=#812 id=812 data-nosnippet>812</a>            value.wf()
+<a href=#813 id=813 data-nosnippet>813</a>        },
+<a href=#814 id=814 data-nosnippet>814</a>        generalized_time_len(value) &lt;= usize::MAX,
+<a href=#815 id=815 data-nosnippet>815</a>    ensures
+<a href=#816 id=816 data-nosnippet>816</a>        generalized_time_bytes_wf::&lt;DER&gt;(generalized_time_bytes(value)),
+<a href=#817 id=817 data-nosnippet>817</a>        generalized_main_end(generalized_time_bytes(value), generalized_time_zone_start(value))
+<a href=#818 id=818 data-nosnippet>818</a>            == generalized_time_main_end(value),
+<a href=#819 id=819 data-nosnippet>819</a>{
+<a href=#820 id=820 data-nosnippet>820</a>    lemma_generalized_time_encoded_prefix(value);
+<a href=#821 id=821 data-nosnippet>821</a>    lemma_generalized_time_encoded_fraction::&lt;DER&gt;(value);
+<a href=#822 id=822 data-nosnippet>822</a>    lemma_generalized_time_encoded_zone::&lt;DER&gt;(value);
+<a href=#823 id=823 data-nosnippet>823</a>}
+<a href=#824 id=824 data-nosnippet>824</a>
+<a href=#825 id=825 data-nosnippet>825</a><span class="attr">#[verifier::rlimit(<span class="number">20</span>)]
+<a href=#826 id=826 data-nosnippet>826</a></span><span class="kw">pub </span>proof <span class="kw">fn </span>lemma_generalized_time_encode_roundtrip&lt;<span class="kw">const </span>DER: bool&gt;(value: GeneralizedTimeSpec)
+<a href=#827 id=827 data-nosnippet>827</a>    requires
+<a href=#828 id=828 data-nosnippet>828</a>        <span class="kw">if </span>DER {
+<a href=#829 id=829 data-nosnippet>829</a>            value.der_wf()
+<a href=#830 id=830 data-nosnippet>830</a>        } <span class="kw">else </span>{
+<a href=#831 id=831 data-nosnippet>831</a>            value.wf()
+<a href=#832 id=832 data-nosnippet>832</a>        },
+<a href=#833 id=833 data-nosnippet>833</a>        generalized_time_len(value) &lt;= usize::MAX,
+<a href=#834 id=834 data-nosnippet>834</a>    ensures
+<a href=#835 id=835 data-nosnippet>835</a>        generalized_time_wf::&lt;DER&gt;(generalized_time_bytes(value)),
+<a href=#836 id=836 data-nosnippet>836</a>        generalized_time_value(generalized_time_bytes(value)) == <span class="prelude-val">Some</span>(value),
+<a href=#837 id=837 data-nosnippet>837</a>        generalized_time_bytes(value).len() == generalized_time_len(value),
+<a href=#838 id=838 data-nosnippet>838</a>{
+<a href=#839 id=839 data-nosnippet>839</a>    lemma_generalized_time_encoded_layout::&lt;DER&gt;(value);
+<a href=#840 id=840 data-nosnippet>840</a>    lemma_generalized_time_encoded_prefix(value);
+<a href=#841 id=841 data-nosnippet>841</a>    lemma_generalized_time_encoded_fraction::&lt;DER&gt;(value);
+<a href=#842 id=842 data-nosnippet>842</a>    lemma_generalized_time_encoded_zone::&lt;DER&gt;(value);
+<a href=#843 id=843 data-nosnippet>843</a>}
+<a href=#844 id=844 data-nosnippet>844</a>
+<a href=#845 id=845 data-nosnippet>845</a><span class="attr">#[verifier::rlimit(<span class="number">100</span>)]
+<a href=#846 id=846 data-nosnippet>846</a></span><span class="kw">pub </span>proof <span class="kw">fn </span>lemma_der_generalized_time_canonical(bytes: Seq&lt;u8&gt;)
+<a href=#847 id=847 data-nosnippet>847</a>    requires
+<a href=#848 id=848 data-nosnippet>848</a>        generalized_time_wf::&lt;<span class="bool-val">true</span>&gt;(bytes),
+<a href=#849 id=849 data-nosnippet>849</a>    ensures
+<a href=#850 id=850 data-nosnippet>850</a>        generalized_time_bytes(generalized_time_value(bytes).unwrap()) == bytes,
+<a href=#851 id=851 data-nosnippet>851</a>{
+<a href=#852 id=852 data-nosnippet>852</a>    lemma_decimal4_canonical(bytes, <span class="number">0</span>);
+<a href=#853 id=853 data-nosnippet>853</a>    lemma_decimal2_canonical(bytes, <span class="number">4</span>);
+<a href=#854 id=854 data-nosnippet>854</a>    lemma_decimal2_canonical(bytes, <span class="number">6</span>);
+<a href=#855 id=855 data-nosnippet>855</a>    lemma_decimal2_canonical(bytes, <span class="number">8</span>);
+<a href=#856 id=856 data-nosnippet>856</a>    lemma_decimal2_canonical(bytes, <span class="number">10</span>);
+<a href=#857 id=857 data-nosnippet>857</a>    lemma_decimal2_canonical(bytes, <span class="number">12</span>);
+<a href=#858 id=858 data-nosnippet>858</a>}
+<a href=#859 id=859 data-nosnippet>859</a>
+<a href=#860 id=860 data-nosnippet>860</a><span class="kw">mod </span>derived_specs {
+<a href=#861 id=861 data-nosnippet>861</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#862 id=862 data-nosnippet>862</a>
+<a href=#863 id=863 data-nosnippet>863</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#864 id=864 data-nosnippet>864</a>        <span class="kw">type </span>PVal = GeneralizedTimeSpec;
+<a href=#865 id=865 data-nosnippet>865</a>
+<a href=#866 id=866 data-nosnippet>866</a>        open spec <span class="kw">fn </span>spec_parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;(int, <span class="self">Self</span>::PVal)&gt; {
+<a href=#867 id=867 data-nosnippet>867</a>            <span class="kw">if </span>generalized_time_wf::&lt;DER&gt;(ibuf) {
+<a href=#868 id=868 data-nosnippet>868</a>                <span class="prelude-val">Some</span>((ibuf.len() <span class="kw">as </span>int, generalized_time_value(ibuf).unwrap()))
+<a href=#869 id=869 data-nosnippet>869</a>            } <span class="kw">else </span>{
+<a href=#870 id=870 data-nosnippet>870</a>                <span class="prelude-val">None
+<a href=#871 id=871 data-nosnippet>871</a>            </span>}
+<a href=#872 id=872 data-nosnippet>872</a>        }
+<a href=#873 id=873 data-nosnippet>873</a>    }
+<a href=#874 id=874 data-nosnippet>874</a>
+<a href=#875 id=875 data-nosnippet>875</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; Consistency <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#876 id=876 data-nosnippet>876</a>        <span class="kw">type </span>Val = GeneralizedTimeSpec;
+<a href=#877 id=877 data-nosnippet>877</a>
+<a href=#878 id=878 data-nosnippet>878</a>        open spec <span class="kw">fn </span>consistent(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::Val) -&gt; bool {
+<a href=#879 id=879 data-nosnippet>879</a>            (<span class="kw">if </span>DER {
+<a href=#880 id=880 data-nosnippet>880</a>                value.der_wf()
+<a href=#881 id=881 data-nosnippet>881</a>            } <span class="kw">else </span>{
+<a href=#882 id=882 data-nosnippet>882</a>                value.wf()
+<a href=#883 id=883 data-nosnippet>883</a>            }) &amp;&amp; generalized_time_len(value) &lt;= usize::MAX
+<a href=#884 id=884 data-nosnippet>884</a>        }
+<a href=#885 id=885 data-nosnippet>885</a>    }
+<a href=#886 id=886 data-nosnippet>886</a>
+<a href=#887 id=887 data-nosnippet>887</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecSerializerDps <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#888 id=888 data-nosnippet>888</a>        <span class="kw">type </span>SValue = GeneralizedTimeSpec;
+<a href=#889 id=889 data-nosnippet>889</a>
+<a href=#890 id=890 data-nosnippet>890</a>        open spec <span class="kw">fn </span>spec_serialize_dps(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) -&gt; Seq&lt;u8&gt; {
+<a href=#891 id=891 data-nosnippet>891</a>            generalized_time_bytes(value)
+<a href=#892 id=892 data-nosnippet>892</a>        }
+<a href=#893 id=893 data-nosnippet>893</a>    }
+<a href=#894 id=894 data-nosnippet>894</a>
+<a href=#895 id=895 data-nosnippet>895</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecSerializer <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#896 id=896 data-nosnippet>896</a>        <span class="kw">type </span>SVal = GeneralizedTimeSpec;
+<a href=#897 id=897 data-nosnippet>897</a>
+<a href=#898 id=898 data-nosnippet>898</a>        open spec <span class="kw">fn </span>spec_serialize(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) -&gt; Seq&lt;u8&gt; {
+<a href=#899 id=899 data-nosnippet>899</a>            generalized_time_bytes(value)
+<a href=#900 id=900 data-nosnippet>900</a>        }
+<a href=#901 id=901 data-nosnippet>901</a>    }
+<a href=#902 id=902 data-nosnippet>902</a>
+<a href=#903 id=903 data-nosnippet>903</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SpecByteLen <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#904 id=904 data-nosnippet>904</a>        <span class="kw">type </span>T = GeneralizedTimeSpec;
+<a href=#905 id=905 data-nosnippet>905</a>
+<a href=#906 id=906 data-nosnippet>906</a>        open spec <span class="kw">fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::T) -&gt; nat {
+<a href=#907 id=907 data-nosnippet>907</a>            generalized_time_len(value)
+<a href=#908 id=908 data-nosnippet>908</a>        }
+<a href=#909 id=909 data-nosnippet>909</a>    }
+<a href=#910 id=910 data-nosnippet>910</a>
+<a href=#911 id=911 data-nosnippet>911</a>}
 <a href=#912 id=912 data-nosnippet>912</a>
-<a href=#913 id=913 data-nosnippet>913</a>}
-<a href=#914 id=914 data-nosnippet>914</a>
-<a href=#915 id=915 data-nosnippet>915</a><span class="kw">pub</span>(<span class="kw">crate</span>) proof <span class="kw">fn </span>lemma_der_generalized_time_model(value: GeneralizedTimeSpec)
-<a href=#916 id=916 data-nosnippet>916</a>    requires
-<a href=#917 id=917 data-nosnippet>917</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.consistent(value),
-<a href=#918 id=918 data-nosnippet>918</a>    ensures
-<a href=#919 id=919 data-nosnippet>919</a>        value.der_wf(),
-<a href=#920 id=920 data-nosnippet>920</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value) == generalized_time_prefix(value)
-<a href=#921 id=921 data-nosnippet>921</a>            + generalized_time_fraction(value) + generalized_time_suffix(value),
-<a href=#922 id=922 data-nosnippet>922</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len()
-<a href=#923 id=923 data-nosnippet>923</a>            == <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.byte_len(value),
-<a href=#924 id=924 data-nosnippet>924</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() &lt;= usize::MAX,
-<a href=#925 id=925 data-nosnippet>925</a>        generalized_time_prefix(value).len() == <span class="number">14</span>,
-<a href=#926 id=926 data-nosnippet>926</a>        generalized_time_suffix(value) == <span class="macro">seq!</span>[<span class="number">0x5au8</span>],
-<a href=#927 id=927 data-nosnippet>927</a>{
-<a href=#928 id=928 data-nosnippet>928</a>}
-<a href=#929 id=929 data-nosnippet>929</a>
-<a href=#930 id=930 data-nosnippet>930</a><span class="kw">pub</span>(<span class="kw">crate</span>) proof <span class="kw">fn </span>lemma_der_generalized_time_layout(value: GeneralizedTimeSpec, pos: usize)
-<a href=#931 id=931 data-nosnippet>931</a>    requires
-<a href=#932 id=932 data-nosnippet>932</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.consistent(value),
-<a href=#933 id=933 data-nosnippet>933</a>    ensures
-<a href=#934 id=934 data-nosnippet>934</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() == <span class="kw">if </span>value.fraction.len()
-<a href=#935 id=935 data-nosnippet>935</a>            == <span class="number">0 </span>{
-<a href=#936 id=936 data-nosnippet>936</a>            <span class="number">15
-<a href=#937 id=937 data-nosnippet>937</a>        </span>} <span class="kw">else </span>{
-<a href=#938 id=938 data-nosnippet>938</a>            value.fraction.len() + <span class="number">16
-<a href=#939 id=939 data-nosnippet>939</a>        </span>},
-<a href=#940 id=940 data-nosnippet>940</a>        pos &lt; <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() ==&gt; {
-<a href=#941 id=941 data-nosnippet>941</a>            <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value)[pos <span class="kw">as </span>int] == <span class="kw">if </span>pos &lt; <span class="number">14 </span>{
-<a href=#942 id=942 data-nosnippet>942</a>                generalized_time_prefix(value)[pos <span class="kw">as </span>int]
-<a href=#943 id=943 data-nosnippet>943</a>            } <span class="kw">else if </span>value.fraction.len() == <span class="number">0 </span>{
-<a href=#944 id=944 data-nosnippet>944</a>                <span class="number">0x5au8
-<a href=#945 id=945 data-nosnippet>945</a>            </span>} <span class="kw">else if </span>pos == <span class="number">14 </span>{
-<a href=#946 id=946 data-nosnippet>946</a>                <span class="number">0x2eu8
-<a href=#947 id=947 data-nosnippet>947</a>            </span>} <span class="kw">else if </span>(pos <span class="kw">as </span>nat) &lt; value.fraction.len() + <span class="number">15 </span>{
-<a href=#948 id=948 data-nosnippet>948</a>                value.fraction[pos <span class="kw">as </span>int - <span class="number">15</span>]
-<a href=#949 id=949 data-nosnippet>949</a>            } <span class="kw">else </span>{
-<a href=#950 id=950 data-nosnippet>950</a>                <span class="number">0x5au8
-<a href=#951 id=951 data-nosnippet>951</a>            </span>}
-<a href=#952 id=952 data-nosnippet>952</a>        },
-<a href=#953 id=953 data-nosnippet>953</a>{
-<a href=#954 id=954 data-nosnippet>954</a>    lemma_der_generalized_time_model(value);
-<a href=#955 id=955 data-nosnippet>955</a>}
-<a href=#956 id=956 data-nosnippet>956</a>
-<a href=#957 id=957 data-nosnippet>957</a><span class="kw">mod </span>derived_proofs {
-<a href=#958 id=958 data-nosnippet>958</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#959 id=959 data-nosnippet>959</a>
-<a href=#960 id=960 data-nosnippet>960</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SafeParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#961 id=961 data-nosnippet>961</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#962 id=962 data-nosnippet>962</a>        }
-<a href=#963 id=963 data-nosnippet>963</a>    }
-<a href=#964 id=964 data-nosnippet>964</a>
-<a href=#965 id=965 data-nosnippet>965</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; Productive <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#966 id=966 data-nosnippet>966</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#967 id=967 data-nosnippet>967</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n, <span class="kw">_</span>)) = <span class="self">self</span>.spec_parse(ibuf) {
-<a href=#968 id=968 data-nosnippet>968</a>                assert(n == ibuf.len());
-<a href=#969 id=969 data-nosnippet>969</a>                assert(n &gt;= <span class="number">10</span>);
-<a href=#970 id=970 data-nosnippet>970</a>            }
-<a href=#971 id=971 data-nosnippet>971</a>        }
-<a href=#972 id=972 data-nosnippet>972</a>    }
-<a href=#973 id=973 data-nosnippet>973</a>
-<a href=#974 id=974 data-nosnippet>974</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#975 id=975 data-nosnippet>975</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) {
-<a href=#976 id=976 data-nosnippet>976</a>        }
-<a href=#977 id=977 data-nosnippet>977</a>    }
-<a href=#978 id=978 data-nosnippet>978</a>
-<a href=#979 id=979 data-nosnippet>979</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#980 id=980 data-nosnippet>980</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) {
-<a href=#981 id=981 data-nosnippet>981</a>        }
-<a href=#982 id=982 data-nosnippet>982</a>    }
-<a href=#983 id=983 data-nosnippet>983</a>
-<a href=#984 id=984 data-nosnippet>984</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#985 id=985 data-nosnippet>985</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
-<a href=#986 id=986 data-nosnippet>986</a>            lemma_generalized_time_encode_roundtrip::&lt;DER&gt;(value);
-<a href=#987 id=987 data-nosnippet>987</a>        }
-<a href=#988 id=988 data-nosnippet>988</a>    }
-<a href=#989 id=989 data-nosnippet>989</a>
-<a href=#990 id=990 data-nosnippet>990</a>    <span class="kw">impl </span>SoundParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt; {
-<a href=#991 id=991 data-nosnippet>991</a>        proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#992 id=992 data-nosnippet>992</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n, value)) = <span class="self">self</span>.spec_parse(ibuf) {
-<a href=#993 id=993 data-nosnippet>993</a>                lemma_der_generalized_time_canonical(ibuf);
-<a href=#994 id=994 data-nosnippet>994</a>                assert(generalized_time_bytes(value) == ibuf);
-<a href=#995 id=995 data-nosnippet>995</a>            }
-<a href=#996 id=996 data-nosnippet>996</a>        }
-<a href=#997 id=997 data-nosnippet>997</a>
-<a href=#998 id=998 data-nosnippet>998</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#999 id=999 data-nosnippet>999</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, value)) = <span class="self">self</span>.spec_parse(ibuf) {
-<a href=#1000 id=1000 data-nosnippet>1000</a>                assert(<span class="self">self</span>.consistent(value));
-<a href=#1001 id=1001 data-nosnippet>1001</a>            }
-<a href=#1002 id=1002 data-nosnippet>1002</a>        }
-<a href=#1003 id=1003 data-nosnippet>1003</a>    }
-<a href=#1004 id=1004 data-nosnippet>1004</a>
-<a href=#1005 id=1005 data-nosnippet>1005</a>    <span class="kw">impl </span>NonMalleable <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt; {
-<a href=#1006 id=1006 data-nosnippet>1006</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
-<a href=#1007 id=1007 data-nosnippet>1007</a>            <span class="kw">if let </span>(<span class="prelude-val">Some</span>((n1, value1)), <span class="prelude-val">Some</span>((n2, value2))) = (
-<a href=#1008 id=1008 data-nosnippet>1008</a>                <span class="self">self</span>.spec_parse(buf1),
-<a href=#1009 id=1009 data-nosnippet>1009</a>                <span class="self">self</span>.spec_parse(buf2),
-<a href=#1010 id=1010 data-nosnippet>1010</a>            ) {
-<a href=#1011 id=1011 data-nosnippet>1011</a>                lemma_der_generalized_time_canonical(buf1);
-<a href=#1012 id=1012 data-nosnippet>1012</a>                lemma_der_generalized_time_canonical(buf2);
-<a href=#1013 id=1013 data-nosnippet>1013</a>                <span class="kw">if </span>value1 == value2 {
-<a href=#1014 id=1014 data-nosnippet>1014</a>                    assert(buf1 == generalized_time_bytes(value1));
-<a href=#1015 id=1015 data-nosnippet>1015</a>                    assert(buf2 == generalized_time_bytes(value2));
-<a href=#1016 id=1016 data-nosnippet>1016</a>                    assert(buf1.take(n1) == buf1);
-<a href=#1017 id=1017 data-nosnippet>1017</a>                    assert(buf2.take(n2) == buf2);
-<a href=#1018 id=1018 data-nosnippet>1018</a>                }
-<a href=#1019 id=1019 data-nosnippet>1019</a>            }
-<a href=#1020 id=1020 data-nosnippet>1020</a>        }
-<a href=#1021 id=1021 data-nosnippet>1021</a>    }
+<a href=#913 id=913 data-nosnippet>913</a><span class="kw">pub</span>(<span class="kw">crate</span>) proof <span class="kw">fn </span>lemma_der_generalized_time_model(value: GeneralizedTimeSpec)
+<a href=#914 id=914 data-nosnippet>914</a>    requires
+<a href=#915 id=915 data-nosnippet>915</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.consistent(value),
+<a href=#916 id=916 data-nosnippet>916</a>    ensures
+<a href=#917 id=917 data-nosnippet>917</a>        value.der_wf(),
+<a href=#918 id=918 data-nosnippet>918</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value) == generalized_time_prefix(value)
+<a href=#919 id=919 data-nosnippet>919</a>            + generalized_time_fraction(value) + generalized_time_suffix(value),
+<a href=#920 id=920 data-nosnippet>920</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len()
+<a href=#921 id=921 data-nosnippet>921</a>            == <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.byte_len(value),
+<a href=#922 id=922 data-nosnippet>922</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() &lt;= usize::MAX,
+<a href=#923 id=923 data-nosnippet>923</a>        generalized_time_prefix(value).len() == <span class="number">14</span>,
+<a href=#924 id=924 data-nosnippet>924</a>        generalized_time_suffix(value) == <span class="macro">seq!</span>[<span class="number">0x5au8</span>],
+<a href=#925 id=925 data-nosnippet>925</a>{
+<a href=#926 id=926 data-nosnippet>926</a>}
+<a href=#927 id=927 data-nosnippet>927</a>
+<a href=#928 id=928 data-nosnippet>928</a><span class="kw">pub</span>(<span class="kw">crate</span>) proof <span class="kw">fn </span>lemma_der_generalized_time_layout(value: GeneralizedTimeSpec, pos: usize)
+<a href=#929 id=929 data-nosnippet>929</a>    requires
+<a href=#930 id=930 data-nosnippet>930</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.consistent(value),
+<a href=#931 id=931 data-nosnippet>931</a>    ensures
+<a href=#932 id=932 data-nosnippet>932</a>        <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() == <span class="kw">if </span>value.fraction.len()
+<a href=#933 id=933 data-nosnippet>933</a>            == <span class="number">0 </span>{
+<a href=#934 id=934 data-nosnippet>934</a>            <span class="number">15
+<a href=#935 id=935 data-nosnippet>935</a>        </span>} <span class="kw">else </span>{
+<a href=#936 id=936 data-nosnippet>936</a>            value.fraction.len() + <span class="number">16
+<a href=#937 id=937 data-nosnippet>937</a>        </span>},
+<a href=#938 id=938 data-nosnippet>938</a>        pos &lt; <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value).len() ==&gt; {
+<a href=#939 id=939 data-nosnippet>939</a>            <span class="kw">super</span>::GeneralizedTimeFmt::&lt;<span class="bool-val">true</span>&gt;.spec_serialize(value)[pos <span class="kw">as </span>int] == <span class="kw">if </span>pos &lt; <span class="number">14 </span>{
+<a href=#940 id=940 data-nosnippet>940</a>                generalized_time_prefix(value)[pos <span class="kw">as </span>int]
+<a href=#941 id=941 data-nosnippet>941</a>            } <span class="kw">else if </span>value.fraction.len() == <span class="number">0 </span>{
+<a href=#942 id=942 data-nosnippet>942</a>                <span class="number">0x5au8
+<a href=#943 id=943 data-nosnippet>943</a>            </span>} <span class="kw">else if </span>pos == <span class="number">14 </span>{
+<a href=#944 id=944 data-nosnippet>944</a>                <span class="number">0x2eu8
+<a href=#945 id=945 data-nosnippet>945</a>            </span>} <span class="kw">else if </span>(pos <span class="kw">as </span>nat) &lt; value.fraction.len() + <span class="number">15 </span>{
+<a href=#946 id=946 data-nosnippet>946</a>                value.fraction[pos <span class="kw">as </span>int - <span class="number">15</span>]
+<a href=#947 id=947 data-nosnippet>947</a>            } <span class="kw">else </span>{
+<a href=#948 id=948 data-nosnippet>948</a>                <span class="number">0x5au8
+<a href=#949 id=949 data-nosnippet>949</a>            </span>}
+<a href=#950 id=950 data-nosnippet>950</a>        },
+<a href=#951 id=951 data-nosnippet>951</a>{
+<a href=#952 id=952 data-nosnippet>952</a>    lemma_der_generalized_time_model(value);
+<a href=#953 id=953 data-nosnippet>953</a>}
+<a href=#954 id=954 data-nosnippet>954</a>
+<a href=#955 id=955 data-nosnippet>955</a><span class="kw">mod </span>derived_proofs {
+<a href=#956 id=956 data-nosnippet>956</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#957 id=957 data-nosnippet>957</a>
+<a href=#958 id=958 data-nosnippet>958</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SafeParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#959 id=959 data-nosnippet>959</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#960 id=960 data-nosnippet>960</a>        }
+<a href=#961 id=961 data-nosnippet>961</a>    }
+<a href=#962 id=962 data-nosnippet>962</a>
+<a href=#963 id=963 data-nosnippet>963</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; Productive <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#964 id=964 data-nosnippet>964</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#965 id=965 data-nosnippet>965</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n, <span class="kw">_</span>)) = <span class="self">self</span>.spec_parse(ibuf) {
+<a href=#966 id=966 data-nosnippet>966</a>                assert(n == ibuf.len());
+<a href=#967 id=967 data-nosnippet>967</a>                assert(n &gt;= <span class="number">10</span>);
+<a href=#968 id=968 data-nosnippet>968</a>            }
+<a href=#969 id=969 data-nosnippet>969</a>        }
+<a href=#970 id=970 data-nosnippet>970</a>    }
+<a href=#971 id=971 data-nosnippet>971</a>
+<a href=#972 id=972 data-nosnippet>972</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#973 id=973 data-nosnippet>973</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) {
+<a href=#974 id=974 data-nosnippet>974</a>        }
+<a href=#975 id=975 data-nosnippet>975</a>    }
+<a href=#976 id=976 data-nosnippet>976</a>
+<a href=#977 id=977 data-nosnippet>977</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#978 id=978 data-nosnippet>978</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::SVal) {
+<a href=#979 id=979 data-nosnippet>979</a>        }
+<a href=#980 id=980 data-nosnippet>980</a>    }
+<a href=#981 id=981 data-nosnippet>981</a>
+<a href=#982 id=982 data-nosnippet>982</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#983 id=983 data-nosnippet>983</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
+<a href=#984 id=984 data-nosnippet>984</a>            lemma_generalized_time_encode_roundtrip::&lt;DER&gt;(value);
+<a href=#985 id=985 data-nosnippet>985</a>        }
+<a href=#986 id=986 data-nosnippet>986</a>    }
+<a href=#987 id=987 data-nosnippet>987</a>
+<a href=#988 id=988 data-nosnippet>988</a>    <span class="kw">impl </span>SoundParser <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt; {
+<a href=#989 id=989 data-nosnippet>989</a>        proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#990 id=990 data-nosnippet>990</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n, value)) = <span class="self">self</span>.spec_parse(ibuf) {
+<a href=#991 id=991 data-nosnippet>991</a>                lemma_der_generalized_time_canonical(ibuf);
+<a href=#992 id=992 data-nosnippet>992</a>                assert(generalized_time_bytes(value) == ibuf);
+<a href=#993 id=993 data-nosnippet>993</a>            }
+<a href=#994 id=994 data-nosnippet>994</a>        }
+<a href=#995 id=995 data-nosnippet>995</a>
+<a href=#996 id=996 data-nosnippet>996</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#997 id=997 data-nosnippet>997</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, value)) = <span class="self">self</span>.spec_parse(ibuf) {
+<a href=#998 id=998 data-nosnippet>998</a>                assert(<span class="self">self</span>.consistent(value));
+<a href=#999 id=999 data-nosnippet>999</a>            }
+<a href=#1000 id=1000 data-nosnippet>1000</a>        }
+<a href=#1001 id=1001 data-nosnippet>1001</a>    }
+<a href=#1002 id=1002 data-nosnippet>1002</a>
+<a href=#1003 id=1003 data-nosnippet>1003</a>    <span class="kw">impl </span>NonMalleable <span class="kw">for </span><span class="kw">super</span>::<span class="kw">super</span>::GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt; {
+<a href=#1004 id=1004 data-nosnippet>1004</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
+<a href=#1005 id=1005 data-nosnippet>1005</a>            <span class="kw">if let </span>(<span class="prelude-val">Some</span>((n1, value1)), <span class="prelude-val">Some</span>((n2, value2))) = (
+<a href=#1006 id=1006 data-nosnippet>1006</a>                <span class="self">self</span>.spec_parse(buf1),
+<a href=#1007 id=1007 data-nosnippet>1007</a>                <span class="self">self</span>.spec_parse(buf2),
+<a href=#1008 id=1008 data-nosnippet>1008</a>            ) {
+<a href=#1009 id=1009 data-nosnippet>1009</a>                lemma_der_generalized_time_canonical(buf1);
+<a href=#1010 id=1010 data-nosnippet>1010</a>                lemma_der_generalized_time_canonical(buf2);
+<a href=#1011 id=1011 data-nosnippet>1011</a>                <span class="kw">if </span>value1 == value2 {
+<a href=#1012 id=1012 data-nosnippet>1012</a>                    assert(buf1 == generalized_time_bytes(value1));
+<a href=#1013 id=1013 data-nosnippet>1013</a>                    assert(buf2 == generalized_time_bytes(value2));
+<a href=#1014 id=1014 data-nosnippet>1014</a>                    assert(buf1[<span class="number">0</span>..n1] == buf1);
+<a href=#1015 id=1015 data-nosnippet>1015</a>                    assert(buf2[<span class="number">0</span>..n2] == buf2);
+<a href=#1016 id=1016 data-nosnippet>1016</a>                }
+<a href=#1017 id=1017 data-nosnippet>1017</a>            }
+<a href=#1018 id=1018 data-nosnippet>1018</a>        }
+<a href=#1019 id=1019 data-nosnippet>1019</a>    }
+<a href=#1020 id=1020 data-nosnippet>1020</a>
+<a href=#1021 id=1021 data-nosnippet>1021</a>}
 <a href=#1022 id=1022 data-nosnippet>1022</a>
-<a href=#1023 id=1023 data-nosnippet>1023</a>}
-<a href=#1024 id=1024 data-nosnippet>1024</a>
-<a href=#1025 id=1025 data-nosnippet>1025</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#1026 id=1026 data-nosnippet>1026</a>    <span class="kw">type </span>PT = GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;;
-<a href=#1027 id=1027 data-nosnippet>1027</a>
-<a href=#1028 id=1028 data-nosnippet>1028</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#1029 id=1029 data-nosnippet>1029</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#1030 id=1030 data-nosnippet>1030</a>        assert(bytes@ == bytes.deep_view());
-<a href=#1031 id=1031 data-nosnippet>1031</a>        <span class="kw">if </span>!generalized_time_valid::&lt;DER&gt;(bytes) {
-<a href=#1032 id=1032 data-nosnippet>1032</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid GeneralizedTime"</span>));
-<a href=#1033 id=1033 data-nosnippet>1033</a>        }
-<a href=#1034 id=1034 data-nosnippet>1034</a>        <span class="kw">match </span>generalized_timevalue(bytes) {
-<a href=#1035 id=1035 data-nosnippet>1035</a>            <span class="prelude-val">Some</span>(value) =&gt; <span class="prelude-val">Ok</span>((n, value)),
-<a href=#1036 id=1036 data-nosnippet>1036</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"GeneralizedTime offset out of range"</span>)),
-<a href=#1037 id=1037 data-nosnippet>1037</a>        }
-<a href=#1038 id=1038 data-nosnippet>1038</a>    }
-<a href=#1039 id=1039 data-nosnippet>1039</a>}
-<a href=#1040 id=1040 data-nosnippet>1040</a>
-<a href=#1041 id=1041 data-nosnippet>1041</a><span class="kw">impl</span>&lt;Output: OutputBuf, <span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Serializer&lt;
-<a href=#1042 id=1042 data-nosnippet>1042</a>    Output,
-<a href=#1043 id=1043 data-nosnippet>1043</a>    GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;,
-<a href=#1044 id=1044 data-nosnippet>1044</a>&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#1045 id=1045 data-nosnippet>1045</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#1046 id=1046 data-nosnippet>1046</a>        generalized_time_to_bytes(value, obuf);
-<a href=#1047 id=1047 data-nosnippet>1047</a>    }
-<a href=#1048 id=1048 data-nosnippet>1048</a>}
-<a href=#1049 id=1049 data-nosnippet>1049</a>
-<a href=#1050 id=1050 data-nosnippet>1050</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Prepare&lt;GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#1051 id=1051 data-nosnippet>1051</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#1052 id=1052 data-nosnippet>1052</a>        <span class="kw">if </span>!generalized_value_wf::&lt;DER&gt;(value) {
-<a href=#1053 id=1053 data-nosnippet>1053</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(PreSerializeError::custom(<span class="string">"Invalid GeneralizedTime value"</span>));
-<a href=#1054 id=1054 data-nosnippet>1054</a>        }
-<a href=#1055 id=1055 data-nosnippet>1055</a>        <span class="kw">if </span>value.fraction.len() &gt; usize::MAX - <span class="number">16 </span>{
-<a href=#1056 id=1056 data-nosnippet>1056</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(PreSerializeError::length_too_large());
-<a href=#1057 id=1057 data-nosnippet>1057</a>        }
-<a href=#1058 id=1058 data-nosnippet>1058</a>        <span class="prelude-val">Ok</span>(
-<a href=#1059 id=1059 data-nosnippet>1059</a>            <span class="number">10 </span>+ <span class="kw">if </span>value.precision == TimePrecision::Hour {
-<a href=#1060 id=1060 data-nosnippet>1060</a>                <span class="number">0
-<a href=#1061 id=1061 data-nosnippet>1061</a>            </span>} <span class="kw">else </span>{
+<a href=#1023 id=1023 data-nosnippet>1023</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#1024 id=1024 data-nosnippet>1024</a>    <span class="kw">type </span>PT = GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;;
+<a href=#1025 id=1025 data-nosnippet>1025</a>
+<a href=#1026 id=1026 data-nosnippet>1026</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#1027 id=1027 data-nosnippet>1027</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#1028 id=1028 data-nosnippet>1028</a>        assert(bytes@ == bytes.deep_view());
+<a href=#1029 id=1029 data-nosnippet>1029</a>        <span class="kw">if </span>!generalized_time_valid::&lt;DER&gt;(bytes) {
+<a href=#1030 id=1030 data-nosnippet>1030</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid GeneralizedTime"</span>));
+<a href=#1031 id=1031 data-nosnippet>1031</a>        }
+<a href=#1032 id=1032 data-nosnippet>1032</a>        <span class="kw">match </span>generalized_timevalue(bytes) {
+<a href=#1033 id=1033 data-nosnippet>1033</a>            <span class="prelude-val">Some</span>(value) =&gt; <span class="prelude-val">Ok</span>((n, value)),
+<a href=#1034 id=1034 data-nosnippet>1034</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"GeneralizedTime offset out of range"</span>)),
+<a href=#1035 id=1035 data-nosnippet>1035</a>        }
+<a href=#1036 id=1036 data-nosnippet>1036</a>    }
+<a href=#1037 id=1037 data-nosnippet>1037</a>}
+<a href=#1038 id=1038 data-nosnippet>1038</a>
+<a href=#1039 id=1039 data-nosnippet>1039</a><span class="kw">impl</span>&lt;Output: OutputBuf, <span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Serializer&lt;
+<a href=#1040 id=1040 data-nosnippet>1040</a>    Output,
+<a href=#1041 id=1041 data-nosnippet>1041</a>    GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;,
+<a href=#1042 id=1042 data-nosnippet>1042</a>&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#1043 id=1043 data-nosnippet>1043</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#1044 id=1044 data-nosnippet>1044</a>        generalized_time_to_bytes(value, obuf);
+<a href=#1045 id=1045 data-nosnippet>1045</a>    }
+<a href=#1046 id=1046 data-nosnippet>1046</a>}
+<a href=#1047 id=1047 data-nosnippet>1047</a>
+<a href=#1048 id=1048 data-nosnippet>1048</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; Prepare&lt;GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#1049 id=1049 data-nosnippet>1049</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#1050 id=1050 data-nosnippet>1050</a>        <span class="kw">if </span>!generalized_value_wf::&lt;DER&gt;(value) {
+<a href=#1051 id=1051 data-nosnippet>1051</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(PreSerializeError::custom(<span class="string">"Invalid GeneralizedTime value"</span>));
+<a href=#1052 id=1052 data-nosnippet>1052</a>        }
+<a href=#1053 id=1053 data-nosnippet>1053</a>        <span class="kw">if </span>value.fraction.len() &gt; usize::MAX - <span class="number">16 </span>{
+<a href=#1054 id=1054 data-nosnippet>1054</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(PreSerializeError::length_too_large());
+<a href=#1055 id=1055 data-nosnippet>1055</a>        }
+<a href=#1056 id=1056 data-nosnippet>1056</a>        <span class="prelude-val">Ok</span>(
+<a href=#1057 id=1057 data-nosnippet>1057</a>            <span class="number">10 </span>+ <span class="kw">if </span>value.precision == TimePrecision::Hour {
+<a href=#1058 id=1058 data-nosnippet>1058</a>                <span class="number">0
+<a href=#1059 id=1059 data-nosnippet>1059</a>            </span>} <span class="kw">else </span>{
+<a href=#1060 id=1060 data-nosnippet>1060</a>                <span class="number">2
+<a href=#1061 id=1061 data-nosnippet>1061</a>            </span>} + <span class="kw">if </span>value.precision == TimePrecision::Second {
 <a href=#1062 id=1062 data-nosnippet>1062</a>                <span class="number">2
-<a href=#1063 id=1063 data-nosnippet>1063</a>            </span>} + <span class="kw">if </span>value.precision == TimePrecision::Second {
-<a href=#1064 id=1064 data-nosnippet>1064</a>                <span class="number">2
-<a href=#1065 id=1065 data-nosnippet>1065</a>            </span>} <span class="kw">else </span>{
+<a href=#1063 id=1063 data-nosnippet>1063</a>            </span>} <span class="kw">else </span>{
+<a href=#1064 id=1064 data-nosnippet>1064</a>                <span class="number">0
+<a href=#1065 id=1065 data-nosnippet>1065</a>            </span>} + <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
 <a href=#1066 id=1066 data-nosnippet>1066</a>                <span class="number">0
-<a href=#1067 id=1067 data-nosnippet>1067</a>            </span>} + <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
-<a href=#1068 id=1068 data-nosnippet>1068</a>                <span class="number">0
-<a href=#1069 id=1069 data-nosnippet>1069</a>            </span>} <span class="kw">else </span>{
-<a href=#1070 id=1070 data-nosnippet>1070</a>                <span class="number">1 </span>+ value.fraction.len()
-<a href=#1071 id=1071 data-nosnippet>1071</a>            } + <span class="kw">if </span>value.zone == TimeZone::Utc {
-<a href=#1072 id=1072 data-nosnippet>1072</a>                <span class="number">1
-<a href=#1073 id=1073 data-nosnippet>1073</a>            </span>} <span class="kw">else </span>{
-<a href=#1074 id=1074 data-nosnippet>1074</a>                <span class="number">0
-<a href=#1075 id=1075 data-nosnippet>1075</a>            </span>},
-<a href=#1076 id=1076 data-nosnippet>1076</a>        )
-<a href=#1077 id=1077 data-nosnippet>1077</a>    }
-<a href=#1078 id=1078 data-nosnippet>1078</a>}
-<a href=#1079 id=1079 data-nosnippet>1079</a>
-<a href=#1080 id=1080 data-nosnippet>1080</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
-<a href=#1081 id=1081 data-nosnippet>1081</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;) -&gt; usize {
-<a href=#1082 id=1082 data-nosnippet>1082</a>        <span class="number">10 </span>+ <span class="kw">if </span>value.precision == TimePrecision::Hour {
-<a href=#1083 id=1083 data-nosnippet>1083</a>            <span class="number">0
-<a href=#1084 id=1084 data-nosnippet>1084</a>        </span>} <span class="kw">else </span>{
+<a href=#1067 id=1067 data-nosnippet>1067</a>            </span>} <span class="kw">else </span>{
+<a href=#1068 id=1068 data-nosnippet>1068</a>                <span class="number">1 </span>+ value.fraction.len()
+<a href=#1069 id=1069 data-nosnippet>1069</a>            } + <span class="kw">if </span>value.zone == TimeZone::Utc {
+<a href=#1070 id=1070 data-nosnippet>1070</a>                <span class="number">1
+<a href=#1071 id=1071 data-nosnippet>1071</a>            </span>} <span class="kw">else </span>{
+<a href=#1072 id=1072 data-nosnippet>1072</a>                <span class="number">0
+<a href=#1073 id=1073 data-nosnippet>1073</a>            </span>},
+<a href=#1074 id=1074 data-nosnippet>1074</a>        )
+<a href=#1075 id=1075 data-nosnippet>1075</a>    }
+<a href=#1076 id=1076 data-nosnippet>1076</a>}
+<a href=#1077 id=1077 data-nosnippet>1077</a>
+<a href=#1078 id=1078 data-nosnippet>1078</a><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;&gt; <span class="kw">for </span><span class="kw">super</span>::GeneralizedTimeFmt&lt;DER&gt; {
+<a href=#1079 id=1079 data-nosnippet>1079</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>GeneralizedTime&lt;<span class="lifetime">'i</span>&gt;) -&gt; usize {
+<a href=#1080 id=1080 data-nosnippet>1080</a>        <span class="number">10 </span>+ <span class="kw">if </span>value.precision == TimePrecision::Hour {
+<a href=#1081 id=1081 data-nosnippet>1081</a>            <span class="number">0
+<a href=#1082 id=1082 data-nosnippet>1082</a>        </span>} <span class="kw">else </span>{
+<a href=#1083 id=1083 data-nosnippet>1083</a>            <span class="number">2
+<a href=#1084 id=1084 data-nosnippet>1084</a>        </span>} + <span class="kw">if </span>value.precision == TimePrecision::Second {
 <a href=#1085 id=1085 data-nosnippet>1085</a>            <span class="number">2
-<a href=#1086 id=1086 data-nosnippet>1086</a>        </span>} + <span class="kw">if </span>value.precision == TimePrecision::Second {
-<a href=#1087 id=1087 data-nosnippet>1087</a>            <span class="number">2
-<a href=#1088 id=1088 data-nosnippet>1088</a>        </span>} <span class="kw">else </span>{
+<a href=#1086 id=1086 data-nosnippet>1086</a>        </span>} <span class="kw">else </span>{
+<a href=#1087 id=1087 data-nosnippet>1087</a>            <span class="number">0
+<a href=#1088 id=1088 data-nosnippet>1088</a>        </span>} + <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
 <a href=#1089 id=1089 data-nosnippet>1089</a>            <span class="number">0
-<a href=#1090 id=1090 data-nosnippet>1090</a>        </span>} + <span class="kw">if </span>value.fraction.len() == <span class="number">0 </span>{
-<a href=#1091 id=1091 data-nosnippet>1091</a>            <span class="number">0
-<a href=#1092 id=1092 data-nosnippet>1092</a>        </span>} <span class="kw">else </span>{
-<a href=#1093 id=1093 data-nosnippet>1093</a>            <span class="number">1 </span>+ value.fraction.len()
-<a href=#1094 id=1094 data-nosnippet>1094</a>        } + <span class="kw">if </span>value.zone == TimeZone::Utc {
-<a href=#1095 id=1095 data-nosnippet>1095</a>            <span class="number">1
-<a href=#1096 id=1096 data-nosnippet>1096</a>        </span>} <span class="kw">else </span>{
-<a href=#1097 id=1097 data-nosnippet>1097</a>            <span class="number">0
-<a href=#1098 id=1098 data-nosnippet>1098</a>        </span>}
-<a href=#1099 id=1099 data-nosnippet>1099</a>    }
-<a href=#1100 id=1100 data-nosnippet>1100</a>}
-<a href=#1101 id=1101 data-nosnippet>1101</a>
-<a href=#1102 id=1102 data-nosnippet>1102</a>} <span class="comment">// verus!
+<a href=#1090 id=1090 data-nosnippet>1090</a>        </span>} <span class="kw">else </span>{
+<a href=#1091 id=1091 data-nosnippet>1091</a>            <span class="number">1 </span>+ value.fraction.len()
+<a href=#1092 id=1092 data-nosnippet>1092</a>        } + <span class="kw">if </span>value.zone == TimeZone::Utc {
+<a href=#1093 id=1093 data-nosnippet>1093</a>            <span class="number">1
+<a href=#1094 id=1094 data-nosnippet>1094</a>        </span>} <span class="kw">else </span>{
+<a href=#1095 id=1095 data-nosnippet>1095</a>            <span class="number">0
+<a href=#1096 id=1096 data-nosnippet>1096</a>        </span>}
+<a href=#1097 id=1097 data-nosnippet>1097</a>    }
+<a href=#1098 id=1098 data-nosnippet>1098</a>}
+<a href=#1099 id=1099 data-nosnippet>1099</a>
+<a href=#1100 id=1100 data-nosnippet>1100</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

@@ -290,7 +290,7 @@
 <a href=#290 id=290 data-nosnippet>290</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#291 id=291 data-nosnippet>291</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#292 id=292 data-nosnippet>292</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#293 id=293 data-nosnippet>293</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#293 id=293 data-nosnippet>293</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#294 id=294 data-nosnippet>294</a>                    <span class="self">self</span>.active_branch().lemma_no_lookahead(i1, i2);
 <a href=#295 id=295 data-nosnippet>295</a>                }
 <a href=#296 id=296 data-nosnippet>296</a>            }

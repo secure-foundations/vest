@@ -617,7 +617,7 @@
 <a href=#617 id=617 data-nosnippet>617</a>{
 <a href=#618 id=618 data-nosnippet>618</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((n, _v)) = a.spec_parse(ibuf) {
 <a href=#619 id=619 data-nosnippet>619</a>        <span class="kw">if </span><span class="number">0 </span>&lt; n &lt;= ibuf.len() {
-<a href=#620 id=620 data-nosnippet>620</a>            lemma_star_parse_rec_congruence(a, b, ibuf.skip(n));
+<a href=#620 id=620 data-nosnippet>620</a>            lemma_star_parse_rec_congruence(a, b, ibuf[n..]);
 <a href=#621 id=621 data-nosnippet>621</a>        }
 <a href=#622 id=622 data-nosnippet>622</a>    }
 <a href=#623 id=623 data-nosnippet>623</a>}
@@ -682,7 +682,7 @@
 <a href=#682 id=682 data-nosnippet>682</a>    } <span class="kw">else </span>{
 <a href=#683 id=683 data-nosnippet>683</a>        assert(a.<span class="number">1</span>.spec_parse(ibuf) == b.<span class="number">1</span>.spec_parse(ibuf));
 <a href=#684 id=684 data-nosnippet>684</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n0, <span class="kw">_</span>)) = a.<span class="number">1</span>.spec_parse(ibuf) {
-<a href=#685 id=685 data-nosnippet>685</a>            lemma_repeat_n_parse_n_rec_congruence(a, b, (count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf.skip(n0));
+<a href=#685 id=685 data-nosnippet>685</a>            lemma_repeat_n_parse_n_rec_congruence(a, b, (count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf[n0..]);
 <a href=#686 id=686 data-nosnippet>686</a>        }
 <a href=#687 id=687 data-nosnippet>687</a>    }
 <a href=#688 id=688 data-nosnippet>688</a>}

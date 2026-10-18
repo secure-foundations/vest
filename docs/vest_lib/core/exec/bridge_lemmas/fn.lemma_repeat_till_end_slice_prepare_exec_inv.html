@@ -2,6 +2,6 @@
     fmt: &amp;<a class="struct" href="../../../combinators/tail/struct.RepeatTillEnd.html" title="struct vest_lib::combinators::tail::RepeatTillEnd">RepeatTillEnd</a>&lt;A&gt;,
 )<div class="where">where
     A: <a class="trait" href="../serializer/trait.Prepare.html" title="trait vest_lib::core::exec::serializer::Prepare">Prepare</a>&lt;T&gt; + <a class="trait" href="https://doc.rust-lang.org/1.98.1/core/marker/trait.Copy.html" title="trait core::marker::Copy">Copy</a>,
-    T: DeepView,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>fmt.<span class="number">0</span>.exec_inv() ==&gt; Prepare::&lt;<span class="kw-2">&amp;</span>[T]&gt;::exec_inv(fmt),</code></pre></div>
+    T: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>fmt.<span class="number">0</span>.exec_inv() ==&gt; Prepare::&lt;<span class="kw-2">&amp;</span>[T]&gt;::exec_inv(fmt),</code></pre></div>
 
 </div></details></section></div></main></body></html>

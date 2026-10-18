@@ -155,13 +155,13 @@
 <a href=#155 id=155 data-nosnippet>155</a>    <span class="kw">let </span><span class="kw-2">mut </span>flat = Vec::new();
 <a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..chunks.len()
 <a href=#157 id=157 data-nosnippet>157</a>        invariant
-<a href=#158 id=158 data-nosnippet>158</a>            flat.deep_view() == chunk_views.take(i <span class="kw">as </span>int).flatten(),
+<a href=#158 id=158 data-nosnippet>158</a>            flat.deep_view() == chunk_views[<span class="number">0</span>..i].flatten(),
 <a href=#159 id=159 data-nosnippet>159</a>    {
 <a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span>chunk = chunks[i];
 <a href=#161 id=161 data-nosnippet>161</a>        proof {
-<a href=#162 id=162 data-nosnippet>162</a>            <span class="kw">let </span>prefix = chunk_views.take(i <span class="kw">as </span>int);
+<a href=#162 id=162 data-nosnippet>162</a>            <span class="kw">let </span>prefix = chunk_views[<span class="number">0</span>..i];
 <a href=#163 id=163 data-nosnippet>163</a>            prefix.lemma_flatten_push(chunk.deep_view());
-<a href=#164 id=164 data-nosnippet>164</a>            assert(chunk_views.take(i <span class="kw">as </span>int + <span class="number">1</span>) == prefix.push(chunk.deep_view()));
+<a href=#164 id=164 data-nosnippet>164</a>            assert(chunk_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(chunk.deep_view()));
 <a href=#165 id=165 data-nosnippet>165</a>        }
 <a href=#166 id=166 data-nosnippet>166</a>        flat.extend_from_slice(chunk);
 <a href=#167 id=167 data-nosnippet>167</a>    }
@@ -205,15 +205,15 @@
 <a href=#205 id=205 data-nosnippet>205</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::new();
 <a href=#206 id=206 data-nosnippet>206</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..chunks.len()
 <a href=#207 id=207 data-nosnippet>207</a>        invariant
-<a href=#208 id=208 data-nosnippet>208</a>            bytes.deep_view() == byte_views.take(i <span class="kw">as </span>int).flatten(),
+<a href=#208 id=208 data-nosnippet>208</a>            bytes.deep_view() == byte_views[<span class="number">0</span>..i].flatten(),
 <a href=#209 id=209 data-nosnippet>209</a>    {
 <a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">let </span>chunk = chunks[i];
 <a href=#211 id=211 data-nosnippet>211</a>        <span class="kw">let </span>chunk_bytes = chunk.as_bytes();
 <a href=#212 id=212 data-nosnippet>212</a>        proof {
-<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">let </span>prefix = byte_views.take(i <span class="kw">as </span>int);
+<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">let </span>prefix = byte_views[<span class="number">0</span>..i];
 <a href=#214 id=214 data-nosnippet>214</a>            prefix.lemma_flatten_push(chunk_bytes.deep_view());
 <a href=#215 id=215 data-nosnippet>215</a>            assert(chunk_bytes.deep_view() == vstd::utf8::encode_utf8(chunk.deep_view()));
-<a href=#216 id=216 data-nosnippet>216</a>            assert(byte_views.take(i <span class="kw">as </span>int + <span class="number">1</span>) == prefix.push(chunk_bytes.deep_view()));
+<a href=#216 id=216 data-nosnippet>216</a>            assert(byte_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(chunk_bytes.deep_view()));
 <a href=#217 id=217 data-nosnippet>217</a>        }
 <a href=#218 id=218 data-nosnippet>218</a>        bytes.extend_from_slice(chunk_bytes);
 <a href=#219 id=219 data-nosnippet>219</a>    }

@@ -26,7 +26,7 @@
 <a href=#26 id=26 data-nosnippet>26</a>            assert(<span class="self">self</span>.<span class="number">0</span>.spec_parse(obuf) is <span class="prelude-val">None</span>);
 <a href=#27 id=27 data-nosnippet>27</a>        } <span class="kw">else </span>{
 <a href=#28 id=28 data-nosnippet>28</a>            <span class="kw">let </span>v = vs[<span class="number">0</span>];
-<a href=#29 id=29 data-nosnippet>29</a>            <span class="kw">let </span>rest = vs.skip(<span class="number">1</span>);
+<a href=#29 id=29 data-nosnippet>29</a>            <span class="kw">let </span>rest = vs[<span class="number">1</span>..];
 <a href=#30 id=30 data-nosnippet>30</a>            <span class="kw">let </span>rest_buf = <span class="self">self</span>.spec_serialize_dps(rest, obuf);
 <a href=#31 id=31 data-nosnippet>31</a>            <span class="kw">let </span>serialized = <span class="self">self</span>.spec_serialize_dps(vs, obuf);
 <a href=#32 id=32 data-nosnippet>32</a>            assert(serialized == <span class="self">self</span>.<span class="number">0</span>.spec_serialize_dps(v, rest_buf));
@@ -43,7 +43,7 @@
 <a href=#43 id=43 data-nosnippet>43</a>
 <a href=#44 id=44 data-nosnippet>44</a>            <span class="kw">let </span>n0 = (serialized.len() - rest_buf.len()) <span class="kw">as </span>int;
 <a href=#45 id=45 data-nosnippet>45</a>            assert(<span class="self">self</span>.<span class="number">0</span>.spec_parse(serialized) == <span class="prelude-val">Some</span>((n0, v)));
-<a href=#46 id=46 data-nosnippet>46</a>            assert(serialized.skip(n0) == rest_buf);
+<a href=#46 id=46 data-nosnippet>46</a>            assert(serialized[n0..] == rest_buf);
 <a href=#47 id=47 data-nosnippet>47</a>
 <a href=#48 id=48 data-nosnippet>48</a>            <span class="kw">if </span><span class="number">0 </span>&lt; n0 &lt;= serialized.len() {
 <a href=#49 id=49 data-nosnippet>49</a>                assert(<span class="self">self</span>.spec_parse(rest_buf) == <span class="prelude-val">Some</span>(<span class="self">self</span>.parse_rec(rest_buf)));
@@ -80,7 +80,7 @@
 <a href=#80 id=80 data-nosnippet>80</a>            ({
 <a href=#81 id=81 data-nosnippet>81</a>                <span class="kw">let </span>(n1, v1) = <span class="self">self</span>.parse_rec(buf1);
 <a href=#82 id=82 data-nosnippet>82</a>                <span class="kw">let </span>(n2, v2) = <span class="self">self</span>.parse_rec(buf2);
-<a href=#83 id=83 data-nosnippet>83</a>                v1 == v2 ==&gt; buf1.take(n1) == buf2.take(n2)
+<a href=#83 id=83 data-nosnippet>83</a>                v1 == v2 ==&gt; buf1[<span class="number">0</span>..n1] == buf2[<span class="number">0</span>..n2]
 <a href=#84 id=84 data-nosnippet>84</a>            }),
 <a href=#85 id=85 data-nosnippet>85</a>        decreases buf1.len(),
 <a href=#86 id=86 data-nosnippet>86</a>    {
@@ -91,8 +91,8 @@
 <a href=#91 id=91 data-nosnippet>91</a>            <span class="kw">match </span>(<span class="self">self</span>.<span class="number">0</span>.spec_parse(buf1), <span class="self">self</span>.<span class="number">0</span>.spec_parse(buf2)) {
 <a href=#92 id=92 data-nosnippet>92</a>                (<span class="prelude-val">Some</span>((m1, a1)), <span class="prelude-val">Some</span>((m2, a2))) =&gt; {
 <a href=#93 id=93 data-nosnippet>93</a>                    <span class="kw">if </span><span class="number">0 </span>&lt; m1 &lt;= buf1.len() &amp;&amp; <span class="number">0 </span>&lt; m2 &lt;= buf2.len() {
-<a href=#94 id=94 data-nosnippet>94</a>                        <span class="kw">let </span>(n1_rest, rest1) = <span class="self">self</span>.parse_rec(buf1.skip(m1));
-<a href=#95 id=95 data-nosnippet>95</a>                        <span class="kw">let </span>(n2_rest, rest2) = <span class="self">self</span>.parse_rec(buf2.skip(m2));
+<a href=#94 id=94 data-nosnippet>94</a>                        <span class="kw">let </span>(n1_rest, rest1) = <span class="self">self</span>.parse_rec(buf1[m1..]);
+<a href=#95 id=95 data-nosnippet>95</a>                        <span class="kw">let </span>(n2_rest, rest2) = <span class="self">self</span>.parse_rec(buf2[m2..]);
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a>                        assert(n1 == m1 + n1_rest);
 <a href=#98 id=98 data-nosnippet>98</a>                        assert(n2 == m2 + n2_rest);
@@ -103,25 +103,25 @@
 <a href=#103 id=103 data-nosnippet>103</a>                            assert(a1 == v1[<span class="number">0</span>] &amp;&amp; a2 == v2[<span class="number">0</span>]);
 <a href=#104 id=104 data-nosnippet>104</a>                        }
 <a href=#105 id=105 data-nosnippet>105</a>                        assert(rest1 == rest2) by {
-<a href=#106 id=106 data-nosnippet>106</a>                            assert(rest1 == v1.skip(<span class="number">1</span>));
-<a href=#107 id=107 data-nosnippet>107</a>                            assert(rest2 == v2.skip(<span class="number">1</span>));
+<a href=#106 id=106 data-nosnippet>106</a>                            assert(rest1 == v1[<span class="number">1</span>..]);
+<a href=#107 id=107 data-nosnippet>107</a>                            assert(rest2 == v2[<span class="number">1</span>..]);
 <a href=#108 id=108 data-nosnippet>108</a>                        }
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a>                        <span class="comment">// base
 <a href=#111 id=111 data-nosnippet>111</a>                        </span><span class="self">self</span>.<span class="number">0</span>.lemma_parse_non_malleable(buf1, buf2);
-<a href=#112 id=112 data-nosnippet>112</a>                        assert(buf1.take(m1) == buf2.take(m2));
+<a href=#112 id=112 data-nosnippet>112</a>                        assert(buf1[<span class="number">0</span>..m1] == buf2[<span class="number">0</span>..m2]);
 <a href=#113 id=113 data-nosnippet>113</a>
 <a href=#114 id=114 data-nosnippet>114</a>                        <span class="comment">// induction
 <a href=#115 id=115 data-nosnippet>115</a>                        </span>assert(<span class="self">self</span>.safe_inv());
-<a href=#116 id=116 data-nosnippet>116</a>                        <span class="self">self</span>.lemma_parse_non_malleable_rec(buf1.skip(m1), buf2.skip(m2));
-<a href=#117 id=117 data-nosnippet>117</a>                        assert(buf1.skip(m1).take(n1_rest) == buf2.skip(m2).take(n2_rest));
+<a href=#116 id=116 data-nosnippet>116</a>                        <span class="self">self</span>.lemma_parse_non_malleable_rec(buf1[m1..], buf2[m2..]);
+<a href=#117 id=117 data-nosnippet>117</a>                        assert(buf1[m1..][<span class="number">0</span>..n1_rest] == buf2[m2..][<span class="number">0</span>..n2_rest]);
 <a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a>                        <span class="comment">// need to show buf1.take(n1) == buf2.take(n2)
+<a href=#119 id=119 data-nosnippet>119</a>                        <span class="comment">// need to show buf1[0..n1] == buf2[0..n2]
 <a href=#120 id=120 data-nosnippet>120</a>                        </span>assert(<span class="self">self</span>.safe_inv());
-<a href=#121 id=121 data-nosnippet>121</a>                        <span class="self">self</span>.lemma_parse_safe(buf1.skip(m1));
-<a href=#122 id=122 data-nosnippet>122</a>                        <span class="self">self</span>.lemma_parse_safe(buf2.skip(m2));
-<a href=#123 id=123 data-nosnippet>123</a>                        assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(n1_rest));
-<a href=#124 id=124 data-nosnippet>124</a>                        assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(n2_rest));
+<a href=#121 id=121 data-nosnippet>121</a>                        <span class="self">self</span>.lemma_parse_safe(buf1[m1..]);
+<a href=#122 id=122 data-nosnippet>122</a>                        <span class="self">self</span>.lemma_parse_safe(buf2[m2..]);
+<a href=#123 id=123 data-nosnippet>123</a>                        assert(buf1[<span class="number">0</span>..n1] == buf1[<span class="number">0</span>..m1] + buf1[m1..][<span class="number">0</span>..n1_rest]);
+<a href=#124 id=124 data-nosnippet>124</a>                        assert(buf2[<span class="number">0</span>..n2] == buf2[<span class="number">0</span>..m2] + buf2[m2..][<span class="number">0</span>..n2_rest]);
 <a href=#125 id=125 data-nosnippet>125</a>                    }
 <a href=#126 id=126 data-nosnippet>126</a>                },
 <a href=#127 id=127 data-nosnippet>127</a>                <span class="kw">_ </span>=&gt; {},
@@ -158,11 +158,11 @@
 <a href=#158 id=158 data-nosnippet>158</a>        requires
 <a href=#159 id=159 data-nosnippet>159</a>            <span class="self">self</span>.safe_inv(),
 <a href=#160 id=160 data-nosnippet>160</a>            <span class="self">self</span>.<span class="number">0</span>.no_lookahead_inv(),
-<a href=#161 id=161 data-nosnippet>161</a>            parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i2.skip(<span class="self">self</span>.parse_rec(i1).<span class="number">0</span>)),
+<a href=#161 id=161 data-nosnippet>161</a>            parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i2[<span class="self">self</span>.parse_rec(i1).<span class="number">0</span>..]),
 <a href=#162 id=162 data-nosnippet>162</a>        ensures
 <a href=#163 id=163 data-nosnippet>163</a>            ({
 <a href=#164 id=164 data-nosnippet>164</a>                <span class="kw">let </span>r = <span class="self">self</span>.parse_rec(i1);
-<a href=#165 id=165 data-nosnippet>165</a>                <span class="number">0 </span>&lt;= r.<span class="number">0 </span>&lt;= i2.len() ==&gt; i2.take(r.<span class="number">0</span>) == i1.take(r.<span class="number">0</span>) ==&gt; <span class="self">self</span>.parse_rec(i2) == r
+<a href=#165 id=165 data-nosnippet>165</a>                <span class="number">0 </span>&lt;= r.<span class="number">0 </span>&lt;= i2.len() ==&gt; i2[<span class="number">0</span>..r.<span class="number">0</span>] == i1[<span class="number">0</span>..r.<span class="number">0</span>] ==&gt; <span class="self">self</span>.parse_rec(i2) == r
 <a href=#166 id=166 data-nosnippet>166</a>            }),
 <a href=#167 id=167 data-nosnippet>167</a>        decreases i1.len(),
 <a href=#168 id=168 data-nosnippet>168</a>    {
@@ -173,21 +173,21 @@
 <a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">let </span>(n, vs) = <span class="self">self</span>.parse_rec(i1);
 <a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.spec_parse(i1) {
 <a href=#175 id=175 data-nosnippet>175</a>            <span class="prelude-val">Some</span>((m, v)) <span class="kw">if </span><span class="number">0 </span>&lt; m &lt;= i1.len() =&gt; {
-<a href=#176 id=176 data-nosnippet>176</a>                <span class="kw">let </span>i1_rest = i1.skip(m);
-<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>i2_rest = i2.skip(m);
+<a href=#176 id=176 data-nosnippet>176</a>                <span class="kw">let </span>i1_rest = i1[m..];
+<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>i2_rest = i2[m..];
 <a href=#178 id=178 data-nosnippet>178</a>                <span class="kw">let </span>(n_rest, vs_rest) = <span class="self">self</span>.parse_rec(i1_rest);
 <a href=#179 id=179 data-nosnippet>179</a>                assert(<span class="self">self</span>.safe_inv());
 <a href=#180 id=180 data-nosnippet>180</a>                <span class="self">self</span>.lemma_parse_safe(i1_rest);
 <a href=#181 id=181 data-nosnippet>181</a>                <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#182 id=182 data-nosnippet>182</a>                    <span class="kw">if </span>i2.take(n) == i1.take(n) {
-<a href=#183 id=183 data-nosnippet>183</a>                        assert(i2.take(m) == i1.take(m));
+<a href=#182 id=182 data-nosnippet>182</a>                    <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
+<a href=#183 id=183 data-nosnippet>183</a>                        assert(i2[<span class="number">0</span>..m] == i1[<span class="number">0</span>..m]);
 <a href=#184 id=184 data-nosnippet>184</a>                        assert(<span class="self">self</span>.<span class="number">0</span>.safe_inv());
 <a href=#185 id=185 data-nosnippet>185</a>                        <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
-<a href=#186 id=186 data-nosnippet>186</a>                        assert(i2_rest.take(n_rest) == i1_rest.take(n_rest)) by {
+<a href=#186 id=186 data-nosnippet>186</a>                        assert(i2_rest[<span class="number">0</span>..n_rest] == i1_rest[<span class="number">0</span>..n_rest]) by {
 <a href=#187 id=187 data-nosnippet>187</a>                            lemma_take_skip(i1, m, n_rest);
 <a href=#188 id=188 data-nosnippet>188</a>                            lemma_take_skip(i2, m, n_rest);
 <a href=#189 id=189 data-nosnippet>189</a>                        };
-<a href=#190 id=190 data-nosnippet>190</a>                        assert(parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i2_rest.skip(n_rest))) by {
+<a href=#190 id=190 data-nosnippet>190</a>                        assert(parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i2_rest[n_rest..])) by {
 <a href=#191 id=191 data-nosnippet>191</a>                            broadcast <span class="kw">use </span>vstd::seq_lib::lemma_seq_skip_of_skip;
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>                        };
@@ -215,7 +215,7 @@
 <a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">if </span>vs.len() == <span class="number">0 </span>{
 <a href=#216 id=216 data-nosnippet>216</a>        } <span class="kw">else </span>{
 <a href=#217 id=217 data-nosnippet>217</a>            <span class="kw">let </span>v0 = vs[<span class="number">0</span>];
-<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>rest = vs.skip(<span class="number">1</span>);
+<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>rest = vs[<span class="number">1</span>..];
 <a href=#219 id=219 data-nosnippet>219</a>
 <a href=#220 id=220 data-nosnippet>220</a>            <span class="kw">let </span>rest_foldr = <span class="self">self</span>.rfold_serialize_dps(rest, obuf);
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>rest_foldl = rest.fold_left(Seq::empty(), f);
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>        <span class="kw">if </span>count == <span class="number">0 </span>{
 <a href=#341 id=341 data-nosnippet>341</a>        } <span class="kw">else </span>{
 <a href=#342 id=342 data-nosnippet>342</a>            <span class="kw">let </span>v0 = vs[<span class="number">0</span>];
-<a href=#343 id=343 data-nosnippet>343</a>            <span class="kw">let </span>rest = vs.skip(<span class="number">1</span>);
+<a href=#343 id=343 data-nosnippet>343</a>            <span class="kw">let </span>rest = vs[<span class="number">1</span>..];
 <a href=#344 id=344 data-nosnippet>344</a>            <span class="kw">let </span>rest_buf = <span class="self">self</span>.spec_serialize_dps(rest, obuf);
 <a href=#345 id=345 data-nosnippet>345</a>            <span class="kw">let </span>serialized = <span class="self">self</span>.spec_serialize_dps(vs, obuf);
 <a href=#346 id=346 data-nosnippet>346</a>
@@ -351,7 +351,7 @@
 <a href=#351 id=351 data-nosnippet>351</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_dps_len(v0, rest_buf);
 <a href=#352 id=352 data-nosnippet>352</a>
 <a href=#353 id=353 data-nosnippet>353</a>            <span class="kw">let </span>n0 = (serialized.len() - rest_buf.len()) <span class="kw">as </span>int;
-<a href=#354 id=354 data-nosnippet>354</a>            assert(serialized.skip(n0) == rest_buf);
+<a href=#354 id=354 data-nosnippet>354</a>            assert(serialized[n0..] == rest_buf);
 <a href=#355 id=355 data-nosnippet>355</a>        }
 <a href=#356 id=356 data-nosnippet>356</a>    }
 <a href=#357 id=357 data-nosnippet>357</a>}
@@ -377,7 +377,7 @@
 <a href=#377 id=377 data-nosnippet>377</a>        ensures
 <a href=#378 id=378 data-nosnippet>378</a>            <span class="self">self</span>.parse_n_rec(count, buf1) matches <span class="prelude-val">Some</span>((n1, v1)) ==&gt;
 <a href=#379 id=379 data-nosnippet>379</a>            <span class="self">self</span>.parse_n_rec(count, buf2) matches <span class="prelude-val">Some</span>((n2, v2)) ==&gt;
-<a href=#380 id=380 data-nosnippet>380</a>            v1 == v2 ==&gt; buf1.take(n1) == buf2.take(n2),
+<a href=#380 id=380 data-nosnippet>380</a>            v1 == v2 ==&gt; buf1[<span class="number">0</span>..n1] == buf2[<span class="number">0</span>..n2],
 <a href=#381 id=381 data-nosnippet>381</a>        decreases count,
 <a href=#382 id=382 data-nosnippet>382</a>    {
 <a href=#383 id=383 data-nosnippet>383</a>        broadcast <span class="kw">use </span>vstd::seq_lib::group_seq_properties;
@@ -389,8 +389,8 @@
 <a href=#389 id=389 data-nosnippet>389</a>                    <span class="kw">if </span>v1 == v2 {
 <a href=#390 id=390 data-nosnippet>390</a>                        <span class="kw">let </span>(m1, a1) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(buf1)-&gt;<span class="number">0</span>;
 <a href=#391 id=391 data-nosnippet>391</a>                        <span class="kw">let </span>(m2, a2) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(buf2)-&gt;<span class="number">0</span>;
-<a href=#392 id=392 data-nosnippet>392</a>                        <span class="kw">let </span>(r1, rest1) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1.skip(m1))-&gt;<span class="number">0</span>;
-<a href=#393 id=393 data-nosnippet>393</a>                        <span class="kw">let </span>(r2, rest2) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf2.skip(m2))-&gt;<span class="number">0</span>;
+<a href=#392 id=392 data-nosnippet>392</a>                        <span class="kw">let </span>(r1, rest1) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1[m1..])-&gt;<span class="number">0</span>;
+<a href=#393 id=393 data-nosnippet>393</a>                        <span class="kw">let </span>(r2, rest2) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf2[m2..])-&gt;<span class="number">0</span>;
 <a href=#394 id=394 data-nosnippet>394</a>                        assert(v1 == <span class="macro">seq!</span>[a1] + rest1);
 <a href=#395 id=395 data-nosnippet>395</a>                        assert(v2 == <span class="macro">seq!</span>[a2] + rest2);
 <a href=#396 id=396 data-nosnippet>396</a>                        assert(a1 == a2) by {
@@ -398,24 +398,24 @@
 <a href=#398 id=398 data-nosnippet>398</a>                            assert(a2 == v2[<span class="number">0</span>]);
 <a href=#399 id=399 data-nosnippet>399</a>                        }
 <a href=#400 id=400 data-nosnippet>400</a>                        assert(rest1 == rest2) by {
-<a href=#401 id=401 data-nosnippet>401</a>                            assert(rest1 == v1.skip(<span class="number">1</span>));
-<a href=#402 id=402 data-nosnippet>402</a>                            assert(rest2 == v2.skip(<span class="number">1</span>));
+<a href=#401 id=401 data-nosnippet>401</a>                            assert(rest1 == v1[<span class="number">1</span>..]);
+<a href=#402 id=402 data-nosnippet>402</a>                            assert(rest2 == v2[<span class="number">1</span>..]);
 <a href=#403 id=403 data-nosnippet>403</a>                        }
 <a href=#404 id=404 data-nosnippet>404</a>
 <a href=#405 id=405 data-nosnippet>405</a>                        <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(buf1);
 <a href=#406 id=406 data-nosnippet>406</a>                        <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(buf2);
-<a href=#407 id=407 data-nosnippet>407</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1.skip(m1));
-<a href=#408 id=408 data-nosnippet>408</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf2.skip(m2));
+<a href=#407 id=407 data-nosnippet>407</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1[m1..]);
+<a href=#408 id=408 data-nosnippet>408</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf2[m2..]);
 <a href=#409 id=409 data-nosnippet>409</a>                        <span class="self">self</span>.<span class="number">1</span>.lemma_parse_non_malleable(buf1, buf2);
-<a href=#410 id=410 data-nosnippet>410</a>                        assert(buf1.take(m1) == buf2.take(m2));
+<a href=#410 id=410 data-nosnippet>410</a>                        assert(buf1[<span class="number">0</span>..m1] == buf2[<span class="number">0</span>..m2]);
 <a href=#411 id=411 data-nosnippet>411</a>
-<a href=#412 id=412 data-nosnippet>412</a>                        <span class="self">self</span>.lemma_parse_non_malleable_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1.skip(m1), buf2.skip(m2));
-<a href=#413 id=413 data-nosnippet>413</a>                        assert(buf1.skip(m1).take(r1) == buf2.skip(m2).take(r2));
+<a href=#412 id=412 data-nosnippet>412</a>                        <span class="self">self</span>.lemma_parse_non_malleable_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, buf1[m1..], buf2[m2..]);
+<a href=#413 id=413 data-nosnippet>413</a>                        assert(buf1[m1..][<span class="number">0</span>..r1] == buf2[m2..][<span class="number">0</span>..r2]);
 <a href=#414 id=414 data-nosnippet>414</a>
 <a href=#415 id=415 data-nosnippet>415</a>                        assert(n1 == m1 + r1);
 <a href=#416 id=416 data-nosnippet>416</a>                        assert(n2 == m2 + r2);
-<a href=#417 id=417 data-nosnippet>417</a>                        assert(buf1.take(n1) == buf1.take(m1) + buf1.skip(m1).take(r1));
-<a href=#418 id=418 data-nosnippet>418</a>                        assert(buf2.take(n2) == buf2.take(m2) + buf2.skip(m2).take(r2));
+<a href=#417 id=417 data-nosnippet>417</a>                        assert(buf1[<span class="number">0</span>..n1] == buf1[<span class="number">0</span>..m1] + buf1[m1..][<span class="number">0</span>..r1]);
+<a href=#418 id=418 data-nosnippet>418</a>                        assert(buf2[<span class="number">0</span>..n2] == buf2[<span class="number">0</span>..m2] + buf2[m2..][<span class="number">0</span>..r2]);
 <a href=#419 id=419 data-nosnippet>419</a>                    }
 <a href=#420 id=420 data-nosnippet>420</a>                }
 <a href=#421 id=421 data-nosnippet>421</a>            }
@@ -441,8 +441,8 @@
 <a href=#441 id=441 data-nosnippet>441</a>            <span class="self">self</span>.<span class="number">1</span>.safe_inv(),
 <a href=#442 id=442 data-nosnippet>442</a>            <span class="self">self</span>.<span class="number">1</span>.no_lookahead_inv(),
 <a href=#443 id=443 data-nosnippet>443</a>        ensures
-<a href=#444 id=444 data-nosnippet>444</a>            <span class="self">self</span>.parse_n_rec(count, i1) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; <span class="number">0 </span>&lt;= n &lt;= i2.len() ==&gt; i2.take(n)
-<a href=#445 id=445 data-nosnippet>445</a>                == i1.take(n) ==&gt; <span class="self">self</span>.parse_n_rec(count, i2) == <span class="prelude-val">Some</span>((n, v)),
+<a href=#444 id=444 data-nosnippet>444</a>            <span class="self">self</span>.parse_n_rec(count, i1) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; <span class="number">0 </span>&lt;= n &lt;= i2.len() ==&gt; i2[<span class="number">0</span>..n]
+<a href=#445 id=445 data-nosnippet>445</a>                == i1[<span class="number">0</span>..n] ==&gt; <span class="self">self</span>.parse_n_rec(count, i2) == <span class="prelude-val">Some</span>((n, v)),
 <a href=#446 id=446 data-nosnippet>446</a>        decreases count,
 <a href=#447 id=447 data-nosnippet>447</a>    {
 <a href=#448 id=448 data-nosnippet>448</a>        <span class="kw">use </span><span class="kw">crate</span>::combinators::tuple::proof::lemma_take_skip;
@@ -452,21 +452,21 @@
 <a href=#452 id=452 data-nosnippet>452</a>        } <span class="kw">else </span>{
 <a href=#453 id=453 data-nosnippet>453</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.parse_n_rec(count, i1) {
 <a href=#454 id=454 data-nosnippet>454</a>                <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#455 id=455 data-nosnippet>455</a>                    <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#455 id=455 data-nosnippet>455</a>                    <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#456 id=456 data-nosnippet>456</a>                        <span class="kw">let </span>(m, a) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1)-&gt;<span class="number">0</span>;
-<a href=#457 id=457 data-nosnippet>457</a>                        <span class="kw">let </span>(r, rest) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1.skip(m))-&gt;<span class="number">0</span>;
+<a href=#457 id=457 data-nosnippet>457</a>                        <span class="kw">let </span>(r, rest) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1[m..])-&gt;<span class="number">0</span>;
 <a href=#458 id=458 data-nosnippet>458</a>                        assert(v == <span class="macro">seq!</span>[a] + rest);
 <a href=#459 id=459 data-nosnippet>459</a>                        assert(n == m + r);
 <a href=#460 id=460 data-nosnippet>460</a>                        <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(i1);
-<a href=#461 id=461 data-nosnippet>461</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1.skip(m));
+<a href=#461 id=461 data-nosnippet>461</a>                        <span class="self">self</span>.lemma_parse_n_len_bound((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1[m..]);
 <a href=#462 id=462 data-nosnippet>462</a>                        assert(<span class="number">0 </span>&lt;= m &lt;= n);
-<a href=#463 id=463 data-nosnippet>463</a>                        assert(i2.take(m) == i1.take(m));
+<a href=#463 id=463 data-nosnippet>463</a>                        assert(i2[<span class="number">0</span>..m] == i1[<span class="number">0</span>..m]);
 <a href=#464 id=464 data-nosnippet>464</a>                        <span class="self">self</span>.<span class="number">1</span>.lemma_no_lookahead(i1, i2);
-<a href=#465 id=465 data-nosnippet>465</a>                        assert(i2.skip(m).take(r) == i1.skip(m).take(r)) by {
+<a href=#465 id=465 data-nosnippet>465</a>                        assert(i2[m..][<span class="number">0</span>..r] == i1[m..][<span class="number">0</span>..r]) by {
 <a href=#466 id=466 data-nosnippet>466</a>                            lemma_take_skip(i1, m, r);
 <a href=#467 id=467 data-nosnippet>467</a>                            lemma_take_skip(i2, m, r);
 <a href=#468 id=468 data-nosnippet>468</a>                        };
-<a href=#469 id=469 data-nosnippet>469</a>                        <span class="self">self</span>.lemma_no_lookahead_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1.skip(m), i2.skip(m));
+<a href=#469 id=469 data-nosnippet>469</a>                        <span class="self">self</span>.lemma_no_lookahead_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, i1[m..], i2[m..]);
 <a href=#470 id=470 data-nosnippet>470</a>                    }
 <a href=#471 id=471 data-nosnippet>471</a>                }
 <a href=#472 id=472 data-nosnippet>472</a>            }
@@ -492,7 +492,7 @@
 <a href=#492 id=492 data-nosnippet>492</a>    {
 <a href=#493 id=493 data-nosnippet>493</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, _v)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(ibuf) {
 <a href=#494 id=494 data-nosnippet>494</a>            <span class="kw">if </span><span class="number">0 </span>&lt; n &lt;= ibuf.len() {
-<a href=#495 id=495 data-nosnippet>495</a>                <span class="self">self</span>.lemma_parse_rec_nonnegative(ibuf.skip(n));
+<a href=#495 id=495 data-nosnippet>495</a>                <span class="self">self</span>.lemma_parse_rec_nonnegative(ibuf[n..]);
 <a href=#496 id=496 data-nosnippet>496</a>            }
 <a href=#497 id=497 data-nosnippet>497</a>        }
 <a href=#498 id=498 data-nosnippet>498</a>    }
@@ -510,9 +510,9 @@
 <a href=#510 id=510 data-nosnippet>510</a>    {
 <a href=#511 id=511 data-nosnippet>511</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n0, _v0)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(ibuf) {
 <a href=#512 id=512 data-nosnippet>512</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_productive(ibuf);
-<a href=#513 id=513 data-nosnippet>513</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, _rest)) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf.skip(n0)) {
+<a href=#513 id=513 data-nosnippet>513</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, _rest)) = <span class="self">self</span>.parse_n_rec((count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf[n0..]) {
 <a href=#514 id=514 data-nosnippet>514</a>                <span class="kw">if </span>count - <span class="number">1 </span>&gt; <span class="number">0 </span>{
-<a href=#515 id=515 data-nosnippet>515</a>                    <span class="self">self</span>.lemma_parse_n_positive((count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf.skip(n0));
+<a href=#515 id=515 data-nosnippet>515</a>                    <span class="self">self</span>.lemma_parse_n_positive((count - <span class="number">1</span>) <span class="kw">as </span>nat, ibuf[n0..]);
 <a href=#516 id=516 data-nosnippet>516</a>                    assert(n1 &gt; <span class="number">0</span>);
 <a href=#517 id=517 data-nosnippet>517</a>                } <span class="kw">else </span>{
 <a href=#518 id=518 data-nosnippet>518</a>                    assert(n1 == <span class="number">0</span>);
@@ -645,7 +645,7 @@
 <a href=#645 id=645 data-nosnippet>645</a>        <span class="kw">let </span>n0 = serialized0.len() - serialized1.len();
 <a href=#646 id=646 data-nosnippet>646</a>        star.lemma_serialize_dps_prepend(v.<span class="number">0</span>, serialized1);
 <a href=#647 id=647 data-nosnippet>647</a>        star.lemma_serialize_dps_len(v.<span class="number">0</span>, serialized1);
-<a href=#648 id=648 data-nosnippet>648</a>        assert(serialized0.skip(n0) == serialized1);
+<a href=#648 id=648 data-nosnippet>648</a>        assert(serialized0[n0..] == serialized1);
 <a href=#649 id=649 data-nosnippet>649</a>    }
 <a href=#650 id=650 data-nosnippet>650</a>}
 <a href=#651 id=651 data-nosnippet>651</a>
@@ -681,17 +681,17 @@
 <a href=#681 id=681 data-nosnippet>681</a>        <span class="self">self</span>.lemma_parse_safe(i1);
 <a href=#682 id=682 data-nosnippet>682</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#683 id=683 data-nosnippet>683</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#684 id=684 data-nosnippet>684</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#684 id=684 data-nosnippet>684</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#685 id=685 data-nosnippet>685</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>((n0, v0)) = star.spec_parse(i1) {
-<a href=#686 id=686 data-nosnippet>686</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, v1)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1.skip(n0)) {
+<a href=#686 id=686 data-nosnippet>686</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, v1)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1[n0..]) {
 <a href=#687 id=687 data-nosnippet>687</a>                            star.lemma_parse_safe(i1);
-<a href=#688 id=688 data-nosnippet>688</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(i1.skip(n0));
-<a href=#689 id=689 data-nosnippet>689</a>                            assert(i2.take(n0) == i1.take(n0));
-<a href=#690 id=690 data-nosnippet>690</a>                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+<a href=#688 id=688 data-nosnippet>688</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(i1[n0..]);
+<a href=#689 id=689 data-nosnippet>689</a>                            assert(i2[<span class="number">0</span>..n0] == i1[<span class="number">0</span>..n0]);
+<a href=#690 id=690 data-nosnippet>690</a>                            assert(i2[n0..][<span class="number">0</span>..n1] == i1[n0..][<span class="number">0</span>..n1]) by {
 <a href=#691 id=691 data-nosnippet>691</a>                                lemma_take_skip(i1, n0, n1);
 <a href=#692 id=692 data-nosnippet>692</a>                                lemma_take_skip(i2, n0, n1);
 <a href=#693 id=693 data-nosnippet>693</a>                            };
-<a href=#694 id=694 data-nosnippet>694</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+<a href=#694 id=694 data-nosnippet>694</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_no_lookahead(i1[n0..], i2[n0..]);
 <a href=#695 id=695 data-nosnippet>695</a>                            assert(disjoint_domains(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>));
 <a href=#696 id=696 data-nosnippet>696</a>                            star.lemma_parse_rec_no_lookahead_conditional(i1, i2);
 <a href=#697 id=697 data-nosnippet>697</a>                        }
@@ -712,9 +712,9 @@
 <a href=#712 id=712 data-nosnippet>712</a>        <span class="kw">let </span>star = <span class="kw">super</span>::Star(<span class="self">self</span>.<span class="number">0</span>);
 <a href=#713 id=713 data-nosnippet>713</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, _v)) = <span class="self">self</span>.spec_parse(s) {
 <a href=#714 id=714 data-nosnippet>714</a>            <span class="kw">let </span>(n0, _vs) = star.spec_parse(s)-&gt;<span class="number">0</span>;
-<a href=#715 id=715 data-nosnippet>715</a>            <span class="kw">let </span>(n1, _b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(s.skip(n0))-&gt;<span class="number">0</span>;
+<a href=#715 id=715 data-nosnippet>715</a>            <span class="kw">let </span>(n1, _b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(s[n0..])-&gt;<span class="number">0</span>;
 <a href=#716 id=716 data-nosnippet>716</a>            star.lemma_parse_rec_nonnegative(s);
-<a href=#717 id=717 data-nosnippet>717</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_productive(s.skip(n0));
+<a href=#717 id=717 data-nosnippet>717</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_productive(s[n0..]);
 <a href=#718 id=718 data-nosnippet>718</a>            assert(n1 &gt; <span class="number">0</span>);
 <a href=#719 id=719 data-nosnippet>719</a>            assert(n == n0 + n1);
 <a href=#720 id=720 data-nosnippet>720</a>            assert(n &gt; <span class="number">0</span>);

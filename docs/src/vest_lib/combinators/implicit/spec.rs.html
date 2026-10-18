@@ -21,7 +21,7 @@
 <a href=#21 id=21 data-nosnippet>21</a>        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.spec_parse(ibuf) {
 <a href=#22 id=22 data-nosnippet>22</a>            <span class="prelude-val">Some</span>((n1, key)) =&gt; {
 <a href=#23 id=23 data-nosnippet>23</a>                <span class="kw">let </span>body = <span class="self">self</span>.<span class="number">1</span>.apply(key);
-<a href=#24 id=24 data-nosnippet>24</a>                <span class="kw">match </span>body.spec_parse(ibuf.skip(n1)) {
+<a href=#24 id=24 data-nosnippet>24</a>                <span class="kw">match </span>body.spec_parse(ibuf[n1..]) {
 <a href=#25 id=25 data-nosnippet>25</a>                    <span class="prelude-val">Some</span>((n2, value)) =&gt; <span class="prelude-val">Some</span>((n1 + n2, value)),
 <a href=#26 id=26 data-nosnippet>26</a>                    <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#27 id=27 data-nosnippet>27</a>                }
@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_parse_safe(ibuf);
 <a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, key)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(ibuf) {
 <a href=#59 id=59 data-nosnippet>59</a>            <span class="kw">let </span>body = <span class="self">self</span>.<span class="number">1</span>.apply(key);
-<a href=#60 id=60 data-nosnippet>60</a>            body.lemma_parse_safe(ibuf.skip(n1));
+<a href=#60 id=60 data-nosnippet>60</a>            body.lemma_parse_safe(ibuf[n1..]);
 <a href=#61 id=61 data-nosnippet>61</a>        }
 <a href=#62 id=62 data-nosnippet>62</a>    }
 <a href=#63 id=63 data-nosnippet>63</a>}
@@ -77,9 +77,9 @@
 <a href=#77 id=77 data-nosnippet>77</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_parse_sound_consumption(ibuf);
 <a href=#78 id=78 data-nosnippet>78</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, key)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(ibuf) {
 <a href=#79 id=79 data-nosnippet>79</a>            <span class="kw">let </span>body = <span class="self">self</span>.<span class="number">1</span>.apply(key);
-<a href=#80 id=80 data-nosnippet>80</a>            body.lemma_parse_sound_consumption(ibuf.skip(n1));
-<a href=#81 id=81 data-nosnippet>81</a>            body.lemma_parse_sound_value(ibuf.skip(n1));
-<a href=#82 id=82 data-nosnippet>82</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n2, value)) = body.spec_parse(ibuf.skip(n1)) {
+<a href=#80 id=80 data-nosnippet>80</a>            body.lemma_parse_sound_consumption(ibuf[n1..]);
+<a href=#81 id=81 data-nosnippet>81</a>            body.lemma_parse_sound_value(ibuf[n1..]);
+<a href=#82 id=82 data-nosnippet>82</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n2, value)) = body.spec_parse(ibuf[n1..]) {
 <a href=#83 id=83 data-nosnippet>83</a>                <span class="self">self</span>.<span class="number">1</span>.lemma_recover_consistent(key, value);
 <a href=#84 id=84 data-nosnippet>84</a>                assert(<span class="self">self</span>.<span class="number">1</span>.recover(value) == key);
 <a href=#85 id=85 data-nosnippet>85</a>                assert(<span class="self">self</span>.byte_len(value) == <span class="self">self</span>.<span class="number">0</span>.byte_len(key) + body.byte_len(value));
@@ -91,8 +91,8 @@
 <a href=#91 id=91 data-nosnippet>91</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_parse_sound_value(ibuf);
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, key)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(ibuf) {
 <a href=#93 id=93 data-nosnippet>93</a>            <span class="kw">let </span>body = <span class="self">self</span>.<span class="number">1</span>.apply(key);
-<a href=#94 id=94 data-nosnippet>94</a>            body.lemma_parse_sound_value(ibuf.skip(n1));
-<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((_n2, value)) = body.spec_parse(ibuf.skip(n1)) {
+<a href=#94 id=94 data-nosnippet>94</a>            body.lemma_parse_sound_value(ibuf[n1..]);
+<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((_n2, value)) = body.spec_parse(ibuf[n1..]) {
 <a href=#96 id=96 data-nosnippet>96</a>                <span class="self">self</span>.<span class="number">1</span>.lemma_recover_consistent(key, value);
 <a href=#97 id=97 data-nosnippet>97</a>                assert(<span class="self">self</span>.<span class="number">1</span>.recover(value) == key);
 <a href=#98 id=98 data-nosnippet>98</a>                assert(<span class="self">self</span>.consistent(value));

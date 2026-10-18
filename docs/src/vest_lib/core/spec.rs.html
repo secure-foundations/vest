@@ -71,11 +71,11 @@
 <a href=#71 id=71 data-nosnippet>71</a>    </span>}
 <a href=#72 id=72 data-nosnippet>72</a>
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="doccomment">/// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
-<a href=#74 id=74 data-nosnippet>74</a>    </span>proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;)
+<a href=#74 id=74 data-nosnippet>74</a>    </span>broadcast proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;)
 <a href=#75 id=75 data-nosnippet>75</a>        requires
 <a href=#76 id=76 data-nosnippet>76</a>            <span class="self">self</span>.sound_inv(),
 <a href=#77 id=77 data-nosnippet>77</a>        ensures
-<a href=#78 id=78 data-nosnippet>78</a>            <span class="self">self</span>.spec_parse(ibuf) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; n == <span class="self">self</span>.byte_len(v),
+<a href=#78 id=78 data-nosnippet>78</a>            <span class="attr">#[trigger] </span><span class="self">self</span>.spec_parse(ibuf) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; n == <span class="self">self</span>.byte_len(v),
 <a href=#79 id=79 data-nosnippet>79</a>    ;
 <a href=#80 id=80 data-nosnippet>80</a>
 <a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
@@ -187,11 +187,11 @@
 <a href=#187 id=187 data-nosnippet>187</a>    </span>spec <span class="kw">fn </span>static_byte_len() -&gt; nat;
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a>    <span class="doccomment">/// Bridge between the dynamic byte-length view and the static one.
-<a href=#190 id=190 data-nosnippet>190</a>    </span>proof <span class="kw">fn </span>lemma_static_len_matches_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T)
+<a href=#190 id=190 data-nosnippet>190</a>    </span>broadcast proof <span class="kw">fn </span>lemma_static_len_matches_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T)
 <a href=#191 id=191 data-nosnippet>191</a>        requires
 <a href=#192 id=192 data-nosnippet>192</a>            <span class="self">self</span>.consistent(v),
 <a href=#193 id=193 data-nosnippet>193</a>        ensures
-<a href=#194 id=194 data-nosnippet>194</a>            <span class="self">self</span>.byte_len(v) == <span class="self">Self</span>::static_byte_len(),
+<a href=#194 id=194 data-nosnippet>194</a>            <span class="attr">#[trigger] </span><span class="self">self</span>.byte_len(v) == <span class="self">Self</span>::static_byte_len(),
 <a href=#195 id=195 data-nosnippet>195</a>    ;
 <a href=#196 id=196 data-nosnippet>196</a>}
 <a href=#197 id=197 data-nosnippet>197</a>
@@ -289,27 +289,25 @@
 <a href=#289 id=289 data-nosnippet>289</a>        requires
 <a href=#290 id=290 data-nosnippet>290</a>            <span class="self">self</span>.serialize_inv(),
 <a href=#291 id=291 data-nosnippet>291</a>        ensures
-<a href=#292 id=292 data-nosnippet>292</a>            <span class="attr">#![trigger <span class="self">self</span>.spec_serialize(v)]
-<a href=#293 id=293 data-nosnippet>293</a>            #![trigger <span class="self">self</span>.byte_len(v)]
-<a href=#294 id=294 data-nosnippet>294</a>            </span><span class="self">self</span>.spec_serialize(v).len() == <span class="self">self</span>.byte_len(v),
-<a href=#295 id=295 data-nosnippet>295</a>    ;
-<a href=#296 id=296 data-nosnippet>296</a>}
-<a href=#297 id=297 data-nosnippet>297</a>
-<a href=#298 id=298 data-nosnippet>298</a><span class="doccomment">/// Marker trait for all specification traits bundled together.
-<a href=#299 id=299 data-nosnippet>299</a></span><span class="kw">pub trait </span>SpecCombinator: SpecByteLen + Consistency&lt;Val = <span class="self">Self</span>::T&gt; + SpecParser&lt;
-<a href=#300 id=300 data-nosnippet>300</a>    PVal = <span class="self">Self</span>::T,
-<a href=#301 id=301 data-nosnippet>301</a>&gt; + SpecSerializer&lt;SVal = <span class="self">Self</span>::T&gt; + SpecSerializerDps&lt;SValue = <span class="self">Self</span>::T&gt; {
+<a href=#292 id=292 data-nosnippet>292</a>            <span class="attr">#[trigger] </span><span class="self">self</span>.spec_serialize(v).len() == <span class="self">self</span>.byte_len(v),
+<a href=#293 id=293 data-nosnippet>293</a>    ;
+<a href=#294 id=294 data-nosnippet>294</a>}
+<a href=#295 id=295 data-nosnippet>295</a>
+<a href=#296 id=296 data-nosnippet>296</a><span class="doccomment">/// Marker trait for all specification traits bundled together.
+<a href=#297 id=297 data-nosnippet>297</a></span><span class="kw">pub trait </span>SpecCombinator: SpecByteLen + Consistency&lt;Val = <span class="self">Self</span>::T&gt; + SpecParser&lt;
+<a href=#298 id=298 data-nosnippet>298</a>    PVal = <span class="self">Self</span>::T,
+<a href=#299 id=299 data-nosnippet>299</a>&gt; + SpecSerializer&lt;SVal = <span class="self">Self</span>::T&gt; + SpecSerializerDps&lt;SValue = <span class="self">Self</span>::T&gt; {
+<a href=#300 id=300 data-nosnippet>300</a>
+<a href=#301 id=301 data-nosnippet>301</a>}
 <a href=#302 id=302 data-nosnippet>302</a>
-<a href=#303 id=303 data-nosnippet>303</a>}
-<a href=#304 id=304 data-nosnippet>304</a>
-<a href=#305 id=305 data-nosnippet>305</a><span class="kw">impl</span>&lt;T&gt; SpecCombinator <span class="kw">for </span>T <span class="kw">where
-<a href=#306 id=306 data-nosnippet>306</a>    </span>T: SpecByteLen + Consistency&lt;Val = <span class="self">Self</span>::T&gt; + SpecParser&lt;PVal = <span class="self">Self</span>::T&gt; + SpecSerializer&lt;
-<a href=#307 id=307 data-nosnippet>307</a>        SVal = <span class="self">Self</span>::T,
-<a href=#308 id=308 data-nosnippet>308</a>    &gt; + SpecSerializerDps&lt;SValue = <span class="self">Self</span>::T&gt;,
-<a href=#309 id=309 data-nosnippet>309</a> {
+<a href=#303 id=303 data-nosnippet>303</a><span class="kw">impl</span>&lt;T&gt; SpecCombinator <span class="kw">for </span>T <span class="kw">where
+<a href=#304 id=304 data-nosnippet>304</a>    </span>T: SpecByteLen + Consistency&lt;Val = <span class="self">Self</span>::T&gt; + SpecParser&lt;PVal = <span class="self">Self</span>::T&gt; + SpecSerializer&lt;
+<a href=#305 id=305 data-nosnippet>305</a>        SVal = <span class="self">Self</span>::T,
+<a href=#306 id=306 data-nosnippet>306</a>    &gt; + SpecSerializerDps&lt;SValue = <span class="self">Self</span>::T&gt;,
+<a href=#307 id=307 data-nosnippet>307</a> {
+<a href=#308 id=308 data-nosnippet>308</a>
+<a href=#309 id=309 data-nosnippet>309</a>}
 <a href=#310 id=310 data-nosnippet>310</a>
-<a href=#311 id=311 data-nosnippet>311</a>}
-<a href=#312 id=312 data-nosnippet>312</a>
-<a href=#313 id=313 data-nosnippet>313</a>} <span class="comment">// verus!
-<a href=#314 id=314 data-nosnippet>314</a></span><span class="kw">pub use </span><span class="kw">crate</span>::core::fns::{ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerFnSpec};
+<a href=#311 id=311 data-nosnippet>311</a>} <span class="comment">// verus!
+<a href=#312 id=312 data-nosnippet>312</a></span><span class="kw">pub use </span><span class="kw">crate</span>::core::fns::{ByteLenFnSpec, ParserFnSpec, SerializerDPSFnSpec, SerializerFnSpec};
 </code></pre></div></section></main></body></html>

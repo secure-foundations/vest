@@ -3,8 +3,8 @@
 )<div class="where">where
     A: <a class="trait" href="../serializer/trait.Prepare.html" title="trait vest_lib::core::exec::serializer::Prepare">Prepare</a>&lt;T&gt;,
     B: <a class="trait" href="../serializer/trait.Prepare.html" title="trait vest_lib::core::exec::serializer::Prepare">Prepare</a>&lt;BVal&gt;,
-    BVal: DeepView&lt;V = BVal&gt;,
-    T: DeepView,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>(fmt.a.exec_inv() &amp;&amp; fmt.b.exec_inv() &amp;&amp; (forall |v: BVal| v.deep_view() == v))
+    BVal: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>&lt;V = BVal&gt;,
+    T: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>(fmt.a.exec_inv() &amp;&amp; fmt.b.exec_inv() &amp;&amp; (forall |v: BVal| v.deep_view() == v))
     ==&gt; fmt.exec_inv(),</code></pre></div>
 
 </div></details></section></div></main></body></html>

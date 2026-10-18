@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#65 id=65 data-nosnippet>65</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#67 id=67 data-nosnippet>67</a>                    assert(<span class="self">self</span>.safe_inv());
 <a href=#68 id=68 data-nosnippet>68</a>                    assert(<span class="self">self</span>.no_lookahead_inv());
 <a href=#69 id=69 data-nosnippet>69</a>                    <span class="self">self</span>.inner.lemma_no_lookahead(i1, i2);
@@ -219,7 +219,7 @@
 <a href=#219 id=219 data-nosnippet>219</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#222 id=222 data-nosnippet>222</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#222 id=222 data-nosnippet>222</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#223 id=223 data-nosnippet>223</a>                    assert(<span class="self">self</span>.safe_inv());
 <a href=#224 id=224 data-nosnippet>224</a>                    assert(<span class="self">self</span>.no_lookahead_inv());
 <a href=#225 id=225 data-nosnippet>225</a>                    <span class="self">self</span>.inner.lemma_no_lookahead(i1, i2);

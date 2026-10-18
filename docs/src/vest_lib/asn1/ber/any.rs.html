@@ -216,7 +216,7 @@
 <a href=#216 id=216 data-nosnippet>216</a>
 <a href=#217 id=217 data-nosnippet>217</a>    open spec <span class="kw">fn </span>spec_parse(<span class="kw-2">&amp;</span><span class="self">self</span>, input: Seq&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;(int, <span class="self">Self</span>::PVal)&gt; {
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.spec_parse(input) {
-<a href=#219 id=219 data-nosnippet>219</a>            <span class="prelude-val">Some</span>((n, value)) =&gt; <span class="prelude-val">Some</span>((n, Captured { value, encoded: input.take(n) })),
+<a href=#219 id=219 data-nosnippet>219</a>            <span class="prelude-val">Some</span>((n, value)) =&gt; <span class="prelude-val">Some</span>((n, Captured { value, encoded: input[<span class="number">0</span>..n] })),
 <a href=#220 id=220 data-nosnippet>220</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#221 id=221 data-nosnippet>221</a>        }
 <a href=#222 id=222 data-nosnippet>222</a>    }
@@ -559,14 +559,14 @@
 <a href=#559 id=559 data-nosnippet>559</a>        invariant
 <a href=#560 id=560 data-nosnippet>560</a>            children.deep_view() == child_views,
 <a href=#561 id=561 data-nosnippet>561</a>            encoded_views == child_views.map(|_i: int, child: Captured&lt;AnySpec&gt;| child.encoded),
-<a href=#562 id=562 data-nosnippet>562</a>            content.deep_view() == encoded_views.take(i <span class="kw">as </span>int).flatten(),
+<a href=#562 id=562 data-nosnippet>562</a>            content.deep_view() == encoded_views[<span class="number">0</span>..i].flatten(),
 <a href=#563 id=563 data-nosnippet>563</a>    {
 <a href=#564 id=564 data-nosnippet>564</a>        <span class="kw">let </span>encoded = children[i].encoded.as_slice();
 <a href=#565 id=565 data-nosnippet>565</a>        proof {
-<a href=#566 id=566 data-nosnippet>566</a>            <span class="kw">let </span>prefix = encoded_views.take(i <span class="kw">as </span>int);
+<a href=#566 id=566 data-nosnippet>566</a>            <span class="kw">let </span>prefix = encoded_views[<span class="number">0</span>..i];
 <a href=#567 id=567 data-nosnippet>567</a>            prefix.lemma_flatten_push(encoded.deep_view());
 <a href=#568 id=568 data-nosnippet>568</a>            assert(encoded_views[i <span class="kw">as </span>int] == encoded.deep_view());
-<a href=#569 id=569 data-nosnippet>569</a>            assert(encoded_views.take(i <span class="kw">as </span>int + <span class="number">1</span>) == prefix.push(encoded.deep_view()));
+<a href=#569 id=569 data-nosnippet>569</a>            assert(encoded_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(encoded.deep_view()));
 <a href=#570 id=570 data-nosnippet>570</a>        }
 <a href=#571 id=571 data-nosnippet>571</a>        content.extend_from_slice(encoded);
 <a href=#572 id=572 data-nosnippet>572</a>    }

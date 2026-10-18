@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["spec_serialize_seq"]};
+window.SIDEBAR_ITEMS = {"fn":["lemma_star_static_byte_len","spec_serialize_seq"]};

@@ -37,12 +37,12 @@
 <a href=#37 id=37 data-nosnippet>37</a>            <span class="self">self</span>.<span class="number">0</span>.no_lookahead_inv(),
 <a href=#38 id=38 data-nosnippet>38</a>            parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i1) ==&gt; parser_fails_on(<span class="self">self</span>.<span class="number">0</span>, i2),
 <a href=#39 id=39 data-nosnippet>39</a>        ensures
-<a href=#40 id=40 data-nosnippet>40</a>            <span class="self">self</span>.spec_parse(i1) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; <span class="number">0 </span>&lt;= n &lt;= i2.len() ==&gt; i2.take(n)
-<a href=#41 id=41 data-nosnippet>41</a>                == i1.take(n) ==&gt; <span class="self">self</span>.spec_parse(i2) == <span class="prelude-val">Some</span>((n, v)),
+<a href=#40 id=40 data-nosnippet>40</a>            <span class="self">self</span>.spec_parse(i1) matches <span class="prelude-val">Some</span>((n, v)) ==&gt; <span class="number">0 </span>&lt;= n &lt;= i2.len() ==&gt; i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n]
+<a href=#41 id=41 data-nosnippet>41</a>                ==&gt; <span class="self">self</span>.spec_parse(i2) == <span class="prelude-val">Some</span>((n, v)),
 <a href=#42 id=42 data-nosnippet>42</a>    {
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#44 id=44 data-nosnippet>44</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#45 id=45 data-nosnippet>45</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#45 id=45 data-nosnippet>45</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#46 id=46 data-nosnippet>46</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>((n0, v0)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(i1) {
 <a href=#47 id=47 data-nosnippet>47</a>                        <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
 <a href=#48 id=48 data-nosnippet>48</a>                    } <span class="kw">else </span>{
@@ -124,7 +124,7 @@
 <a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>n0 = serialized0.len() - serialized1.len();
 <a href=#125 id=125 data-nosnippet>125</a>        opt.lemma_serialize_dps_prepend(v.<span class="number">0</span>, serialized1);
 <a href=#126 id=126 data-nosnippet>126</a>        opt.lemma_serialize_dps_len(v.<span class="number">0</span>, serialized1);
-<a href=#127 id=127 data-nosnippet>127</a>        assert(serialized0.skip(n0) == serialized1);
+<a href=#127 id=127 data-nosnippet>127</a>        assert(serialized0[n0..] == serialized1);
 <a href=#128 id=128 data-nosnippet>128</a>    }
 <a href=#129 id=129 data-nosnippet>129</a>}
 <a href=#130 id=130 data-nosnippet>130</a>
@@ -159,21 +159,21 @@
 <a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>opt = <span class="kw">super</span>::Opt(<span class="self">self</span>.<span class="number">0</span>);
 <a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#162 id=162 data-nosnippet>162</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#162 id=162 data-nosnippet>162</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#163 id=163 data-nosnippet>163</a>                    assert(<span class="self">self</span>.safe_inv());
 <a href=#164 id=164 data-nosnippet>164</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>((n0, a)) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(i1) {
-<a href=#165 id=165 data-nosnippet>165</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, b)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1.skip(n0)) {
+<a href=#165 id=165 data-nosnippet>165</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, b)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1[n0..]) {
 <a href=#166 id=166 data-nosnippet>166</a>                            assert(opt.safe_inv());
 <a href=#167 id=167 data-nosnippet>167</a>                            assert(<span class="self">self</span>.<span class="number">1</span>.safe_inv());
 <a href=#168 id=168 data-nosnippet>168</a>                            opt.lemma_parse_safe(i1);
-<a href=#169 id=169 data-nosnippet>169</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(i1.skip(n0));
-<a href=#170 id=170 data-nosnippet>170</a>                            assert(i2.take(n0) == i1.take(n0));
+<a href=#169 id=169 data-nosnippet>169</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_parse_safe(i1[n0..]);
+<a href=#170 id=170 data-nosnippet>170</a>                            assert(i2[<span class="number">0</span>..n0] == i1[<span class="number">0</span>..n0]);
 <a href=#171 id=171 data-nosnippet>171</a>                            opt.lemma_opt_no_lookahead(i1, i2);
-<a href=#172 id=172 data-nosnippet>172</a>                            assert(i2.skip(n0).take(n1) == i1.skip(n0).take(n1)) by {
+<a href=#172 id=172 data-nosnippet>172</a>                            assert(i2[n0..][<span class="number">0</span>..n1] == i1[n0..][<span class="number">0</span>..n1]) by {
 <a href=#173 id=173 data-nosnippet>173</a>                                lemma_take_skip(i1, n0, n1);
 <a href=#174 id=174 data-nosnippet>174</a>                                lemma_take_skip(i2, n0, n1);
 <a href=#175 id=175 data-nosnippet>175</a>                            };
-<a href=#176 id=176 data-nosnippet>176</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_no_lookahead(i1.skip(n0), i2.skip(n0));
+<a href=#176 id=176 data-nosnippet>176</a>                            <span class="self">self</span>.<span class="number">1</span>.lemma_no_lookahead(i1[n0..], i2[n0..]);
 <a href=#177 id=177 data-nosnippet>177</a>                        }
 <a href=#178 id=178 data-nosnippet>178</a>                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>((n1, b)) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(i1) {
 <a href=#179 id=179 data-nosnippet>179</a>                        assert(disjoint_domains(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>));
@@ -194,9 +194,9 @@
 <a href=#194 id=194 data-nosnippet>194</a>    proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
 <a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, _v)) = <span class="self">self</span>.spec_parse(s) {
 <a href=#196 id=196 data-nosnippet>196</a>            <span class="kw">let </span>(n1, _v1) = <span class="kw">super</span>::Opt(<span class="self">self</span>.<span class="number">0</span>).spec_parse(s)-&gt;<span class="number">0</span>;
-<a href=#197 id=197 data-nosnippet>197</a>            <span class="kw">let </span>(n2, _v2) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(s.skip(n1))-&gt;<span class="number">0</span>;
+<a href=#197 id=197 data-nosnippet>197</a>            <span class="kw">let </span>(n2, _v2) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(s[n1..])-&gt;<span class="number">0</span>;
 <a href=#198 id=198 data-nosnippet>198</a>            <span class="kw">super</span>::Opt(<span class="self">self</span>.<span class="number">0</span>).lemma_parse_safe(s);
-<a href=#199 id=199 data-nosnippet>199</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_productive(s.skip(n1));
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_productive(s[n1..]);
 <a href=#200 id=200 data-nosnippet>200</a>        }
 <a href=#201 id=201 data-nosnippet>201</a>    }
 <a href=#202 id=202 data-nosnippet>202</a>}

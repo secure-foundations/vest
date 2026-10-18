@@ -42,7 +42,7 @@
 <a href=#42 id=42 data-nosnippet>42</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#44 id=44 data-nosnippet>44</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#45 id=45 data-nosnippet>45</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#45 id=45 data-nosnippet>45</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#46 id=46 data-nosnippet>46</a>                    assert(<span class="self">self</span>.no_lookahead_inv());
 <a href=#47 id=47 data-nosnippet>47</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
 <a href=#48 id=48 data-nosnippet>48</a>                    assert(<span class="self">self</span>.<span class="number">0</span>.spec_parse(i2) == <span class="prelude-val">Some</span>((n, v)));
@@ -123,7 +123,7 @@
 <a href=#123 id=123 data-nosnippet>123</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#125 id=125 data-nosnippet>125</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#126 id=126 data-nosnippet>126</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#126 id=126 data-nosnippet>126</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#127 id=127 data-nosnippet>127</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
 <a href=#128 id=128 data-nosnippet>128</a>                }
 <a href=#129 id=129 data-nosnippet>129</a>            }
@@ -191,7 +191,7 @@
 <a href=#191 id=191 data-nosnippet>191</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#193 id=193 data-nosnippet>193</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#194 id=194 data-nosnippet>194</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#194 id=194 data-nosnippet>194</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#195 id=195 data-nosnippet>195</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
 <a href=#196 id=196 data-nosnippet>196</a>                }
 <a href=#197 id=197 data-nosnippet>197</a>            }

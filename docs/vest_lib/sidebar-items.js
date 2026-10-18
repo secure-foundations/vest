@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":[["impl_ber",1],["impl_der",1],["with_deep_view",1],["with_deep_view_and_mapper",1]],"mod":["asn1","cbor","combinators","core","macros","primitives"],"type":["Never"]};
+window.SIDEBAR_ITEMS = {"macro":[["impl_ber",1],["impl_der",1],["with_deep_view",1],["with_deep_view_and_mapper",1]],"mod":["asn1","cbor","combinators","core","macros","prelude","primitives"],"type":["Never"]};

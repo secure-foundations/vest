@@ -172,7 +172,7 @@
 <a href=#172 id=172 data-nosnippet>172</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#173 id=173 data-nosnippet>173</a>
 <a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U16_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#175 id=175 data-nosnippet>175</a>        assert(chunk@ == ibuf@.take(U16_BYTE_LEN <span class="kw">as </span>int));
+<a href=#175 id=175 data-nosnippet>175</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U16_BYTE_LEN]);
 <a href=#176 id=176 data-nosnippet>176</a>
 <a href=#177 id=177 data-nosnippet>177</a>        <span class="kw">let </span>bytes = [chunk[<span class="number">0</span>], chunk[<span class="number">1</span>]];
 <a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">let </span>value = i16_from_le_bytes(bytes);
@@ -213,7 +213,7 @@
 <a href=#213 id=213 data-nosnippet>213</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U16_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#216 id=216 data-nosnippet>216</a>        assert(chunk@ == ibuf@.take(U16_BYTE_LEN <span class="kw">as </span>int));
+<a href=#216 id=216 data-nosnippet>216</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U16_BYTE_LEN]);
 <a href=#217 id=217 data-nosnippet>217</a>
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>bytes = [chunk[<span class="number">0</span>], chunk[<span class="number">1</span>]];
 <a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>value = i16_from_be_bytes(bytes);
@@ -254,7 +254,7 @@
 <a href=#254 id=254 data-nosnippet>254</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#255 id=255 data-nosnippet>255</a>
 <a href=#256 id=256 data-nosnippet>256</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U32_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#257 id=257 data-nosnippet>257</a>        assert(chunk@ == ibuf@.take(U32_BYTE_LEN <span class="kw">as </span>int));
+<a href=#257 id=257 data-nosnippet>257</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U32_BYTE_LEN]);
 <a href=#258 id=258 data-nosnippet>258</a>
 <a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">let </span>bytes = [chunk[<span class="number">0</span>], chunk[<span class="number">1</span>], chunk[<span class="number">2</span>], chunk[<span class="number">3</span>]];
 <a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>value = i32_from_le_bytes(bytes);
@@ -295,7 +295,7 @@
 <a href=#295 id=295 data-nosnippet>295</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#296 id=296 data-nosnippet>296</a>
 <a href=#297 id=297 data-nosnippet>297</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U32_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#298 id=298 data-nosnippet>298</a>        assert(chunk@ == ibuf@.take(U32_BYTE_LEN <span class="kw">as </span>int));
+<a href=#298 id=298 data-nosnippet>298</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U32_BYTE_LEN]);
 <a href=#299 id=299 data-nosnippet>299</a>
 <a href=#300 id=300 data-nosnippet>300</a>        <span class="kw">let </span>bytes = [chunk[<span class="number">0</span>], chunk[<span class="number">1</span>], chunk[<span class="number">2</span>], chunk[<span class="number">3</span>]];
 <a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">let </span>value = i32_from_be_bytes(bytes);
@@ -336,7 +336,7 @@
 <a href=#336 id=336 data-nosnippet>336</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#337 id=337 data-nosnippet>337</a>
 <a href=#338 id=338 data-nosnippet>338</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U64_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#339 id=339 data-nosnippet>339</a>        assert(chunk@ == ibuf@.take(U64_BYTE_LEN <span class="kw">as </span>int));
+<a href=#339 id=339 data-nosnippet>339</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U64_BYTE_LEN]);
 <a href=#340 id=340 data-nosnippet>340</a>
 <a href=#341 id=341 data-nosnippet>341</a>        <span class="kw">let </span>bytes = [
 <a href=#342 id=342 data-nosnippet>342</a>            chunk[<span class="number">0</span>],
@@ -386,7 +386,7 @@
 <a href=#386 id=386 data-nosnippet>386</a>        broadcast <span class="kw">use </span>lemma_array_from_seq_roundtrip;
 <a href=#387 id=387 data-nosnippet>387</a>
 <a href=#388 id=388 data-nosnippet>388</a>        <span class="kw">let </span>(n, chunk) = Fixed::&lt;U64_BYTE_LEN&gt;.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#389 id=389 data-nosnippet>389</a>        assert(chunk@ == ibuf@.take(U64_BYTE_LEN <span class="kw">as </span>int));
+<a href=#389 id=389 data-nosnippet>389</a>        assert(chunk@ == ibuf@[<span class="number">0</span>..U64_BYTE_LEN]);
 <a href=#390 id=390 data-nosnippet>390</a>
 <a href=#391 id=391 data-nosnippet>391</a>        <span class="kw">let </span>bytes = [
 <a href=#392 id=392 data-nosnippet>392</a>            chunk[<span class="number">0</span>],

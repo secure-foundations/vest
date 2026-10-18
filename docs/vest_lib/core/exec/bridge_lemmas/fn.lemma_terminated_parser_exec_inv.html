@@ -4,7 +4,7 @@
     I: <a class="trait" href="../input/trait.InputBuf.html" title="trait vest_lib::core::exec::input::InputBuf">InputBuf</a>,
     A: <a class="trait" href="../parser/trait.Parser.html" title="trait vest_lib::core::exec::parser::Parser">Parser</a>&lt;I&gt; + <a class="trait" href="../../spec/trait.SafeParser.html" title="trait vest_lib::core::spec::SafeParser">SafeParser</a>,
     B: <a class="trait" href="../parser/trait.Parser.html" title="trait vest_lib::core::exec::parser::Parser">Parser</a>&lt;I, PT = BVal&gt; + <a class="trait" href="../../spec/trait.SafeParser.html" title="trait vest_lib::core::spec::SafeParser">SafeParser</a>&lt;PVal = BVal&gt;,
-    BVal: DeepView&lt;V = BVal&gt;,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>(fmt.a.exec_inv() &amp;&amp; fmt.a.safe_inv() &amp;&amp; fmt.b.exec_inv() &amp;&amp; fmt.b.safe_inv())
+    BVal: <a class="trait" href="../../../prelude/trait.DeepView.html" title="trait vest_lib::prelude::DeepView">DeepView</a>&lt;V = BVal&gt;,</div></code></pre><details class="toggle top-doc" open=""><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><div class="verus-spec"><span class="verus-spec-keyword">ensures</span><pre class="rust rest-example-rendered verus-spec-code"><code>(fmt.a.exec_inv() &amp;&amp; fmt.a.safe_inv() &amp;&amp; fmt.b.exec_inv() &amp;&amp; fmt.b.safe_inv())
     ==&gt; fmt.exec_inv(),</code></pre></div>
 
 </div></details></section></div></main></body></html>

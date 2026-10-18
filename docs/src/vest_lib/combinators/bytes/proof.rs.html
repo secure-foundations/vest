@@ -215,11 +215,11 @@
 <a href=#215 id=215 data-nosnippet>215</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_non_malleable(buf1, buf2);
 <a href=#216 id=216 data-nosnippet>216</a>                    <span class="self">self</span>.<span class="number">1</span>.lemma_parse_non_malleable(chunk1, chunk2);
 <a href=#217 id=217 data-nosnippet>217</a>                    assert(n1 == n1a &amp;&amp; n2 == n2a);
-<a href=#218 id=218 data-nosnippet>218</a>                    assert(chunk1.take(n1a) == chunk2.take(n2a));
-<a href=#219 id=219 data-nosnippet>219</a>                    assert(chunk1.take(n1a) == chunk1);
-<a href=#220 id=220 data-nosnippet>220</a>                    assert(chunk2.take(n2a) == chunk2);
+<a href=#218 id=218 data-nosnippet>218</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk2[<span class="number">0</span>..n2a]);
+<a href=#219 id=219 data-nosnippet>219</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk1);
+<a href=#220 id=220 data-nosnippet>220</a>                    assert(chunk2[<span class="number">0</span>..n2a] == chunk2);
 <a href=#221 id=221 data-nosnippet>221</a>                    assert(chunk1 == chunk2);
-<a href=#222 id=222 data-nosnippet>222</a>                    assert(buf1.take(n1a) == buf2.take(n2a));
+<a href=#222 id=222 data-nosnippet>222</a>                    assert(buf1[<span class="number">0</span>..n1a] == buf2[<span class="number">0</span>..n2a]);
 <a href=#223 id=223 data-nosnippet>223</a>                }
 <a href=#224 id=224 data-nosnippet>224</a>            }
 <a href=#225 id=225 data-nosnippet>225</a>        }
@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
 <a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
 <a href=#239 id=239 data-nosnippet>239</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#240 id=240 data-nosnippet>240</a>                <span class="kw">if </span>i2.take(n) == i1.take(n) {
+<a href=#240 id=240 data-nosnippet>240</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
 <a href=#241 id=241 data-nosnippet>241</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
 <a href=#242 id=242 data-nosnippet>242</a>                }
 <a href=#243 id=243 data-nosnippet>243</a>            }

@@ -5,9 +5,7 @@
             parser,
             buf1,
             buf2,
-        ) matches <span class="prelude-val">Some</span>(
-            ((n1, v1), (n2, v2)),
-        ) ==&gt; v1 == v2 ==&gt; buf1.take(n1) == buf2.take(n2)
+        ) matches <span class="prelude-val">Some</span>(((n1, v1), (n2, v2))) ==&gt; v1 == v2 ==&gt; buf1[<span class="number">0</span>..n1] == buf2[<span class="number">0</span>..n2]
     )
 }</code></pre></div>
 
