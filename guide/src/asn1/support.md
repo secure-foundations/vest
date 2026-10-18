@@ -81,15 +81,15 @@ with an error.
 **`SET OF` ordering.** DER requires the values to be sorted by their complete
 DER TLV encoding. The generated `prepare` rejects an unsorted vector without
 allocating, so sorting is the caller's job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER
-`SET OF` imposes no canonical order and preserves schema order on output.
+`SET OF` imposes no canonical order and writes values in their vector order.
 
 **Heterogeneous `SET`.** BER lets a `SET` carry its components in any order, so
 a BER parser would have to accept every permutation of the fields. DER
 instead fixes them in ascending tag order. `vest_asn1` currently emits `SET` only
 under DER, and only when the schema already lists the fields in canonical order. The `vest_lib` backend supports a group of `Permute` combinators that can be used to implement BER `SET`, but the generator does not yet emit them.
 
-**Borrowing and `alloc`.** DER strings are contiguous, so their value types
-borrow from the input. BER strings may arrive fragmented across constructed
+**Borrowing and `alloc`.** DER byte strings and UTF-8-compatible character
+strings borrow from the input. BER strings may arrive fragmented across constructed
 encodings and are flattened into owned values, which is why BER modules need the
 `alloc` feature where the equivalent DER module may not. `BMPString` and
 `UniversalString` are always owned, since their wire form is not UTF-8.

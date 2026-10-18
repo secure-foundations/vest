@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -281,11 +281,14 @@ impl KIND {
     proof fn lemma_schema_unambiguous(&amp;self) { /* .. */ }
 }</code></pre>
 <p>Several things differ from the DSL here.</p>
-<p><strong>The format type is always parametric.</strong> <code>MessageFmt</code> in a DSL module is a zero-sized
-struct. <code>KIND</code> is a tuple struct holding the effective tag class and number, so
-an <code>IMPLICIT</code> tag can replace the outer tag without rebuilding the format.
+<p><strong>Tagged format types carry their effective tag.</strong> Unlike the zero-sized
+<code>MessageFmt</code> in our DSL example, <code>KIND</code> is a tuple struct holding the effective
+tag class and number, so an <code>IMPLICIT</code> tag can replace the outer tag without
+rebuilding the format.
 <code>KIND::Fmt</code> is the associated constant carrying the definition’s own tag —
-<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.</p>
+<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.
+Untagged <code>CHOICE</code> and <code>ANY</code> format types are zero-sized instead: they have no
+single outer tag to store or replace.</p>
 <p><strong><code>schema()</code> is dual spec-exec.</strong> The DSL’s <code>spec_inner()</code> is
 <code>pub open spec fn</code> — specification only. <code>schema()</code> here is a <code>const fn</code> marked
 <code>#[verifier::allow_in_spec]</code> with a <code>returns</code> clause, so the same definition
@@ -304,10 +307,13 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
         PacketForward, PacketReverse
     );
 }</code></pre>
-<p><code>impl_der!</code> (or <code>impl_ber!</code> under BER) expands to the same code the DSL
-emits explicitly — derived spec trait impls (<code>SpecParser</code>, <code>SpecSerializer</code>,
-<code>SpecByteLen</code>, <code>Consistency</code>) and derived proof trait impls (<code>SafeParser</code>, <code>SoundParser</code>, <code>Productive</code>,
-<code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>NonMalleable</code>, etc.). Additionally, it also expands to the executable trait impls (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<p>Both macros implement the specification traits (<code>SpecParser</code>, <code>SpecSerializer</code>,
+<code>SpecByteLen</code>, <code>Consistency</code>), compositional proof traits (<code>SafeParser</code>,
+<code>Productive</code>, <code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>SPRoundTripDps</code>, etc.), and
+executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
+allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
+accept several encodings of the same logical value, with different lengths.</p>
 <!--## How this differs from DSL-generated code
 
 | | Vest DSL | ASN.1 |

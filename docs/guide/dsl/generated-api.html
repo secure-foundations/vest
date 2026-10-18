@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -377,7 +377,7 @@ of failure and the innermost named format that reported it. Enable
 <code>vest_lib</code>’s <code>error-trace</code> feature to also keep the trace of enclosing formats.</p>
 <h2 id="reasoning-about-generated-values"><a class="header" href="#reasoning-about-generated-values">Reasoning about generated values</a></h2>
 <p>We’ve seen that the <a href="../getting-started.html#using-vest-from-verified-rust">getting-started example</a>
-proves a value serialze-parse roundtrip. This section further covers:</p>
+proves a value serialize-parse roundtrip. This section further covers:</p>
 <ul>
 <li>what each executable API guarantees,</li>
 <li>how to prove facts about fields and lengths,</li>
@@ -472,7 +472,7 @@ the usual reveals, we can assert that the length is <code>2 + 2 * count</code>:<
     assert(len == 2 + 2 * value.values@.len());
     Ok(len)
 }</code></pre>
-<p><code>vest_lib</code> also provides the <code>ByteLen::length</code> API for infallable length calculation, but the DSL doesn’t
+<p><code>vest_lib</code> also provides the <code>ByteLen::length</code> API for infallible length calculation, but the DSL doesn’t
 currently generate it. Unlike <code>prepare</code>, <code>length</code> doesn’t check consistency, and
 it needs a proof that the length fits in <code>usize</code>.</p>
 <h3 id="roundtrips-and-non-malleability"><a class="header" href="#roundtrips-and-non-malleability">Roundtrips and non-malleability</a></h3>

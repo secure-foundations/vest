@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -196,8 +196,10 @@ header = {
 The generated Rust types are the matching
 unsigned integer types, except that <code>u24</code> is represented as <code>u32</code> (with proper value constraints specified in Verus).</p>
 <p><strong>Parsing.</strong> Reads exactly the declared number of bytes and interprets them in the specified byte order. Fewer bytes remaining than the width is a parse error.</p>
-<p><strong>Preparation and serialization.</strong> Preparation always succeeds and reports the
-fixed width. Serialization writes that many bytes in the same byte order.</p>
+<p><strong>Preparation and serialization.</strong> Preparation reports the fixed width. For
+<code>u24</code>, it also checks that the <code>u32</code> value fits in 24 bits; values above
+<code>0xFFFFFF</code> are rejected. Preparation for the other widths always succeeds.
+Serialization writes that many bytes in the same byte order.</p>
 <p>Signed counterparts are supported in the <code>vest_lib</code> backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
 Widths other than the five listed above are rejected too. See <a href="bits.html">bitfields</a> for ways to specify bit-sized integers inside a <code>bits</code> block.</p>
 <h2 id="variable-width-integers"><a class="header" href="#variable-width-integers">Variable-width integers</a></h2>

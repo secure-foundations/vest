@@ -254,7 +254,7 @@ of failure and the innermost named format that reported it. Enable
 ## Reasoning about generated values
 
 We've seen that the [getting-started example](../getting-started.md#using-vest-from-verified-rust)
-proves a value serialze-parse roundtrip. This section further covers:
+proves a value serialize-parse roundtrip. This section further covers:
 
 - what each executable API guarantees,
 - how to prove facts about fields and lengths,
@@ -370,7 +370,7 @@ fn samples_length(value: &Samples) -> Result<usize, PreSerializeError> {
 }
 ```
 
-`vest_lib` also provides the `ByteLen::length` API for infallable length calculation, but the DSL doesn't
+`vest_lib` also provides the `ByteLen::length` API for infallible length calculation, but the DSL doesn't
 currently generate it. Unlike `prepare`, `length` doesn't check consistency, and
 it needs a proof that the length fits in `usize`.
 

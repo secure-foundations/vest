@@ -33,8 +33,9 @@ module with canonical DER substructures inside a BER envelope; see
 [DER, BER, and rule overrides](index.md#der-ber-and-rule-overrides).
 
 The generator emits `Kind` and `Packet<'i>` value types. Unlike the Vest DSL, their verified format
-values are `KIND::Fmt` and `PACKET::Fmt` (due to technical reasons mandated by the ASN.1 standard). Uppercase format names avoid collisions
-with the idiomatic Rust value names.
+values are `KIND::Fmt` and `PACKET::Fmt`. Uppercase format names avoid collisions with the
+idiomatic Rust value names. Tagged formats also store their effective tag to
+support `IMPLICIT` retagging.
 
 ## Parse and serialize
 
@@ -59,8 +60,10 @@ PACKET::Fmt.serialize(&packet, &mut output);
 assert_eq!(output, encoded);
 ```
 
-DER string fields *borrow* from the input because their representation is
-contiguous. BER generated values may be *owned* when constructed, fragmented strings are concatenated.
+DER byte strings and UTF-8-compatible character strings *borrow* from the input.
+BER string formats concatenate constructed fragments into owned values.
+`BMPString` and `UniversalString` are always owned because their wire encodings
+must be converted to UTF-8.
 
 ## What is checked
 

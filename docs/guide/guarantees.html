@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -194,8 +194,8 @@ The most common implementation mistakes are:</p>
 <li><strong>Format confusion.</strong> It occurs when objects from different semantic domains, or distinct objects from the same semantic domain are encoded with the same byte representation. In this case, a parser fundamentally cannot distinguish between the two objects, making it vulnerable to cross-protocol attacks.</li>
 <li><strong>Format malleability.</strong> It occurs when a single object can be encoded in multiple ways, and a parser accepts all of them. In this case, a parser can be tricked into accepting a modified input that is semantically equivalent to the original, but would yield completely different hash values or signatures. This is a common source of signature forgery or transaction malleability attacks.</li>
 </ul>
-<p>Vest’s answer is to formally prove the absence of these vulnerabilities,
-for each format you define, without asking you to write proofs.</p>
+<p>Vest addresses these risks with proofs of safety, correctness, and security. The DSL generates these proofs alongside
+the executable code.</p>
 <p>This page describes Vest’s formal guarantees in plain words.
 For the formal definitions, see the <a href="../vest_lib/index.html">core specs in <code>vest_lib</code></a>.</p>
 <h2 id="safety-for-every-format"><a class="header" href="#safety-for-every-format">Safety, for every format</a></h2>
@@ -218,7 +218,7 @@ about which properties hold for which formats.</p>
 the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
 <li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
 <li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
-Modifying or truncating an accepted input changes the outcome — it fails, or
+Modifying or truncating its consumed bytes changes the outcome — it fails, or
 yields a different value.</li>
 <li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
 change what was already parsed.</li>
@@ -249,7 +249,7 @@ The practical consequence is that if your application needs byte-faithful round 
 <ul>
 <li><strong><code>rustc</code></strong>, the Rust compiler;</li>
 <li><strong>Verus</strong> and the <strong>Z3</strong> solver;</li>
-<li><strong><code>vstd</code></strong>, Verus’s trusted standard-library specification;</li>
+<li><strong><code>vstd</code></strong>’s trusted specifications;</li>
 <li>top-level theorem statements in <strong><code>vest_lib</code></strong>.</li>
 </ul>
 <blockquote>

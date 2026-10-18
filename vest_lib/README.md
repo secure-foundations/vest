@@ -18,4 +18,8 @@ disable default features for the `core`-only library:
 vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
 ```
 
+See the Vest guide's
+[feature configurations](https://secure-foundations.github.io/vest/guide/library/features.html)
+for feature dependencies and `no_std` usage.
+
 Use the Verus and `vstd` versions pinned by the corresponding Vest release.

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -496,15 +496,15 @@ assert_eq!(output, wire);</code></pre>
 <p>We get back exactly the bytes we started with.</p>
 <p>Why does Vest separate preparation from serialization? There are several key benefits:</p>
 <ol>
-<li><em>Infalliable-serialization</em>: It allows the caller to check for potential errors (such as a value that doesn’t satisfy the format’s constraints or integer overflows) before allocating a buffer. A fallable serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.</li>
+<li><em>Infallible serialization</em>: It allows the caller to check for potential errors (such as a value that doesn’t satisfy the format’s constraints or integer overflows) before allocating a buffer. A fallible serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.</li>
 <li><em>Zero-reallocation</em>: It allows the caller to pre-allocate a buffer of the (provably) correct size, which can be more efficient than growing a buffer during serialization.</li>
 </ol>
 <blockquote>
-<p><strong>Always call <code>prepare</code> first.</strong> Because <code>serialize</code> is designed to be infalliable,
+<p><strong>Always call <code>prepare</code> first.</strong> Because <code>serialize</code> is designed to be infallible,
 it doesn’t recheck the value or the
 buffer size; it relies on what <code>prepare</code> has already established. In ordinary
-Rust, nothing enforces this. If you skip <code>prepare</code>, an inconsistent value
-produces bytes that won’t parse, and a buffer that’s too small is undefined
+Rust, nothing enforces this. If you skip <code>prepare</code>, the output is not
+guaranteed to match the format, and an undersized buffer may cause undefined
 behavior. In verified code, Verus prevents you from calling <code>serialize</code> without first establishing those proof obligations.</p>
 </blockquote>
 <h3 id="building-a-message-from-scratch"><a class="header" href="#building-a-message-from-scratch">Building a message from scratch</a></h3>
@@ -601,7 +601,7 @@ fn roundtrip(value: &amp;Msg&lt;'_&gt;) -&gt; Result&lt;(), PreSerializeError&gt
 <li><code>prepare</code> checks that the value is consistent with the format and tells us
 exactly how much space to allocate for the serialized output, just like before.</li>
 <li><code>serialize</code> fills that space with the value’s binary encoding. Here, Verus
-verifies that the value is consistent and the buffer is large enough (because we just called <code>prepare</code>).</li>
+verifies that the value is consistent and the buffer has exactly the required size (because we just called <code>prepare</code>).</li>
 <li>The <code>proof</code> block calls Vest’s roundtrip theorem. It tells Verus that
 parsing <code>output</code> (the serialized <code>value</code>) succeeds, consumes all <code>len</code> bytes, and returns the same
 logical contents. That’s enough for Verus to prove both <code>assert</code>s, and to

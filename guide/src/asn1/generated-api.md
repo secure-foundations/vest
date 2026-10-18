@@ -137,11 +137,14 @@ impl KIND {
 
 Several things differ from the DSL here.
 
-**The format type is always parametric.** `MessageFmt` in a DSL module is a zero-sized
-struct. `KIND` is a tuple struct holding the effective tag class and number, so
-an `IMPLICIT` tag can replace the outer tag without rebuilding the format.
+**Tagged format types carry their effective tag.** Unlike the zero-sized
+`MessageFmt` in our DSL example, `KIND` is a tuple struct holding the effective
+tag class and number, so an `IMPLICIT` tag can replace the outer tag without
+rebuilding the format.
 `KIND::Fmt` is the associated constant carrying the definition's own tag —
 `Class::Universal, 10` for `ENUMERATED`, `16` for `SEQUENCE`, etc.
+Untagged `CHOICE` and `ANY` format types are zero-sized instead: they have no
+single outer tag to store or replace.
 
 **`schema()` is dual spec-exec.** The DSL's `spec_inner()` is
 `pub open spec fn` — specification only. `schema()` here is a `const fn` marked
@@ -168,10 +171,14 @@ mod __impl_packet {
 }
 ```
 
-`impl_der!` (or `impl_ber!` under BER) expands to the same code the DSL
-emits explicitly — derived spec trait impls (`SpecParser`, `SpecSerializer`,
-`SpecByteLen`, `Consistency`) and derived proof trait impls (`SafeParser`, `SoundParser`, `Productive`,
-`NonTailFmt`, `GoodSerializer`, `NonMalleable`, etc.). Additionally, it also expands to the executable trait impls (`Parser`, `Prepare`, `Serializer`).
+Both macros implement the specification traits (`SpecParser`, `SpecSerializer`,
+`SpecByteLen`, `Consistency`), compositional proof traits (`SafeParser`,
+`Productive`, `NonTailFmt`, `GoodSerializer`, `SPRoundTripDps`, etc.), and
+executable APIs (`Parser`, `Prepare`, `Serializer`).
+
+`impl_der!` additionally implements `SoundParser`, `NonMalleable`, and
+allocation-free `DerOrd`. `impl_ber!` deliberately omits those traits: BER may
+accept several encodings of the same logical value, with different lengths.
 
 <!--## How this differs from DSL-generated code
 

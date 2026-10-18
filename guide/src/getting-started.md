@@ -387,14 +387,14 @@ assert_eq!(output, wire);
 We get back exactly the bytes we started with.
 
 Why does Vest separate preparation from serialization? There are several key benefits:
-1. *Infalliable-serialization*: It allows the caller to check for potential errors (such as a value that doesn't satisfy the format's constraints or integer overflows) before allocating a buffer. A fallable serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.
+1. *Infallible serialization*: It allows the caller to check for potential errors (such as a value that doesn't satisfy the format's constraints or integer overflows) before allocating a buffer. A fallible serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.
 2. *Zero-reallocation*: It allows the caller to pre-allocate a buffer of the (provably) correct size, which can be more efficient than growing a buffer during serialization.
 
-> **Always call `prepare` first.** Because `serialize` is designed to be infalliable,
+> **Always call `prepare` first.** Because `serialize` is designed to be infallible,
 > it doesn't recheck the value or the
 > buffer size; it relies on what `prepare` has already established. In ordinary
-> Rust, nothing enforces this. If you skip `prepare`, an inconsistent value
-> produces bytes that won't parse, and a buffer that's too small is undefined
+> Rust, nothing enforces this. If you skip `prepare`, the output is not
+> guaranteed to match the format, and an undersized buffer may cause undefined
 > behavior. In verified code, Verus prevents you from calling `serialize` without first establishing those proof obligations.
 
 ### Building a message from scratch
@@ -532,7 +532,7 @@ Let's walk through it:
 1. `prepare` checks that the value is consistent with the format and tells us
    exactly how much space to allocate for the serialized output, just like before.
 2. `serialize` fills that space with the value's binary encoding. Here, Verus
-   verifies that the value is consistent and the buffer is large enough (because we just called `prepare`).
+   verifies that the value is consistent and the buffer has exactly the required size (because we just called `prepare`).
 3. The `proof` block calls Vest's roundtrip theorem. It tells Verus that
    parsing `output` (the serialized `value`) succeeds, consumes all `len` bytes, and returns the same
    logical contents. That's enough for Verus to prove both `assert`s, and to

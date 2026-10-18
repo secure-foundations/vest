@@ -13,8 +13,8 @@ There are also more subtle issues that root in the format itself, such as:
 - **Format confusion.** It occurs when objects from different semantic domains, or distinct objects from the same semantic domain are encoded with the same byte representation. In this case, a parser fundamentally cannot distinguish between the two objects, making it vulnerable to cross-protocol attacks.
 - **Format malleability.** It occurs when a single object can be encoded in multiple ways, and a parser accepts all of them. In this case, a parser can be tricked into accepting a modified input that is semantically equivalent to the original, but would yield completely different hash values or signatures. This is a common source of signature forgery or transaction malleability attacks.
 
-Vest's answer is to formally prove the absence of these vulnerabilities,
-for each format you define, without asking you to write proofs.
+Vest addresses these risks with proofs of safety, correctness, and security. The DSL generates these proofs alongside
+the executable code.
 
 This page describes Vest's formal guarantees in plain words.
 For the formal definitions, see the [core specs in `vest_lib`](../vest_lib/index.html).
@@ -41,7 +41,7 @@ about which properties hold for which formats.
   the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.
 - **Parser completeness.** Every valid instance of the format can be successfully parsed from its byte representation.
 - **Parser non-malleability.** Each value has a *unique* byte representation accepted by the parser.
-  Modifying or truncating an accepted input changes the outcome — it fails, or
+  Modifying or truncating its consumed bytes changes the outcome — it fails, or
   yields a different value.
 - **Parser non-extensibility.** Appending bytes to an accepted input does not
   change what was already parsed.
@@ -76,7 +76,7 @@ The guarantees above rely on the correctness of the following components:
 
 - **`rustc`**, the Rust compiler;
 - **Verus** and the **Z3** solver;
-- **`vstd`**, Verus's trusted standard-library specification;
+- **`vstd`**'s trusted specifications;
 - top-level theorem statements in **`vest_lib`**.
 
 > Vest also says nothing about whether your format is the *right* format. That it

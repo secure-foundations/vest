@@ -18,9 +18,9 @@ Vest consists of several core components:
 * `vest_lib`, a verified combinator library in Rust for building formats (parsers, serializers, and their data types) compositionally.
 * `vest` DSL, a domain-specific language for describing formats concisely; and a compiler that automatically generates verified Rust code (leveraging the combinator library `vest_lib`) from format descriptions in the DSL.
 * `vest_asn1`, a compiler for ASN.1 schemas that automatically generates verified parsers and serializers (leveraging the verified backend ASN.1 combinators in `vest_lib`), supporting both Distinguished Encoding Rules (DER) and Basic Encoding Rules (BER).
-* Vest-CBOR, a verified generic CBOR codec (built on top of `vest_lib` combinators) that supports both general and deterministic CBOR.
+* Vest-CBOR, a verified generic CBOR codec (built on top of `vest_lib` combinators) supporting general CBOR and a [partial deterministic profile](https://secure-foundations.github.io/vest/guide/cbor.html).
 
-Vest-generated parsers and serializers are provably memory-safe, arithmetically safe, panic-free, and terminating on any input.
+Vest-generated parsers and serializers are provably memory-safe, arithmetically safe, panic-free, and terminating when their API preconditions hold; parsers accept arbitrary input bytes, while serializers require values consistent with the format and sufficient output space.
 More importantly, they are guaranteed to satisfy a suite of [*security properties*](https://secure-foundations.github.io/vest/guide/guarantees.html), making them immune to entire classes of attacks that have historically plagued unverified, hand-written code.
 
 <p align="center">

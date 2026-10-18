@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -202,8 +202,9 @@ END
 module with canonical DER substructures inside a BER envelope; see
 <a href="index.html#der-ber-and-rule-overrides">DER, BER, and rule overrides</a>.</p>
 <p>The generator emits <code>Kind</code> and <code>Packet&lt;'i&gt;</code> value types. Unlike the Vest DSL, their verified format
-values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code> (due to technical reasons mandated by the ASN.1 standard). Uppercase format names avoid collisions
-with the idiomatic Rust value names.</p>
+values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code>. Uppercase format names avoid collisions with the
+idiomatic Rust value names. Tagged formats also store their effective tag to
+support <code>IMPLICIT</code> retagging.</p>
 <h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
 <pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 use crate::message::{Kind, PACKET};
@@ -223,8 +224,10 @@ let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
 let mut output = vec![0u8; size];
 PACKET::Fmt.serialize(&amp;packet, &amp;mut output);
 assert_eq!(output, encoded);</code></pre>
-<p>DER string fields <em>borrow</em> from the input because their representation is
-contiguous. BER generated values may be <em>owned</em> when constructed, fragmented strings are concatenated.</p>
+<p>DER byte strings and UTF-8-compatible character strings <em>borrow</em> from the input.
+BER string formats concatenate constructed fragments into owned values.
+<code>BMPString</code> and <code>UniversalString</code> are always owned because their wire encodings
+must be converted to UTF-8.</p>
 <h2 id="what-is-checked"><a class="header" href="#what-is-checked">What is checked</a></h2>
 <p><strong>TODO.</strong> Discuss the proof obligations for format non-ambiguity, etc.</p>
 

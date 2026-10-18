@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -283,13 +283,13 @@ with an error.</p>
 <p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
 DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
 allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER
-<code>SET OF</code> imposes no canonical order and preserves schema order on output.</p>
+<code>SET OF</code> imposes no canonical order and writes values in their vector order.</p>
 <p><strong>Heterogeneous <code>SET</code>.</strong> BER lets a <code>SET</code> carry its components in any order, so
 a BER parser would have to accept every permutation of the fields. DER
 instead fixes them in ascending tag order. <code>vest_asn1</code> currently emits <code>SET</code> only
 under DER, and only when the schema already lists the fields in canonical order. The <code>vest_lib</code> backend supports a group of <code>Permute</code> combinators that can be used to implement BER <code>SET</code>, but the generator does not yet emit them.</p>
-<p><strong>Borrowing and <code>alloc</code>.</strong> DER strings are contiguous, so their value types
-borrow from the input. BER strings may arrive fragmented across constructed
+<p><strong>Borrowing and <code>alloc</code>.</strong> DER byte strings and UTF-8-compatible character
+strings borrow from the input. BER strings may arrive fragmented across constructed
 encodings and are flattened into owned values, which is why BER modules need the
 <code>alloc</code> feature where the equivalent DER module may not. <code>BMPString</code> and
 <code>UniversalString</code> are always owned, since their wire form is not UTF-8.</p>

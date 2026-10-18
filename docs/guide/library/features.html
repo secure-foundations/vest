@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "../searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -179,15 +179,15 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="feature-configurations"><a class="header" href="#feature-configurations">Feature configurations</a></h1>
-<p><code>vest_lib</code> has three supported configurations:</p>
+<p><code>vest_lib</code> supports three runtime environments:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Cargo configuration</th><th>Available environment</th></tr>
 </thead>
 <tbody>
-<tr><td>default features</td><td><code>std</code>: everything available, including heap-backed formats and full error traces</td></tr>
-<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code> and <code>String</code> for heap-backed formats and error reporting</td></tr>
+<tr><td>default features</td><td><code>std</code>, including all heap-backed formats; full error traces are off by default</td></tr>
+<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code>, and <code>String</code> for heap-backed formats</td></tr>
 <tr><td><code>default-features = false</code></td><td><code>core</code>-only formats and caller-provided buffers</td></tr>
 </tbody>
 </table>
@@ -195,6 +195,22 @@
 <pre><code class="language-toml">[dependencies]
 vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
 </code></pre>
+<p><code>std</code> enables <code>alloc</code>. Without <code>alloc</code>, one can still use fixed-width formats, formats with raw byte fields, and serialization into caller-provided slices.
+Heap-backed collection parsers, owned string values, <code>serialize_with_vec</code>, and the generic
+CBOR codec require <code>alloc</code> (or <code>std</code>).</p>
+<h2 id="error-traces"><a class="header" href="#error-traces">Error traces</a></h2>
+<p><code>ParseError</code> and <code>PreSerializeError</code> always retain the failure kind and, when
+available, the innermost named format that reported it. This does not require
+allocation.</p>
+<p>Enable <code>error-trace</code> to also record a stack of enclosing named formats.</p>
+<pre><code class="language-toml">[dependencies]
+vest_lib = { version = "0.2", features = ["error-trace"] }
+</code></pre>
+<p>This diagnostic feature is off by default, even with <code>std</code>. It enables <code>alloc</code>
+but does not require <code>std</code>, so it also works with
+<code>default-features = false, features = ["error-trace"]</code>. Errors may allocate and become heavier when propagating, so leave it disabled
+for production builds.</p>
+<h2 id="verus-compatibility"><a class="header" href="#verus-compatibility">Verus compatibility</a></h2>
 <p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions this release
 pins. The Verus version is in
 <a href="https://github.com/secure-foundations/vest/blob/main/verus.json"><code>verus.json</code></a>

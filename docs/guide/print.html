@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-17413ca6.js";
+            window.path_to_searchindex_js = "searchindex-8077ba59.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -537,15 +537,15 @@ assert_eq!(output, wire);</code></pre>
 <p>We get back exactly the bytes we started with.</p>
 <p>Why does Vest separate preparation from serialization? There are several key benefits:</p>
 <ol>
-<li><em>Infalliable-serialization</em>: It allows the caller to check for potential errors (such as a value that doesn’t satisfy the format’s constraints or integer overflows) before allocating a buffer. A fallable serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.</li>
+<li><em>Infallible serialization</em>: It allows the caller to check for potential errors (such as a value that doesn’t satisfy the format’s constraints or integer overflows) before allocating a buffer. A fallible serialization would instead perform the checks while writing to the buffer, which could lead to partial writes and more complex error handling.</li>
 <li><em>Zero-reallocation</em>: It allows the caller to pre-allocate a buffer of the (provably) correct size, which can be more efficient than growing a buffer during serialization.</li>
 </ol>
 <blockquote>
-<p><strong>Always call <code>prepare</code> first.</strong> Because <code>serialize</code> is designed to be infalliable,
+<p><strong>Always call <code>prepare</code> first.</strong> Because <code>serialize</code> is designed to be infallible,
 it doesn’t recheck the value or the
 buffer size; it relies on what <code>prepare</code> has already established. In ordinary
-Rust, nothing enforces this. If you skip <code>prepare</code>, an inconsistent value
-produces bytes that won’t parse, and a buffer that’s too small is undefined
+Rust, nothing enforces this. If you skip <code>prepare</code>, the output is not
+guaranteed to match the format, and an undersized buffer may cause undefined
 behavior. In verified code, Verus prevents you from calling <code>serialize</code> without first establishing those proof obligations.</p>
 </blockquote>
 <h3 id="building-a-message-from-scratch"><a class="header" href="#building-a-message-from-scratch">Building a message from scratch</a></h3>
@@ -642,7 +642,7 @@ fn roundtrip(value: &amp;Msg&lt;'_&gt;) -&gt; Result&lt;(), PreSerializeError&gt
 <li><code>prepare</code> checks that the value is consistent with the format and tells us
 exactly how much space to allocate for the serialized output, just like before.</li>
 <li><code>serialize</code> fills that space with the value’s binary encoding. Here, Verus
-verifies that the value is consistent and the buffer is large enough (because we just called <code>prepare</code>).</li>
+verifies that the value is consistent and the buffer has exactly the required size (because we just called <code>prepare</code>).</li>
 <li>The <code>proof</code> block calls Vest’s roundtrip theorem. It tells Verus that
 parsing <code>output</code> (the serialized <code>value</code>) succeeds, consumes all <code>len</code> bytes, and returns the same
 logical contents. That’s enough for Verus to prove both <code>assert</code>s, and to
@@ -695,8 +695,8 @@ The most common implementation mistakes are:</p>
 <li><strong>Format confusion.</strong> It occurs when objects from different semantic domains, or distinct objects from the same semantic domain are encoded with the same byte representation. In this case, a parser fundamentally cannot distinguish between the two objects, making it vulnerable to cross-protocol attacks.</li>
 <li><strong>Format malleability.</strong> It occurs when a single object can be encoded in multiple ways, and a parser accepts all of them. In this case, a parser can be tricked into accepting a modified input that is semantically equivalent to the original, but would yield completely different hash values or signatures. This is a common source of signature forgery or transaction malleability attacks.</li>
 </ul>
-<p>Vest’s answer is to formally prove the absence of these vulnerabilities,
-for each format you define, without asking you to write proofs.</p>
+<p>Vest addresses these risks with proofs of safety, correctness, and security. The DSL generates these proofs alongside
+the executable code.</p>
 <p>This page describes Vest’s formal guarantees in plain words.
 For the formal definitions, see the <a href="../vest_lib/index.html">core specs in <code>vest_lib</code></a>.</p>
 <h2 id="safety-for-every-format"><a class="header" href="#safety-for-every-format">Safety, for every format</a></h2>
@@ -719,7 +719,7 @@ about which properties hold for which formats.</p>
 the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
 <li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
 <li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
-Modifying or truncating an accepted input changes the outcome — it fails, or
+Modifying or truncating its consumed bytes changes the outcome — it fails, or
 yields a different value.</li>
 <li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
 change what was already parsed.</li>
@@ -750,7 +750,7 @@ The practical consequence is that if your application needs byte-faithful round 
 <ul>
 <li><strong><code>rustc</code></strong>, the Rust compiler;</li>
 <li><strong>Verus</strong> and the <strong>Z3</strong> solver;</li>
-<li><strong><code>vstd</code></strong>, Verus’s trusted standard-library specification;</li>
+<li><strong><code>vstd</code></strong>’s trusted specifications;</li>
 <li>top-level theorem statements in <strong><code>vest_lib</code></strong>.</li>
 </ul>
 <blockquote>
@@ -921,8 +921,10 @@ header = {
 The generated Rust types are the matching
 unsigned integer types, except that <code>u24</code> is represented as <code>u32</code> (with proper value constraints specified in Verus).</p>
 <p><strong>Parsing.</strong> Reads exactly the declared number of bytes and interprets them in the specified byte order. Fewer bytes remaining than the width is a parse error.</p>
-<p><strong>Preparation and serialization.</strong> Preparation always succeeds and reports the
-fixed width. Serialization writes that many bytes in the same byte order.</p>
+<p><strong>Preparation and serialization.</strong> Preparation reports the fixed width. For
+<code>u24</code>, it also checks that the <code>u32</code> value fits in 24 bits; values above
+<code>0xFFFFFF</code> are rejected. Preparation for the other widths always succeeds.
+Serialization writes that many bytes in the same byte order.</p>
 <p>Signed counterparts are supported in the <code>vest_lib</code> backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
 Widths other than the five listed above are rejected too. See <a href="#bit-fields">bitfields</a> for ways to specify bit-sized integers inside a <code>bits</code> block.</p>
 <h2 id="variable-width-integers"><a class="header" href="#variable-width-integers">Variable-width integers</a></h2>
@@ -1734,7 +1736,7 @@ of failure and the innermost named format that reported it. Enable
 <code>vest_lib</code>’s <code>error-trace</code> feature to also keep the trace of enclosing formats.</p>
 <h2 id="reasoning-about-generated-values"><a class="header" href="#reasoning-about-generated-values">Reasoning about generated values</a></h2>
 <p>We’ve seen that the <a href="#using-vest-from-verified-rust">getting-started example</a>
-proves a value serialze-parse roundtrip. This section further covers:</p>
+proves a value serialize-parse roundtrip. This section further covers:</p>
 <ul>
 <li>what each executable API guarantees,</li>
 <li>how to prove facts about fields and lengths,</li>
@@ -1829,7 +1831,7 @@ the usual reveals, we can assert that the length is <code>2 + 2 * count</code>:<
     assert(len == 2 + 2 * value.values@.len());
     Ok(len)
 }</code></pre>
-<p><code>vest_lib</code> also provides the <code>ByteLen::length</code> API for infallable length calculation, but the DSL doesn’t
+<p><code>vest_lib</code> also provides the <code>ByteLen::length</code> API for infallible length calculation, but the DSL doesn’t
 currently generate it. Unlike <code>prepare</code>, <code>length</code> doesn’t check consistency, and
 it needs a proof that the length fits in <code>usize</code>.</p>
 <h3 id="roundtrips-and-non-malleability"><a class="header" href="#roundtrips-and-non-malleability">Roundtrips and non-malleability</a></h3>
@@ -1922,15 +1924,15 @@ lists every primitive and higher-order format with its semantics and
 holds some handwritten examples that demonstrate how to use them.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="feature-configurations"><a class="header" href="#feature-configurations">Feature configurations</a></h1>
-<p><code>vest_lib</code> has three supported configurations:</p>
+<p><code>vest_lib</code> supports three runtime environments:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Cargo configuration</th><th>Available environment</th></tr>
 </thead>
 <tbody>
-<tr><td>default features</td><td><code>std</code>: everything available, including heap-backed formats and full error traces</td></tr>
-<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code> and <code>String</code> for heap-backed formats and error reporting</td></tr>
+<tr><td>default features</td><td><code>std</code>, including all heap-backed formats; full error traces are off by default</td></tr>
+<tr><td><code>default-features = false, features = ["alloc"]</code></td><td><code>no_std</code> with <code>Vec</code>, <code>Box</code>, and <code>String</code> for heap-backed formats</td></tr>
 <tr><td><code>default-features = false</code></td><td><code>core</code>-only formats and caller-provided buffers</td></tr>
 </tbody>
 </table>
@@ -1938,6 +1940,22 @@ holds some handwritten examples that demonstrate how to use them.</p>
 <pre><code class="language-toml">[dependencies]
 vest_lib = { version = "0.2", default-features = false, features = ["alloc"] }
 </code></pre>
+<p><code>std</code> enables <code>alloc</code>. Without <code>alloc</code>, one can still use fixed-width formats, formats with raw byte fields, and serialization into caller-provided slices.
+Heap-backed collection parsers, owned string values, <code>serialize_with_vec</code>, and the generic
+CBOR codec require <code>alloc</code> (or <code>std</code>).</p>
+<h2 id="error-traces"><a class="header" href="#error-traces">Error traces</a></h2>
+<p><code>ParseError</code> and <code>PreSerializeError</code> always retain the failure kind and, when
+available, the innermost named format that reported it. This does not require
+allocation.</p>
+<p>Enable <code>error-trace</code> to also record a stack of enclosing named formats.</p>
+<pre><code class="language-toml">[dependencies]
+vest_lib = { version = "0.2", features = ["error-trace"] }
+</code></pre>
+<p>This diagnostic feature is off by default, even with <code>std</code>. It enables <code>alloc</code>
+but does not require <code>std</code>, so it also works with
+<code>default-features = false, features = ["error-trace"]</code>. Errors may allocate and become heavier when propagating, so leave it disabled
+for production builds.</p>
+<h2 id="verus-compatibility"><a class="header" href="#verus-compatibility">Verus compatibility</a></h2>
 <p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions this release
 pins. The Verus version is in
 <a href="https://github.com/secure-foundations/vest/blob/main/verus.json"><code>verus.json</code></a>
@@ -1995,8 +2013,9 @@ END
 module with canonical DER substructures inside a BER envelope; see
 <a href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a>.</p>
 <p>The generator emits <code>Kind</code> and <code>Packet&lt;'i&gt;</code> value types. Unlike the Vest DSL, their verified format
-values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code> (due to technical reasons mandated by the ASN.1 standard). Uppercase format names avoid collisions
-with the idiomatic Rust value names.</p>
+values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code>. Uppercase format names avoid collisions with the
+idiomatic Rust value names. Tagged formats also store their effective tag to
+support <code>IMPLICIT</code> retagging.</p>
 <h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
 <pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 use crate::message::{Kind, PACKET};
@@ -2016,8 +2035,10 @@ let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
 let mut output = vec![0u8; size];
 PACKET::Fmt.serialize(&amp;packet, &amp;mut output);
 assert_eq!(output, encoded);</code></pre>
-<p>DER string fields <em>borrow</em> from the input because their representation is
-contiguous. BER generated values may be <em>owned</em> when constructed, fragmented strings are concatenated.</p>
+<p>DER byte strings and UTF-8-compatible character strings <em>borrow</em> from the input.
+BER string formats concatenate constructed fragments into owned values.
+<code>BMPString</code> and <code>UniversalString</code> are always owned because their wire encodings
+must be converted to UTF-8.</p>
 <h2 id="what-is-checked"><a class="header" href="#what-is-checked">What is checked</a></h2>
 <p><strong>TODO.</strong> Discuss the proof obligations for format non-ambiguity, etc.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -2124,11 +2145,14 @@ impl KIND {
     proof fn lemma_schema_unambiguous(&amp;self) { /* .. */ }
 }</code></pre>
 <p>Several things differ from the DSL here.</p>
-<p><strong>The format type is always parametric.</strong> <code>MessageFmt</code> in a DSL module is a zero-sized
-struct. <code>KIND</code> is a tuple struct holding the effective tag class and number, so
-an <code>IMPLICIT</code> tag can replace the outer tag without rebuilding the format.
+<p><strong>Tagged format types carry their effective tag.</strong> Unlike the zero-sized
+<code>MessageFmt</code> in our DSL example, <code>KIND</code> is a tuple struct holding the effective
+tag class and number, so an <code>IMPLICIT</code> tag can replace the outer tag without
+rebuilding the format.
 <code>KIND::Fmt</code> is the associated constant carrying the definition’s own tag —
-<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.</p>
+<code>Class::Universal, 10</code> for <code>ENUMERATED</code>, <code>16</code> for <code>SEQUENCE</code>, etc.
+Untagged <code>CHOICE</code> and <code>ANY</code> format types are zero-sized instead: they have no
+single outer tag to store or replace.</p>
 <p><strong><code>schema()</code> is dual spec-exec.</strong> The DSL’s <code>spec_inner()</code> is
 <code>pub open spec fn</code> — specification only. <code>schema()</code> here is a <code>const fn</code> marked
 <code>#[verifier::allow_in_spec]</code> with a <code>returns</code> clause, so the same definition
@@ -2147,10 +2171,13 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
         PacketForward, PacketReverse
     );
 }</code></pre>
-<p><code>impl_der!</code> (or <code>impl_ber!</code> under BER) expands to the same code the DSL
-emits explicitly — derived spec trait impls (<code>SpecParser</code>, <code>SpecSerializer</code>,
-<code>SpecByteLen</code>, <code>Consistency</code>) and derived proof trait impls (<code>SafeParser</code>, <code>SoundParser</code>, <code>Productive</code>,
-<code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>NonMalleable</code>, etc.). Additionally, it also expands to the executable trait impls (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<p>Both macros implement the specification traits (<code>SpecParser</code>, <code>SpecSerializer</code>,
+<code>SpecByteLen</code>, <code>Consistency</code>), compositional proof traits (<code>SafeParser</code>,
+<code>Productive</code>, <code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>SPRoundTripDps</code>, etc.), and
+executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
+<p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
+allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
+accept several encodings of the same logical value, with different lengths.</p>
 <!--## How this differs from DSL-generated code
 
 | | Vest DSL | ASN.1 |
@@ -2282,13 +2309,13 @@ with an error.</p>
 <p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
 DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
 allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER
-<code>SET OF</code> imposes no canonical order and preserves schema order on output.</p>
+<code>SET OF</code> imposes no canonical order and writes values in their vector order.</p>
 <p><strong>Heterogeneous <code>SET</code>.</strong> BER lets a <code>SET</code> carry its components in any order, so
 a BER parser would have to accept every permutation of the fields. DER
 instead fixes them in ascending tag order. <code>vest_asn1</code> currently emits <code>SET</code> only
 under DER, and only when the schema already lists the fields in canonical order. The <code>vest_lib</code> backend supports a group of <code>Permute</code> combinators that can be used to implement BER <code>SET</code>, but the generator does not yet emit them.</p>
-<p><strong>Borrowing and <code>alloc</code>.</strong> DER strings are contiguous, so their value types
-borrow from the input. BER strings may arrive fragmented across constructed
+<p><strong>Borrowing and <code>alloc</code>.</strong> DER byte strings and UTF-8-compatible character
+strings borrow from the input. BER strings may arrive fragmented across constructed
 encodings and are flattened into owned values, which is why BER modules need the
 <code>alloc</code> feature where the equivalent DER module may not. <code>BMPString</code> and
 <code>UniversalString</code> are always owned, since their wire form is not UTF-8.</p>

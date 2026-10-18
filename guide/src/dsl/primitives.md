@@ -24,8 +24,10 @@ unsigned integer types, except that `u24` is represented as `u32` (with proper v
 
 **Parsing.** Reads exactly the declared number of bytes and interprets them in the specified byte order. Fewer bytes remaining than the width is a parse error.
 
-**Preparation and serialization.** Preparation always succeeds and reports the
-fixed width. Serialization writes that many bytes in the same byte order.
+**Preparation and serialization.** Preparation reports the fixed width. For
+`u24`, it also checks that the `u32` value fits in 24 bits; values above
+`0xFFFFFF` are rejected. Preparation for the other widths always succeeds.
+Serialization writes that many bytes in the same byte order.
 
 Signed counterparts are supported in the `vest_lib` backend, but not yet exposed in the DSL (currently rejected during type checking, but we plan to support them soon).
 Widths other than the five listed above are rejected too. See [bitfields](bits.md) for ways to specify bit-sized integers inside a `bits` block.
