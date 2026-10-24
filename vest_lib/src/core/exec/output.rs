@@ -5,21 +5,6 @@ use vstd::prelude::*;
 
 verus! {
 
-/// Specification for `core`'s unchecked slice split.
-///
-/// `vstd` specifies the checked `split_at_mut` but not this variant.
-pub assume_specification<T>[ <[T]>::split_at_mut_unchecked ](slice: &mut [T], mid: usize) -> (ret: (
-    &mut [T],
-    &mut [T],
-))
-    requires
-        mid <= old(slice)@.len(),
-    ensures
-        ret.0@ == old(slice)@[0..mid],
-        ret.1@ == old(slice)@[mid..],
-        final(slice)@ == final(ret.0)@ + final(ret.1)@,
-;
-
 /// An abstraction for append-oriented output buffer.
 ///
 /// The view is the sequence already present in, or written through, the output. Capacity is
