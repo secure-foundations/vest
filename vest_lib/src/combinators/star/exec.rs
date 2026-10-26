@@ -33,11 +33,7 @@ fn initial_capacity<T>(estimated: usize) -> (cap: usize)
         0
     } else {
         let limit = MAX_INITIAL_BYTES / size;
-        if estimated < limit {
-            estimated
-        } else {
-            limit
-        }
+        core::cmp::min(estimated, limit)
     }
 }
 
@@ -69,11 +65,7 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         // Without reservation, the `Vec` is regrown several times per repetition,
         // which dominates the cost of parsing `[u8; @len] >>= Vec<..>`.
         let min_len = self.0.min_byte_len();
-        let per = if min_len == 0 {
-            1
-        } else {
-            min_len
-        };
+        let per = core::cmp::max(min_len, 1);
         let estimate = remaining / per;
         let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(estimate));
 
@@ -164,11 +156,7 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         let mut rest = ibuf.skip(0);
         // The count may be attacker-controlled. Bound the initial allocation
         // even when a short input claims many elements.
-        let reserve = if count < _total_len {
-            count
-        } else {
-            _total_len
-        };
+        let reserve = core::cmp::min(count, _total_len);
         let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(reserve));
 
         for _i in 0..count

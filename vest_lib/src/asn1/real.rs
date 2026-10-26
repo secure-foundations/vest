@@ -14,6 +14,7 @@ use crate::core::exec::{
     ParseError,
 };
 use crate::core::{proof::*, spec::*};
+use core::ops::Range;
 use vstd::prelude::*;
 
 use super::RealFmt;
@@ -425,26 +426,13 @@ pub proof fn lemma_decimal_scan_characterizes(bytes: Seq<u8>, start: int, scanne
     }
 }
 
-fn all_ascii_digits(bytes: &[u8], start: usize, end: usize) -> (ok: bool)
+fn all_ascii_digits(bytes: &[u8], span: Range<usize>) -> (ok: bool)
     requires
-        start <= end <= bytes@.len(),
+        span.start <= span.end <= bytes@.len(),
     ensures
-        ok == ascii_digits(bytes@, start as int, end as int),
+        ok == ascii_digits(bytes@, span.start as int, span.end as int),
 {
-    let mut i = start;
-    while i < end
-        invariant
-            start <= i <= end <= bytes@.len(),
-            ascii_digits(bytes@, start as int, i as int),
-        decreases end - i,
-    {
-        if !(ASCII_ZERO <= bytes[i] && bytes[i] <= ASCII_NINE) {
-            assert(!ascii_digits(bytes@, start as int, end as int));
-            return false;
-        }
-        i += 1;
-    }
-    true
+    super::datetime::is_digits(bytes, span.start, span.end)
 }
 
 fn skip_ascii_spaces_exec(bytes: &[u8], start: usize) -> (end: usize)
@@ -504,29 +492,21 @@ fn scan_ascii_digits_exec(bytes: &[u8], start: usize) -> (end: usize)
     i
 }
 
-fn ascii_digits_have_nonzero_exec(bytes: &[u8], start: usize, end: usize) -> (found: bool)
+fn ascii_digits_have_nonzero_exec(bytes: &[u8], span: Range<usize>) -> (found: bool)
     requires
-        start <= end <= bytes@.len(),
+        span.start <= span.end <= bytes@.len(),
     ensures
-        found == ascii_digits_have_nonzero(bytes@, start as int, end as int),
+        found == ascii_digits_have_nonzero(bytes@, span.start as int, span.end as int),
 {
-    let mut i = start;
-    while i < end
-        invariant
-            start <= i <= end <= bytes@.len(),
-            forall|j: int| #![auto] start <= j < i ==> !ascii_nonzero_digit(bytes@[j]),
-        decreases end - i,
-    {
-        if ASCII_ONE <= bytes[i] && bytes[i] <= ASCII_NINE {
-            assert(ascii_digits_have_nonzero(bytes@, start as int, end as int)) by {
-                assert(ascii_nonzero_digit(bytes@[i as int]));
-            }
-            return true;
-        }
-        i += 1;
-    }
-    assert(!ascii_digits_have_nonzero(bytes@, start as int, end as int));
-    false
+    let digits = &bytes[span.start..span.end];
+    let found = digits.iter().any(
+        |&byte: &u8| -> (found: bool)
+            ensures found == ascii_nonzero_digit(byte),
+        { (ASCII_ONE..=ASCII_NINE).contains(&byte) },
+    );
+    assert forall|j: int| span.start <= j < span.end implies
+        #[trigger] bytes@[j] == digits@[j - span.start] by {}
+    found
 }
 
 fn ber_real_decimal_wf_exec(bytes: &[u8]) -> (ok: bool)
@@ -552,7 +532,7 @@ fn ber_real_decimal_wf_exec(bytes: &[u8]) -> (ok: bool)
         if start >= end || end != bytes.len() {
             return false;
         }
-        return ascii_digits_have_nonzero_exec(bytes, start, end);
+        return ascii_digits_have_nonzero_exec(bytes, start..end);
     }
     let mark = scan_ascii_digits_exec(bytes, start);
     if mark >= bytes.len() || !(bytes[mark] == ASCII_FULL_STOP || bytes[mark] == ASCII_COMMA) {
@@ -566,8 +546,8 @@ fn ber_real_decimal_wf_exec(bytes: &[u8]) -> (ok: bool)
     assert(ber_real_decimal_significand(bytes@) == Some(
         (start as nat, mark as nat, after as nat, end as nat),
     ));
-    let before_nonzero = ascii_digits_have_nonzero_exec(bytes, start, mark);
-    let after_nonzero = ascii_digits_have_nonzero_exec(bytes, after, end);
+    let before_nonzero = ascii_digits_have_nonzero_exec(bytes, start..mark);
+    let after_nonzero = ascii_digits_have_nonzero_exec(bytes, after..end);
     let nonzero = before_nonzero || after_nonzero;
 
     if representation == 0x02u8 {
@@ -594,16 +574,7 @@ fn scan_decimal_mantissa(bytes: &[u8], start: usize) -> (scanned: usize)
         ascii_digits(bytes@, start as int, scanned as int),
         scanned == bytes@.len() || !ascii_digit(bytes@[scanned as int]),
 {
-    let mut i = start;
-    while i < bytes.len() && ASCII_ZERO <= bytes[i] && bytes[i] <= ASCII_NINE
-        invariant
-            start <= i <= bytes@.len(),
-            ascii_digits(bytes@, start as int, i as int),
-        decreases bytes@.len() - i,
-    {
-        i += 1;
-    }
-    i
+    scan_ascii_digits_exec(bytes, start)
 }
 
 fn der_real_decimal_at_exec(bytes: &[u8], dot: usize) -> (ok: bool)
@@ -621,7 +592,7 @@ fn der_real_decimal_at_exec(bytes: &[u8], dot: usize) -> (ok: bool)
     if start >= dot || dot >= bytes.len() {
         return false;
     }
-    if !all_ascii_digits(bytes, start, dot) {
+    if !all_ascii_digits(bytes, start..dot) {
         return false;
     }
     if bytes[start] == ASCII_ZERO || bytes[dot - 1] == ASCII_ZERO {
@@ -646,7 +617,7 @@ fn der_real_decimal_at_exec(bytes: &[u8], dot: usize) -> (ok: bool)
     if digits >= bytes.len() || bytes[digits] < ASCII_ONE || bytes[digits] > ASCII_NINE {
         return false;
     }
-    all_ascii_digits(bytes, digits, bytes.len())
+    all_ascii_digits(bytes, digits..bytes.len())
 }
 
 fn der_real_decimal_wf_exec(bytes: &[u8]) -> (ok: bool)
@@ -751,21 +722,15 @@ fn has_nonzero_octet(bytes: &[u8], start: usize) -> (found: bool)
     ensures
         found == exists|i: int| start <= i < bytes@.len() && bytes@[i] != 0u8,
 {
-    let mut i = start;
-    while i < bytes.len()
-        invariant
-            start <= i <= bytes@.len(),
-            forall|j: int| start <= j < i ==> bytes@[j] == 0u8,
-        decreases bytes@.len() - i,
-    {
-        if bytes[i] != 0 {
-            assert(exists|j: int| start <= j < bytes@.len() && bytes@[j] != 0u8);
-            return true;
-        }
-        i += 1;
-    }
-    assert(!(exists|j: int| start <= j < bytes@.len() && bytes@[j] != 0u8));
-    false
+    let suffix = &bytes[start..];
+    let found = suffix.iter().any(
+        |&byte: &u8| -> (found: bool)
+            ensures found == (byte != 0),
+        { byte != 0 },
+    );
+    assert forall|j: int| start <= j < bytes@.len() implies
+        #[trigger] bytes@[j] == suffix@[j - start] by {}
+    found
 }
 
 fn ber_real_binary_wf_exec(bytes: &[u8]) -> (ok: bool)

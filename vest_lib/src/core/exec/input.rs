@@ -1,5 +1,5 @@
 //! Input abstractions for executable parsers.
-use vstd::{prelude::*, slice::slice_subrange};
+use vstd::prelude::*;
 
 verus! {
 
@@ -65,7 +65,7 @@ impl<'input> InputBuf for &'input [u8] {
     }
 
     fn subrange(&self, i: usize, j: usize) -> &'input [u8] {
-        let sliced = slice_subrange(self, i, j);
+        let sliced = &self[i..j];
         proof {
             sliced.deep_view_eq_view();
         }

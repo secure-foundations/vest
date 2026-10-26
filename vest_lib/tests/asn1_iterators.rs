@@ -1,12 +1,14 @@
-//! Regression tests for iterator-based validation and checked INTEGER conversion.
+//! Iterator validation, range constraints, and checked INTEGER conversion.
 
 use vest_lib::asn1::bmpstring::check_valid_bmp_string;
+use vest_lib::asn1::constraints::{IntegerRange, Size};
 use vest_lib::asn1::datetime::is_digits;
 use vest_lib::asn1::ia5string::is_valid_ia5_string;
 use vest_lib::asn1::numericstring::is_numeric_string_char;
 use vest_lib::asn1::printablestring::{is_printable_byte, is_valid_printable_string};
 use vest_lib::asn1::universalstring::check_valid_universal_string;
 use vest_lib::asn1::{Integer16Fmt, NumericStringFmt};
+use vest_lib::core::exec::fns::Pred;
 use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 
 #[test]
@@ -57,6 +59,34 @@ fn ascii_repertoires() {
             is_numeric_string_char(char::from(byte)),
             byte == b' ' || byte.is_ascii_digit()
         );
+    }
+}
+
+#[test]
+fn inclusive_and_unbounded_constraints() {
+    for value in [i16::MIN, -2, -1, 0, 1, 2, i16::MAX] {
+        assert_eq!(
+            IntegerRange::<true, -1, true, 1>.test(&value),
+            (-1..=1).contains(&value)
+        );
+        assert_eq!(
+            IntegerRange::<true, -1, false, -99>.test(&value),
+            value >= -1
+        );
+        assert_eq!(IntegerRange::<false, 99, true, 1>.test(&value), value <= 1);
+        assert!(IntegerRange::<false, 99, false, -99>.test(&value));
+        assert!(!IntegerRange::<true, 1, true, -1>.test(&value));
+    }
+    for len in 0..=4 {
+        let bytes = &[0u8; 4][..len];
+        assert_eq!(
+            Size::<true, 1, true, 3>.test(&bytes),
+            (1..=3).contains(&len)
+        );
+        assert_eq!(Size::<true, 1, false, 0>.test(&bytes), len >= 1);
+        assert_eq!(Size::<false, 99, true, 3>.test(&bytes), len <= 3);
+        assert!(Size::<false, 99, false, 0>.test(&bytes));
+        assert!(!Size::<true, 3, true, 1>.test(&bytes));
     }
 }
 
