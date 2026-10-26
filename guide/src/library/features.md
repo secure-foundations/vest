@@ -41,3 +41,5 @@ Vest and `vest_lib` must be used with the Verus and `vstd` versions this release
 pins. The Verus version is in
 [`verus.json`](https://github.com/secure-foundations/vest/blob/main/verus.json)
 and the `vstd` version is in the workspace `Cargo.toml`.
+For a published crate, read these files at its `vest_lib-vVERSION` Git tag;
+`main` describes the development checkout, which may use newer versions.

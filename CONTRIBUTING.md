@@ -109,6 +109,7 @@ Verification, once Verus is on your `PATH`:
 cargo verus verify -p vest_lib --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_lib --no-default-features --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_lib --no-default-features --features alloc --locked --check-toolchain -- --expand-errors
+cargo verus verify -p vest_lib --features error-trace --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_tests --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_dev --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_asn1_tests --locked --check-toolchain -- --expand-errors --rlimit 100
@@ -121,8 +122,9 @@ cargo verus focus -p vest_lib --locked --check-toolchain -- --expand-errors --ve
 ```
 
 `focus` checks the selected crate or modules, not dependency proofs. Run `verify`
-for the full check before submitting a change. To bypass Cargo's cached result
-without editing files or cleaning, pass a new `--target-dir` before `--`.
+for the full check before submitting a change. Cargo Verus separates artifacts
+by Verus version. To force a fresh check with the same version, without editing
+files or cleaning, pass a new `--target-dir` before `--`.
 
 ## Adding a test `.vest` or `.asn1` file
 
@@ -148,9 +150,10 @@ Feel free to ask questions in GitHub Issues or the Verus Zulip if you are unsure
 **Upgrading Verus.** Update `verus.json` and the exact `vstd` version in the
 workspace `Cargo.toml` together.
 `verus.json` needs the new version, commit, Rust version, and the SHA-256
-of all three platform archives. Then run the full verification matrix, since
+of each supported platform archive. Then run the full verification matrix, since
 Verus upgrades can change proof results and performance.
-Update the getting-started guide's direct `vstd` dependency too.
+Update the getting-started guide's compiler, library, `vstd`, and release-tag
+pins together with the release version bump.
 The release also bundles `verusdoc`; `scripts/build-docs.sh` uses it to rebuild
 the library's specifications and proofs alongside the guide.
 

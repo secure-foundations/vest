@@ -468,6 +468,7 @@ impl<const DET: bool> SpecRecBody for CborRecBody<DET> {
     }
 }
 
+#[verifier::spinoff_prover]
 fn parse_cbor_with_child<'i, const DET: bool, P>(
     Ghost(spec_rec): Ghost<ParamRecSpecs<(), CborValueSpec>>,
     child: &P,

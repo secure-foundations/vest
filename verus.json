@@ -1,16 +1,16 @@
 {
-  "version": "0.2026.10.04.426d8b0",
-  "commit": "426d8b01e7ffb910a36c15e1f870ff985bb61eef",
-  "rust": "1.98.1",
+  "version": "0.2026.10.26.d17fbd0",
+  "commit": "d17fbd0c58abf0d5e86825ea64b96aba72b1b31f",
+  "rust": "1.99.1",
   "artifacts": {
     "arm64-macos": {
-      "sha256": "83cafc50284caea07fa8762df04b00cc0af441f25cdf1631d6c30987c65af446"
+      "sha256": "5e62be446a5da782d64caeee41bb1490c8aa3c65c0afe380d1c1dcbe207571ff"
     },
     "x86-linux": {
-      "sha256": "624018662868563a7bec0dd07be5e4dd0c3d61124b4b55105765884bf2d4d1a0"
+      "sha256": "361674d05f0c1b2c9c3f4d5bc56a8fb2ab9241ed0cceca27780668c292bb4940"
     },
     "x86-macos": {
-      "sha256": "9b00357ee298a3b052038abc85c0be3129ab2821762fe8be5eb8dcbe37349f9c"
+      "sha256": "24a23b0267f7a225c6ece4bc019930ca273bd57207fe0c1dd3cc7dc5726a37bc"
     }
   }
 }

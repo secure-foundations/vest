@@ -56,7 +56,7 @@ You'll need a stable Rust toolchain with `cargo` and `rustc` on your `PATH`.
 Install the Vest DSL compiler from crates.io:
 
 ```console
-cargo install vest
+cargo install vest --version 0.2.3 --locked
 ```
 
 This puts `vest` on your `PATH`. You can run `vest --version` to check that it worked.
@@ -68,16 +68,16 @@ Next, let's create a new Rust project and add Verus and Vest as dependencies:
 ```console
 cargo new msg-demo
 cd msg-demo
-cargo add vest_lib
-cargo add vstd@=0.0.0-2026-10-04-0306 --no-default-features
+cargo add vest_lib@=0.2.3
+cargo add vstd@=0.0.0-2026-10-25-0158 --no-default-features
 ```
 
 Your `Cargo.toml` should now contain something like this:
 
 ```toml
 [dependencies]
-vest_lib = "0.2"
-vstd = { version = "=0.0.0-2026-10-04-0306", default-features = false }
+vest_lib = "=0.2.3"
+vstd = { version = "=0.0.0-2026-10-25-0158", default-features = false }
 ```
 
 > **`vest_lib` and `vstd`:** `vest_lib` is Vest's combinator library underlying the generated code.
@@ -460,13 +460,14 @@ recommend checking the proofs with Verus. That way, you don't have to trust the
 Vest DSL compiler: Verus confirms that the generated code really satisfies the
 [promised properties](guarantees.md).
 
-Each Vest release works with one exact Verus release, recorded in
-[`verus.json`](https://github.com/secure-foundations/vest/blob/main/verus.json).
+Each Vest release works with one exact Verus release. For Vest 0.2.3, it is
+recorded in the release's
+[`verus.json`](https://github.com/secure-foundations/vest/blob/vest_lib-v0.2.3/verus.json).
 Follow the [Verus installation instructions](https://github.com/verus-lang/verus/blob/main/INSTALL.md)
 for that version, or let a script from the Vest repository install it for you:
 
 ```console
-git clone https://github.com/secure-foundations/vest.git
+git clone --branch vest_lib-v0.2.3 --depth 1 https://github.com/secure-foundations/vest.git
 ./vest/scripts/install-verus.sh
 export PATH="$PWD/vest/.verus:$PATH"
 ```

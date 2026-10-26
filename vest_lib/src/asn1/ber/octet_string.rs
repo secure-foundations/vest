@@ -406,6 +406,7 @@ impl<'i> ParserRecBody<&'i [u8]> for BerOctetStringRecBody {
 
     type O = Vec<u8>;
 
+    #[verifier::spinoff_prover]
     fn parse_body<Exec>(
         &self,
         expected: &Tag,
