@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["_verus_external_fn_specification_2__60__32__91_T_93__32__62__32__58__58__32_split__at__mut__unchecked","outbuf_lemmas"],"struct":["OutputSlice"],"trait":["OutputBuf"]};
+window.SIDEBAR_ITEMS = {"fn":["outbuf_lemmas"],"struct":["OutputSlice"],"trait":["OutputBuf"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/bmpstring.rs`."><title>bmpstring.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.1 (48a229cea 2026-09-01)" data-channel="1.98.1" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>bmpstring.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! ASN.1 BMPString values and UCS-2 contents format.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/bmpstring.rs`."><title>bmpstring.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>bmpstring.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! ASN.1 BMPString values and UCS-2 contents format.
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">use </span><span class="kw">crate</span>::core::exec::input::{InputBuf, InputSlice};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::core::exec::output::<span class="kw-2">*</span>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::core::exec::{
@@ -391,85 +391,92 @@
 <a href=#391 id=391 data-nosnippet>391</a>}
 <a href=#392 id=392 data-nosnippet>392</a>
 <a href=#393 id=393 data-nosnippet>393</a><span class="doccomment">/// Decode a byte slice into a String, assuming it contains a valid BMPString.
-<a href=#394 id=394 data-nosnippet>394</a>/// TODO: Verify this function while keeping it efficient and idiomatic.
-<a href=#395 id=395 data-nosnippet>395</a></span><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#396 id=396 data-nosnippet>396</a>#[verifier::external_body]
-<a href=#397 id=397 data-nosnippet>397</a></span><span class="kw">fn </span>decode_bmp_string_owned(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; (res: String)
-<a href=#398 id=398 data-nosnippet>398</a>    requires
-<a href=#399 id=399 data-nosnippet>399</a>        is_valid_bmp_string(bytes.deep_view()),
-<a href=#400 id=400 data-nosnippet>400</a>    ensures
-<a href=#401 id=401 data-nosnippet>401</a>        res.deep_view() == decode_bmp_string(bytes.deep_view()),
-<a href=#402 id=402 data-nosnippet>402</a>{
-<a href=#403 id=403 data-nosnippet>403</a>    <span class="comment">// SAFETY: `is_valid_bmp_string` guarantees that all code units are valid BMP scalars, which are valid Unicode code points, so `char::from_u32_unchecked` is safe to use here.
-<a href=#404 id=404 data-nosnippet>404</a>    </span>bytes.chunks_exact(<span class="number">2</span>).map(
-<a href=#405 id=405 data-nosnippet>405</a>        |pair| <span class="kw">unsafe </span>{ char::from_u32_unchecked(u16::from_be_bytes([pair[<span class="number">0</span>], pair[<span class="number">1</span>]]) <span class="kw">as </span>u32) },
-<a href=#406 id=406 data-nosnippet>406</a>    ).collect()
-<a href=#407 id=407 data-nosnippet>407</a>}
-<a href=#408 id=408 data-nosnippet>408</a>
-<a href=#409 id=409 data-nosnippet>409</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#410 id=410 data-nosnippet>410</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
-<a href=#411 id=411 data-nosnippet>411</a>    <span class="kw">type </span>PT = BmpString;
-<a href=#412 id=412 data-nosnippet>412</a>
-<a href=#413 id=413 data-nosnippet>413</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#414 id=414 data-nosnippet>414</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#415 id=415 data-nosnippet>415</a>        <span class="kw">if </span>!check_valid_bmp_string(bytes) {
-<a href=#416 id=416 data-nosnippet>416</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid BMPString"</span>))
-<a href=#417 id=417 data-nosnippet>417</a>        } <span class="kw">else </span>{
-<a href=#418 id=418 data-nosnippet>418</a>            <span class="kw">let </span>inner = decode_bmp_string_owned(bytes);
-<a href=#419 id=419 data-nosnippet>419</a>            <span class="prelude-val">Ok</span>((n, BmpString::new(inner)))
-<a href=#420 id=420 data-nosnippet>420</a>        }
-<a href=#421 id=421 data-nosnippet>421</a>    }
-<a href=#422 id=422 data-nosnippet>422</a>}
-<a href=#423 id=423 data-nosnippet>423</a>
-<a href=#424 id=424 data-nosnippet>424</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#425 id=425 data-nosnippet>425</a></span><span class="kw">impl</span>&lt;Output: OutputBuf&gt; Serializer&lt;Output, BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
-<a href=#426 id=426 data-nosnippet>426</a>    <span class="attr">#[verifier::loop_isolation(<span class="bool-val">false</span>)]
-<a href=#427 id=427 data-nosnippet>427</a>    </span><span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#428 id=428 data-nosnippet>428</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
-<a href=#429 id=429 data-nosnippet>429</a>
-<a href=#430 id=430 data-nosnippet>430</a>        proof {
-<a href=#431 id=431 data-nosnippet>431</a>            use_type_invariant(v);
-<a href=#432 id=432 data-nosnippet>432</a>            lemma_encode_bmp_string_valid(v.deep_view().inner);
-<a href=#433 id=433 data-nosnippet>433</a>        }
-<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>value = v.inner.as_str();
-<a href=#435 id=435 data-nosnippet>435</a>
-<a href=#436 id=436 data-nosnippet>436</a>        <span class="kw">let </span>ghost initial = obuf@;
-<a href=#437 id=437 data-nosnippet>437</a>        <span class="kw">let </span>ghost len = value.deep_view().len();
-<a href=#438 id=438 data-nosnippet>438</a>        <span class="kw">for </span>c <span class="kw">in </span>iter: value.chars()
-<a href=#439 id=439 data-nosnippet>439</a>            invariant
-<a href=#440 id=440 data-nosnippet>440</a>                obuf@ == initial + encode_bmp_string(value.deep_view()[<span class="number">0</span>..iter.index()]),
-<a href=#441 id=441 data-nosnippet>441</a>                forall|n| old(obuf).fits(<span class="number">2 </span>* iter.index() <span class="kw">as </span>nat + n) &lt;==&gt; obuf.fits(n),
-<a href=#442 id=442 data-nosnippet>442</a>                old(obuf).same_destination(obuf),
-<a href=#443 id=443 data-nosnippet>443</a>        {
-<a href=#444 id=444 data-nosnippet>444</a>            proof {
-<a href=#445 id=445 data-nosnippet>445</a>                old(obuf).lemma_fits_mono(<span class="number">2 </span>* iter.index() <span class="kw">as </span>nat + <span class="number">2</span>, <span class="number">2 </span>* len <span class="kw">as </span>nat);
-<a href=#446 id=446 data-nosnippet>446</a>            }
-<a href=#447 id=447 data-nosnippet>447</a>            <span class="kw">let </span>pair = u16_to_be_bytes(c <span class="kw">as </span>u16);
-<a href=#448 id=448 data-nosnippet>448</a>            obuf.write_bytes(<span class="kw-2">&amp;</span>pair);
-<a href=#449 id=449 data-nosnippet>449</a>        }
-<a href=#450 id=450 data-nosnippet>450</a>    }
-<a href=#451 id=451 data-nosnippet>451</a>}
-<a href=#452 id=452 data-nosnippet>452</a>
-<a href=#453 id=453 data-nosnippet>453</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#454 id=454 data-nosnippet>454</a></span><span class="kw">impl </span>Prepare&lt;BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
-<a href=#455 id=455 data-nosnippet>455</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#456 id=456 data-nosnippet>456</a>        proof {
-<a href=#457 id=457 data-nosnippet>457</a>            use_type_invariant(v);
-<a href=#458 id=458 data-nosnippet>458</a>            lemma_encode_bmp_string_valid(v.deep_view().inner);
-<a href=#459 id=459 data-nosnippet>459</a>        }
-<a href=#460 id=460 data-nosnippet>460</a>        v.inner.as_str().unicode_len().checked_mul(<span class="number">2</span>).ok_or(PreSerializeError::length_too_large())
-<a href=#461 id=461 data-nosnippet>461</a>    }
-<a href=#462 id=462 data-nosnippet>462</a>}
-<a href=#463 id=463 data-nosnippet>463</a>
-<a href=#464 id=464 data-nosnippet>464</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#465 id=465 data-nosnippet>465</a></span><span class="kw">impl </span>ByteLen&lt;BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
-<a href=#466 id=466 data-nosnippet>466</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString) -&gt; usize {
-<a href=#467 id=467 data-nosnippet>467</a>        proof {
-<a href=#468 id=468 data-nosnippet>468</a>            use_type_invariant(v);
-<a href=#469 id=469 data-nosnippet>469</a>        }
-<a href=#470 id=470 data-nosnippet>470</a>        v.inner.as_str().unicode_len() * <span class="number">2
-<a href=#471 id=471 data-nosnippet>471</a>    </span>}
-<a href=#472 id=472 data-nosnippet>472</a>}
-<a href=#473 id=473 data-nosnippet>473</a>
-<a href=#474 id=474 data-nosnippet>474</a>} <span class="comment">// verus!
+<a href=#394 id=394 data-nosnippet>394</a></span><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#395 id=395 data-nosnippet>395</a>#[verifier::loop_isolation(<span class="bool-val">false</span>)]
+<a href=#396 id=396 data-nosnippet>396</a></span><span class="kw">fn </span>decode_bmp_string_owned(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; (res: String)
+<a href=#397 id=397 data-nosnippet>397</a>    requires
+<a href=#398 id=398 data-nosnippet>398</a>        is_valid_bmp_string(bytes.deep_view()),
+<a href=#399 id=399 data-nosnippet>399</a>    ensures
+<a href=#400 id=400 data-nosnippet>400</a>        res.deep_view() == decode_bmp_string(bytes.deep_view()),
+<a href=#401 id=401 data-nosnippet>401</a>{
+<a href=#402 id=402 data-nosnippet>402</a>    <span class="kw">let </span><span class="kw-2">mut </span>output = String::with_capacity(bytes.len() / <span class="number">2</span>);
+<a href=#403 id=403 data-nosnippet>403</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() / <span class="number">2
+<a href=#404 id=404 data-nosnippet>404</a>        </span>invariant
+<a href=#405 id=405 data-nosnippet>405</a>            output@ == decode_bmp_string(bytes.deep_view())[<span class="number">0</span>..i],
+<a href=#406 id=406 data-nosnippet>406</a>    {
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">let </span>pair = <span class="kw-2">&amp;</span>bytes[<span class="number">2 </span>* i..<span class="number">2 </span>* i + <span class="number">2</span>];
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">let </span>unit = u16_from_be_bytes([pair[<span class="number">0</span>], pair[<span class="number">1</span>]]) <span class="kw">as </span>u32;
+<a href=#409 id=409 data-nosnippet>409</a>        assert(unit == bmp_code_unit(bytes.deep_view(), i <span class="kw">as </span>int));
+<a href=#410 id=410 data-nosnippet>410</a>        <span class="comment">// SAFETY: the input's validity proves that this code unit is a scalar.
+<a href=#411 id=411 data-nosnippet>411</a>        </span>output.push(<span class="kw">unsafe </span>{ char::from_u32_unchecked(unit) });
+<a href=#412 id=412 data-nosnippet>412</a>    }
+<a href=#413 id=413 data-nosnippet>413</a>    output
+<a href=#414 id=414 data-nosnippet>414</a>}
+<a href=#415 id=415 data-nosnippet>415</a>
+<a href=#416 id=416 data-nosnippet>416</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#417 id=417 data-nosnippet>417</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
+<a href=#418 id=418 data-nosnippet>418</a>    <span class="kw">type </span>PT = BmpString;
+<a href=#419 id=419 data-nosnippet>419</a>
+<a href=#420 id=420 data-nosnippet>420</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">if </span>!check_valid_bmp_string(bytes) {
+<a href=#423 id=423 data-nosnippet>423</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid BMPString"</span>))
+<a href=#424 id=424 data-nosnippet>424</a>        } <span class="kw">else </span>{
+<a href=#425 id=425 data-nosnippet>425</a>            <span class="kw">let </span>inner = decode_bmp_string_owned(bytes);
+<a href=#426 id=426 data-nosnippet>426</a>            <span class="prelude-val">Ok</span>((n, BmpString::new(inner)))
+<a href=#427 id=427 data-nosnippet>427</a>        }
+<a href=#428 id=428 data-nosnippet>428</a>    }
+<a href=#429 id=429 data-nosnippet>429</a>}
+<a href=#430 id=430 data-nosnippet>430</a>
+<a href=#431 id=431 data-nosnippet>431</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#432 id=432 data-nosnippet>432</a></span><span class="kw">impl</span>&lt;Output: OutputBuf&gt; Serializer&lt;Output, BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
+<a href=#433 id=433 data-nosnippet>433</a>    <span class="attr">#[verifier::loop_isolation(<span class="bool-val">false</span>)]
+<a href=#434 id=434 data-nosnippet>434</a>    </span><span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#435 id=435 data-nosnippet>435</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
+<a href=#436 id=436 data-nosnippet>436</a>
+<a href=#437 id=437 data-nosnippet>437</a>        proof {
+<a href=#438 id=438 data-nosnippet>438</a>            use_type_invariant(v);
+<a href=#439 id=439 data-nosnippet>439</a>            lemma_encode_bmp_string_valid(v.deep_view().inner);
+<a href=#440 id=440 data-nosnippet>440</a>        }
+<a href=#441 id=441 data-nosnippet>441</a>        <span class="kw">let </span>value = v.inner.as_str();
+<a href=#442 id=442 data-nosnippet>442</a>
+<a href=#443 id=443 data-nosnippet>443</a>        <span class="kw">let </span>ghost initial = obuf@;
+<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">let </span>ghost len = value.deep_view().len();
+<a href=#445 id=445 data-nosnippet>445</a>        <span class="kw">for </span>c <span class="kw">in </span>iter: value.chars()
+<a href=#446 id=446 data-nosnippet>446</a>            invariant
+<a href=#447 id=447 data-nosnippet>447</a>                obuf@ == initial + encode_bmp_string(value.deep_view()[<span class="number">0</span>..iter.index()]),
+<a href=#448 id=448 data-nosnippet>448</a>                forall|n| old(obuf).fits(<span class="number">2 </span>* iter.index() <span class="kw">as </span>nat + n) &lt;==&gt; obuf.fits(n),
+<a href=#449 id=449 data-nosnippet>449</a>                old(obuf).same_destination(obuf),
+<a href=#450 id=450 data-nosnippet>450</a>        {
+<a href=#451 id=451 data-nosnippet>451</a>            proof {
+<a href=#452 id=452 data-nosnippet>452</a>                old(obuf).lemma_fits_mono(<span class="number">2 </span>* iter.index() <span class="kw">as </span>nat + <span class="number">2</span>, <span class="number">2 </span>* len <span class="kw">as </span>nat);
+<a href=#453 id=453 data-nosnippet>453</a>            }
+<a href=#454 id=454 data-nosnippet>454</a>            <span class="kw">let </span>pair = u16_to_be_bytes(c <span class="kw">as </span>u16);
+<a href=#455 id=455 data-nosnippet>455</a>            obuf.write_bytes(<span class="kw-2">&amp;</span>pair);
+<a href=#456 id=456 data-nosnippet>456</a>        }
+<a href=#457 id=457 data-nosnippet>457</a>    }
+<a href=#458 id=458 data-nosnippet>458</a>}
+<a href=#459 id=459 data-nosnippet>459</a>
+<a href=#460 id=460 data-nosnippet>460</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#461 id=461 data-nosnippet>461</a></span><span class="kw">impl </span>Prepare&lt;BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
+<a href=#462 id=462 data-nosnippet>462</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#463 id=463 data-nosnippet>463</a>        proof {
+<a href=#464 id=464 data-nosnippet>464</a>            use_type_invariant(v);
+<a href=#465 id=465 data-nosnippet>465</a>            lemma_encode_bmp_string_valid(v.deep_view().inner);
+<a href=#466 id=466 data-nosnippet>466</a>        }
+<a href=#467 id=467 data-nosnippet>467</a>        v.inner.as_str().unicode_len().checked_mul(<span class="number">2</span>).ok_or(PreSerializeError::length_too_large())
+<a href=#468 id=468 data-nosnippet>468</a>    }
+<a href=#469 id=469 data-nosnippet>469</a>}
+<a href=#470 id=470 data-nosnippet>470</a>
+<a href=#471 id=471 data-nosnippet>471</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#472 id=472 data-nosnippet>472</a></span><span class="kw">impl </span>ByteLen&lt;BmpString&gt; <span class="kw">for </span><span class="kw">super</span>::BmpStringFmt {
+<a href=#473 id=473 data-nosnippet>473</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>BmpString) -&gt; usize {
+<a href=#474 id=474 data-nosnippet>474</a>        proof {
+<a href=#475 id=475 data-nosnippet>475</a>            use_type_invariant(v);
+<a href=#476 id=476 data-nosnippet>476</a>        }
+<a href=#477 id=477 data-nosnippet>477</a>        v.inner.as_str().unicode_len() * <span class="number">2
+<a href=#478 id=478 data-nosnippet>478</a>    </span>}
+<a href=#479 id=479 data-nosnippet>479</a>}
+<a href=#480 id=480 data-nosnippet>480</a>
+<a href=#481 id=481 data-nosnippet>481</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

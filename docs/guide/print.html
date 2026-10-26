@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7cc7b63f.js";
+            window.path_to_searchindex_js = "searchindex-8c72ad54.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -270,20 +270,20 @@ We’ll see how Vest takes care of each of these for us.</p>
 <h3 id="install-the-compiler"><a class="header" href="#install-the-compiler">Install the compiler</a></h3>
 <p>You’ll need a stable Rust toolchain with <code>cargo</code> and <code>rustc</code> on your <code>PATH</code>.
 Install the Vest DSL compiler from crates.io:</p>
-<pre><code class="language-console">cargo install vest
+<pre><code class="language-console">cargo install vest --version 0.2.3 --locked
 </code></pre>
 <p>This puts <code>vest</code> on your <code>PATH</code>. You can run <code>vest --version</code> to check that it worked.</p>
 <h3 id="create-a-project"><a class="header" href="#create-a-project">Create a project</a></h3>
 <p>Next, let’s create a new Rust project and add Verus and Vest as dependencies:</p>
 <pre><code class="language-console">cargo new msg-demo
 cd msg-demo
-cargo add vest_lib
-cargo add vstd@=0.0.0-2026-10-04-0306 --no-default-features
+cargo add vest_lib@=0.2.3
+cargo add vstd@=0.0.0-2026-10-25-0158 --no-default-features
 </code></pre>
 <p>Your <code>Cargo.toml</code> should now contain something like this:</p>
 <pre><code class="language-toml">[dependencies]
-vest_lib = "0.2"
-vstd = { version = "=0.0.0-2026-10-04-0306", default-features = false }
+vest_lib = "=0.2.3"
+vstd = { version = "=0.0.0-2026-10-25-0158", default-features = false }
 </code></pre>
 <blockquote>
 <p><strong><code>vest_lib</code> and <code>vstd</code>:</strong> <code>vest_lib</code> is Vest’s combinator library underlying the generated code.
@@ -588,11 +588,12 @@ want to parse and serialize more safely, you can stop here. Still, we highly
 recommend checking the proofs with Verus. That way, you don’t have to trust the
 Vest DSL compiler: Verus confirms that the generated code really satisfies the
 <a href="#what-vest-proves">promised properties</a>.</p>
-<p>Each Vest release works with one exact Verus release, recorded in
-<a href="https://github.com/secure-foundations/vest/blob/main/verus.json"><code>verus.json</code></a>.
+<p>Each Vest release works with one exact Verus release. For Vest 0.2.3, it is
+recorded in the release’s
+<a href="https://github.com/secure-foundations/vest/blob/vest_lib-v0.2.3/verus.json"><code>verus.json</code></a>.
 Follow the <a href="https://github.com/verus-lang/verus/blob/main/INSTALL.md">Verus installation instructions</a>
 for that version, or let a script from the Vest repository install it for you:</p>
-<pre><code class="language-console">git clone https://github.com/secure-foundations/vest.git
+<pre><code class="language-console">git clone --branch vest_lib-v0.2.3 --depth 1 https://github.com/secure-foundations/vest.git
 ./vest/scripts/install-verus.sh
 export PATH="$PWD/vest/.verus:$PATH"
 </code></pre>
@@ -1960,7 +1961,9 @@ for production builds.</p>
 <p>Vest and <code>vest_lib</code> must be used with the Verus and <code>vstd</code> versions this release
 pins. The Verus version is in
 <a href="https://github.com/secure-foundations/vest/blob/main/verus.json"><code>verus.json</code></a>
-and the <code>vstd</code> version is in the workspace <code>Cargo.toml</code>.</p>
+and the <code>vstd</code> version is in the workspace <code>Cargo.toml</code>.
+For a published crate, read these files at its <code>vest_lib-vVERSION</code> Git tag;
+<code>main</code> describes the development checkout, which may use newer versions.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="asn1-compiler"><a class="header" href="#asn1-compiler">ASN.1 Compiler</a></h1>
 <p><code>vest_asn1</code> parses an ASN.1 module and emits verified formats backed by

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/universalstring.rs`."><title>universalstring.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.1 (48a229cea 2026-09-01)" data-channel="1.98.1" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>universalstring.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! ASN.1 UniversalString contents.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/universalstring.rs`."><title>universalstring.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/</div>universalstring.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! ASN.1 UniversalString contents.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! UniversalString represents ISO/IEC 10646 scalar values as four-octet,
 <a href=#4 id=4 data-nosnippet>4</a>//! big-endian code points. Its semantic Rust value is an owned `String`
@@ -321,79 +321,85 @@
 <a href=#321 id=321 data-nosnippet>321</a>}
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#324 id=324 data-nosnippet>324</a>#[verifier::external_body]
+<a href=#324 id=324 data-nosnippet>324</a>#[verifier::loop_isolation(<span class="bool-val">false</span>)]
 <a href=#325 id=325 data-nosnippet>325</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>decode_universal_string_owned(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; (value: String)
 <a href=#326 id=326 data-nosnippet>326</a>    requires
 <a href=#327 id=327 data-nosnippet>327</a>        is_valid_universal_string(bytes.deep_view()),
 <a href=#328 id=328 data-nosnippet>328</a>    ensures
 <a href=#329 id=329 data-nosnippet>329</a>        value.deep_view() == decode_universal_string(bytes.deep_view()),
 <a href=#330 id=330 data-nosnippet>330</a>{
-<a href=#331 id=331 data-nosnippet>331</a>    bytes.chunks_exact(<span class="number">4</span>).map(
-<a href=#332 id=332 data-nosnippet>332</a>        |word|
-<a href=#333 id=333 data-nosnippet>333</a>            <span class="kw">unsafe </span>{
-<a href=#334 id=334 data-nosnippet>334</a>                char::from_u32_unchecked(u32::from_be_bytes([word[<span class="number">0</span>], word[<span class="number">1</span>], word[<span class="number">2</span>], word[<span class="number">3</span>]]))
-<a href=#335 id=335 data-nosnippet>335</a>            },
-<a href=#336 id=336 data-nosnippet>336</a>    ).collect()
-<a href=#337 id=337 data-nosnippet>337</a>}
-<a href=#338 id=338 data-nosnippet>338</a>
-<a href=#339 id=339 data-nosnippet>339</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#340 id=340 data-nosnippet>340</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
-<a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">type </span>PT = UniversalString;
-<a href=#342 id=342 data-nosnippet>342</a>
-<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#344 id=344 data-nosnippet>344</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#345 id=345 data-nosnippet>345</a>        <span class="kw">if </span>!check_valid_universal_string(bytes) {
-<a href=#346 id=346 data-nosnippet>346</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid UniversalString"</span>))
-<a href=#347 id=347 data-nosnippet>347</a>        } <span class="kw">else </span>{
-<a href=#348 id=348 data-nosnippet>348</a>            <span class="prelude-val">Ok</span>((n, decode_universal_string_owned(bytes)))
-<a href=#349 id=349 data-nosnippet>349</a>        }
-<a href=#350 id=350 data-nosnippet>350</a>    }
-<a href=#351 id=351 data-nosnippet>351</a>}
-<a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#354 id=354 data-nosnippet>354</a></span><span class="kw">impl</span>&lt;Output: OutputBuf&gt; Serializer&lt;Output, UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
-<a href=#355 id=355 data-nosnippet>355</a>    <span class="attr">#[verifier::loop_isolation(<span class="bool-val">false</span>)]
-<a href=#356 id=356 data-nosnippet>356</a>    </span><span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#357 id=357 data-nosnippet>357</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
+<a href=#331 id=331 data-nosnippet>331</a>    <span class="kw">let </span><span class="kw-2">mut </span>output = String::with_capacity(bytes.len() / <span class="number">4</span>);
+<a href=#332 id=332 data-nosnippet>332</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() / <span class="number">4
+<a href=#333 id=333 data-nosnippet>333</a>        </span>invariant
+<a href=#334 id=334 data-nosnippet>334</a>            output@ == decode_universal_string(bytes.deep_view())[<span class="number">0</span>..i],
+<a href=#335 id=335 data-nosnippet>335</a>    {
+<a href=#336 id=336 data-nosnippet>336</a>        <span class="kw">let </span>word = <span class="kw-2">&amp;</span>bytes[<span class="number">4 </span>* i..<span class="number">4 </span>* i + <span class="number">4</span>];
+<a href=#337 id=337 data-nosnippet>337</a>        <span class="kw">let </span>code = u32_from_be_bytes([word[<span class="number">0</span>], word[<span class="number">1</span>], word[<span class="number">2</span>], word[<span class="number">3</span>]]);
+<a href=#338 id=338 data-nosnippet>338</a>        assert(code == universal_code_point(bytes.deep_view(), i <span class="kw">as </span>int));
+<a href=#339 id=339 data-nosnippet>339</a>        <span class="comment">// SAFETY: the input's validity proves that this code point is a scalar.
+<a href=#340 id=340 data-nosnippet>340</a>        </span>output.push(<span class="kw">unsafe </span>{ char::from_u32_unchecked(code) });
+<a href=#341 id=341 data-nosnippet>341</a>    }
+<a href=#342 id=342 data-nosnippet>342</a>    output
+<a href=#343 id=343 data-nosnippet>343</a>}
+<a href=#344 id=344 data-nosnippet>344</a>
+<a href=#345 id=345 data-nosnippet>345</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#346 id=346 data-nosnippet>346</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
+<a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">type </span>PT = UniversalString;
+<a href=#348 id=348 data-nosnippet>348</a>
+<a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#350 id=350 data-nosnippet>350</a>        <span class="kw">let </span>(n, bytes) = Tail.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#351 id=351 data-nosnippet>351</a>        <span class="kw">if </span>!check_valid_universal_string(bytes) {
+<a href=#352 id=352 data-nosnippet>352</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Invalid UniversalString"</span>))
+<a href=#353 id=353 data-nosnippet>353</a>        } <span class="kw">else </span>{
+<a href=#354 id=354 data-nosnippet>354</a>            <span class="prelude-val">Ok</span>((n, decode_universal_string_owned(bytes)))
+<a href=#355 id=355 data-nosnippet>355</a>        }
+<a href=#356 id=356 data-nosnippet>356</a>    }
+<a href=#357 id=357 data-nosnippet>357</a>}
 <a href=#358 id=358 data-nosnippet>358</a>
-<a href=#359 id=359 data-nosnippet>359</a>        proof {
-<a href=#360 id=360 data-nosnippet>360</a>            lemma_encode_universal_string_valid(value.deep_view());
-<a href=#361 id=361 data-nosnippet>361</a>        }
-<a href=#362 id=362 data-nosnippet>362</a>        <span class="kw">let </span>value = value.as_str();
-<a href=#363 id=363 data-nosnippet>363</a>
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="kw">let </span>ghost initial = obuf@;
-<a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">let </span>ghost len = value.deep_view().len();
-<a href=#366 id=366 data-nosnippet>366</a>        <span class="kw">for </span>c <span class="kw">in </span>iter: value.chars()
-<a href=#367 id=367 data-nosnippet>367</a>            invariant
-<a href=#368 id=368 data-nosnippet>368</a>                obuf@ == initial + encode_universal_string(value.deep_view()[<span class="number">0</span>..iter.index()]),
-<a href=#369 id=369 data-nosnippet>369</a>                forall|n| old(obuf).fits(<span class="number">4 </span>* iter.index() <span class="kw">as </span>nat + n) &lt;==&gt; obuf.fits(n),
-<a href=#370 id=370 data-nosnippet>370</a>                old(obuf).same_destination(obuf),
-<a href=#371 id=371 data-nosnippet>371</a>        {
-<a href=#372 id=372 data-nosnippet>372</a>            proof {
-<a href=#373 id=373 data-nosnippet>373</a>                old(obuf).lemma_fits_mono(<span class="number">4 </span>* iter.index() <span class="kw">as </span>nat + <span class="number">4</span>, <span class="number">4 </span>* len <span class="kw">as </span>nat);
-<a href=#374 id=374 data-nosnippet>374</a>            }
-<a href=#375 id=375 data-nosnippet>375</a>            <span class="kw">let </span>word = u32_to_be_bytes(c <span class="kw">as </span>u32);
-<a href=#376 id=376 data-nosnippet>376</a>            obuf.write_bytes(<span class="kw-2">&amp;</span>word);
-<a href=#377 id=377 data-nosnippet>377</a>        }
-<a href=#378 id=378 data-nosnippet>378</a>    }
-<a href=#379 id=379 data-nosnippet>379</a>}
-<a href=#380 id=380 data-nosnippet>380</a>
-<a href=#381 id=381 data-nosnippet>381</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#382 id=382 data-nosnippet>382</a></span><span class="kw">impl </span>Prepare&lt;UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
-<a href=#383 id=383 data-nosnippet>383</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#384 id=384 data-nosnippet>384</a>        proof {
-<a href=#385 id=385 data-nosnippet>385</a>            lemma_encode_universal_string_valid(value.deep_view());
-<a href=#386 id=386 data-nosnippet>386</a>        }
-<a href=#387 id=387 data-nosnippet>387</a>        value.as_str().unicode_len().checked_mul(<span class="number">4</span>).ok_or(PreSerializeError::length_too_large())
-<a href=#388 id=388 data-nosnippet>388</a>    }
-<a href=#389 id=389 data-nosnippet>389</a>}
-<a href=#390 id=390 data-nosnippet>390</a>
-<a href=#391 id=391 data-nosnippet>391</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#392 id=392 data-nosnippet>392</a></span><span class="kw">impl </span>ByteLen&lt;UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
-<a href=#393 id=393 data-nosnippet>393</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString) -&gt; usize {
-<a href=#394 id=394 data-nosnippet>394</a>        value.as_str().unicode_len() * <span class="number">4
-<a href=#395 id=395 data-nosnippet>395</a>    </span>}
-<a href=#396 id=396 data-nosnippet>396</a>}
-<a href=#397 id=397 data-nosnippet>397</a>
-<a href=#398 id=398 data-nosnippet>398</a>} <span class="comment">// verus!
+<a href=#359 id=359 data-nosnippet>359</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#360 id=360 data-nosnippet>360</a></span><span class="kw">impl</span>&lt;Output: OutputBuf&gt; Serializer&lt;Output, UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
+<a href=#361 id=361 data-nosnippet>361</a>    <span class="attr">#[verifier::loop_isolation(<span class="bool-val">false</span>)]
+<a href=#362 id=362 data-nosnippet>362</a>    </span><span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#363 id=363 data-nosnippet>363</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
+<a href=#364 id=364 data-nosnippet>364</a>
+<a href=#365 id=365 data-nosnippet>365</a>        proof {
+<a href=#366 id=366 data-nosnippet>366</a>            lemma_encode_universal_string_valid(value.deep_view());
+<a href=#367 id=367 data-nosnippet>367</a>        }
+<a href=#368 id=368 data-nosnippet>368</a>        <span class="kw">let </span>value = value.as_str();
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a>        <span class="kw">let </span>ghost initial = obuf@;
+<a href=#371 id=371 data-nosnippet>371</a>        <span class="kw">let </span>ghost len = value.deep_view().len();
+<a href=#372 id=372 data-nosnippet>372</a>        <span class="kw">for </span>c <span class="kw">in </span>iter: value.chars()
+<a href=#373 id=373 data-nosnippet>373</a>            invariant
+<a href=#374 id=374 data-nosnippet>374</a>                obuf@ == initial + encode_universal_string(value.deep_view()[<span class="number">0</span>..iter.index()]),
+<a href=#375 id=375 data-nosnippet>375</a>                forall|n| old(obuf).fits(<span class="number">4 </span>* iter.index() <span class="kw">as </span>nat + n) &lt;==&gt; obuf.fits(n),
+<a href=#376 id=376 data-nosnippet>376</a>                old(obuf).same_destination(obuf),
+<a href=#377 id=377 data-nosnippet>377</a>        {
+<a href=#378 id=378 data-nosnippet>378</a>            proof {
+<a href=#379 id=379 data-nosnippet>379</a>                old(obuf).lemma_fits_mono(<span class="number">4 </span>* iter.index() <span class="kw">as </span>nat + <span class="number">4</span>, <span class="number">4 </span>* len <span class="kw">as </span>nat);
+<a href=#380 id=380 data-nosnippet>380</a>            }
+<a href=#381 id=381 data-nosnippet>381</a>            <span class="kw">let </span>word = u32_to_be_bytes(c <span class="kw">as </span>u32);
+<a href=#382 id=382 data-nosnippet>382</a>            obuf.write_bytes(<span class="kw-2">&amp;</span>word);
+<a href=#383 id=383 data-nosnippet>383</a>        }
+<a href=#384 id=384 data-nosnippet>384</a>    }
+<a href=#385 id=385 data-nosnippet>385</a>}
+<a href=#386 id=386 data-nosnippet>386</a>
+<a href=#387 id=387 data-nosnippet>387</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#388 id=388 data-nosnippet>388</a></span><span class="kw">impl </span>Prepare&lt;UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
+<a href=#389 id=389 data-nosnippet>389</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#390 id=390 data-nosnippet>390</a>        proof {
+<a href=#391 id=391 data-nosnippet>391</a>            lemma_encode_universal_string_valid(value.deep_view());
+<a href=#392 id=392 data-nosnippet>392</a>        }
+<a href=#393 id=393 data-nosnippet>393</a>        value.as_str().unicode_len().checked_mul(<span class="number">4</span>).ok_or(PreSerializeError::length_too_large())
+<a href=#394 id=394 data-nosnippet>394</a>    }
+<a href=#395 id=395 data-nosnippet>395</a>}
+<a href=#396 id=396 data-nosnippet>396</a>
+<a href=#397 id=397 data-nosnippet>397</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#398 id=398 data-nosnippet>398</a></span><span class="kw">impl </span>ByteLen&lt;UniversalString&gt; <span class="kw">for </span><span class="kw">super</span>::UniversalStringFmt {
+<a href=#399 id=399 data-nosnippet>399</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>UniversalString) -&gt; usize {
+<a href=#400 id=400 data-nosnippet>400</a>        value.as_str().unicode_len() * <span class="number">4
+<a href=#401 id=401 data-nosnippet>401</a>    </span>}
+<a href=#402 id=402 data-nosnippet>402</a>}
+<a href=#403 id=403 data-nosnippet>403</a>
+<a href=#404 id=404 data-nosnippet>404</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>
