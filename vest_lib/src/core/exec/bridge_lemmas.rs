@@ -1,4 +1,8 @@
 //! Bridges executable invariants through common combinator wrappers.
+//
+// Some generic callers still need these explicit instantiations even though the
+// underlying invariant definitions are open. Keep them local rather than adding
+// every wrapper to a global broadcast group.
 use crate::combinators::bytes::{AndThen, ExactLen};
 use crate::combinators::mapped::spec::{BiMap, SpecMap};
 use crate::combinators::named::Named;
@@ -28,7 +32,6 @@ verus! {
 // ----------------------------------------------------
 // Executable function adapters
 // ----------------------------------------------------
-
 /// Exposes the semantic specification bundled into an [`FnSerializer`] without requiring callers
 /// to unfold the adapter's individual trait implementations.
 pub proof fn lemma_fn_serializer_specs<Output, T, Spec, Exec>(
@@ -62,20 +65,8 @@ pub proof fn lemma_ref_fn_serializer_congruence<Output, T, Spec, Exec>(
 {
     use crate::combinators::congruence::*;
 
-    assert forall|value: T::V| #[trigger]
-        serializer.consistent(value) == serializer.spec_fn@.consistent(value) by {
-        lemma_fn_serializer_specs(serializer, value);
-    }
-    assert forall|value: T::V| #[trigger]
-        serializer.byte_len(value) == serializer.spec_fn@.byte_len(value) by {
-        lemma_fn_serializer_specs(serializer, value);
-    }
-    assert forall|value: T::V| #[trigger]
-        serializer.spec_serialize(value) == serializer.spec_fn@.spec_serialize(value) by {
-        lemma_fn_serializer_specs(serializer, value);
-    }
-    lemma_prepare_congruent_intro(serializer, serializer.spec_fn@);
-    lemma_serializer_congruent_intro(serializer, serializer.spec_fn@);
+    reveal(prepare_congruent);
+    reveal(serializer_congruent);
 }
 
 /// Exposes the consistency and byte-length specification bundled into an [`FnPrepare`].
@@ -107,15 +98,7 @@ pub proof fn lemma_ref_fn_prepare_congruence<T, Spec, Exec>(
 {
     use crate::combinators::congruence::*;
 
-    assert forall|value: T::V| #[trigger]
-        prepare.consistent(value) == prepare.spec_fn@.consistent(value) by {
-        lemma_fn_prepare_specs(prepare, value);
-    }
-    assert forall|value: T::V| #[trigger]
-        prepare.byte_len(value) == prepare.spec_fn@.byte_len(value) by {
-        lemma_fn_prepare_specs(prepare, value);
-    }
-    lemma_prepare_congruent_intro(prepare, prepare.spec_fn@);
+    reveal(prepare_congruent);
 }
 
 /// Exposes the byte-length and consistency specification bundled into an [`FnByteLen`].
@@ -146,15 +129,7 @@ pub proof fn lemma_ref_fn_byte_len_congruence<T, Spec, Exec>(
 {
     use crate::combinators::congruence::*;
 
-    assert forall|value: T::V| #[trigger]
-        length.consistent(value) == length.spec_fn@.consistent(value) by {
-        lemma_fn_byte_len_specs(length, value);
-    }
-    assert forall|value: T::V| #[trigger]
-        length.byte_len(value) == length.spec_fn@.byte_len(value) by {
-        lemma_fn_byte_len_specs(length, value);
-    }
-    lemma_prepare_congruent_intro(length, length.spec_fn@);
+    reveal(prepare_congruent);
 }
 
 // ----------------------------------------------------
@@ -865,7 +840,6 @@ pub proof fn lemma_bind_parser_exec_inv<I, A, B>(fmt: &Bind<A, B>) where
         assert forall|key: A::PVal| #[trigger] fmt.1.spec_map(key).safe_inv() by {
             let pb = fmt.1.spec_map(key);
             assert(pb.exec_inv());
-            assert(pb.exec_inv());
         };
         assert(fmt.safe_inv());
     }
@@ -924,10 +898,7 @@ pub proof fn lemma_ref_prepare_exec_inv<S, T>(serializer: &S) where
 {
 }
 
-pub proof fn lemma_ref_byte_len_exec_inv<S, T>(length: &S) where
-    S: ByteLen<T>,
-    T: DeepView + ?Sized,
-
+pub proof fn lemma_ref_byte_len_exec_inv<S, T>(length: &S) where S: ByteLen<T>, T: DeepView + ?Sized
     ensures
         length.exec_inv() ==> ByteLen::<T>::exec_inv(&length),
 {
@@ -940,8 +911,9 @@ pub proof fn lemma_pair_byte_len_exec_inv<A, B, TA, TB>(fmt: &Pair<A, B>) where
     TB: DeepView,
 
     ensures
-        (ByteLen::<TA>::exec_inv(&fmt.0) && ByteLen::<TB>::exec_inv(&fmt.1)) ==>
-            ByteLen::<(TA, TB)>::exec_inv(fmt),
+        (ByteLen::<TA>::exec_inv(&fmt.0) && ByteLen::<TB>::exec_inv(&fmt.1)) ==> ByteLen::<
+            (TA, TB),
+        >::exec_inv(fmt),
 {
 }
 

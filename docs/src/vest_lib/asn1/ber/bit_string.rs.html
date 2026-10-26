@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/ber/bit_string.rs`."><title>bit_string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.1 (48a229cea 2026-09-01)" data-channel="1.98.1" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/ber/</div>bit_string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! BER BIT STRING combinators with constructed/indefinite segment trees.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/asn1/ber/bit_string.rs`."><title>bit_string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">vest_lib/asn1/ber/</div>bit_string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! BER BIT STRING combinators with constructed/indefinite segment trees.
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">use </span><span class="kw">crate</span>::asn1::{
 <a href=#3 id=3 data-nosnippet>3</a>    constructed_tag, primitive_tag, ASN1Fmt, BerLength, BerLengthFmt, BitStringFmt, BitStringSpec,
 <a href=#4 id=4 data-nosnippet>4</a>    Class, LengthFmt, Tag, TagFmt, BER,
@@ -384,233 +384,222 @@
 <a href=#384 id=384 data-nosnippet>384</a>}
 <a href=#385 id=385 data-nosnippet>385</a>
 <a href=#386 id=386 data-nosnippet>386</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#387 id=387 data-nosnippet>387</a></span><span class="kw">fn </span>ber_bit_string_segments_wf_exec(segments: <span class="kw-2">&amp;</span>Vec&lt;BitStringOwned&gt;) -&gt; (valid: bool)
+<a href=#387 id=387 data-nosnippet>387</a></span><span class="kw">fn </span>ber_bit_string_segments_wf_exec(segments: <span class="kw-2">&amp;</span>[BitStringOwned]) -&gt; (valid: bool)
 <a href=#388 id=388 data-nosnippet>388</a>    ensures
 <a href=#389 id=389 data-nosnippet>389</a>        valid == ber_bit_string_segments_wf(segments.deep_view()),
 <a href=#390 id=390 data-nosnippet>390</a>{
-<a href=#391 id=391 data-nosnippet>391</a>    <span class="kw">let </span>ghost views = segments.deep_view();
-<a href=#392 id=392 data-nosnippet>392</a>    <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0usize</span>;
-<a href=#393 id=393 data-nosnippet>393</a>    <span class="kw">while </span>i &lt; segments.len()
-<a href=#394 id=394 data-nosnippet>394</a>        invariant
-<a href=#395 id=395 data-nosnippet>395</a>            segments.deep_view() == views,
-<a href=#396 id=396 data-nosnippet>396</a>            i &lt;= segments.len(),
-<a href=#397 id=397 data-nosnippet>397</a>            forall|j: int| <span class="number">0 </span>&lt;= j &lt; i &amp;&amp; j &lt; views.len() - <span class="number">1 </span>==&gt; <span class="attr">#[trigger] </span>views[j].unused == <span class="number">0</span>,
-<a href=#398 id=398 data-nosnippet>398</a>        decreases segments.len() - i,
-<a href=#399 id=399 data-nosnippet>399</a>    {
-<a href=#400 id=400 data-nosnippet>400</a>        <span class="kw">if </span>i + <span class="number">1 </span>&lt; segments.len() {
-<a href=#401 id=401 data-nosnippet>401</a>            <span class="kw">let </span>unused = segments[i].unused();
-<a href=#402 id=402 data-nosnippet>402</a>            <span class="kw">if </span>unused != <span class="number">0 </span>{
-<a href=#403 id=403 data-nosnippet>403</a>                assert(<span class="number">0 </span>&lt;= i <span class="kw">as </span>int);
-<a href=#404 id=404 data-nosnippet>404</a>                assert((i <span class="kw">as </span>int) &lt; views.len() - <span class="number">1</span>);
-<a href=#405 id=405 data-nosnippet>405</a>                assert(views[i <span class="kw">as </span>int].unused != <span class="number">0</span>);
-<a href=#406 id=406 data-nosnippet>406</a>                <span class="kw">return </span><span class="bool-val">false</span>;
-<a href=#407 id=407 data-nosnippet>407</a>            }
-<a href=#408 id=408 data-nosnippet>408</a>        }
-<a href=#409 id=409 data-nosnippet>409</a>        i += <span class="number">1</span>;
-<a href=#410 id=410 data-nosnippet>410</a>    }
-<a href=#411 id=411 data-nosnippet>411</a>    <span class="bool-val">true
-<a href=#412 id=412 data-nosnippet>412</a></span>}
-<a href=#413 id=413 data-nosnippet>413</a>
-<a href=#414 id=414 data-nosnippet>414</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#415 id=415 data-nosnippet>415</a></span><span class="kw">fn </span>flatten_bit_string_segments(segments: Vec&lt;BitStringOwned&gt;) -&gt; (flat: BitStringOwned)
-<a href=#416 id=416 data-nosnippet>416</a>    requires
-<a href=#417 id=417 data-nosnippet>417</a>        ber_bit_string_segments_wf(segments.deep_view()),
-<a href=#418 id=418 data-nosnippet>418</a>    ensures
-<a href=#419 id=419 data-nosnippet>419</a>        flat.deep_view() == flatten_ber_bit_string_segments(segments.deep_view()),
-<a href=#420 id=420 data-nosnippet>420</a>{
-<a href=#421 id=421 data-nosnippet>421</a>    broadcast <span class="kw">use </span>vstd::seq_lib::group_seq_properties;
-<a href=#422 id=422 data-nosnippet>422</a>
-<a href=#423 id=423 data-nosnippet>423</a>    <span class="kw">let </span>ghost segment_views = segments.deep_view();
-<a href=#424 id=424 data-nosnippet>424</a>    <span class="kw">let </span>ghost bit_views = segment_views.map(|_i: int, segment: BitStringSpec| segment.bits);
-<a href=#425 id=425 data-nosnippet>425</a>    <span class="kw">let </span><span class="kw-2">mut </span>bits = Vec::new();
-<a href=#426 id=426 data-nosnippet>426</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..segments.len()
-<a href=#427 id=427 data-nosnippet>427</a>        invariant
-<a href=#428 id=428 data-nosnippet>428</a>            segments.deep_view() == segment_views,
-<a href=#429 id=429 data-nosnippet>429</a>            bit_views == segment_views.map(|_i: int, segment: BitStringSpec| segment.bits),
-<a href=#430 id=430 data-nosnippet>430</a>            bits@ == bit_views[<span class="number">0</span>..i].flatten(),
-<a href=#431 id=431 data-nosnippet>431</a>    {
-<a href=#432 id=432 data-nosnippet>432</a>        <span class="kw">let </span>segment_bits = segments[i].bits();
-<a href=#433 id=433 data-nosnippet>433</a>        proof {
-<a href=#434 id=434 data-nosnippet>434</a>            <span class="kw">let </span>prefix = bit_views[<span class="number">0</span>..i];
-<a href=#435 id=435 data-nosnippet>435</a>            prefix.lemma_flatten_push(segment_bits@);
-<a href=#436 id=436 data-nosnippet>436</a>            assert(bit_views[i <span class="kw">as </span>int] == segment_bits@);
-<a href=#437 id=437 data-nosnippet>437</a>            assert(bit_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(segment_bits@));
-<a href=#438 id=438 data-nosnippet>438</a>        }
-<a href=#439 id=439 data-nosnippet>439</a>        bits.extend_from_slice(segment_bits);
-<a href=#440 id=440 data-nosnippet>440</a>    }
-<a href=#441 id=441 data-nosnippet>441</a>
-<a href=#442 id=442 data-nosnippet>442</a>    <span class="kw">let </span>unused = <span class="kw">if </span>bits.len() == <span class="number">0 </span>|| segments.len() == <span class="number">0 </span>{
-<a href=#443 id=443 data-nosnippet>443</a>        <span class="number">0
-<a href=#444 id=444 data-nosnippet>444</a>    </span>} <span class="kw">else </span>{
-<a href=#445 id=445 data-nosnippet>445</a>        <span class="kw">let </span>last = <span class="kw-2">&amp;</span>segments[segments.len() - <span class="number">1</span>];
-<a href=#446 id=446 data-nosnippet>446</a>        last.unused()
-<a href=#447 id=447 data-nosnippet>447</a>    };
-<a href=#448 id=448 data-nosnippet>448</a>    BitStringOwned::new(unused, bits)
+<a href=#391 id=391 data-nosnippet>391</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..segments.len().saturating_sub(<span class="number">1</span>)
+<a href=#392 id=392 data-nosnippet>392</a>        invariant
+<a href=#393 id=393 data-nosnippet>393</a>            forall|j: int| <span class="number">0 </span>&lt;= j &lt; i ==&gt; <span class="attr">#[trigger] </span>segments.deep_view()[j].unused == <span class="number">0</span>,
+<a href=#394 id=394 data-nosnippet>394</a>    {
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">if </span>segments[i].unused() != <span class="number">0 </span>{
+<a href=#396 id=396 data-nosnippet>396</a>            assert(segments.deep_view()[i <span class="kw">as </span>int].unused != <span class="number">0</span>);
+<a href=#397 id=397 data-nosnippet>397</a>            <span class="kw">return </span><span class="bool-val">false</span>;
+<a href=#398 id=398 data-nosnippet>398</a>        }
+<a href=#399 id=399 data-nosnippet>399</a>    }
+<a href=#400 id=400 data-nosnippet>400</a>    <span class="bool-val">true
+<a href=#401 id=401 data-nosnippet>401</a></span>}
+<a href=#402 id=402 data-nosnippet>402</a>
+<a href=#403 id=403 data-nosnippet>403</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#404 id=404 data-nosnippet>404</a></span><span class="kw">fn </span>flatten_bit_string_segments(segments: Vec&lt;BitStringOwned&gt;) -&gt; (flat: BitStringOwned)
+<a href=#405 id=405 data-nosnippet>405</a>    requires
+<a href=#406 id=406 data-nosnippet>406</a>        ber_bit_string_segments_wf(segments.deep_view()),
+<a href=#407 id=407 data-nosnippet>407</a>    ensures
+<a href=#408 id=408 data-nosnippet>408</a>        flat.deep_view() == flatten_ber_bit_string_segments(segments.deep_view()),
+<a href=#409 id=409 data-nosnippet>409</a>{
+<a href=#410 id=410 data-nosnippet>410</a>    broadcast <span class="kw">use </span>vstd::seq_lib::group_seq_properties;
+<a href=#411 id=411 data-nosnippet>411</a>
+<a href=#412 id=412 data-nosnippet>412</a>    <span class="kw">let </span>ghost segment_views = segments.deep_view();
+<a href=#413 id=413 data-nosnippet>413</a>    <span class="kw">let </span>ghost bit_views = segment_views.map(|_i: int, segment: BitStringSpec| segment.bits);
+<a href=#414 id=414 data-nosnippet>414</a>    <span class="kw">let </span><span class="kw-2">mut </span>bits = Vec::new();
+<a href=#415 id=415 data-nosnippet>415</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..segments.len()
+<a href=#416 id=416 data-nosnippet>416</a>        invariant
+<a href=#417 id=417 data-nosnippet>417</a>            segments.deep_view() == segment_views,
+<a href=#418 id=418 data-nosnippet>418</a>            bit_views == segment_views.map(|_i: int, segment: BitStringSpec| segment.bits),
+<a href=#419 id=419 data-nosnippet>419</a>            bits@ == bit_views[<span class="number">0</span>..i].flatten(),
+<a href=#420 id=420 data-nosnippet>420</a>    {
+<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">let </span>segment_bits = segments[i].bits();
+<a href=#422 id=422 data-nosnippet>422</a>        proof {
+<a href=#423 id=423 data-nosnippet>423</a>            <span class="kw">let </span>prefix = bit_views[<span class="number">0</span>..i];
+<a href=#424 id=424 data-nosnippet>424</a>            prefix.lemma_flatten_push(segment_bits@);
+<a href=#425 id=425 data-nosnippet>425</a>            assert(bit_views[i <span class="kw">as </span>int] == segment_bits@);
+<a href=#426 id=426 data-nosnippet>426</a>            assert(bit_views[<span class="number">0</span>..i + <span class="number">1</span>] == prefix.push(segment_bits@));
+<a href=#427 id=427 data-nosnippet>427</a>        }
+<a href=#428 id=428 data-nosnippet>428</a>        bits.extend_from_slice(segment_bits);
+<a href=#429 id=429 data-nosnippet>429</a>    }
+<a href=#430 id=430 data-nosnippet>430</a>
+<a href=#431 id=431 data-nosnippet>431</a>    <span class="kw">let </span>unused = <span class="kw">if </span>bits.len() == <span class="number">0 </span>|| segments.len() == <span class="number">0 </span>{
+<a href=#432 id=432 data-nosnippet>432</a>        <span class="number">0
+<a href=#433 id=433 data-nosnippet>433</a>    </span>} <span class="kw">else </span>{
+<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>last = <span class="kw-2">&amp;</span>segments[segments.len() - <span class="number">1</span>];
+<a href=#435 id=435 data-nosnippet>435</a>        last.unused()
+<a href=#436 id=436 data-nosnippet>436</a>    };
+<a href=#437 id=437 data-nosnippet>437</a>    BitStringOwned::new(unused, bits)
+<a href=#438 id=438 data-nosnippet>438</a>}
+<a href=#439 id=439 data-nosnippet>439</a>
+<a href=#440 id=440 data-nosnippet>440</a>spec <span class="kw">fn </span>flattened_bit_string_result(result: <span class="prelude-ty">Option</span>&lt;(int, Seq&lt;BitStringSpec&gt;)&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;
+<a href=#441 id=441 data-nosnippet>441</a>    (int, BitStringSpec),
+<a href=#442 id=442 data-nosnippet>442</a>&gt; {
+<a href=#443 id=443 data-nosnippet>443</a>    <span class="kw">match </span>result {
+<a href=#444 id=444 data-nosnippet>444</a>        <span class="prelude-val">Some</span>((n, segments)) <span class="kw">if </span>ber_bit_string_segments_wf(segments) =&gt; {
+<a href=#445 id=445 data-nosnippet>445</a>            <span class="prelude-val">Some</span>((n, flatten_ber_bit_string_segments(segments)))
+<a href=#446 id=446 data-nosnippet>446</a>        },
+<a href=#447 id=447 data-nosnippet>447</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#448 id=448 data-nosnippet>448</a>    }
 <a href=#449 id=449 data-nosnippet>449</a>}
 <a href=#450 id=450 data-nosnippet>450</a>
-<a href=#451 id=451 data-nosnippet>451</a>spec <span class="kw">fn </span>flattened_bit_string_result(result: <span class="prelude-ty">Option</span>&lt;(int, Seq&lt;BitStringSpec&gt;)&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;
-<a href=#452 id=452 data-nosnippet>452</a>    (int, BitStringSpec),
-<a href=#453 id=453 data-nosnippet>453</a>&gt; {
+<a href=#451 id=451 data-nosnippet>451</a>spec <span class="kw">fn </span>flattened_bit_string_eoc_result(
+<a href=#452 id=452 data-nosnippet>452</a>    result: <span class="prelude-ty">Option</span>&lt;(int, (Seq&lt;BitStringSpec&gt;, EocValue))&gt;,
+<a href=#453 id=453 data-nosnippet>453</a>) -&gt; <span class="prelude-ty">Option</span>&lt;(int, BitStringSpec)&gt; {
 <a href=#454 id=454 data-nosnippet>454</a>    <span class="kw">match </span>result {
-<a href=#455 id=455 data-nosnippet>455</a>        <span class="prelude-val">Some</span>((n, segments)) <span class="kw">if </span>ber_bit_string_segments_wf(segments) =&gt; {
+<a href=#455 id=455 data-nosnippet>455</a>        <span class="prelude-val">Some</span>((n, (segments, _eoc))) <span class="kw">if </span>ber_bit_string_segments_wf(segments) =&gt; {
 <a href=#456 id=456 data-nosnippet>456</a>            <span class="prelude-val">Some</span>((n, flatten_ber_bit_string_segments(segments)))
 <a href=#457 id=457 data-nosnippet>457</a>        },
 <a href=#458 id=458 data-nosnippet>458</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#459 id=459 data-nosnippet>459</a>    }
 <a href=#460 id=460 data-nosnippet>460</a>}
 <a href=#461 id=461 data-nosnippet>461</a>
-<a href=#462 id=462 data-nosnippet>462</a>spec <span class="kw">fn </span>flattened_bit_string_eoc_result(
-<a href=#463 id=463 data-nosnippet>463</a>    result: <span class="prelude-ty">Option</span>&lt;(int, (Seq&lt;BitStringSpec&gt;, EocValue))&gt;,
-<a href=#464 id=464 data-nosnippet>464</a>) -&gt; <span class="prelude-ty">Option</span>&lt;(int, BitStringSpec)&gt; {
-<a href=#465 id=465 data-nosnippet>465</a>    <span class="kw">match </span>result {
-<a href=#466 id=466 data-nosnippet>466</a>        <span class="prelude-val">Some</span>((n, (segments, _eoc))) <span class="kw">if </span>ber_bit_string_segments_wf(segments) =&gt; {
-<a href=#467 id=467 data-nosnippet>467</a>            <span class="prelude-val">Some</span>((n, flatten_ber_bit_string_segments(segments)))
-<a href=#468 id=468 data-nosnippet>468</a>        },
-<a href=#469 id=469 data-nosnippet>469</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#470 id=470 data-nosnippet>470</a>    }
-<a href=#471 id=471 data-nosnippet>471</a>}
-<a href=#472 id=472 data-nosnippet>472</a>
-<a href=#473 id=473 data-nosnippet>473</a><span class="attr">#[inline(always)]
-<a href=#474 id=474 data-nosnippet>474</a>#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#475 id=475 data-nosnippet>475</a></span><span class="kw">fn </span>parse_bit_string_segments&lt;I, P&gt;(parser: <span class="kw-2">&amp;</span>P, ibuf: <span class="kw-2">&amp;</span>I) -&gt; (result: PResult&lt;BitStringOwned&gt;) <span class="kw">where
-<a href=#476 id=476 data-nosnippet>476</a>    </span>I: InputBuf,
-<a href=#477 id=477 data-nosnippet>477</a>    P: Parser&lt;I, PT = Vec&lt;BitStringOwned&gt;, PVal = Seq&lt;BitStringSpec&gt;&gt;,
-<a href=#478 id=478 data-nosnippet>478</a>
-<a href=#479 id=479 data-nosnippet>479</a>    requires
-<a href=#480 id=480 data-nosnippet>480</a>        parser.exec_inv(),
-<a href=#481 id=481 data-nosnippet>481</a>    ensures
-<a href=#482 id=482 data-nosnippet>482</a>        parse_matches_spec(result, flattened_bit_string_result(parser.spec_parse(ibuf@))),
-<a href=#483 id=483 data-nosnippet>483</a>{
-<a href=#484 id=484 data-nosnippet>484</a>    <span class="kw">let </span>(n, segments) = parser.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#485 id=485 data-nosnippet>485</a>    <span class="kw">if </span>!ber_bit_string_segments_wf_exec(<span class="kw-2">&amp;</span>segments) {
-<a href=#486 id=486 data-nosnippet>486</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(
-<a href=#487 id=487 data-nosnippet>487</a>            ParseError::custom(
-<a href=#488 id=488 data-nosnippet>488</a>                <span class="string">"Only the final constructed BIT STRING segment may have unused bits"</span>,
-<a href=#489 id=489 data-nosnippet>489</a>            ),
-<a href=#490 id=490 data-nosnippet>490</a>        );
-<a href=#491 id=491 data-nosnippet>491</a>    }
-<a href=#492 id=492 data-nosnippet>492</a>    <span class="kw">let </span>flat = flatten_bit_string_segments(segments);
-<a href=#493 id=493 data-nosnippet>493</a>    <span class="prelude-val">Ok</span>((n, flat))
-<a href=#494 id=494 data-nosnippet>494</a>}
-<a href=#495 id=495 data-nosnippet>495</a>
-<a href=#496 id=496 data-nosnippet>496</a><span class="attr">#[inline(always)]
-<a href=#497 id=497 data-nosnippet>497</a>#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#498 id=498 data-nosnippet>498</a></span><span class="kw">fn </span>parse_bit_string_segments_eoc&lt;I, P&gt;(parser: <span class="kw-2">&amp;</span>P, ibuf: <span class="kw-2">&amp;</span>I) -&gt; (result: PResult&lt;
-<a href=#499 id=499 data-nosnippet>499</a>    BitStringOwned,
-<a href=#500 id=500 data-nosnippet>500</a>&gt;) <span class="kw">where
-<a href=#501 id=501 data-nosnippet>501</a>    </span>I: InputBuf,
-<a href=#502 id=502 data-nosnippet>502</a>    P: Parser&lt;I, PT = (Vec&lt;BitStringOwned&gt;, EocValue), PVal = (Seq&lt;BitStringSpec&gt;, EocValue)&gt;,
-<a href=#503 id=503 data-nosnippet>503</a>
-<a href=#504 id=504 data-nosnippet>504</a>    requires
-<a href=#505 id=505 data-nosnippet>505</a>        parser.exec_inv(),
-<a href=#506 id=506 data-nosnippet>506</a>    ensures
-<a href=#507 id=507 data-nosnippet>507</a>        parse_matches_spec(result, flattened_bit_string_eoc_result(parser.spec_parse(ibuf@))),
-<a href=#508 id=508 data-nosnippet>508</a>{
-<a href=#509 id=509 data-nosnippet>509</a>    <span class="kw">let </span>(n, (segments, _eoc)) = parser.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#510 id=510 data-nosnippet>510</a>    <span class="kw">if </span>!ber_bit_string_segments_wf_exec(<span class="kw-2">&amp;</span>segments) {
-<a href=#511 id=511 data-nosnippet>511</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(
-<a href=#512 id=512 data-nosnippet>512</a>            ParseError::custom(
-<a href=#513 id=513 data-nosnippet>513</a>                <span class="string">"Only the final constructed BIT STRING segment may have unused bits"</span>,
-<a href=#514 id=514 data-nosnippet>514</a>            ),
-<a href=#515 id=515 data-nosnippet>515</a>        );
-<a href=#516 id=516 data-nosnippet>516</a>    }
-<a href=#517 id=517 data-nosnippet>517</a>    <span class="kw">let </span>flat = flatten_bit_string_segments(segments);
-<a href=#518 id=518 data-nosnippet>518</a>    <span class="prelude-val">Ok</span>((n, flat))
-<a href=#519 id=519 data-nosnippet>519</a>}
-<a href=#520 id=520 data-nosnippet>520</a>
-<a href=#521 id=521 data-nosnippet>521</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#522 id=522 data-nosnippet>522</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; ParserRecBody&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span>BerBitStringRecBody {
-<a href=#523 id=523 data-nosnippet>523</a>    <span class="kw">type </span>EP = Tag;
-<a href=#524 id=524 data-nosnippet>524</a>
-<a href=#525 id=525 data-nosnippet>525</a>    <span class="kw">type </span>O = BitStringOwned;
-<a href=#526 id=526 data-nosnippet>526</a>
-<a href=#527 id=527 data-nosnippet>527</a>    <span class="kw">fn </span>parse_body&lt;Exec&gt;(
-<a href=#528 id=528 data-nosnippet>528</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#529 id=529 data-nosnippet>529</a>        expected: <span class="kw-2">&amp;</span>Tag,
-<a href=#530 id=530 data-nosnippet>530</a>        Ghost(spec_rec): Ghost&lt;ParamRecSpecs&lt;Tag, BitStringSpec&gt;&gt;,
-<a href=#531 id=531 data-nosnippet>531</a>        exec_rec: Exec,
-<a href=#532 id=532 data-nosnippet>532</a>        ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8],
-<a href=#533 id=533 data-nosnippet>533</a>    ) -&gt; PResult&lt;BitStringOwned&gt; <span class="kw">where </span>Exec: Fn(<span class="kw-2">&amp;</span>Tag, &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;BitStringOwned&gt; {
-<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">use </span><span class="kw">crate</span>::combinators::congruence::<span class="kw-2">*</span>;
-<a href=#535 id=535 data-nosnippet>535</a>        <span class="kw">use </span><span class="kw">crate</span>::core::exec::bridge_lemmas::<span class="kw-2">*</span>;
-<a href=#536 id=536 data-nosnippet>536</a>
-<a href=#537 id=537 data-nosnippet>537</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
-<a href=#538 id=538 data-nosnippet>538</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::lemma_const_tag_fmt_exec_inv;
-<a href=#539 id=539 data-nosnippet>539</a>        broadcast <span class="kw">use </span>lemma_parser_congruent_reflexive;
-<a href=#540 id=540 data-nosnippet>540</a>
-<a href=#541 id=541 data-nosnippet>541</a>        <span class="kw">let _ </span>= ibuf.len();
-<a href=#542 id=542 data-nosnippet>542</a>        <span class="kw">let </span>(tag_len, actual_tag) = TagFmt.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#543 id=543 data-nosnippet>543</a>        <span class="kw">let </span>rest = ibuf.skip(tag_len);
-<a href=#544 id=544 data-nosnippet>544</a>
-<a href=#545 id=545 data-nosnippet>545</a>        <span class="kw">if </span>actual_tag == primitive_tag(<span class="kw-2">*</span>expected) {
-<a href=#546 id=546 data-nosnippet>546</a>            <span class="kw">let </span>(length_len, content_len) = LengthFmt::&lt;BER&gt;.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
-<a href=#547 id=547 data-nosnippet>547</a>            <span class="kw">let </span>content_bytes = rest.skip(length_len);
-<a href=#548 id=548 data-nosnippet>548</a>            <span class="kw">let </span>(content_len, value) = ExactLen(content_len, BitStringFmt::&lt;BER&gt;).parse(
-<a href=#549 id=549 data-nosnippet>549</a>                <span class="kw-2">&amp;</span>content_bytes,
-<a href=#550 id=550 data-nosnippet>550</a>            )<span class="question-mark">?</span>;
-<a href=#551 id=551 data-nosnippet>551</a>            <span class="kw">let </span>value = bit_string_to_owned(value);
-<a href=#552 id=552 data-nosnippet>552</a>            <span class="prelude-val">Ok</span>((tag_len + length_len + content_len, value))
-<a href=#553 id=553 data-nosnippet>553</a>        } <span class="kw">else if </span>actual_tag == constructed_tag(<span class="kw-2">*</span>expected) {
-<a href=#554 id=554 data-nosnippet>554</a>            <span class="kw">let </span>(length_len, content_len) = BerLengthFmt.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
-<a href=#555 id=555 data-nosnippet>555</a>            <span class="kw">let </span>content_bytes = rest.skip(length_len);
-<a href=#556 id=556 data-nosnippet>556</a>            <span class="kw">let </span>ghost child_spec = spec_rec(TagFmt::BIT_STRING);
-<a href=#557 id=557 data-nosnippet>557</a>            <span class="kw">let </span>child_exec = |input: &amp;&amp;<span class="lifetime">'i </span>[u8]| -&gt; (r: PResult&lt;BitStringOwned&gt;)
-<a href=#558 id=558 data-nosnippet>558</a>                ensures
-<a href=#559 id=559 data-nosnippet>559</a>                    parse_matches_spec(r, child_spec.<span class="number">2</span>(input@)),
-<a href=#560 id=560 data-nosnippet>560</a>                { exec_rec(<span class="kw-2">&amp;</span>TagFmt::BIT_STRING, input) };
-<a href=#561 id=561 data-nosnippet>561</a>            <span class="kw">let </span>child: <span class="kw-2">&amp;</span>FnParser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], BitStringOwned, BundledSpecs&lt;BitStringSpec&gt;, <span class="kw">_</span>&gt; =
-<a href=#562 id=562 data-nosnippet>562</a>                <span class="kw-2">&amp;</span>FnParser::new(child_exec, Ghost(child_spec));
-<a href=#563 id=563 data-nosnippet>563</a>            proof {
-<a href=#564 id=564 data-nosnippet>564</a>                lemma_ref_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>&gt;(child);
-<a href=#565 id=565 data-nosnippet>565</a>                lemma_ref_safe_productive_inv(child);
-<a href=#566 id=566 data-nosnippet>566</a>                lemma_ref_fn_parser_congruence(child);
-<a href=#567 id=567 data-nosnippet>567</a>            }
-<a href=#568 id=568 data-nosnippet>568</a>
-<a href=#569 id=569 data-nosnippet>569</a>            <span class="kw">let </span>(content_len, value) = <span class="kw">match </span>content_len {
-<a href=#570 id=570 data-nosnippet>570</a>                BerLength::Definite(content_len) =&gt; {
-<a href=#571 id=571 data-nosnippet>571</a>                    <span class="kw">let </span>ghost repeated_spec = RepeatTillEnd(child_spec);
-<a href=#572 id=572 data-nosnippet>572</a>                    <span class="kw">let </span>repeated = RepeatTillEnd(child);
-<a href=#573 id=573 data-nosnippet>573</a>                    <span class="kw">let </span>exact = ExactLen(content_len, repeated);
+<a href=#462 id=462 data-nosnippet>462</a><span class="attr">#[inline(always)]
+<a href=#463 id=463 data-nosnippet>463</a>#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#464 id=464 data-nosnippet>464</a></span><span class="kw">fn </span>parse_bit_string_segments&lt;I, P&gt;(parser: <span class="kw-2">&amp;</span>P, ibuf: <span class="kw-2">&amp;</span>I) -&gt; (result: PResult&lt;BitStringOwned&gt;) <span class="kw">where
+<a href=#465 id=465 data-nosnippet>465</a>    </span>I: InputBuf,
+<a href=#466 id=466 data-nosnippet>466</a>    P: Parser&lt;I, PT = Vec&lt;BitStringOwned&gt;, PVal = Seq&lt;BitStringSpec&gt;&gt;,
+<a href=#467 id=467 data-nosnippet>467</a>
+<a href=#468 id=468 data-nosnippet>468</a>    requires
+<a href=#469 id=469 data-nosnippet>469</a>        parser.exec_inv(),
+<a href=#470 id=470 data-nosnippet>470</a>    ensures
+<a href=#471 id=471 data-nosnippet>471</a>        parse_matches_spec(result, flattened_bit_string_result(parser.spec_parse(ibuf@))),
+<a href=#472 id=472 data-nosnippet>472</a>{
+<a href=#473 id=473 data-nosnippet>473</a>    <span class="kw">let </span>(n, segments) = parser.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#474 id=474 data-nosnippet>474</a>    <span class="kw">if </span>!ber_bit_string_segments_wf_exec(<span class="kw-2">&amp;</span>segments) {
+<a href=#475 id=475 data-nosnippet>475</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(
+<a href=#476 id=476 data-nosnippet>476</a>            ParseError::custom(
+<a href=#477 id=477 data-nosnippet>477</a>                <span class="string">"Only the final constructed BIT STRING segment may have unused bits"</span>,
+<a href=#478 id=478 data-nosnippet>478</a>            ),
+<a href=#479 id=479 data-nosnippet>479</a>        );
+<a href=#480 id=480 data-nosnippet>480</a>    }
+<a href=#481 id=481 data-nosnippet>481</a>    <span class="kw">let </span>flat = flatten_bit_string_segments(segments);
+<a href=#482 id=482 data-nosnippet>482</a>    <span class="prelude-val">Ok</span>((n, flat))
+<a href=#483 id=483 data-nosnippet>483</a>}
+<a href=#484 id=484 data-nosnippet>484</a>
+<a href=#485 id=485 data-nosnippet>485</a><span class="attr">#[inline(always)]
+<a href=#486 id=486 data-nosnippet>486</a>#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#487 id=487 data-nosnippet>487</a></span><span class="kw">fn </span>parse_bit_string_segments_eoc&lt;I, P&gt;(parser: <span class="kw-2">&amp;</span>P, ibuf: <span class="kw-2">&amp;</span>I) -&gt; (result: PResult&lt;
+<a href=#488 id=488 data-nosnippet>488</a>    BitStringOwned,
+<a href=#489 id=489 data-nosnippet>489</a>&gt;) <span class="kw">where
+<a href=#490 id=490 data-nosnippet>490</a>    </span>I: InputBuf,
+<a href=#491 id=491 data-nosnippet>491</a>    P: Parser&lt;I, PT = (Vec&lt;BitStringOwned&gt;, EocValue), PVal = (Seq&lt;BitStringSpec&gt;, EocValue)&gt;,
+<a href=#492 id=492 data-nosnippet>492</a>
+<a href=#493 id=493 data-nosnippet>493</a>    requires
+<a href=#494 id=494 data-nosnippet>494</a>        parser.exec_inv(),
+<a href=#495 id=495 data-nosnippet>495</a>    ensures
+<a href=#496 id=496 data-nosnippet>496</a>        parse_matches_spec(result, flattened_bit_string_eoc_result(parser.spec_parse(ibuf@))),
+<a href=#497 id=497 data-nosnippet>497</a>{
+<a href=#498 id=498 data-nosnippet>498</a>    <span class="kw">let </span>(n, (segments, _eoc)) = parser.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#499 id=499 data-nosnippet>499</a>    <span class="kw">if </span>!ber_bit_string_segments_wf_exec(<span class="kw-2">&amp;</span>segments) {
+<a href=#500 id=500 data-nosnippet>500</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(
+<a href=#501 id=501 data-nosnippet>501</a>            ParseError::custom(
+<a href=#502 id=502 data-nosnippet>502</a>                <span class="string">"Only the final constructed BIT STRING segment may have unused bits"</span>,
+<a href=#503 id=503 data-nosnippet>503</a>            ),
+<a href=#504 id=504 data-nosnippet>504</a>        );
+<a href=#505 id=505 data-nosnippet>505</a>    }
+<a href=#506 id=506 data-nosnippet>506</a>    <span class="kw">let </span>flat = flatten_bit_string_segments(segments);
+<a href=#507 id=507 data-nosnippet>507</a>    <span class="prelude-val">Ok</span>((n, flat))
+<a href=#508 id=508 data-nosnippet>508</a>}
+<a href=#509 id=509 data-nosnippet>509</a>
+<a href=#510 id=510 data-nosnippet>510</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#511 id=511 data-nosnippet>511</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; ParserRecBody&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span>BerBitStringRecBody {
+<a href=#512 id=512 data-nosnippet>512</a>    <span class="kw">type </span>EP = Tag;
+<a href=#513 id=513 data-nosnippet>513</a>
+<a href=#514 id=514 data-nosnippet>514</a>    <span class="kw">type </span>O = BitStringOwned;
+<a href=#515 id=515 data-nosnippet>515</a>
+<a href=#516 id=516 data-nosnippet>516</a>    <span class="kw">fn </span>parse_body&lt;Exec&gt;(
+<a href=#517 id=517 data-nosnippet>517</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#518 id=518 data-nosnippet>518</a>        expected: <span class="kw-2">&amp;</span>Tag,
+<a href=#519 id=519 data-nosnippet>519</a>        Ghost(spec_rec): Ghost&lt;ParamRecSpecs&lt;Tag, BitStringSpec&gt;&gt;,
+<a href=#520 id=520 data-nosnippet>520</a>        exec_rec: Exec,
+<a href=#521 id=521 data-nosnippet>521</a>        ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8],
+<a href=#522 id=522 data-nosnippet>522</a>    ) -&gt; PResult&lt;BitStringOwned&gt; <span class="kw">where </span>Exec: Fn(<span class="kw-2">&amp;</span>Tag, &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;BitStringOwned&gt; {
+<a href=#523 id=523 data-nosnippet>523</a>        <span class="kw">use </span><span class="kw">crate</span>::combinators::congruence::<span class="kw-2">*</span>;
+<a href=#524 id=524 data-nosnippet>524</a>        <span class="kw">use </span><span class="kw">crate</span>::core::exec::bridge_lemmas::<span class="kw-2">*</span>;
+<a href=#525 id=525 data-nosnippet>525</a>
+<a href=#526 id=526 data-nosnippet>526</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
+<a href=#527 id=527 data-nosnippet>527</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::asn1::tag::lemma_const_tag_fmt_exec_inv;
+<a href=#528 id=528 data-nosnippet>528</a>        broadcast <span class="kw">use </span>lemma_parser_congruent_reflexive;
+<a href=#529 id=529 data-nosnippet>529</a>
+<a href=#530 id=530 data-nosnippet>530</a>        <span class="kw">let _ </span>= ibuf.len();
+<a href=#531 id=531 data-nosnippet>531</a>        <span class="kw">let </span>(tag_len, actual_tag) = TagFmt.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#532 id=532 data-nosnippet>532</a>        <span class="kw">let </span>rest = ibuf.skip(tag_len);
+<a href=#533 id=533 data-nosnippet>533</a>
+<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">if </span>actual_tag == primitive_tag(<span class="kw-2">*</span>expected) {
+<a href=#535 id=535 data-nosnippet>535</a>            <span class="kw">let </span>(length_len, content_len) = LengthFmt::&lt;BER&gt;.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
+<a href=#536 id=536 data-nosnippet>536</a>            <span class="kw">let </span>content_bytes = rest.skip(length_len);
+<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw">let </span>(content_len, value) = ExactLen(content_len, BitStringFmt::&lt;BER&gt;).parse(
+<a href=#538 id=538 data-nosnippet>538</a>                <span class="kw-2">&amp;</span>content_bytes,
+<a href=#539 id=539 data-nosnippet>539</a>            )<span class="question-mark">?</span>;
+<a href=#540 id=540 data-nosnippet>540</a>            <span class="kw">let </span>value = bit_string_to_owned(value);
+<a href=#541 id=541 data-nosnippet>541</a>            <span class="prelude-val">Ok</span>((tag_len + length_len + content_len, value))
+<a href=#542 id=542 data-nosnippet>542</a>        } <span class="kw">else if </span>actual_tag == constructed_tag(<span class="kw-2">*</span>expected) {
+<a href=#543 id=543 data-nosnippet>543</a>            <span class="kw">let </span>(length_len, content_len) = BerLengthFmt.parse(<span class="kw-2">&amp;</span>rest)<span class="question-mark">?</span>;
+<a href=#544 id=544 data-nosnippet>544</a>            <span class="kw">let </span>content_bytes = rest.skip(length_len);
+<a href=#545 id=545 data-nosnippet>545</a>            <span class="kw">let </span>ghost child_spec = spec_rec(TagFmt::BIT_STRING);
+<a href=#546 id=546 data-nosnippet>546</a>            <span class="kw">let </span>child_exec = |input: &amp;&amp;<span class="lifetime">'i </span>[u8]| -&gt; (r: PResult&lt;BitStringOwned&gt;)
+<a href=#547 id=547 data-nosnippet>547</a>                ensures
+<a href=#548 id=548 data-nosnippet>548</a>                    parse_matches_spec(r, child_spec.<span class="number">2</span>(input@)),
+<a href=#549 id=549 data-nosnippet>549</a>                { exec_rec(<span class="kw-2">&amp;</span>TagFmt::BIT_STRING, input) };
+<a href=#550 id=550 data-nosnippet>550</a>            <span class="kw">let </span>child: <span class="kw-2">&amp;</span>FnParser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], BitStringOwned, BundledSpecs&lt;BitStringSpec&gt;, <span class="kw">_</span>&gt; =
+<a href=#551 id=551 data-nosnippet>551</a>                <span class="kw-2">&amp;</span>FnParser::new(child_exec, Ghost(child_spec));
+<a href=#552 id=552 data-nosnippet>552</a>            proof {
+<a href=#553 id=553 data-nosnippet>553</a>                lemma_ref_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>&gt;(child);
+<a href=#554 id=554 data-nosnippet>554</a>                lemma_ref_safe_productive_inv(child);
+<a href=#555 id=555 data-nosnippet>555</a>                lemma_ref_fn_parser_congruence(child);
+<a href=#556 id=556 data-nosnippet>556</a>            }
+<a href=#557 id=557 data-nosnippet>557</a>
+<a href=#558 id=558 data-nosnippet>558</a>            <span class="kw">let </span>(content_len, value) = <span class="kw">match </span>content_len {
+<a href=#559 id=559 data-nosnippet>559</a>                BerLength::Definite(content_len) =&gt; {
+<a href=#560 id=560 data-nosnippet>560</a>                    <span class="kw">let </span>ghost repeated_spec = RepeatTillEnd(child_spec);
+<a href=#561 id=561 data-nosnippet>561</a>                    <span class="kw">let </span>repeated = RepeatTillEnd(child);
+<a href=#562 id=562 data-nosnippet>562</a>                    <span class="kw">let </span>exact = ExactLen(content_len, repeated);
+<a href=#563 id=563 data-nosnippet>563</a>                    proof {
+<a href=#564 id=564 data-nosnippet>564</a>                        lemma_repeat_till_end_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>repeated);
+<a href=#565 id=565 data-nosnippet>565</a>                        lemma_exact_len_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>exact);
+<a href=#566 id=566 data-nosnippet>566</a>                        lemma_repeat_till_end_parser_congruence(child, child_spec);
+<a href=#567 id=567 data-nosnippet>567</a>                        lemma_exact_len_parser_congruence(content_len, repeated, repeated_spec);
+<a href=#568 id=568 data-nosnippet>568</a>                        reveal(parser_congruent);
+<a href=#569 id=569 data-nosnippet>569</a>                    }
+<a href=#570 id=570 data-nosnippet>570</a>                    parse_bit_string_segments(<span class="kw-2">&amp;</span>exact, <span class="kw-2">&amp;</span>content_bytes)<span class="question-mark">?
+<a href=#571 id=571 data-nosnippet>571</a>                </span>},
+<a href=#572 id=572 data-nosnippet>572</a>                BerLength::Indefinite =&gt; {
+<a href=#573 id=573 data-nosnippet>573</a>                    <span class="kw">let </span>repeated = Repeat(child, EOC);
 <a href=#574 id=574 data-nosnippet>574</a>                    proof {
-<a href=#575 id=575 data-nosnippet>575</a>                        lemma_repeat_till_end_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>repeated);
-<a href=#576 id=576 data-nosnippet>576</a>                        lemma_exact_len_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>exact);
-<a href=#577 id=577 data-nosnippet>577</a>                        lemma_repeat_till_end_parser_congruence(child, child_spec);
-<a href=#578 id=578 data-nosnippet>578</a>                        lemma_exact_len_parser_congruence(content_len, repeated, repeated_spec);
-<a href=#579 id=579 data-nosnippet>579</a>                        reveal(parser_congruent);
-<a href=#580 id=580 data-nosnippet>580</a>                    }
-<a href=#581 id=581 data-nosnippet>581</a>                    parse_bit_string_segments(<span class="kw-2">&amp;</span>exact, <span class="kw-2">&amp;</span>content_bytes)<span class="question-mark">?
-<a href=#582 id=582 data-nosnippet>582</a>                </span>},
-<a href=#583 id=583 data-nosnippet>583</a>                BerLength::Indefinite =&gt; {
-<a href=#584 id=584 data-nosnippet>584</a>                    <span class="kw">let </span>repeated = Repeat(child, EOC);
-<a href=#585 id=585 data-nosnippet>585</a>                    proof {
-<a href=#586 id=586 data-nosnippet>586</a>                        lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>EOC);
-<a href=#587 id=587 data-nosnippet>587</a>                        lemma_repeat_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>repeated);
-<a href=#588 id=588 data-nosnippet>588</a>                        lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
-<a href=#589 id=589 data-nosnippet>589</a>                        reveal(parser_congruent);
-<a href=#590 id=590 data-nosnippet>590</a>                    }
-<a href=#591 id=591 data-nosnippet>591</a>                    parse_bit_string_segments_eoc(<span class="kw-2">&amp;</span>repeated, <span class="kw-2">&amp;</span>content_bytes)<span class="question-mark">?
-<a href=#592 id=592 data-nosnippet>592</a>                </span>},
-<a href=#593 id=593 data-nosnippet>593</a>            };
-<a href=#594 id=594 data-nosnippet>594</a>            <span class="prelude-val">Ok</span>((tag_len + length_len + content_len, value))
-<a href=#595 id=595 data-nosnippet>595</a>        } <span class="kw">else </span>{
-<a href=#596 id=596 data-nosnippet>596</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Tag must match the configured BER BIT STRING identity"</span>))
-<a href=#597 id=597 data-nosnippet>597</a>        }
-<a href=#598 id=598 data-nosnippet>598</a>    }
-<a href=#599 id=599 data-nosnippet>599</a>}
-<a href=#600 id=600 data-nosnippet>600</a>
-<a href=#601 id=601 data-nosnippet>601</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
-<a href=#602 id=602 data-nosnippet>602</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>LIMIT: usize&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span>BerBitStringFmt&lt;LIMIT&gt; {
-<a href=#603 id=603 data-nosnippet>603</a>    <span class="kw">type </span>PT = BitStringOwned;
-<a href=#604 id=604 data-nosnippet>604</a>
-<a href=#605 id=605 data-nosnippet>605</a>    <span class="kw">fn </span>min_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-<a href=#606 id=606 data-nosnippet>606</a>        <span class="comment">// An empty value has an identifier and a length octet.
-<a href=#607 id=607 data-nosnippet>607</a>        </span><span class="number">2
-<a href=#608 id=608 data-nosnippet>608</a>    </span>}
-<a href=#609 id=609 data-nosnippet>609</a>
-<a href=#610 id=610 data-nosnippet>610</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#611 id=611 data-nosnippet>611</a>        FixWith::&lt;LIMIT, <span class="kw">_</span>, <span class="kw">_</span>&gt;(BerBitStringRecBody, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)
-<a href=#612 id=612 data-nosnippet>612</a>    }
-<a href=#613 id=613 data-nosnippet>613</a>}
-<a href=#614 id=614 data-nosnippet>614</a>
-<a href=#615 id=615 data-nosnippet>615</a>} <span class="comment">// verus!
+<a href=#575 id=575 data-nosnippet>575</a>                        lemma_pair_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>EOC);
+<a href=#576 id=576 data-nosnippet>576</a>                        lemma_repeat_parser_exec_inv::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>repeated);
+<a href=#577 id=577 data-nosnippet>577</a>                        lemma_repeat_parser_congruence(child, child_spec, EOC, EOC);
+<a href=#578 id=578 data-nosnippet>578</a>                        reveal(parser_congruent);
+<a href=#579 id=579 data-nosnippet>579</a>                    }
+<a href=#580 id=580 data-nosnippet>580</a>                    parse_bit_string_segments_eoc(<span class="kw-2">&amp;</span>repeated, <span class="kw-2">&amp;</span>content_bytes)<span class="question-mark">?
+<a href=#581 id=581 data-nosnippet>581</a>                </span>},
+<a href=#582 id=582 data-nosnippet>582</a>            };
+<a href=#583 id=583 data-nosnippet>583</a>            <span class="prelude-val">Ok</span>((tag_len + length_len + content_len, value))
+<a href=#584 id=584 data-nosnippet>584</a>        } <span class="kw">else </span>{
+<a href=#585 id=585 data-nosnippet>585</a>            <span class="prelude-val">Err</span>(ParseError::custom(<span class="string">"Tag must match the configured BER BIT STRING identity"</span>))
+<a href=#586 id=586 data-nosnippet>586</a>        }
+<a href=#587 id=587 data-nosnippet>587</a>    }
+<a href=#588 id=588 data-nosnippet>588</a>}
+<a href=#589 id=589 data-nosnippet>589</a>
+<a href=#590 id=590 data-nosnippet>590</a><span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
+<a href=#591 id=591 data-nosnippet>591</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, <span class="kw">const </span>LIMIT: usize&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]&gt; <span class="kw">for </span>BerBitStringFmt&lt;LIMIT&gt; {
+<a href=#592 id=592 data-nosnippet>592</a>    <span class="kw">type </span>PT = BitStringOwned;
+<a href=#593 id=593 data-nosnippet>593</a>
+<a href=#594 id=594 data-nosnippet>594</a>    <span class="kw">fn </span>min_byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+<a href=#595 id=595 data-nosnippet>595</a>        <span class="comment">// An empty value has an identifier and a length octet.
+<a href=#596 id=596 data-nosnippet>596</a>        </span><span class="number">2
+<a href=#597 id=597 data-nosnippet>597</a>    </span>}
+<a href=#598 id=598 data-nosnippet>598</a>
+<a href=#599 id=599 data-nosnippet>599</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'i </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#600 id=600 data-nosnippet>600</a>        FixWith::&lt;LIMIT, <span class="kw">_</span>, <span class="kw">_</span>&gt;(BerBitStringRecBody, <span class="self">self</span>.<span class="number">0</span>).parse(ibuf)
+<a href=#601 id=601 data-nosnippet>601</a>    }
+<a href=#602 id=602 data-nosnippet>602</a>}
+<a href=#603 id=603 data-nosnippet>603</a>
+<a href=#604 id=604 data-nosnippet>604</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

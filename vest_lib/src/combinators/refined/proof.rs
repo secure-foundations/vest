@@ -19,11 +19,6 @@ impl<A, Pred> SPRoundTripDps for super::Refined<A, Pred> where
     }
 }
 
-// impl<A: PSRoundTrip, Pred: SpecPred<A::PVal>> PSRoundTrip for super::Refined<A, Pred> {
-//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         self.0.theorem_parse_serialize_roundtrip(ibuf);
-//     }
-// }
 impl<A: NonMalleable, Pred: SpecPred<A::PVal>> NonMalleable for super::Refined<A, Pred> {
     open spec fn nonmal_inv(&self) -> bool {
         self.0.nonmal_inv()
@@ -100,11 +95,6 @@ impl<Inner: SPRoundTripDps> SPRoundTripDps for super::Const<Inner, Inner::PVal> 
     }
 }
 
-// impl<Inner: PSRoundTrip> PSRoundTrip for super::Const<Inner, Inner::PVal> {
-//     proof fn theorem_parse_serialize_roundtrip(&self, ibuf: Seq<u8>) {
-//         self.0.theorem_parse_serialize_roundtrip(ibuf);
-//     }
-// }
 impl<Inner: NonMalleable> NonMalleable for super::Const<Inner, Inner::PVal> {
     open spec fn nonmal_inv(&self) -> bool {
         self.0.nonmal_inv()

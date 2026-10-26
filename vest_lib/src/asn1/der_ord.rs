@@ -143,12 +143,12 @@ pub trait DerOrd<T>: DerState + SpecSerializer<SVal = T::V> + SpecByteLen<T = T:
         let ghost leftvv = left.deep_view();
         let ghost rightvv = right.deep_view();
         let ghost left_encoding = self.spec_serialize(leftvv);
-        let ghost right_encoding = self.spec_serialize(right.deep_view());
+        let ghost right_encoding = self.spec_serialize(rightvv);
 
         loop
             invariant
                 self.der_state_valid(leftvv, left_state),
-                self.der_state_valid(right.deep_view(), right_state),
+                self.der_state_valid(rightvv, right_state),
                 der_octets_leq(left_encoding, right_encoding) == der_octets_leq(
                     self.der_remaining(leftvv, left_state),
                     self.der_remaining(rightvv, right_state),
@@ -163,14 +163,8 @@ pub trait DerOrd<T>: DerState + SpecSerializer<SVal = T::V> + SpecByteLen<T = T:
             let ghost old_r = self.der_remaining(rightvv, right_state);
             let left_next = self.der_next(left, &mut left_state);
             let right_next = self.der_next(right, &mut right_state);
-            let left_byte = match left_next {
-                Some(byte) => byte,
-                None => 0,
-            };
-            let right_byte = match right_next {
-                Some(byte) => byte,
-                None => 0,
-            };
+            let left_byte = left_next.unwrap_or(0);
+            let right_byte = right_next.unwrap_or(0);
 
             if left_next.is_none() && right_next.is_none() {
                 return true;

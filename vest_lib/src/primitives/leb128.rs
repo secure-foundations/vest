@@ -370,7 +370,4 @@ mod leb128_derived_proofs {
 
 }
 
-// impl<const MINIMAL: bool> Parser<&[u8]> for ULeb128<MINIMAL, 5> {
-//     typ
-// }
 } // verus!

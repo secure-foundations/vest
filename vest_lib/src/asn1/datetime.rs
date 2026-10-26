@@ -323,7 +323,7 @@ pub fn is_digits(bytes: &[u8], start: usize, end: usize) -> bool
         |&byte: &u8| -> (valid: bool)
             ensures
                 valid == ascii_digit(byte),
-            { ASCII_0 <= byte && byte <= ASCII_9 },
+            { (ASCII_0..=ASCII_9).contains(&byte) },
     );
     assert forall|i: int| valid && start <= i < end implies ascii_digit(#[trigger] bytes@[i]) by {
         assert(span@[i - start] == bytes@[i]);

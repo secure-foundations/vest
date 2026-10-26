@@ -30,8 +30,10 @@ pub use head::{
 };
 pub use value::{CborArray, CborBytes, CborFloat, CborMap, CborText, CborValue, CborValueSpec};
 
+vstd::prelude::verus! {
 /// Default maximum nesting depth for generic CBOR values.
 pub const MAX_RECURSION_DEPTH: usize = 30;
+}
 
 #[cfg(test)]
 mod tests {

@@ -13,7 +13,6 @@ use crate::core::spec::{Consistency, SpecByteLen};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -48,20 +47,12 @@ impl<'i, Output: OutputBuf> Serializer<Output, &'i [u8]> for super::Tail {
 }
 
 impl ByteLen<[u8]> for super::Tail {
-    open spec fn exec_inv(&self) -> bool {
-        true
-    }
-
     fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()
     }
 }
 
 impl<'i> ByteLen<&'i [u8]> for super::Tail {
-    open spec fn exec_inv(&self) -> bool {
-        true
-    }
-
     fn length(&self, v: &&'i [u8]) -> (len: usize) {
         v.len()
     }

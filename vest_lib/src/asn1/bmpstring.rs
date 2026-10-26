@@ -23,7 +23,6 @@ use vstd::prelude::*;
 #[cfg(verus_only)]
 use vstd::std_specs::iter::IteratorSpec;
 use vstd::string::StrSliceExecFns;
-use OutputBuf;
 
 verus! {
 
@@ -391,19 +390,26 @@ pub fn check_valid_bmp_string(bytes: &[u8]) -> (res: bool)
 }
 
 /// Decode a byte slice into a String, assuming it contains a valid BMPString.
-/// TODO: Verify this function while keeping it efficient and idiomatic.
 #[cfg(feature = "alloc")]
-#[verifier::external_body]
+#[verifier::loop_isolation(false)]
 fn decode_bmp_string_owned(bytes: &[u8]) -> (res: String)
     requires
         is_valid_bmp_string(bytes.deep_view()),
     ensures
         res.deep_view() == decode_bmp_string(bytes.deep_view()),
 {
-    // SAFETY: `is_valid_bmp_string` guarantees that all code units are valid BMP scalars, which are valid Unicode code points, so `char::from_u32_unchecked` is safe to use here.
-    bytes.chunks_exact(2).map(
-        |pair| unsafe { char::from_u32_unchecked(u16::from_be_bytes([pair[0], pair[1]]) as u32) },
-    ).collect()
+    let mut output = String::with_capacity(bytes.len() / 2);
+    for i in 0..bytes.len() / 2
+        invariant
+            output@ == decode_bmp_string(bytes.deep_view())[0..i],
+    {
+        let pair = &bytes[2 * i..2 * i + 2];
+        let unit = u16_from_be_bytes([pair[0], pair[1]]) as u32;
+        assert(unit == bmp_code_unit(bytes.deep_view(), i as int));
+        // SAFETY: the input's validity proves that this code unit is a scalar.
+        output.push(unsafe { char::from_u32_unchecked(unit) });
+    }
+    output
 }
 
 #[cfg(feature = "alloc")]

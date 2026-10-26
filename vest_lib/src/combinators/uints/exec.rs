@@ -11,7 +11,6 @@ use crate::core::exec::{
 };
 use crate::core::spec::{SpecParser, SpecSerializer};
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -160,10 +159,6 @@ impl Parser<&[u8]> for super::U8 {
 
     fn min_byte_len(&self) -> usize {
         U8_BYTE_LEN
-    }
-
-    open spec fn exec_inv(&self) -> bool {
-        true
     }
 
     fn parse(&self, ibuf: &&[u8]) -> PResult<Self::PT> {

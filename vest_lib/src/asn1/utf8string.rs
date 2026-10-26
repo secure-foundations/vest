@@ -14,7 +14,6 @@ use crate::{
 use alloc::{string::String, vec::Vec};
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
-use OutputBuf;
 
 verus! {
 
@@ -31,8 +30,25 @@ pub(crate) fn is_unicode_scalar(value: u32) -> bool
     returns
         vstd::utf8::is_scalar(value),
 {
-    value <= 0x10ffff && !(0xd800 <= value && value <= 0xdfff)
+    value <= 0x10ffff && (value < 0xd800 || value > 0xdfff)
 }
+
+/// Standard scalar conversion; callers prove validity before the unsafe call.
+pub assume_specification[ char::from_u32_unchecked ](value: u32) -> char
+    requires
+        vstd::utf8::is_scalar(value),
+    returns
+        value as char,
+;
+
+/// Reserving string storage does not add any characters.
+#[cfg(feature = "alloc")]
+pub assume_specification[ String::with_capacity ](capacity: usize) -> (value: String)
+    requires
+        capacity <= isize::MAX as usize,
+    ensures
+        value@ == Seq::<char>::empty(),
+;
 
 #[verifier::external_body]
 pub fn is_valid_utf8(bytes: &[u8]) -> (res: bool)

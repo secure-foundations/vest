@@ -15,7 +15,6 @@ use crate::core::exec::{
 };
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

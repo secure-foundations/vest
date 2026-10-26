@@ -15,7 +15,6 @@ use crate::{
 use alloc::string::String;
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
-use OutputBuf;
 
 verus! {
 

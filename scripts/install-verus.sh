@@ -76,7 +76,7 @@ case "$(uname -s):$(uname -m)" in
   Darwin:x86_64) asset="x86-macos" ;;
   Linux:x86_64) asset="x86-linux" ;;
   *)
-    echo "No prebuilt Verus release is available for $(uname -s) $(uname -m)." >&2
+    echo "This installer does not support $(uname -s) $(uname -m)." >&2
     exit 1
     ;;
 esac

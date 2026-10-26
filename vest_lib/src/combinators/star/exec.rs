@@ -15,7 +15,6 @@ use crate::core::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -33,11 +32,7 @@ fn initial_capacity<T>(estimated: usize) -> (cap: usize)
         0
     } else {
         let limit = MAX_INITIAL_BYTES / size;
-        if estimated < limit {
-            estimated
-        } else {
-            limit
-        }
+        core::cmp::min(estimated, limit)
     }
 }
 
@@ -56,6 +51,7 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         &&& self.0.productive_inv()
     }
 
+    #[verifier::loop_isolation(false)]
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         reveal(<super::Star::<_> as SpecParser>::spec_parse);
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
@@ -69,17 +65,12 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         // Without reservation, the `Vec` is regrown several times per repetition,
         // which dominates the cost of parsing `[u8; @len] >>= Vec<..>`.
         let min_len = self.0.min_byte_len();
-        let per = if min_len == 0 {
-            1
-        } else {
-            min_len
-        };
+        let per = core::cmp::max(min_len, 1);
         let estimate = remaining / per;
         let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(estimate));
 
         while remaining > 0
             invariant
-                self.exec_inv(),
                 consumed + remaining == total_len,
                 remaining == rest@.len(),
                 ({
@@ -155,27 +146,22 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         &&& self.1.safe_inv()
     }
 
+    #[verifier::loop_isolation(false)]
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
         let count = self.0.get();
-        let _total_len = ibuf.len();
+        let total_len = ibuf.len();
         let mut consumed: usize = 0;
         let mut rest = ibuf.skip(0);
         // The count may be attacker-controlled. Bound the initial allocation
         // even when a short input claims many elements.
-        let reserve = if count < _total_len {
-            count
-        } else {
-            _total_len
-        };
+        let reserve = core::cmp::min(count, total_len);
         let mut values = Vec::with_capacity(initial_capacity::<Inner::PT>(reserve));
 
         for _i in 0..count
             invariant
-                self.exec_inv(),
-                count as nat == self.0.as_nat(),
-                consumed + rest@.len() == _total_len,
+                consumed + rest@.len() == total_len,
                 ({
                     let prefix = values.deep_view();
                     let parsed = self.parse_n_rec(count as nat, ibuf@);
@@ -196,26 +182,6 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
     }
 }
 
-// pub assume_specification<T, const N: usize, F: FnMut(usize) -> T>[ core::array::from_fn ](
-//     f: F,
-// ) -> (out: [T; N])
-//     requires
-//         forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (i as usize,)),
-//     ensures
-//         forall|i: int| 0 <= i < N ==> call_ensures(f, (i as usize,), #[trigger] out[i]),
-// ;
-// pub assume_specification<T, const N: usize, F: FnMut(T) -> U, U>[ <[T; N]>::map ](
-//     arr: [T; N],
-//     f: F,
-// ) -> (out: [U; N])
-//     requires
-//         forall|i: int| 0 <= i < N ==> #[trigger] call_requires(f, (arr[i],)),
-//     ensures
-//         forall|i: int|
-//             #![trigger arr[i]]
-//             #![trigger out[i]]
-//             0 <= i < N ==> call_ensures(f, (arr[i],), out[i]),
-// ;
 #[inline(always)]
 #[verifier::external_body]
 pub fn array_of_none<T, const N: usize>() -> (out: [Option<T>; N])
@@ -251,6 +217,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
         &&& self.0.safe_inv()
     }
 
+    #[verifier::loop_isolation(false)]
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
@@ -261,7 +228,6 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
 
         for i in 0..N
             invariant
-                self.exec_inv(),
                 consumed + rest@.len() == _total_len,
                 forall|j: int| 0 <= j < i ==> #[trigger] arr@[j] is Some,
                 forall|j: int| i <= j < N ==> #[trigger] arr@[j] is None,
@@ -361,8 +327,8 @@ pub fn length_slice<Inner, T>(fmt: &Inner, values: &[T]) -> (len: usize) where
             assert(vs[i..] == seq![vs[i]] + vs[i + 1..]);
             star.lemma_byte_len_cons(vs[i], vs[i + 1..]);
         }
-        let l = fmt.length(value);
-        len += l;
+        let elem_len = fmt.length(value);
+        len += elem_len;
     }
     len
 }

@@ -8,7 +8,6 @@ use crate::core::exec::{
 };
 use crate::Never;
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

@@ -191,7 +191,6 @@ impl<C: SpecParser> SpecParser for super::OptionalEnd<C> {
 }
 
 // /// Parsing semantics: parses `B` from the back, consumes the tail of the input, then parses `A`.
-// pub struct PairRev<A, B>(pub B, pub A);
 impl<A, B> SpecParser for super::PairRev<A, B> where
     A: SpecParser,
     B: StaticByteLen + SpecParser<PVal = B::T>,

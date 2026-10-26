@@ -15,7 +15,6 @@ use crate::{
 };
 use vstd::assert_seqs_equal;
 use vstd::prelude::*;
-use OutputBuf;
 
 use super::datetime::*;
 

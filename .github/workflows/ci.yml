@@ -205,6 +205,9 @@ jobs:
           - name: vest_lib-std
             cargo_args: -p vest_lib
             verus_args: --expand-errors
+          - name: vest_lib-error-trace
+            cargo_args: -p vest_lib --features error-trace
+            verus_args: --expand-errors
           - name: vest-tests
             cargo_args: -p vest_tests
             verus_args: --expand-errors

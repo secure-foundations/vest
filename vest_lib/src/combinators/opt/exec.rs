@@ -9,7 +9,6 @@ use crate::core::{
     spec::{SafeParser, SpecParser},
 };
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

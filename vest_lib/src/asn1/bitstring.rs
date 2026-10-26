@@ -11,7 +11,6 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

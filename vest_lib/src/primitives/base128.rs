@@ -166,8 +166,6 @@ pub const CONTINUATION_MASK: u8 = 0b1000_0000;
 pub const PAYLOAD_MASK: u8 = 0b0111_1111;
 
 // ceil(log_128(2^32)) = 5
-// pub const BASE128_MAX_BYTES: usize = 4;
-// pub type UInt = u32;
 // ceil(log_128(2^64)) = 10
 pub const BASE128_MAX_BYTES: usize = 9;
 

@@ -14,7 +14,6 @@ use crate::core::{
     spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
 };
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -162,10 +161,6 @@ impl<Inner, T> Prepare<T> for super::Const<Inner, T> where
 }
 
 impl<const N: usize> ByteLen<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
-    open spec fn exec_inv(&self) -> bool {
-        true
-    }
-
     fn length(&self, _v: &[u8; N]) -> (len: usize) {
         N
     }
@@ -189,22 +184,6 @@ impl<const N: usize> Prepare<[u8; N]> for super::Const<Fixed<N>, [u8; N]> {
     }
 }
 
-// pub assume_specification<const N: usize>[ <[u8; N] as PartialEq<&[u8]>>::eq ](
-//     x: &[u8; N],
-//     y: &&[u8],
-// ) -> (is_eq: bool)
-//     ensures
-//         is_eq == (x@ == y@),
-// ;
-// pub assume_specification<'a, T, U, const N: usize>[ <[T; N] as core::cmp::PartialEq<&[U]>>::eq ](
-//     a: &[T; N],
-//     b: &&[U],
-// ) -> (r: bool) where T: core::cmp::PartialEq<U>
-// // , T: DeepView, U: DeepView<V = T::V>,
-//     // ensures
-//     //     // r == (a@ == b@),
-//     //     r == (a.deep_view() == b.deep_view()),
-// ;
 impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
     type PT = [u8; N];
 

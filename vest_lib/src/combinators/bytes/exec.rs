@@ -9,7 +9,6 @@ use crate::core::exec::{
 };
 use crate::core::spec::{Consistency, SpecByteLen, SpecParser};
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
@@ -68,11 +67,6 @@ impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::F
     }
 }
 
-// impl<Output: OutputBuf, const N: usize> Serializer<Output, [u8; N]> for super::Fixed<N> {
-//     fn ex_serialize(&self, v: &[u8; N], obuf: &mut Output) {
-//         obuf.write_bytes(v);
-//     }
-// }
 impl<const N: usize> ByteLen<[u8]> for super::Fixed<N> {
     fn length(&self, v: &[u8]) -> (len: usize) {
         v.len()

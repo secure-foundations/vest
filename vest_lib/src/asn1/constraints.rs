@@ -47,7 +47,11 @@ fn integer_in_range_exec<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: boo
     ensures
         ok == integer_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(value as int),
 {
-    (!HAS_MIN || MIN <= value) && (!HAS_MAX || value <= MAX)
+    if HAS_MIN && HAS_MAX {
+        (MIN..=MAX).contains(&value)
+    } else {
+        (!HAS_MIN || MIN <= value) && (!HAS_MAX || value <= MAX)
+    }
 }
 
 impl<const HAS_MIN: bool, const MIN: i64, const HAS_MAX: bool, const MAX: i64> SpecPred<
@@ -114,7 +118,11 @@ fn size_in_range_exec<const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool
     ensures
         ok == size_in_range::<HAS_MIN, MIN, HAS_MAX, MAX>(len as nat),
 {
-    (!HAS_MIN || MIN <= len) && (!HAS_MAX || len <= MAX)
+    if HAS_MIN && HAS_MAX {
+        (MIN..=MAX).contains(&len)
+    } else {
+        (!HAS_MIN || MIN <= len) && (!HAS_MAX || len <= MAX)
+    }
 }
 
 impl<T, const HAS_MIN: bool, const MIN: usize, const HAS_MAX: bool, const MAX: usize> SpecPred<

@@ -15,7 +15,7 @@ fn message_parse_serialize(input: &[u8]) -> Result<Vec<u8>, ParseError> {
         MessageFmt.theorem_parse_serialize_roundtrip(input@);
     }
     assert(bytes@ == input@[0..consumed]);
-    assert!(bytes.as_slice() == &input[..consumed]);
+    assert_eq!(bytes.as_slice(), &input[..consumed]);
     Ok(bytes)
 }
 
@@ -27,7 +27,7 @@ fn samples_parse_serialize(input: &[u8]) -> Result<Vec<u8>, ParseError> {
         SamplesFmt.theorem_parse_serialize_roundtrip(input@);
     }
     assert(bytes@ == input@[0..consumed]);
-    assert!(bytes.as_slice() == &input[..consumed]);
+    assert_eq!(bytes.as_slice(), &input[..consumed]);
     Ok(bytes)
 }
 
@@ -39,7 +39,7 @@ fn choice_parse_serialize(input: &[u8]) -> Result<Vec<u8>, ParseError> {
         VariableChoiceFmt.theorem_parse_serialize_roundtrip(input@);
     }
     assert(bytes@ == input@[0..consumed]);
-    assert!(bytes.as_slice() == &input[..consumed]);
+    assert_eq!(bytes.as_slice(), &input[..consumed]);
     Ok(bytes)
 }
 
@@ -57,7 +57,7 @@ fn message_non_malleability(first: &[u8], second: &[u8]) -> Result<bool, ParseEr
             MessageFmt.lemma_parse_non_malleable(first@, second@);
         }
         assert(first@[0..n1] == second@[0..n2]);
-        assert!(first[..n1] == second[..n2]);
+        assert_eq!(first[..n1], second[..n2]);
         Ok(true)
     } else {
         Ok(false)
@@ -97,22 +97,20 @@ fn triple_roundtrip() -> Result<(), PreSerializeError> {
     }
     let value = Triple { a: 0x42, b: [0x55, 0x77], c: u64::MAX };
     let len = TripleFmt.prepare(&value)?;
-    assert(len == 11);
-    assert!(len == 11);
+    assert_eq!(len, 11);
     let mut bytes = vec![0; len];
     TripleFmt.serialize(&value, &mut bytes);
     proof {
         TripleFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = TripleFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == 11);
     assert(parsed.a == 0x42);
     assert(parsed.b@ == value.b@);
-    assert(parsed.c == u64::MAX);
-    assert!(consumed == 11);
-    assert!(parsed.a == 0x42);
-    assert!(parsed.b.as_slice() == value.b.as_slice());
-    assert!(parsed.c == u64::MAX);
+    assert_eq!(consumed, 11);
+    assert_eq!(parsed.a, 0x42);
+    assert_ne!(parsed.a, 0);
+    assert_eq!(parsed.b.as_slice(), value.b.as_slice());
+    assert_eq!(parsed.c, u64::MAX);
     Ok(())
 }
 
@@ -122,18 +120,15 @@ fn alias_roundtrip() -> Result<(), PreSerializeError> {
     }
     let value = TripleAlias { a: 1, b: [0x55, 0x77], c: 2 };
     let len = TripleAliasFmt.prepare(&value)?;
-    assert(len == 11);
-    assert!(len == 11);
+    assert_eq!(len, 11);
     let mut bytes = vec![0; len];
     TripleAliasFmt.serialize(&value, &mut bytes);
     proof {
         TripleAliasFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = TripleAliasFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
-    assert(parsed.a == 1);
-    assert!(consumed == len);
-    assert!(parsed.a == 1);
+    assert_eq!(consumed, len);
+    assert_eq!(parsed.a, 1);
     Ok(())
 }
 
@@ -145,22 +140,18 @@ fn message_roundtrip() -> Result<(), PreSerializeError> {
     let payload = [b'a', b'b', b'c'];
     let value = Message { length: 3, payload: payload.as_slice() };
     let len = MessageFmt.prepare(&value)?;
-    assert(len == 5);
-    assert!(len == 5);
+    assert_eq!(len, 5);
     let mut bytes = vec![0; len];
     MessageFmt.serialize(&value, &mut bytes);
     proof {
         MessageFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = MessageFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
-    assert(parsed.length == 3);
     assert(parsed.payload@ == payload@);
-    assert(parsed.payload[0] == b'a');
-    assert!(consumed == len);
-    assert!(parsed.length == 3);
-    assert!(parsed.payload == payload.as_slice());
-    assert!(parsed.payload[0] == b'a');
+    assert_eq!(consumed, len);
+    assert_eq!(parsed.length, 3);
+    assert_eq!(parsed.payload, payload.as_slice());
+    assert_eq!(parsed.payload[0], b'a');
     Ok(())
 }
 
@@ -171,20 +162,17 @@ fn samples_roundtrip() -> Result<(), PreSerializeError> {
     }
     let value = Samples { count: 2, values: vec![100u16, 200u16] };
     let len = SamplesFmt.prepare(&value)?;
-    assert(len == 6);
-    assert!(len == 6);
+    assert_eq!(len, 6);
     let mut bytes = vec![0; len];
     SamplesFmt.serialize(&value, &mut bytes);
     proof {
         SamplesFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = SamplesFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
-    assert(parsed.count == 2);
     assert(parsed.values@ == value.values@);
-    assert!(consumed == len);
-    assert!(parsed.count == 2);
-    assert!(parsed.values == value.values);
+    assert_eq!(consumed, len);
+    assert_eq!(parsed.count, 2);
+    assert_eq!(parsed.values, value.values);
     Ok(())
 }
 
@@ -195,7 +183,7 @@ fn samples_length(value: Samples) -> Result<(), PreSerializeError> {
     }
     let len = SamplesFmt.prepare(&value)?;
     assert(len == 2 + 2 * value.values@.len());
-    assert!(len == 2 + 2 * value.values.len());
+    assert_eq!(len, 2 + 2 * value.values.len());
     Ok(())
 }
 
@@ -203,18 +191,16 @@ fn fixed_window_roundtrip() -> Result<(), PreSerializeError> {
     let payload = [1u8, 2, 3];
     let value = payload.as_slice();
     let len = FixedWindowFmt.prepare(&value)?;
-    assert(len == 3);
-    assert!(len == 3);
+    assert_eq!(len, 3);
     let mut bytes = vec![0; len];
     FixedWindowFmt.serialize(&value, &mut bytes);
     proof {
         FixedWindowFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = FixedWindowFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
     assert(parsed@ == payload@);
-    assert!(consumed == len);
-    assert!(parsed == payload.as_slice());
+    assert_eq!(consumed, len);
+    assert_eq!(parsed, payload.as_slice());
     Ok(())
 }
 
@@ -224,17 +210,15 @@ fn fixed_choice_roundtrip() -> Result<(), PreSerializeError> {
     }
     let value = FixedChoice::High(200);
     let len = FixedChoiceFmt.prepare(&value)?;
-    assert(len == 1);
-    assert!(len == 1);
+    assert_eq!(len, 1);
     let mut bytes = vec![0; len];
     FixedChoiceFmt.serialize(&value, &mut bytes);
     proof {
         FixedChoiceFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = FixedChoiceFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
     assert(parsed matches FixedChoice::High(x) && x == 200);
-    assert!(consumed == len);
+    assert_eq!(consumed, len);
     assert!(matches!(parsed, FixedChoice::High(200)));
     Ok(())
 }
@@ -246,17 +230,15 @@ fn variable_choice_roundtrip() -> Result<(), PreSerializeError> {
     }
     let value = VariableChoice::Long(2);
     let len = VariableChoiceFmt.prepare(&value)?;
-    assert(len == 3);
-    assert!(len == 3);
+    assert_eq!(len, 3);
     let mut bytes = vec![0; len];
     VariableChoiceFmt.serialize(&value, &mut bytes);
     proof {
         VariableChoiceFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = VariableChoiceFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
     assert(parsed matches VariableChoice::Long(x) && x == 2);
-    assert!(consumed == len);
+    assert_eq!(consumed, len);
     assert!(matches!(parsed, VariableChoice::Long(2)));
     Ok(())
 }
@@ -272,23 +254,19 @@ fn nested_roundtrip() -> Result<(), PreSerializeError> {
     let child_len = MessageFmt.prepare(&message)?;
     let value = Envelope { kind: 7, message };
     let len = EnvelopeFmt.prepare(&value)?;
-    assert(len == 1 + child_len);
-    assert!(len == 1 + child_len);
+    assert_eq!(len, 1 + child_len);
     let mut bytes = vec![0; len];
     EnvelopeFmt.serialize(&value, &mut bytes);
     proof {
         EnvelopeFmt.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = EnvelopeFmt.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
-    assert(parsed.kind == 7);
     assert(parsed.message.deep_view() == message.deep_view());
-    assert(parsed.message.length == message.length);
     assert(parsed.message.payload@ == message.payload@);
-    assert!(consumed == len);
-    assert!(parsed.kind == 7);
-    assert!(parsed.message.length == message.length);
-    assert!(parsed.message.payload == message.payload);
+    assert_eq!(consumed, len);
+    assert_eq!(parsed.kind, 7);
+    assert_eq!(parsed.message.length, message.length);
+    assert_eq!(parsed.message.payload, message.payload);
     Ok(())
 }
 
@@ -303,18 +281,16 @@ fn parameterized_roundtrip(format: BoundedFmt) -> Result<(), PreSerializeError>
     let payload = [1u8, 2, 3];
     let value = Bounded { payload: payload.as_slice() };
     let len = format.prepare(&value)?;
-    assert(len == 3);
-    assert!(len == 3);
+    assert_eq!(len, 3);
     let mut bytes = vec![0; len];
     format.serialize(&value, &mut bytes);
     proof {
         format.theorem_serialize_parse_roundtrip(value.deep_view());
     }
     let (consumed, parsed) = format.parse(&bytes.as_slice()).unwrap();
-    assert(consumed == len);
     assert(parsed.payload@ == payload@);
-    assert!(consumed == len);
-    assert!(parsed.payload == payload.as_slice());
+    assert_eq!(consumed, len);
+    assert_eq!(parsed.payload, payload.as_slice());
     Ok(())
 }
 

@@ -468,6 +468,7 @@ impl<const DET: bool> SpecRecBody for CborRecBody<DET> {
     }
 }
 
+#[verifier::spinoff_prover]
 fn parse_cbor_with_child<'i, const DET: bool, P>(
     Ghost(spec_rec): Ghost<ParamRecSpecs<(), CborValueSpec>>,
     child: &P,
@@ -484,7 +485,6 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
         parse_matches_spec(result, cbor_body::<DET>(spec_rec).spec_parse(input@)),
 {
     use crate::combinators::congruence::*;
-    use crate::core::exec::bridge_lemmas::*;
 
     broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
     broadcast use lemma_parser_congruent_reflexive;
@@ -498,7 +498,6 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
 
     let ghost child_spec = spec_rec(());
     proof {
-        lemma_ref_parser_exec_inv::<&'i [u8], _>(child);
         lemma_ref_safe_productive_inv(child);
     }
 
@@ -532,7 +531,6 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
         CborHead { major: MajorType::Array, value: CborHeadValue::Argument(len) } => {
             let repeated = RepeatN(len, child);
             proof {
-                lemma_repeat_n_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                 lemma_repeat_n_parser_congruence(repeated, RepeatN(len, child_spec));
                 lemma_parser_congruent_apply(repeated, RepeatN(len, child_spec), rest@);
             }
@@ -546,7 +544,6 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
         CborHead { major: MajorType::Array, value: CborHeadValue::Indefinite } => {
             let repeated = Repeat(child, BREAK);
             proof {
-                lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                 lemma_repeat_parser_congruence(child, child_spec, BREAK, BREAK);
                 lemma_parser_congruent_apply(repeated, Repeat(child_spec, BREAK), rest@);
             }
@@ -561,9 +558,7 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let entry = Pair(child, child);
             let repeated = RepeatN(len, entry);
             proof {
-                lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&entry);
                 lemma_pair_parser_congruence(child, child_spec, child, child_spec);
-                lemma_repeat_n_parser_exec_inv::<&'i [u8], _, _>(&repeated);
                 lemma_repeat_n_parser_congruence(
                     repeated,
                     RepeatN(len, Pair(child_spec, child_spec)),
@@ -585,9 +580,8 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let entry = Pair(child, child);
             let repeated = Repeat(entry, BREAK);
             proof {
-                lemma_pair_parser_exec_inv::<&'i [u8], _, _>(&entry);
                 lemma_pair_parser_congruence(child, child_spec, child, child_spec);
-                lemma_repeat_parser_exec_inv::<&'i [u8], _, _>(&repeated);
+
                 lemma_repeat_parser_congruence(entry, Pair(child_spec, child_spec), BREAK, BREAK);
                 lemma_parser_congruent_apply(
                     repeated,

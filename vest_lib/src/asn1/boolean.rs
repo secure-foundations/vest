@@ -10,7 +10,6 @@ use crate::{
     combinators::{mapped::spec::FnSpecMapper, Mapped, Refined, U8},
     core::{proof::*, spec::*},
 };
-use OutputBuf;
 
 use vstd::prelude::*;
 
@@ -41,11 +40,6 @@ pub fn der_bool_byte(b: u8) -> bool
 }
 
 pub open spec fn true_byte<const DER: bool>() -> u8 {
-    // if DER {
-    //     CANONICAL_TRUE_BYTE
-    // } else {
-    //     choose|x: u8| non_zero(x)
-    // }
     // BER accepts any non-zero TRUE octet, but the serializer deliberately
     // normalizes both BER and DER output to DER's canonical 0xff spelling.
     CANONICAL_TRUE_BYTE

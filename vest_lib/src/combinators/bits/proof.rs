@@ -11,10 +11,6 @@ impl<Repr, Tuple, Nominal> SPRoundTripDps for super::Bits<Repr, Tuple, Nominal> 
     Repr: SPRoundTripDps,
  {
     open spec fn unambiguous(&self) -> bool {
-        // let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
-        // fmt.unambiguous()
-        // &&& forall|ibuf| #[trigger]
-        //     fmt.spec_parse(ibuf) matches Some((_, v)) ==> (self.consistent)(v)
         &&& self.repr.unambiguous()
         &&& forall|unpacked: Tuple|
             (#[trigger] (self.consistent)((self.ctor)(unpacked)) && (self.refinement)(unpacked))
@@ -53,7 +49,6 @@ impl<Repr, Tuple, Nominal> NoLookAhead for super::Bits<Repr, Tuple, Nominal> whe
 
     proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
         let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
-        assert(self.no_lookahead_inv() == fmt.no_lookahead_inv());
         fmt.lemma_no_lookahead(i1, i2);
     }
 }

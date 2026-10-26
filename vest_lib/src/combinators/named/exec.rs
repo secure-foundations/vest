@@ -8,7 +8,6 @@ use crate::core::{
     spec::SpecSerializer,
 };
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

@@ -13,7 +13,6 @@ use crate::{
     },
 };
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 
