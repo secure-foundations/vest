@@ -321,19 +321,25 @@ pub fn check_valid_universal_string(bytes: &[u8]) -> (valid: bool)
 }
 
 #[cfg(feature = "alloc")]
-#[verifier::external_body]
+#[verifier::loop_isolation(false)]
 pub(crate) fn decode_universal_string_owned(bytes: &[u8]) -> (value: String)
     requires
         is_valid_universal_string(bytes.deep_view()),
     ensures
         value.deep_view() == decode_universal_string(bytes.deep_view()),
 {
-    bytes.chunks_exact(4).map(
-        |word|
-            unsafe {
-                char::from_u32_unchecked(u32::from_be_bytes([word[0], word[1], word[2], word[3]]))
-            },
-    ).collect()
+    let mut output = String::with_capacity(bytes.len() / 4);
+    for i in 0..bytes.len() / 4
+        invariant
+            output@ == decode_universal_string(bytes.deep_view())[0..i],
+    {
+        let word = &bytes[4 * i..4 * i + 4];
+        let code = u32_from_be_bytes([word[0], word[1], word[2], word[3]]);
+        assert(code == universal_code_point(bytes.deep_view(), i as int));
+        // SAFETY: the input's validity proves that this code point is a scalar.
+        output.push(unsafe { char::from_u32_unchecked(code) });
+    }
+    output
 }
 
 #[cfg(feature = "alloc")]
