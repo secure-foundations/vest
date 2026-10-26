@@ -384,29 +384,18 @@ fn bit_string_to_owned(value: BitString<'_, BER>) -> (owned: BitStringOwned)
 }
 
 #[cfg(feature = "alloc")]
-fn ber_bit_string_segments_wf_exec(segments: &Vec<BitStringOwned>) -> (valid: bool)
+fn ber_bit_string_segments_wf_exec(segments: &[BitStringOwned]) -> (valid: bool)
     ensures
         valid == ber_bit_string_segments_wf(segments.deep_view()),
 {
-    let ghost views = segments.deep_view();
-    let mut i = 0usize;
-    while i < segments.len()
+    for i in 0..segments.len().saturating_sub(1)
         invariant
-            segments.deep_view() == views,
-            i <= segments.len(),
-            forall|j: int| 0 <= j < i && j < views.len() - 1 ==> #[trigger] views[j].unused == 0,
-        decreases segments.len() - i,
+            forall|j: int| 0 <= j < i ==> #[trigger] segments.deep_view()[j].unused == 0,
     {
-        if i + 1 < segments.len() {
-            let unused = segments[i].unused();
-            if unused != 0 {
-                assert(0 <= i as int);
-                assert((i as int) < views.len() - 1);
-                assert(views[i as int].unused != 0);
-                return false;
-            }
+        if segments[i].unused() != 0 {
+            assert(segments.deep_view()[i as int].unused != 0);
+            return false;
         }
-        i += 1;
     }
     true
 }

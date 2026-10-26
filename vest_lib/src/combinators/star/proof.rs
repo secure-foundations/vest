@@ -649,11 +649,6 @@ impl<A: SPRoundTripDps + NonTailFmt, B: SPRoundTripDps> SPRoundTripDps for super
     }
 }
 
-// impl<
-//     A: PSRoundTrip + GoodSerializerDps + EquivSerializersGeneral,
-//     B: PSRoundTrip,
-// > PSRoundTrip for super::Repeat<A, B> {
-// }
 impl<A: NonMalleable, B: NonMalleable> NonMalleable for super::Repeat<A, B> {
     open spec fn nonmal_inv(&self) -> bool {
         Pair(super::Star(self.0), self.1).nonmal_inv()

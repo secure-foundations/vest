@@ -11,7 +11,6 @@ use crate::core::{
     spec::{SafeParser, SpecByteLen, SpecParser, SpecSerializer},
 };
 use vstd::prelude::*;
-use OutputBuf;
 
 verus! {
 

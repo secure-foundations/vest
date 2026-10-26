@@ -18,7 +18,6 @@ use crate::core::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use vstd::{prelude::*, relations::*};
-use OutputBuf;
 
 verus! {
 

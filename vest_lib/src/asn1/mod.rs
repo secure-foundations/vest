@@ -365,12 +365,4 @@ impl Leaf for BerBoolFmt {
     }
 }
 
-// impl LeafNonMalleable for DerLengthFmt {
-//     proof fn nonmal_leaf_inv(&self) {
-//     }
-// }
-// impl Leaf for BerLengthFmt {
-//     proof fn leaf_inv(&self) {
-//     }
-// }
 } // verus!

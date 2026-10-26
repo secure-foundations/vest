@@ -15,7 +15,6 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::vec;
 use vstd::prelude::*;
-use OutputBuf;
 use Sum::Inl as L;
 use Sum::Inr as R;
 

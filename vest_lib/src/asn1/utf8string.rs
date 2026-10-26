@@ -14,7 +14,6 @@ use crate::{
 use alloc::{string::String, vec::Vec};
 use vstd::prelude::*;
 use vstd::string::StringSliceAdditionalSpecFns;
-use OutputBuf;
 
 verus! {
 
@@ -31,7 +30,7 @@ pub(crate) fn is_unicode_scalar(value: u32) -> bool
     returns
         vstd::utf8::is_scalar(value),
 {
-    value <= 0x10ffff && !(0xd800..=0xdfff).contains(&value)
+    value <= 0x10ffff && (value < 0xd800 || value > 0xdfff)
 }
 
 /// Standard scalar conversion; callers prove validity before the unsafe call.

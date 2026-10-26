@@ -308,14 +308,10 @@
 <a href=#308 id=308 data-nosnippet>308</a>    Param: DeepView&lt;V = Body::Param&gt;,
 <a href=#309 id=309 data-nosnippet>309</a>    Body: PrepareRecBody&lt;T, EP = Param&gt;,
 <a href=#310 id=310 data-nosnippet>310</a> {
-<a href=#311 id=311 data-nosnippet>311</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#312 id=312 data-nosnippet>312</a>        <span class="bool-val">true
-<a href=#313 id=313 data-nosnippet>313</a>    </span>}
-<a href=#314 id=314 data-nosnippet>314</a>
-<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; (checked: <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt;) {
-<a href=#316 id=316 data-nosnippet>316</a>        <span class="self">self</span>.prepare_gas(LIMIT, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>, v)
-<a href=#317 id=317 data-nosnippet>317</a>    }
-<a href=#318 id=318 data-nosnippet>318</a>}
-<a href=#319 id=319 data-nosnippet>319</a>
-<a href=#320 id=320 data-nosnippet>320</a>} <span class="comment">// verus!
+<a href=#311 id=311 data-nosnippet>311</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>T) -&gt; (checked: <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt;) {
+<a href=#312 id=312 data-nosnippet>312</a>        <span class="self">self</span>.prepare_gas(LIMIT, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>, v)
+<a href=#313 id=313 data-nosnippet>313</a>    }
+<a href=#314 id=314 data-nosnippet>314</a>}
+<a href=#315 id=315 data-nosnippet>315</a>
+<a href=#316 id=316 data-nosnippet>316</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

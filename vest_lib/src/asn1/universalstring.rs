@@ -28,7 +28,6 @@ use vstd::prelude::*;
 use vstd::std_specs::iter::IteratorSpec;
 #[cfg(feature = "alloc")]
 use vstd::string::StrSliceExecFns;
-use OutputBuf;
 
 verus! {
 

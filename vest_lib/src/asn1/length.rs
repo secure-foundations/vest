@@ -16,7 +16,6 @@ use crate::{
 };
 use vstd::arithmetic::power::*;
 use vstd::prelude::*;
-use OutputBuf;
 use Sum::Inl as L;
 use Sum::Inr as R;
 

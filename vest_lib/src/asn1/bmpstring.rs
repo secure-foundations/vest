@@ -23,7 +23,6 @@ use vstd::prelude::*;
 #[cfg(verus_only)]
 use vstd::std_specs::iter::IteratorSpec;
 use vstd::string::StrSliceExecFns;
-use OutputBuf;
 
 verus! {
 
