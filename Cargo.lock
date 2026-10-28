@@ -1328,10 +1328,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "synta-codegen"
-version = "0.3.0"
-
-[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1478,13 +1474,14 @@ dependencies = [
 name = "vest_asn1"
 version = "0.1.0"
 dependencies = [
- "synta-codegen",
+ "clap",
 ]
 
 [[package]]
 name = "vest_asn1_tests"
 version = "0.1.0"
 dependencies = [
+ "vest_asn1",
  "vest_lib",
  "vstd",
 ]

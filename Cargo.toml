@@ -3,7 +3,6 @@ members = [
     "vest",
     "vest_lib",
     "vest_asn1",
-    "vest_asn1/vendor/synta-codegen",
     "vest_tests",
     "vest_asn1_tests",
     "vest_dev",

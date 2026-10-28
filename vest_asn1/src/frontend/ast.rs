@@ -1,4 +1,4 @@
-//! Abstract Syntax Tree for ASN.1 schemas
+//! ASN.1 abstract syntax tree, adapted from Synta. See `THIRD_PARTY.md`.
 
 use std::fmt;
 

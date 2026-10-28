@@ -8,6 +8,9 @@ publish = false
 vstd = { workspace = true, features = ["std"] }
 vest_lib = { workspace = true, features = ["std"] }
 
+[dev-dependencies]
+vest_asn1 = { path = "../vest_asn1" }
+
 [package.metadata.verus]
 verify = true
 

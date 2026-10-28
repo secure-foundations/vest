@@ -64,6 +64,15 @@ jobs:
       - name: Run workspace tests
         run: cargo test --workspace --locked
 
+      - name: Test the packaged ASN.1 compiler outside the workspace
+        run: |
+          cargo package -p vest_asn1 --locked
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("vest_asn1/Cargo.toml", "rb"))["package"]["version"])')
+          directory=$(mktemp -d "$RUNNER_TEMP/vest-asn1-package.XXXXXX")
+          tar -xzf "target/package/vest_asn1-$version.crate" -C "$directory"
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo test \
+            --manifest-path "$directory/vest_asn1-$version/Cargo.toml" --locked
+
       - name: Test benchmark reporting and run integrity
         run: python3 -B -m unittest discover -s vest_bench/tests
 

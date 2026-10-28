@@ -1,5 +1,10 @@
-//! Vest-facing names for the lossless, locally patched Synta frontend.
+//! The locally maintained Synta frontend. See the crate's `THIRD_PARTY.md`.
 
-pub type SchemaModule = synta_codegen::ast::Module;
-pub type SchemaValueAssignment = synta_codegen::ast::ValueAssignment;
-pub type SchemaValue = synta_codegen::ast::Value;
+pub mod ast;
+mod parser;
+
+pub use parser::{parse, ParseError};
+
+pub type SchemaModule = ast::Module;
+pub type SchemaValueAssignment = ast::ValueAssignment;
+pub type SchemaValue = ast::Value;

@@ -1,13 +1,13 @@
 .PHONY: generate test verify
 
 generate:
-	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- fixture.asn1 -o src/generated.rs
-	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber fixture_ber.asn1 -o src/generated_ber.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- ../vest_asn1/tests/fixtures/fixture.asn1 -o src/generated.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber ../vest_asn1/tests/fixtures/fixture_ber.asn1 -o src/generated_ber.rs
 	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		--der-definition Shared \
 		--der-definition Canonical \
 		--der-definition Ordered \
-		fixture_mixed.asn1 -o src/generated_mixed.rs
+		../vest_asn1/tests/fixtures/fixture_mixed.asn1 -o src/generated_mixed.rs
 	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		schema_depth.asn1 -o src/generated_stress_depth.rs
 	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \

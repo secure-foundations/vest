@@ -1,4 +1,4 @@
-//! ASN.1 schema parser
+//! ASN.1 schema parser, adapted from Synta. See `THIRD_PARTY.md`.
 
 use crate::ast::*;
 use std::fmt;
@@ -388,6 +388,14 @@ pub struct Parser {
 }
 
 impl Parser {
+    fn error(&self, message: impl Into<String>) -> ParseError {
+        ParseError {
+            message: message.into(),
+            line: self.lexer.line,
+            column: self.lexer.column,
+        }
+    }
+
     pub fn new(input: &str) -> Result<Self> {
         let mut lexer = Lexer::new(input);
         let current = lexer.next_token()?;
@@ -452,50 +460,8 @@ impl Parser {
 
         self.advance()?; // consume '('
 
-        // Check for SIZE keyword
-        if !matches!(self.current, Token::Keyword(ref kw) if kw == "SIZE") {
-            // Not a SIZE constraint - skip it
-            while !matches!(self.current, Token::Symbol(ref s) if s == ")") {
-                if matches!(self.current, Token::Eof) {
-                    break;
-                }
-                self.advance()?;
-            }
-            if matches!(self.current, Token::Symbol(ref s) if s == ")") {
-                self.advance()?;
-            }
-            return Ok(None);
-        }
-
-        self.advance()?; // consume SIZE
-        self.expect_symbol("(")?;
-
-        // Parse size value
-        let min = if let Token::Number(n) = self.current {
-            let val = n;
-            self.advance()?;
-            Some(val)
-        } else {
-            None
-        };
-
-        let constraint = if matches!(self.current, Token::Symbol(ref s) if s == "..") {
-            self.advance()?;
-            let max = if let Token::Number(n) = self.current {
-                let val = n;
-                self.advance()?;
-                Some(val)
-            } else {
-                None
-            };
-            SizeConstraint::Range(min, max)
-        } else if let Some(size) = min {
-            SizeConstraint::Fixed(size)
-        } else {
-            return Ok(None);
-        };
-
-        self.expect_symbol(")")?; // inner paren
+        self.expect_keyword("SIZE")?;
+        let constraint = self.parse_collection_size_constraint()?;
         self.expect_symbol(")")?; // outer paren
 
         Ok(Some(constraint))
@@ -514,7 +480,7 @@ impl Parser {
                 self.advance()?;
                 None
             }
-            _ => None,
+            _ => return Err(self.error("Expected an integer or MIN as the SIZE lower bound")),
         };
         let constraint = if matches!(self.current, Token::Symbol(ref symbol) if symbol == "..") {
             self.advance()?;
@@ -527,7 +493,7 @@ impl Parser {
                     self.advance()?;
                     None
                 }
-                _ => None,
+                _ => return Err(self.error("Expected an integer or MAX as the SIZE upper bound")),
             };
             SizeConstraint::Range(min, max)
         } else if let Some(value) = min {
@@ -554,7 +520,9 @@ impl Parser {
         };
 
         if let Token::Number(n) = self.current {
-            let val = if negative { -(n as i64) } else { n as i64 };
+            let signed = if negative { -(n as i128) } else { n as i128 };
+            let val = i64::try_from(signed)
+                .map_err(|_| self.error("ASN.1 integer literals must fit in i64"))?;
             self.advance()?;
             Ok(Some(val))
         } else {
@@ -850,7 +818,7 @@ impl Parser {
 
         // Return appropriate constraint based on count
         match constraints.len() {
-            0 => Ok(None),
+            0 => Err(self.error("Expected a string constraint")),
             1 => Ok(Some(constraints.into_iter().next().unwrap())),
             _ => {
                 // Multiple constraints - combine with Intersection
@@ -1105,27 +1073,20 @@ impl Parser {
         let declared_type_names = self.scan_type_definition_names();
         while !matches!(self.current, Token::Keyword(ref kw) if kw == "END") {
             if matches!(self.current, Token::Eof) {
-                break;
+                return Err(self.error("Expected END before end of input"));
             }
-            // Priority order:
-            //  1. Classic value assignment (name OBJECT|INTEGER|BOOLEAN ::= value)
-            //  2. IOC value assignment (name ClassName ::= { ... }) — consumed and discarded
-            //  3. Type definition (TypeName ::= Type)
             if let Some(value_assignment) =
                 self.try_parse_value_assignment(&definitions, &declared_type_names)?
             {
                 values.push(value_assignment);
-            } else if self.try_skip_class_alias()? {
-                // Class alias assignment (e.g. `MyClass ::= TYPE-IDENTIFIER`) consumed and discarded
-            } else if self.try_skip_ioc_assignment()? {
-                // IOC assignment consumed; loop continues to the next definition
             } else {
                 definitions.push(self.parse_definition()?);
             }
         }
 
-        if matches!(self.current, Token::Keyword(ref kw) if kw == "END") {
-            self.advance()?;
+        self.expect_keyword("END")?;
+        if !matches!(self.current, Token::Eof) {
+            return Err(self.error("Unexpected input after END; expected exactly one ASN.1 module"));
         }
 
         Ok(Module {
@@ -1189,12 +1150,8 @@ impl Parser {
     fn parse_definition(&mut self) -> Result<Definition> {
         let name = self.expect_identifier()?;
 
-        // Skip optional parameterized type formal parameters after the type name,
-        // e.g. `AttributeSet{ATTRIBUTE:AttrSet} ::= SEQUENCE { ... }`.
-        // The parameter list carries governance information only; no DER encoding
-        // information is lost by discarding it.
         if matches!(self.current, Token::Symbol(ref s) if s == "{") {
-            self.skip_balanced_braces()?;
+            return Err(self.error("Parameterized type definitions are not supported"));
         }
 
         self.expect_symbol("::=")?;
@@ -1229,10 +1186,9 @@ impl Parser {
         // For value assignment, the second token should be OBJECT, INTEGER, BOOLEAN, etc.
         let is_value_assignment = if let Token::Identifier(_) = &self.current {
             match self.peek_next_token() {
-                Token::Keyword(ref kw) => matches!(
-                    kw.as_str(),
-                    "OBJECT" | "INTEGER" | "BOOLEAN" | "REAL"
-                ),
+                Token::Keyword(ref kw) => {
+                    matches!(kw.as_str(), "OBJECT" | "INTEGER" | "BOOLEAN" | "REAL")
+                }
                 Token::Identifier(ref type_name) => {
                     declared_type_names.iter().any(|name| name == type_name)
                         || resolve_assignment_type(
@@ -1323,104 +1279,6 @@ impl Parser {
                 column: self.lexer.column,
             }),
         }
-    }
-
-    /// Try to consume a class alias assignment of the form:
-    ///   `TypeName ::= TYPE-IDENTIFIER` or `TypeName ::= ABSTRACT-SYNTAX`
-    ///
-    /// These are X.681 §14.2 built-in class assignments that carry no concrete
-    /// DER encoding.  Returning `true` causes the module parser to discard the
-    /// definition without generating any Rust type.
-    fn try_skip_class_alias(&mut self) -> Result<bool> {
-        // Pattern: Identifier ::= (TYPE-IDENTIFIER | ABSTRACT-SYNTAX)
-        // We peek: current = Identifier, next = ::=, after-next = keyword
-        let is_ident = matches!(self.current, Token::Identifier(_));
-        if !is_ident {
-            return Ok(false);
-        }
-
-        // Save state so we can restore if this is NOT a class alias
-        let saved_lexer = self.lexer.clone();
-        let saved_current = self.current.clone();
-
-        self.advance()?; // consume identifier
-
-        // Must be followed by ::=
-        if !matches!(self.current, Token::Symbol(ref s) if s == "::=") {
-            self.lexer = saved_lexer;
-            self.current = saved_current;
-            return Ok(false);
-        }
-        self.advance()?; // consume ::=
-
-        // Check if the RHS is a class-defining keyword
-        let is_class_keyword = matches!(
-            self.current,
-            Token::Keyword(ref kw) if kw == "TYPE-IDENTIFIER" || kw == "ABSTRACT-SYNTAX"
-        );
-
-        if !is_class_keyword {
-            // Restore and let parse_definition handle it
-            self.lexer = saved_lexer;
-            self.current = saved_current;
-            return Ok(false);
-        }
-
-        // Consume the class keyword (and any trailing parts)
-        self.advance()?;
-        Ok(true)
-    }
-
-    /// Try to consume an Information Object Set assignment (X.681 §12), returning
-    /// `true` if one was consumed and `false` if the current token is not the start
-    /// of an IOC assignment.
-    ///
-    /// Pattern: `name ClassName ::= { ... }` where `ClassName` is an identifier
-    /// (not a built-in keyword).  This distinguishes IOC assignments from:
-    ///  - Type definitions (`TypeName ::= ...`) where `::=` immediately follows
-    ///    the first identifier.
-    ///  - Classic value assignments where the second token is a built-in keyword
-    ///    (`OBJECT`, `INTEGER`, `BOOLEAN`), handled by `try_parse_value_assignment`.
-    ///
-    /// IOC assignments carry no DER type information and are discarded.
-    fn try_skip_ioc_assignment(&mut self) -> Result<bool> {
-        // An IOC assignment begins with Identifier (name) followed by Identifier
-        // (class name) — neither the assignment operator nor a built-in keyword.
-        let is_ioc = if let Token::Identifier(_) = &self.current {
-            matches!(self.peek_next_token(), Token::Identifier(_))
-        } else {
-            false
-        };
-
-        if !is_ioc {
-            return Ok(false);
-        }
-
-        // Save state so we can backtrack if the two-identifier sequence is not
-        // actually an IOC assignment (i.e. the mandatory '::=' is absent).
-        let saved_lexer = self.lexer.clone();
-        let saved_current = self.current.clone();
-
-        // Consume: name  ClassName  ::=  { ... }
-        self.advance()?; // consume assignment name
-        self.advance()?; // consume class name
-
-        if !matches!(self.current, Token::Symbol(ref s) if s == "::=") {
-            // Not an IOC assignment — restore state and let the caller handle it.
-            self.lexer = saved_lexer;
-            self.current = saved_current;
-            return Ok(false);
-        }
-        self.advance()?; // consume ::=
-
-        if matches!(self.current, Token::Symbol(ref s) if s == "{") {
-            self.skip_balanced_braces()?;
-        } else {
-            // Scalar value — consume single token
-            self.advance()?;
-        }
-
-        Ok(true)
     }
 
     /// Peek at the next token without consuming it
@@ -1521,7 +1379,10 @@ impl Parser {
                     Ok(crate::ast::Value::Identifier(name))
                 } else {
                     Err(ParseError {
-                        message: format!("Expected an integer or named value, got {:?}", self.current),
+                        message: format!(
+                            "Expected an integer or named value, got {:?}",
+                            self.current
+                        ),
                         line: self.lexer.line,
                         column: self.lexer.column,
                     })
@@ -1569,7 +1430,8 @@ impl Parser {
                 "SEQUENCE" => {
                     self.advance()?;
                     // Handle SIZE constraint before OF: `SEQUENCE SIZE (1..MAX) OF ...`
-                    let leading_size = if matches!(self.current, Token::Keyword(ref k) if k == "SIZE") {
+                    let leading_size = if matches!(self.current, Token::Keyword(ref k) if k == "SIZE")
+                    {
                         self.advance()?; // consume SIZE
                         Some(self.parse_collection_size_constraint()?)
                     } else {
@@ -1579,8 +1441,15 @@ impl Parser {
                         self.advance()?;
                         let inner = self.parse_type()?;
                         let trailing_size = self.parse_size_constraint()?;
+                        if leading_size.is_some() && trailing_size.is_some() {
+                            return Err(self
+                                .error("Multiple collection SIZE constraints are not supported"));
+                        }
                         let size_constraint = leading_size.or(trailing_size);
                         return Ok(Type::SequenceOf(Box::new(inner), size_constraint));
+                    }
+                    if leading_size.is_some() {
+                        return Err(self.error("Expected OF after collection SIZE constraint"));
                     }
                     self.expect_symbol("{")?;
                     let fields = self.parse_sequence_fields()?;
@@ -1590,7 +1459,8 @@ impl Parser {
                 "SET" => {
                     self.advance()?;
                     // Handle SIZE constraint before OF: `SET SIZE (1..MAX) OF ...`
-                    let leading_size = if matches!(self.current, Token::Keyword(ref k) if k == "SIZE") {
+                    let leading_size = if matches!(self.current, Token::Keyword(ref k) if k == "SIZE")
+                    {
                         self.advance()?; // consume SIZE
                         Some(self.parse_collection_size_constraint()?)
                     } else {
@@ -1600,8 +1470,15 @@ impl Parser {
                         self.advance()?;
                         let inner = self.parse_type()?;
                         let trailing_size = self.parse_size_constraint()?;
+                        if leading_size.is_some() && trailing_size.is_some() {
+                            return Err(self
+                                .error("Multiple collection SIZE constraints are not supported"));
+                        }
                         let size_constraint = leading_size.or(trailing_size);
                         return Ok(Type::SetOf(Box::new(inner), size_constraint));
+                    }
+                    if leading_size.is_some() {
+                        return Err(self.error("Expected OF after collection SIZE constraint"));
                     }
                     self.expect_symbol("{")?;
                     let fields = self.parse_sequence_fields()?;
@@ -1790,16 +1667,11 @@ impl Parser {
                     return Ok(Type::Any);
                 }
                 "CLASS" => {
-                    self.advance()?;
-                    return self.parse_class_body();
+                    return Err(self.error("ASN.1 information object classes are not supported"));
                 }
-                // Built-in information object classes used as type aliases (X.681 §14).
-                // `TYPE-IDENTIFIER` and `ABSTRACT-SYNTAX` are class names that appear in
-                // type-assignment position (e.g. `MyClass ::= TYPE-IDENTIFIER`).  Treat
-                // them as ANY since they carry no concrete DER structure.
+                // Do not erase information-object semantics by treating class names as ANY.
                 "TYPE-IDENTIFIER" | "ABSTRACT-SYNTAX" => {
-                    self.advance()?;
-                    return Ok(Type::Any);
+                    return Err(self.error("ASN.1 information object classes are not supported"));
                 }
                 _ => {}
             }
@@ -1823,64 +1695,17 @@ impl Parser {
         if let Some(result) = type_name {
             self.advance()?;
 
-            // Skip optional parameterized type arguments,
-            // e.g. `AlgorithmIdentifier{ KEM-ALGORITHM, {KEMAlgSet} }`.
-            // The type is still resolved as a plain TypeRef; the parameter set
-            // carries no DER encoding information.
-            if matches!(self.current, Token::Symbol(ref s) if s == "{") {
-                self.skip_balanced_braces()?;
-            }
-
-            // Handle `INSTANCE OF TypeName` (X.681 §14) — treat as ANY.
-            // The `INSTANCE` identifier is already consumed as the TypeRef name.
-            // The `OF` keyword and following class name are discarded.
             if result == "INSTANCE" && matches!(self.current, Token::Keyword(ref k) if k == "OF") {
-                self.advance()?; // consume OF
-                                 // Consume the class name (identifier)
-                                 // Consume the class name (identifier)
-                self.advance()?;
-                // Skip optional parameterized arguments
-                if matches!(self.current, Token::Symbol(ref s) if s == "{") {
-                    self.skip_balanced_braces()?;
-                }
-                return Ok(Type::Any);
+                return Err(
+                    self.error("INSTANCE OF is not supported; use an explicitly curated wire type")
+                );
             }
-
-            // Handle IOC field access notation: `ClassName.&field({params})`.
-            // This appears in 2009-syntax modules as a field type, e.g.:
-            //   `type  ATTRIBUTE.&id({AttrSet})`
-            //   `parameters  ALGORITHM-TYPE.&Params({AlgorithmSet}{@algorithm}) OPTIONAL`
-            //
-            // For `&id` fields, the class definition always constrains the type to
-            // `OBJECT IDENTIFIER UNIQUE`, so we resolve these to ObjectIdentifier.
-            // All other IOC field accesses are treated as ANY (Type::Any).
+            if matches!(self.current, Token::Symbol(ref s) if s == "{") {
+                return Err(self.error("Parameterized type references are not supported"));
+            }
             if matches!(self.current, Token::Symbol(ref s) if s == ".") {
-                self.advance()?; // consume '.'
-                                 // Consume the &field identifier and remember its name
-                                 // Consume the &field identifier and remember its name
-                let field_name = if let Token::Identifier(ref name) = self.current {
-                    let n = name.clone();
-                    self.advance()?;
-                    n
-                } else {
-                    self.advance()?;
-                    String::new()
-                };
-                // Skip any optional parameterized argument groups {..} or (..) after the field name
-                loop {
-                    if matches!(self.current, Token::Symbol(ref s) if s == "{") {
-                        self.skip_balanced_braces()?;
-                    } else if matches!(self.current, Token::Symbol(ref s) if s == "(") {
-                        self.skip_balanced_parens()?;
-                    } else {
-                        break;
-                    }
-                }
-                // Resolve &id to ObjectIdentifier (X.681 convention: &id fields are OIDs)
-                if field_name == "&id" {
-                    return Ok(Type::ObjectIdentifier);
-                }
-                return Ok(Type::Any);
+                return Err(self
+                    .error("Qualified and information-object field references are not supported"));
             }
 
             // Check for constraint on type reference (subtype definition)
@@ -2037,7 +1862,8 @@ impl Parser {
                 self.advance()?; // consume first '['
                 if matches!(self.current, Token::Symbol(ref s) if s == "[") {
                     return Err(ParseError {
-                        message: "extension addition groups are not represented in the Synta AST".to_string(),
+                        message: "extension addition groups are not represented in the Synta AST"
+                            .to_string(),
                         line: self.lexer.line,
                         column: self.lexer.column,
                     });
@@ -2112,116 +1938,6 @@ impl Parser {
         Ok(variants)
     }
 
-    /// Parse an ASN.1 Information Object Class body (X.681 §9).
-    ///
-    /// Called after the `CLASS` keyword has been consumed.  Parses:
-    ///
-    /// ```text
-    /// CLASS { &field [TYPE] [UNIQUE] [OPTIONAL] [DEFAULT value], ... }
-    ///         [WITH SYNTAX { ... }]
-    /// ```
-    ///
-    /// The `WITH SYNTAX` block (if present) is consumed and discarded — its
-    /// content is arbitrary keyword syntax and has no DER representation.
-    /// The resulting [`Type::Class`] stores only the field names and the
-    /// `UNIQUE`/`OPTIONAL` qualifiers; actual type expressions within the
-    /// class body are also consumed and discarded.
-    fn parse_class_body(&mut self) -> Result<Type> {
-        self.expect_symbol("{")?;
-
-        let mut fields = Vec::new();
-
-        while !matches!(self.current, Token::Symbol(ref s) if s == "}") {
-            if matches!(self.current, Token::Eof) {
-                break;
-            }
-
-            // Skip extension markers
-            if matches!(self.current, Token::Symbol(ref s) if s == "...") {
-                self.advance()?;
-                if matches!(self.current, Token::Symbol(ref s) if s == ",") {
-                    self.advance()?;
-                }
-                continue;
-            }
-
-            // Each field begins with &name
-            let field_name = if let Token::Identifier(ref id) = self.current {
-                if id.starts_with('&') {
-                    let name = id.strip_prefix('&').unwrap_or(id).to_string();
-                    self.advance()?;
-                    name
-                } else {
-                    // Not a field reference — skip token and try to recover
-                    self.advance()?;
-                    continue;
-                }
-            } else {
-                // Non-identifier token — skip and recover
-                self.advance()?;
-                continue;
-            };
-
-            // Consume optional type expression and qualifiers until ',', '}', or '...'
-            // We track brace depth to handle nested { } in DEFAULT values.
-            let mut unique = false;
-            let mut optional = false;
-            let mut depth = 0usize;
-
-            loop {
-                match &self.current {
-                    Token::Symbol(ref s) if s == "}" && depth == 0 => break,
-                    Token::Symbol(ref s) if s == "," && depth == 0 => break,
-                    Token::Symbol(ref s) if s == "..." && depth == 0 => break,
-                    Token::Symbol(ref s) if s == "{" => {
-                        depth += 1;
-                        self.advance()?;
-                    }
-                    Token::Symbol(ref s) if s == "}" => {
-                        depth -= 1;
-                        self.advance()?;
-                    }
-                    Token::Keyword(ref kw) if kw == "UNIQUE" && depth == 0 => {
-                        unique = true;
-                        self.advance()?;
-                    }
-                    Token::Keyword(ref kw) if kw == "OPTIONAL" && depth == 0 => {
-                        optional = true;
-                        self.advance()?;
-                    }
-                    Token::Eof => break,
-                    _ => {
-                        self.advance()?;
-                    }
-                }
-            }
-
-            fields.push(ClassField {
-                name: field_name,
-                unique,
-                optional,
-            });
-
-            if matches!(self.current, Token::Symbol(ref s) if s == ",") {
-                self.advance()?;
-            }
-        }
-
-        self.expect_symbol("}")?;
-
-        // Consume optional WITH SYNTAX { ... } block
-        if matches!(self.current, Token::Keyword(ref kw) if kw == "WITH") {
-            self.advance()?; // consume WITH
-            if matches!(self.current, Token::Keyword(ref kw) if kw == "SYNTAX") {
-                self.advance()?; // consume SYNTAX
-                                 // The syntax block is a balanced { ... } with arbitrary token content
-                self.skip_balanced_braces()?;
-            }
-        }
-
-        Ok(Type::Class(fields))
-    }
-
     /// Consume a balanced `{ ... }` block, discarding all tokens inside.
     ///
     /// Handles nested braces.  Assumes the opening `{` is the current token.
@@ -2253,55 +1969,18 @@ impl Parser {
         Ok(())
     }
 
-    /// Consume a balanced `( ... )` block, discarding all tokens inside.
-    ///
-    /// Used to skip parameterized argument groups in IOC field access expressions,
-    /// e.g. the `({AttrSet})` and `({AttrSet}{@type})` parts of
-    /// `ATTRIBUTE.&id({AttrSet})` and `ATTRIBUTE.&Type({AttrSet}{@type})`.
-    fn skip_balanced_parens(&mut self) -> Result<()> {
-        self.expect_symbol("(")?;
-        let mut depth = 1usize;
-        while depth > 0 {
-            match &self.current {
-                Token::Symbol(ref s) if s == "(" => {
-                    depth += 1;
-                    self.advance()?;
-                }
-                Token::Symbol(ref s) if s == ")" => {
-                    depth -= 1;
-                    self.advance()?;
-                }
-                Token::Eof => {
-                    return Err(ParseError {
-                        message: "Unexpected EOF inside parenthesized block".to_string(),
-                        line: self.lexer.line,
-                        column: self.lexer.column,
-                    });
-                }
-                _ => {
-                    self.advance()?;
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// Parse named number list: name1(value1), name2(value2), ...
     fn parse_named_numbers(&mut self) -> Result<Vec<NamedNumber>> {
-        let mut numbers = Vec::new();
+        let mut numbers: Vec<NamedNumber> = Vec::new();
 
         while !matches!(self.current, Token::Symbol(ref s) if s == "}") {
             if matches!(self.current, Token::Eof) {
                 break;
             }
 
-            // Skip extension markers (...)
+            // Extensibility changes the value domain and must not be discarded.
             if matches!(self.current, Token::Symbol(ref s) if s == "...") {
-                self.advance()?;
-                if matches!(self.current, Token::Symbol(ref s) if s == ",") {
-                    self.advance()?;
-                }
-                continue;
+                return Err(self.error("Extension markers in named-number lists are not supported"));
             }
 
             // Parse name
@@ -2320,10 +1999,13 @@ impl Parser {
                 v
             } else {
                 // Auto-number: next value after the last one (or 0 for first)
-                numbers
-                    .last()
-                    .map(|n: &NamedNumber| n.value + 1)
-                    .unwrap_or(0)
+                match numbers.last() {
+                    Some(previous) => previous
+                        .value
+                        .checked_add(1)
+                        .ok_or_else(|| self.error("ENUMERATED auto-numbering exceeds i64"))?,
+                    None => 0,
+                }
             };
 
             numbers.push(NamedNumber { name, value });
@@ -2349,14 +2031,17 @@ fn resolve_assignment_type<'a>(
                 return None;
             }
             visiting.push(name.clone());
-            let definition = definitions.iter().find(|definition| definition.name == *name)?;
+            let definition = definitions
+                .iter()
+                .find(|definition| definition.name == *name)?;
             let resolved = resolve_assignment_type(&definition.ty, definitions, visiting);
             visiting.pop();
             resolved
         }
-        Type::Tagged { inner, .. } | Type::Constrained { base_type: inner, .. } => {
-            resolve_assignment_type(inner, definitions, visiting)
-        }
+        Type::Tagged { inner, .. }
+        | Type::Constrained {
+            base_type: inner, ..
+        } => resolve_assignment_type(inner, definitions, visiting),
         Type::Boolean
         | Type::Integer(_, _)
         | Type::Enumerated(_)

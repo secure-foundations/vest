@@ -3,7 +3,7 @@ use std::fmt;
 /// An error produced while parsing or lowering an ASN.1 module.
 #[derive(Debug)]
 pub enum Error {
-    Parse(synta_codegen::ParseError),
+    Parse(crate::ParseError),
     Codegen(CodegenError),
 }
 
@@ -25,8 +25,8 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<synta_codegen::ParseError> for Error {
-    fn from(value: synta_codegen::ParseError) -> Self {
+impl From<crate::ParseError> for Error {
+    fn from(value: crate::ParseError) -> Self {
         Self::Parse(value)
     }
 }

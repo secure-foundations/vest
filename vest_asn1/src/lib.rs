@@ -1,6 +1,7 @@
 //! ASN.1-to-Vest code generation.
 //!
-//! The frontend is Synta's ASN.1 parser and AST. The backend emits concrete
+//! The frontend is a locally maintained adaptation of Synta's parser and AST.
+//! The backend emits concrete
 //! nominal `vest_lib::asn1` BER or DER formats, so generated parsers and
 //! serializers use Vest's verified combinators directly while enclosing formats
 //! depend on compact, already-proved interfaces.
@@ -18,11 +19,16 @@ pub use codegen::{
     generate, generate_with_options, generate_with_rule_overrides, CodegenOptions, EncodingRules,
 };
 pub use error::{CodegenError, Error};
-pub use frontend::{SchemaModule, SchemaValue, SchemaValueAssignment};
-pub use synta_codegen::ast;
-pub use synta_codegen::{parse as parse_synta, Definition, Module, ParseError, Type};
+pub use frontend::ast::{Definition, Module, Type};
+pub use frontend::{
+    ast, parse as parse_synta, ParseError, SchemaModule, SchemaValue, SchemaValueAssignment,
+};
 
-/// Parse with the locally patched, lossless-for-supported-syntax Synta frontend.
+/// Parse one complete ASN.1 module with the locally maintained Synta frontend.
+///
+/// A final `END` is required; trailing input and syntax that the frontend would
+/// otherwise discard or approximate are rejected. Backend support is checked
+/// separately by [`generate`].
 pub fn parse(source: &str) -> Result<SchemaModule, Error> {
     Ok(parse_synta(source)?)
 }
