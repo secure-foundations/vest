@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8c72ad54.js";
+            window.path_to_searchindex_js = "../searchindex-0e0bd3c9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -276,10 +276,16 @@ with an error.</p>
 <tr><td><code>BOOLEAN</code>, <code>INTEGER</code>, <code>ENUMERATED</code> value assignments</td><td>Supported</td><td>emitted as typed Rust constants</td></tr>
 <tr><td><code>OBJECT IDENTIFIER</code>, <code>REAL</code> value assignments</td><td>Not supported</td><td></td></tr>
 <tr><td>Imports from other modules</td><td>Not supported</td><td>module linking is unimplemented; curate dependencies into one module instead</td></tr>
+<tr><td>Parameterized types and information object classes</td><td>Not supported</td><td>includes <code>INSTANCE OF</code> and class-field references</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="additional-notes"><a class="header" href="#additional-notes">Additional notes</a></h2>
+<p><strong>Complete modules and integer literals.</strong> Input must contain exactly one
+module, including its final <code>END</code>; trailing comments are allowed, but trailing
+definitions or a second module are rejected. Integer literals in schemas must
+fit in <code>i64</code>. This limits constraint bounds and value assignments, not the
+wire values accepted by an unconstrained <code>INTEGER</code> format.</p>
 <p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
 DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
 allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER

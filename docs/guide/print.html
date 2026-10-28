@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8c72ad54.js";
+            window.path_to_searchindex_js = "searchindex-0e0bd3c9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -1969,9 +1969,13 @@ For a published crate, read these files at its <code>vest_lib-vVERSION</code> Gi
 <p><code>vest_asn1</code> parses an ASN.1 module and emits verified formats backed by
 <code>vest_lib::asn1</code>. DER is the default; BER and definition-level rule overrides
 are available.</p>
-<pre><code class="language-console">cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
-cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
+<pre><code class="language-console">cargo install vest_asn1 --version 0.1.0 --locked
+vest_asn1 schema.asn1 -o generated.rs
+vest_asn1 --rules ber schema.asn1 -o generated_ber.rs
 </code></pre>
+<p>Version 0.1.0 targets <code>vest_lib</code> 0.2.3 and the matching Verus/vstd versions in
+the <a href="#asn1-tutorial">tutorial</a>. The compiler emits Rust code with Verus specs and proofs; run Verus
+on the generated code to check those proofs.</p>
 <p>Similar to the Vest DSL, each supported ASN.1 definition becomes a user-facing Rust value type and a nominal format type whose specification, proof, and executable implementation are all derived from the
 inner combinator representation.</p>
 <p>Start with the <a href="#asn1-tutorial">ASN.1 tutorial</a>, then see the
@@ -1982,7 +1986,7 @@ inner combinator representation.</p>
 <p><code>--rules der</code> or <code>--rules ber</code> authoritatively selects the module default. A
 definition override changes that definition and the transitive children it
 needs under the selected rule; parents remain under the module default.</p>
-<pre><code class="language-console">cargo run -p vest_asn1 -- --rules ber \
+<pre><code class="language-console">vest_asn1 --rules ber \
   --der-definition SignedAttributes \
   --der-definition CertificateSet \
   schema.asn1 -o generated_mixed.rs
@@ -1994,9 +1998,21 @@ canonicality. Conflicting transitive overrides are rejected and require an
 explicit rule boundary.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="asn1-tutorial"><a class="header" href="#asn1-tutorial">ASN.1 tutorial</a></h1>
-<p>This walkthrough generates a small DER codec from an ASN.1 module and uses it to parse and serialize a message.</p>
-<h2 id="define-a-module"><a class="header" href="#define-a-module">Define a module</a></h2>
-<p>Create <code>message.asn1</code>:</p>
+<p>In this tutorial, we’ll generate a parser and a serializer from a small ASN.1
+schema and use them in ordinary Rust and in Verus.
+The overall workflow is much like the <a href="#getting-started">Vest DSL</a>.</p>
+<h2 id="setting-up-1"><a class="header" href="#setting-up-1">Setting up</a></h2>
+<p>Install Vest’s ASN.1 compiler <code>vest_asn1</code> and create a Rust project:</p>
+<pre><code class="language-console">cargo install vest_asn1 --version 0.1.0 --locked
+cargo new --lib asn1-example
+cd asn1-example
+</code></pre>
+<p>Add the <code>vest_lib</code> and <code>vstd</code> dependencies from
+<a href="#create-a-project">Setting up</a>. This compiler release
+uses <code>vest_lib</code> 0.2.3 and its matching Verus/vstd versions.</p>
+<h2 id="turn-an-asn1-schema-into-rust"><a class="header" href="#turn-an-asn1-schema-into-rust">Turn an ASN.1 schema into Rust</a></h2>
+<p>We’ll define an ASN.1 module containing a message with a request/response kind and an optional payload of
+1–32 bytes. Save this schema as <code>message.asn1</code> in the project directory:</p>
 <pre><code class="language-asn1">Message DEFINITIONS EXPLICIT TAGS ::= BEGIN
     Kind ::= ENUMERATED {
         request(0),
@@ -2009,42 +2025,96 @@ explicit rule boundary.</p>
     }
 END
 </code></pre>
-<h2 id="generate-der"><a class="header" href="#generate-der">Generate DER</a></h2>
-<p><code>vest_asn1</code> is currently a repository tool rather than a published crate:</p>
-<pre><code class="language-console">cargo run -p vest_asn1 -- message.asn1 -o src/message.rs
+<p>The syntax is standard ASN.1, with a few restrictions documented in <a href="#supported-asn1-and-limitations">ASN.1 support table</a>.
+Now we can generate a Rust module using <code>vest_asn1</code>, then add <code>pub mod message;</code> to <code>src/lib.rs</code> to expose it.
+Invoke the compiler with:</p>
+<pre><code class="language-console">vest_asn1 message.asn1 -o src/message.rs
 </code></pre>
-<p>DER is the default. Use <code>--rules ber</code> for BER, or definition overrides for a
-module with canonical DER substructures inside a BER envelope; see
+<p>The default generated codec uses DER. For BER or mixed-rule schemas, see
 <a href="#der-ber-and-rule-overrides">DER, BER, and rule overrides</a>.</p>
-<p>The generator emits <code>Kind</code> and <code>Packet&lt;'i&gt;</code> value types. Unlike the Vest DSL, their verified format
-values are <code>KIND::Fmt</code> and <code>PACKET::Fmt</code>. Uppercase format names avoid collisions with the
-idiomatic Rust value names. Tagged formats also store their effective tag to
-support <code>IMPLICIT</code> retagging.</p>
-<h2 id="parse-and-serialize"><a class="header" href="#parse-and-serialize">Parse and serialize</a></h2>
-<pre><code class="language-rust ignore">use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
-use crate::message::{Kind, PACKET};
+<h2 id="using-the-generated-code"><a class="header" href="#using-the-generated-code">Using the generated code</a></h2>
+<p>The compiler gives us ordinary Rust value types: <code>Kind</code> is an enum, and
+<code>Packet&lt;'i&gt;</code> has <code>kind: Kind</code> and <code>payload: Option&lt;&amp;'i [u8]&gt;</code> fields. The payload
+borrows from the input when parsing, just like a byte field in the Vest DSL.</p>
+<p>Each definition also gets a format type. Where the DSL uses a value such as
+<code>PacketFmt</code>, the ASN.1 compiler uses <code>PACKET::Fmt</code>: an associated constant on
+the format type <code>PACKET</code>. There’re several reasons for doing it this way. One major reason
+is that ASN.1 types can be (re-)tagged (<code>IMPLICIT</code>ly or <code>EXPLICIT</code>ly) in different contexts.
+The emitted format <code>PACKET::Fmt</code> stores its default effective tag, and you can change it with, for example,
+<code>vest_lib::asn1::der::IMPLICIT(3, PACKET::Fmt)</code> when you need a different tag.
+We’ll use the original tag here.</p>
+<p>Now create <code>examples/roundtrip.rs</code> with this program:</p>
+<pre><code class="language-rust ignore">use asn1_example::message::{Kind, Packet, PACKET};
+use vest_lib::core::exec::{Parser, Prepare, SerializerExt};
 
-let encoded: &amp;[u8] = &amp;[
-    0x30, 0x07,             // SEQUENCE, seven content octets
-    0x0a, 0x01, 0x00,       // Kind::Request
-    0x80, 0x02, 0xaa, 0xbb, // [0] IMPLICIT OCTET STRING
-];
+fn main() {
+    let packet = Packet {
+        kind: Kind::Request,
+        payload: Some(b"hello"),
+    };
 
-let (consumed, packet) = PACKET::Fmt.parse(&amp;encoded).unwrap();
-assert_eq!(consumed, encoded.len());
-assert_eq!(packet.kind, Kind::Request);
-assert_eq!(packet.payload, Some(&amp;[0xaa, 0xbb][..]));
+    let len = PACKET::Fmt.prepare(&amp;packet).unwrap();
+    let mut output = vec![0u8; len];
+    PACKET::Fmt.serialize(&amp;packet, &amp;mut output);
 
-let size = PACKET::Fmt.prepare(&amp;packet).unwrap();
-let mut output = vec![0u8; size];
-PACKET::Fmt.serialize(&amp;packet, &amp;mut output);
-assert_eq!(output, encoded);</code></pre>
-<p>DER byte strings and UTF-8-compatible character strings <em>borrow</em> from the input.
-BER string formats concatenate constructed fragments into owned values.
-<code>BMPString</code> and <code>UniversalString</code> are always owned because their wire encodings
-must be converted to UTF-8.</p>
-<h2 id="what-is-checked"><a class="header" href="#what-is-checked">What is checked</a></h2>
-<p><strong>TODO.</strong> Discuss the proof obligations for format non-ambiguity, etc.</p>
+    let (consumed, parsed) = PACKET::Fmt.parse(&amp;output.as_slice()).unwrap();
+    assert_eq!(consumed, output.len());
+    assert_eq!(parsed.kind, packet.kind);
+    assert_eq!(parsed.payload, packet.payload);
+}</code></pre>
+<p>Run it with <code>cargo run --example roundtrip</code>. As in the DSL tutorial, <code>prepare</code>
+checks that the value is consistent with the format and returns its exact
+serialized length; <code>serialize</code> writes into a buffer of that size. An empty
+payload, for example, would make <code>prepare</code> return an error because our schema
+requires at least one byte when the payload is present. See
+<a href="#serializing-a-message">Serializing a message</a> for why
+preparation matters.</p>
+<p>ASN.1 formats also expose an additional API <code>length(&amp;value)</code> through the <code>ByteLen</code> trait. Unlike
+<code>prepare</code>, it does <em>not</em> check format constraints or overflow (so it can be faster): use it only when you
+already know that the value is valid and the encoded length fits in <code>usize</code>.</p>
+<h3 id="using-the-generated-code-in-verus"><a class="header" href="#using-the-generated-code-in-verus">Using the generated code in Verus</a></h3>
+<p>First, follow <a href="#checking-the-proofs-recommended">Checking the proofs</a>
+to install the matching Verus release, enable verification in <code>Cargo.toml</code>,
+and run <code>cargo verus verify</code>.</p>
+<p>In general, Vest ASN.1 clients get to use the same set of Vest theorems as a DSL client.
+Add this code to <code>src/lib.rs</code>, below <code>pub mod message;</code>:</p>
+<pre><code class="language-rust ignore">use crate::message::{Packet, PACKET};
+use vest_lib::prelude::*;
+
+verus! {
+
+pub fn roundtrip(value: &amp;Packet&lt;'_&gt;) -&gt; Result&lt;(), PreSerializeError&gt; {
+    let len = PACKET::Fmt.prepare(value)?;
+    let mut output = vec![0u8; len];
+    PACKET::Fmt.serialize(value, &amp;mut output);
+
+    proof {
+        PACKET::Fmt.theorem_serialize_parse_roundtrip(value.deep_view());
+    }
+    let (consumed, parsed) = PACKET::Fmt.parse(&amp;output.as_slice()).unwrap();
+    assert(consumed == len);
+    assert(parsed.deep_view() == value.deep_view());
+
+    proof {
+        reveal(&lt;Packet as DeepView&gt;::deep_view);
+    }
+    assert(parsed.kind == value.kind);
+    Ok(())
+}
+
+} // verus!</code></pre>
+<p>Run <code>cargo verus verify</code> again. The roundtrip theorem proves that parsing
+succeeds, consumes every serialized byte, and returns the same logical value.
+The last proof block opens <code>Packet</code>’s field-wise view so we can further assert
+the equality of their <code>kind</code> fields. If you only need the abstract roundtrip property,
+you can omit the last proof block and the <code>assert(parsed.kind == value.kind)</code> line.
+These <code>assert(...)</code> statements are checked at verification time; use
+<code>assert!(...)</code> for runtime checks.</p>
+<p>For more on views, lengths, and other roundtrip theorems, see
+<a href="#reasoning-about-generated-values">Reasoning about generated values</a>.
+The same <code>vest_lib</code> spec and proof traits apply here. In particular, DER formats
+support non-malleability and parse–serialize roundtrip, while BER formats do not because they may accept
+multiple encodings of one value.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="generated-rust-code-1"><a class="header" href="#generated-rust-code-1">Generated Rust Code</a></h1>
 <p>An ASN.1 definition such as <code>Packet</code> becomes a Rust value type <code>Packet</code> and a
@@ -2063,8 +2133,9 @@ Packet ::= SEQUENCE {
 }
 </code></pre>
 <h2 id="the-shape-of-an-emitted-file-1"><a class="header" href="#the-shape-of-an-emitted-file-1">The shape of an emitted file</a></h2>
-<p>Unlike a DSL-generated module, an ASN.1 module has <em>no banner sections</em>. It is
-one flat <code>verus!</code> block holding every definition’s types and schema, followed by
+<p>Each file starts with an auto-generated comment recording the compiler version
+and source module name. Do not edit it manually; update the schema and regenerate.
+The core code for the ASN.1 definitions appear in one flat <code>verus!</code> block, followed by
 one small private module per definition <em>outside</em> the block:</p>
 <pre><code class="language-rust ignore">use vest_lib::asn1::der::{...};          // preamble selected by the encoding rules
 verus! {
@@ -2109,9 +2180,8 @@ pub type KindSpec = Kind; // the abstract type is the same as the value type
 
 impl DeepView for Kind { type V = Self; /* *self */ }</code></pre>
 <h2 id="predicates-and-mappers"><a class="header" href="#predicates-and-mappers">Predicates and mappers</a></h2>
-<p>ASN.1 constraints become <em>named predicate structs</em> used in both the
-specification and implementation, rather than the inline closures the DSL
-emits:</p>
+<p>ASN.1 constraints become named predicate structs used in both the
+specification and implementation:</p>
 <pre><code class="language-rust ignore">#[derive(Clone, Copy)]
 pub struct KindPredicate;
 
@@ -2120,15 +2190,14 @@ impl Pred&lt;i16&gt;     for KindPredicate { /* the executable test */ }</code><
 <p><code>ENUMERATED</code> values are built on the verified <code>i16</code> integer-content backend, which is
 why the predicate is over <code>i16</code>. Larger enumerations are currently
 <a href="#supported-asn1-and-limitations">not yet supported</a>.</p>
-<p>Mappers follow the DSL’s <code>Forward</code>/<code>Reverse</code> pattern, with one addition — they
-implement the executable <code>Map</code> as well as <code>SpecMap</code>.</p>
+<p>Forward and reverse mappers implement both <code>SpecMap</code> and executable <code>Map</code>.</p>
 <pre><code class="language-rust ignore">pub struct KindForward;
 pub struct KindReverse;
 
 impl SpecMap for KindForward { /* .. */ }
 impl SpecMap for KindReverse { /* .. */ }
 impl Map&lt;i16&gt; for KindForward { /* executable */ }
-impl Map&lt;Kind&gt; for KindReverse { /* executable */ }</code></pre>
+impl Map&lt;&amp;Kind&gt; for KindReverse { /* executable */ }</code></pre>
 <h2 id="the-nominal-format-type"><a class="header" href="#the-nominal-format-type">The nominal format type</a></h2>
 <pre><code class="language-rust ignore">/// DER format for ASN.1 `Kind`.
 type KIND__ = Mapped&lt;Refined&lt;Enumerated16TlvFmt, KindPredicate&gt;, BiMap&lt;KindForward, KindReverse&gt;&gt;;
@@ -2182,20 +2251,6 @@ executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</co
 <p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
 allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
 accept several encodings of the same logical value, with different lengths.</p>
-<!--## How this differs from DSL-generated code
-
-| | Vest DSL | ASN.1 |
-|---|---|---|
-| File layout | five banner sections | flat `verus!` block + `mod __impl_*` after it |
-| Spec/proof/exec code | written out in three private modules | one `impl_der!` / `impl_ber!` call per definition |
-| Format type | `MessageFmt`, zero-sized | `PACKET(Class, u64)`, carries the effective tag |
-| Entry value | `MessageFmt` | `PACKET::Fmt` associated constant |
-| Combinator alias | `pub type MessageFmtSpec` | private `type PACKET__` |
-| Constructor | `pub open spec fn spec_inner()` | dual `pub const fn schema()` |
-| Abstract type | always a generic `*Spec` | identity alias when the value is already structural |
-| Constraints | inline refinement closures | named `*Predicate` structs (`SpecPred` + `Pred`) |
-| Mappers | `SpecMap` only | `SpecMap` **and** executable `Map` |
-| Extra proofs | — | `lemma_schema_unambiguous`, `HasAsn1Start`, `DerOrd` |-->
 <h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
 <p>Calling the parser, serializer, and the prepare methods is
 almost identical in shape to DSL-generated code, except that the format value is the
@@ -2306,10 +2361,16 @@ with an error.</p>
 <tr><td><code>BOOLEAN</code>, <code>INTEGER</code>, <code>ENUMERATED</code> value assignments</td><td>Supported</td><td>emitted as typed Rust constants</td></tr>
 <tr><td><code>OBJECT IDENTIFIER</code>, <code>REAL</code> value assignments</td><td>Not supported</td><td></td></tr>
 <tr><td>Imports from other modules</td><td>Not supported</td><td>module linking is unimplemented; curate dependencies into one module instead</td></tr>
+<tr><td>Parameterized types and information object classes</td><td>Not supported</td><td>includes <code>INSTANCE OF</code> and class-field references</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="additional-notes"><a class="header" href="#additional-notes">Additional notes</a></h2>
+<p><strong>Complete modules and integer literals.</strong> Input must contain exactly one
+module, including its final <code>END</code>; trailing comments are allowed, but trailing
+definitions or a second module are rejected. Integer literals in schemas must
+fit in <code>i64</code>. This limits constraint bounds and value assignments, not the
+wire values accepted by an unconstrained <code>INTEGER</code> format.</p>
 <p><strong><code>SET OF</code> ordering.</strong> DER requires the values to be sorted by their complete
 DER TLV encoding. The generated <code>prepare</code> rejects an unsorted vector without
 allocating, so sorting is the caller’s job (the provided comparison abstraction is non-allocating so sorting should be efficient as well). Duplicate encodings are allowed. BER

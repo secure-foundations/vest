@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8c72ad54.js";
+            window.path_to_searchindex_js = "../searchindex-0e0bd3c9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -182,9 +182,13 @@
 <p><code>vest_asn1</code> parses an ASN.1 module and emits verified formats backed by
 <code>vest_lib::asn1</code>. DER is the default; BER and definition-level rule overrides
 are available.</p>
-<pre><code class="language-console">cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
-cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
+<pre><code class="language-console">cargo install vest_asn1 --version 0.1.0 --locked
+vest_asn1 schema.asn1 -o generated.rs
+vest_asn1 --rules ber schema.asn1 -o generated_ber.rs
 </code></pre>
+<p>Version 0.1.0 targets <code>vest_lib</code> 0.2.3 and the matching Verus/vstd versions in
+the <a href="tutorial.html">tutorial</a>. The compiler emits Rust code with Verus specs and proofs; run Verus
+on the generated code to check those proofs.</p>
 <p>Similar to the Vest DSL, each supported ASN.1 definition becomes a user-facing Rust value type and a nominal format type whose specification, proof, and executable implementation are all derived from the
 inner combinator representation.</p>
 <p>Start with the <a href="tutorial.html">ASN.1 tutorial</a>, then see the
@@ -195,7 +199,7 @@ inner combinator representation.</p>
 <p><code>--rules der</code> or <code>--rules ber</code> authoritatively selects the module default. A
 definition override changes that definition and the transitive children it
 needs under the selected rule; parents remain under the module default.</p>
-<pre><code class="language-console">cargo run -p vest_asn1 -- --rules ber \
+<pre><code class="language-console">vest_asn1 --rules ber \
   --der-definition SignedAttributes \
   --der-definition CertificateSet \
   schema.asn1 -o generated_mixed.rs

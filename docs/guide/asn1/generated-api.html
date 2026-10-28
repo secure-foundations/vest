@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8c72ad54.js";
+            window.path_to_searchindex_js = "../searchindex-0e0bd3c9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -195,8 +195,9 @@ Packet ::= SEQUENCE {
 }
 </code></pre>
 <h2 id="the-shape-of-an-emitted-file"><a class="header" href="#the-shape-of-an-emitted-file">The shape of an emitted file</a></h2>
-<p>Unlike a DSL-generated module, an ASN.1 module has <em>no banner sections</em>. It is
-one flat <code>verus!</code> block holding every definition’s types and schema, followed by
+<p>Each file starts with an auto-generated comment recording the compiler version
+and source module name. Do not edit it manually; update the schema and regenerate.
+The core code for the ASN.1 definitions appear in one flat <code>verus!</code> block, followed by
 one small private module per definition <em>outside</em> the block:</p>
 <pre><code class="language-rust ignore">use vest_lib::asn1::der::{...};          // preamble selected by the encoding rules
 verus! {
@@ -241,9 +242,8 @@ pub type KindSpec = Kind; // the abstract type is the same as the value type
 
 impl DeepView for Kind { type V = Self; /* *self */ }</code></pre>
 <h2 id="predicates-and-mappers"><a class="header" href="#predicates-and-mappers">Predicates and mappers</a></h2>
-<p>ASN.1 constraints become <em>named predicate structs</em> used in both the
-specification and implementation, rather than the inline closures the DSL
-emits:</p>
+<p>ASN.1 constraints become named predicate structs used in both the
+specification and implementation:</p>
 <pre><code class="language-rust ignore">#[derive(Clone, Copy)]
 pub struct KindPredicate;
 
@@ -252,15 +252,14 @@ impl Pred&lt;i16&gt;     for KindPredicate { /* the executable test */ }</code><
 <p><code>ENUMERATED</code> values are built on the verified <code>i16</code> integer-content backend, which is
 why the predicate is over <code>i16</code>. Larger enumerations are currently
 <a href="support.html">not yet supported</a>.</p>
-<p>Mappers follow the DSL’s <code>Forward</code>/<code>Reverse</code> pattern, with one addition — they
-implement the executable <code>Map</code> as well as <code>SpecMap</code>.</p>
+<p>Forward and reverse mappers implement both <code>SpecMap</code> and executable <code>Map</code>.</p>
 <pre><code class="language-rust ignore">pub struct KindForward;
 pub struct KindReverse;
 
 impl SpecMap for KindForward { /* .. */ }
 impl SpecMap for KindReverse { /* .. */ }
 impl Map&lt;i16&gt; for KindForward { /* executable */ }
-impl Map&lt;Kind&gt; for KindReverse { /* executable */ }</code></pre>
+impl Map&lt;&amp;Kind&gt; for KindReverse { /* executable */ }</code></pre>
 <h2 id="the-nominal-format-type"><a class="header" href="#the-nominal-format-type">The nominal format type</a></h2>
 <pre><code class="language-rust ignore">/// DER format for ASN.1 `Kind`.
 type KIND__ = Mapped&lt;Refined&lt;Enumerated16TlvFmt, KindPredicate&gt;, BiMap&lt;KindForward, KindReverse&gt;&gt;;
@@ -314,20 +313,6 @@ executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</co
 <p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
 allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
 accept several encodings of the same logical value, with different lengths.</p>
-<!--## How this differs from DSL-generated code
-
-| | Vest DSL | ASN.1 |
-|---|---|---|
-| File layout | five banner sections | flat `verus!` block + `mod __impl_*` after it |
-| Spec/proof/exec code | written out in three private modules | one `impl_der!` / `impl_ber!` call per definition |
-| Format type | `MessageFmt`, zero-sized | `PACKET(Class, u64)`, carries the effective tag |
-| Entry value | `MessageFmt` | `PACKET::Fmt` associated constant |
-| Combinator alias | `pub type MessageFmtSpec` | private `type PACKET__` |
-| Constructor | `pub open spec fn spec_inner()` | dual `pub const fn schema()` |
-| Abstract type | always a generic `*Spec` | identity alias when the value is already structural |
-| Constraints | inline refinement closures | named `*Predicate` structs (`SpecPred` + `Pred`) |
-| Mappers | `SpecMap` only | `SpecMap` **and** executable `Map` |
-| Extra proofs | — | `lemma_schema_unambiguous`, `HasAsn1Start`, `DerOrd` |-->
 <h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
 <p>Calling the parser, serializer, and the prepare methods is
 almost identical in shape to DSL-generated code, except that the format value is the

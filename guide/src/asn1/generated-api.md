@@ -22,8 +22,9 @@ Packet ::= SEQUENCE {
 
 ## The shape of an emitted file
 
-Unlike a DSL-generated module, an ASN.1 module has *no banner sections*. It is
-one flat `verus!` block holding every definition's types and schema, followed by
+Each file starts with an auto-generated comment recording the compiler version
+and source module name. Do not edit it manually; update the schema and regenerate.
+The core code for the ASN.1 definitions appear in one flat `verus!` block, followed by
 one small private module per definition *outside* the block:
 
 ```rust,ignore
@@ -83,9 +84,8 @@ impl DeepView for Kind { type V = Self; /* *self */ }
 
 ## Predicates and mappers
 
-ASN.1 constraints become *named predicate structs* used in both the
-specification and implementation, rather than the inline closures the DSL
-emits:
+ASN.1 constraints become named predicate structs used in both the
+specification and implementation:
 
 ```rust,ignore
 #[derive(Clone, Copy)]
@@ -99,8 +99,7 @@ impl Pred<i16>     for KindPredicate { /* the executable test */ }
 why the predicate is over `i16`. Larger enumerations are currently
 [not yet supported](support.md).
 
-Mappers follow the DSL's `Forward`/`Reverse` pattern, with one addition — they
-implement the executable `Map` as well as `SpecMap`.
+Forward and reverse mappers implement both `SpecMap` and executable `Map`.
 
 ```rust,ignore
 pub struct KindForward;
@@ -109,7 +108,7 @@ pub struct KindReverse;
 impl SpecMap for KindForward { /* .. */ }
 impl SpecMap for KindReverse { /* .. */ }
 impl Map<i16> for KindForward { /* executable */ }
-impl Map<Kind> for KindReverse { /* executable */ }
+impl Map<&Kind> for KindReverse { /* executable */ }
 ```
 
 ## The nominal format type
@@ -179,21 +178,6 @@ executable APIs (`Parser`, `Prepare`, `Serializer`).
 `impl_der!` additionally implements `SoundParser`, `NonMalleable`, and
 allocation-free `DerOrd`. `impl_ber!` deliberately omits those traits: BER may
 accept several encodings of the same logical value, with different lengths.
-
-<!--## How this differs from DSL-generated code
-
-| | Vest DSL | ASN.1 |
-|---|---|---|
-| File layout | five banner sections | flat `verus!` block + `mod __impl_*` after it |
-| Spec/proof/exec code | written out in three private modules | one `impl_der!` / `impl_ber!` call per definition |
-| Format type | `MessageFmt`, zero-sized | `PACKET(Class, u64)`, carries the effective tag |
-| Entry value | `MessageFmt` | `PACKET::Fmt` associated constant |
-| Combinator alias | `pub type MessageFmtSpec` | private `type PACKET__` |
-| Constructor | `pub open spec fn spec_inner()` | dual `pub const fn schema()` |
-| Abstract type | always a generic `*Spec` | identity alias when the value is already structural |
-| Constraints | inline refinement closures | named `*Predicate` structs (`SpecPred` + `Pred`) |
-| Mappers | `SpecMap` only | `SpecMap` **and** executable `Map` |
-| Extra proofs | — | `lemma_schema_unambiguous`, `HasAsn1Start`, `DerOrd` |-->
 
 ## Calling it
 

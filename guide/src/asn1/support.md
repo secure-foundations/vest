@@ -75,8 +75,15 @@ with an error.
 | `BOOLEAN`, `INTEGER`, `ENUMERATED` value assignments | Supported     | emitted as typed Rust constants                                              |
 | `OBJECT IDENTIFIER`, `REAL` value assignments        | Not supported |                                                                              |
 | Imports from other modules                           | Not supported | module linking is unimplemented; curate dependencies into one module instead |
+| Parameterized types and information object classes   | Not supported | includes `INSTANCE OF` and class-field references                            |
 
 ## Additional notes
+
+**Complete modules and integer literals.** Input must contain exactly one
+module, including its final `END`; trailing comments are allowed, but trailing
+definitions or a second module are rejected. Integer literals in schemas must
+fit in `i64`. This limits constraint bounds and value assignments, not the
+wire values accepted by an unconstrained `INTEGER` format.
 
 **`SET OF` ordering.** DER requires the values to be sorted by their complete
 DER TLV encoding. The generated `prepare` rejects an unsorted vector without

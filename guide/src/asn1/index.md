@@ -5,9 +5,14 @@
 are available.
 
 ```console
-cargo run -p vest_asn1 -- schema.asn1 -o generated.rs
-cargo run -p vest_asn1 -- --rules ber schema.asn1 -o generated_ber.rs
+cargo install vest_asn1 --version 0.1.0 --locked
+vest_asn1 schema.asn1 -o generated.rs
+vest_asn1 --rules ber schema.asn1 -o generated_ber.rs
 ```
+
+Version 0.1.0 targets `vest_lib` 0.2.3 and the matching Verus/vstd versions in
+the [tutorial](tutorial.md). The compiler emits Rust code with Verus specs and proofs; run Verus
+on the generated code to check those proofs.
 
 Similar to the Vest DSL, each supported ASN.1 definition becomes a user-facing Rust value type and a nominal format type whose specification, proof, and executable implementation are all derived from the
 inner combinator representation.
@@ -24,7 +29,7 @@ definition override changes that definition and the transitive children it
 needs under the selected rule; parents remain under the module default.
 
 ```console
-cargo run -p vest_asn1 -- --rules ber \
+vest_asn1 --rules ber \
   --der-definition SignedAttributes \
   --der-definition CertificateSet \
   schema.asn1 -o generated_mixed.rs

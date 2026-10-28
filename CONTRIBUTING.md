@@ -54,7 +54,7 @@ version is already installed.
 | ------------------ | ------------------------------------------------------------------ |
 | `vest/`            | the `.vest` DSL compiler (published to crates.io)                  |
 | `vest_lib/`        | the verified combinator library (published to crates.io)           |
-| `vest_asn1/`       | the ASN.1 frontend (not published to crates.io yet)                |
+| `vest_asn1/`       | the ASN.1 compiler and its standalone schema fixtures             |
 | `vest_tests/`      | `.vest` files and their generated Rust                             |
 | `vest_asn1_tests/` | ASN.1 modules and their generated Rust                             |
 | `vest_bench/`      | runtime benchmarks, public corpora, and comparison baselines      |
@@ -138,6 +138,9 @@ checks that every one of them fails.
 ASN.1 works the same way: add the `.asn1` module, add a generation rule
 to `vest_asn1_tests/Makefile`, and declare the module in
 `vest_asn1_tests/src/lib.rs`.
+Compiler-only regressions belong in `vest_asn1/tests/`; the small schemas shared
+with the generated-code tests live in `vest_asn1/tests/fixtures/` so they are
+included in the published compiler package.
 
 ## Working on `vest_lib`
 
