@@ -8,6 +8,14 @@ pub mod generated_ber;
 pub mod generated_cms;
 #[cfg(feature = "fixtures")]
 pub mod generated_mixed;
+#[cfg(feature = "fixtures")]
+pub mod generated_sized_sequence_of_ber;
+#[cfg(feature = "fixtures")]
+pub mod generated_sized_sequence_of_der;
+#[cfg(feature = "fixtures")]
+pub mod generated_sized_set_of_ber;
+#[cfg(feature = "fixtures")]
+pub mod generated_sized_set_of_der;
 #[cfg(feature = "stress")]
 pub mod generated_stress_depth;
 #[cfg(feature = "stress")]
