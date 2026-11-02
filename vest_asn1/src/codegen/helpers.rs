@@ -198,6 +198,22 @@ pub(super) struct WireTag {
     pub(super) constructed: bool,
 }
 
+impl WireTag {
+    /// Universal constructed SEQUENCE / SEQUENCE OF tag (number 16).
+    pub(super) const UNIVERSAL_SEQUENCE: WireTag = WireTag {
+        class: 0,
+        number: 16,
+        constructed: true,
+    };
+
+    /// Universal constructed SET / SET OF tag (number 17).
+    pub(super) const UNIVERSAL_SET: WireTag = WireTag {
+        class: 0,
+        number: 17,
+        constructed: true,
+    };
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum TagDomain {
     Finite(BTreeSet<WireTag>),
