@@ -1,0 +1,15 @@
+SizedSetOf DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+    Element ::= SEQUENCE {
+        value INTEGER
+    }
+
+    -- SET SIZE (n) OF whose element start tag (SEQUENCE, 16) differs from the
+    -- collection's own SET tag (17). The OPTIONAL sibling makes the enclosing
+    -- SEQUENCE's unambiguity proof compute the `items` field start tag.
+    Container ::= SEQUENCE {
+        marker  [0] IMPLICIT INTEGER OPTIONAL,
+        items   SET SIZE (1) OF Element
+    }
+
+END

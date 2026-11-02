@@ -5,6 +5,10 @@ pub mod generated_ber;
 pub mod generated_cms;
 pub mod generated_mixed;
 pub mod generated_stress_depth;
+pub mod generated_sized_sequence_of_ber;
+pub mod generated_sized_sequence_of_der;
+pub mod generated_sized_set_of_ber;
+pub mod generated_sized_set_of_der;
 pub mod generated_stress_width;
 
 use vest_lib::core::exec::parser::{PResult, Parser};

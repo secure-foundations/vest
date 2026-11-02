@@ -12,6 +12,14 @@ generate:
 		schema_depth.asn1 -o src/generated_stress_depth.rs
 	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
 		schema_width.asn1 -o src/generated_stress_width.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- \
+		sized_set_of.asn1 -o src/generated_sized_set_of_der.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- \
+		sized_sequence_of.asn1 -o src/generated_sized_sequence_of_der.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+		sized_set_of.asn1 -o src/generated_sized_set_of_ber.rs
+	cargo run --locked --manifest-path ../Cargo.toml -p vest_asn1 -- --rules ber \
+		sized_sequence_of.asn1 -o src/generated_sized_sequence_of_ber.rs
 # CMS is a BER envelope around a DER island.  BER is the default because RFC 5652
 # section 1 designs every content type for "single pass processing using
 # indefinite-length Basic Encoding Rules".  Each DER override below is a

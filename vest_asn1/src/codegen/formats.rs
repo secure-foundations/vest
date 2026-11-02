@@ -314,11 +314,9 @@ impl<'a> Generator<'a> {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
                             proof: UnambiguityPlan {
                                 expr: expr.clone(),
-                                start: StartCertificate::finite(BTreeSet::from([WireTag {
-                                    class: 0,
-                                    number: 16,
-                                    constructed: true,
-                                }])),
+                                start: StartCertificate::finite(BTreeSet::from([
+                                    WireTag::UNIVERSAL_SEQUENCE,
+                                ])),
                                 kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
                             },
                             expr,
@@ -341,11 +339,9 @@ impl<'a> Generator<'a> {
                             ty: format!("{}<{}>", self.backend_item(rule, "SequenceFmt"), raw.ty),
                             proof: UnambiguityPlan {
                                 expr: expr.clone(),
-                                start: StartCertificate::finite(BTreeSet::from([WireTag {
-                                    class: 0,
-                                    number: 16,
-                                    constructed: true,
-                                }])),
+                                start: StartCertificate::finite(BTreeSet::from([
+                                    WireTag::UNIVERSAL_SEQUENCE,
+                                ])),
                                 kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
                             },
                             expr,
@@ -363,11 +359,7 @@ impl<'a> Generator<'a> {
                     ty: format!("{}<{}>", self.backend_item(rule, "SetFmt"), raw.ty),
                     proof: UnambiguityPlan {
                         expr: expr.clone(),
-                        start: StartCertificate::finite(BTreeSet::from([WireTag {
-                            class: 0,
-                            number: 17,
-                            constructed: true,
-                        }])),
+                        start: StartCertificate::finite(BTreeSet::from([WireTag::UNIVERSAL_SET])),
                         kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
                     },
                     expr,
@@ -567,14 +559,16 @@ impl<'a> Generator<'a> {
             Type::SequenceOf(inner, constraint) => {
                 let inner = self.render_type(inner, rule)?;
                 let expr = format!("{}({})", self.backend_item(rule, "SEQUENCE_OF"), inner.expr);
-                let proof = if rule == EncodingRules::Ber {
-                    UnambiguityPlan {
-                        expr: expr.clone(),
-                        start: inner.proof.start.clone(),
-                        kind: UnambiguityKind::BerSequenceOf(Box::new(inner.proof)),
-                    }
-                } else {
-                    UnambiguityPlan::transparent(expr.clone(), inner.proof)
+                // A `SEQUENCE OF` node begins with the universal SEQUENCE tag, independent of
+                // the element; the element's own start is irrelevant to the collection node.
+                let proof = UnambiguityPlan {
+                    expr: expr.clone(),
+                    start: StartCertificate::finite(BTreeSet::from([WireTag::UNIVERSAL_SEQUENCE])),
+                    kind: if rule == EncodingRules::Ber {
+                        UnambiguityKind::BerSequenceOf(Box::new(inner.proof))
+                    } else {
+                        UnambiguityKind::Transparent(Box::new(inner.proof))
+                    },
                 };
                 let sequence_of = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SequenceOfFmt"), inner.ty),
@@ -593,14 +587,16 @@ impl<'a> Generator<'a> {
             Type::SetOf(inner, constraint) => {
                 let inner = self.render_type(inner, rule)?;
                 let expr = format!("{}({})", self.backend_item(rule, "SET_OF"), inner.expr);
-                let proof = if rule == EncodingRules::Ber {
-                    UnambiguityPlan {
-                        expr: expr.clone(),
-                        start: inner.proof.start.clone(),
-                        kind: UnambiguityKind::BerSequenceOf(Box::new(inner.proof)),
-                    }
-                } else {
-                    UnambiguityPlan::transparent(expr.clone(), inner.proof)
+                // A `SET OF` node begins with the universal SET tag, independent of the
+                // element; the element's own start is irrelevant to the collection node.
+                let proof = UnambiguityPlan {
+                    expr: expr.clone(),
+                    start: StartCertificate::finite(BTreeSet::from([WireTag::UNIVERSAL_SET])),
+                    kind: if rule == EncodingRules::Ber {
+                        UnambiguityKind::BerSequenceOf(Box::new(inner.proof))
+                    } else {
+                        UnambiguityKind::Transparent(Box::new(inner.proof))
+                    },
                 };
                 let set_of = Rendered {
                     ty: format!("{}<{}>", self.backend_item(rule, "SetOfTlvFmt"), inner.ty),

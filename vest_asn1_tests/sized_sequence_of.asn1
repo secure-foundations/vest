@@ -1,0 +1,11 @@
+SizedSequenceOf DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+    -- SEQUENCE SIZE (n) OF whose element start tag (INTEGER, 2) differs from the
+    -- collection's own SEQUENCE tag (16). The OPTIONAL sibling makes the enclosing
+    -- SEQUENCE's unambiguity proof compute the `items` field start tag.
+    Container ::= SEQUENCE {
+        marker  [0] IMPLICIT INTEGER OPTIONAL,
+        items   SEQUENCE SIZE (1) OF INTEGER
+    }
+
+END
