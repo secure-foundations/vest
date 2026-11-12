@@ -45,19 +45,25 @@ impl<A> SoundParser for super::Opt<A> where A: SoundParser {
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        match self.0.spec_parse(ibuf) {
-            Some((n, vv)) => {
-                assert(self.sound_inv());
-                self.0.lemma_parse_sound_consumption(ibuf);
-            },
-            None => {},
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         assert(self.sound_inv());
         self.0.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A> StrictParser for super::Opt<A> where A: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            Some((n, vv)) => {
+                assert(self.strict_inv());
+                self.0.lemma_parse_strict_consumption(ibuf);
+            },
+            None => {},
+        }
     }
 }
 
@@ -201,12 +207,19 @@ impl<A, B> SoundParser for super::Optional<A, B> where A: SoundParser, B: SoundP
         &&& self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Pair(super::Opt(self.0), self.1).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         Pair(super::Opt(self.0), self.1).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<A, B> StrictParser for super::Optional<A, B> where A: StrictParser, B: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        Pair(super::Opt(self.0), self.1).lemma_parse_strict_consumption(ibuf)
     }
 }
 

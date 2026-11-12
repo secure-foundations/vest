@@ -265,12 +265,18 @@ mod implicit_proofs {
             self.1.spec_retagged(self.0).sound_inv()
         }
 
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            self.1.spec_retagged(self.0).lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             self.1.spec_retagged(self.0).lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<F> StrictParser for ImplicitlyTaggedFmt<F> where F: Retaggable + StrictParser {
+        open spec fn strict_inv(&self) -> bool {
+            self.1.spec_retagged(self.0).strict_inv()
+        }
+
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            self.1.spec_retagged(self.0).lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -673,7 +679,7 @@ mod derived_proofs {
         Rest: SpecByteLen + SafeParser<PVal = Rest::T>,
      {
         open spec fn safe_inv(&self) -> bool {
-            defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).safe_inv()
+            self.0.safe_inv() && self.2.safe_inv()
         }
 
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -704,19 +710,35 @@ mod derived_proofs {
         Field::PVal,
         Rest,
         DER,
-    > where Field: SoundParser, Rest: SoundParser {
+    > where
+        Field: SpecByteLen + SoundParser<PVal = Field::T>,
+        Rest: SpecByteLen + SoundParser<PVal = Rest::T>,
+     {
         open spec fn sound_inv(&self) -> bool {
-            defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).sound_inv()
-        }
-
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).lemma_parse_sound_consumption(
-                ibuf,
-            );
+            self.0.sound_inv() && self.2.sound_inv()
         }
 
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<Field, Rest, const DER: bool> StrictParser for DefaultedFmt<
+        Field,
+        Field::PVal,
+        Rest,
+        DER,
+    > where Field: StrictParser, Rest: StrictParser {
+        open spec fn strict_inv(&self) -> bool {
+            defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).strict_inv()
+        }
+
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            defaulted_fmt::<Field, Rest, DER>(
+                self.0,
+                self.1,
+                self.2,
+            ).lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -802,7 +824,10 @@ mod derived_proofs {
         Field::PVal,
         Rest,
         DER,
-    > where Field: SoundParser + NonMalleable, Rest: SoundParser + NonMalleable {
+    > where
+        Field: SpecByteLen + SoundParser<PVal = Field::T> + NonMalleable,
+        Rest: SpecByteLen + SoundParser<PVal = Rest::T> + NonMalleable,
+     {
         open spec fn nonmal_inv(&self) -> bool {
             defaulted_fmt::<Field, Rest, DER>(self.0, self.1, self.2).nonmal_inv()
         }

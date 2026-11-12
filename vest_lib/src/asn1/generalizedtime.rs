@@ -954,6 +954,15 @@ pub(crate) proof fn lemma_der_generalized_time_layout(value: GeneralizedTimeSpec
 mod derived_proofs {
     use super::*;
 
+    impl<const DER: bool> SoundParser for crate::asn1::ASN1Fmt<
+        crate::asn1::GeneralizedTimeFmt<false>,
+        DER,
+    > {
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+            crate::asn1::tlv::lemma_asn1_parse_sound_bounded::<_, DER>(self.0, self.1, input);
+        }
+    }
+
     impl<const DER: bool> SafeParser for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         }
@@ -984,14 +993,7 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::GeneralizedTimeFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            if let Some((n, value)) = self.spec_parse(ibuf) {
-                lemma_der_generalized_time_canonical(ibuf);
-                assert(generalized_time_bytes(value) == ibuf);
-            }
-        }
-
+    impl<const DER: bool> SoundParser for super::super::GeneralizedTimeFmt<DER> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             if let Some((_, value)) = self.spec_parse(ibuf) {
                 assert(self.consistent(value));
@@ -999,19 +1001,23 @@ mod derived_proofs {
         }
     }
 
+    impl StrictParser for super::super::GeneralizedTimeFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            if self.spec_parse(ibuf) is Some {
+                lemma_der_generalized_time_canonical(ibuf);
+            }
+        }
+    }
+
     impl NonMalleable for super::super::GeneralizedTimeFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            if let (Some((n1, value1)), Some((n2, value2))) = (
+            if let (Some((_, value1)), Some((_, value2))) = (
                 self.spec_parse(buf1),
                 self.spec_parse(buf2),
             ) {
-                lemma_der_generalized_time_canonical(buf1);
-                lemma_der_generalized_time_canonical(buf2);
                 if value1 == value2 {
-                    assert(buf1 == generalized_time_bytes(value1));
-                    assert(buf2 == generalized_time_bytes(value2));
-                    assert(buf1[0..n1] == buf1);
-                    assert(buf2[0..n2] == buf2);
+                    lemma_der_generalized_time_canonical(buf1);
+                    lemma_der_generalized_time_canonical(buf2);
                 }
             }
         }

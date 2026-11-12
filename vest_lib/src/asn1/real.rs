@@ -931,12 +931,14 @@ mod derived_proofs {
     }
 
     impl<const DER: bool> SoundParser for RealFmt<DER> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            real_fmt::<DER>().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             real_fmt::<DER>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const DER: bool> StrictParser for RealFmt<DER> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            real_fmt::<DER>().lemma_parse_strict_consumption(ibuf);
         }
     }
 

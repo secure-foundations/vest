@@ -1,6 +1,6 @@
 //! Executable parser traits.
 use crate::core::proof::Productive;
-use crate::core::spec::{SafeParser, SpecParser};
+use crate::core::spec::{SafeParser, SoundParser, SpecParser, StrictParser};
 use vstd::prelude::*;
 
 use super::ParseError;
@@ -122,6 +122,26 @@ impl<P: SafeParser> SafeParser for &P {
 
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         (*self).lemma_parse_safe(ibuf);
+    }
+}
+
+impl<P: SoundParser> SoundParser for &P {
+    open spec fn sound_inv(&self) -> bool {
+        (*self).sound_inv()
+    }
+
+    proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+        (*self).lemma_parse_sound_value(input);
+    }
+}
+
+impl<P: StrictParser> StrictParser for &P {
+    open spec fn strict_inv(&self) -> bool {
+        (*self).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+        (*self).lemma_parse_strict_consumption(input);
     }
 }
 

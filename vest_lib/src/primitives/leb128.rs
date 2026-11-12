@@ -226,7 +226,16 @@ mod leb128_derived_proofs {
         }
     }
 
-    impl SoundParserRecBody for ULeb128RecBody<true> {
+    impl StrictParserRecBody for ULeb128RecBody<true> {
+        proof fn lemma_body_strict_inv_preservation(
+            &self,
+            _param: Self::Param,
+            _rec: ParamRecSpecs<Self::Param, Self::T>,
+        ) {
+        }
+    }
+
+    impl<const MINIMAL: bool> SoundParserRecBody for ULeb128RecBody<MINIMAL> {
         proof fn lemma_body_sound_inv_preservation(
             &self,
             _param: (),
@@ -260,6 +269,18 @@ mod leb128_derived_proofs {
             _param: (),
             rec: ParamRecSpecs<Self::Param, Self::T>,
         ) {
+            let body = self.spec_body((), rec);
+            assert(body.1.inner.sound_inv());
+            assert forall|i: (u8, nat)| #[trigger] body.1.inner.consistent(i) implies (
+            body.1.mapper.1)((body.1.mapper.0)(i)) == i by {
+                assert(i.0 < 128);
+                lemma_mod_multiples_vanish(i.1 as int, i.0 as int, 128);
+                lemma_div_multiples_vanish_fancy(i.1 as int, i.0 as int, 128);
+            }
+            assert forall|v: nat| body.0.consistent(v) && body.1.consistent(v) implies false by {
+                assert(v < 128);
+                assert(body.1.mapper.1(v).1 > 0);
+            }
         }
     }
 
@@ -312,13 +333,15 @@ mod leb128_derived_proofs {
         }
     }
 
-    impl<const N: usize> SoundParser for ULeb128<true, N> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            uleb128_fmt::<true, N>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const MINIMAL: bool, const N: usize> SoundParser for ULeb128<MINIMAL, N> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            uleb128_fmt::<true, N>().lemma_parse_sound_value(ibuf);
+            uleb128_fmt::<MINIMAL, N>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const N: usize> StrictParser for ULeb128<true, N> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            uleb128_fmt::<true, N>().lemma_parse_strict_consumption(ibuf);
         }
     }
 

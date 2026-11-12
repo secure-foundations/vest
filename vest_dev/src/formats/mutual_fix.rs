@@ -431,16 +431,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ExprFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ExprFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -505,16 +507,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ListFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ListFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -735,6 +739,7 @@ mod slow_exec_impl {
             obuf: &mut Output,
         ) where Exec: Fn(&WhichFmt, &ValueRef<'a>, &mut Output) {
             broadcast use crate::core::exec::output::outbuf_lemmas;
+
             match v {
                 ValueRef::Expr { expr: Expr::Num(n) } => {
                     U8.serialize_into(&0x10u8, obuf);
@@ -847,12 +852,7 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
         }
     }
 
-    fn serialize_gas<Output: OutputBuf>(
-        &self,
-        gas: usize,
-        v: &Expr,
-        obuf: &mut Output,
-    )
+    fn serialize_gas<Output: OutputBuf>(&self, gas: usize, v: &Expr, obuf: &mut Output)
         requires
             FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
                 &ExprListRecBody,
@@ -860,12 +860,14 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
                 WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
             ),
-            old(obuf).fits(FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
-                &ExprListRecBody,
-                gas as nat,
-                WhichFmt::EXPR,
-                ValueSpec::Expr { expr: v.deep_view() },
-            )),
+            old(obuf).fits(
+                FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    &ExprListRecBody,
+                    gas as nat,
+                    WhichFmt::EXPR,
+                    ValueSpec::Expr { expr: v.deep_view() },
+                ),
+            ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
@@ -877,18 +879,20 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
                 WhichFmt::EXPR,
                 ValueSpec::Expr { expr: v.deep_view() },
             ),
-            forall|n| old(obuf).fits(
-                FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    WhichFmt::EXPR,
-                    ValueSpec::Expr { expr: v.deep_view() },
-                ) + n,
-            ) <==> final(obuf).fits(n),
+            forall|n|
+                old(obuf).fits(
+                    FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                        &ExprListRecBody,
+                        gas as nat,
+                        WhichFmt::EXPR,
+                        ValueSpec::Expr { expr: v.deep_view() },
+                    ) + n,
+                ) <==> final(obuf).fits(n),
             old(obuf).same_destination(final(obuf)),
         decreases gas,
     {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             Expr::Num(n) => {
                 U8.serialize_into(&0x10u8, obuf);
@@ -920,6 +924,7 @@ impl<const LIMIT: usize> ExprFmt<LIMIT> {
         decreases gas,
     {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             Expr::Num(n) => {
                 let l1 = U8.prepare(&0x10u8)?;
@@ -983,12 +988,7 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
         }
     }
 
-    fn serialize_gas<Output: OutputBuf>(
-        &self,
-        gas: usize,
-        v: &List,
-        obuf: &mut Output,
-    )
+    fn serialize_gas<Output: OutputBuf>(&self, gas: usize, v: &List, obuf: &mut Output)
         requires
             FixWith::<LIMIT, ExprListRecBody, WhichFmt>::consistent_gas(
                 &ExprListRecBody,
@@ -996,12 +996,14 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
                 WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
             ),
-            old(obuf).fits(FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
-                &ExprListRecBody,
-                gas as nat,
-                WhichFmt::LIST,
-                ValueSpec::List { list: v.deep_view() },
-            )),
+            old(obuf).fits(
+                FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                    &ExprListRecBody,
+                    gas as nat,
+                    WhichFmt::LIST,
+                    ValueSpec::List { list: v.deep_view() },
+                ),
+            ),
         ensures
             final(obuf)@ == old(obuf)@ + FixWith::<
                 LIMIT,
@@ -1013,18 +1015,20 @@ impl<const LIMIT: usize> ListFmt<LIMIT> {
                 WhichFmt::LIST,
                 ValueSpec::List { list: v.deep_view() },
             ),
-            forall|n| old(obuf).fits(
-                FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
-                    &ExprListRecBody,
-                    gas as nat,
-                    WhichFmt::LIST,
-                    ValueSpec::List { list: v.deep_view() },
-                ) + n,
-            ) <==> final(obuf).fits(n),
+            forall|n|
+                old(obuf).fits(
+                    FixWith::<LIMIT, ExprListRecBody, WhichFmt>::byte_len_gas(
+                        &ExprListRecBody,
+                        gas as nat,
+                        WhichFmt::LIST,
+                        ValueSpec::List { list: v.deep_view() },
+                    ) + n,
+                ) <==> final(obuf).fits(n),
             old(obuf).same_destination(final(obuf)),
         decreases gas,
     {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             List::Nil => {
                 U8.serialize_into(&0x20u8, obuf);
@@ -1222,6 +1226,7 @@ impl<Output: OutputBuf> SerializerRecBody<Output, ByteList> for ByteListRecBody 
         obuf: &mut Output,
     ) where Exec: Fn(&(), &ByteList, &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         match v {
             ByteList::Nil => {
                 U8.serialize_into(&0x20u8, obuf);

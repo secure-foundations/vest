@@ -1,7 +1,12 @@
-//! BER SEQUENCE combinators.
-use crate::asn1::{ASN1Fmt, BerLength, BerLengthFmt, Class, Tag, TagFmt, BER};
+//! BER SEQUENCE framing and schema-body termination.
+//!
+//! `BerSeqBody` replaces a field chain's final EOF with a consuming EOC for
+//! indefinite framing. Complete child TLVs are unchanged. EXPLICIT wrappers
+//! reuse the same framing through `BerSequenceFmt`.
+use crate::asn1::{ASN1Fmt, BerLength, BerLengthFmt, Class, DefaultedFmt, Tag, TagFmt, BER};
 use crate::combinators::{
-    bytes::ExactLen, mapped::spec::FnSpecMapper, Bind, Const, Mapped, Pair, PrefixTagged, Sum,
+    bytes::ExactLen, mapped::spec::FnSpecMapper, Bind, Const, Eof, Mapped, Optional, Pair,
+    PrefixTagged, SuffixTagged, Sum,
 };
 use crate::core::exec::input::InputBuf;
 use crate::core::exec::parser::*;
@@ -11,35 +16,190 @@ use crate::core::exec::{
 use crate::core::{proof::*, spec::*};
 use vstd::prelude::*;
 
-use super::any::{parse_discard_eoc, EocFmt, EocValue, EOC};
+use super::eoc::{EocEndFmt, EOC_END};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
 verus! {
 
-type BerSequenceWireType<T> = (BerLength, Sum<T, (T, EocValue)>);
+/// An EOF-terminated body for BER SEQUENCE and EXPLICIT wrappers.
+///
+/// Indefinite framing replaces the final [`Eof`] with [`EOC_END`], consuming the
+/// marker without changing the body's value type.
+/// Only the continuation is changed; complete child TLVs are left intact.
+/// Implementations follow `Pair`, `Optional`, and `DefaultedFmt` continuations;
+/// `SuffixTagged<C, Eof, ()>` provides the same transformation for EXPLICIT wrappers.
+pub trait BerSeqBody: SpecCombinator + Copy {
+    type WithEoc: SpecCombinator<T = Self::T> + Copy;
+
+    spec fn spec_with_eoc(&self) -> Self::WithEoc;
+
+    fn with_eoc(&self) -> (body: Self::WithEoc)
+        ensures
+            body == self.spec_with_eoc(),
+    ;
+
+    proof fn lemma_eoc_consistent(&self, value: Self::T)
+        ensures
+            self.spec_with_eoc().consistent(value) == self.consistent(value),
+    ;
+
+    proof fn lemma_eoc_serialize(&self, value: Self::T)
+        ensures
+            self.spec_with_eoc().spec_serialize(value) == self.spec_serialize(value)
+                + EOC_END.spec_serialize(()),
+    ;
+
+    proof fn lemma_eoc_len(&self, value: Self::T)
+        ensures
+            self.spec_with_eoc().byte_len(value) == self.byte_len(value) + 2,
+    ;
+}
+
+impl BerSeqBody for Eof {
+    type WithEoc = EocEndFmt;
+
+    open spec fn spec_with_eoc(&self) -> Self::WithEoc {
+        EOC_END
+    }
+
+    fn with_eoc(&self) -> Self::WithEoc {
+        EOC_END
+    }
+
+    proof fn lemma_eoc_consistent(&self, value: ()) {
+    }
+
+    proof fn lemma_eoc_serialize(&self, value: ()) {
+    }
+
+    proof fn lemma_eoc_len(&self, value: ()) {
+    }
+}
+
+impl<A: SpecCombinator + Copy, B: BerSeqBody> BerSeqBody for Pair<A, B> {
+    type WithEoc = Pair<A, B::WithEoc>;
+
+    open spec fn spec_with_eoc(&self) -> Self::WithEoc {
+        Pair(self.0, self.1.spec_with_eoc())
+    }
+
+    fn with_eoc(&self) -> Self::WithEoc {
+        Pair(self.0, self.1.with_eoc())
+    }
+
+    proof fn lemma_eoc_consistent(&self, value: Self::T) {
+        self.1.lemma_eoc_consistent(value.1);
+    }
+
+    proof fn lemma_eoc_serialize(&self, value: Self::T) {
+        self.1.lemma_eoc_serialize(value.1);
+    }
+
+    proof fn lemma_eoc_len(&self, value: Self::T) {
+        self.1.lemma_eoc_len(value.1);
+    }
+}
+
+impl<A: SpecCombinator + Copy, B: BerSeqBody> BerSeqBody for Optional<A, B> {
+    type WithEoc = Optional<A, B::WithEoc>;
+
+    open spec fn spec_with_eoc(&self) -> Self::WithEoc {
+        Optional(self.0, self.1.spec_with_eoc())
+    }
+
+    fn with_eoc(&self) -> Self::WithEoc {
+        Optional(self.0, self.1.with_eoc())
+    }
+
+    proof fn lemma_eoc_consistent(&self, value: Self::T) {
+        self.1.lemma_eoc_consistent(value.1);
+    }
+
+    proof fn lemma_eoc_serialize(&self, value: Self::T) {
+        self.1.lemma_eoc_serialize(value.1);
+    }
+
+    proof fn lemma_eoc_len(&self, value: Self::T) {
+        self.1.lemma_eoc_len(value.1);
+    }
+}
+
+impl<F, R, const DER: bool> BerSeqBody for DefaultedFmt<F, F::T, R, DER> where
+    F: SpecCombinator + Copy,
+    F::T: Copy,
+    R: BerSeqBody,
+ {
+    type WithEoc = DefaultedFmt<F, F::T, R::WithEoc, DER>;
+
+    open spec fn spec_with_eoc(&self) -> Self::WithEoc {
+        DefaultedFmt(self.0, self.1, self.2.spec_with_eoc())
+    }
+
+    fn with_eoc(&self) -> Self::WithEoc {
+        DefaultedFmt(self.0, self.1, self.2.with_eoc())
+    }
+
+    proof fn lemma_eoc_consistent(&self, value: Self::T) {
+        self.2.lemma_eoc_consistent(value.1);
+    }
+
+    proof fn lemma_eoc_serialize(&self, value: Self::T) {
+        self.2.lemma_eoc_serialize(value.1);
+    }
+
+    proof fn lemma_eoc_len(&self, value: Self::T) {
+        self.2.lemma_eoc_len(value.1);
+    }
+}
+
+impl<C: SpecCombinator + Copy> BerSeqBody for SuffixTagged<C, Eof, ()> where (): Copy {
+    type WithEoc = SuffixTagged<C, EocEndFmt, ()>;
+
+    open spec fn spec_with_eoc(&self) -> Self::WithEoc {
+        SuffixTagged(self.0, EOC_END, ())
+    }
+
+    fn with_eoc(&self) -> Self::WithEoc {
+        SuffixTagged(self.0, EOC_END, ())
+    }
+
+    proof fn lemma_eoc_consistent(&self, value: Self::T) {
+    }
+
+    proof fn lemma_eoc_serialize(&self, value: Self::T) {
+    }
+
+    proof fn lemma_eoc_len(&self, value: Self::T) {
+    }
+}
+
+type BerSequenceWireType<T> = (BerLength, Sum<T, T>);
 
 type BerSequenceFmt__<C> = Mapped<
     PrefixTagged<
         TagFmt,
         Tag,
-        Bind<BerLengthFmt, spec_fn(BerLength) -> Sum<ExactLen<C, usize>, Pair<C, EocFmt>>>,
+        Bind<
+            BerLengthFmt,
+            spec_fn(BerLength) -> Sum<ExactLen<C, usize>, <C as BerSeqBody>::WithEoc>,
+        >,
     >,
     FnSpecMapper<BerSequenceWireType<<C as SpecByteLen>::T>, <C as SpecByteLen>::T>,
 >;
 
 /// BER `SEQUENCE` accepting definite and indefinite outer length forms.
 ///
-/// `content` ends in [`super::BerEndFmt`]. [`ExactLen`] makes that marker observe the end of a
-/// bounded definite body; under indefinite framing it recognizes EOC without consuming it, after
-/// which [`Pair`] consumes EOC. Serialization is normalized to definite-length BER.
-pub open spec fn ber_sequence_fmt<C: SpecCombinator>(tag: Tag, content: C) -> BerSequenceFmt__<C> {
+/// The body ends in `Eof`. For indefinite framing, [`BerSeqBody`] replaces that terminal with
+/// an EOC terminal. Normalization uses definite framing when the content length fits
+/// `usize`, and indefinite framing for larger mathematical values.
+pub open spec fn ber_sequence_fmt<C: BerSeqBody>(tag: Tag, content: C) -> BerSequenceFmt__<C> {
     #[verusfmt::skip]
     Mapped {
         inner: PrefixTagged(TagFmt, tag, Bind(BerLengthFmt, |len: BerLength|
                 match len {
                     BerLength::Definite(len) => L(ExactLen(len, content)),
-                    BerLength::Indefinite => R(Pair(content, EOC)),
+                    BerLength::Indefinite => R(content.spec_with_eoc()),
                 },
             ),
         ),
@@ -47,27 +207,73 @@ pub open spec fn ber_sequence_fmt<C: SpecCombinator>(tag: Tag, content: C) -> Be
             |parsed: BerSequenceWireType<C::T>|
                 match parsed.1 {
                     L(value) => value,
-                    R((value, _eoc)) => value,
+                    R(value) => value,
                 },
             |value: C::T| {
-                let len = content.byte_len(value) as usize;
-                (BerLength::Definite(len), L(value))
+                let len = content.byte_len(value);
+                if len <= usize::MAX {
+                    (BerLength::Definite(len as usize), L(value))
+                } else {
+                    (BerLength::Indefinite, R(value))
+                }
             },
         ),
     }
 }
 
-/// The definite-length BER encoding selected by [`BerSequenceFmt`]'s serializer.
-pub open spec fn ber_sequence_normalized_fmt<C>(tag: Tag, content: C) -> ASN1Fmt<C, BER> {
-    ASN1Fmt(tag, content)
+pub(crate) proof fn lemma_ber_sequence_consistent<C: BerSeqBody>(tag: Tag, content: C, value: C::T)
+    ensures
+        content.spec_with_eoc().consistent(value) == content.consistent(value),
+        BerSequenceFmt(tag, content).consistent(value) == (TagFmt.consistent(tag)
+            && content.consistent(value)),
+{
+    content.lemma_eoc_consistent(value);
+    crate::asn1::length::lemma_length_fmt_consistent::<BER>(content.byte_len(value) as usize);
+}
+
+proof fn lemma_content_len<C: BerSeqBody>(tag: Tag, content: C, value: C::T)
+    ensures
+        content.byte_len(value) <= BerSequenceFmt(tag, content).byte_len(value),
+{
+    content.lemma_eoc_len(value);
+}
+
+proof fn lemma_definite<C: BerSeqBody>(tag: Tag, content: C, value: C::T)
+    requires
+        content.byte_len(value) <= usize::MAX,
+    ensures
+        BerSequenceFmt(tag, content).consistent(value) == ASN1Fmt::<_, BER>(
+            tag,
+            content,
+        ).consistent(value),
+        BerSequenceFmt(tag, content).byte_len(value) == ASN1Fmt::<_, BER>(tag, content).byte_len(
+            value,
+        ),
+        BerSequenceFmt(tag, content).spec_serialize(value) == ASN1Fmt::<_, BER>(
+            tag,
+            content,
+        ).spec_serialize(value),
+        forall|suffix: Seq<u8>| #[trigger]
+            BerSequenceFmt(tag, content).spec_serialize_dps(value, suffix) == ASN1Fmt::<_, BER>(
+                tag,
+                content,
+            ).spec_serialize_dps(value, suffix),
+{
 }
 
 /// BER `SEQUENCE` codec with a configurable outer tag.
 ///
 /// Parsing accepts definite and indefinite framing for one schema body. Serialization always
-/// emits the normalized definite-length form.
+/// emits definite-length BER for executable-sized output buffers.
 #[derive(Copy)]
 pub struct BerSequenceFmt<C>(pub Tag, pub C);
+
+impl<C: BerSeqBody> BerSequenceFmt<C> {
+    /// The same schema fields with a consuming EOC terminal.
+    pub open spec fn eoc_body(&self) -> C::WithEoc {
+        self.1.spec_with_eoc()
+    }
+}
 
 impl<C: Clone> Clone for BerSequenceFmt<C> {
     fn clone(&self) -> (cloned: Self)
@@ -112,7 +318,7 @@ impl<C: Copy> BerSequenceFmt<C> {
 mod derived_specs {
     use super::*;
 
-    impl<C: SpecCombinator> SpecParser for BerSequenceFmt<C> {
+    impl<C: BerSeqBody> SpecParser for BerSequenceFmt<C> {
         type PVal = C::T;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
@@ -120,7 +326,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecCombinator> Consistency for BerSequenceFmt<C> {
+    impl<C: BerSeqBody> Consistency for BerSequenceFmt<C> {
         type Val = C::T;
 
         open spec fn consistent(&self, value: Self::Val) -> bool {
@@ -128,7 +334,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecCombinator> SpecSerializerDps for BerSequenceFmt<C> {
+    impl<C: BerSeqBody> SpecSerializerDps for BerSequenceFmt<C> {
         type SValue = C::T;
 
         open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
@@ -136,7 +342,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecCombinator> SpecSerializer for BerSequenceFmt<C> {
+    impl<C: BerSeqBody> SpecSerializer for BerSequenceFmt<C> {
         type SVal = C::T;
 
         open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
@@ -144,7 +350,7 @@ mod derived_specs {
         }
     }
 
-    impl<C: SpecCombinator> SpecByteLen for BerSequenceFmt<C> {
+    impl<C: BerSeqBody> SpecByteLen for BerSequenceFmt<C> {
         type T = C::T;
 
         open spec fn byte_len(&self, value: Self::T) -> nat {
@@ -157,9 +363,9 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
-    impl<C: SpecCombinator + SafeParser> SafeParser for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + SafeParser> SafeParser for BerSequenceFmt<C> where C::WithEoc: SafeParser {
         open spec fn safe_inv(&self) -> bool {
-            self.1.safe_inv()
+            self.1.safe_inv() && self.1.spec_with_eoc().safe_inv()
         }
 
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -167,9 +373,9 @@ mod derived_proofs {
         }
     }
 
-    impl<C: SpecCombinator + SafeParser + Productive> Productive for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + Productive> Productive for BerSequenceFmt<C> where C::WithEoc: Productive {
         open spec fn productive_inv(&self) -> bool {
-            self.1.safe_inv()
+            self.safe_inv()
         }
 
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
@@ -177,44 +383,81 @@ mod derived_proofs {
         }
     }
 
-    impl<C: SpecCombinator + GoodSerializer> GoodSerializer for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + SoundParser> SoundParser for BerSequenceFmt<C> where
+        C::WithEoc: SoundParser,
+     {
+        open spec fn sound_inv(&self) -> bool {
+            self.1.sound_inv() && self.1.spec_with_eoc().sound_inv()
+        }
+
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+            let fmt = ber_sequence_fmt(self.0, self.1);
+            TagFmt.lemma_parse_sound_value(input);
+            if let Some((_, (length, branch))) = fmt.inner.spec_parse(input) {
+                TagFmt.lemma_parse_safe(input);
+                let after_tag = input[(TagFmt.spec_parse(input)->0).0..];
+                BerLengthFmt.lemma_parse_safe(after_tag);
+                let bytes = after_tag[(BerLengthFmt.spec_parse(after_tag)->0).0..];
+                match length {
+                    BerLength::Definite(len) => self.1.lemma_parse_sound_value(bytes[0..len]),
+                    BerLength::Indefinite => self.1.spec_with_eoc().lemma_parse_sound_value(bytes),
+                }
+                let value = match branch {
+                    L(value) => value,
+                    R(value) => value,
+                };
+                lemma_ber_sequence_consistent(self.0, self.1, value);
+            }
+        }
+    }
+
+    impl<C: BerSeqBody + GoodSerializer> GoodSerializer for BerSequenceFmt<C> where
+        C::WithEoc: GoodSerializer,
+     {
         open spec fn serialize_inv(&self) -> bool {
-            self.1.serialize_inv()
+            self.1.serialize_inv() && self.1.spec_with_eoc().serialize_inv()
         }
 
         proof fn lemma_serialize_len(&self, value: Self::SVal) {
-            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_len(value);
+            ber_sequence_fmt(self.0, self.1).lemma_serialize_len(value);
         }
     }
 
-    impl<C: SpecCombinator + GoodSerializer + EquivSerializers> NonTailFmt for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + GoodSerializer + EquivSerializers> NonTailFmt for BerSequenceFmt<C> where
+        C::WithEoc: NonTailFmt,
+     {
         open spec fn serialize_dps_inv(&self) -> bool {
             &&& self.1.serialize_inv()
             &&& self.1.equiv_inv()
+            &&& self.1.spec_with_eoc().serialize_dps_inv()
         }
 
         proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
-            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_dps_prepend(value, obuf);
+            ber_sequence_fmt(self.0, self.1).lemma_serialize_dps_prepend(value, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
-            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_dps_len(value, obuf);
+            ber_sequence_fmt(self.0, self.1).lemma_serialize_dps_len(value, obuf);
         }
     }
 
-    impl<C: SpecCombinator + EquivSerializers> EquivSerializersGeneral for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + EquivSerializers> EquivSerializersGeneral for BerSequenceFmt<C> where
+        C::WithEoc: EquivSerializersGeneral,
+     {
         open spec fn equiv_general_inv(&self) -> bool {
-            self.1.equiv_inv()
+            self.1.equiv_inv() && self.1.spec_with_eoc().equiv_general_inv()
         }
 
         proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
-            ber_sequence_normalized_fmt(self.0, self.1).lemma_serialize_equiv(value, obuf);
+            ber_sequence_fmt(self.0, self.1).lemma_serialize_equiv(value, obuf);
         }
     }
 
-    impl<C: SpecCombinator + EquivSerializers> EquivSerializers for BerSequenceFmt<C> {
+    impl<C: BerSeqBody + EquivSerializers> EquivSerializers for BerSequenceFmt<C> where
+        C::WithEoc: EquivSerializersGeneral,
+     {
         open spec fn equiv_inv(&self) -> bool {
-            self.1.equiv_inv()
+            self.equiv_general_inv()
         }
 
         proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
@@ -223,41 +466,26 @@ mod derived_proofs {
     }
 
     impl<C> SPRoundTripDps for BerSequenceFmt<C> where
-        C: SpecCombinator + GoodSerializer + EquivSerializers + SPRoundTripDps,
+        C: BerSeqBody + GoodSerializer + EquivSerializers + SPRoundTripDps,
+        C::WithEoc: SPRoundTripDps,
      {
         open spec fn unambiguous(&self) -> bool {
-            ber_sequence_normalized_fmt(self.0, self.1).unambiguous()
+            &&& self.1.serialize_inv()
+            &&& self.1.equiv_inv()
+            &&& self.1.unambiguous()
+            &&& self.1.spec_with_eoc().unambiguous()
         }
 
         proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-            let normalized = ber_sequence_normalized_fmt(self.0, self.1);
-            normalized.theorem_serialize_dps_parse_roundtrip(value, obuf);
-            let len = self.1.byte_len(value) as usize;
-            let exact = ExactLen(len, self.1);
-            exact.theorem_serialize_dps_parse_roundtrip(value, obuf);
-            let content_suffix = exact.spec_serialize_dps(value, obuf);
-            BerLengthFmt.theorem_serialize_dps_parse_roundtrip(
-                BerLength::Definite(len),
-                content_suffix,
-            );
-            let length_suffix = BerLengthFmt.spec_serialize_dps(
-                BerLength::Definite(len),
-                content_suffix,
-            );
-            BerLengthFmt.lemma_serialize_dps_prepend(BerLength::Definite(len), content_suffix);
-            BerLengthFmt.lemma_serialize_dps_len(BerLength::Definite(len), content_suffix);
-            let length_len = BerLengthFmt.byte_len(BerLength::Definite(len)) as int;
-            TagFmt.theorem_serialize_dps_parse_roundtrip(self.0, length_suffix);
-            TagFmt.lemma_serialize_dps_prepend(self.0, length_suffix);
-            TagFmt.lemma_serialize_dps_len(self.0, length_suffix);
-
+            ber_sequence_fmt(self.0, self.1).theorem_serialize_dps_parse_roundtrip(value, obuf);
         }
     }
 
 }
 
 impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
-    C: SpecCombinator + Parser<&'i [u8]> + SafeParser + Copy,
+    C: BerSeqBody + Parser<&'i [u8]> + SafeParser,
+    C::WithEoc: Parser<&'i [u8], PT = C::PT> + SafeParser,
  {
     type PT = C::PT;
 
@@ -269,6 +497,8 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()
+        &&& self.1.spec_with_eoc().exec_inv()
+        &&& self.1.spec_with_eoc().safe_inv()
     }
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
@@ -284,16 +514,8 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
         let (content_len, value) = match length {
             BerLength::Definite(len) => ExactLen(len, self.1).parse(&content)?,
             BerLength::Indefinite => {
-                let framed = Pair(self.1, EOC);
-                proof {
-                    crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(
-                        &EOC,
-                    );
-                    crate::core::exec::bridge_lemmas::lemma_pair_parser_exec_inv::<&'i [u8], _, _>(
-                        &framed,
-                    );
-                }
-                parse_discard_eoc(&framed, &content)?
+                let framed = self.1.with_eoc();
+                framed.parse(&content)?
             },
         };
         let total = tag_len + length_len + content_len;
@@ -304,7 +526,7 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
 
 impl<Output: OutputBuf, C, T> Serializer<Output, T> for BerSequenceFmt<C> where
     T: DeepView + ?Sized,
-    C: SpecCombinator + Serializer<Output, T> + ByteLen<T> + Copy,
+    C: BerSeqBody + Serializer<Output, T> + ByteLen<T>,
  {
     #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
@@ -313,37 +535,95 @@ impl<Output: OutputBuf, C, T> Serializer<Output, T> for BerSequenceFmt<C> where
     }
 
     fn serialize_into(&self, value: &T, obuf: &mut Output) {
+        proof {
+            obuf.lemma_fits_len_bound(self.byte_len(value.deep_view()));
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
         normalized.serialize_into(value, obuf);
     }
 }
 
-impl<C, T> Prepare<T> for BerSequenceFmt<C> where
-    T: DeepView + ?Sized,
-    C: SpecCombinator + Prepare<T> + Copy,
- {
+impl<C, T> Prepare<T> for BerSequenceFmt<C> where T: DeepView + ?Sized, C: BerSeqBody + Prepare<T> {
     open spec fn exec_inv(&self) -> bool {
         <C as Prepare<T>>::exec_inv(&self.1)
     }
 
     fn prepare(&self, value: &T) -> Result<usize, PreSerializeError> {
         let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
-        normalized.prepare(value)
+        let result = normalized.prepare(value);
+        proof {
+            if result is Ok {
+                crate::asn1::tlv::lemma_asn1_consistent::<_, BER>(
+                    self.0,
+                    self.1,
+                    value.deep_view(),
+                );
+                lemma_definite(self.0, self.1, value.deep_view());
+            }
+        }
+        result
     }
 }
 
-impl<C, T> ByteLen<T> for BerSequenceFmt<C> where
-    T: DeepView + ?Sized,
-    C: SpecCombinator + ByteLen<T> + Copy,
- {
+impl<C, T> ByteLen<T> for BerSequenceFmt<C> where T: DeepView + ?Sized, C: BerSeqBody + ByteLen<T> {
     open spec fn exec_inv(&self) -> bool {
         <C as ByteLen<T>>::exec_inv(&self.1)
     }
 
     fn length(&self, value: &T) -> usize {
+        proof {
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, self.1);
         normalized.length(value)
     }
 }
 
 } // verus!
+#[cfg(all(test, feature = "alloc"))]
+mod tests {
+    use super::*;
+    use crate::asn1::ber::{BOOLEAN, DEFAULT, EXPLICIT, INTEGER8, SEQUENCE};
+    use crate::core::exec::SerializerExt;
+
+    #[test]
+    fn optional_body_consumes_eoc_and_leaves_the_continuation() {
+        let fmt = SEQUENCE(Optional(BOOLEAN, Eof));
+        let empty = [0x30, 0x80, 0, 0, 0xaa];
+        assert_eq!(fmt.parse(&&empty[..]).unwrap(), (4, (None, ())));
+        let present = [0x30, 0x80, 1, 1, 1, 0, 0, 0xaa];
+        let (n, value) = fmt.parse(&&present[..]).unwrap();
+        assert_eq!(n, 7);
+        assert_eq!(value, (Some(true), ()));
+        let mut output = alloc::vec![0; fmt.prepare(&value).unwrap()];
+        fmt.serialize(&value, &mut output);
+        assert_eq!(output, [0x30, 3, 1, 1, 0xff]);
+    }
+
+    #[test]
+    fn default_body_accepts_present_and_absent_default() {
+        let fmt = SEQUENCE(DEFAULT(BOOLEAN, false, Eof));
+        for bytes in [&[0x30, 0x80, 0, 0][..], &[0x30, 0x80, 1, 1, 0, 0, 0][..]] {
+            let (n, value) = fmt.parse(&bytes).unwrap();
+            assert_eq!(n, bytes.len());
+            assert_eq!(value, (false, ()));
+            let mut output = alloc::vec![0; fmt.prepare(&value).unwrap()];
+            fmt.serialize(&value, &mut output);
+            assert_eq!(output, [0x30, 0]);
+        }
+    }
+
+    #[test]
+    fn explicit_terminal_belongs_to_the_wrapper() {
+        let fmt = EXPLICIT(0, INTEGER8);
+        let input = [0xa0, 0x80, 2, 1, 7, 0, 0, 0xaa];
+        let (n, value) = fmt.parse(&&input[..]).unwrap();
+        assert_eq!((n, value), (7, 7i8));
+        let mut output = alloc::vec![0; fmt.prepare(&value).unwrap()];
+        fmt.serialize(&value, &mut output);
+        assert_eq!(output, [0xa0, 3, 2, 1, 7]);
+    }
+}

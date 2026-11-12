@@ -156,7 +156,7 @@ proof fn test_dispatch_tag() {
 
     dispatch.lemma_parse_safe(buf);
     dispatch.lemma_parse_sound_value(buf);
-    dispatch.lemma_parse_sound_consumption(buf);
+    dispatch.lemma_parse_strict_consumption(buf);
     dispatch.lemma_parse_non_malleable(buf, buf);
     dispatch.lemma_serialize_len(v);
     dispatch.lemma_serialize_dps_len(v, obuf);

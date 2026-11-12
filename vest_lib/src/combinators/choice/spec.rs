@@ -66,14 +66,21 @@ impl<A: SoundParser, B: SoundParser> SoundParser for super::Choice<A, B> {
         &&& self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-        self.1.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
         self.1.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A: StrictParser, B: StrictParser> StrictParser for super::Choice<A, B> {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
+        self.1.lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -258,33 +265,34 @@ impl<const NONDETERMINISTIC: bool, A, B> super::Alt<A, B, NONDETERMINISTIC> wher
 
 impl<const NONDETERMINISTIC: bool, A, B> SoundParser for super::Alt<A, B, NONDETERMINISTIC> where
     A: SoundParser,
-    B: SoundParser<T = A::T>,
+    B: SoundParser<PVal = A::PVal>,
  {
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& self.1.sound_inv()
-        &&& disjoint_values(self.0, self.1)
-    }
-
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-        self.1.lemma_parse_sound_consumption(ibuf);
-        self.0.lemma_parse_sound_value(ibuf);
-        self.1.lemma_parse_sound_value(ibuf);
-        if let Some((n, v)) = self.0.spec_parse(ibuf) {
-            assert(disjoint_values(self.0, self.1));
-            assert(self.choose_left(v));
-            assert(n == self.byte_len(v));
-        } else if let Some((n, v)) = self.1.spec_parse(ibuf) {
-            assert(self.1.consistent(v));
-            assert(disjoint_values(self.0, self.1));
-            assert(!self.choose_left(v));
-            assert(self.byte_len(v) == self.1.byte_len(v));
-            assert(n == self.1.byte_len(v));
-        }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_sound_value(ibuf);
+        self.1.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<const NONDETERMINISTIC: bool, A, B> StrictParser for super::Alt<A, B, NONDETERMINISTIC> where
+    A: StrictParser,
+    B: StrictParser<T = A::T>,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+        &&& forall|v: A::T| #[trigger]
+            self.0.consistent(v) && #[trigger] self.1.consistent(v) ==> self.0.byte_len(v)
+                == self.1.byte_len(v)
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
+        self.1.lemma_parse_strict_consumption(ibuf);
         self.0.lemma_parse_sound_value(ibuf);
         self.1.lemma_parse_sound_value(ibuf);
     }
@@ -514,15 +522,21 @@ impl<T, C: SoundParser, const N: usize> SoundParser for super::Dispatch<T, C, N>
         self.active_branch().sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        if self.has_active_branch() {
-            self.active_branch().lemma_parse_sound_consumption(ibuf);
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if self.has_active_branch() {
             self.active_branch().lemma_parse_sound_value(ibuf);
+        }
+    }
+}
+
+impl<T, C: StrictParser, const N: usize> StrictParser for super::Dispatch<T, C, N> {
+    open spec fn strict_inv(&self) -> bool {
+        self.active_branch().strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        if self.has_active_branch() {
+            self.active_branch().lemma_parse_strict_consumption(ibuf);
         }
     }
 }
@@ -674,17 +688,26 @@ impl<A: SoundParser, B: SoundParser> SoundParser for Sum<A, B> {
         }
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        match self {
-            Sum::Inl(a) => a.lemma_parse_sound_consumption(ibuf),
-            Sum::Inr(b) => b.lemma_parse_sound_consumption(ibuf),
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         match self {
             Sum::Inl(a) => a.lemma_parse_sound_value(ibuf),
             Sum::Inr(b) => b.lemma_parse_sound_value(ibuf),
+        }
+    }
+}
+
+impl<A: StrictParser, B: StrictParser> StrictParser for Sum<A, B> {
+    open spec fn strict_inv(&self) -> bool {
+        match self {
+            Sum::Inl(a) => a.strict_inv(),
+            Sum::Inr(b) => b.strict_inv(),
+        }
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        match self {
+            Sum::Inl(a) => a.lemma_parse_strict_consumption(ibuf),
+            Sum::Inr(b) => b.lemma_parse_strict_consumption(ibuf),
         }
     }
 }

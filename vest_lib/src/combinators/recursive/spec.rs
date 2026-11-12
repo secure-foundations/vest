@@ -146,42 +146,42 @@ impl<SpecP, Cnstcy, Blen> SoundParser for (SpecP, Cnstcy, Blen) where
     Cnstcy: Consistency<Val = Blen::T>,
  {
     open spec fn sound_inv(&self) -> bool {
-        let (p, c, b) = *self;
-        let (p_fn, c_fn, b_fn) = (
-            |ibuf| p.spec_parse(ibuf),
-            |v| c.consistent(v),
-            |v| b.byte_len(v),
-        );
-        sound_parser(p_fn, c_fn, b_fn)
-    }
-
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let (p, c, b) = *self;
-        let (p_fn, c_fn, b_fn) = (
-            |i: Seq<u8>| p.spec_parse(i),
-            |v: Blen::T| c.consistent(v),
-            |v: Blen::T| b.byte_len(v),
-        );
-        assert(self.sound_inv());
-        if let Some((n, v)) = self.spec_parse(ibuf) {
-            assert(sound_parser(p_fn, c_fn, b_fn));
-            assert(p_fn(ibuf) == Some((n, v)));
-            assert(b_fn(v) == n);
-        }
+        let (p, c, _) = *self;
+        let (p_fn, c_fn) = (|ibuf| p.spec_parse(ibuf), |v| c.consistent(v));
+        sound_parser(p_fn, c_fn)
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-        let (p, c, b) = *self;
-        let (p_fn, c_fn, b_fn) = (
-            |i: Seq<u8>| p.spec_parse(i),
-            |v: Blen::T| c.consistent(v),
-            |v: Blen::T| b.byte_len(v),
-        );
+        let (p, c, _) = *self;
+        let (p_fn, c_fn) = (|i: Seq<u8>| p.spec_parse(i), |v: Blen::T| c.consistent(v));
         assert(self.sound_inv());
         if let Some((n, v)) = self.spec_parse(ibuf) {
-            assert(sound_parser(p_fn, c_fn, b_fn));
+            assert(sound_parser(p_fn, c_fn));
             assert(p_fn(ibuf) == Some((n, v)));
             assert(c_fn(v));
+        }
+    }
+}
+
+impl<SpecP, Cnstcy, Blen> StrictParser for (SpecP, Cnstcy, Blen) where
+    Blen: SpecByteLen,
+    SpecP: SpecParser<PVal = Blen::T>,
+    Cnstcy: Consistency<Val = Blen::T>,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        let (p, _, b) = *self;
+        let (p_fn, b_fn) = (|ibuf| p.spec_parse(ibuf), |v| b.byte_len(v));
+        strict_parser(p_fn, b_fn)
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let (p, _, b) = *self;
+        let (p_fn, b_fn) = (|i: Seq<u8>| p.spec_parse(i), |v: Blen::T| b.byte_len(v));
+        assert(self.strict_inv());
+        if let Some((n, v)) = self.spec_parse(ibuf) {
+            assert(strict_parser(p_fn, b_fn));
+            assert(p_fn(ibuf) == Some((n, v)));
+            assert(b_fn(v) == n);
         }
     }
 }
@@ -210,16 +210,13 @@ impl<SpecP, Cnstcy, Blen> Productive for (SpecP, Cnstcy, Blen) where
 }
 
 /// The functional version of [`SoundParser`].
-pub open spec fn sound_parser<T>(
-    parser: ParserFnSpec<T>,
-    consistent: PredFnSpec<T>,
-    byte_len: ByteLenFnSpec<T>,
-) -> bool {
-    forall|input: Seq<u8>| #[trigger]
-        parser(input) matches Some((n, v)) ==> {
-            &&& consistent(v)
-            &&& byte_len(v) == n
-        }
+pub open spec fn sound_parser<T>(parser: ParserFnSpec<T>, consistent: PredFnSpec<T>) -> bool {
+    forall|input: Seq<u8>| #[trigger] parser(input) matches Some((_, v)) ==> consistent(v)
+}
+
+/// The functional version of [`StrictParser`]'s length agreement.
+pub open spec fn strict_parser<T>(parser: ParserFnSpec<T>, byte_len: ByteLenFnSpec<T>) -> bool {
+    forall|input: Seq<u8>| #[trigger] parser(input) matches Some((n, v)) ==> byte_len(v) == n
 }
 
 /// The functional version of [`Productive`].
@@ -307,12 +304,18 @@ impl<T> SoundParser for BundledSpecs<T> {
         parser_specs(*self).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        parser_specs(*self).lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         parser_specs(*self).lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<T> StrictParser for BundledSpecs<T> {
+    open spec fn strict_inv(&self) -> bool {
+        parser_specs(*self).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        parser_specs(*self).lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -396,6 +399,21 @@ pub trait SoundParserRecBody: SpecRecBody where Self::Body: SoundParser {
             forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv(),
         ensures
             self.spec_body(param, rec).sound_inv(),
+    ;
+}
+
+/// Length-agreement preservation for recursive bodies.
+pub trait StrictParserRecBody: SoundParserRecBody where Self::Body: StrictParser {
+    proof fn lemma_body_strict_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    )
+        requires
+            forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv(),
+            forall|p: Self::Param| #![trigger rec(p)] rec(p).strict_inv(),
+        ensures
+            self.spec_body(param, rec).strict_inv(),
     ;
 }
 
@@ -725,7 +743,6 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         ensures
             Self::spec_parse_gas(&self.0, gas, param, input) == Some((n, v)) ==> {
                 &&& Self::consistent_gas(&self.0, gas, param, v)
-                &&& Self::byte_len_gas(&self.0, gas, param, v) == n
             },
         decreases gas,
     {
@@ -740,31 +757,26 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
             callback(p).2(rem) matches Some((nn, vv)) ==> {
                 &&& callback(p).0(vv)
-                &&& callback(p).1(vv) == nn
             } by {
             if let Some((nn, vv)) = callback(p).2(rem) {
                 self.sound_parser_by_induction((gas - 1) as nat, p, rem, nn, vv);
                 assert(Self::spec_parse_gas(&self.0, (gas - 1) as nat, p, rem) == Some((nn, vv)));
                 assert(Self::consistent_gas(&self.0, (gas - 1) as nat, p, vv) == callback(p).0(vv));
-                assert(Self::byte_len_gas(&self.0, (gas - 1) as nat, p, vv) == callback(p).1(vv));
                 assert(callback(p).0(vv));
-                assert(callback(p).1(vv) == nn);
             }
         }
 
         assert forall|p: Body::Param| #[trigger] callback(p).sound_inv() by {
-            assert(sound_parser(callback(p).2, callback(p).0, callback(p).1));
+            assert(sound_parser(callback(p).2, callback(p).0));
         }
 
         self.0.lemma_body_sound_inv_preservation(param, callback);
         let body = self.0.spec_body(param, callback);
 
-        body.lemma_parse_sound_consumption(input);
         body.lemma_parse_sound_value(input);
 
         assert(Self::spec_parse_gas(&self.0, gas, param, input) == body.spec_parse(input));
         assert(Self::consistent_gas(&self.0, gas, param, v) == body.consistent(v));
-        assert(Self::byte_len_gas(&self.0, gas, param, v) == body.byte_len(v));
     }
 }
 
@@ -773,15 +785,69 @@ impl<const LIMIT: usize, Body, Param> SoundParser for super::FixWith<LIMIT, Body
     Body::Body: SoundParser,
     Param: DeepView<V = Body::Param>,
  {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
             self.sound_parser_by_induction(LIMIT as nat, self.1.deep_view(), ibuf, n, v);
         }
     }
+}
 
-    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
+    Body: StrictParserRecBody,
+    Body::Body: StrictParser,
+    Param: DeepView<V = Body::Param>,
+ {
+    /// Inductive proof that `spec_parse_gas` satisfies [`strict_parser`].
+    pub proof fn strict_parser_by_induction(
+        &self,
+        gas: nat,
+        param: Body::Param,
+        input: Seq<u8>,
+        n: int,
+        v: Body::T,
+    )
+        ensures
+            Self::spec_parse_gas(&self.0, gas, param, input) == Some((n, v)) ==> Self::byte_len_gas(
+                &self.0,
+                gas,
+                param,
+                v,
+            ) == n,
+        decreases gas,
+    {
+        if Self::spec_parse_gas(&self.0, gas, param, input) != Some((n, v)) {
+            return;
+        }
+        let callback = Self::specs_callback(&self.0, gas);
+        assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
+            callback(p).2(rem) matches Some((nn, vv)) ==> callback(p).0(vv) by {
+            if let Some((nn, vv)) = callback(p).2(rem) {
+                self.sound_parser_by_induction((gas - 1) as nat, p, rem, nn, vv);
+            }
+        }
+        assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
+            callback(p).2(rem) matches Some((nn, vv)) ==> callback(p).1(vv) == nn by {
+            if let Some((nn, vv)) = callback(p).2(rem) {
+                self.strict_parser_by_induction((gas - 1) as nat, p, rem, nn, vv);
+            }
+        }
+        assert forall|p: Body::Param| #[trigger] callback(p).sound_inv() by {}
+        assert forall|p: Body::Param| #[trigger] callback(p).strict_inv() by {}
+        self.0.lemma_body_sound_inv_preservation(param, callback);
+        self.0.lemma_body_strict_inv_preservation(param, callback);
+        let body = self.0.spec_body(param, callback);
+        body.lemma_parse_strict_consumption(input);
+    }
+}
+
+impl<const LIMIT: usize, Body, Param> StrictParser for super::FixWith<LIMIT, Body, Param> where
+    Body: StrictParserRecBody,
+    Body::Body: StrictParser,
+    Param: DeepView<V = Body::Param>,
+ {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
         if let Some((n, v)) = self.spec_parse(ibuf) {
-            self.sound_parser_by_induction(LIMIT as nat, self.1.deep_view(), ibuf, n, v);
+            self.strict_parser_by_induction(LIMIT as nat, self.1.deep_view(), ibuf, n, v);
         }
     }
 }

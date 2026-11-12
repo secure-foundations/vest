@@ -73,14 +73,18 @@ impl<'i> DeepView for BtcTx<'i> {
 
 pub open spec fn btc_tx_fmt() -> Named<
     Mapped<
-        PrefixTagged<U8, u8, Bind<
+        PrefixTagged<
+            U8,
+            u8,
+            Bind<
                 U8,
                 spec_fn(txin_count: u8) -> Pair<
                     Varied,
                     Bind<
                         Refined<U8, PredFnSpec<u8>>,
                         spec_fn(txout_count: u8) -> Pair<RepeatN<U16Le>, Pair<RepeatN<U16Le>, U8>>,
-                    >,>,
+                    >,
+                >,
             >,
         >,
         FnSpecMapper<BtcTxInner, BtcTxSpec>,
@@ -168,16 +172,18 @@ impl SafeParser for TxSegwitFmt {
 }
 
 impl SoundParser for TxSegwitFmt {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        reveal(<TxSegwitFmt as SpecParser>::spec_parse);
-        reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
-        btc_tx_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         reveal(<TxSegwitFmt as SpecParser>::spec_parse);
         reveal(<TxSegwitFmt as Consistency>::consistent);
         btc_tx_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for TxSegwitFmt {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<TxSegwitFmt as SpecParser>::spec_parse);
+        reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
+        btc_tx_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -275,6 +281,7 @@ impl<'i> Parser<&'i [u8]> for TxSegwitFmt {
 impl<Output: OutputBuf, 'i> Serializer<Output, BtcTx<'i>> for TxSegwitFmt {
     fn serialize_into(&self, v: &BtcTx<'i>, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         reveal(<TxSegwitFmt as SpecSerializer>::spec_serialize);
         reveal(<TxSegwitFmt as SpecByteLen>::byte_len);
         reveal(<TxSegwitFmt as Consistency>::consistent);
@@ -309,9 +316,9 @@ impl<'i> Prepare<BtcTx<'i>> for TxSegwitFmt {
         let l5 = RepeatN(txout_cnt, U16Le).prepare(txout)?;
         let l6 = RepeatN(txin_cnt, U16Le).prepare(witness)?;
         let l7 = U8.prepare(locktime)?;
-        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?.checked_add(
-            l3,
-        ).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
+        let total_len = l1.checked_add(l2).ok_or(
+            PreSerializeError::length_too_large(),
+        )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?.checked_add(l4).ok_or(
             PreSerializeError::length_too_large(),
         )?.checked_add(l5).ok_or(PreSerializeError::length_too_large())?.checked_add(l6).ok_or(
             PreSerializeError::length_too_large(),
@@ -457,16 +464,18 @@ impl SafeParser for MsgTyFmt {
 }
 
 impl SoundParser for MsgTyFmt {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        reveal(<MsgTyFmt as SpecParser>::spec_parse);
-        reveal(<MsgTyFmt as SpecByteLen>::byte_len);
-        msg_ty_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         reveal(<MsgTyFmt as SpecParser>::spec_parse);
         reveal(<MsgTyFmt as Consistency>::consistent);
         msg_ty_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for MsgTyFmt {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<MsgTyFmt as SpecParser>::spec_parse);
+        reveal(<MsgTyFmt as SpecByteLen>::byte_len);
+        msg_ty_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -554,6 +563,7 @@ impl<'i> Parser<&'i [u8]> for MsgTyFmt {
 impl<Output: OutputBuf> Serializer<Output, MsgTy> for MsgTyFmt {
     fn serialize_into(&self, v: &MsgTy, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         reveal(<MsgTyFmt as SpecSerializer>::spec_serialize);
         reveal(<MsgTyFmt as SpecByteLen>::byte_len);
         let ghost old_obuf = obuf@;
@@ -652,9 +662,9 @@ pub struct TLVPayloadFmt {
     pub tag: MsgTy,
 }
 
-pub open spec fn tlv_fmt() -> Implicit<
-    MsgTyFmt,
-    KVFormat<MsgTy, TLVMsgSpec, Implicit<U8, KVFormat<u8, TLVMsgSpec, ExactLen<TLVPayloadFmt>>>>,
+pub open spec fn tlv_fmt() -> Mapped<
+    Bind<MsgTyFmt, spec_fn(MsgTy) -> Bind<U8, spec_fn(u8) -> ExactLen<TLVPayloadFmt, u8>>>,
+    FnSpecMapper<(MsgTy, (u8, TLVMsgSpec)), TLVMsgSpec>,
 > {
     let recover_tag = |msg: TLVMsgSpec| -> MsgTy
         {
@@ -670,13 +680,16 @@ pub open spec fn tlv_fmt() -> Implicit<
             let tag = recover_tag(msg);
             TLVPayloadFmt { tag }.byte_len(msg) as u8
         };
-    #[verusfmt::skip]
-    let fmt = Implicit(MsgTyFmt,
-        (|tag: MsgTy| Implicit(U8,
-        (|len: u8| ExactLen(len, TLVPayloadFmt { tag }),
-        recover_len)),
-        recover_tag));
-    fmt
+    Mapped {
+        inner: Bind(
+            MsgTyFmt,
+            |tag: MsgTy| Bind(U8, |len: u8| ExactLen(len, TLVPayloadFmt { tag })),
+        ),
+        mapper: (
+            |wire: (MsgTy, (u8, TLVMsgSpec))| wire.1.1,
+            |value: TLVMsgSpec| (recover_tag(value), (recover_len(value), value)),
+        ),
+    }
 }
 
 // pub open spec fn payload_fmt(tag: MsgTy) -> Mapped<
@@ -827,20 +840,22 @@ impl SafeParser for TLVFmt {
 }
 
 impl SoundParser for TLVFmt {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        reveal(<TLVFmt as SpecParser>::spec_parse);
-        reveal(<TLVFmt as SpecByteLen>::byte_len);
-        reveal(<TLVPayloadFmt as Consistency>::consistent);
-        reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
-        tlv_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         reveal(<TLVFmt as SpecParser>::spec_parse);
         reveal(<TLVFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
         tlv_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for TLVFmt {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<TLVFmt as SpecParser>::spec_parse);
+        reveal(<TLVFmt as SpecByteLen>::byte_len);
+        reveal(<TLVPayloadFmt as Consistency>::consistent);
+        reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
+        tlv_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -908,16 +923,18 @@ impl SafeParser for TLVPayloadFmt {
 }
 
 impl SoundParser for TLVPayloadFmt {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        reveal(<TLVPayloadFmt as SpecParser>::spec_parse);
-        reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
-        payload_fmt(self.tag).lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         reveal(<TLVPayloadFmt as SpecParser>::spec_parse);
         reveal(<TLVPayloadFmt as Consistency>::consistent);
         payload_fmt(self.tag).lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for TLVPayloadFmt {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<TLVPayloadFmt as SpecParser>::spec_parse);
+        reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
+        payload_fmt(self.tag).lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -982,6 +999,7 @@ impl<'i> Parser<&'i [u8]> for TLVFmt {
 impl<Output: OutputBuf, 'i> Serializer<Output, TLVMsg<'i>> for TLVFmt {
     fn serialize_into(&self, v: &TLVMsg<'i>, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         reveal(<TLVFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVFmt as SpecByteLen>::byte_len);
         reveal(<TLVFmt as Consistency>::consistent);
@@ -1046,9 +1064,9 @@ impl<'i> Prepare<TLVMsg<'i>> for TLVFmt {
             return Err(PreSerializeError::length_too_large());
         }
         let l2 = U8.prepare(&(l3 as u8))?;
-        let total_len = l1.checked_add(l2).ok_or(PreSerializeError::length_too_large())?.checked_add(
-            l3,
-        ).ok_or(PreSerializeError::length_too_large())?;
+        let total_len = l1.checked_add(l2).ok_or(
+            PreSerializeError::length_too_large(),
+        )?.checked_add(l3).ok_or(PreSerializeError::length_too_large())?;
         Ok(total_len)
     }
 }
@@ -1089,6 +1107,7 @@ impl<'i> Parser<&'i [u8]> for TLVPayloadFmt {
 impl<Output: OutputBuf, 'i> Serializer<Output, TLVMsg<'i>> for TLVPayloadFmt {
     fn serialize_into(&self, v: &TLVMsg<'i>, obuf: &mut Output) {
         broadcast use crate::core::exec::output::outbuf_lemmas;
+
         reveal(<TLVPayloadFmt as SpecSerializer>::spec_serialize);
         reveal(<TLVPayloadFmt as SpecByteLen>::byte_len);
         reveal(<TLVPayloadFmt as Consistency>::consistent);

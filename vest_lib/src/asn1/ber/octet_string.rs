@@ -11,7 +11,7 @@ use crate::combinators::{
         SpecRecBody,
     },
     tail::RepeatTillEnd,
-    Bind, FixWith, Mapped, Repeat, Sum, Void,
+    Bind, FixWith, Mapped, Refined, Repeat, Sum, Void,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -27,7 +27,7 @@ use vstd::prelude::*;
 #[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
-use super::any::{EocFmt, EocValue, EOC};
+use super::eoc::{EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -186,7 +186,10 @@ mod derived_specs {
         type PVal = Seq<u8>;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).spec_parse(ibuf)
+            Refined(
+                FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0),
+                |bytes: Seq<u8>| ber_octet_string_normalized_fmt(self.0).consistent(bytes),
+            ).spec_parse(ibuf)
         }
     }
 
@@ -226,6 +229,11 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
+
+    impl<const LIMIT: usize> SoundParser for BerOctetStringFmt<LIMIT> {
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        }
+    }
 
     impl<const LIMIT: usize> SafeParser for BerOctetStringFmt<LIMIT> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -496,7 +504,21 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerOctetStringFmt<LIMIT> {
     }
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).parse(ibuf)
+        let result = FixWith::<LIMIT, _, _>(BerOctetStringRecBody, self.0).parse(ibuf);
+        proof {
+            broadcast use crate::asn1::tlv::lemma_asn1_consistent;
+
+            TagFmt.lemma_parse_sound_value(ibuf@);
+            if let Ok((_, bytes)) = &result {
+                vstd::std_specs::vec::axiom_spec_len(bytes);
+                assert(TagFmt.spec_parse(ibuf@) is Some);
+                let actual = (TagFmt.spec_parse(ibuf@)->0).1;
+                assert(actual == primitive_tag(self.0) || actual == constructed_tag(self.0));
+                assert(TagFmt.consistent(primitive_tag(self.0)));
+                assert(ber_octet_string_normalized_fmt(self.0).consistent(bytes.deep_view()));
+            }
+        }
+        result
     }
 }
 

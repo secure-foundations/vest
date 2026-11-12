@@ -94,13 +94,13 @@ impl<Repr, Tuple, Nominal> SafeParser for super::Bits<Repr, Tuple, Nominal> wher
 }
 
 impl<Repr, Tuple, Nominal> SoundParser for super::Bits<Repr, Tuple, Nominal> where
-    Repr: SoundParser,
+    Repr: SpecByteLen + SoundParser<PVal = Repr::T>,
  {
     open spec fn sound_inv(&self) -> bool {
         // &&& forall|ibuf| #[trigger]
         //     fmt.spec_parse(ibuf) matches Some((_, v)) ==> (self.consistent)(v)
         // &&& self.repr.sound_inv()
-        // &&& forall|packed: Repr::T| #[trigger]
+        // &&& forall|packed: Repr::PVal| #[trigger]
         //     self.repr.consistent(packed) ==> (self.pack)((self.unpack)(packed)) == packed
         // &&& forall|t: Tuple| #[trigger]
         //     ((self.refinement)(t)) && self.repr.consistent((self.pack)(t)) ==> (self.dtor)(
@@ -112,14 +112,25 @@ impl<Repr, Tuple, Nominal> SoundParser for super::Bits<Repr, Tuple, Nominal> whe
             fmt.spec_parse(ibuf) matches Some((_, v)) ==> (self.consistent)(v)
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
-        fmt.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
         fmt.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Repr, Tuple, Nominal> StrictParser for super::Bits<Repr, Tuple, Nominal> where
+    Repr: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
+        &&& fmt.strict_inv()
+        &&& forall|ibuf| #[trigger]
+            fmt.spec_parse(ibuf) matches Some((_, v)) ==> (self.consistent)(v)
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let fmt = bits(self.repr, self.unpack, self.pack, self.refinement, self.ctor, self.dtor);
+        fmt.lemma_parse_strict_consumption(ibuf);
     }
 }
 

@@ -1,10 +1,9 @@
 use crate::combinators::bytes::ExactLen;
 use crate::combinators::disjoint::*;
-use crate::combinators::implicit::*;
 use crate::combinators::tuple::Pair;
 use crate::combinators::{
-    Cond, Const, Eof, Fixed, Implicit, Optional, OptionalEnd, PrefixTagged, Repeat, RepeatTillEnd,
-    Star, Tail, U16Le, U32Le, U8,
+    Bind, Cond, Const, Eof, Fixed, Mapped, Optional, OptionalEnd, PrefixTagged, Repeat,
+    RepeatTillEnd, Star, Tail, U16Le, U32Le, U8,
 };
 
 use crate::core::{proof::*, spec::*};
@@ -14,8 +13,6 @@ use PrefixTagged as Tagged;
 verus! {
 
 broadcast use crate::combinators::disjoint::disjointness_lemmas;
-
-
 
 proof fn test_tail_compose() {
     let c = Pair(U8, Tail);
@@ -73,7 +70,17 @@ proof fn test_chain_end_with_tailrepeat() {
     let f1 = U8;
     let f2 = Fixed::<3>;
     let f3 = Tagged(U8, 0xA2, U8);
-    let f4 = Tagged(U8, 0xB2, Implicit(U16Le, VLDataOf(RepeatTillEnd(U16Le))));
+    let f4 = Tagged(
+        U8,
+        0xB2,
+        Mapped {
+            inner: Bind(U16Le, |len: u16| ExactLen(len, RepeatTillEnd(U16Le))),
+            mapper: (
+                |wire: (u16, Seq<u16>)| wire.1,
+                |values: Seq<u16>| ((values.len() * 2) as u16, values),
+            ),
+        },
+    );
     let f5 = U32Le;
 
     #[verusfmt::skip]

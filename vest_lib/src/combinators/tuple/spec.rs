@@ -48,19 +48,26 @@ impl<A, B> SoundParser for super::Pair<A, B> where A: SoundParser, B: SoundParse
         &&& self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        assert(self.sound_inv());
-        self.0.lemma_parse_sound_consumption(ibuf);
-        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
-            self.1.lemma_parse_sound_consumption(ibuf[n1..]);
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         assert(self.sound_inv());
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
             self.1.lemma_parse_sound_value(ibuf[n1..]);
+        }
+    }
+}
+
+impl<A, B> StrictParser for super::Pair<A, B> where A: StrictParser, B: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        assert(self.strict_inv());
+        self.0.lemma_parse_strict_consumption(ibuf);
+        if let Some((n1, v1)) = self.0.spec_parse(ibuf) {
+            self.1.lemma_parse_strict_consumption(ibuf[n1..]);
         }
     }
 }
@@ -232,19 +239,6 @@ impl<A, B> SoundParser for super::Bind<A, B> where
         &&& forall|key: A::PVal| #[trigger] self.1.spec_map(key).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-        self.0.lemma_parse_sound_value(ibuf);
-        if let Some((n1, key)) = self.0.spec_parse(ibuf) {
-            let next = self.1.spec_map(key);
-            next.lemma_parse_sound_consumption(ibuf[n1..]);
-            next.lemma_parse_sound_value(ibuf[n1..]);
-            if let Some((_n2, val)) = next.spec_parse(ibuf[n1..]) {
-                assert(self.byte_len((key, val)) == self.0.byte_len(key) + next.byte_len(val));
-            }
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
         if let Some((n1, key)) = self.0.spec_parse(ibuf) {
@@ -253,6 +247,27 @@ impl<A, B> SoundParser for super::Bind<A, B> where
             if let Some((_n2, val)) = next.spec_parse(ibuf[n1..]) {
                 assert(self.consistent((key, val)));
             }
+        }
+    }
+}
+
+impl<A, B> StrictParser for super::Bind<A, B> where
+    A: StrictParser,
+    B: SpecMap<Input = A::PVal>,
+    B::Output: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& forall|key: A::PVal| #[trigger] self.1.spec_map(key).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
+        self.0.lemma_parse_sound_value(ibuf);
+        if let Some((n1, key)) = self.0.spec_parse(ibuf) {
+            let next = self.1.spec_map(key);
+            next.lemma_parse_strict_consumption(ibuf[n1..]);
+            next.lemma_parse_sound_value(ibuf[n1..]);
         }
     }
 }

@@ -43,7 +43,6 @@
 //! | [`Permute4<A, B, C, D>`] | Accepts any of the 24 orders of four components (malleable) |
 //! | [`Permute5<A, B, C, D, E>`] | Accepts any of the 120 orders of five components (malleable) |
 //! | [`Mapped<Inner, M>`] | Isomorphic format transformation via a [bijection](mapped::spec::SpecMapper) |
-//! | [`TryMap<Inner, M>`] | `Mapped` plus a parse-time `wf_in` check |
 //! | [`Refined<Inner, Pred>`] | Format refinement via a [predicate](crate::core::spec::SpecPred) |
 //! | [`Const<Inner, T>`] | Matches and returns a specific constant value |
 //! | [`PrefixTagged<Tg, T, Of>`] | A format preceded by a tag value |
@@ -84,7 +83,6 @@ pub mod choice;
 pub mod cond;
 pub mod congruence;
 pub mod disjoint;
-pub mod implicit;
 pub mod length;
 pub mod mapped;
 pub mod marker;
@@ -106,13 +104,8 @@ pub use bits::Bits;
 pub use bytes::{AndThen, ExactLen, Fixed, Varied};
 pub use choice::{Alt, Choice, Dispatch, Sum};
 pub use cond::Cond;
-pub use implicit::Implicit;
-// Not part of the documented public API. These are still reachable because the `vest_dev`
-// experiments depend on them; they are hidden so they do not appear in the published catalog.
-#[doc(hidden)]
-pub use implicit::{DepCombinator, KVFormat, TLVal, TVLeaf, TVOr, VoidTag};
 pub use length::AsLen;
-pub use mapped::{Mapped, TryMap};
+pub use mapped::Mapped;
 pub use marker::{exec::ExecNever, Empty, Void};
 pub use named::Named;
 pub use opt::{Opt, Optional};

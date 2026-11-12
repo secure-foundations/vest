@@ -13,7 +13,7 @@ use crate::combinators::{
         SpecRecBody,
     },
     tail::RepeatTillEnd,
-    Bind, FixWith, Mapped, Refined, Repeat, Sum, Void,
+    Bind, FixWith, Mapped, Refined, Repeat, Star, Sum, Void,
 };
 use crate::core::exec::fns::*;
 use crate::core::exec::parser::*;
@@ -29,7 +29,7 @@ use vstd::prelude::*;
 #[cfg(feature = "alloc")]
 use vstd::slice::slice_to_vec;
 
-use super::any::{EocFmt, EocValue, EOC};
+use super::eoc::{EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -191,6 +191,103 @@ pub open spec fn ber_bit_string_normalized_fmt(tag: Tag) -> ASN1Fmt<BitStringFmt
 #[derive(Clone, Copy)]
 pub struct BerBitStringFmt<const LIMIT: usize>(pub Tag);
 
+proof fn lemma_segment_bound<P: SpecParser<PVal = BitStringSpec>>(parser: P, input: Seq<u8>)
+    requires
+        forall|bytes: Seq<u8>| #[trigger]
+            parser.spec_parse(bytes) matches Some((n, value)) ==> value.wf::<BER>()
+                && value.bits.len() + 1 <= n,
+    ensures
+        ({
+            let (n, segments) = Star(parser).parse_rec(input);
+            &&& flatten_ber_bit_string_segments(segments).bits.len() + segments.len() <= n
+            &&& forall|i: int| 0 <= i < segments.len() ==> #[trigger] segments[i].wf::<BER>()
+        }),
+    decreases input.len(),
+{
+    if let Some((n, value)) = parser.spec_parse(input) {
+        if 0 < n <= input.len() {
+            lemma_segment_bound(parser, input[n..]);
+            let (_, rest) = Star(parser).parse_rec(input[n..]);
+            let tail = rest.map(|_i: int, segment: BitStringSpec| segment.bits);
+            let segments = seq![value] + rest;
+            assert(segments.map(|_i: int, segment: BitStringSpec| segment.bits) =~= seq![value.bits]
+                + tail);
+            vstd::seq_lib::lemma_flatten_concat(seq![value.bits], tail);
+            seq![value.bits].lemma_flatten_singleton();
+            assert(flatten_ber_bit_string_segments(segments).bits.len() == value.bits.len()
+                + flatten_ber_bit_string_segments(rest).bits.len());
+        }
+    }
+}
+
+/// Flattening removes framing; the primitive unused-bits octet still fits within the wire size.
+proof fn lemma_parse_properties<const LIMIT: usize>(gas: nat, tag: Tag, input: Seq<u8>)
+    ensures
+        FixWith::<LIMIT, BerBitStringRecBody, Tag>::spec_parse_gas(
+            &BerBitStringRecBody,
+            gas,
+            tag,
+            input,
+        ) matches Some((n, value)) ==> {
+            &&& value.wf::<BER>()
+            &&& value.bits.len() + 1 <= n
+            &&& TagFmt.consistent(primitive_tag(tag))
+        },
+    decreases gas,
+{
+    broadcast use crate::asn1::bitstring::lemma_bit_string_fmt_consistency;
+    broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
+
+    reveal(<Star<BundledSpecs<BitStringSpec>> as SpecParser>::spec_parse);
+    let rec = FixWith::<LIMIT, BerBitStringRecBody, Tag>::specs_callback(&BerBitStringRecBody, gas);
+    let child = rec(TagFmt::BIT_STRING);
+    assert forall|bytes: Seq<u8>| #[trigger]
+        child.spec_parse(bytes) matches Some((n, value)) ==> value.wf::<BER>() && value.bits.len()
+            + 1 <= n by {
+        if gas > 0 {
+            lemma_parse_properties::<LIMIT>((gas - 1) as nat, TagFmt::BIT_STRING, bytes);
+        }
+    }
+    let body = ber_bit_string_rec_body(tag, rec);
+    TagFmt.lemma_parse_sound_value(input);
+    TagFmt.lemma_parse_safe(input);
+    TagFmt.lemma_productive(input);
+    if let Some((_, wire)) = body.inner.spec_parse(input) {
+        let after_tag = input[(TagFmt.spec_parse(input)->0).0..];
+        crate::asn1::tag::lemma_tag_wf_implies_tag_consistent(primitive_tag(tag));
+        match wire.1 {
+            L((len, value)) => {
+                LengthFmt::<BER>.lemma_parse_safe(after_tag);
+                let bytes = after_tag[(LengthFmt::<BER>.spec_parse(after_tag)->0).0..][0..len];
+                BitStringFmt::<BER>.lemma_parse_sound_value(bytes);
+                BitStringFmt::<BER>.lemma_parse_strict_consumption(bytes);
+            },
+            R(L((length, inner))) => {
+                BerLengthFmt.lemma_parse_safe(after_tag);
+                let bytes = after_tag[(BerLengthFmt.spec_parse(after_tag)->0).0..];
+                let segments = match inner {
+                    L(segments) => segments,
+                    R((segments, _)) => segments,
+                };
+                match length {
+                    BerLength::Definite(len) => lemma_segment_bound(child, bytes[0..len]),
+                    BerLength::Indefinite => {
+                        lemma_segment_bound(child, bytes);
+                        let used = Star(child).parse_rec(bytes).0;
+                        EOC.lemma_parse_safe(bytes[used..]);
+                    },
+                }
+                let flat = flatten_ber_bit_string_segments(segments);
+                if flat.bits.len() != 0 && segments.len() != 0 {
+                    assert(segments.last().wf::<BER>());
+                }
+                assert(flat.wf::<BER>());
+            },
+            R(R(_)) => {},
+        }
+    }
+}
+
 impl<const LIMIT: usize> BerBitStringFmt<LIMIT> {
     #[verifier::allow_in_spec]
     pub const fn universal() -> Self
@@ -222,7 +319,10 @@ mod derived_specs {
         type PVal = BitStringSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).spec_parse(ibuf)
+            Refined(
+                FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0),
+                |value: BitStringSpec| ber_bit_string_normalized_fmt(self.0).consistent(value),
+            ).spec_parse(ibuf)
         }
     }
 
@@ -262,6 +362,11 @@ mod derived_specs {
 
 mod derived_proofs {
     use super::*;
+
+    impl<const LIMIT: usize> SoundParser for BerBitStringFmt<LIMIT> {
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+        }
+    }
 
     impl<const LIMIT: usize> SafeParser for BerBitStringFmt<LIMIT> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
@@ -597,7 +702,20 @@ impl<'i, const LIMIT: usize> Parser<&'i [u8]> for BerBitStringFmt<LIMIT> {
     }
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).parse(ibuf)
+        let result = FixWith::<LIMIT, _, _>(BerBitStringRecBody, self.0).parse(ibuf);
+        proof {
+            if let Ok((n, value)) = &result {
+                vstd::slice::axiom_spec_len(*ibuf);
+                lemma_parse_properties::<LIMIT>(LIMIT as nat, self.0, ibuf@);
+                crate::asn1::tlv::lemma_asn1_consistent::<_, BER>(
+                    primitive_tag(self.0),
+                    BitStringFmt::<BER>,
+                    value.deep_view(),
+                );
+                crate::asn1::bitstring::lemma_bit_string_fmt_consistency::<BER>(value.deep_view());
+            }
+        }
+        result
     }
 }
 

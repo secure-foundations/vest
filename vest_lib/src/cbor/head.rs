@@ -531,6 +531,24 @@ impl LosslessMapper for HeadMapper<true> {
     }
 }
 
+/// Decoding a well-formed wire head preserves semantic head validity, even
+/// when the argument width is nonminimal.
+proof fn lemma_head_mapper_forward_valid<const DET: bool>(wire: (CborInitial, HeadWireValue))
+    requires
+        HeadMapper::<DET>.wf_in(wire),
+    ensures
+        HeadMapper::<DET>.wf_out(decode_head_wire(wire)),
+{
+    match wire.1 {
+        L(_) => {},
+        R(L(_)) => {},
+        R(R(L(_))) => {},
+        R(R(R(L(_)))) => {},
+        R(R(R(R(L(_))))) => {},
+        R(R(R(R(R(_))))) => {},
+    }
+}
+
 pub open spec fn cbor_head_fmt<const DET: bool>() -> HeadMappedFmt<DET> {
     Mapped {
         inner: Refined(
@@ -845,20 +863,22 @@ mod derived_proofs {
     }
 
     impl SoundParser for CborInitialFmt {
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            broadcast use lemma_initial_unpack_pack, lemma_initial_unpack_in_bounds;
-
-            let fmt = cbor_initial_fmt();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(input);
-        }
-
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
             broadcast use lemma_initial_unpack_pack, lemma_initial_unpack_in_bounds;
 
             let fmt = cbor_initial_fmt();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(input);
+        }
+    }
+
+    impl StrictParser for CborInitialFmt {
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            broadcast use lemma_initial_unpack_pack, lemma_initial_unpack_in_bounds;
+
+            let fmt = cbor_initial_fmt();
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(input);
         }
     }
 
@@ -926,13 +946,21 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for CborHeadFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            cbor_head_fmt::<true>().lemma_parse_sound_consumption(input);
-        }
-
+    impl<const DET: bool> SoundParser for CborHeadFmt<DET> {
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-            cbor_head_fmt::<true>().lemma_parse_sound_value(input);
+            cbor_head_fmt::<DET>().lemma_parse_sound_value(input);
+        }
+    }
+
+    impl StrictParser for CborHeadFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            let fmt = cbor_head_fmt::<true>();
+            assert forall|wire: (CborInitial, HeadWireValue)| #[trigger]
+                fmt.inner.consistent(wire) implies
+                    encode_head_wire(decode_head_wire(wire)) == wire by {
+                fmt.mapper.lemma_lossless_mapper(wire);
+            }
+            fmt.lemma_parse_strict_consumption(input);
         }
     }
 

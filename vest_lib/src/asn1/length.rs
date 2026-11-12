@@ -7,10 +7,9 @@ use crate::primitives::base256::*;
 use crate::Never;
 use crate::{
     combinators::{
-        implicit::*,
         length::AsLen,
         mapped::spec::{FnSpecMapper, LosslessMapper, LossyMapper, SpecMapper},
-        Alt, Choice, Const, Implicit, Mapped, Refined, TryMap, Varied, U8,
+        Alt, Choice, Const, Mapped, Refined, Varied, U8,
     },
     core::{proof::*, spec::*},
 };
@@ -169,23 +168,18 @@ proof fn lemma_length_wire_long_form_roundtrip(b1: u8, bytes: Seq<u8>)
     ;
 }
 
-proof fn lemma_length_fmt_sound_nonmal_inv()
+proof fn lemma_der_nat_length_fmt_parser_invariants()
     ensures
         nat_length_fmt::<true>().sound_inv(),
+        nat_length_fmt::<true>().strict_inv(),
         nat_length_fmt::<true>().nonmal_inv(),
 {
-    assert forall|v| nat_length_fmt::<true>().inner.consistent(v) implies (nat_length_fmt::<
-        true,
-    >().mapper.1)((nat_length_fmt::<true>().mapper.0)(v)) == v by {
-        let (b1, rest) = v;
-        if b1 <= SHORT_FORM_MAX {
-        } else if 0b1000_0000 < b1 < 0b1111_1111 {
-            match rest {
-                R(L(bytes)) => {
-                    lemma_length_wire_long_form_roundtrip(b1, bytes);
-                },
-                _ => {},
-            }
+    let fmt = nat_length_fmt::<true>();
+    assert forall|wire| #[trigger] fmt.inner.consistent(wire) implies (fmt.mapper.1)(
+        (fmt.mapper.0)(wire),
+    ) == wire by {
+        if let R(L(bytes)) = wire.1 {
+            lemma_length_wire_long_form_roundtrip(wire.0, bytes);
         }
     }
 }
@@ -194,37 +188,29 @@ proof fn lemma_length_fmt_unambiguous<const DER: bool>()
     ensures
         nat_length_fmt::<DER>().unambiguous(),
 {
-    assert forall|o: nat| nat_length_fmt::<DER>().consistent(o) implies (nat_length_fmt::<
-        DER,
-    >().mapper.0)((nat_length_fmt::<DER>().mapper.1)(o)) == o by {
-        if nat_length_fmt::<DER>().consistent(o) {
-            if o <= SHORT_FORM_MAX as nat {
-            } else {
-                lemma_to_from_be_bytes_roundtrip(o);
-            }
+    let fmt = nat_length_fmt::<DER>();
+    assert forall|value: nat| #[trigger] fmt.consistent(value) implies (fmt.mapper.0)(
+        (fmt.mapper.1)(value),
+    ) == value by {
+        if value > SHORT_FORM_MAX {
+            lemma_to_from_be_bytes_roundtrip(value);
         }
     }
 }
 
-proof fn lemma_length_fmt_usize_sound_nonmal_inv()
+proof fn lemma_der_length_fmt_parser_invariants()
     ensures
         length_fmt::<true>().sound_inv(),
+        length_fmt::<true>().strict_inv(),
         length_fmt::<true>().nonmal_inv(),
 {
-    assert forall|v| length_fmt::<true>().inner.consistent(v) implies (length_fmt::<
-        true,
-    >().mapper.1)((length_fmt::<true>().mapper.0)(v)) == v by {
-        let (b1, rest) = v;
-        if b1 <= SHORT_FORM_MAX {
-        } else if 0b1000_0000 < b1 < 0b1111_1111 {
-            match rest {
-                R(L(bytes)) => {
-                    assert(bytes.len() <= size_of_usize());
-                    lemma_nat_from_be_bytes_fits_usize(bytes);
-                    lemma_length_wire_long_form_roundtrip(b1, bytes);
-                },
-                _ => {},
-            }
+    let fmt = length_fmt::<true>();
+    assert forall|wire| #[trigger] fmt.inner.consistent(wire) implies (fmt.mapper.1)(
+        (fmt.mapper.0)(wire),
+    ) == wire by {
+        if let R(L(bytes)) = wire.1 {
+            lemma_nat_from_be_bytes_fits_usize(bytes);
+            lemma_length_wire_long_form_roundtrip(wire.0, bytes);
         }
     }
 }
@@ -234,14 +220,12 @@ proof fn lemma_length_fmt_usize_unambiguous<const DER: bool>()
     ensures
         length_fmt::<DER>().unambiguous(),
 {
-    assert forall|o: usize| length_fmt::<DER>().consistent(o) implies (length_fmt::<
-        DER,
-    >().mapper.0)((length_fmt::<DER>().mapper.1)(o)) == o by {
-        if length_fmt::<DER>().consistent(o) {
-            if o <= SHORT_FORM_MAX as usize {
-            } else {
-                lemma_to_from_be_bytes_roundtrip(o as nat);
-            }
+    let fmt = length_fmt::<DER>();
+    assert forall|value: usize| #[trigger] fmt.consistent(value) implies (fmt.mapper.0)(
+        (fmt.mapper.1)(value),
+    ) == value by {
+        if value > SHORT_FORM_MAX as usize {
+            lemma_to_from_be_bytes_roundtrip(value as nat);
         }
     }
 }
@@ -281,6 +265,14 @@ pub(crate) proof fn lemma_length_fmt_byte_len_bound<const DER: bool>(value: usiz
 {
     lemma_length_fmt_usize_props::<DER>(value);
     lemma_usize_to_be_bytes_len_bound(value);
+}
+
+/// Every machine-sized length has a valid definite-length encoding.
+pub(crate) broadcast proof fn lemma_length_fmt_consistent<const DER: bool>(value: usize)
+    ensures
+        #[trigger] super::LengthFmt::<DER>.consistent(value),
+{
+    lemma_length_fmt_usize_props::<DER>(value);
 }
 
 pub(crate) broadcast proof fn lemma_length_fmt_short_byte_len<const DER: bool>(o: usize)
@@ -394,15 +386,48 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for NatLengthFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_length_fmt_sound_nonmal_inv();
-            nat_length_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const DER: bool> SoundParser for NatLengthFmt<DER> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_length_fmt_sound_nonmal_inv();
-            nat_length_fmt::<true>().lemma_parse_sound_value(ibuf);
+            let fmt = nat_length_fmt::<DER>();
+            assert forall|wire| #[trigger] fmt.inner.consistent(wire) implies fmt.consistent(
+                (fmt.mapper.0)(wire),
+            ) by {
+                let value = (fmt.mapper.0)(wire);
+                lemma_to_be_bytes_props(value);
+                if value > SHORT_FORM_MAX {
+                    if let R(L(bytes)) = wire.1 {
+                        let b1 = wire.0;
+                        assert(1 <= bytes.len() <= LONG_FORM_MAX_COUNT) by {
+                            assert(0 < (b1 & 0x7fu8) <= 126) by (bit_vector)
+                                requires
+                                    0x80u8 < b1 < 0xffu8,
+                            ;
+                        }
+                        lemma_from_be_bytes_upper_bound(bytes);
+                        lemma_to_be_bytes_len_bound(value, bytes.len());
+                        let encoded = nat_to_be_bytes(value);
+                        let count = encoded.len() as u8;
+                        assert(0x80u8 < (0x80u8 | count) < 0xffu8 && ((0x80u8 | count) & 0x7fu8)
+                            == count) by (bit_vector)
+                            requires
+                                0 < count <= 126,
+                        ;
+                        if DER {
+                            assert(der_long_len_bytes_minimal(encoded)) by {
+                                reveal_with_fuel(nat_to_be_bytes, 2);
+                            }
+                        }
+                    }
+                }
+            }
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for NatLengthFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_der_nat_length_fmt_parser_invariants();
+            nat_length_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -437,7 +462,7 @@ mod derived_proofs {
 
     impl NonMalleable for NatLengthFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_length_fmt_sound_nonmal_inv();
+            lemma_der_nat_length_fmt_parser_invariants();
             nat_length_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
@@ -466,15 +491,22 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for LengthFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_length_fmt_usize_sound_nonmal_inv();
-            length_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const DER: bool> SoundParser for LengthFmt<DER> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_length_fmt_usize_sound_nonmal_inv();
-            length_fmt::<true>().lemma_parse_sound_value(ibuf);
+            let fmt = length_fmt::<DER>();
+            assert forall|wire| #[trigger] fmt.inner.consistent(wire) implies fmt.consistent(
+                (fmt.mapper.0)(wire),
+            ) by {
+                lemma_length_fmt_usize_props::<DER>((fmt.mapper.0)(wire));
+            }
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for LengthFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_der_length_fmt_parser_invariants();
+            length_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -509,7 +541,7 @@ mod derived_proofs {
 
     impl NonMalleable for LengthFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_length_fmt_usize_sound_nonmal_inv();
+            lemma_der_length_fmt_parser_invariants();
             length_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
@@ -650,6 +682,12 @@ impl SpecByteLen for super::BerLengthFmt {
 impl SafeParser for super::BerLengthFmt {
     proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
         ber_length_fmt().lemma_parse_safe(ibuf)
+    }
+}
+
+impl SoundParser for super::BerLengthFmt {
+    proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        ber_length_fmt().lemma_parse_sound_value(ibuf);
     }
 }
 

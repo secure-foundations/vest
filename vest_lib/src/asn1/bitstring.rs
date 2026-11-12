@@ -168,6 +168,15 @@ pub(crate) proof fn lemma_bit_string_fmt_serialization<const DER: bool>(value: B
 {
 }
 
+pub(crate) broadcast proof fn lemma_bit_string_fmt_consistency<const DER: bool>(
+    value: BitStringSpec,
+)
+    ensures
+        #[trigger] super::BitStringFmt::<DER>.consistent(value) <==> value.wf::<DER>(),
+        #[trigger] super::BitStringFmt::<DER>.byte_len(value) == 1 + value.bits.len(),
+{
+}
+
 mod derived_specs {
     use super::*;
     use super::super::BitStringFmt;
@@ -231,12 +240,14 @@ mod derived_proofs {
     }
 
     impl<const DER: bool> SoundParser for BitStringFmt<DER> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            bitstring_fmt::<DER>().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             bitstring_fmt::<DER>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const DER: bool> StrictParser for BitStringFmt<DER> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            bitstring_fmt::<DER>().lemma_parse_strict_consumption(ibuf);
         }
     }
 

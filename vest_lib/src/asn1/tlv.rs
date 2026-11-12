@@ -39,6 +39,51 @@ pub open spec fn asn1_fmt<Content: SpecCombinator, const DER: bool>(
     }
 }
 
+/// Normalized TLV validity depends on the content, tag, and representable length,
+/// not on the length header used by a parser.
+pub(crate) broadcast proof fn lemma_asn1_consistent<C: SpecCombinator, const DER: bool>(
+    tag: Tag,
+    content: C,
+    value: C::T,
+)
+    ensures
+        #[trigger] ASN1Fmt::<C, DER>(tag, content).consistent(value) <==> (TagFmt.consistent(tag)
+            && content.consistent(value) && content.byte_len(value) <= usize::MAX),
+{
+    super::length::lemma_length_fmt_consistent::<DER>(content.byte_len(value) as usize);
+}
+
+/// Sound contents with intrinsically bounded encodings need not be strict.
+pub(crate) proof fn lemma_asn1_parse_sound_bounded<C, const DER: bool>(
+    tag: Tag,
+    content: C,
+    input: Seq<u8>,
+) where C: SpecCombinator + SoundParser
+    requires
+        content.sound_inv(),
+        forall|value: C::T| #[trigger]
+            content.consistent(value) ==> content.byte_len(value) <= usize::MAX,
+    ensures
+        ASN1Fmt::<C, DER>(tag, content).spec_parse(input) matches Some((_, value)) ==> ASN1Fmt::<
+            C,
+            DER,
+        >(tag, content).consistent(value),
+{
+    broadcast use lemma_asn1_consistent;
+
+    TagFmt.lemma_parse_sound_value(input);
+    let fmt = asn1_fmt::<C, DER>(tag, content);
+    if let Some((_, (len, value))) = fmt.inner.spec_parse(input) {
+        TagFmt.lemma_parse_safe(input);
+        let after_tag = input[(TagFmt.spec_parse(input)->0).0..];
+        LengthFmt::<DER>.lemma_parse_safe(after_tag);
+        let head_len = (LengthFmt::<DER>.spec_parse(after_tag)->0).0;
+        let bytes = after_tag[head_len..][0..len];
+        content.lemma_parse_sound_value(bytes);
+        assert(content.consistent(value));
+    }
+}
+
 mod derived_specs {
     use super::*;
 
@@ -105,18 +150,29 @@ mod derived_proofs {
         }
     }
 
-    impl<Content: SpecCombinator + SoundParser> SoundParser for ASN1Fmt<Content, true> {
+    impl<Content: SpecCombinator + StrictParser, const DER: bool> SoundParser for ASN1Fmt<
+        Content,
+        DER,
+    > {
         open spec fn sound_inv(&self) -> bool {
             &&& self.1.sound_inv()
+            &&& self.1.strict_inv()
             &&& TagFmt.consistent(self.0)
         }
 
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            asn1_fmt::<Content, true>(self.0, self.1).lemma_parse_sound_consumption(ibuf);
+        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            asn1_fmt::<Content, DER>(self.0, self.1).lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<Content: SpecCombinator + StrictParser> StrictParser for ASN1Fmt<Content, true> {
+        open spec fn strict_inv(&self) -> bool {
+            &&& self.1.strict_inv()
+            &&& TagFmt.consistent(self.0)
         }
 
-        proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            asn1_fmt::<Content, true>(self.0, self.1).lemma_parse_sound_value(ibuf);
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            asn1_fmt::<Content, true>(self.0, self.1).lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -175,13 +231,14 @@ mod derived_proofs {
         }
     }
 
-    impl<Content: SpecCombinator + SoundParser + NonMalleable> NonMalleable for ASN1Fmt<
+    impl<Content: SpecCombinator + StrictParser + NonMalleable> NonMalleable for ASN1Fmt<
         Content,
         true,
     > {
         open spec fn nonmal_inv(&self) -> bool {
             &&& self.1.nonmal_inv()
             &&& self.1.sound_inv()
+            &&& self.1.strict_inv()
             &&& self.1.safe_inv()
             &&& TagFmt.consistent(self.0)
         }

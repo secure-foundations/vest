@@ -162,9 +162,10 @@ pub open spec fn universalstring_fmt() -> UniversalStringInnerFmt {
     }
 }
 
-proof fn lemma_universalstring_fmt_sound_nonmal_inv()
+proof fn lemma_universalstring_fmt_parser_invariants()
     ensures
         universalstring_fmt().sound_inv(),
+        universalstring_fmt().strict_inv(),
         universalstring_fmt().nonmal_inv(),
 {
     assert forall|bytes: Seq<u8>| #[trigger]
@@ -246,14 +247,16 @@ mod derived_proofs {
     }
 
     impl SoundParser for super::super::UniversalStringFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_universalstring_fmt_sound_nonmal_inv();
-            universalstring_fmt().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_universalstring_fmt_sound_nonmal_inv();
+            lemma_universalstring_fmt_parser_invariants();
             universalstring_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for super::super::UniversalStringFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_universalstring_fmt_parser_invariants();
+            universalstring_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -275,7 +278,7 @@ mod derived_proofs {
 
     impl NonMalleable for super::super::UniversalStringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_universalstring_fmt_sound_nonmal_inv();
+            lemma_universalstring_fmt_parser_invariants();
             universalstring_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }

@@ -34,10 +34,12 @@ impl SafeParser for super::Empty {
 }
 
 impl SoundParser for super::Empty {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl StrictParser for super::Empty {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -139,10 +141,12 @@ impl SafeParser for super::Void {
 }
 
 impl SoundParser for super::Void {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl StrictParser for super::Void {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 

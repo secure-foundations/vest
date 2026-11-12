@@ -189,34 +189,6 @@ pub broadcast proof fn lemma_disjoint_bind_left<
     reveal(disjoint_domains);
 }
 
-/// An implicit dependent parser is disjoint from another parser if its head parser is.
-pub broadcast proof fn lemma_disjoint_implicit<
-    U: SpecParser,
-    Head: SpecParser,
-    Tail: DepCombinator<Key = Head::PVal>,
->(other: U, implicit: Implicit<Head, Tail>) where Tail::Body: SpecParser<PVal = Tail::Val>
-    requires
-        disjoint_domains(other, implicit.0),
-    ensures
-        #[trigger] disjoint_domains(other, implicit),
-{
-    reveal(disjoint_domains);
-}
-
-/// An implicit dependent parser is disjoint from another parser if its head parser is.
-pub broadcast proof fn lemma_disjoint_implicit_left<
-    Head: SpecParser,
-    Tail: DepCombinator<Key = Head::PVal>,
-    U: SpecParser,
->(implicit: Implicit<Head, Tail>, other: U) where Tail::Body: SpecParser<PVal = Tail::Val>
-    requires
-        disjoint_domains(implicit.0, other),
-    ensures
-        #[trigger] disjoint_domains(implicit, other),
-{
-    reveal(disjoint_domains);
-}
-
 /// An [`AndThen`] parser is disjoint from another parser if its byte-source parser is.
 pub broadcast proof fn lemma_disjoint_and_then<
     U: SpecParser,
@@ -720,7 +692,6 @@ pub broadcast group disjoint_right_wrapper_lemmas {
 pub broadcast group disjoint_right_continuation_lemmas {
     lemma_disjoint_tuple,
     lemma_disjoint_bind,
-    lemma_disjoint_implicit,
     lemma_disjoint_and_then,
     lemma_disjoint_preceded,
     lemma_disjoint_terminated,
@@ -734,7 +705,6 @@ pub broadcast group disjoint_right_continuation_lemmas {
 pub broadcast group disjoint_left_composite_lemmas {
     lemma_disjoint_tuple_left,
     lemma_disjoint_bind_left,
-    lemma_disjoint_implicit_left,
     lemma_disjoint_and_then_left,
     lemma_disjoint_preceded_left,
     lemma_disjoint_terminated_left,
@@ -773,7 +743,6 @@ pub broadcast group disjointness_lemmas {
     lemma_disjoint_cond,
     lemma_disjoint_tuple,
     lemma_disjoint_bind,
-    lemma_disjoint_implicit,
     lemma_disjoint_and_then,
     lemma_disjoint_preceded,
     lemma_disjoint_terminated,

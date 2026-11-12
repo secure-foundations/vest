@@ -199,16 +199,19 @@ impl<A: SoundParser> super::Star<A> {
             }
         }
     }
+}
 
+impl<A: StrictParser> super::Star<A> {
     proof fn lemma_parse_rec_byte_len(&self, ibuf: Seq<u8>)
         requires
             self.0.sound_inv(),
+            self.0.strict_inv(),
         ensures
             self.parse_rec(ibuf).0 == self.byte_len(self.parse_rec(ibuf).1),
         decreases ibuf.len(),
     {
         reveal(<super::Star::<_> as SpecByteLen>::byte_len);
-        self.0.lemma_parse_sound_consumption(ibuf);
+        self.0.lemma_parse_strict_consumption(ibuf);
         if let Some((n, v)) = self.0.spec_parse(ibuf) {
             if 0 < n <= ibuf.len() {
                 let (n_rest, vs) = self.parse_rec(ibuf[n..]);
@@ -254,16 +257,22 @@ impl<A> SoundParser for super::Star<A> where A: SoundParser {
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        reveal(<super::Star::<_> as SpecParser>::spec_parse);
-        reveal(<super::Star::<_> as SpecByteLen>::byte_len);
-        self.lemma_parse_rec_byte_len(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         reveal(<super::Star::<_> as SpecParser>::spec_parse);
         reveal(<super::Star::<_> as Consistency>::consistent);
         self.lemma_parse_rec_consistent(ibuf);
+    }
+}
+
+impl<A> StrictParser for super::Star<A> where A: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        reveal(<super::Star::<_> as SpecParser>::spec_parse);
+        reveal(<super::Star::<_> as SpecByteLen>::byte_len);
+        self.lemma_parse_rec_byte_len(ibuf);
     }
 }
 
@@ -474,10 +483,11 @@ impl<C: SafeParser, N: AsLen> super::RepeatN<C, N> {
     }
 }
 
-impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
+impl<C: StrictParser, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_parse_n_byte_len(&self, count: nat, ibuf: Seq<u8>)
         requires
             self.1.sound_inv(),
+            self.1.strict_inv(),
         ensures
             self.parse_n_rec(count, ibuf) matches Some((n, vs)) ==> n == (super::Star(
                 self.1,
@@ -487,7 +497,7 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
         reveal(<super::Star::<_> as SpecByteLen>::byte_len);
         if count == 0 {
         } else {
-            self.1.lemma_parse_sound_consumption(ibuf);
+            self.1.lemma_parse_strict_consumption(ibuf);
             if let Some((n0, v0)) = self.1.spec_parse(ibuf) {
                 self.lemma_parse_n_byte_len((count - 1) as nat, ibuf[n0..]);
                 if let Some((n1, vs1)) = self.parse_n_rec((count - 1) as nat, ibuf[n0..]) {
@@ -497,7 +507,9 @@ impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
             }
         }
     }
+}
 
+impl<C: SoundParser, N: AsLen> super::RepeatN<C, N> {
     proof fn lemma_parse_n_consistent(&self, count: nat, ibuf: Seq<u8>)
         requires
             self.1.sound_inv(),
@@ -534,12 +546,18 @@ impl<C: SoundParser, N: AsLen> SoundParser for super::RepeatN<C, N> {
         self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.lemma_parse_n_byte_len(self.0.as_nat(), ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.lemma_parse_n_consistent(self.0.as_nat(), ibuf);
+    }
+}
+
+impl<C: StrictParser, N: AsLen> StrictParser for super::RepeatN<C, N> {
+    open spec fn strict_inv(&self) -> bool {
+        self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.lemma_parse_n_byte_len(self.0.as_nat(), ibuf);
     }
 }
 
@@ -653,12 +671,18 @@ impl<const N: usize, C: SoundParser> SoundParser for super::Array<N, C> {
         super::RepeatN(N, self.0).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        super::RepeatN(N, self.0).lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         super::RepeatN(N, self.0).lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<const N: usize, C: StrictParser> StrictParser for super::Array<N, C> {
+    open spec fn strict_inv(&self) -> bool {
+        super::RepeatN(N, self.0).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        super::RepeatN(N, self.0).lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -786,12 +810,19 @@ impl<A, B> SoundParser for super::Repeat<A, B> where A: SoundParser, B: SoundPar
         &&& self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Pair(super::Star(self.0), self.1).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         Pair(super::Star(self.0), self.1).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<A, B> StrictParser for super::Repeat<A, B> where A: StrictParser, B: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        Pair(super::Star(self.0), self.1).lemma_parse_strict_consumption(ibuf)
     }
 }
 

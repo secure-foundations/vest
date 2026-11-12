@@ -255,7 +255,7 @@ fn test_map_exec(ibuf: &[u8]) {
         assert(fmt2.nonmal_inv());
         assert(fmt2.sound_inv());
         assert(fmt2.unambiguous());
-        fmt2.lemma_parse_sound_consumption(ibuf@);
+        fmt2.lemma_parse_strict_consumption(ibuf@);
         fmt2.lemma_parse_sound_value(ibuf@);
     }
 

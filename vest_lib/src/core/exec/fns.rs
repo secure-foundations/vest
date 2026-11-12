@@ -218,6 +218,62 @@ impl<I, O, Spec, Exec> SpecParser for FnParser<I, O, Spec, Exec> where
     }
 }
 
+impl<I, O, Spec, Exec> Consistency for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SpecParser<PVal = O::V> + Consistency<Val = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    type Val = O::V;
+
+    open spec fn consistent(&self, value: Self::Val) -> bool {
+        self.spec_fn@.consistent(value)
+    }
+}
+
+impl<I, O, Spec, Exec> SpecByteLen for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SpecParser<PVal = O::V> + SpecByteLen<T = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    type T = O::V;
+
+    open spec fn byte_len(&self, value: Self::T) -> nat {
+        self.spec_fn@.byte_len(value)
+    }
+}
+
+impl<I, O, Spec, Exec> SoundParser for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: SoundParser<PVal = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    open spec fn sound_inv(&self) -> bool {
+        self.spec_fn@.sound_inv()
+    }
+
+    proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+        self.spec_fn@.lemma_parse_sound_value(input);
+    }
+}
+
+impl<I, O, Spec, Exec> StrictParser for FnParser<I, O, Spec, Exec> where
+    I: View<V = Seq<u8>>,
+    O: DeepView,
+    Spec: StrictParser<T = O::V>,
+    Exec: Fn(&I) -> PResult<O>,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        self.spec_fn@.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+        self.spec_fn@.lemma_parse_strict_consumption(input);
+    }
+}
+
 pub proof fn lemma_ref_fn_parser_spec_parse<I, O, Spec, Exec>(
     parser: &FnParser<I, O, Spec, Exec>,
     ibuf: Seq<u8>,

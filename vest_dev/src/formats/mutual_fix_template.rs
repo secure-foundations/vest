@@ -80,8 +80,6 @@ impl DeepView for ExprKind {
     }
 }
 
-
-
 # [doc = "data type for `list_kind`."]
 # [repr (u8)]
 # [derive (Debug, PartialEq, Eq, Clone, Copy, Structural)]
@@ -101,8 +99,6 @@ impl DeepView for ListKind {
         *self
     }
 }
-
-
 
 # [doc = "data type for `expr`."]
 # [derive (Debug, PartialEq, Eq)]
@@ -288,16 +284,21 @@ pub open spec fn forest_view(x: &Forest) -> ForestSpec
 {
     ForestSpec {
         len: x.len.deep_view(),
-        items: Seq::new(x.items@.len(), |i: int| {
-            if 0 <= i < x.items@.len() {
-                proof {
-                    assert(decreases_to!(*x => x.items));
-                };
-                expr_view(&x.items@[i])
-            } else {
-                arbitrary()
-            }
-        }),
+        items: Seq::new(
+            x.items@.len(),
+            |i: int|
+                {
+                    if 0 <= i < x.items@.len() {
+                        proof {
+                            assert(decreases_to!(*x => x.items));
+                        }
+                        ;
+                        expr_view(&x.items@[i])
+                    } else {
+                        arbitrary()
+                    }
+                },
+        ),
     }
 }
 
@@ -471,9 +472,7 @@ pub open spec fn expr_v_proj<Rec>(rec: Rec) -> ExprVProj<Rec> where Rec: SpecCom
 
 pub type ForestProj<Rec> = Mapped<Refined<Rec, PredFnSpec<SCC1>>, FnSpecMapper<SCC1, ForestSpec>>;
 
-pub open spec fn forest_proj<Rec>(rec: Rec) -> ForestProj<Rec> where
-    Rec: SpecCombinator<T = SCC1>,
-{
+pub open spec fn forest_proj<Rec>(rec: Rec) -> ForestProj<Rec> where Rec: SpecCombinator<T = SCC1> {
     Mapped {
         inner: Refined(rec, |v: SCC1| v is Forest),
         mapper: (
@@ -897,35 +896,42 @@ impl SpecRecBody for ExprVBodyRec {
         Mapped {
             inner: match param.expr_kind {
                 ExprKind::Num => Sum::Inl(U8),
-                ExprKind::Group => Sum::Inr(Sum::Inl(
-                    list_proj(
-                        rec(
-                            SCC1Param {
-                                which: SCC1Which::LIST,
-                                expr_kind: arbitrary(),
-                                list_kind: arbitrary(),
-                            },
+                ExprKind::Group => Sum::Inr(
+                    Sum::Inl(
+                        list_proj(
+                            rec(
+                                SCC1Param {
+                                    which: SCC1Which::LIST,
+                                    expr_kind: arbitrary(),
+                                    list_kind: arbitrary(),
+                                },
+                            ),
                         ),
                     ),
-                )),
-                ExprKind::Forest => Sum::Inr(Sum::Inr(
-                    forest_proj(
-                        rec(
-                            SCC1Param {
-                                which: SCC1Which::FOREST,
-                                expr_kind: arbitrary(),
-                                list_kind: arbitrary(),
-                            },
+                ),
+                ExprKind::Forest => Sum::Inr(
+                    Sum::Inr(
+                        forest_proj(
+                            rec(
+                                SCC1Param {
+                                    which: SCC1Which::FOREST,
+                                    expr_kind: arbitrary(),
+                                    list_kind: arbitrary(),
+                                },
+                            ),
                         ),
                     ),
-                )),
+                ),
             },
             mapper: ExprVMapper,
         }
     }
 }
 
-pub type ForestBodyFmt<Rec> = Mapped<Bind<U8, spec_fn(u8) -> RepeatN<ExprProj<Rec>, u8>>, ForestMapper>;
+pub type ForestBodyFmt<Rec> = Mapped<
+    Bind<U8, spec_fn(u8) -> RepeatN<ExprProj<Rec>, u8>>,
+    ForestMapper,
+>;
 
 pub struct ForestBodyRec;
 
@@ -1083,7 +1089,10 @@ impl SpecRecBody for SCC1RecBody {
                                 param.which == SCC1Which::LISTVCONS,
                                 ListVConsBodyRec.spec_body(param, rec),
                             ),
-                            Cond(param.which == SCC1Which::LISTV, ListVBodyRec.spec_body(param, rec)),
+                            Cond(
+                                param.which == SCC1Which::LISTV,
+                                ListVBodyRec.spec_body(param, rec),
+                            ),
                         ),
                     ),
                 ),
@@ -1490,20 +1499,22 @@ mod derived_spec_proof {
     }
 
     impl SoundParser for ExprKindFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<ExprKindFmt as SpecParser>::spec_parse);
-            reveal(<ExprKindFmt as SpecByteLen>::byte_len);
-            let fmt = ExprKindFmt::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ExprKindFmt as SpecParser>::spec_parse);
             reveal(<ExprKindFmt as Consistency>::consistent);
             let fmt = ExprKindFmt::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for ExprKindFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<ExprKindFmt as SpecParser>::spec_parse);
+            reveal(<ExprKindFmt as SpecByteLen>::byte_len);
+            let fmt = ExprKindFmt::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1596,20 +1607,22 @@ mod derived_spec_proof {
     }
 
     impl SoundParser for ListKindFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<ListKindFmt as SpecParser>::spec_parse);
-            reveal(<ListKindFmt as SpecByteLen>::byte_len);
-            let fmt = ListKindFmt::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ListKindFmt as SpecParser>::spec_parse);
             reveal(<ListKindFmt as Consistency>::consistent);
             let fmt = ListKindFmt::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for ListKindFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<ListKindFmt as SpecParser>::spec_parse);
+            reveal(<ListKindFmt as SpecByteLen>::byte_len);
+            let fmt = ListKindFmt::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1704,16 +1717,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ExprFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ExprFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1778,16 +1793,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ListFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ListFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1852,16 +1869,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ExprVFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self.expr_kind.deep_view());
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.expr_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ExprVFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner(self.expr_kind.deep_view());
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1926,16 +1945,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ListVConsFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ListVConsFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -2000,16 +2021,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ListVFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner(self.list_kind.deep_view());
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner(self.list_kind.deep_view());
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ListVFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner(self.list_kind.deep_view());
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -2074,16 +2097,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for ForestFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for ForestFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -2148,16 +2173,18 @@ mod derived_spec_proof {
     }
 
     impl<const LIMIT: usize> SoundParser for OuterFmt<LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = Self::spec_inner();
-            assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             let fmt = Self::spec_inner();
             assert(fmt.sound_inv());
             fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for OuterFmt<LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = Self::spec_inner();
+            assert(fmt.sound_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -3067,16 +3094,15 @@ impl<const LIMIT: usize> ForestFmt<LIMIT> {
             gas as nat,
         );
         let ghost expr_spec = expr_proj(callback(expr_param));
-        let ghost parse_spec =
-            match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
-                &SCC1RecBody,
-                gas as nat,
-                forest_param,
-                ibuf@,
-            ) {
-                Some((n, v)) => Some((n, v->forest)),
-                _ => None,
-            };
+        let ghost parse_spec = match FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
+            &SCC1RecBody,
+            gas as nat,
+            forest_param,
+            ibuf@,
+        ) {
+            Some((n, v)) => Some((n, v->forest)),
+            _ => None,
+        };
         let _ = ibuf.len();
         let (n1, len) = U8.parse(ibuf)?;
         let rest = ibuf.skip(n1);
@@ -3086,32 +3112,32 @@ impl<const LIMIT: usize> ForestFmt<LIMIT> {
             let expr_exec = |buf: &&'i [u8]| -> (rr: PResult<Expr<'i>>)
                 ensures
                     parse_matches_spec(rr, expr_spec.spec_parse(buf@)),
-            {
-                proof {
-                    let pg = FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
-                        &SCC1RecBody,
-                        (gas - 1) as nat,
-                        expr_param,
-                        buf@,
-                    );
-                    if let Some((n, v)) = pg {
-                        FixWith::<LIMIT, SCC1RecBody, SCC1Param>(
-                            SCC1RecBody,
-                            expr_param,
-                        ).sound_parser_by_induction((gas - 1) as nat, expr_param, buf@, n, v);
-                        reveal(<SCC1RecBody as SpecRecBody>::spec_body);
-                        reveal(<ExprBodyRec as SpecRecBody>::spec_body);
-                        assert(FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                {
+                    proof {
+                        let pg = FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_parse_gas(
                             &SCC1RecBody,
                             (gas - 1) as nat,
                             expr_param,
-                            v,
-                        ));
-                        assert(v is Expr);
+                            buf@,
+                        );
+                        if let Some((n, v)) = pg {
+                            FixWith::<LIMIT, SCC1RecBody, SCC1Param>(
+                                SCC1RecBody,
+                                expr_param,
+                            ).sound_parser_by_induction((gas - 1) as nat, expr_param, buf@, n, v);
+                            reveal(<SCC1RecBody as SpecRecBody>::spec_body);
+                            reveal(<ExprBodyRec as SpecRecBody>::spec_body);
+                            assert(FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
+                                &SCC1RecBody,
+                                (gas - 1) as nat,
+                                expr_param,
+                                v,
+                            ));
+                            assert(v is Expr);
+                        }
                     }
-                }
-                ExprFmt::<LIMIT>.parse_gas(gas - 1, buf)
-            };
+                    ExprFmt::<LIMIT>.parse_gas(gas - 1, buf)
+                };
             proof {
                 let fix = FixWith::<LIMIT, SCC1RecBody, SCC1Param>(SCC1RecBody, forest_param);
                 fix.lemma_specs_callback_safe_inv(gas as nat, expr_param);
@@ -3174,17 +3200,15 @@ impl<const LIMIT: usize> ForestFmt<LIMIT> {
                 list_kind: arbitrary(),
             };
             let ghost expr_spec = expr_proj(
-                FixWith::<LIMIT, SCC1RecBody, SCC1Param>::specs_callback(
-                    &SCC1RecBody,
-                    gas as nat,
-                )(expr_param),
+                FixWith::<LIMIT, SCC1RecBody, SCC1Param>::specs_callback(&SCC1RecBody, gas as nat)(
+                    expr_param,
+                ),
             );
-            let expr_serializer =
-                |expr: &Expr<'i>, obuf: &mut Vec<u8>| -> ()
-                    requires
-                        expr_spec.consistent(expr.deep_view()),
-                    ensures
-                        final(obuf)@ == old(obuf)@ + expr_spec.spec_serialize(expr.deep_view()),
+            let expr_serializer = |expr: &Expr<'i>, obuf: &mut Vec<u8>| -> ()
+                requires
+                    expr_spec.consistent(expr.deep_view()),
+                ensures
+                    final(obuf)@ == old(obuf)@ + expr_spec.spec_serialize(expr.deep_view()),
                 {
                     proof {
                         assert(gas > 0) by {
@@ -3192,27 +3216,29 @@ impl<const LIMIT: usize> ForestFmt<LIMIT> {
                                 assert(!expr_spec.consistent(expr.deep_view()));
                             }
                         }
-                        assert(
-                            expr_spec.consistent(expr.deep_view())
-                                == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::consistent_gas(
-                                    &SCC1RecBody,
-                                    (gas - 1) as nat,
-                                    expr_param,
-                                    SCC1::Expr { expr: expr.deep_view() },
-                                )
-                        );
+                        assert(expr_spec.consistent(expr.deep_view()) == FixWith::<
+                            LIMIT,
+                            SCC1RecBody,
+                            SCC1Param,
+                        >::consistent_gas(
+                            &SCC1RecBody,
+                            (gas - 1) as nat,
+                            expr_param,
+                            SCC1::Expr { expr: expr.deep_view() },
+                        ));
                     }
                     ExprFmt::<LIMIT>.serialize_gas(gas - 1, expr, obuf);
                     proof {
-                        assert(
-                            expr_spec.spec_serialize(expr.deep_view())
-                                == FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_serialize_gas(
-                                    &SCC1RecBody,
-                                    (gas - 1) as nat,
-                                    expr_param,
-                                    SCC1::Expr { expr: expr.deep_view() },
-                                )
-                        );
+                        assert(expr_spec.spec_serialize(expr.deep_view()) == FixWith::<
+                            LIMIT,
+                            SCC1RecBody,
+                            SCC1Param,
+                        >::spec_serialize_gas(
+                            &SCC1RecBody,
+                            (gas - 1) as nat,
+                            expr_param,
+                            SCC1::Expr { expr: expr.deep_view() },
+                        ));
                     }
                 };
             let expr_serializer: FnSerializer<Expr<'i>, _, _> = FnSerializer::new(
@@ -3229,18 +3255,10 @@ impl<const LIMIT: usize> ForestFmt<LIMIT> {
             }
             expr_repeat.serialize(&v.items, obuf);
         }
-        assert(obuf@ == old_obuf + FixWith::<
-            LIMIT,
-            SCC1RecBody,
-            SCC1Param,
-        >::spec_serialize_gas(
+        assert(obuf@ == old_obuf + FixWith::<LIMIT, SCC1RecBody, SCC1Param>::spec_serialize_gas(
             &SCC1RecBody,
             gas as nat,
-            SCC1Param {
-                which: SCC1Which::FOREST,
-                expr_kind: arbitrary(),
-                list_kind: arbitrary(),
-            },
+            SCC1Param { which: SCC1Which::FOREST, expr_kind: arbitrary(), list_kind: arbitrary() },
             SCC1::Forest { forest: v.deep_view() },
         ));
     }

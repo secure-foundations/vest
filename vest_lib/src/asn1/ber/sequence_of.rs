@@ -15,7 +15,7 @@ use crate::core::{proof::*, spec::*};
 use alloc::vec::Vec;
 use vstd::prelude::*;
 
-use super::any::{parse_discard_eoc, EocFmt, EocValue, EOC};
+use super::eoc::{parse_discard_eoc, EocFmt, EocValue, EOC};
 use Sum::Inl as L;
 use Sum::Inr as R;
 
@@ -39,7 +39,8 @@ type BerSequenceOfInnerFmt<C> = Mapped<
 ///
 /// The indefinite branch is non-recursive at this layer: [`Repeat`] parses complete ASN.1
 /// elements until [`EOC`]. Nested indefinite values are handled by the element codec itself.
-/// Serialization is normalized to the definite form.
+/// Serialization uses definite framing when the content length fits `usize`, and indefinite
+/// framing for larger mathematical values.
 pub open spec fn ber_sequence_of_fmt<C: SpecCombinator>(
     tag: Tag,
     content: C,
@@ -61,19 +62,55 @@ pub open spec fn ber_sequence_of_fmt<C: SpecCombinator>(
                 },
             |values: Seq<C::T>|
                 {
-                    let len = RepeatTillEnd(content).byte_len(values) as usize;
-                    (BerLength::Definite(len), L(values))
+                    let len = RepeatTillEnd(content).byte_len(values);
+                    if len <= usize::MAX {
+                        (BerLength::Definite(len as usize), L(values))
+                    } else {
+                        (BerLength::Indefinite, R((values, (TagFmt::EOC, 0u8))))
+                    }
                 },
         ),
     }
 }
 
-/// The definite-length BER encoding selected by [`BerSequenceOfFmt`]'s serializer.
-pub open spec fn ber_sequence_of_normalized_fmt<C>(tag: Tag, content: C) -> ASN1Fmt<
-    RepeatTillEnd<C>,
-    BER,
-> {
-    ASN1Fmt(tag, RepeatTillEnd(content))
+pub(crate) proof fn lemma_ber_sequence_of_consistent<C: SpecCombinator>(
+    tag: Tag,
+    content: C,
+    values: Seq<C::T>,
+)
+    ensures
+        BerSequenceOfFmt(tag, content).consistent(values) == (TagFmt.consistent(tag)
+            && RepeatTillEnd(content).consistent(values)),
+{
+    crate::asn1::tag::lemma_tag_wf_implies_tag_consistent(TagFmt::EOC);
+    crate::asn1::length::lemma_length_fmt_consistent::<BER>(
+        RepeatTillEnd(content).byte_len(values) as usize,
+    );
+}
+
+proof fn lemma_content_len<C: SpecCombinator>(tag: Tag, content: C, values: Seq<C::T>)
+    ensures
+        RepeatTillEnd(content).byte_len(values) <= BerSequenceOfFmt(tag, content).byte_len(values),
+{
+}
+
+proof fn lemma_definite<C: SpecCombinator>(tag: Tag, content: C, values: Seq<C::T>)
+    requires
+        RepeatTillEnd(content).byte_len(values) <= usize::MAX,
+    ensures
+        BerSequenceOfFmt(tag, content).consistent(values) == ASN1Fmt::<_, BER>(
+            tag,
+            RepeatTillEnd(content),
+        ).consistent(values),
+        BerSequenceOfFmt(tag, content).byte_len(values) == ASN1Fmt::<_, BER>(
+            tag,
+            RepeatTillEnd(content),
+        ).byte_len(values),
+        BerSequenceOfFmt(tag, content).spec_serialize(values) == ASN1Fmt::<_, BER>(
+            tag,
+            RepeatTillEnd(content),
+        ).spec_serialize(values),
+{
 }
 
 /// BER `SEQUENCE OF` codec with a configurable outer tag.
@@ -192,6 +229,36 @@ mod derived_proofs {
         }
     }
 
+    impl<C: SpecCombinator + SoundParser> SoundParser for BerSequenceOfFmt<C> {
+        open spec fn sound_inv(&self) -> bool {
+            self.1.sound_inv()
+        }
+
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+            let fmt = ber_sequence_of_fmt(self.0, self.1);
+            TagFmt.lemma_parse_sound_value(input);
+            if let Some((_, (length, branch))) = fmt.inner.spec_parse(input) {
+                TagFmt.lemma_parse_safe(input);
+                let after_tag = input[(TagFmt.spec_parse(input)->0).0..];
+                BerLengthFmt.lemma_parse_safe(after_tag);
+                let bytes = after_tag[(BerLengthFmt.spec_parse(after_tag)->0).0..];
+                match length {
+                    BerLength::Definite(len) => {
+                        RepeatTillEnd(self.1).lemma_parse_sound_value(bytes[0..len]);
+                    },
+                    BerLength::Indefinite => {
+                        Repeat(self.1, EOC).lemma_parse_sound_value(bytes);
+                    },
+                }
+                let values = match branch {
+                    L(values) => values,
+                    R((values, _)) => values,
+                };
+                lemma_ber_sequence_of_consistent(self.0, self.1, values);
+            }
+        }
+    }
+
     impl<C: SpecCombinator + GoodSerializer> GoodSerializer for BerSequenceOfFmt<C> {
         open spec fn serialize_inv(&self) -> bool {
             self.1.serialize_inv()
@@ -211,11 +278,12 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
-            ber_sequence_of_normalized_fmt(self.0, self.1).lemma_serialize_dps_prepend(value, obuf);
+            self.lemma_serialize_equiv(value, obuf);
         }
 
         proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
-            ber_sequence_of_normalized_fmt(self.0, self.1).lemma_serialize_dps_len(value, obuf);
+            self.lemma_serialize_equiv(value, obuf);
+            self.lemma_serialize_len(value);
         }
     }
 
@@ -227,7 +295,7 @@ mod derived_proofs {
         }
 
         proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
-            ber_sequence_of_normalized_fmt(self.0, self.1).lemma_serialize_equiv(value, obuf);
+            ber_sequence_of_fmt(self.0, self.1).lemma_serialize_equiv(value, obuf);
         }
     }
 
@@ -321,6 +389,11 @@ impl<Output: OutputBuf, C, T> Serializer<Output, &[T]> for BerSequenceOfFmt<C> w
     }
 
     fn serialize_into(&self, value: &&[T], obuf: &mut Output) {
+        proof {
+            obuf.lemma_fits_len_bound(self.byte_len(value.deep_view()));
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
         normalized.serialize_into(value, obuf);
     }
@@ -336,7 +409,18 @@ impl<C, T> Prepare<&[T]> for BerSequenceOfFmt<C> where
 
     fn prepare(&self, value: &&[T]) -> Result<usize, PreSerializeError> {
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
-        normalized.prepare(value)
+        let result = normalized.prepare(value);
+        proof {
+            if result is Ok {
+                crate::asn1::tlv::lemma_asn1_consistent::<_, BER>(
+                    self.0,
+                    RepeatTillEnd(self.1),
+                    value.deep_view(),
+                );
+                lemma_definite(self.0, self.1, value.deep_view());
+            }
+        }
+        result
     }
 }
 
@@ -349,6 +433,10 @@ impl<C, T> ByteLen<&[T]> for BerSequenceOfFmt<C> where
     }
 
     fn length(&self, value: &&[T]) -> usize {
+        proof {
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
         normalized.length(value)
     }
@@ -366,6 +454,11 @@ impl<Output: OutputBuf, C, T> Serializer<Output, Vec<T>> for BerSequenceOfFmt<C>
     }
 
     fn serialize_into(&self, value: &Vec<T>, obuf: &mut Output) {
+        proof {
+            obuf.lemma_fits_len_bound(self.byte_len(value.deep_view()));
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
         normalized.serialize_into(value, obuf);
     }
@@ -382,7 +475,18 @@ impl<C, T> Prepare<Vec<T>> for BerSequenceOfFmt<C> where
 
     fn prepare(&self, value: &Vec<T>) -> Result<usize, PreSerializeError> {
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
-        normalized.prepare(value)
+        let result = normalized.prepare(value);
+        proof {
+            if result is Ok {
+                crate::asn1::tlv::lemma_asn1_consistent::<_, BER>(
+                    self.0,
+                    RepeatTillEnd(self.1),
+                    value.deep_view(),
+                );
+                lemma_definite(self.0, self.1, value.deep_view());
+            }
+        }
+        result
     }
 }
 
@@ -396,6 +500,10 @@ impl<C, T> ByteLen<Vec<T>> for BerSequenceOfFmt<C> where
     }
 
     fn length(&self, value: &Vec<T>) -> usize {
+        proof {
+            lemma_content_len(self.0, self.1, value.deep_view());
+            lemma_definite(self.0, self.1, value.deep_view());
+        }
         let normalized = ASN1Fmt::<_, BER>(self.0, RepeatTillEnd(self.1));
         normalized.length(value)
     }

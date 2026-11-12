@@ -222,9 +222,10 @@ pub proof fn lemma_integer_to_from_bytes(o: int)
     }
 }
 
-pub proof fn lemma_integer_fmt_sound_nonmal_inv()
+pub proof fn lemma_integer_fmt_parser_invariants()
     ensures
         integer_fmt().sound_inv(),
+        integer_fmt().strict_inv(),
         integer_fmt().nonmal_inv(),
 {
     assert forall|v: Seq<u8>| #[trigger] integer_fmt().inner.consistent(v) implies (
@@ -623,14 +624,16 @@ mod derived_proofs {
     }
 
     impl SoundParser for IntegerFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_integer_fmt_sound_nonmal_inv();
-            integer_fmt().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_fmt_parser_invariants();
             integer_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for IntegerFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_integer_fmt_parser_invariants();
+            integer_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -642,7 +645,7 @@ mod derived_proofs {
 
     impl SPRoundTripDps for IntegerFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_fmt_parser_invariants();
             lemma_integer_fmt_unambiguous();
             integer_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
@@ -650,7 +653,7 @@ mod derived_proofs {
 
     impl NonMalleable for IntegerFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_integer_fmt_sound_nonmal_inv();
+            lemma_integer_fmt_parser_invariants();
             integer_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }
@@ -678,15 +681,17 @@ mod derived_proofs {
     }
 
     impl SoundParser for Integer8Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            if ibuf.len() == 1 {
-                I8.lemma_parse_sound_consumption(ibuf);
-            }
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_sound_value(ibuf);
+            }
+        }
+    }
+
+    impl StrictParser for Integer8Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_strict_consumption(ibuf);
             }
         }
     }
@@ -738,19 +743,21 @@ mod derived_proofs {
     }
 
     impl SoundParser for Integer16Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            if ibuf.len() == 1 {
-                I8.lemma_parse_sound_consumption(ibuf);
-            } else if ibuf.len() == 2 {
-                I16Be.lemma_parse_sound_consumption(ibuf);
-            }
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             if ibuf.len() == 1 {
                 I8.lemma_parse_sound_value(ibuf);
             } else if ibuf.len() == 2 {
                 I16Be.lemma_parse_sound_value(ibuf);
+            }
+        }
+    }
+
+    impl StrictParser for Integer16Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            if ibuf.len() == 1 {
+                I8.lemma_parse_strict_consumption(ibuf);
+            } else if ibuf.len() == 2 {
+                I16Be.lemma_parse_strict_consumption(ibuf);
             }
         }
     }
@@ -917,7 +924,7 @@ impl<Output: OutputBuf, 'i> Serializer<Output, Integer<'i>> for super::IntegerFm
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
-                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_fmt_parser_invariants();
                     lemma_integer_from_to_bytes(bytes.deep_view());
                 }
                 Tail.serialize_into(&bytes, obuf);
@@ -940,7 +947,7 @@ impl<'i> Prepare<Integer<'i>> for super::IntegerFmt {
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
-                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_fmt_parser_invariants();
                     lemma_integer_from_to_bytes(bytes.deep_view());
                 }
                 Tail.prepare(&bytes)
@@ -957,7 +964,7 @@ impl<'i> ByteLen<Integer<'i>> for super::IntegerFmt {
                 let bytes = raw.as_slice();
                 proof {
                     use_type_invariant(raw);
-                    lemma_integer_fmt_sound_nonmal_inv();
+                    lemma_integer_fmt_parser_invariants();
                     lemma_integer_from_to_bytes(bytes.deep_view());
                 }
                 Tail.length(&bytes)

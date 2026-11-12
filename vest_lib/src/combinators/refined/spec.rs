@@ -42,12 +42,21 @@ impl<A, Pred> SoundParser for super::Refined<A, Pred> where
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A, Pred> StrictParser for super::Refined<A, Pred> where
+    A: StrictParser,
+    Pred: SpecPred<A::PVal>,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -195,12 +204,18 @@ impl<Inner> SoundParser for super::Const<Inner, Inner::PVal> where Inner: SoundP
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner> StrictParser for super::Const<Inner, Inner::PVal> where Inner: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -332,12 +347,14 @@ impl<const N: usize> SoundParser for super::Const<Fixed::<N>, [u8; N]> {
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.0.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.0.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<const N: usize> StrictParser for super::Const<Fixed::<N>, [u8; N]> {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.0.lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -474,20 +491,29 @@ impl<Tg, Of> SafeParser for super::PrefixTagged<Tg, Tg::T, Of> where
     }
 }
 
-impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Tg::T, Of> where
-    Tg: SpecByteLen + SoundParser,
+impl<Tg, Of> SoundParser for super::PrefixTagged<Tg, Tg::PVal, Of> where
+    Tg: SpecByteLen + SoundParser<PVal = Tg::T>,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
         with_prefix_tag(self.0, self.1, self.2).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        with_prefix_tag(self.0, self.1, self.2).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         with_prefix_tag(self.0, self.1, self.2).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<Tg, Of> StrictParser for super::PrefixTagged<Tg, Tg::T, Of> where
+    Tg: SpecByteLen + StrictParser,
+    Of: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        with_prefix_tag(self.0, self.1, self.2).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        with_prefix_tag(self.0, self.1, self.2).lemma_parse_strict_consumption(ibuf)
     }
 }
 
@@ -632,20 +658,29 @@ impl<Of, Tg> SafeParser for super::SuffixTagged<Of, Tg, Tg::T> where
     }
 }
 
-impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg, Tg::T> where
-    Tg: SpecByteLen + SoundParser,
+impl<Of, Tg> SoundParser for super::SuffixTagged<Of, Tg, Tg::PVal> where
+    Tg: SpecByteLen + SoundParser<PVal = Tg::T>,
     Of: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
         with_suffix_tag(self.1, self.2, self.0).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        with_suffix_tag(self.1, self.2, self.0).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         with_suffix_tag(self.1, self.2, self.0).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<Of, Tg> StrictParser for super::SuffixTagged<Of, Tg, Tg::T> where
+    Tg: SpecByteLen + StrictParser,
+    Of: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        with_suffix_tag(self.1, self.2, self.0).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        with_suffix_tag(self.1, self.2, self.0).lemma_parse_strict_consumption(ibuf)
     }
 }
 

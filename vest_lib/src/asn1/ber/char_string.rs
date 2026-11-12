@@ -104,6 +104,34 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
+    impl<C, const LIMIT: usize> SoundParser for BerCharStringFmt<C, LIMIT> where
+        C: SpecCombinator + StrictParser + SafeParser + GoodSerializer + SPRoundTrip,
+     {
+        open spec fn sound_inv(&self) -> bool {
+            &&& self.1.sound_inv()
+            &&& self.1.strict_inv()
+            &&& self.1.safe_inv()
+            &&& self.1.serialize_inv()
+            &&& self.1.sp_roundtrip_inv()
+        }
+
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+            broadcast use crate::asn1::tlv::lemma_asn1_consistent;
+
+            let fmt = ber_char_string_fmt::<C, LIMIT>(self.0, self.1);
+            fmt.inner.lemma_parse_sound_value(input);
+            if let Some((_, bytes)) = fmt.inner.spec_parse(input) {
+                self.1.lemma_parse_sound_value(bytes);
+                self.1.lemma_parse_strict_consumption(bytes);
+                self.1.lemma_parse_safe(bytes);
+                if let Some((_, value)) = self.1.spec_parse(bytes) {
+                    self.1.theorem_serialize_parse_roundtrip(value);
+                    self.1.lemma_serialize_len(value);
+                }
+            }
+        }
+    }
+
     impl<C: SpecCombinator, const LIMIT: usize> SafeParser for BerCharStringFmt<C, LIMIT> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             ber_char_string_fmt::<C, LIMIT>(self.0, self.1).lemma_parse_safe(ibuf);

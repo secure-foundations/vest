@@ -97,38 +97,55 @@ impl<A, B> SoundParser for super::Terminated<A, B, B::PVal, true> where
         Pair(self.a, self.b).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let fmt = terminated::<_, _, _, _, true>(self.a, self.b, self.b_val);
-        fmt.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         let fmt = terminated::<_, _, _, _, true>(self.a, self.b, self.b_val);
         fmt.lemma_parse_sound_value(ibuf);
     }
 }
 
+impl<A, B> StrictParser for super::Terminated<A, B, B::PVal, true> where
+    A: StrictParser,
+    B: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        Pair(self.a, self.b).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let fmt = terminated::<_, _, _, _, true>(self.a, self.b, self.b_val);
+        fmt.lemma_parse_strict_consumption(ibuf);
+    }
+}
+
 impl<A, B> SoundParser for super::Terminated<A, B, B::PVal, false> where
     A: SoundParser,
-    B: SoundParser + AdmitsUniqueVal,
+    B: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
         &&& Pair(self.a, self.b).sound_inv()
         &&& self.b.consistent(self.b_val)
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let pair = Pair(self.a, self.b);
-        pair.lemma_parse_sound_consumption(ibuf);
-        pair.lemma_parse_sound_value(ibuf);
-        if let Some((n, va)) = self.spec_parse(ibuf) {
-            let (_m, p) = pair.spec_parse(ibuf)->0;
-            self.b.lemma_unique_consistent_val(self.b_val, p.1);
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         let pair = Pair(self.a, self.b);
+        pair.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A, B> StrictParser for super::Terminated<A, B, B::PVal, false> where
+    A: StrictParser,
+    B: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        &&& Pair(self.a, self.b).strict_inv()
+        &&& self.b.consistent(self.b_val)
+        &&& forall|v: B::T| #[trigger]
+            self.b.consistent(v) ==> self.b.byte_len(v) == self.b.byte_len(self.b_val)
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let pair = Pair(self.a, self.b);
+        pair.lemma_parse_strict_consumption(ibuf);
         pair.lemma_parse_sound_value(ibuf);
     }
 }

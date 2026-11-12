@@ -423,9 +423,10 @@ pub open spec fn utc_time_fmt<const DER: bool>() -> UtcTimeInnerFmt<DER> {
     }
 }
 
-proof fn lemma_der_utc_time_fmt_sound_nonmal()
+proof fn lemma_der_utc_time_fmt_parser_invariants()
     ensures
         utc_time_fmt::<true>().sound_inv(),
+        utc_time_fmt::<true>().strict_inv(),
         utc_time_fmt::<true>().nonmal_inv(),
 {
     assert forall|bytes: Seq<u8>| #[trigger]
@@ -484,6 +485,15 @@ mod derived_specs {
 mod derived_proofs {
     use super::*;
 
+    impl<const DER: bool> SoundParser for crate::asn1::ASN1Fmt<
+        crate::asn1::UtcTimeFmt<false>,
+        DER,
+    > {
+        proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
+            crate::asn1::tlv::lemma_asn1_parse_sound_bounded::<_, DER>(self.0, self.1, input);
+        }
+    }
+
     impl<const DER: bool> SafeParser for super::super::UtcTimeFmt<DER> {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
             utc_time_fmt::<DER>().lemma_parse_safe(ibuf);
@@ -511,21 +521,24 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for super::super::UtcTimeFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_der_utc_time_fmt_sound_nonmal();
-            utc_time_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const DER: bool> SoundParser for super::super::UtcTimeFmt<DER> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_der_utc_time_fmt_sound_nonmal();
-            utc_time_fmt::<true>().lemma_parse_sound_value(ibuf);
+            if let Some((_, value)) = self.spec_parse(ibuf) {
+                assert(self.consistent(value));
+            }
+        }
+    }
+
+    impl StrictParser for super::super::UtcTimeFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_der_utc_time_fmt_parser_invariants();
+            utc_time_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 
     impl NonMalleable for super::super::UtcTimeFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_der_utc_time_fmt_sound_nonmal();
+            lemma_der_utc_time_fmt_parser_invariants();
             utc_time_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }

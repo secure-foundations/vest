@@ -6,7 +6,6 @@ use crate::core::exec::{parser::*, serializer::*, ParseError, ParseErrorKind};
 use crate::primitives::base128::*;
 use crate::{
     combinators::{
-        implicit::*,
         mapped::spec::{FnSpecMapper, SpecMap},
         Mapped, Refined, U8,
     },
@@ -435,17 +434,17 @@ proof fn lemma_first_byte_roundtrip(b1: u8)
     ;
 }
 
-proof fn lemma_tag_fmt_sound_nonmal_inv()
+proof fn lemma_tag_fmt_parser_invariants()
     ensures
         tag_fmt().sound_inv(),
+        tag_fmt().strict_inv(),
         tag_fmt().nonmal_inv(),
 {
     let fmt = tag_fmt();
     assert forall|v| fmt.inner.consistent(v) implies (fmt.mapper.1)((fmt.mapper.0)(v)) == v by {
         let (b1, rest) = v;
         lemma_first_byte_roundtrip(b1);
-        if b1 & TAG_NUMBER_MASK == TAG_LONG_FORM_SENTINEL {
-        } else {
+        if b1 & TAG_NUMBER_MASK != TAG_LONG_FORM_SENTINEL {
             let num = (b1 & TAG_NUMBER_MASK) as UInt;
             assert(num < TAG_LONG_FORM_SENTINEL as UInt) by (bit_vector)
                 requires
@@ -581,14 +580,16 @@ mod derived_proofs {
     }
 
     impl SoundParser for TagFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_tag_fmt_sound_nonmal_inv();
-            tag_fmt().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_tag_fmt_sound_nonmal_inv();
+            lemma_tag_fmt_parser_invariants();
             tag_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for TagFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_tag_fmt_parser_invariants();
+            tag_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -624,7 +625,7 @@ mod derived_proofs {
 
     impl NonMalleable for TagFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_tag_fmt_sound_nonmal_inv();
+            lemma_tag_fmt_parser_invariants();
             tag_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }

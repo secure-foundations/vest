@@ -41,18 +41,24 @@ impl<Inner: SoundParser> SoundParser for super::Cond<Inner> {
         self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        if self.0 {
-            self.1.lemma_parse_sound_consumption(ibuf);
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         if self.0 {
             self.1.lemma_parse_sound_value(ibuf);
             if let Some((_, v)) = self.1.spec_parse(ibuf) {
                 assert(self.consistent(v));
             }
+        }
+    }
+}
+
+impl<Inner: StrictParser> StrictParser for super::Cond<Inner> {
+    open spec fn strict_inv(&self) -> bool {
+        self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        if self.0 {
+            self.1.lemma_parse_strict_consumption(ibuf);
         }
     }
 }

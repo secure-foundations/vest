@@ -7,12 +7,14 @@
 //! allocation is needed only for fragmented strings and recursive items.
 //!
 //! [`CborFmt<false>`] accepts the well-formed representation variants described
-//! by RFC 8949. [`CborFmt<true>`] additionally requires preferred integer,
-//! length, and tag arguments and rejects indefinite-length items (RFC 8949
-//! section 4.2.1).
+//! by RFC 8949, subject to the limits below. [`CborFmt<true>`] additionally
+//! requires preferred integer, length, and tag arguments and rejects
+//! indefinite-length items (RFC 8949 §4.2.1).
 //!
 //! ## Limitations
 //!
+//! - Flattened byte/text lengths and array/map counts must fit in `u64`, even
+//!   for indefinite items; though serialization always emits definite lengths.
 //! - Map-key ordering is not yet enforced in [`CborFmt<true>`].
 //! - Floating-point widths are retained in [`CborFloat`], so shortest-width
 //! floating-point normalization is likewise not yet imposed.

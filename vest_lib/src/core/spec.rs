@@ -61,22 +61,15 @@ pub trait SafeParser: SpecParser {
 
 /// Parser soundness.
 ///
-/// This trait specifies semantic soundness w.r.t. the format spec, independent
-/// from the orthogonal safety property captured by [`SafeParser`].
-pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Val = Self::T> {
+/// Successful parsing produces a value consistent with the format. This does not
+/// constrain the consumed length; see [`SafeParser`] and [`StrictParser`]
+/// for additional constraints on the consumed length.
+pub trait SoundParser: SpecParser + Consistency<Val = Self::PVal> {
     /// Optional invariant (used by spec-function combinators; struct-based combinators
     /// typically leave this as `true`).
     open spec fn sound_inv(&self) -> bool {
         true
     }
-
-    /// For any successful parse `Some((n, v))`, `n == self.byte_len(v)`.
-    broadcast proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>)
-        requires
-            self.sound_inv(),
-        ensures
-            #[trigger] self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
-    ;
 
     /// For any successful parse `Some((_, v))`, `v` is consistent with the format's spec.
     broadcast proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>)
@@ -84,6 +77,27 @@ pub trait SoundParser: SpecByteLen + SpecParser<PVal = Self::T> + Consistency<Va
             self.sound_inv(),
         ensures
             #[trigger] self.spec_parse(ibuf) matches Some((_, v)) ==> self.consistent(v),
+    ;
+}
+
+/// Parser strictness.
+///
+/// This trait constrains parsing to consume exactly the number of bytes specified by the format's spec.
+/// However, it still permits malleable encodings of the same length.
+///
+/// See [`super::proof::NonMalleable`] for even stronger guarantees that rule out malleable encodings.
+pub trait StrictParser: SpecByteLen + SoundParser<PVal = Self::T> {
+    /// Additional conditions needed for length agreement.
+    open spec fn strict_inv(&self) -> bool {
+        true
+    }
+
+    broadcast proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>)
+        requires
+            self.sound_inv(),
+            self.strict_inv(),
+        ensures
+            #[trigger] self.spec_parse(ibuf) matches Some((n, v)) ==> n == self.byte_len(v),
     ;
 }
 
@@ -166,7 +180,6 @@ pub trait SpecByteLen {
 ///   *   `RepeatTillEnd<A>` (sugar for `Repeat<A, Eof>`)
 /// * **Dependent and Recursive Combinators:**
 ///   *   `Bind<A, B>` (the suffix parser `B` is constructed dynamically from the parsed value of `A`)
-///   *   `Implicit<Head, Tail>` (similar to `Bind`)
 ///   *   `FixWith<LIMIT, Body, Param>` (recursive fixpoint)
 pub trait MinMaxByteLen: SpecByteLen + Consistency<Val = Self::T> {
     spec fn min(&self) -> nat;

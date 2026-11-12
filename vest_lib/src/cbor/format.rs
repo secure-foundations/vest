@@ -13,9 +13,9 @@ use crate::combinators::{
         BundledSpecs, EquivSerializersGeneralRecBody, GoodSerializerRecBody, NonMalleableRecBody,
         NonTailFmtRecBody, ParamRecSpecs, ParserRecBody, PrepareRecBody, ProductiveRecBody,
         SPRoundTripDpsRecBody, SafeParserRecBody, SerializerRecBody, SoundParserRecBody,
-        SpecRecBody,
+        SpecRecBody, StrictParserRecBody,
     },
-    Bind, Empty, FixWith, Mapped, Pair, Repeat, RepeatN, Sum, Tail, Void,
+    Bind, Empty, FixWith, Mapped, Pair, Refined, Repeat, RepeatN, Sum, Tail, Void,
 };
 use crate::core::exec::{
     fns::{FnByteLen, FnParser, FnPrepare, FnSerializer},
@@ -109,9 +109,9 @@ type CborBranches<Rec, const DET: bool> = Sum<
     >,
 >;
 
-type CborParseBodyInnerFmt<Rec, const DET: bool> = Mapped<
-    Bind<CborHeadFmt<DET>, spec_fn(CborHead) -> CborBranches<Rec, DET>>,
-    CborMapper<DET>,
+type CborParseBodyInnerFmt<Rec, const DET: bool> = Refined<
+    Mapped<Bind<CborHeadFmt<DET>, spec_fn(CborHead) -> CborBranches<Rec, DET>>, CborMapper<DET>>,
+    PredFnSpec<CborValueSpec>,
 >;
 
 type NormalizedOnly<T> = Mapped<Void, FnSpecMapper<Never, T>>;
@@ -160,6 +160,8 @@ type CborNormalizedBodyInnerFmt<Rec, const DET: bool> = Mapped<
     CborMapper<DET>,
 >;
 
+/// *Shallow* value restrictions, including machine-representable lengths and simple-value ranges.
+/// Recursive child consistency is checked separately by the body combinators.
 pub open spec fn cbor_value_valid(value: CborValueSpec) -> bool {
     match value {
         CborValueSpec::Integer(value) => {
@@ -355,8 +357,11 @@ pub open spec fn cbor_parse_body<const DET: bool>(
     rec: ParamRecSpecs<(), CborValueSpec>,
 ) -> CborParseBodyInnerFmt<BundledSpecs<CborValueSpec>, DET> {
     let child = rec(());
+    // Indefinite items can exceed a u64 length.
+    // Reject those values so every parsed value has a machine-representable length.
+    // Concrete Rust buffers already satisfy this bound.
     #[verusfmt::skip]
-    Mapped {
+    Refined(Mapped {
         inner: Bind(
             CborHeadFmt::<DET>,
             |head: CborHead|
@@ -377,7 +382,7 @@ pub open spec fn cbor_parse_body<const DET: bool>(
                 },
         ),
         mapper: CborMapper::<DET>,
-    }
+    }, |value: CborValueSpec| cbor_value_valid(value))
 }
 
 #[doc(hidden)]
@@ -418,6 +423,28 @@ proof fn lemma_normalized_parse_implies_parse<const DET: bool>(
         cbor_normalized_body::<DET>(rec).spec_parse(input) matches Some((n, value))
             ==> cbor_parse_body::<DET>(rec).spec_parse(input) == Some((n, value)),
 {
+    let normalized = cbor_normalized_body::<DET>(rec);
+    normalized.inner.0.lemma_parse_sound_value(input);
+    if let Some((_, wire)) = normalized.inner.spec_parse(input) {
+        let head_len = (normalized.inner.0.spec_parse(input)->0).0;
+        let rest = input[head_len..];
+        match wire.0 {
+            CborHead { major: MajorType::Bytes, value: CborHeadValue::Argument(len) } => {
+                ExactLen(len, Tail).lemma_parse_sound_value(rest);
+            },
+            CborHead { major: MajorType::Text, value: CborHeadValue::Argument(len) } => {
+                ExactLen(len, Utf8StringFmt).lemma_parse_sound_value(rest);
+            },
+            CborHead { major: MajorType::Array, value: CborHeadValue::Argument(len) } => {
+                RepeatN(len, rec(())).lemma_parse_exactly_n_times(rest);
+            },
+            CborHead { major: MajorType::Map, value: CborHeadValue::Argument(len) } => {
+                RepeatN(len, Pair(rec(()), rec(()))).lemma_parse_exactly_n_times(rest);
+            },
+            _ => {},
+        }
+        assert(cbor_value_valid(decode_cbor_wire(wire)));
+    }
 }
 
 proof fn lemma_parse_normalized_consistency<const DET: bool>(
@@ -429,6 +456,28 @@ proof fn lemma_parse_normalized_consistency<const DET: bool>(
             rec,
         ).consistent(value),
 {
+}
+
+/// A parsed wire value can be normalized without changing child values. The
+/// size predicate excludes indefinite collections too large for a definite head.
+proof fn lemma_wire_normalized_consistency<const DET: bool>(
+    rec: ParamRecSpecs<(), CborValueSpec>,
+    wire: CborWire,
+)
+    requires
+        cbor_parse_body::<DET>(rec).0.inner.consistent(wire),
+        cbor_value_valid(decode_cbor_wire(wire)),
+    ensures
+        cbor_normalized_body::<DET>(rec).consistent(decode_cbor_wire(wire)),
+{
+    reveal(<crate::combinators::Star<_> as Consistency>::consistent);
+    CborMapper::<DET>.lemma_mapper_wf_out_in(decode_cbor_wire(wire));
+    match wire.1 {
+        R(R(R(R(R(L(chunks)))))) => {
+            vstd::utf8::encode_utf8_valid_utf8(chunks.0.flatten());
+        },
+        _ => {},
+    }
 }
 
 proof fn lemma_parse_normalized_byte_len<const DET: bool>(
@@ -486,9 +535,6 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
 {
     use crate::combinators::congruence::*;
 
-    broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-    broadcast use lemma_parser_congruent_reflexive;
-
     let _ = input.len();
     let (head_len, head) = CborHeadFmt::<DET>.parse(input)?;
     proof {
@@ -499,9 +545,10 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
     let ghost child_spec = spec_rec(());
     proof {
         lemma_ref_safe_productive_inv(child);
+        lemma_parser_congruent_reflexive(BREAK);
     }
 
-    match head {
+    let result = match head {
         CborHead { major: MajorType::Unsigned, value: CborHeadValue::Argument(value) } => {
             Ok((head_len, CborValue::Integer(value as i128)))
         },
@@ -515,16 +562,28 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
         CborHead { major: MajorType::Bytes, value: CborHeadValue::Indefinite } => {
             let repeated = Repeat(ByteChunkFmt::<DET>, BREAK);
             let (content_len, (chunks, _break)) = repeated.parse(&rest)?;
+            proof {
+                repeated.lemma_parse_safe(rest@);
+            }
             let bytes = flatten_byte_chunks(chunks);
+            proof {
+                vstd::std_specs::vec::axiom_spec_len(&bytes);
+            }
             Ok((head_len + content_len, CborValue::Bytes(CborBytes::Indefinite(bytes))))
         },
         CborHead { major: MajorType::Text, value: CborHeadValue::Argument(len) } => {
             let (content_len, text) = ExactLen(len, Utf8StringFmt).parse(&rest)?;
+            proof {
+                ExactLen(len, Utf8StringFmt).lemma_parse_sound_value(rest@);
+            }
             Ok((head_len + content_len, CborValue::Text(CborText::Definite(text))))
         },
         CborHead { major: MajorType::Text, value: CborHeadValue::Indefinite } => {
             let repeated = Repeat(TextChunkFmt::<DET>, BREAK);
             let (content_len, (chunks, _break)) = repeated.parse(&rest)?;
+            proof {
+                repeated.lemma_parse_safe(rest@);
+            }
             let text = flatten_text_chunks(chunks);
             Ok((head_len + content_len, CborValue::Text(CborText::Indefinite(text))))
         },
@@ -537,7 +596,11 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let (content_len, values) = repeated.parse(&rest)?;
             let value = CborValue::Array(values);
             proof {
+                repeated.lemma_parse_safe(rest@);
                 super::value::lemma_collection_value_view(&value);
+                if let CborValue::Array(values) = &value {
+                    vstd::std_specs::vec::axiom_spec_len(values);
+                }
             }
             Ok((head_len + content_len, value))
         },
@@ -550,7 +613,11 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let (content_len, (values, _break)) = repeated.parse(&rest)?;
             let value = CborValue::Array(values);
             proof {
+                repeated.lemma_parse_safe(rest@);
                 super::value::lemma_collection_value_view(&value);
+                if let CborValue::Array(values) = &value {
+                    vstd::std_specs::vec::axiom_spec_len(values);
+                }
             }
             Ok((head_len + content_len, value))
         },
@@ -572,7 +639,11 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let (content_len, entries) = repeated.parse(&rest)?;
             let value = CborValue::Map(entries);
             proof {
+                repeated.lemma_parse_safe(rest@);
                 super::value::lemma_collection_value_view(&value);
+                if let CborValue::Map(entries) = &value {
+                    vstd::std_specs::vec::axiom_spec_len(entries);
+                }
             }
             Ok((head_len + content_len, value))
         },
@@ -592,7 +663,11 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             let (content_len, (entries, _break)) = repeated.parse(&rest)?;
             let value = CborValue::Map(entries);
             proof {
+                repeated.lemma_parse_safe(rest@);
                 super::value::lemma_collection_value_view(&value);
+                if let CborValue::Map(entries) = &value {
+                    vstd::std_specs::vec::axiom_spec_len(entries);
+                }
             }
             Ok((head_len + content_len, value))
         },
@@ -601,6 +676,9 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
                 lemma_parser_congruent_apply(child, child_spec, rest@);
             }
             let (content_len, value) = child.parse(&rest)?;
+            proof {
+                child.lemma_parse_safe(rest@);
+            }
             Ok((head_len + content_len, CborValue::Tag(tag, Box::new(value))))
         },
         CborHead { major: MajorType::Simple, value: CborHeadValue::Float(value) } => {
@@ -622,7 +700,13 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
             Ok((head_len, CborValue::Simple(value)))
         },
         _ => Err(ParseError::custom("invalid CBOR head/value combination")),
+    };
+    proof {
+        if let Ok((_, value)) = &result {
+            assert(cbor_value_valid(value.deep_view()));
+        }
     }
+    result
 }
 
 #[verifier::rlimit(50)]
@@ -1508,7 +1592,16 @@ mod recursive_proofs {
         }
     }
 
-    impl SoundParserRecBody for CborRecBody<true> {
+    impl StrictParserRecBody for CborRecBody<true> {
+        proof fn lemma_body_strict_inv_preservation(
+            &self,
+            _param: (),
+            _rec: ParamRecSpecs<(), CborValueSpec>,
+        ) {
+        }
+    }
+
+    impl<const DET: bool> SoundParserRecBody for CborRecBody<DET> {
         proof fn lemma_body_sound_inv_preservation(
             &self,
             _param: (),
@@ -1587,22 +1680,36 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for CborBodyFmt<true> {
+    impl<const DET: bool> SoundParser for CborBodyFmt<DET> {
         open spec fn sound_inv(&self) -> bool {
-            cbor_parse_body::<true>(self.rec@).sound_inv()
-        }
-
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            cbor_parse_body::<true>(self.rec@).lemma_parse_sound_consumption(input);
-            if let Some((_n, value)) = self.spec_parse(input) {
-                lemma_parse_normalized_byte_len::<true>(self.rec@, value);
-            }
+            self.rec@(()).sound_inv()
         }
 
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-            cbor_parse_body::<true>(self.rec@).lemma_parse_sound_value(input);
+            let fmt = cbor_parse_body::<DET>(self.rec@);
+            fmt.0.inner.lemma_parse_sound_value(input);
+            if self.spec_parse(input) is Some {
+                if let Some((_, wire)) = fmt.0.inner.spec_parse(input) {
+                    lemma_wire_normalized_consistency::<DET>(self.rec@, wire);
+                }
+            }
+        }
+    }
+
+    impl StrictParser for CborBodyFmt<true> {
+        open spec fn strict_inv(&self) -> bool {
+            cbor_parse_body::<true>(self.rec@).strict_inv()
+        }
+
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            let fmt = cbor_parse_body::<true>(self.rec@).0;
+            fmt.inner.lemma_parse_sound_value(input);
+            fmt.inner.lemma_parse_strict_consumption(input);
             if let Some((_n, value)) = self.spec_parse(input) {
-                lemma_parse_normalized_consistency::<true>(self.rec@, value);
+                if let Some((_, wire)) = fmt.inner.spec_parse(input) {
+                    CborMapper::<true>.lemma_lossless_mapper(wire);
+                }
+                lemma_parse_normalized_byte_len::<true>(self.rec@, value);
             }
         }
     }
@@ -1688,13 +1795,15 @@ mod derived_proofs {
         }
     }
 
-    impl<const LIMIT: usize> SoundParser for CborFmt<true, LIMIT> {
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            cbor_fmt::<true, LIMIT>().lemma_parse_sound_consumption(input);
-        }
-
+    impl<const DET: bool, const LIMIT: usize> SoundParser for CborFmt<DET, LIMIT> {
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-            cbor_fmt::<true, LIMIT>().lemma_parse_sound_value(input);
+            cbor_fmt::<DET, LIMIT>().lemma_parse_sound_value(input);
+        }
+    }
+
+    impl<const LIMIT: usize> StrictParser for CborFmt<true, LIMIT> {
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            cbor_fmt::<true, LIMIT>().lemma_parse_strict_consumption(input);
         }
     }
 

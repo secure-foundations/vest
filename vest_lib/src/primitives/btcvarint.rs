@@ -141,13 +141,15 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for VarInt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            varint_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const MINIMAL: bool> SoundParser for VarInt<MINIMAL> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            varint_fmt::<true>().lemma_parse_sound_value(ibuf);
+            varint_fmt::<MINIMAL>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for VarInt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            varint_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 

@@ -54,10 +54,12 @@ impl<const N: usize> SafeParser for super::Fixed<N> {
 }
 
 impl<const N: usize> SoundParser for super::Fixed<N> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl<const N: usize> StrictParser for super::Fixed<N> {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -163,10 +165,12 @@ impl<Len: AsLen> SafeParser for super::Varied<Len> {
 }
 
 impl<Len: AsLen> SoundParser for super::Varied<Len> {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl<Len: AsLen> StrictParser for super::Varied<Len> {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -273,17 +277,23 @@ impl<Inner: SafeParser, Len: AsLen> SafeParser for super::ExactLen<Inner, Len> {
     }
 }
 
-impl<Inner: SoundParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len> {
+impl<Inner: StrictParser, Len: AsLen> SoundParser for super::ExactLen<Inner, Len> {
     open spec fn sound_inv(&self) -> bool {
         super::AndThen(super::Varied(self.0), self.1).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        super::AndThen(super::Varied(self.0), self.1).lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         super::AndThen(super::Varied(self.0), self.1).lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner: StrictParser, Len: AsLen> StrictParser for super::ExactLen<Inner, Len> {
+    open spec fn strict_inv(&self) -> bool {
+        super::AndThen(super::Varied(self.0), self.1).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        super::AndThen(super::Varied(self.0), self.1).lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -444,24 +454,14 @@ impl<A, Then> SafeParser for super::AndThen<A, Then> where
 }
 
 impl<A, Then> SoundParser for super::AndThen<A, Then> where
-    A: BytesCombinator + SoundParser,
-    Then: SoundParser,
+    A: BytesCombinator + StrictParser,
+    Then: StrictParser,
  {
     open spec fn sound_inv(&self) -> bool {
-        self.0.sound_inv() && self.1.sound_inv()
-    }
-
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        match self.0.spec_parse(ibuf) {
-            None => {},
-            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
-                Some((len_b, v)) if len_a == len_b => {
-                    self.1.lemma_parse_sound_consumption(chunk);
-                    assert(self.byte_len(v) == self.1.byte_len(v));
-                },
-                _ => {},
-            },
-        }
+        &&& self.0.sound_inv()
+        &&& self.1.sound_inv()
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
@@ -470,10 +470,32 @@ impl<A, Then> SoundParser for super::AndThen<A, Then> where
             Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
                 Some((len_b, v)) if len_a == len_b => {
                     self.0.lemma_parse_sound_value(ibuf);
-                    self.0.lemma_parse_sound_consumption(ibuf);
-                    self.1.lemma_parse_sound_consumption(chunk);
+                    self.0.lemma_parse_strict_consumption(ibuf);
+                    self.1.lemma_parse_strict_consumption(chunk);
                     self.1.lemma_parse_sound_value(chunk);
                     assert(self.0.consistent(chunk));
+                },
+                _ => {},
+            },
+        }
+    }
+}
+
+impl<A, Then> StrictParser for super::AndThen<A, Then> where
+    A: BytesCombinator + StrictParser,
+    Then: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv() && self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        match self.0.spec_parse(ibuf) {
+            None => {},
+            Some((len_a, chunk)) => match self.1.spec_parse(chunk) {
+                Some((len_b, v)) if len_a == len_b => {
+                    self.1.lemma_parse_strict_consumption(chunk);
+                    assert(self.byte_len(v) == self.1.byte_len(v));
                 },
                 _ => {},
             },

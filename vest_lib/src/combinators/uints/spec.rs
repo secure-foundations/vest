@@ -563,10 +563,12 @@ impl SafeParser for super::U8 {
 }
 
 impl SoundParser for super::U8 {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl StrictParser for super::U8 {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -664,18 +666,20 @@ impl SafeParser for super::U16Le {
 }
 
 impl SoundParser for super::U16Le {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u16_le_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u16_le_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_le_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u16_le_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U16Le {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u16_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u16_le_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -773,18 +777,20 @@ impl SafeParser for super::U16Be {
 }
 
 impl SoundParser for super::U16Be {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u16_be_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u16_be_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u16_be_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u16_be_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U16Be {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u16_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u16_be_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -882,18 +888,22 @@ impl SafeParser for super::U24Le {
 }
 
 impl SoundParser for super::U24Le {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use axiom_array_from_seq;
-        broadcast use lemma_u24_le_bytes_roundtrip;
-
-        u24_le_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use LosslessMapper::lemma_mapper_wf_in_out;
         broadcast use axiom_array_from_seq;
         broadcast use lemma_u24_le_bytes_roundtrip;
 
         u24_le_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U24Le {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use LosslessMapper::lemma_mapper_wf_in_out;
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_le_bytes_roundtrip;
+
+        u24_le_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -991,18 +1001,22 @@ impl SafeParser for super::U24Be {
 }
 
 impl SoundParser for super::U24Be {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use axiom_array_from_seq;
-        broadcast use lemma_u24_be_bytes_roundtrip;
-
-        u24_be_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+        broadcast use LosslessMapper::lemma_mapper_wf_in_out;
         broadcast use axiom_array_from_seq;
         broadcast use lemma_u24_be_bytes_roundtrip;
 
         u24_be_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U24Be {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use LosslessMapper::lemma_mapper_wf_in_out;
+        broadcast use axiom_array_from_seq;
+        broadcast use lemma_u24_be_bytes_roundtrip;
+
+        u24_be_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -1100,18 +1114,20 @@ impl SafeParser for super::U32Le {
 }
 
 impl SoundParser for super::U32Le {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u32_le_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u32_le_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_le_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u32_le_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U32Le {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u32_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u32_le_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -1209,18 +1225,20 @@ impl SafeParser for super::U32Be {
 }
 
 impl SoundParser for super::U32Be {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u32_be_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u32_be_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u32_be_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u32_be_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U32Be {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u32_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u32_be_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -1318,18 +1336,20 @@ impl SafeParser for super::U64Le {
 }
 
 impl SoundParser for super::U64Le {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u64_le_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u64_le_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u64_le_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u64_le_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U64Le {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u64_le_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u64_le_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 
@@ -1427,18 +1447,20 @@ impl SafeParser for super::U64Be {
 }
 
 impl SoundParser for super::U64Be {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        broadcast use lemma_u64_be_bytes_roundtrip;
-        broadcast use axiom_array_from_seq;
-
-        u64_be_fmt().lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         broadcast use lemma_u64_be_bytes_roundtrip;
         broadcast use axiom_array_from_seq;
 
         u64_be_fmt().lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl StrictParser for super::U64Be {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        broadcast use lemma_u64_be_bytes_roundtrip;
+        broadcast use axiom_array_from_seq;
+
+        u64_be_fmt().lemma_parse_strict_consumption(ibuf);
     }
 }
 

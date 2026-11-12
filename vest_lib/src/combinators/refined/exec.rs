@@ -11,7 +11,7 @@ use crate::core::{
         serializer::{ByteLen, ComplianceErrorKind, PreSerializeError, Prepare, Serializer},
         ParseError,
     },
-    spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred},
+    spec::{Consistency, SafeParser, SoundParser, SpecByteLen, SpecParser, SpecPred, StrictParser},
 };
 use vstd::prelude::*;
 
@@ -195,7 +195,7 @@ impl<const N: usize> Parser<&[u8]> for super::Const<Fixed<N>, [u8; N]> {
         let (n, v) = self.0.parse(ibuf)?;
         let tag = self.1.as_slice();
         proof {
-            self.0.lemma_parse_sound_consumption(ibuf@);
+            self.0.lemma_parse_strict_consumption(ibuf@);
             assert(v.len() == N);
             assert(tag.len() == N);
             v.deep_view_eq_view();

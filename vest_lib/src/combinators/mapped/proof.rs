@@ -29,7 +29,7 @@ impl<Inner, M> NonMalleable for super::Mapped<Inner, M> where
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()
         &&& self.inner.sound_inv()
-        &&& forall|v: Inner::T| #![auto] self.inner.consistent(v) ==> self.mapper.wf_in(v)
+        &&& forall|v: Inner::PVal| #![auto] self.inner.consistent(v) ==> self.mapper.wf_in(v)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -95,6 +95,9 @@ impl<Inner, M> EquivSerializersGeneral for super::Mapped<Inner, M> where
     }
 
     proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
+        reveal(<super::Mapped<_, _> as EquivSerializersGeneral>::equiv_general_inv);
+        assert(self.equiv_general_inv());
+        assert(self.inner.equiv_general_inv());
         let inner_v = self.mapper.spec_map_rev(v);
         self.inner.lemma_serialize_equiv(inner_v, obuf);
     }
@@ -189,7 +192,7 @@ impl<Inner, M, MRev> NonMalleable for super::Mapped<Inner, BiMap<M, MRev>> where
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.inner.nonmal_inv()
         &&& self.inner.sound_inv()
-        &&& forall|i: Inner::T| #![auto] self.inner.consistent(i) ==> self.mapper.lossless(i)
+        &&& forall|i: Inner::PVal| #![auto] self.inner.consistent(i) ==> self.mapper.lossless(i)
     }
 
     proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
@@ -270,85 +273,6 @@ impl<Inner, M, MRev> EquivSerializers for super::Mapped<Inner, BiMap<M, MRev>> w
     proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
         let inner_v = self.mapper.1.spec_map(v);
         self.inner.lemma_serialize_equiv_on_empty(inner_v);
-    }
-}
-
-impl<Inner, M> SPRoundTripDps for super::TryMap<Inner, M> where
-    Inner: SPRoundTripDps,
-    M: LossyMapper<In = Inner::T>,
- {
-    open spec fn unambiguous(&self) -> bool {
-        self.inner().unambiguous()
-    }
-
-    proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-        self.inner().theorem_serialize_dps_parse_roundtrip(v, obuf);
-    }
-}
-
-impl<Inner, M> NonMalleable for super::TryMap<Inner, M> where
-    Inner: SoundParser + NonMalleable,
-    M: LosslessMapper<In = Inner::PVal>,
- {
-    open spec fn nonmal_inv(&self) -> bool {
-        self.inner().nonmal_inv()
-    }
-
-    proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-        self.inner().lemma_parse_non_malleable(buf1, buf2);
-    }
-}
-
-impl<Inner, M> NoLookAhead for super::TryMap<Inner, M> where
-    Inner: NoLookAhead,
-    M: LossyMapper<In = Inner::PVal>,
- {
-    open spec fn no_lookahead_inv(&self) -> bool {
-        self.inner().no_lookahead_inv()
-    }
-
-    proof fn lemma_no_lookahead(&self, i1: Seq<u8>, i2: Seq<u8>) {
-        assert(self.no_lookahead_inv());
-        self.inner().lemma_no_lookahead(i1, i2);
-    }
-}
-
-impl<Inner, M> Productive for super::TryMap<Inner, M> where
-    Inner: Productive,
-    M: SpecMapper<In = Inner::PVal>,
- {
-    open spec fn productive_inv(&self) -> bool {
-        self.inner().productive_inv()
-    }
-
-    proof fn lemma_productive(&self, s: Seq<u8>) {
-        self.inner().lemma_productive(s);
-    }
-}
-
-impl<Inner, M> EquivSerializersGeneral for super::TryMap<Inner, M> where
-    Inner: EquivSerializersGeneral,
-    M: SpecMapper<In = Inner::SVal>,
- {
-    open spec fn equiv_general_inv(&self) -> bool {
-        self.inner().equiv_general_inv()
-    }
-
-    proof fn lemma_serialize_equiv(&self, v: Self::SVal, obuf: Seq<u8>) {
-        self.inner().lemma_serialize_equiv(v, obuf);
-    }
-}
-
-impl<Inner, M> EquivSerializers for super::TryMap<Inner, M> where
-    Inner: EquivSerializers,
-    M: SpecMapper<In = Inner::SVal>,
- {
-    open spec fn equiv_inv(&self) -> bool {
-        self.inner().equiv_inv()
-    }
-
-    proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-        self.inner().lemma_serialize_equiv_on_empty(v);
     }
 }
 

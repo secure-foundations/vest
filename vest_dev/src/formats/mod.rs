@@ -6,7 +6,6 @@ mod dependent;
 mod disjoint;
 pub mod fix;
 mod imperative;
-mod implicit;
 mod malleable;
 mod mapped;
 pub mod mutual_fix;

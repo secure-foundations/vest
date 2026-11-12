@@ -159,16 +159,18 @@ mod derived_proofs {
     }
 
     impl SoundParser for super::super::Utf8StringFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            broadcast use vstd::utf8::decode_utf8_encode_utf8;
-
-            utf8string_fmt().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use vstd::utf8::decode_utf8_encode_utf8;
 
             utf8string_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for super::super::Utf8StringFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            broadcast use vstd::utf8::decode_utf8_encode_utf8;
+
+            utf8string_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 

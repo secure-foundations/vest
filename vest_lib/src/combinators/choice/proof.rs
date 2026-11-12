@@ -129,7 +129,7 @@ impl<
 // This ensures that if two byte sequences parse to the same value, they must have used the same underlying parser.
 impl<const NONDETERMINISTIC: bool, A, B> NonMalleable for super::Alt<A, B, NONDETERMINISTIC> where
     A: SoundParser + NonMalleable,
-    B: SoundParser<T = A::T> + NonMalleable,
+    B: SoundParser<PVal = A::PVal> + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.sound_inv()

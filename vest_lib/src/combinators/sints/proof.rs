@@ -187,7 +187,7 @@ impl NonMalleable for super::I32Be {
         broadcast use axiom_array_from_seq;
         broadcast use lemma_i32_be_bytes_roundtrip;
 
-        i32_be_fmt().lemma_parse_sound_consumption(buf1);  // triggers axiom_array_from_seq
+        i32_be_fmt().lemma_parse_strict_consumption(buf1);  // triggers axiom_array_from_seq
         i32_be_fmt().lemma_parse_non_malleable(buf1, buf2);
     }
 }

@@ -135,8 +135,6 @@ impl DeepView for PayloadKind {
     }
 }
 
-
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]
 pub struct PacketHeader {
@@ -227,8 +225,6 @@ impl DeepView for ClosedPayloadKind {
         *self
     }
 }
-
-
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[verifier::ext_equal]
@@ -967,18 +963,20 @@ mod derived_specs_proofs {
     }
 
     impl SoundParser for VersionIhlFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = VersionIhlFmt::spec_inner();
-            broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
-
-            assert(fmt.1.sound_inv());
-            VersionIhlFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
 
             VersionIhlFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for VersionIhlFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = VersionIhlFmt::spec_inner();
+            broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            VersionIhlFmt::spec_inner().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1078,18 +1076,20 @@ mod derived_specs_proofs {
     }
 
     impl SoundParser for CrossByteSpanFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = CrossByteSpanFmt::spec_inner();
-            broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
-
-            assert(fmt.1.sound_inv());
-            CrossByteSpanFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
 
             CrossByteSpanFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for CrossByteSpanFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = CrossByteSpanFmt::spec_inner();
+            broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            CrossByteSpanFmt::spec_inner().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1189,18 +1189,20 @@ mod derived_specs_proofs {
     }
 
     impl SoundParser for PacketHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = PacketHeaderFmt::spec_inner();
-            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
-
-            assert(fmt.1.sound_inv());
-            PacketHeaderFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
 
             PacketHeaderFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for PacketHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = PacketHeaderFmt::spec_inner();
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            PacketHeaderFmt::spec_inner().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1300,18 +1302,20 @@ mod derived_specs_proofs {
     }
 
     impl SoundParser for ClosedPacketHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let fmt = ClosedPacketHeaderFmt::spec_inner();
-            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
-
-            assert(fmt.1.sound_inv());
-            ClosedPacketHeaderFmt::spec_inner().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
 
             ClosedPacketHeaderFmt::spec_inner().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for ClosedPacketHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            let fmt = ClosedPacketHeaderFmt::spec_inner();
+            broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
+
+            assert(fmt.1.sound_inv());
+            ClosedPacketHeaderFmt::spec_inner().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -1541,11 +1545,15 @@ mod derived_execs {
     impl<Output: OutputBuf, 'i> Serializer<Output, ChoicePacket<'i>> for ChoicePacketFmt {
         fn serialize_into(&self, v: &ChoicePacket<'i>, obuf: &mut Output) {
             broadcast use crate::core::exec::output::outbuf_lemmas;
+
             let ChoicePacket { hdr, payload } = v;
             PacketHeaderFmt.serialize_into(hdr, obuf);
             match payload {
                 ChoicePayload::Raw(bytes) => Varied(hdr.len).serialize_into(bytes, obuf),
-                ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize_into(words, obuf),
+                ChoicePayload::Words(words) => RepeatN(hdr.count, U16Be).serialize_into(
+                    words,
+                    obuf,
+                ),
                 ChoicePayload::Tiny(x) => U8.serialize_into(x, obuf),
                 ChoicePayload::Default(bytes) => Varied(hdr.len).serialize_into(bytes, obuf),
             }
@@ -1609,9 +1617,13 @@ mod derived_execs {
         }
     }
 
-    impl<Output: OutputBuf, 'i> Serializer<Output, ClosedChoicePacket<'i>> for ClosedChoicePacketFmt {
+    impl<Output: OutputBuf, 'i> Serializer<
+        Output,
+        ClosedChoicePacket<'i>,
+    > for ClosedChoicePacketFmt {
         fn serialize_into(&self, v: &ClosedChoicePacket<'i>, obuf: &mut Output) {
             broadcast use crate::core::exec::output::outbuf_lemmas;
+
             let ClosedChoicePacket { hdr, payload } = v;
             ClosedPacketHeaderFmt.serialize_into(hdr, obuf);
             match payload {
@@ -1653,9 +1665,9 @@ mod derived_execs {
 }
 
 } // verus!
-  // ============================================================
-  // Runtime tests
-  // ============================================================
+// ============================================================
+// Runtime tests
+// ============================================================
 #[test]
 fn exec_version_ihl_roundtrip() {
     let fmt = VersionIhlFmt;
@@ -1964,12 +1976,16 @@ macro_rules! impl_named_spec_traits {
             }
 
             impl SoundParser for $fmt {
-                proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-                    $fmt::spec_inner().lemma_parse_sound_consumption(ibuf);
-                }
+
 
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
                     $fmt::spec_inner().lemma_parse_sound_value(ibuf);
+                }
+            }
+
+            impl StrictParser for $fmt {
+                proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+                    $fmt::spec_inner().lemma_parse_strict_consumption(ibuf);
                 }
             }
 

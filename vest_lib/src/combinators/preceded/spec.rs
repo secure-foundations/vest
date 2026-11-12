@@ -1,6 +1,6 @@
 //! Specification for sequential formats discarding their prefix.
 use crate::{
-    combinators::{mapped::spec::*, Mapped, Pair, Refined, TryMap},
+    combinators::{mapped::spec::*, Mapped, Pair, Refined},
     core::{proof::*, spec::*},
 };
 use vstd::prelude::*;
@@ -100,19 +100,28 @@ impl<A, B> SoundParser for super::Preceded<A, A::PVal, B, true> where
         Pair(self.a, self.b).sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let fmt = preceded::<_, _, _, _, true>(self.a, self.b, self.a_val);
-        fmt.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         let fmt = preceded::<_, _, _, _, true>(self.a, self.b, self.a_val);
         fmt.lemma_parse_sound_value(ibuf);
     }
 }
 
+impl<A, B> StrictParser for super::Preceded<A, A::PVal, B, true> where
+    A: StrictParser,
+    B: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        Pair(self.a, self.b).strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let fmt = preceded::<_, _, _, _, true>(self.a, self.b, self.a_val);
+        fmt.lemma_parse_strict_consumption(ibuf);
+    }
+}
+
 impl<A, B> SoundParser for super::Preceded<A, A::PVal, B, false> where
-    A: SoundParser + AdmitsUniqueVal,
+    A: SoundParser,
     B: SoundParser,
  {
     open spec fn sound_inv(&self) -> bool {
@@ -120,18 +129,26 @@ impl<A, B> SoundParser for super::Preceded<A, A::PVal, B, false> where
         &&& self.a.consistent(self.a_val)
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        let pair = Pair(self.a, self.b);
-        pair.lemma_parse_sound_consumption(ibuf);
-        pair.lemma_parse_sound_value(ibuf);
-        if let Some((n, vb)) = self.spec_parse(ibuf) {
-            let (_m, p) = pair.spec_parse(ibuf)->0;
-            self.a.lemma_unique_consistent_val(self.a_val, p.0);
-        }
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         let pair = Pair(self.a, self.b);
+        pair.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<A, B> StrictParser for super::Preceded<A, A::PVal, B, false> where
+    A: StrictParser,
+    B: StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        &&& Pair(self.a, self.b).strict_inv()
+        &&& self.a.consistent(self.a_val)
+        &&& forall|v: A::T| #[trigger]
+            self.a.consistent(v) ==> self.a.byte_len(v) == self.a.byte_len(self.a_val)
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        let pair = Pair(self.a, self.b);
+        pair.lemma_parse_strict_consumption(ibuf);
         pair.lemma_parse_sound_value(ibuf);
     }
 }

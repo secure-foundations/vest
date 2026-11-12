@@ -314,10 +314,6 @@ pub open spec fn asn1_start_any_non_eoc() -> Asn1StartDomain {
     }
 }
 
-pub open spec fn asn1_start_ber_boundary() -> Asn1StartDomain {
-    Asn1StartDomain { accepts_empty: true, tags: tag_lead_mask(TagFmt::EOC) }
-}
-
 pub open spec fn asn1_start_empty() -> Asn1StartDomain {
     Asn1StartDomain { accepts_empty: true, tags: empty_tag_lead_mask() }
 }
@@ -698,7 +694,7 @@ impl<Content: SpecCombinator, const DER: bool> HasAsn1Start for ASN1Fmt<Content,
 }
 
 /// BER SEQUENCE has one exact, necessarily constructed outer tag.
-impl<Content: SpecCombinator> HasAsn1Start for BerSequenceFmt<Content> {
+impl<Content: BerSeqBody> HasAsn1Start for BerSequenceFmt<Content> {
     #[verifier::inline]
     open spec fn asn1_start(&self) -> Asn1StartDomain {
         asn1_start_exact_uint(self.0.class, self.0.constructed, tag_num_to_uint(self.0.number))
@@ -807,15 +803,15 @@ impl<const LIMIT: usize> HasAsn1Start for BerAnyFmt<LIMIT> {
     }
 }
 
-/// BER_END recognizes either EOF or an EOC prefix without consuming it.
-impl HasAsn1Start for BerEndFmt {
+/// The consuming BER terminal starts with the EOC tag.
+impl HasAsn1Start for EocEndFmt {
     #[verifier::inline]
     open spec fn asn1_start(&self) -> Asn1StartDomain {
-        asn1_start_ber_boundary()
+        asn1_start_exact_uint(Class::Universal, false, 0u64)
     }
 
     proof fn lemma_parse_implies_asn1_start(&self, input: Seq<u8>) {
-        if self.spec_parse(input) is Some && input.len() != 0 {
+        if self.spec_parse(input) is Some {
             lemma_exact_input_starts_with_bitmap(input, TagFmt::EOC);
         }
     }

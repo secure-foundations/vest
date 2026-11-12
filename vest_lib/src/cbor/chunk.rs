@@ -196,6 +196,7 @@ pub proof fn lemma_encode_utf8_flatten(chunks: Seq<Seq<char>>)
 pub fn flatten_text_chunks(chunks: Vec<&str>) -> (flat: String)
     ensures
         flat.deep_view() =~= chunks.deep_view().flatten(),
+        vstd::utf8::encode_utf8(flat.deep_view()).len() <= usize::MAX,
 {
     broadcast use vstd::seq_lib::group_seq_properties;
     broadcast use vstd::utf8::encode_utf8_valid_utf8;
@@ -221,6 +222,7 @@ pub fn flatten_text_chunks(chunks: Vec<&str>) -> (flat: String)
     proof {
         lemma_encode_utf8_flatten(char_views);
         assert(vstd::utf8::valid_utf8(bytes.deep_view()));
+        vstd::std_specs::vec::axiom_spec_len(&bytes);
     }
     // SAFETY: concatenating independently valid UTF-8 chunks remains valid UTF-8.
     let flat = unsafe { String::from_utf8_unchecked(bytes) };
@@ -330,13 +332,15 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ByteChunkFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            byte_chunk_fmt::<true>().lemma_parse_sound_consumption(input);
-        }
-
+    impl<const DET: bool> SoundParser for ByteChunkFmt<DET> {
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-            byte_chunk_fmt::<true>().lemma_parse_sound_value(input);
+            byte_chunk_fmt::<DET>().lemma_parse_sound_value(input);
+        }
+    }
+
+    impl StrictParser for ByteChunkFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            byte_chunk_fmt::<true>().lemma_parse_strict_consumption(input);
         }
     }
 
@@ -398,13 +402,15 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TextChunkFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, input: Seq<u8>) {
-            text_chunk_fmt::<true>().lemma_parse_sound_consumption(input);
-        }
-
+    impl<const DET: bool> SoundParser for TextChunkFmt<DET> {
         proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-            text_chunk_fmt::<true>().lemma_parse_sound_value(input);
+            text_chunk_fmt::<DET>().lemma_parse_sound_value(input);
+        }
+    }
+
+    impl StrictParser for TextChunkFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, input: Seq<u8>) {
+            text_chunk_fmt::<true>().lemma_parse_strict_consumption(input);
         }
     }
 

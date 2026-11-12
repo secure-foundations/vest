@@ -33,6 +33,7 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
         self.0.min_byte_len().saturating_add(self.1.min_byte_len())
     }
 
+    #[inline(always)]
     fn parse(&self, ibuf: &I) -> PResult<Self::PT> {
         assert(self.exec_inv());
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;

@@ -33,10 +33,6 @@ impl<A: Clone, B: Clone> Clone for Pair<A, B> {
 /// and returns `(key, value)`.
 /// During serialization, the caller must provide both the `key` and `value`.
 ///
-/// ## Note on usage
-///
-/// Prefer [`super::Implicit`] when the key should be recovered from the body value instead of
-/// being carried explicitly through the value type.
 #[derive(Copy)]
 pub struct Bind<A, B>(pub A, pub B);
 

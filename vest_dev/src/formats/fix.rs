@@ -76,42 +76,6 @@ pub open spec fn nested_braces_body<Rec>(rec: Rec) -> NestedBracesBodyComb<Rec> 
                 }),
         ),
     }
-    // Implicit(
-    //     U8,
-    //     (
-    //         |tag: u8|
-    //             Mapped {
-    //                 inner: match tag {
-    //                     0x7Bu8 => Sum::Inl(SuffixTagged(rec, U8, 0x7Du8)),
-    //                     0x00u8 => Sum::Inr(Const(U8, 0x00u8)),
-    //                 },
-    //                 mapper: BiMap(
-    //                     (|i: Sum<NestedBracesTSpec, u8>| -> NestedBracesTSpec
-    //                         {
-    //                             match i {
-    //                                 Sum::Inl(inner) => NestedBracesTSpec::Brace(Box::new(inner)),
-    //                                 Sum::Inr(_) => NestedBracesTSpec::Eps,
-    //                             }
-    //                         }),
-    //                     (|o: NestedBracesTSpec| -> Sum<NestedBracesTSpec, u8>
-    //                         {
-    //                             match o {
-    //                                 NestedBracesTSpec::Brace(inner) => Sum::Inl(*inner),
-    //                                 NestedBracesTSpec::Eps => Sum::Inr(0x00u8),
-    //                             }
-    //                         }),
-    //                 ),
-    //             },
-    //         |o: NestedBracesTSpec| -> u8
-    //             {
-    //                 match o {
-    //                     NestedBracesTSpec::Brace(_) => 0x7Bu8,
-    //                     NestedBracesTSpec::Eps => 0x00u8,
-    //                 }
-    //             },
-    //     ),
-    // )
-
 }
 
 type NestedBracesBodyComb<Rec> = Mapped<
@@ -119,17 +83,6 @@ type NestedBracesBodyComb<Rec> = Mapped<
     BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
 >;
 
-// type NestedBracesBodyComb<Rec> = Implicit<
-//     U8,
-//     KVFormat<
-//         u8,
-//         NestedBracesTSpec,
-//         Mapped<
-//             Sum<SuffixTagged<Rec, u8, U8>, Const<U8, u8>>,
-//             BiMapper<Sum<NestedBracesTSpec, u8>, NestedBracesTSpec>,
-//         >,
-//     >,
-// >;
 /// [`SpecRecBody`] for the nested-braces example.
 pub struct NestedBracesBody;
 
@@ -275,7 +228,7 @@ proof fn nested_braces_sound_parser() {
 
     nested_braces.lemma_parse_safe(input);
     nested_braces.lemma_parse_sound_value(input);
-    nested_braces.lemma_parse_sound_consumption(input);
+    nested_braces.lemma_parse_strict_consumption(input);
     nested_braces.lemma_parse_non_malleable(input, input2);
     let (n, v) = nested_braces.spec_parse(input)->0;
     nested_braces.lemma_serialize_len(v);
@@ -494,7 +447,7 @@ proof fn tagged_chain_sound_parser() {
 
     tagged_chain.lemma_parse_safe(input);
     tagged_chain.lemma_parse_sound_value(input);
-    tagged_chain.lemma_parse_sound_consumption(input);
+    tagged_chain.lemma_parse_strict_consumption(input);
     tagged_chain.lemma_serialize_len(value);
     tagged_chain.theorem_parse_serialize_roundtrip(input);
 }

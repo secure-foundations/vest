@@ -441,7 +441,7 @@ fn scan_base128_bytes<'a, const MINIMAL: bool>(ibuf: &&'a [u8]) -> (out: PResult
                 if fmt.inner.spec_parse(ibuf@) is Some {
                     fmt.inner.lemma_parse_safe(ibuf@);
                     let (n, (cont_bytes, term_byte)) = fmt.inner.spec_parse(ibuf@)->0;
-                    star.lemma_parse_sound_consumption(ibuf@);
+                    star.lemma_parse_strict_consumption(ibuf@);
                     lemma_star_byte_len_seq_u8(cont_bytes);
                     assert(term_byte == ibuf@[n - 1]);
                     assert(term_byte & CONTINUATION_MASK == 0);
@@ -471,7 +471,7 @@ fn scan_base128_bytes<'a, const MINIMAL: bool>(ibuf: &&'a [u8]) -> (out: PResult
         if fmt.spec_parse(ibuf@) is Some {
             fmt.inner.lemma_parse_safe(ibuf@);
             let (n, (cont_bytes, term_byte)) = fmt.inner.spec_parse(ibuf@)->0;
-            star.lemma_parse_sound_consumption(ibuf@);
+            star.lemma_parse_strict_consumption(ibuf@);
             lemma_star_byte_len_seq_u8(cont_bytes);
             assert(term_byte == ibuf@[n - 1]);
             assert(term_byte & CONTINUATION_MASK == 0);
@@ -655,15 +655,26 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Base128Fmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_base128_fmt_sound_nonmal_inv();
-            base128_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const MINIMAL: bool> SoundParser for Base128Fmt<MINIMAL> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+            let fmt = base128_fmt::<MINIMAL>();
+            assert forall|wire: (Seq<u8>, u8)| #[trigger]
+                fmt.inner.consistent(wire) implies fmt.consistent((fmt.mapper.0)(wire)) by {
+                let bytes = wire.0.push(wire.1);
+                let value = nat_from_base128(bytes);
+                lemma_nat_from_base128_bounds(bytes);
+                lemma_from_base128_upper_bound(bytes);
+                lemma_to_base128_len_bound(value, bytes.len());
+                lemma_base128_fmt_consistent::<MINIMAL>(value as UInt);
+            }
+            fmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for Base128Fmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             lemma_base128_fmt_sound_nonmal_inv();
-            base128_fmt::<true>().lemma_parse_sound_value(ibuf);
+            base128_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 

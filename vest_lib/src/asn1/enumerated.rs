@@ -81,12 +81,14 @@ mod derived_proofs {
     }
 
     impl SoundParser for EnumeratedFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            IntegerFmt.lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             IntegerFmt.lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for EnumeratedFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            IntegerFmt.lemma_parse_strict_consumption(ibuf);
         }
     }
 

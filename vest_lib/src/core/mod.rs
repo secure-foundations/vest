@@ -10,6 +10,8 @@
 //! - [`spec::SpecByteLen`] — byte length of serialized values
 //! - [`spec::SpecSerializerDps`] — destination-passing style serializer specification for better composability
 //! - [`spec::StaticByteLen`] — fixed byte length for static-size formats
+//! - [`spec::SoundParser`] — successful parsing produces consistent values
+//! - [`spec::StrictParser`] — parsing consumes input length strictly equal to the format's specified byte length
 //!
 //! These traits are designed to be as independent as possible such that they can be useful individually
 //! (e.g., applications that only need to specify parsing but not serialization, or vice versa). However,

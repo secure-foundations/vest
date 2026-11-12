@@ -20,7 +20,7 @@ pub use proof::{
 };
 pub use spec::{
     BundledSpecs, GoodSerializerRecBody, NonTailFmtRecBody, ParamRecSpecs, ProductiveRecBody,
-    SafeParserRecBody, SoundParserRecBody, SpecRecBody,
+    SafeParserRecBody, SoundParserRecBody, SpecRecBody, StrictParserRecBody,
 };
 
 use crate::core::{proof::*, spec::*};

@@ -234,9 +234,10 @@ pub open spec fn bmpstring_fmt() -> BmpStringInnerFmt {
     }
 }
 
-proof fn lemma_bmpstring_fmt_sound_nonmal_inv()
+proof fn lemma_bmpstring_fmt_parser_invariants()
     ensures
         bmpstring_fmt().sound_inv(),
+        bmpstring_fmt().strict_inv(),
         bmpstring_fmt().nonmal_inv(),
 {
     assert forall|bytes: Seq<u8>| #[trigger] is_valid_bmp_string(bytes) implies encode_bmp_string(
@@ -317,14 +318,16 @@ mod derived_proofs {
     }
 
     impl SoundParser for super::super::BmpStringFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_bmpstring_fmt_sound_nonmal_inv();
-            bmpstring_fmt().lemma_parse_sound_consumption(ibuf);
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_bmpstring_fmt_sound_nonmal_inv();
+            lemma_bmpstring_fmt_parser_invariants();
             bmpstring_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for super::super::BmpStringFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_bmpstring_fmt_parser_invariants();
+            bmpstring_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -346,7 +349,7 @@ mod derived_proofs {
 
     impl NonMalleable for super::super::BmpStringFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_bmpstring_fmt_sound_nonmal_inv();
+            lemma_bmpstring_fmt_parser_invariants();
             bmpstring_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }

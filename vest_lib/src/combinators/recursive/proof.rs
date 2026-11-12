@@ -223,6 +223,10 @@ pub trait StrictRecBody: SpecRecBody where Self::Body: StrictCombinator {
             (forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv())
             ==> self.spec_body(param, rec).sound_inv(),
 
+            (forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv())
+            && (forall|p: Self::Param| #![trigger rec(p)] rec(p).strict_inv())
+            ==> self.spec_body(param, rec).strict_inv(),
+
             (forall|p: Self::Param| #![trigger rec(p)] rec(p).safe_inv())
             && (forall|p: Self::Param| #![trigger rec(p)] rec(p).sound_inv())
             && (forall|p: Self::Param| #![trigger rec(p)] rec(p).nonmal_inv())
@@ -273,6 +277,16 @@ impl<Body: StrictRecBody> SoundParserRecBody for Body where Body::Body: StrictCo
     ) {
         self.lemma_body_all_inv_preservation(param, rec);
         assert(self.spec_body(param, rec).sound_inv());
+    }
+}
+
+impl<Body: StrictRecBody> StrictParserRecBody for Body where Body::Body: StrictCombinator {
+    proof fn lemma_body_strict_inv_preservation(
+        &self,
+        param: Self::Param,
+        rec: ParamRecSpecs<Self::Param, Self::T>,
+    ) {
+        self.lemma_body_all_inv_preservation(param, rec);
     }
 }
 
@@ -382,7 +396,6 @@ impl<const LIMIT: usize, Body, Param> super::FixWith<LIMIT, Body, Param> where
         assert forall|p: Body::Param, rem: Seq<u8>| #[trigger]
             callback(p).2(rem) matches Some((nn, vv)) ==> {
                 &&& callback(p).0(vv)
-                &&& callback(p).1(vv) == nn
             } by {
             if let Some((nn, vv)) = callback(p).2(rem) {
                 self.sound_parser_by_induction((gas - 1) as nat, p, rem, nn, vv);

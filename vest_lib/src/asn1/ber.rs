@@ -9,6 +9,7 @@ use crate::asn1::{
     NumericStringFmt, ObjectIdentifierFmt, PrintableStringFmt, RealFmt, TagFmt, TeletexStringFmt,
     UniversalStringFmt, Utf8StringFmt, BER,
 };
+use crate::combinators::{Eof, SuffixTagged};
 use crate::core::spec::SpecByteLen;
 use vstd::prelude::*;
 
@@ -22,6 +23,7 @@ use super::{GeneralizedTimeFmt, Integer16Fmt, Integer8Fmt, UtcTimeFmt};
 pub mod any;
 pub mod bit_string;
 pub mod char_string;
+pub mod eoc;
 pub mod octet_string;
 pub mod sequence;
 pub mod sequence_of;
@@ -29,6 +31,7 @@ pub mod sequence_of;
 pub use any::*;
 pub use bit_string::*;
 pub use char_string::*;
+pub use eoc::*;
 pub use octet_string::*;
 pub use sequence::*;
 pub use sequence_of::*;
@@ -87,7 +90,7 @@ pub type SequenceOfFmt<C> = BerSequenceOfFmt<C>;
 
 pub type SetOfTlvFmt<C> = BerSequenceOfFmt<C>;
 
-pub type ExplicitFmt<C> = BerSequenceFmt<C>;
+pub type ExplicitFmt<C> = BerSequenceFmt<SuffixTagged<C, Eof, ()>>;
 
 pub type DefaultFmt<Field, Default, Rest> = super::DefaultedFmt<Field, Default, Rest, BER>;
 
@@ -186,9 +189,9 @@ pub const fn SET_OF<C: Copy>(content: C) -> SetOfTlvFmt<C>
 #[verifier::allow_in_spec]
 pub const fn Explicit<C: Copy>(class: Class, number: u64, inner: C) -> ExplicitFmt<C>
     returns
-        BerSequenceFmt(explicit_tag(class, number), inner),
+        BerSequenceFmt(explicit_tag(class, number), SuffixTagged(inner, Eof, ())),
 {
-    BerSequenceFmt(explicit_tag(class, number), inner)
+    BerSequenceFmt(explicit_tag(class, number), SuffixTagged(inner, Eof, ()))
 }
 
 #[allow(non_snake_case)]
@@ -252,31 +255,9 @@ mod tests {
     }
 
     fn integer_fields_sequence(
-    ) -> BerSequenceFmt<Pair<ASN1Fmt<Integer8Fmt, BER>, ASN1Fmt<Integer8Fmt, BER>>> {
+    ) -> BerSequenceFmt<Pair<ASN1Fmt<Integer8Fmt, BER>, Pair<ASN1Fmt<Integer8Fmt, BER>, Eof>>> {
         let integer = ASN1Fmt::<_, BER>(TagFmt::INTEGER, Integer8Fmt);
-        SEQUENCE(Pair(integer, integer))
-    }
-
-    #[test]
-    fn eoc_is_exactly_the_canonical_tag_and_zero_length_octet() {
-        let input = [0x00, 0x00, 0xff];
-        assert_eq!(EOC.parse(&&input[..]).unwrap(), (2, (TagFmt::EOC, 0u8)),);
-
-        for invalid in [
-            &[0x00][..],
-            &[0x00, 0x01],
-            &[0x20, 0x00],
-            &[0x40, 0x00],
-            &[0x1f, 0x00, 0x00],
-        ] {
-            assert!(EOC.parse(&invalid).is_err());
-        }
-
-        let value = (TagFmt::EOC, 0u8);
-        let mut output = [0xff; 2];
-        assert_eq!(EOC.prepare(&value).unwrap(), output.len());
-        EOC.serialize(&value, output.as_mut_slice());
-        assert_eq!(output, [0x00, 0x00]);
+        SEQUENCE(Pair(integer, Pair(integer, Eof)))
     }
 
     #[test]
@@ -287,11 +268,11 @@ mod tests {
 
         assert_eq!(
             format.parse(&&definite[..]).unwrap(),
-            (definite.len(), (1i8, 2i8)),
+            (definite.len(), (1i8, (2i8, ()))),
         );
         assert_eq!(
             format.parse(&&indefinite[..]).unwrap(),
-            (indefinite.len(), (1i8, 2i8)),
+            (indefinite.len(), (1i8, (2i8, ()))),
         );
 
         let missing_eoc = [0x30, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
@@ -309,7 +290,7 @@ mod tests {
         let format = BerSequenceFmt::implicit(Class::ContextSpecific, 0, content);
         let indefinite = [0xa0, 0x80, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x00];
         let (_, value) = format.parse(&&indefinite[..]).unwrap();
-        assert_eq!(value, (1i8, 2i8));
+        assert_eq!(value, (1i8, (2i8, ())));
 
         let mut output = vec![0; format.prepare(&value).unwrap()];
         format.serialize(&value, output.as_mut_slice());

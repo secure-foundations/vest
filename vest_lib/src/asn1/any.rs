@@ -51,28 +51,29 @@ pub open spec fn any_fmt<const DER: bool>() -> AnyInnerFmt<DER> {
     )
 }
 
-proof fn lemma_any_mapped_sound_nonmal_inv()
+proof fn lemma_any_mapped_inverse<const DER: bool>()
+    ensures
+        ({
+            let mapped = any_fmt::<DER>().0;
+            forall|wire: (Tag, (usize, Seq<u8>))| #[trigger]
+                mapped.inner.consistent(wire) ==> (mapped.mapper.1)((mapped.mapper.0)(wire)) == wire
+        }),
+{
+}
+
+proof fn lemma_der_any_mapped_parser_invariants()
     ensures
         any_fmt::<true>().0.sound_inv(),
+        any_fmt::<true>().0.strict_inv(),
         any_fmt::<true>().0.nonmal_inv(),
 {
-    let mapped = any_fmt::<true>().0;
-    assert forall|v: (Tag, (usize, Seq<u8>))| #[trigger] mapped.inner.consistent(v) implies (
-    mapped.mapper.1)((mapped.mapper.0)(v)) == v by {
-        let (_tag, (len, content)) = v;
-        assert(len as nat == content.len());
-        assert(content.len() <= usize::MAX);
-    }
+    lemma_any_mapped_inverse::<true>();
 }
 
 proof fn lemma_any_mapped_unambiguous<const DER: bool>()
     ensures
         any_fmt::<DER>().0.unambiguous(),
 {
-    let mapped = any_fmt::<DER>().0;
-    assert forall|v: AnySpec| #[trigger] mapped.consistent(v) implies (mapped.mapper.0)(
-        (mapped.mapper.1)(v),
-    ) == v by {}
 }
 
 mod derived_specs {
@@ -135,15 +136,17 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for AnyFmt<true> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            lemma_any_mapped_sound_nonmal_inv();
-            any_fmt::<true>().lemma_parse_sound_consumption(ibuf);
-        }
-
+    impl<const DER: bool> SoundParser for AnyFmt<DER> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            lemma_any_mapped_sound_nonmal_inv();
-            any_fmt::<true>().lemma_parse_sound_value(ibuf);
+            lemma_any_mapped_inverse::<DER>();
+            any_fmt::<DER>().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for AnyFmt<true> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_der_any_mapped_parser_invariants();
+            any_fmt::<true>().lemma_parse_strict_consumption(ibuf);
         }
     }
 
@@ -172,7 +175,7 @@ mod derived_proofs {
 
     impl NonMalleable for AnyFmt<true> {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            lemma_any_mapped_sound_nonmal_inv();
+            lemma_der_any_mapped_parser_invariants();
             any_fmt::<true>().lemma_parse_non_malleable(buf1, buf2);
         }
     }
@@ -283,7 +286,6 @@ impl<'a, const DER: bool> Parser<&'a [u8]> for AnyFmt<DER> {
 
     fn parse(&self, ibuf: &&'a [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-        broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
 
         let _ = ibuf.len();
         let (n1, tag) = TagFmt.parse(ibuf)?;

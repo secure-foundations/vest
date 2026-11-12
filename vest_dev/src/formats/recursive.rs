@@ -113,12 +113,14 @@ impl SafeParser for NestedBracesCombinator {
 }
 
 impl SoundParser for NestedBracesCombinator {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        lemma_parse_sound_consumption_nested_braces(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         lemma_parse_wf_nested_braces(ibuf);
+    }
+}
+
+impl StrictParser for NestedBracesCombinator {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        lemma_parse_strict_consumption_nested_braces(ibuf);
     }
 }
 
@@ -152,14 +154,14 @@ proof fn lemma_parse_wf_nested_braces(ibuf: Seq<u8>)
     }
 }
 
-proof fn lemma_parse_sound_consumption_nested_braces(ibuf: Seq<u8>)
+proof fn lemma_parse_strict_consumption_nested_braces(ibuf: Seq<u8>)
     ensures
         p_nested_braces(ibuf) matches Some((n, v)) ==> n == byte_len_nested_braces(v),
     decreases ibuf.len(),
 {
     if ibuf.len() >= 2 {
         let rem = ibuf[2..];
-        lemma_parse_sound_consumption_nested_braces(rem);
+        lemma_parse_strict_consumption_nested_braces(rem);
     }
 }
 

@@ -190,12 +190,13 @@ impl<Then> SPRoundTripDps for super::AndThen<Tail, Then> where
 }
 
 impl<A, Then> NonMalleable for super::AndThen<A, Then> where
-    A: BytesCombinator + SoundParser + NonMalleable,
+    A: BytesCombinator + StrictParser + NonMalleable,
     Then: NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
         &&& self.0.nonmal_inv()
         &&& self.0.sound_inv()
+        &&& self.0.strict_inv()
         &&& self.1.nonmal_inv()
         &&& self.1.safe_inv()
     }
@@ -208,8 +209,8 @@ impl<A, Then> NonMalleable for super::AndThen<A, Then> where
                     let (n2a, chunk2) = self.0.spec_parse(buf2)->0;
                     let (n1b, v1b) = self.1.spec_parse(chunk1)->0;
                     let (n2b, v2b) = self.1.spec_parse(chunk2)->0;
-                    self.0.lemma_parse_sound_consumption(buf1);
-                    self.0.lemma_parse_sound_consumption(buf2);
+                    self.0.lemma_parse_strict_consumption(buf1);
+                    self.0.lemma_parse_strict_consumption(buf2);
                     self.0.lemma_byte_len_is_buf_len(chunk1);
                     self.0.lemma_byte_len_is_buf_len(chunk2);
                     self.0.lemma_parse_non_malleable(buf1, buf2);

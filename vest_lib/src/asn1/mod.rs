@@ -118,10 +118,7 @@ pub use utf8string::Utf8String;
 pub use utf8string::Utf8StringOwned;
 
 use crate::{
-    combinators::{
-        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Empty, PrefixTagged, Tail, TryMap,
-        U8,
-    },
+    combinators::{mapped::spec::FnSpecMapper, Const, Empty, PrefixTagged, Tail, U8},
     core::proof::{Leaf, LeafNonMalleable},
 };
 use vstd::prelude::*;

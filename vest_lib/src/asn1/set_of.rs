@@ -227,10 +227,11 @@ impl<C: SpecParser> SetOfFmt<C> {
     }
 }
 
-impl<C: SoundParser> SetOfFmt<C> {
+impl<C: StrictParser> SetOfFmt<C> {
     proof fn lemma_parse_ordered_byte_len(&self, ibuf: Seq<u8>, previous: Seq<Seq<u8>>)
         requires
             self.0.sound_inv(),
+            self.0.strict_inv(),
             der_encodings_sorted(previous),
         ensures
             self.parse_ordered(ibuf, previous) matches Some(values) ==> {
@@ -245,7 +246,7 @@ impl<C: SoundParser> SetOfFmt<C> {
                 Some((n, value)) if 0 < n <= ibuf.len() && der_encodings_sorted(
                     previous.push(ibuf[0..n]),
                 ) => {
-                    self.0.lemma_parse_sound_consumption(ibuf);
+                    self.0.lemma_parse_strict_consumption(ibuf);
                     self.lemma_parse_ordered_byte_len(ibuf[n..], previous.push(ibuf[0..n]));
 
                     if let Some(rest_values) = self.parse_ordered(
@@ -486,16 +487,22 @@ mod derived_proofs {
             self.0.sound_inv() && self.0.ps_roundtrip_inv()
         }
 
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
-            reveal(<SetOfFmt<_> as SpecByteLen>::byte_len);
-            self.lemma_parse_ordered_byte_len(ibuf, Seq::empty());
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
             reveal(<SetOfFmt<_> as Consistency>::consistent);
             self.lemma_parse_ordered_consistent(ibuf, Seq::empty());
+        }
+    }
+
+    impl<C: StrictParser + PSRoundTrip> StrictParser for SetOfFmt<C> {
+        open spec fn strict_inv(&self) -> bool {
+            self.0.strict_inv() && self.0.ps_roundtrip_inv()
+        }
+
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            reveal(<SetOfFmt<_> as SpecParser>::spec_parse);
+            reveal(<SetOfFmt<_> as SpecByteLen>::byte_len);
+            self.lemma_parse_ordered_byte_len(ibuf, Seq::empty());
         }
     }
 

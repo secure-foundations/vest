@@ -141,7 +141,7 @@ impl<C: SPRoundTrip> NonAmbiguous for C {
 ///
 /// Parsing a buffer and serializing the result reproduces the consumed bytes.
 ///
-/// Automatically derived for combinators implementing [`SPRoundTrip`] + [`NonMalleable`].
+/// Automatically derived from [`SPRoundTrip`], [`NonMalleable`], and [`SoundParser`].
 ///
 /// User-defined combinators can also prove this directly.
 pub trait PSRoundTrip where
@@ -321,7 +321,7 @@ pub trait EquivSerializers: SpecSerializer + SpecSerializerDps<SValue = Self::SV
 pub trait StrictCombinator:
     SafeParser +
     Productive +
-    SoundParser +
+    StrictParser +
     NonMalleable +
     GoodSerializer +
     NonTailFmt +
@@ -334,7 +334,7 @@ impl<Body> StrictCombinator for Body where
     Body:
         SafeParser +
         Productive +
-        SoundParser +
+        StrictParser +
         NonMalleable +
         GoodSerializer +
         NonTailFmt +
@@ -369,16 +369,18 @@ pub trait Leaf:
     ;
 }
 
-/// Similar to [`Leaf`], but also includes the parser soundness and non-malleability properties.
+/// Similar to [`Leaf`], but also includes parser strictness
+/// and non-malleability.
 pub trait LeafNonMalleable:
     Leaf +
-    SoundParser +
+    StrictParser +
     NonMalleable {
     proof fn nonmal_leaf_inv(&self)
         ensures
             self.unambiguous(),
             self.safe_inv(),
             self.sound_inv(),
+            self.strict_inv(),
             self.nonmal_inv(),
             self.serialize_inv(),
             self.serialize_dps_inv(),

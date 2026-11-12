@@ -61,7 +61,7 @@ pub broadcast group basic_lemmas {
 /// Opt-in parser facts: consumed bounds, consistent values, and exact byte lengths.
 pub broadcast group parser_lemmas {
     SafeParser::lemma_parse_safe,
-    SoundParser::lemma_parse_sound_consumption,
+    StrictParser::lemma_parse_strict_consumption,
     SoundParser::lemma_parse_sound_value,
 }
 

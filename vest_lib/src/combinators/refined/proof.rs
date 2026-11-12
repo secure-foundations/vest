@@ -233,7 +233,7 @@ impl<Tg, Of> SPRoundTripDps for super::PrefixTagged<Tg, Tg::T, Of> where
 }
 
 impl<Tg, Of> NonMalleable for super::PrefixTagged<Tg, Tg::T, Of> where
-    Tg: SpecByteLen + SoundParser + NonMalleable,
+    Tg: SpecByteLen + SoundParser<PVal = Tg::T> + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {
@@ -315,7 +315,7 @@ impl<Of, Tg> SPRoundTripDps for super::SuffixTagged<Of, Tg, Tg::T> where
 }
 
 impl<Of, Tg> NonMalleable for super::SuffixTagged<Of, Tg, Tg::T> where
-    Tg: SpecByteLen + SoundParser + NonMalleable,
+    Tg: SpecByteLen + SoundParser<PVal = Tg::T> + NonMalleable,
     Of: SoundParser + NonMalleable,
  {
     open spec fn nonmal_inv(&self) -> bool {

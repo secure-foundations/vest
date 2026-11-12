@@ -4,7 +4,9 @@
 //! `40 * first + second`.  Importantly, that subidentifier is itself encoded using
 //! the same minimal base-128 form as every later arc; it is not restricted to one
 //! octet.
-use crate::combinators::{Pair, RepeatTillEnd};
+use crate::combinators::{
+    mapped::spec::{LosslessMapper, LossyMapper, SpecMapper}, Mapped, Pair, RepeatTillEnd,
+};
 use crate::core::exec::output::OutputBuf;
 use crate::core::exec::{
     parser::{PResult, Parser},
@@ -97,6 +99,66 @@ pub proof fn lemma_oid_arcs_roundtrip(v: ObjectIdentifierSpec)
 {
 }
 
+#[doc(hidden)]
+pub struct ObjectIdentifierMapper;
+
+impl SpecMapper for ObjectIdentifierMapper {
+    type In = (UInt, Seq<UInt>);
+    type Out = ObjectIdentifierSpec;
+
+    open spec fn spec_map(&self, wire: Self::In) -> Self::Out {
+        oid_from_subidentifiers(wire.0, wire.1)
+    }
+
+    open spec fn spec_map_rev(&self, value: Self::Out) -> Self::In {
+        oid_to_subidentifiers(value)
+    }
+
+    open spec fn wf_out(&self, value: Self::Out) -> bool {
+        value.wf()
+    }
+}
+
+impl LossyMapper for ObjectIdentifierMapper {
+    proof fn lemma_sound_mapper(&self, value: Self::Out) {
+        lemma_oid_arcs_roundtrip(value);
+    }
+
+    proof fn lemma_mapper_wf_out_in(&self, value: Self::Out) {
+    }
+}
+
+impl LosslessMapper for ObjectIdentifierMapper {
+    proof fn lemma_lossless_mapper(&self, wire: Self::In) {
+        lemma_oid_subidentifier_roundtrip(wire.0, wire.1);
+    }
+
+    proof fn lemma_mapper_wf_in_out(&self, wire: Self::In) {
+        lemma_oid_from_subidentifiers_wf(wire.0, wire.1);
+    }
+}
+
+#[doc(hidden)]
+pub open spec fn object_identifier_fmt() -> Mapped<ObjectIdentifierInnerFmt, ObjectIdentifierMapper> {
+    Mapped { inner: object_identifier_inner(), mapper: ObjectIdentifierMapper }
+}
+
+proof fn lemma_oid_parser_invariants()
+    ensures
+        object_identifier_fmt().sound_inv(),
+        object_identifier_fmt().strict_inv(),
+{
+    let fmt = object_identifier_fmt();
+    assert forall|wire: (UInt, Seq<UInt>)| #[trigger]
+        fmt.inner.consistent(wire) implies {
+            &&& fmt.consistent(fmt.mapper.spec_map(wire))
+            &&& fmt.mapper.spec_map_rev(fmt.mapper.spec_map(wire)) == wire
+        } by {
+        fmt.mapper.lemma_lossless_mapper(wire);
+        fmt.mapper.lemma_mapper_wf_in_out(wire);
+    }
+}
+
 mod derived_specs {
     use super::*;
 
@@ -104,10 +166,7 @@ mod derived_specs {
         type PVal = ObjectIdentifierSpec;
 
         open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-            match object_identifier_inner().spec_parse(ibuf) {
-                Some((n, (first, rest))) => Some((n, oid_from_subidentifiers(first, rest))),
-                None => None,
-            }
+            object_identifier_fmt().spec_parse(ibuf)
         }
     }
 
@@ -115,7 +174,7 @@ mod derived_specs {
         type Val = ObjectIdentifierSpec;
 
         open spec fn consistent(&self, v: Self::Val) -> bool {
-            v.wf() && object_identifier_inner().consistent(oid_to_subidentifiers(v))
+            object_identifier_fmt().consistent(v)
         }
     }
 
@@ -123,7 +182,7 @@ mod derived_specs {
         type SValue = ObjectIdentifierSpec;
 
         open spec fn spec_serialize_dps(&self, v: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-            object_identifier_inner().spec_serialize_dps(oid_to_subidentifiers(v), obuf)
+            object_identifier_fmt().spec_serialize_dps(v, obuf)
         }
     }
 
@@ -131,7 +190,7 @@ mod derived_specs {
         type SVal = ObjectIdentifierSpec;
 
         open spec fn spec_serialize(&self, v: Self::SVal) -> Seq<u8> {
-            object_identifier_inner().spec_serialize(oid_to_subidentifiers(v))
+            object_identifier_fmt().spec_serialize(v)
         }
     }
 
@@ -139,7 +198,7 @@ mod derived_specs {
         type T = ObjectIdentifierSpec;
 
         open spec fn byte_len(&self, v: Self::T) -> nat {
-            object_identifier_inner().byte_len(oid_to_subidentifiers(v))
+            object_identifier_fmt().byte_len(v)
         }
     }
 
@@ -150,65 +209,51 @@ mod derived_proofs {
 
     impl SafeParser for ObjectIdentifierFmt {
         proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-            object_identifier_inner().lemma_parse_safe(ibuf);
+            object_identifier_fmt().lemma_parse_safe(ibuf);
         }
     }
 
     impl Productive for ObjectIdentifierFmt {
         proof fn lemma_productive(&self, ibuf: Seq<u8>) {
-            object_identifier_inner().lemma_productive(ibuf);
+            object_identifier_fmt().lemma_productive(ibuf);
         }
     }
 
     impl SoundParser for ObjectIdentifierFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-            let inner = object_identifier_inner();
-            inner.lemma_parse_sound_consumption(ibuf);
-            if let Some((_, (first, rest))) = inner.spec_parse(ibuf) {
-                lemma_oid_subidentifier_roundtrip(first, rest);
-            }
-        }
-
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-            let inner = object_identifier_inner();
-            inner.lemma_parse_sound_value(ibuf);
-            if let Some((_, (first, rest))) = inner.spec_parse(ibuf) {
-                lemma_oid_from_subidentifiers_wf(first, rest);
-                lemma_oid_subidentifier_roundtrip(first, rest);
-            }
+            lemma_oid_parser_invariants();
+            object_identifier_fmt().lemma_parse_sound_value(ibuf);
+        }
+    }
+
+    impl StrictParser for ObjectIdentifierFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+            lemma_oid_parser_invariants();
+            object_identifier_fmt().lemma_parse_strict_consumption(ibuf);
         }
     }
 
     impl GoodSerializer for ObjectIdentifierFmt {
         proof fn lemma_serialize_len(&self, v: Self::SVal) {
-            object_identifier_inner().lemma_serialize_len(oid_to_subidentifiers(v));
+            object_identifier_fmt().lemma_serialize_len(v);
         }
     }
 
     impl SPRoundTripDps for ObjectIdentifierFmt {
         proof fn theorem_serialize_dps_parse_roundtrip(&self, v: Self::T, obuf: Seq<u8>) {
-            let inner = object_identifier_inner();
-            lemma_oid_arcs_roundtrip(v);
-            inner.theorem_serialize_dps_parse_roundtrip(oid_to_subidentifiers(v), obuf);
+            object_identifier_fmt().theorem_serialize_dps_parse_roundtrip(v, obuf);
         }
     }
 
     impl NonMalleable for ObjectIdentifierFmt {
         proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-            let inner = object_identifier_inner();
-            if let Some((_, (first1, rest1))) = inner.spec_parse(buf1) {
-                if let Some((_, (first2, rest2))) = inner.spec_parse(buf2) {
-                    lemma_oid_subidentifier_roundtrip(first1, rest1);
-                    lemma_oid_subidentifier_roundtrip(first2, rest2);
-                    inner.lemma_parse_non_malleable(buf1, buf2);
-                }
-            }
+            object_identifier_fmt().lemma_parse_non_malleable(buf1, buf2);
         }
     }
 
     impl EquivSerializers for ObjectIdentifierFmt {
         proof fn lemma_serialize_equiv_on_empty(&self, v: Self::SVal) {
-            object_identifier_inner().lemma_serialize_equiv_on_empty(oid_to_subidentifiers(v));
+            object_identifier_fmt().lemma_serialize_equiv_on_empty(v);
         }
     }
 

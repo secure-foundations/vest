@@ -31,10 +31,12 @@ impl SafeParser for super::Tail {
 }
 
 impl SoundParser for super::Tail {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl StrictParser for super::Tail {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -112,10 +114,12 @@ impl SafeParser for super::Eof {
 }
 
 impl SoundParser for super::Eof {
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
+    }
+}
+
+impl StrictParser for super::Eof {
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
     }
 }
 
@@ -233,19 +237,11 @@ impl<A, B> SafeParser for super::PairRev<A, B> where
 
 impl<A, B> SoundParser for super::PairRev<A, B> where
     A: SoundParser,
-    B: StaticByteLen + SoundParser,
+    B: StaticByteLen + SoundParser<PVal = B::T>,
  {
     open spec fn sound_inv(&self) -> bool {
         &&& self.0.sound_inv()
         &&& self.1.sound_inv()
-    }
-
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        if ibuf.len() >= B::static_byte_len() {
-            let prefix = ibuf.len() - B::static_byte_len();
-            self.0.lemma_parse_sound_consumption(ibuf[prefix..]);
-            self.1.lemma_parse_sound_consumption(ibuf[0..prefix]);
-        }
     }
 
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
@@ -253,6 +249,24 @@ impl<A, B> SoundParser for super::PairRev<A, B> where
             let prefix = ibuf.len() - B::static_byte_len();
             self.0.lemma_parse_sound_value(ibuf[prefix..]);
             self.1.lemma_parse_sound_value(ibuf[0..prefix]);
+        }
+    }
+}
+
+impl<A, B> StrictParser for super::PairRev<A, B> where
+    A: StrictParser,
+    B: StaticByteLen + StrictParser,
+ {
+    open spec fn strict_inv(&self) -> bool {
+        &&& self.0.strict_inv()
+        &&& self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        if ibuf.len() >= B::static_byte_len() {
+            let prefix = ibuf.len() - B::static_byte_len();
+            self.0.lemma_parse_strict_consumption(ibuf[prefix..]);
+            self.1.lemma_parse_strict_consumption(ibuf[0..prefix]);
         }
     }
 }
@@ -354,12 +368,18 @@ impl<C> SoundParser for super::OptionalEnd<C> where C: SoundParser {
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Optional(self.0, super::Eof).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         Optional(self.0, super::Eof).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<C> StrictParser for super::OptionalEnd<C> where C: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        Optional(self.0, super::Eof).lemma_parse_strict_consumption(ibuf)
     }
 }
 
@@ -455,12 +475,18 @@ impl<C> SoundParser for super::RepeatTillEnd<C> where C: SoundParser {
         self.0.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        Repeat(self.0, super::Eof).lemma_parse_sound_consumption(ibuf)
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         Repeat(self.0, super::Eof).lemma_parse_sound_value(ibuf)
+    }
+}
+
+impl<C> StrictParser for super::RepeatTillEnd<C> where C: StrictParser {
+    open spec fn strict_inv(&self) -> bool {
+        self.0.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        Repeat(self.0, super::Eof).lemma_parse_strict_consumption(ibuf)
     }
 }
 

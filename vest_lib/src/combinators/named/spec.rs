@@ -41,12 +41,18 @@ impl<Inner: SoundParser> SoundParser for super::Named<Inner> {
         self.1.sound_inv()
     }
 
-    proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-        self.1.lemma_parse_sound_consumption(ibuf);
-    }
-
     proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
         self.1.lemma_parse_sound_value(ibuf);
+    }
+}
+
+impl<Inner: StrictParser> StrictParser for super::Named<Inner> {
+    open spec fn strict_inv(&self) -> bool {
+        self.1.strict_inv()
+    }
+
+    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+        self.1.lemma_parse_strict_consumption(ibuf);
     }
 }
 
