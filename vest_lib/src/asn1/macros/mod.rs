@@ -1,825 +1,265 @@
-//! Implementations for generated nominal ASN.1 format types.
+//! Verified nominal wrappers for ASN.1 schemas.
 //!
-//! These macros are exported at the crate root as [`impl_der!`](crate::impl_der) and [`impl_ber!`](crate::impl_ber). A generated
-//! nominal format supplies a duel spec-exec `schema()` constructor. Tagged formats
-//! additionally store their outer tag class and number in tuple fields `0` and `1`; the macros
-//! apply that effective tag when constructing the inner format.
+//! [`impl_der!`](crate::impl_der) and [`impl_ber!`](crate::impl_ber) turn a schema
+//! built from combinators into a named format with its own specifications,
+//! proofs, and executable APIs. `vest_asn1` emits these macro invocations.
 //!
-//! Mapped BER parsers hide wire parsing while leaving the structural mapping visible.
-//! Named aliases already have an opaque nominal boundary and need no additional hiding.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_inner {
-    (tagged_exact($constructed:expr), $fmt:ident, $inner:ty) => {
-        $crate::__impl_asn1_nominal_inner!(tagged($constructed), $fmt, $inner);
-    };
-    (tagged_identity($constructed:expr), $fmt:ident, $inner:ty) => {
-        $crate::__impl_asn1_nominal_inner!(tagged($constructed), $fmt, $inner);
-    };
-    (untagged_mask($domain:expr), $fmt:ident, $inner:ty) => {
-        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
-    };
-    (untagged_any, $fmt:ident, $inner:ty) => {
-        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
-    };
-    (tagged($constructed:expr), $fmt:ident, $inner:ty) => {
-        verus! {
-
-        impl $fmt {
-            pub open spec fn spec_inner(&self) -> $inner {
-                Self::schema().spec_retagged($crate::asn1::Tag {
-                    class: self.0,
-                    constructed: $constructed,
-                    number: $crate::asn1::tag::tag_num_from_uint(self.1),
-                })
-            }
-
-            fn exec_inner(&self) -> (fmt: $inner)
-                ensures
-                    fmt == self.spec_inner(),
-            {
-                Self::schema().retagged($crate::asn1::Tag {
-                    class: self.0,
-                    constructed: $constructed,
-                    number: $crate::asn1::tag::tag_num_from_uint(self.1),
-                })
-            }
-        }
-
-        } // verus!
-    };
-    (untagged_start, $fmt:ident, $inner:ty) => {
-        $crate::__impl_asn1_nominal_inner!(untagged, $fmt, $inner);
-    };
-    (untagged, $fmt:ident, $inner:ty) => {
-        verus! {
-
-        impl $fmt {
-            pub open spec fn spec_inner(&self) -> $inner {
-                Self::schema()
-            }
-
-            fn exec_inner(&self) -> (fmt: $inner)
-                ensures
-                    fmt == self.spec_inner(),
-            {
-                Self::schema()
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_specs_and_proofs {
-    ($fmt:ident, $spec:ty) => {
-        verus! {
-
-        impl SpecParser for $fmt {
-            type PVal = $spec;
-
-            #[verifier::opaque]
-            open spec fn spec_parse(&self, ibuf: Seq<u8>) -> Option<(int, Self::PVal)> {
-                self.spec_inner().spec_parse(ibuf)
-            }
-        }
-
-        impl Consistency for $fmt {
-            type Val = $spec;
-
-            #[verifier::opaque]
-            open spec fn consistent(&self, value: Self::Val) -> bool {
-                self.spec_inner().consistent(value)
-            }
-        }
-
-        impl SpecSerializerDps for $fmt {
-            type SValue = $spec;
-
-            #[verifier::opaque]
-            open spec fn spec_serialize_dps(&self, value: Self::SValue, obuf: Seq<u8>) -> Seq<u8> {
-                self.spec_inner().spec_serialize_dps(value, obuf)
-            }
-        }
-
-        impl SpecSerializer for $fmt {
-            type SVal = $spec;
-
-            #[verifier::opaque]
-            open spec fn spec_serialize(&self, value: Self::SVal) -> Seq<u8> {
-                self.spec_inner().spec_serialize(value)
-            }
-        }
-
-        impl SpecByteLen for $fmt {
-            type T = $spec;
-
-            #[verifier::opaque]
-            open spec fn byte_len(&self, value: Self::T) -> nat {
-                self.spec_inner().byte_len(value)
-            }
-        }
-
-        // The nominal boundary keeps the default `true` invariants. Each proof establishes the
-        // concrete inner obligation locally before delegating.
-        impl SafeParser for $fmt {
-            proof fn lemma_parse_safe(&self, ibuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                self.spec_inner().lemma_parse_safe(ibuf);
-            }
-        }
-
-        impl Productive for $fmt {
-            proof fn lemma_productive(&self, input: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                self.spec_inner().lemma_productive(input);
-            }
-        }
-
-        impl NonTailFmt for $fmt {
-            proof fn lemma_serialize_dps_prepend(&self, value: Self::SValue, obuf: Seq<u8>) {
-                reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                self.spec_inner().lemma_serialize_dps_prepend(value, obuf);
-            }
-
-            proof fn lemma_serialize_dps_len(&self, value: Self::SValue, obuf: Seq<u8>) {
-                reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                self.spec_inner().lemma_serialize_dps_len(value, obuf);
-            }
-        }
-
-        impl GoodSerializer for $fmt {
-            proof fn lemma_serialize_len(&self, value: Self::SVal) {
-                // Keep the nominal equations opaque outside this pointwise bridge.
-                let inner = self.spec_inner();
-                assert(self.spec_serialize(value) == inner.spec_serialize(value)
-                    && self.byte_len(value) == inner.byte_len(value)) by {
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                inner.lemma_serialize_len(value);
-            }
-        }
-
-        impl SPRoundTripDps for $fmt {
-            proof fn theorem_serialize_dps_parse_roundtrip(&self, value: Self::T, obuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as Consistency>::consistent);
-                reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                self.lemma_schema_unambiguous();
-                self.spec_inner().theorem_serialize_dps_parse_roundtrip(value, obuf);
-            }
-        }
-
-        impl EquivSerializersGeneral for $fmt {
-            proof fn lemma_serialize_equiv(&self, value: Self::SVal, obuf: Seq<u8>) {
-                reveal(<$fmt as SpecSerializer>::spec_serialize);
-                reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                self.spec_inner().lemma_serialize_equiv(value, obuf);
-            }
-        }
-
-        impl EquivSerializers for $fmt {
-            proof fn lemma_serialize_equiv_on_empty(&self, value: Self::SVal) {
-                reveal(<$fmt as SpecSerializer>::spec_serialize);
-                reveal(<$fmt as SpecSerializerDps>::spec_serialize_dps);
-                self.spec_inner().lemma_serialize_equiv_on_empty(value);
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_exec_borrowed {
-    ($fmt:ident, $value:ident, $_forward:ty, $_reverse:ty) => {
-        $crate::__impl_asn1_nominal_exec_borrowed!(@impl $fmt, $value,
-            $crate::combinators::Mapped<_, $crate::combinators::mapped::spec::FnSpecMapper<_, _>>);
-    };
-    ($fmt:ident, $value:ident) => {
-        $crate::__impl_asn1_nominal_exec_borrowed!(@impl $fmt, $value);
-    };
-    (@impl $fmt:ident, $value:ident $(, $backend:ty)?) => {
-        verus! {
-
-        impl<'i> Parser<&'i [u8]> for $fmt {
-            type PT = $value<'i>;
-
-            fn min_byte_len(&self) -> usize {
-                <_ as Parser<&'i [u8]>>::min_byte_len(&self.exec_inner())
-            }
-
-            fn parse(&self, ibuf: &&'i [u8]) -> (result: PResult<Self::PT>) {
-                $(hide(<$backend as SpecParser>::spec_parse);)?
-                let inner = self.exec_inner();
-                proof {
-                    assert(self.spec_parse(ibuf@) == inner.spec_parse(ibuf@)) by {
-                        reveal(<$fmt as SpecParser>::spec_parse);
-                    }
-                }
-                inner.parse(ibuf)
-            }
-        }
-
-        impl<'i, Output: OutputBuf> Serializer<Output, $value<'i>> for $fmt {
-            fn serialize_into(&self, value: &$value<'i>, obuf: &mut Output) {
-                proof {
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.serialize_into(value, obuf)
-            }
-        }
-
-        impl<'i> Prepare<$value<'i>> for $fmt {
-            fn prepare(&self, value: &$value<'i>) -> (result: Result<usize, PreSerializeError>) {
-                proof {
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.prepare(value)
-            }
-        }
-
-        impl<'i> ByteLen<$value<'i>> for $fmt {
-            fn length(&self, value: &$value<'i>) -> (result: usize) {
-                proof {
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.length(value)
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_exec_owned {
-    ($fmt:ident, $value:ty, $_forward:ty, $_reverse:ty) => {
-        $crate::__impl_asn1_nominal_exec_owned!(@impl $fmt, $value,
-            $crate::combinators::Mapped<_, $crate::combinators::mapped::spec::FnSpecMapper<_, _>>);
-    };
-    ($fmt:ident, $value:ty) => {
-        $crate::__impl_asn1_nominal_exec_owned!(@impl $fmt, $value);
-    };
-    (@impl $fmt:ident, $value:ty $(, $backend:ty)?) => {
-        verus! {
-
-        impl<'i> Parser<&'i [u8]> for $fmt {
-            type PT = $value;
-
-            fn min_byte_len(&self) -> usize {
-                <_ as Parser<&'i [u8]>>::min_byte_len(&self.exec_inner())
-            }
-
-            fn parse(&self, ibuf: &&'i [u8]) -> (result: PResult<Self::PT>) {
-                $(hide(<$backend as SpecParser>::spec_parse);)?
-                let inner = self.exec_inner();
-                proof {
-                    assert(self.spec_parse(ibuf@) == inner.spec_parse(ibuf@)) by {
-                        reveal(<$fmt as SpecParser>::spec_parse);
-                    }
-                }
-                inner.parse(ibuf)
-            }
-        }
-
-        impl<Output: OutputBuf> Serializer<Output, $value> for $fmt {
-            fn serialize_into(&self, value: &$value, obuf: &mut Output) {
-                proof {
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.serialize_into(value, obuf)
-            }
-        }
-
-        impl Prepare<$value> for $fmt {
-            fn prepare(&self, value: &$value) -> (result: Result<usize, PreSerializeError>) {
-                proof {
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.prepare(value)
-            }
-        }
-
-        impl ByteLen<$value> for $fmt {
-            fn length(&self, value: &$value) -> (result: usize) {
-                proof {
-                    reveal(<$fmt as SpecByteLen>::byte_len);
-                }
-                let inner = self.exec_inner();
-                inner.length(value)
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_has_start {
-    (exact($constructed:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
-            $crate::asn1::disjoint::asn1_start_exact_uint(_this.0, $constructed, _this.1));
-    };
-    (identity, $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
-            $crate::asn1::disjoint::asn1_start_identity_uint(_this.0, _this.1));
-    };
-    (mask($domain:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this, $domain);
-    };
-    (any, $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(@certified $fmt, _this,
-            $crate::asn1::disjoint::asn1_start_any_non_eoc());
-    };
-    (@certified $fmt:ident, $this:ident, $domain:expr) => {
-        verus! {
-
-        impl $crate::asn1::disjoint::HasAsn1Start for $fmt {
-            #[verifier::inline]
-            open spec fn asn1_start(&self) -> $crate::asn1::disjoint::Asn1StartDomain {
-                let $this = self;
-                $domain
-            }
-
-            proof fn lemma_parse_implies_asn1_start(&self, input: Seq<u8>) {
-                self.lemma_schema_unambiguous();
-                reveal(<$fmt as SpecParser>::spec_parse);
-                self.spec_inner().lemma_parse_implies_asn1_start(input);
-            }
-        }
-
-        } // verus!
-    };
-    ($fmt:ident) => {
-        verus! {
-
-        impl $crate::asn1::disjoint::HasAsn1Start for $fmt {
-            #[verifier::inline]
-            open spec fn asn1_start(&self) -> $crate::asn1::disjoint::Asn1StartDomain {
-                self.spec_inner().asn1_start()
-            }
-
-            proof fn lemma_parse_implies_asn1_start(&self, input: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                self.spec_inner().lemma_parse_implies_asn1_start(input);
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_tagged {
-    ($fmt:ident) => {
-        verus! {
-
-        impl Retaggable for $fmt {
-            #[verifier::inline]
-            open spec fn spec_retagged(&self, tag: Tag) -> Self {
-                Self(tag.class, $crate::asn1::tag::tag_num_to_uint(tag.number))
-            }
-
-            fn retagged(&self, tag: Tag) -> Self {
-                Self(tag.class, $crate::asn1::tag::tag_number_value(tag.number))
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_der_tagged_proofs {
-    ($fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        verus! {
-
-        impl $fmt {
-            proof fn lemma_successful_parse_inner_invariants(&self, input: Seq<u8>)
-                requires
-                    self.spec_parse(input) is Some,
-                ensures
-                    self.spec_inner().safe_inv(),
-                    self.spec_inner().sound_inv(),
-                    self.spec_inner().strict_inv(),
-                    self.spec_inner().nonmal_inv(),
-            {
-                $(
-                    assert forall|input: <$forward as $crate::combinators::mapped::spec::SpecMap>::Input| #[trigger]
-                        self.spec_inner().inner.consistent(input) implies
-                            self.spec_inner().mapper.lossless(input) by {
-                        <$spec>::lemma_into_from(input);
-                    }
-                )?
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal($fmt::spec_inner);
-                broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
-                self.spec_inner().lemma_parse_implies_asn1_start(input);
-                reveal($crate::asn1::disjoint::input_starts_with);
-                TagFmt.lemma_parse_sound_value(input);
-            }
-        }
-
-        impl SoundParser for $fmt {
-            proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as Consistency>::consistent);
-                if self.spec_parse(ibuf) is Some {
-                    self.lemma_successful_parse_inner_invariants(ibuf);
-                    self.spec_inner().lemma_parse_sound_value(ibuf);
-                }
-            }
-        }
-
-        impl StrictParser for $fmt {
-            proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                if self.spec_parse(ibuf) is Some {
-                    self.lemma_successful_parse_inner_invariants(ibuf);
-                    self.spec_inner().lemma_parse_strict_consumption(ibuf);
-                }
-            }
-        }
-
-        impl NonMalleable for $fmt {
-            proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                if self.spec_parse(buf1) is Some && self.spec_parse(buf2) is Some {
-                    self.lemma_successful_parse_inner_invariants(buf1);
-                    self.spec_inner().lemma_parse_non_malleable(buf1, buf2);
-                }
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_der_fixed_proofs {
-    ($fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        verus! {
-
-        impl $fmt {
-            proof fn lemma_parser_invariants(&self)
-                ensures
-                    self.spec_inner().sound_inv(),
-                    self.spec_inner().strict_inv(),
-                    self.spec_inner().nonmal_inv(),
-            {
-                $(
-                    assert forall|input: <$forward as $crate::combinators::mapped::spec::SpecMap>::Input| #[trigger]
-                        self.spec_inner().inner.consistent(input) implies
-                            self.spec_inner().mapper.lossless(input) by {
-                        <$spec>::lemma_into_from(input);
-                    }
-                )?
-                broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
-            }
-        }
-
-        impl SoundParser for $fmt {
-            proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as Consistency>::consistent);
-                self.lemma_parser_invariants();
-                self.spec_inner().lemma_parse_sound_value(ibuf);
-            }
-        }
-
-        impl StrictParser for $fmt {
-            proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                self.lemma_parser_invariants();
-                self.spec_inner().lemma_parse_strict_consumption(ibuf);
-            }
-        }
-
-        impl NonMalleable for $fmt {
-            proof fn lemma_parse_non_malleable(&self, buf1: Seq<u8>, buf2: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                self.lemma_parser_invariants();
-                self.spec_inner().lemma_parse_non_malleable(buf1, buf2);
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_der_ord_borrowed {
-    ($fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?) => {
-        verus! {
-
-        impl DerState for $fmt {
-            type State = <$inner as DerState>::State;
-        }
-
-        impl<'i> DerOrd<$value<'i>> for $fmt {
-            proof fn lemma_der_serialize_len(&self, value: $spec) {
-                $(
-                    reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                )?
-                reveal(<$fmt as Consistency>::consistent);
-                reveal(<$fmt as SpecSerializer>::spec_serialize);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                <$inner as DerOrd<$value<'i>>>::lemma_der_serialize_len(
-                    &self.spec_inner(),
-                    value,
-                );
-            }
-
-            open spec fn der_remaining(
-                &self,
-                value: $spec,
-                state: <Self as DerState>::State,
-            ) -> Seq<u8> {
-                <$inner as DerOrd<$value<'i>>>::der_remaining(&self.spec_inner(), value, state)
-            }
-
-            open spec fn der_state_valid(
-                &self,
-                value: $spec,
-                state: <Self as DerState>::State,
-            ) -> bool {
-                <$inner as DerOrd<$value<'i>>>::der_state_valid(&self.spec_inner(), value, state)
-            }
-
-            fn der_start(&self, value: &$value<'i>) -> (state: <Self as DerState>::State) {
-                proof {
-                    $(
-                        reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                    )?
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                }
-                let inner = self.exec_inner();
-                <$inner as DerOrd<$value<'i>>>::der_start(&inner, value)
-            }
-
-            fn der_next(
-                &self,
-                value: &$value<'i>,
-                state: &mut <Self as DerState>::State,
-            ) -> (next: Option<u8>) {
-                proof {
-                    $(
-                        reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                    )?
-                    reveal(<$fmt as Consistency>::consistent);
-                }
-                let inner = self.exec_inner();
-                <$inner as DerOrd<$value<'i>>>::der_next(&inner, value, state)
-            }
-        }
-
-        } // verus!
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_der_ord_owned {
-    ($fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?) => {
-        verus! {
-
-        impl DerState for $fmt {
-            type State = <$inner as DerState>::State;
-        }
-
-        impl DerOrd<$value> for $fmt {
-            proof fn lemma_der_serialize_len(&self, value: $spec) {
-                $(
-                    reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                )?
-                reveal(<$fmt as Consistency>::consistent);
-                reveal(<$fmt as SpecSerializer>::spec_serialize);
-                reveal(<$fmt as SpecByteLen>::byte_len);
-                <$inner as DerOrd<$value>>::lemma_der_serialize_len(&self.spec_inner(), value);
-            }
-
-            open spec fn der_remaining(
-                &self,
-                value: $spec,
-                state: <Self as DerState>::State,
-            ) -> Seq<u8> {
-                <$inner as DerOrd<$value>>::der_remaining(&self.spec_inner(), value, state)
-            }
-
-            open spec fn der_state_valid(
-                &self,
-                value: $spec,
-                state: <Self as DerState>::State,
-            ) -> bool {
-                <$inner as DerOrd<$value>>::der_state_valid(&self.spec_inner(), value, state)
-            }
-
-            fn der_start(&self, value: &$value) -> (state: <Self as DerState>::State) {
-                proof {
-                    $(
-                        reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                    )?
-                    reveal(<$fmt as Consistency>::consistent);
-                    reveal(<$fmt as SpecSerializer>::spec_serialize);
-                }
-                let inner = self.exec_inner();
-                <$inner as DerOrd<$value>>::der_start(&inner, value)
-            }
-
-            fn der_next(
-                &self,
-                value: &$value,
-                state: &mut <Self as DerState>::State,
-            ) -> (next: Option<u8>) {
-                proof {
-                    $(
-                        reveal(<$reverse as $crate::combinators::mapped::spec::SpecMap>::spec_map);
-                    )?
-                    reveal(<$fmt as Consistency>::consistent);
-                }
-                let inner = self.exec_inner();
-                <$inner as DerOrd<$value>>::der_next(&inner, value, state)
-            }
-        }
-
-        } // verus!
-    };
-}
+//! # What the caller supplies
+//!
+//! The invocation names the format kind, value ownership, nominal format type,
+//! inner combinator type, specification value type, and executable value type:
+//!
+//! ```rust,ignore
+//! vest_lib::impl_der!(
+//!     tag(constructed), borrowed,
+//!     HEADER, HEADER__, HeaderSpec, Header,
+//!     HeaderForward, HeaderReverse
+//! );
+//! ```
+//!
+//! `borrowed` means the executable type is `Header<'i>`; pass just `Header`.
+//! `owned` takes a complete type with no input lifetime, such as `bool` or `Vec<u8>`.
+//! The optional final arguments name the forward and reverse mappers of a
+//! structural `Mapped<_, BiMap<_, _>>`. Its specification value type supplies
+//! `lemma_into_from` for the mapper's losslessness proof. Omit these arguments
+//! for primitive formats and named aliases.
+//!
+//! The format must provide a `schema()` constructor usable in both specification
+//! and executable code, and `lemma_schema_unambiguous` proving the inner format's
+//! `unambiguous()` condition. Certified start domains also require that lemma to
+//! equate the inner and nominal `asn1_start()` domains, as in the example below.
+//!
+//! # Example: a retaggable DER BOOLEAN
+//!
+//! This is a small version of the code emitted for `Flag ::= BOOLEAN`:
+//!
+//! ```rust,ignore
+//! use vest_lib::asn1::*;
+//! use vest_lib::asn1::der_ord::DerState;
+//! #[cfg(verus_keep_ghost)]
+//! use vest_lib::asn1::disjoint::{
+//!     asn1_start_exact_uint, lemma_asn1_start_exact_uint, HasAsn1Start,
+//! };
+//! use vest_lib::prelude::*;
+//!
+//! verus! {
+//! #[derive(Clone, Copy)]
+//! pub struct FlagFmt(pub Class, pub u64);
+//!
+//! impl FlagFmt {
+//!     pub const Fmt: Self = Self(Class::Universal, 1);
+//!
+//!     #[verifier::allow_in_spec]
+//!     pub const fn schema() -> BoolTlvFmt
+//!         returns BOOLEAN,
+//!     {
+//!         BOOLEAN
+//!     }
+//!
+//!     proof fn lemma_schema_unambiguous(&self)
+//!         ensures
+//!             self.spec_inner().unambiguous(),
+//!             self.spec_inner().asn1_start() == self.asn1_start(),
+//!     {
+//!         reveal(asn1_start_exact_uint);
+//!         lemma_asn1_start_exact_uint(self.0, false, self.1);
+//!     }
+//! }
+//! } // verus!
+//!
+//! vest_lib::impl_der!(tag(primitive), owned, FlagFmt, BoolTlvFmt, bool, bool);
+//! // FlagFmt::Fmt.parse(...), .prepare(...), .serialize(...), and .length(...)
+//! // are now available, together with the proof traits.
+//! ```
+//!
+//! # Format kinds
+//!
+//! A named ASN.1 format needs two pieces of tagging information:
+//! (1). whether its outer tag can be replaced (for IMPLICIT retagging);
+//! and (2). which tags (start_domain) are allowed in a successful parse.
+//! The latter lets Vest prove that CHOICE branches, or an OPTIONAL/DEFAULT field and its
+//! continuation, are disjoint without unfolding their schemas. The format kind
+//! selects the `Retaggable` implementation and the `HasAsn1Start` certificate.
+//!
+//! An ASN.1 identifier carries a class, a primitive/constructed bit, and a tag
+//! number. For example, `BOOLEAN` has universal primitive tag 1 (`01`), while
+//! `SEQUENCE(...)` has universal constructed tag 16 (`30`). Identifier octets
+//! below are hexadecimal. Vest supports:
+//!
+//! - **IMPLICIT tagging:** replace the outer class and number, preserving the
+//!   content's primitive/constructed form. `IMPLICIT(0, BOOLEAN)` starts with
+//!   context-specific primitive tag 0 (`80`), not the BOOLEAN identifier `01`.
+//! - **EXPLICIT tagging:** add a constructed TLV around the complete inner TLV.
+//!   `EXPLICIT(0, BOOLEAN)` starts with `a0` and retains the inner `01` identifier.
+//!   This also gives CHOICE and ANY, which have no single outer tag to replace,
+//!   a retaggable envelope.
+//!
+//! These constructors use the context-specific class; their `_APPLICATION` and
+//! `_PRIVATE` variants select those classes instead. `Retaggable` lifts through
+//! `Ref`, `Refined`, and `Mapped`, so constraints and value mappings do not prevent
+//! replacing the enclosing format's tag.
+//!
+//! ## A replaceable outer tag: `tag(form)`
+//!
+//! These formats have one replaceable outer class and number. The form selects
+//! whether the start certificate permits primitive, constructed, or both kinds
+//! of identifiers:
+//!
+//! - **`tag(primitive)`**: `Flag ::= BOOLEAN` has universal primitive tag 1 (`01`).
+//!   DER `Payload ::= OCTET STRING` also uses this kind, with identifier `04`.
+//! - **`tag(constructed)`**: `Record ::= SEQUENCE { flag BOOLEAN }` has universal
+//!   constructed tag 16 (`30`). An EXPLICIT envelope also uses this kind:
+//!   `[0] EXPLICIT BOOLEAN` starts with constructed identifier `a0`.
+//! - **`tag(either)`**: BER `Payload ::= OCTET STRING` accepts primitive `04` and
+//!   constructed `24`. After `IMPLICIT(0, PAYLOAD::Fmt)`, the corresponding
+//!   identifiers are `80` and `a0`. The schema handles normalization of the
+//!   serialized form; there is no separate constructed-bit argument.
+//!
+//! The kind describes the schema's accepted forms; it does not change the
+//! schema's parser or enable constructed encodings by itself.
+//!
+//! ## A fixed start domain: `starts(domain)`
+//!
+//! CHOICE and ANY have no single outer tag to replace. Their nominal types are
+//! zero-sized and expose a start-domain certificate, without implementing
+//! `Retaggable`. Both use `starts(domain)`:
+//!
+//! - `Selection ::= CHOICE { flag BOOLEAN, count INTEGER }` can start with `01`
+//!   or `02`, so it uses `starts(asn1_start_mask(false, 0x6u64, 0, 0, 0))`.
+//!   Bits 1 and 2 of the universal-class bitmap are set; the selected alternative
+//!   supplies the identifier, not CHOICE itself.
+//! - `OpenValue ::= ANY` uses `starts(asn1_start_any_non_eoc())`. It can accept,
+//!   for example, an INTEGER TLV beginning with `02` or a SEQUENCE beginning
+//!   with `30`, but not standalone end-of-contents (`00 00`). This is an ordinary
+//!   start-domain expression, not a separate ANY-specific macro kind.
+//!
+//! Start-domain masks describe identifier leading octets conservatively; distinct
+//! high tag numbers can share a bit. See
+//! [`Asn1StartDomain`](crate::asn1::disjoint::Asn1StartDomain) for that limitation.
+//!
+//! # DER and BER
+//!
+//! Both macros implement the codec specifications, `SafeParser`, `SoundParser`,
+//! `Productive`, `NonTailFmt`, `GoodSerializer`, `SPRoundTripDps`, both serializer
+//! equivalence traits, and the executable `Parser`, `Serializer`, `Prepare`, and
+//! `ByteLen` APIs. DER additionally implements `StrictParser`, `NonMalleable`, and
+//! allocation-free `DerOrd`. The inner format must support the delegated traits.
+//!
+//! For a BER schema, use BER combinators in `schema()` and invoke `impl_ber!`:
+//!
+//! ```rust,ignore
+//! vest_lib::impl_ber!(
+//!     tag(constructed), borrowed,
+//!     ITEM, ITEM__, ItemSpec, Item,
+//!     ItemForward, ItemReverse
+//! );
+//! ```
+//!
+//! Changing the macro alone does not change the schema's encoding rules. BER
+//! does not generally preserve encoded length or have a unique encoding, so its
+//! macro does not add `StrictParser`, `NonMalleable`, or `DerOrd` implementations.
+//!
+//! # Proof boundaries and maintenance
+//!
+//! The nominal specifications are opaque. Proofs reveal only the operations they
+//! delegate, and establish the inner invariants locally. The nominal invariants
+//! retain their default `true` definitions: parents use the proved properties
+//! without rechecking the child's combinator tree.
+//!
+//! Mapped BER parsing also hides the closure-backed wire parser, while leaving
+//! the structural `BiMap` visible. This is deliberately narrower than hiding all
+//! `Mapped` parsers or child formats. Scoped equality proofs in `parse` and
+//! `lemma_serialize_len` likewise avoid exposing a whole schema to the solver.
+//!
+//! Implementation responsibilities are separated into four files:
+//!
+//! - `schema.rs`: inner constructors, retagging, and start-domain certificates.
+//! - `proofs.rs`: opaque specifications and common / DER / BER proof traits.
+//! - `exec.rs`: shared borrowed/owned executable delegation.
+//! - `der_ord.rs`: shared borrowed/owned DER ordering delegation.
+//!
+//! This file only assembles those pieces. Internal helper macros are exported
+//! because public macros must resolve them from other crates; they are not a
+//! supported interface. Changes should be checked against the ASN.1 width,
+//! depth, mixed-rule, and CMS fixtures, not just a primitive example.
+mod der_ord;
+mod exec;
+mod proofs;
+mod schema;
 
 /// Implements the verified DER traits and executable APIs for a generated nominal format.
+///
+/// See [`asn1::macros`](crate::asn1::macros) for the required schema declarations,
+/// invocation arguments, and examples.
 #[macro_export]
 macro_rules! impl_der {
-
-    // Transitional spelling adapters; the implementation is shared with the existing kinds.
-    (tag(primitive), $($rest:tt)*) => {
-        $crate::impl_der!(tagged_exact(false), $($rest)*);
-    };
-    (tag(constructed), $($rest:tt)*) => {
-        $crate::impl_der!(tagged_exact(true), $($rest)*);
-    };
-    (tag(either), $($rest:tt)*) => {
-        $crate::impl_der!(tagged_identity(false), $($rest)*);
-    };
-    (starts($domain:expr), $($rest:tt)*) => {
-        $crate::impl_der!(untagged_mask($domain), $($rest)*);
-    };
-    ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
+    (
+        $kind:ident($($argument:tt)*), borrowed,
+        $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?
+    ) => {
+        $crate::__impl_asn1_nominal_inner!($kind($($argument)*), $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
-        $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value);
-        $crate::__impl_asn1_nominal_der_ord_borrowed!($fmt, $inner, $spec, $value $(, $forward, $reverse)?);
-        $crate::impl_der!(@kind $kind $(($constructed))?, $fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_exec!(borrowed, $fmt, $value);
+        $crate::__impl_asn1_nominal_der_ord!(
+            borrowed, $fmt, $inner, $spec, $value $(, $forward, $reverse)?
+        );
+        $crate::__impl_asn1_nominal_tag_support!($kind($($argument)*), $fmt);
+        $crate::impl_der!(
+            @parser_proofs $kind($($argument)*), $fmt, $spec $(, $forward, $reverse)?
+        );
     };
-    ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
+    (
+        $kind:ident($($argument:tt)*), owned,
+        $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?
+    ) => {
+        $crate::__impl_asn1_nominal_inner!($kind($($argument)*), $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
-        $crate::__impl_asn1_nominal_exec_owned!($fmt, $value);
-        $crate::__impl_asn1_nominal_der_ord_owned!($fmt, $inner, $spec, $value $(, $forward, $reverse)?);
-        $crate::impl_der!(@kind $kind $(($constructed))?, $fmt, $spec $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_exec!(owned, $fmt, $value);
+        $crate::__impl_asn1_nominal_der_ord!(
+            owned, $fmt, $inner, $spec, $value $(, $forward, $reverse)?
+        );
+        $crate::__impl_asn1_nominal_tag_support!($kind($($argument)*), $fmt);
+        $crate::impl_der!(
+            @parser_proofs $kind($($argument)*), $fmt, $spec $(, $forward, $reverse)?
+        );
     };
-    (@kind tagged($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!($fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
+    // Retagged DER formats may have an invalid expected tag. Establish their
+    // inner invariants only after parsing succeeds; other formats need no guard.
+    (@parser_proofs tag($form:ident), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
     };
-    (@kind tagged_exact($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!(exact($constructed), $fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
-        $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-    (@kind tagged_identity($constructed:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!(identity, $fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
-        $crate::__impl_asn1_nominal_der_tagged_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-    (@kind untagged_mask($domain:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!(mask($domain), $fmt);
+    (@parser_proofs starts($domain:expr), $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
         $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-    (@kind untagged_any, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!(any, $fmt);
-        $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-    (@kind untagged_start, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_has_start!($fmt);
-        $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-    (@kind untagged, $fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_der_fixed_proofs!($fmt, $spec $(, $forward, $reverse)?);
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_asn1_nominal_ber_sound {
-    ($fmt:ident, $spec:ty $(, $forward:ty, $reverse:ty)?) => {
-        verus! {
-        impl SoundParser for $fmt {
-            proof fn lemma_parse_sound_value(&self, input: Seq<u8>) {
-                reveal(<$fmt as SpecParser>::spec_parse);
-                reveal(<$fmt as Consistency>::consistent);
-                if self.spec_parse(input) is Some {
-                    $(
-                        assert forall|value: <$forward as $crate::combinators::mapped::spec::SpecMap>::Input| #[trigger]
-                            self.spec_inner().inner.consistent(value) implies
-                                self.spec_inner().mapper.lossless(value) by {
-                            <$spec>::lemma_into_from(value);
-                        }
-                    )?
-                    broadcast use $crate::asn1::tag::lemma_tag_wf_implies_tag_consistent;
-                    TagFmt.lemma_parse_sound_value(input);
-                    self.spec_inner().lemma_parse_sound_value(input);
-                }
-            }
-        }
-        } // verus!
     };
 }
 
 /// Implements the verified BER traits and executable APIs for a generated nominal format.
 ///
 /// BER formats deliberately do not implement `StrictParser`, `NonMalleable`, or DER ordering.
+/// See [`asn1::macros`](crate::asn1::macros) for invocation arguments and examples.
 #[macro_export]
 macro_rules! impl_ber {
-
-    // Transitional spelling adapters; the implementation is shared with the existing kinds.
-    (tag(primitive), $($rest:tt)*) => {
-        $crate::impl_ber!(tagged_exact(false), $($rest)*);
-    };
-    (tag(constructed), $($rest:tt)*) => {
-        $crate::impl_ber!(tagged_exact(true), $($rest)*);
-    };
-    (tag(either), $($rest:tt)*) => {
-        $crate::impl_ber!(tagged_identity(false), $($rest)*);
-    };
-    (starts($domain:expr), $($rest:tt)*) => {
-        $crate::impl_ber!(untagged_mask($domain), $($rest)*);
-    };
-    ($kind:ident $(($constructed:expr))?, borrowed, $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
+    (
+        $kind:ident($($argument:tt)*), borrowed,
+        $fmt:ident, $inner:ty, $spec:ty, $value:ident $(, $forward:ty, $reverse:ty)?
+    ) => {
+        $crate::__impl_asn1_nominal_inner!($kind($($argument)*), $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
-        $crate::__impl_asn1_nominal_exec_borrowed!($fmt, $value $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_exec!(borrowed, $fmt, $value $(, $forward, $reverse)?);
         $crate::__impl_asn1_nominal_ber_sound!($fmt, $spec $(, $forward, $reverse)?);
-        $crate::impl_ber!(@kind $kind $(($constructed))?, $fmt);
+        $crate::__impl_asn1_nominal_tag_support!($kind($($argument)*), $fmt);
     };
-    ($kind:ident $(($constructed:expr))?, owned, $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?) => {
-        $crate::__impl_asn1_nominal_inner!($kind $(($constructed))?, $fmt, $inner);
+    (
+        $kind:ident($($argument:tt)*), owned,
+        $fmt:ident, $inner:ty, $spec:ty, $value:ty $(, $forward:ty, $reverse:ty)?
+    ) => {
+        $crate::__impl_asn1_nominal_inner!($kind($($argument)*), $fmt, $inner);
         $crate::__impl_asn1_nominal_specs_and_proofs!($fmt, $spec);
-        $crate::__impl_asn1_nominal_exec_owned!($fmt, $value $(, $forward, $reverse)?);
+        $crate::__impl_asn1_nominal_exec!(owned, $fmt, $value $(, $forward, $reverse)?);
         $crate::__impl_asn1_nominal_ber_sound!($fmt, $spec $(, $forward, $reverse)?);
-        $crate::impl_ber!(@kind $kind $(($constructed))?, $fmt);
+        $crate::__impl_asn1_nominal_tag_support!($kind($($argument)*), $fmt);
     };
-    (@kind tagged($constructed:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!($fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
-    };
-    (@kind tagged_exact($constructed:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(exact($constructed), $fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
-    };
-    (@kind tagged_identity($constructed:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(identity, $fmt);
-        $crate::__impl_asn1_nominal_tagged!($fmt);
-    };
-    (@kind untagged_mask($domain:expr), $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(mask($domain), $fmt);
-    };
-    (@kind untagged_any, $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!(any, $fmt);
-    };
-    (@kind untagged_start, $fmt:ident) => {
-        $crate::__impl_asn1_nominal_has_start!($fmt);
-    };
-    (@kind untagged, $fmt:ident) => {};
 }
 
-// `#[macro_export]` places macros at the crate root. Re-export them here as well so callers can
-// discover and import them through `vest_lib::asn1::macros`.
+// Exported macros live at the crate root; also make them discoverable under asn1::macros.
 pub use crate::{impl_ber, impl_der};
