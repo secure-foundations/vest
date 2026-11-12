@@ -7,11 +7,18 @@ verus! {
 
 /// An abstraction for append-oriented output buffer.
 ///
-/// The view is the sequence already present in, or written through, the output. Capacity is
-/// abstract: bounded and unbounded outputs expose the same `fits` interface.
+/// The view is the sequence already present in (written through) the output.
+/// The capacity is abstract: fixed-size and growable outputs both provide the `fits` spec to describe the
+/// output's capacity to accept *additional* bytes.
 pub trait OutputBuf: View<V = Seq<u8>> {
     /// Whether the output can accept `len` additional bytes.
     spec fn fits(&self, len: nat) -> bool;
+
+    /// Write capacity is bounded by `usize::MAX`.
+    broadcast proof fn lemma_fits_len_bound(&self, len: nat)
+        ensures
+            #[trigger] self.fits(len) ==> self@.len() + len <= usize::MAX,
+    ;
 
     /// Write capacity is monotone: accepting a larger write implies accepting every prefix.
     broadcast proof fn lemma_fits_mono(&self, shorter: nat, longer: nat)
@@ -141,6 +148,10 @@ impl OutputBuf for OutputSlice<'_> {
         self.pos as nat + len <= self.obuf@.len()
     }
 
+    proof fn lemma_fits_len_bound(&self, len: nat) {
+        vstd::slice::axiom_spec_len(&*self.obuf);
+    }
+
     proof fn lemma_fits_mono(&self, shorter: nat, longer: nat) {
     }
 
@@ -198,8 +209,11 @@ impl OutputBuf for OutputSlice<'_> {
 
 #[cfg(feature = "alloc")]
 impl OutputBuf for Vec<u8> {
-    open spec fn fits(&self, _len: nat) -> bool {
-        true
+    open spec fn fits(&self, len: nat) -> bool {
+        self@.len() + len <= usize::MAX
+    }
+
+    proof fn lemma_fits_len_bound(&self, len: nat) {
     }
 
     proof fn lemma_fits_mono(&self, _shorter: nat, _longer: nat) {
@@ -227,6 +241,7 @@ impl OutputBuf for Vec<u8> {
 
 pub broadcast group outbuf_lemmas {
     OutputBuf::lemma_fits_mono,
+    OutputBuf::lemma_fits_len_bound,
     OutputBuf::lemma_same_destination_reflexive,
     OutputBuf::lemma_same_destination_transitive,
 }

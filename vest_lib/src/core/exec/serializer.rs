@@ -76,12 +76,14 @@ pub trait SerializerExt<T> where
         }
     }
 
-    /// Serializes by appending to a growable Vec (though the Vec can be preallocated with [`Prepare`]/[`ByteLen`]).
+    /// Serializes by appending to a growable Vec, requiring its resulting length to fit `usize`.
+    /// The Vec can be preallocated using [`Prepare`] or [`ByteLen`].
     #[cfg(feature = "alloc")]
     fn serialize_with_vec(&self, v: &T, obuf: &mut Vec<u8>) where Self: Serializer<Vec<u8>, T>
         requires
             self.exec_inv(),
             self.consistent(v.deep_view()),
+            old(obuf)@.len() + self.byte_len(v.deep_view()) <= usize::MAX,
         ensures
             final(obuf)@ == old(obuf)@ + self.spec_serialize(v.deep_view()),
     {
@@ -214,6 +216,8 @@ pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: D
     }
 
     /// Validates `v` and returns its exact serialized length.
+    /// NOTE: this method checks for integer overflow, as
+    /// a mathematically consistent value can still be too "large" to encode into a machine-sized buffer.
     fn prepare(&self, v: &T) -> (checked: Result<usize, PreSerializeError>)
         requires
             self.exec_inv(),
