@@ -11,6 +11,21 @@ import bench
 
 
 class BenchTests(unittest.TestCase):
+    def test_toolchain_follows_verus_pin_and_checks_compiler_overrides(self):
+        with tempfile.TemporaryDirectory() as temporary, patch("bench.ROOT", Path(temporary)), \
+                patch.dict("os.environ", {"RUSTUP_TOOLCHAIN": "stable"}, clear=True), \
+                patch("bench.subprocess.check_output", return_value="rustc 1.99.1 (test)\nhost: test") as rustc:
+            (Path(temporary) / "verus.json").write_text(json.dumps({"rust": "1.99.1"}))
+            bench.configure_toolchain()
+            self.assertEqual(bench.os.environ["RUSTUP_TOOLCHAIN"], "1.99.1")
+            self.assertEqual(rustc.call_args.args[0], ["rustc", "-Vv"])
+            bench.os.environ["RUSTC"] = "/custom/rustc"
+            bench.configure_toolchain()
+            self.assertEqual(rustc.call_args.args[0], ["/custom/rustc", "-Vv"])
+            rustc.return_value = "rustc 1.97.1 (test)"
+            with self.assertRaisesRegex(ValueError, "must be Rust 1.99.1"):
+                bench.configure_toolchain()
+
     def measurement(self, name="Vest", samples=(10., 10., 10.), byte_count=2**20, items=10):
         return bench.Measurement(f"micro/bits/parse/{name}", samples[1], min(samples), max(samples),
                                  byte_count, items, samples)

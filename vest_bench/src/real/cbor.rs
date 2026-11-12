@@ -1,12 +1,16 @@
-//! CBOR corpora, native baseline adapters, and semantic/wire checks.
+//! CBOR corpora, borrowing-aware native baseline adapters, and wire checks.
 
 use ciborium::value::Value;
-use serde::Deserialize;
-use serde::Serialize;
 use std::fs;
 use vest_lib::cbor::CborFmt;
 use vest_lib::cbor::{CborBytes, CborFloat, CborText, CborValue};
 use vest_lib::core::exec::{Prepare, SerializerExt};
+
+pub mod cbor4ii;
+pub mod minicbor;
+mod value;
+
+pub use value::Value as BorrowedValue;
 
 fn nested(depth: usize, seed: i64) -> Value {
     if depth == 0 {
@@ -190,144 +194,39 @@ pub fn ciborium_exact(input: &[u8]) -> Value {
     value
 }
 
-pub fn cbor4ii_exact(input: &[u8]) -> Value {
-    use cbor4ii::core::dec::{Decode, Read};
-    let mut reader = cbor4ii::core::utils::SliceReader::new(input);
-    let value = cbor4ii::core::Value::decode(&mut reader).unwrap();
-    let remaining = reader.fill(input.len()).unwrap();
-    assert!(
-        remaining.as_ref().is_empty(),
-        "cbor4ii left trailing input: input={input:02x?}, remaining={:02x?}",
-        remaining.as_ref()
-    );
-    cbor4ii_semantic_value(&value)
-}
-
-/// Conversion is only used in untimed validation and serializer setup.
-pub fn cbor4ii_value(value: &Value) -> cbor4ii::core::Value {
-    use cbor4ii::core::Value as Native;
-    match value {
-        Value::Null => Native::Null,
-        Value::Bool(v) => Native::Bool(*v),
-        Value::Integer(v) => Native::Integer((*v).into()),
-        Value::Float(v) => Native::Float(*v),
-        Value::Bytes(v) => Native::Bytes(v.clone()),
-        Value::Text(v) => Native::Text(v.clone()),
-        Value::Array(v) => Native::Array(v.iter().map(cbor4ii_value).collect()),
-        Value::Map(v) => Native::Map(
-            v.iter()
-                .map(|(k, v)| (cbor4ii_value(k), cbor4ii_value(v)))
-                .collect(),
-        ),
-        Value::Tag(tag, v) => Native::Tag(*tag, Box::new(cbor4ii_value(v))),
-        _ => panic!("unsupported CBOR value in corpus"),
-    }
-}
-
-pub fn cbor4ii_semantic_value(value: &cbor4ii::core::Value) -> Value {
-    use cbor4ii::core::Value as Native;
-    match value {
-        Native::Null => Value::Null,
-        Native::Bool(v) => Value::Bool(*v),
-        Native::Integer(v) => Value::Integer((*v).try_into().unwrap()),
-        Native::Float(v) => Value::Float(*v),
-        Native::Bytes(v) => Value::Bytes(v.clone()),
-        Native::Text(v) => Value::Text(v.clone()),
-        Native::Array(v) => Value::Array(v.iter().map(cbor4ii_semantic_value).collect()),
-        Native::Map(v) => Value::Map(
-            v.iter()
-                .map(|(k, v)| (cbor4ii_semantic_value(k), cbor4ii_semantic_value(v)))
-                .collect(),
-        ),
-        Native::Tag(tag, v) => Value::Tag(*tag, Box::new(cbor4ii_semantic_value(v))),
-        _ => panic!("unsupported native CBOR value in corpus"),
-    }
-}
-
-#[inline]
-pub fn cbor4ii_parse(input: &[u8]) -> cbor4ii::core::Value {
-    use cbor4ii::core::dec::Decode;
-    cbor4ii::core::Value::decode(&mut cbor4ii::core::utils::SliceReader::new(input)).unwrap()
-}
-
-#[inline]
-pub fn cbor4ii_encode(value: &cbor4ii::core::Value) -> Vec<u8> {
-    use cbor4ii::core::enc::Encode;
-    let mut writer = cbor4ii::core::utils::BufWriter::new(Vec::new());
-    value.encode(&mut writer).unwrap();
-    writer.into_inner()
-}
-
-pub fn minicbor_exact(input: &[u8]) -> Value {
-    let mut decoder = minicbor_serde::Deserializer::new(input);
-    let value = Value::deserialize(&mut decoder).unwrap();
-    assert_eq!(
-        decoder.decoder().position(),
-        input.len(),
-        "minicbor left trailing input"
-    );
-    value
-}
-
-#[derive(Clone, Copy)]
-pub enum Baselines {
-    Fragmented,
-    Tagged,
-}
-
-impl Baselines {
-    pub fn supports_minicbor(self) -> bool {
-        !matches!(self, Self::Tagged)
-    }
-
-    pub fn supports_cbor4ii_parse(self) -> bool {
-        !matches!(self, Self::Fragmented)
-    }
-}
-
 pub struct Values<'i> {
     pub vest: Vec<CborValue<'i>>,
-    pub cbor4ii: Vec<cbor4ii::core::Value>,
+    pub cbor4ii: Vec<BorrowedValue<'i>>,
+    pub minicbor: Vec<BorrowedValue<'i>>,
 }
 
 /// Validate parsing and equal serialized output while constructing values once.
-pub fn validated_values<'i>(
-    values: &[Value],
-    inputs: &'i [Vec<u8>],
-    baselines: Baselines,
-) -> Values<'i> {
+pub fn validated_values<'i>(values: &[Value], inputs: &'i [Vec<u8>]) -> Values<'i> {
     assert!(!inputs.is_empty());
     assert_eq!(values.len(), inputs.len());
     let format = CborFmt::<false>;
     let mut result = Values {
         vest: Vec::new(),
         cbor4ii: Vec::new(),
+        minicbor: Vec::new(),
     };
     for (expected, input) in values.iter().zip(inputs) {
         assert_eq!(&ciborium_exact(input), expected);
-        if baselines.supports_cbor4ii_parse() {
-            assert_eq!(&cbor4ii_exact(input), expected);
-        }
-        if baselines.supports_minicbor() {
-            assert_eq!(&minicbor_exact(input), expected);
-        }
+        let minicbor = minicbor::parse(input).unwrap();
+        assert_eq!(&minicbor.semantic_value(), expected);
+        let cbor4ii = cbor4ii::parse(input).unwrap();
+        assert_eq!(&cbor4ii.semantic_value(), expected);
         let value = crate::harness::parse_complete(&format, input).unwrap();
         assert_eq!(&semantic_value(&value), expected);
         let mut output = vec![0; format.prepare(&value).unwrap()];
         format.serialize(&value, &mut output);
         assert_eq!(&ciborium_exact(&output), expected);
         assert_eq!(output, canonical(expected));
-        let native = cbor4ii_value(expected);
-        assert_eq!(output, cbor4ii_encode(&native));
-        if baselines.supports_minicbor() {
-            let mut baseline = Vec::new();
-            expected
-                .serialize(&mut minicbor_serde::Serializer::new(&mut baseline))
-                .unwrap();
-            assert_eq!(output, baseline);
-        }
+        assert_eq!(output, cbor4ii::encode(&cbor4ii));
+        assert_eq!(output, minicbor::encode(&minicbor));
         result.vest.push(value);
-        result.cbor4ii.push(native);
+        result.cbor4ii.push(cbor4ii);
+        result.minicbor.push(minicbor);
     }
     result
 }

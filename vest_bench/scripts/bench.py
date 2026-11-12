@@ -22,7 +22,21 @@ ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "target/vest-bench"
 VERSION = 3
 BEGIN, END = "<!-- benchmark-results:start -->", "<!-- benchmark-results:end -->"
-SOURCE_ROOTS = {"vest_bench", "vest_lib", "vest_tests", "vest_asn1_tests", "Cargo.toml", "Cargo.lock", ".cargo"}
+SOURCE_ROOTS = {"vest_bench", "vest_lib", "vest_tests", "vest_asn1_tests", "Cargo.toml", "Cargo.lock", ".cargo", "verus.json"}
+
+
+def compiler_version():
+    compiler = os.environ.get("RUSTC", os.environ.get("CARGO_BUILD_RUSTC", "rustc"))
+    return subprocess.check_output([compiler, "-Vv"], cwd=ROOT, text=True).strip()
+
+
+def configure_toolchain():
+    """Use the same Rust release as the repository's pinned Verus, not ambient stable."""
+    pinned = json.loads((ROOT / "verus.json").read_text())["rust"]
+    os.environ["RUSTUP_TOOLCHAIN"] = pinned
+    version = compiler_version()
+    if version.split()[1] != pinned:
+        raise ValueError(f"benchmark compiler must be Rust {pinned} from verus.json; got {version.splitlines()[0]}")
 
 
 def save(path, value):
@@ -146,7 +160,7 @@ def execute(args):
         "seed": args.seed if args.seed is not None else random.SystemRandom().randrange(2**32),
         "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT)),
-        "rustc": subprocess.check_output(["rustc", "-Vv"], text=True).strip(), "machine": machine_info(),
+        "rustc": compiler_version(), "machine": machine_info(),
         "environment": {k: v for k, v in os.environ.items() if k in env_keys or k.startswith("CARGO_PROFILE_")},
         "settings": {"samples": 10 if args.quick else 100, "warmup_seconds": .1 if args.quick else 3,
                      "measurement_seconds": .2 if args.quick else 5},
@@ -346,6 +360,8 @@ def main():
             command.add_argument("--write", action="store_true", help="refresh result snapshot and README together")
     args = parser.parse_args()
     try:
+        if args.command != "report":
+            configure_toolchain()
         if args.command != "report" and args.timeout <= 0:
             raise ValueError("--timeout must be positive")
         if args.command == "run":

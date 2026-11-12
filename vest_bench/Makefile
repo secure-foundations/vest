@@ -1,4 +1,5 @@
 VEST    := cargo run --locked --manifest-path ../Cargo.toml -p vest --
+export RUSTUP_TOOLCHAIN := $(shell python3 -c 'import json; print(json.load(open("../verus.json"))["rust"])')
 
 .PHONY: help generate test smoke list bench report
 

@@ -17,12 +17,13 @@ vstd = { workspace = true, features = ["std"] }
 vest_lib = { workspace = true, features = ["std"] }
 bcder = "0.7.7"
 bitcoin = "0.32.100"
-cbor4ii = { version = "1.2.3", features = ["use_alloc", "half-f16"] }
+cbor4ii = { version = "1.2.4", features = ["use_alloc", "half-f16"] }
 ciborium = "0.2.2"
 cryptographic-message-syntax = { version = "0.28.0", default-features = false }
 criterion = { version = "0.5", features = ["html_reports"] }
 der = { version = "0.8.1", features = ["alloc", "ber", "derive"] }
-minicbor-serde = { version = "0.7.1", features = ["std"] }
+half = "2.7.1"
+minicbor = { version = "2.3.0", features = ["std", "half"] }
 rasn = "0.28.14"
 rasn-cms = "0.28.14"
 # This benchmark needs the publicly exposed parsed-handshake codec from 0.22.
