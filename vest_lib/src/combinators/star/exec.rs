@@ -2,6 +2,8 @@
 use super::spec::*;
 use crate::combinators::length::AsLen;
 use crate::core::exec::output::*;
+#[cfg(verus_keep_ghost)]
+use crate::core::exec::parser::parse_matches_spec;
 use crate::core::{
     exec::{
         input::InputBuf,
@@ -146,8 +148,27 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         &&& self.1.safe_inv()
     }
 
-    #[verifier::loop_isolation(false)]
+    /// Disable inlining for the default entry point; hot paths can explicitly call [`Self::parse_inline`] to force inlining.
+    #[inline(never)]
     fn parse(&self, ibuf: &I) -> (r: PResult<Self::PT>) {
+        self.parse_inline(ibuf)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<Inner, N: AsLen> super::RepeatN<Inner, N> {
+    /// Forces inlining the repetition parser, which is useful for certain hot paths (e.g., generic CBOR parsing).
+    #[inline(always)]
+    #[verifier::loop_isolation(false)]
+    pub(crate) fn parse_inline<I>(&self, ibuf: &I) -> (r: PResult<Vec<Inner::PT>>) where
+        I: InputBuf,
+        Inner: Parser<I> + SafeParser,
+
+        requires
+            <Self as Parser<I>>::exec_inv(self),
+        ensures
+            parse_matches_spec(r, self.spec_parse(ibuf@)),
+    {
         broadcast use vstd::seq_lib::lemma_seq_skip_nothing;
 
         let count = self.0.get();

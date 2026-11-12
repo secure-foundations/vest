@@ -575,6 +575,7 @@ pub const BREAK: BreakFmt = Const(U8, 0xffu8);
 impl<'i, const DET: bool> Parser<&'i [u8]> for CborHeadFmt<DET> {
     type PT = CborHead;
 
+    #[inline(always)]
     fn parse(&self, input: &&'i [u8]) -> PResult<Self::PT> {
         broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
 

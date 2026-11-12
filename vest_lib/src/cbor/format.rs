@@ -593,7 +593,7 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
                 lemma_repeat_n_parser_congruence(repeated, RepeatN(len, child_spec));
                 lemma_parser_congruent_apply(repeated, RepeatN(len, child_spec), rest@);
             }
-            let (content_len, values) = repeated.parse(&rest)?;
+            let (content_len, values) = repeated.parse_inline(&rest)?;
             let value = CborValue::Array(values);
             proof {
                 repeated.lemma_parse_safe(rest@);
@@ -636,7 +636,7 @@ fn parse_cbor_with_child<'i, const DET: bool, P>(
                     rest@,
                 );
             }
-            let (content_len, entries) = repeated.parse(&rest)?;
+            let (content_len, entries) = repeated.parse_inline(&rest)?;
             let value = CborValue::Map(entries);
             proof {
                 repeated.lemma_parse_safe(rest@);
