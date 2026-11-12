@@ -1078,6 +1078,7 @@ impl<'a> Analysis<'a> {
             &inner,
             opaque,
             &TokenStream::new(),
+            true,
         );
         let non_tail =
             self.gen_non_tail_impl(&fmt_id, &impl_generics, &type_generics, &inner, opaque);

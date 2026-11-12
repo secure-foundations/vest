@@ -32,11 +32,27 @@ pub(super) enum TagShape {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum NominalKind {
-    TaggedExact { constructed: bool },
-    TaggedIdentity { constructed: bool },
-    UntaggedFinite(Vec<WireTag>),
-    UntaggedAny,
-    Untagged,
+    /// A replaceable outer tag, with a certificate for the accepted wire forms.
+    Tag(TagForm),
+    /// A fixed start domain, without a replaceable outer tag (e.g. CHOICE or ANY).
+    Starts(TagDomain),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum TagForm {
+    Primitive,
+    Constructed,
+    Either,
+}
+
+impl Display for TagForm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Primitive => "primitive",
+            Self::Constructed => "constructed",
+            Self::Either => "either",
+        })
+    }
 }
 
 pub(super) fn angle_bracketed(parts: &[String]) -> String {
@@ -145,6 +161,7 @@ pub(super) enum UnambiguityKind {
     Optional(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
     Defaulted(Box<UnambiguityPlan>, Box<UnambiguityPlan>),
     BerSequenceOf(Box<UnambiguityPlan>),
+    BerSequence(Box<UnambiguityPlan>),
     Mapped(Box<UnambiguityPlan>),
 }
 
@@ -903,14 +920,14 @@ mod tests {
         );
 
         let (localized, items) = localize_rule_items(
-            "vest_lib::asn1::ber::SEQUENCE(vest_lib::asn1::ber::BER_END)",
+            "vest_lib::asn1::ber::SEQUENCE(vest_lib::asn1::ber::BOOLEAN)",
             EncodingRules::Ber,
         );
-        assert_eq!(localized, "SEQUENCE(BER_END)");
-        assert_eq!(items, ["BER_END", "SEQUENCE"]);
+        assert_eq!(localized, "SEQUENCE(BOOLEAN)");
+        assert_eq!(items, ["BOOLEAN", "SEQUENCE"]);
         assert_eq!(
             render_local_rule_import(EncodingRules::Ber, &items).unwrap(),
-            "use vest_lib::asn1::ber::{BER_END, SEQUENCE};"
+            "use vest_lib::asn1::ber::{BOOLEAN, SEQUENCE};"
         );
     }
 }

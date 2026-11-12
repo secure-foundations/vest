@@ -1317,8 +1317,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MyEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MyEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1328,9 +1328,12 @@ mod derived_proofs {
                 MyEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MyEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<MyEnumFmt as SpecParser>::spec_parse);
             reveal(<MyEnumFmt as Consistency>::consistent);
@@ -1453,8 +1456,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for EnumConstraintsFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for EnumConstraintsFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(EnumConstraintsSpec::into_structural);
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraintsFmt as SpecByteLen>::byte_len);
@@ -1464,9 +1467,12 @@ mod derived_proofs {
                 EnumConstraintsSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for EnumConstraintsFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(EnumConstraintsSpec::into_structural);
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
@@ -1591,8 +1597,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MyTypedEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MyTypedEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1602,9 +1608,12 @@ mod derived_proofs {
                 MyTypedEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MyTypedEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<MyTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<MyTypedEnumFmt as Consistency>::consistent);
@@ -1727,8 +1736,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TypedEnumConstraintsFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TypedEnumConstraintsFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(TypedEnumConstraintsSpec::into_structural);
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraintsFmt as SpecByteLen>::byte_len);
@@ -1738,9 +1747,12 @@ mod derived_proofs {
                 TypedEnumConstraintsSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TypedEnumConstraintsFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(TypedEnumConstraintsSpec::into_structural);
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
@@ -1865,8 +1877,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for OpenKindFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for OpenKindFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<OpenKindFmt as SpecParser>::spec_parse);
             reveal(<OpenKindFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1876,9 +1888,12 @@ mod derived_proofs {
                 OpenKind::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for OpenKindFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<OpenKindFmt as SpecParser>::spec_parse);
             reveal(<OpenKindFmt as Consistency>::consistent);
@@ -2001,8 +2016,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for RefinedDispatchFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for RefinedDispatchFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(RefinedDispatchSpec::into_structural);
             reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
             reveal(<RefinedDispatchFmt as SpecByteLen>::byte_len);
@@ -2012,9 +2027,12 @@ mod derived_proofs {
                 RefinedDispatchSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for RefinedDispatchFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(RefinedDispatchSpec::into_structural);
             reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
@@ -2128,8 +2146,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for RefinedDispatchBodyFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for RefinedDispatchBodyFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(RefinedDispatchBodySpec::into_structural);
             reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
             reveal(<RefinedDispatchBodyFmt as SpecByteLen>::byte_len);
@@ -2139,9 +2157,12 @@ mod derived_proofs {
                 RefinedDispatchBodySpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for RefinedDispatchBodyFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(RefinedDispatchBodySpec::into_structural);
             reveal(<RefinedDispatchBodyFmt as SpecParser>::spec_parse);
@@ -2276,7 +2297,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<EnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<EnumConstraints as DeepView>::deep_view);
@@ -2452,7 +2472,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TypedEnumConstraintsFmt as SpecParser>::spec_parse);
             reveal(<TypedEnumConstraints as DeepView>::deep_view);
@@ -2628,7 +2647,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<RefinedDispatchFmt as SpecParser>::spec_parse);
             reveal(<RefinedDispatch as DeepView>::deep_view);
@@ -2638,12 +2656,21 @@ mod exec_impls {
 
             let (n1, kind) = (Named("open_kind", OpenKindFmt)).parse(&rest)?;
 
+            proof {
+                (Named("open_kind", OpenKindFmt)).lemma_parse_sound_value(rest@);
+            }
+
             if !(!(kind == OpenKind::Q || kind == OpenKind::R)) {
                 return Err(ParseError::predicate_failed());
             }
 
             let rest = rest.skip(n1);
             let (n2, len) = (U8).parse(&rest)?;
+
+            proof {
+                (U8).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, body) = (
                 ExactLen(len, Named("refined_dispatch_body", RefinedDispatchBodyFmt { kind: kind }))

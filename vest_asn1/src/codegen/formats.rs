@@ -23,6 +23,46 @@ struct EmittedUnambiguity {
     reveal_disjoint: bool,
 }
 
+/// Follow the field chain through its continuation, without re-emitting the field expression.
+/// Both terminals return `()`, so mapper and value types are unchanged.
+fn sequence_body_proof(body: &UnambiguityPlan, expr: String, eoc: bool) -> UnambiguityPlan {
+    let mut plan = body.clone();
+    plan.expr = expr.clone();
+    plan.kind = match &body.kind {
+        UnambiguityKind::Pair(field, rest) => UnambiguityKind::Pair(
+            field.clone(),
+            Box::new(sequence_body_proof(rest, format!("({expr}).1"), eoc)),
+        ),
+        UnambiguityKind::Optional(field, rest) => {
+            let rest = sequence_body_proof(rest, format!("({expr}).1"), eoc);
+            plan.start = field.start.union(&rest.start);
+            UnambiguityKind::Optional(field.clone(), Box::new(rest))
+        }
+        UnambiguityKind::Defaulted(field, rest) => {
+            let rest = sequence_body_proof(rest, format!("({expr}).2"), eoc);
+            plan.start = field.start.union(&rest.start);
+            UnambiguityKind::Defaulted(field.clone(), Box::new(rest))
+        }
+        UnambiguityKind::Leaf => {
+            plan.start = if eoc {
+                StartCertificate {
+                    accepts_empty: false,
+                    tags: Some(BTreeSet::from([WireTag {
+                        class: 0,
+                        number: 0,
+                        constructed: false,
+                    }])),
+                }
+            } else {
+                StartCertificate::eof()
+            };
+            UnambiguityKind::Leaf
+        }
+        _ => unreachable!("a schema field chain ends in EOF"),
+    };
+    plan
+}
+
 impl<'a> UnambiguityEmitter<'a> {
     fn new(names: &'a Names) -> Self {
         Self {
@@ -106,24 +146,6 @@ impl<'a> UnambiguityEmitter<'a> {
             } else {
                 false
             }
-        } else if domain.accepts_empty
-            && tags.len() == 1
-            && tags[0].class == 0
-            && tags[0].number == 0
-            && !tags[0].constructed
-        {
-            if self.bridged_start_domains.insert(domain.clone()) {
-                self.lines
-                    .push("reveal(asn1_start_ber_boundary);".to_string());
-                self.lines.push(format!(
-                    "assert(asn1_start_ber_boundary() == {}) by (bit_vector);",
-                    render_start_certificate(domain),
-                ));
-            }
-            self.lines.push(format!(
-                "assert({format}.asn1_start() == asn1_start_ber_boundary());"
-            ));
-            true
         } else {
             false
         };
@@ -182,8 +204,19 @@ impl<'a> UnambiguityEmitter<'a> {
             // certificate through their macro-generated trait implementations. Their private
             // schema proof is therefore not an obligation of an enclosing format.
             UnambiguityKind::Nominal => {}
-            UnambiguityKind::Transparent(child) | UnambiguityKind::Mapped(child) => {
+            UnambiguityKind::Transparent(child) => {
                 self.emit_plan(child, needs_certificate)?;
+            }
+            UnambiguityKind::Mapped(child) => {
+                let mut child = (**child).clone();
+                child.expr = format!("({name}).inner");
+                self.emit_plan(&child, needs_certificate)?;
+            }
+            UnambiguityKind::BerSequence(body) => {
+                let definite = sequence_body_proof(body, format!("({name}).1"), false);
+                self.emit_plan(&definite, false)?;
+                let indefinite = sequence_body_proof(body, format!("({name}).eoc_body()"), true);
+                self.emit_plan(&indefinite, false)?;
             }
             UnambiguityKind::Retagged(child) => {
                 self.emit_plan(child, false)?;
@@ -326,15 +359,7 @@ impl<'a> Generator<'a> {
                         }
                     }
                     EncodingRules::Ber => {
-                        let end_ty = self.backend_item(rule, "BerEndFmt");
-                        let end_expr = self.backend_item(rule, "BER_END");
-                        let raw = self.render_sequence_fields_with_end(
-                            fields,
-                            &definition.name,
-                            &end_ty,
-                            &end_expr,
-                            rule,
-                        )?;
+                        let raw = self.render_sequence_fields(fields, &definition.name, rule)?;
                         let expr =
                             render_list_combinator(&self.backend_item(rule, "SEQUENCE"), &raw.expr);
                         Rendered {
@@ -346,7 +371,7 @@ impl<'a> Generator<'a> {
                                     number: 16,
                                     constructed: true,
                                 }])),
-                                kind: UnambiguityKind::Transparent(Box::new(raw.proof)),
+                                kind: UnambiguityKind::BerSequence(Box::new(raw.proof)),
                             },
                             expr,
                             shape: TagShape::Tlv { constructed: true },
@@ -410,8 +435,9 @@ impl<'a> Generator<'a> {
         ));
         output.line(format_args!("#[derive(Clone, Copy)]"));
         output.line(format_args!("#[verifier::ext_equal]"));
-        match self.nominal_kind(definition)? {
-            NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. } => {
+        let nominal_kind = self.nominal_kind(definition)?;
+        match &nominal_kind {
+            NominalKind::Tag(_) => {
                 let (class, number) = self.nominal_tag(definition)?;
                 output.line(format_args!(
                     "pub struct {}(pub Class, pub u64);",
@@ -422,7 +448,7 @@ impl<'a> Generator<'a> {
                     "    pub const Fmt: Self = Self({class}, {number}u64);"
                 ));
             }
-            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny | NominalKind::Untagged => {
+            NominalKind::Starts(_) => {
                 output.line(format_args!("pub struct {};", names.format));
                 output.line(format_args!("impl {} {{", names.format));
                 output.line(format_args!("    pub const Fmt: Self = Self;"));
@@ -460,43 +486,28 @@ impl<'a> Generator<'a> {
             indent_continuation(&rendered_expr, 8)
         ));
         output.line(format_args!("    }}"));
-        let nominal_kind = self.nominal_kind(definition)?;
         let mut proof_plan = rendered.proof.clone();
         proof_plan.expr = "self.spec_inner()".to_string();
-        if matches!(
-            nominal_kind,
-            NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. }
-        ) {
+        if matches!(&nominal_kind, NominalKind::Tag(_)) {
             // `self` is retaggable, so only `Self::Fmt` has the schema's concrete start mask.
             // The arbitrary receiver's start is related to `spec_inner` symbolically below.
             proof_plan.start = StartCertificate::open();
         }
-        let certify_root = matches!(
-            nominal_kind,
-            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny
-        );
+        let certify_root = matches!(&nominal_kind, NominalKind::Starts(_));
         let proof = UnambiguityEmitter::new(names).emit(&proof_plan, certify_root)?;
         output.blank_line();
         output.line(format_args!("    proof fn lemma_schema_unambiguous(&self)"));
         output.line(format_args!("        ensures"));
         output.line(format_args!("            self.spec_inner().unambiguous(),"));
-        let has_start = !matches!(&nominal_kind, NominalKind::Untagged);
-        if has_start {
-            output.line(format_args!(
-                "            self.spec_inner().asn1_start() == self.asn1_start(),"
-            ));
-            output.line(format_args!(
-                "            Self::Fmt.asn1_start() == {},",
-                render_start_certificate(&rendered.proof.start)
-            ));
-        }
+        output.line(format_args!(
+            "            self.spec_inner().asn1_start() == self.asn1_start(),"
+        ));
+        output.line(format_args!(
+            "            Self::Fmt.asn1_start() == {},",
+            render_start_certificate(&rendered.proof.start)
+        ));
         output.line(format_args!("    {{"));
-        if proof.reveal_exact_uint
-            || matches!(
-                &nominal_kind,
-                NominalKind::TaggedExact { .. } | NominalKind::TaggedIdentity { .. }
-            )
-        {
+        if proof.reveal_exact_uint || matches!(&nominal_kind, NominalKind::Tag(_)) {
             output.line(format_args!("        reveal(asn1_start_exact_uint);"));
         }
         if proof.reveal_any_non_eoc {
@@ -516,17 +527,18 @@ impl<'a> Generator<'a> {
             names.format
         ));
         match nominal_kind {
-            NominalKind::TaggedExact { constructed } => {
+            NominalKind::Tag(form @ (TagForm::Primitive | TagForm::Constructed)) => {
+                let constructed = form == TagForm::Constructed;
                 output.line(format_args!(
                     "        lemma_asn1_start_exact_uint(self.0, {constructed}, self.1);"
                 ));
             }
-            NominalKind::TaggedIdentity { .. } => {
+            NominalKind::Tag(TagForm::Either) => {
                 output.line(format_args!(
                     "        lemma_asn1_start_identity_uint(self.0, self.1);"
                 ));
             }
-            NominalKind::UntaggedFinite(_) | NominalKind::UntaggedAny | NominalKind::Untagged => {}
+            NominalKind::Starts(_) => {}
         }
         if !proof.code.is_empty() {
             output.line(format_args!(
@@ -534,15 +546,13 @@ impl<'a> Generator<'a> {
                 indent_continuation(&proof.code, 8)
             ));
         }
-        if has_start {
-            output.line(format_args!(
-                "        assert(self.spec_inner().asn1_start() == self.asn1_start());"
-            ));
-            output.line(format_args!(
-                "        assert(Self::Fmt.asn1_start() == {}) by (bit_vector);",
-                render_start_certificate(&rendered.proof.start)
-            ));
-        }
+        output.line(format_args!(
+            "        assert(self.spec_inner().asn1_start() == self.asn1_start());"
+        ));
+        output.line(format_args!(
+            "        assert(Self::Fmt.asn1_start() == {}) by (bit_vector);",
+            render_start_certificate(&rendered.proof.start)
+        ));
         output.line(format_args!("    }}"));
         output.line(format_args!(
             "}}
@@ -799,36 +809,13 @@ impl<'a> Generator<'a> {
         path: &str,
         rule: EncodingRules,
     ) -> Result<Rendered, CodegenError> {
-        self.render_sequence_fields_with_end(fields, path, "Eof", "Eof", rule)
-    }
-
-    pub(super) fn render_sequence_fields_with_end(
-        &self,
-        fields: &[SequenceField],
-        path: &str,
-        end_ty: &str,
-        end_expr: &str,
-        rule: EncodingRules,
-    ) -> Result<Rendered, CodegenError> {
-        let end_start = if end_expr.ends_with("BER_END") {
-            StartCertificate {
-                accepts_empty: true,
-                tags: Some(BTreeSet::from([WireTag {
-                    class: 0,
-                    number: 0,
-                    constructed: false,
-                }])),
-            }
-        } else {
-            StartCertificate::eof()
-        };
         let mut result = Rendered {
-            ty: end_ty.to_string(),
-            expr: end_expr.to_string(),
+            ty: "Eof".to_string(),
+            expr: "Eof".to_string(),
             shape: TagShape::Untagged,
             proof: UnambiguityPlan {
-                expr: end_expr.to_string(),
-                start: end_start,
+                expr: "Eof".to_string(),
+                start: StartCertificate::eof(),
                 kind: UnambiguityKind::Leaf,
             },
         };
@@ -1043,71 +1030,30 @@ impl<'a> Generator<'a> {
     ) -> Result<NominalKind, CodegenError> {
         let rule = self.rules[&definition.name];
         match self.tag_shape(&definition.ty, &mut BTreeSet::new(), rule)? {
-            TagShape::Tlv { constructed }
+            TagShape::Tlv { .. }
                 if self.accepts_primitive_and_constructed(
                     &definition.ty,
                     &mut BTreeSet::new(),
                     rule,
                 )? =>
             {
-                Ok(NominalKind::TaggedIdentity { constructed })
+                Ok(NominalKind::Tag(TagForm::Either))
             }
-            TagShape::Tlv { constructed } => Ok(NominalKind::TaggedExact { constructed }),
+            TagShape::Tlv { constructed } => Ok(NominalKind::Tag(if constructed {
+                TagForm::Constructed
+            } else {
+                TagForm::Primitive
+            })),
             TagShape::Untagged => {
-                match self.tag_domain(&definition.ty, &mut BTreeSet::new(), rule)? {
-                    TagDomain::Finite(tags) if !tags.is_empty() => Ok(NominalKind::UntaggedFinite(
-                        self.start_atoms(&definition.ty, &mut BTreeSet::new(), rule)?,
-                    )),
-                    TagDomain::Open => Ok(NominalKind::UntaggedAny),
-                    TagDomain::Finite(_) => Ok(NominalKind::Untagged),
-                }
-            }
-        }
-    }
-
-    pub(super) fn start_atoms(
-        &self,
-        ty: &Type,
-        visiting: &mut BTreeSet<String>,
-        rule: EncodingRules,
-    ) -> Result<Vec<WireTag>, CodegenError> {
-        match ty {
-            Type::Choice(variants) => {
-                let mut atoms = Vec::new();
-                for variant in variants {
-                    for atom in self.start_atoms(&variant.ty, visiting, rule)? {
-                        if !atoms.contains(&atom) {
-                            atoms.push(atom);
-                        }
-                    }
-                }
-                Ok(atoms)
-            }
-            Type::Constrained { base_type, .. } => self.start_atoms(base_type, visiting, rule),
-            Type::TypeRef(name) => {
-                if !visiting.insert(name.clone()) {
+                let domain = self.tag_domain(&definition.ty, &mut BTreeSet::new(), rule)?;
+                if matches!(&domain, TagDomain::Finite(tags) if tags.is_empty()) {
                     return Err(CodegenError::new(
-                        name,
-                        "recursive type while resolving ASN.1 start atoms",
+                        &definition.name,
+                        "a nominal format must have a possible outer tag",
                     ));
                 }
-                let definition = self.definition(name)?;
-                let referenced_rule = self.rules[name];
-                let atoms = self.start_atoms(&definition.ty, visiting, referenced_rule)?;
-                visiting.remove(name);
-                Ok(atoms)
+                Ok(NominalKind::Starts(domain))
             }
-            _ if self.accepts_primitive_and_constructed(ty, &mut BTreeSet::new(), rule)? => {
-                let TagDomain::Finite(tags) = self.tag_domain(ty, &mut BTreeSet::new(), rule)?
-                else {
-                    return Ok(Vec::new());
-                };
-                Ok(tags.into_iter().collect())
-            }
-            _ => match self.tag_domain(ty, visiting, rule)? {
-                TagDomain::Finite(tags) => Ok(tags.into_iter().collect()),
-                TagDomain::Open => Ok(Vec::new()),
-            },
         }
     }
 

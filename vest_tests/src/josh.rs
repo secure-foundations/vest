@@ -1806,8 +1806,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TstTagFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TstTagFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<TstTagFmt as SpecParser>::spec_parse);
             reveal(<TstTagFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1817,9 +1817,12 @@ mod derived_proofs {
                 TstTag::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TstTagFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<TstTagFmt as SpecParser>::spec_parse);
             reveal(<TstTagFmt as Consistency>::consistent);
@@ -1942,8 +1945,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MydataFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MydataFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecParser>::spec_parse);
             reveal(<MydataFmt as SpecByteLen>::byte_len);
@@ -1953,9 +1956,12 @@ mod derived_proofs {
                 MydataSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MydataFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MydataSpec::into_structural);
             reveal(<MydataFmt as SpecParser>::spec_parse);
@@ -2080,8 +2086,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TstFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TstFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecParser>::spec_parse);
             reveal(<TstFmt as SpecByteLen>::byte_len);
@@ -2091,9 +2097,12 @@ mod derived_proofs {
                 TstSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TstFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(TstSpec::into_structural);
             reveal(<TstFmt as SpecParser>::spec_parse);
@@ -2179,8 +2188,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for PairStressFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for PairStressFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecParser>::spec_parse);
             reveal(<PairStressFmt as SpecByteLen>::byte_len);
@@ -2190,9 +2199,12 @@ mod derived_proofs {
                 PairStressSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for PairStressFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(PairStressSpec::into_structural);
             reveal(<PairStressFmt as SpecParser>::spec_parse);
@@ -2317,8 +2329,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TstMydataFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TstMydataFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
             reveal(<TstMydataFmt as SpecByteLen>::byte_len);
@@ -2328,9 +2340,12 @@ mod derived_proofs {
                 TstMydataSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TstMydataFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(TstMydataSpec::into_structural);
             reveal(<TstMydataFmt as SpecParser>::spec_parse);
@@ -2582,7 +2597,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MydataFmt as SpecParser>::spec_parse);
             reveal(<Mydata as DeepView>::deep_view);
@@ -2639,7 +2653,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TstFmt as SpecParser>::spec_parse);
             reveal(<Tst as DeepView>::deep_view);
@@ -2648,6 +2661,11 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, tag) = (Named("tst_tag", TstTagFmt)).parse(&rest)?;
+
+            proof {
+                (Named("tst_tag", TstTagFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, mydata) = (Named("tst_mydata", TstMydataFmt { tag: tag })).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -2702,7 +2720,6 @@ mod exec_impls {
         #[verifier::spinoff_prover]
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<PairStressFmt as SpecParser>::spec_parse);
             reveal(<PairStress as DeepView>::deep_view);

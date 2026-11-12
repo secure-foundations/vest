@@ -1985,8 +1985,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for AClosedEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for AClosedEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<AClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1996,9 +1996,12 @@ mod derived_proofs {
                 AClosedEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for AClosedEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<AClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<AClosedEnumFmt as Consistency>::consistent);
@@ -2121,8 +2124,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ARegularChooseFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ARegularChooseFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ARegularChooseSpec::into_structural);
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
             reveal(<ARegularChooseFmt as SpecByteLen>::byte_len);
@@ -2132,9 +2135,12 @@ mod derived_proofs {
                 ARegularChooseSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ARegularChooseFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ARegularChooseSpec::into_structural);
             reveal(<ARegularChooseFmt as SpecParser>::spec_parse);
@@ -2248,8 +2254,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for AnOpenEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for AnOpenEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<AnOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2259,9 +2265,12 @@ mod derived_proofs {
                 AnOpenEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for AnOpenEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<AnOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<AnOpenEnumFmt as Consistency>::consistent);
@@ -2384,8 +2393,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for AChooseWithDefaultFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for AChooseWithDefaultFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(AChooseWithDefaultSpec::into_structural);
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<AChooseWithDefaultFmt as SpecByteLen>::byte_len);
@@ -2395,9 +2404,12 @@ mod derived_proofs {
                 AChooseWithDefaultSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for AChooseWithDefaultFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(AChooseWithDefaultSpec::into_structural);
             reveal(<AChooseWithDefaultFmt as SpecParser>::spec_parse);
@@ -2483,8 +2495,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ANonDependentChooseFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ANonDependentChooseFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ANonDependentChooseSpec::into_structural);
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
             reveal(<ANonDependentChooseFmt as SpecByteLen>::byte_len);
@@ -2494,9 +2506,12 @@ mod derived_proofs {
                 ANonDependentChooseSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ANonDependentChooseFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ANonDependentChooseSpec::into_structural);
             reveal(<ANonDependentChooseFmt as SpecParser>::spec_parse);
@@ -2626,8 +2641,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ATypedClosedEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ATypedClosedEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedClosedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2637,9 +2652,12 @@ mod derived_proofs {
                 ATypedClosedEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ATypedClosedEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ATypedClosedEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedClosedEnumFmt as Consistency>::consistent);
@@ -2762,8 +2780,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ATypedChooseFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ATypedChooseFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ATypedChooseSpec::into_structural);
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseFmt as SpecByteLen>::byte_len);
@@ -2773,9 +2791,12 @@ mod derived_proofs {
                 ATypedChooseSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ATypedChooseFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ATypedChooseSpec::into_structural);
             reveal(<ATypedChooseFmt as SpecParser>::spec_parse);
@@ -2889,8 +2910,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ATypedOpenEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ATypedOpenEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedOpenEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -2900,9 +2921,12 @@ mod derived_proofs {
                 ATypedOpenEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ATypedOpenEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ATypedOpenEnumFmt as SpecParser>::spec_parse);
             reveal(<ATypedOpenEnumFmt as Consistency>::consistent);
@@ -3025,8 +3049,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ATypedChooseWithDefaultFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ATypedChooseWithDefaultFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ATypedChooseWithDefaultSpec::into_structural);
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
             reveal(<ATypedChooseWithDefaultFmt as SpecByteLen>::byte_len);
@@ -3036,9 +3060,12 @@ mod derived_proofs {
                 ATypedChooseWithDefaultSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ATypedChooseWithDefaultFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ATypedChooseWithDefaultSpec::into_structural);
             reveal(<ATypedChooseWithDefaultFmt as SpecParser>::spec_parse);
@@ -3124,8 +3151,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for AMixedTypedEnumFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for AMixedTypedEnumFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<AMixedTypedEnumFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -3135,9 +3162,12 @@ mod derived_proofs {
                 AMixedTypedEnum::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for AMixedTypedEnumFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<AMixedTypedEnumFmt as SpecParser>::spec_parse);
             reveal(<AMixedTypedEnumFmt as Consistency>::consistent);

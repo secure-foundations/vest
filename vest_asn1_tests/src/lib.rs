@@ -24,6 +24,18 @@ pub fn parse_selection<'a>(input: &'a [u8]) -> PResult<
     generated::SELECTION::Fmt.parse(&input)
 }
 
+// Clients can use value soundness without revealing a schema or its mapper.
+proof fn ber_formats_produce_consistent_values(input: Seq<u8>) {
+    use vest_lib::core::spec::SoundParser;
+
+    generated_ber::ITEM::Fmt.lemma_parse_sound_value(input);
+    generated_ber::ITEMS::Fmt.lemma_parse_sound_value(input);
+    generated_ber::AUTOMATION_CHOICE::Fmt.lemma_parse_sound_value(input);
+    generated_ber::FLAG_SET::Fmt.lemma_parse_sound_value(input);
+    generated_mixed::OUTER::Fmt.lemma_parse_sound_value(input);
+    generated_cms::SIGNED_DATA::Fmt.lemma_parse_sound_value(input);
+}
+
 } // verus!
 
 #[cfg(test)]

@@ -451,16 +451,19 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for BitsHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for BitsHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<BitsHeaderFmt as SpecParser>::spec_parse);
             reveal(<BitsHeaderFmt as SpecByteLen>::byte_len);
             let fmt = BitsHeaderFmt::spec_inner();
             broadcast use lemma_bits_header_unpack_pack, lemma_bits_header_mapper_wf_in_out;
             assert(fmt.1.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.1.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for BitsHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<BitsHeaderFmt as SpecParser>::spec_parse);
             reveal(<BitsHeaderFmt as Consistency>::consistent);
@@ -569,8 +572,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for BitsPacketFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for BitsPacketFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
             reveal(<BitsPacketFmt as SpecByteLen>::byte_len);
@@ -580,9 +583,12 @@ mod derived_proofs {
                 BitsPacketSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for BitsPacketFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(BitsPacketSpec::into_structural);
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
@@ -749,7 +755,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<BitsPacketFmt as SpecParser>::spec_parse);
             reveal(<BitsPacket as DeepView>::deep_view);

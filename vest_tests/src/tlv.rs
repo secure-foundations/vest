@@ -1612,8 +1612,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Msg1Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for Msg1Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(Msg1Spec::into_structural);
             reveal(<Msg1Fmt as SpecParser>::spec_parse);
             reveal(<Msg1Fmt as SpecByteLen>::byte_len);
@@ -1623,9 +1623,12 @@ mod derived_proofs {
                 Msg1Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for Msg1Fmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(Msg1Spec::into_structural);
             reveal(<Msg1Fmt as SpecParser>::spec_parse);
@@ -1711,8 +1714,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Msg2Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for Msg2Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(Msg2Spec::into_structural);
             reveal(<Msg2Fmt as SpecParser>::spec_parse);
             reveal(<Msg2Fmt as SpecByteLen>::byte_len);
@@ -1722,9 +1725,12 @@ mod derived_proofs {
                 Msg2Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for Msg2Fmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(Msg2Spec::into_structural);
             reveal(<Msg2Fmt as SpecParser>::spec_parse);
@@ -1849,8 +1855,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for Msg3Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for Msg3Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(Msg3Spec::into_structural);
             reveal(<Msg3Fmt as SpecParser>::spec_parse);
             reveal(<Msg3Fmt as SpecByteLen>::byte_len);
@@ -1860,9 +1866,12 @@ mod derived_proofs {
                 Msg3Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for Msg3Fmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(Msg3Spec::into_structural);
             reveal(<Msg3Fmt as SpecParser>::spec_parse);
@@ -1987,8 +1996,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgTypeFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgTypeFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<MsgTypeFmt as SpecParser>::spec_parse);
             reveal(<MsgTypeFmt as SpecByteLen>::byte_len);
             let fmt = Self::spec_inner();
@@ -1998,9 +2007,12 @@ mod derived_proofs {
                 MsgType::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgTypeFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<MsgTypeFmt as SpecParser>::spec_parse);
             reveal(<MsgTypeFmt as Consistency>::consistent);
@@ -2123,8 +2135,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MsgSpec::into_structural);
             reveal(<MsgFmt as SpecParser>::spec_parse);
             reveal(<MsgFmt as SpecByteLen>::byte_len);
@@ -2134,9 +2146,12 @@ mod derived_proofs {
                 MsgSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MsgSpec::into_structural);
             reveal(<MsgFmt as SpecParser>::spec_parse);
@@ -2250,8 +2265,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgParamFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgParamFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MsgParamSpec::into_structural);
             reveal(<MsgParamFmt as SpecParser>::spec_parse);
             reveal(<MsgParamFmt as SpecByteLen>::byte_len);
@@ -2261,9 +2276,12 @@ mod derived_proofs {
                 MsgParamSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgParamFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MsgParamSpec::into_structural);
             reveal(<MsgParamFmt as SpecParser>::spec_parse);
@@ -2349,8 +2367,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgAltFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgAltFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MsgAltSpec::into_structural);
             reveal(<MsgAltFmt as SpecParser>::spec_parse);
             reveal(<MsgAltFmt as SpecByteLen>::byte_len);
@@ -2360,9 +2378,12 @@ mod derived_proofs {
                 MsgAltSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgAltFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MsgAltSpec::into_structural);
             reveal(<MsgAltFmt as SpecParser>::spec_parse);
@@ -2476,8 +2497,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgContentFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgContentFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MsgContentSpec::into_structural);
             reveal(<MsgContentFmt as SpecParser>::spec_parse);
             reveal(<MsgContentFmt as SpecByteLen>::byte_len);
@@ -2487,9 +2508,12 @@ mod derived_proofs {
                 MsgContentSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgContentFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MsgContentSpec::into_structural);
             reveal(<MsgContentFmt as SpecParser>::spec_parse);
@@ -2575,8 +2599,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for MsgAltContentFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for MsgAltContentFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(MsgAltContentSpec::into_structural);
             reveal(<MsgAltContentFmt as SpecParser>::spec_parse);
             reveal(<MsgAltContentFmt as SpecByteLen>::byte_len);
@@ -2586,9 +2610,12 @@ mod derived_proofs {
                 MsgAltContentSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for MsgAltContentFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(MsgAltContentSpec::into_structural);
             reveal(<MsgAltContentFmt as SpecParser>::spec_parse);
@@ -2670,7 +2697,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg1Fmt as SpecParser>::spec_parse);
             reveal(<Msg1 as DeepView>::deep_view);
@@ -2745,7 +2771,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg2Fmt as SpecParser>::spec_parse);
             reveal(<Msg2 as DeepView>::deep_view);
@@ -2814,7 +2839,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<Msg3Fmt as SpecParser>::spec_parse);
             reveal(<Msg3 as DeepView>::deep_view);
@@ -2924,7 +2948,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgFmt as SpecParser>::spec_parse);
             reveal(<Msg as DeepView>::deep_view);
@@ -2933,8 +2956,18 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, tag) = (Named("msg_type", MsgTypeFmt)).parse(&rest)?;
+
+            proof {
+                (Named("msg_type", MsgTypeFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, len) = (U16Le).parse(&rest)?;
+
+            proof {
+                (U16Le).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, content) = (
                 ExactLen(len, Named("msg_content", MsgContentFmt { tag: tag }))
@@ -3081,7 +3114,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<MsgAltFmt as SpecParser>::spec_parse);
             reveal(<MsgAlt as DeepView>::deep_view);
@@ -3090,8 +3122,18 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, tag) = (U8).parse(&rest)?;
+
+            proof {
+                (U8).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, len) = (U16Le).parse(&rest)?;
+
+            proof {
+                (U16Le).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, content) = (
                 ExactLen(len, Named("msg_alt_content", MsgAltContentFmt { len: len, tag: tag }))

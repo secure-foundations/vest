@@ -7,7 +7,7 @@
 use vest_lib::asn1::*;
 use vest_lib::asn1::der_ord::{DerOrd, DerState};
 #[cfg(verus_only)]
-use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
 use vest_lib::asn1::tag::tag_num_from_uint;
 use vest_lib::asn1::der::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
 use vest_lib::asn1::der::{SetFmt, SET};
@@ -1950,9 +1950,7 @@ impl SELECTION {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                IMPLICIT(1u64, Ref(FLAG::Fmt)),
-                EXPLICIT(2u64, Ref(PAYLOAD::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             IMPLICIT(1u64, Ref(FLAG::Fmt));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 1u64));
@@ -2436,9 +2434,7 @@ impl INLINE_RECORD_SELECTED {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                IMPLICIT(2u64, Ref(BOOLEAN)),
-                IMPLICIT(3u64, Ref(OBJECT_IDENTIFIER)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             IMPLICIT(2u64, Ref(BOOLEAN));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 2u64));
@@ -2577,17 +2573,7 @@ impl AUTOMATION_CHOICE {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                CHOICE(
-                    IMPLICIT(10u64, Ref(BOOLEAN)),
-                    IMPLICIT(11u64, Ref(INTEGER))),
-                CHOICE(
-                    CHOICE(
-                        IMPLICIT(12u64, Ref(OCTET_STRING)),
-                        IMPLICIT(13u64, Ref(NULL))),
-                    CHOICE(
-                        EXPLICIT(14u64, Ref(UTF8_STRING)),
-                        EXPLICIT(15u64, Ref(OBJECT_IDENTIFIER)))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             CHOICE(
                 IMPLICIT(10u64, Ref(BOOLEAN)),
@@ -2828,143 +2814,143 @@ pub const DEFAULT_COLOR: Color = Color::Green;
 mod __impl_flag {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, FLAG, FLAG__, FlagSpec, Flag);
+    vest_lib::impl_der!(tag(primitive), owned, FLAG, FLAG__, FlagSpec, Flag);
 }
 
 mod __impl_count {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, COUNT, COUNT__, CountSpec, Count);
+    vest_lib::impl_der!(tag(primitive), borrowed, COUNT, COUNT__, CountSpec, Count);
 }
 
 mod __impl_tagged_count {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
+    vest_lib::impl_der!(tag(primitive), borrowed, TAGGED_COUNT, TAGGED_COUNT__, TaggedCountSpec, TaggedCount);
 }
 
 mod __impl_retagged_count {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
+    vest_lib::impl_der!(tag(primitive), borrowed, RETAGGED_COUNT, RETAGGED_COUNT__, RetaggedCountSpec, RetaggedCount);
 }
 
 mod __impl_payload {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
+    vest_lib::impl_der!(tag(primitive), borrowed, PAYLOAD, PAYLOAD__, PayloadSpec, Payload);
 }
 
 mod __impl_header {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, HEADER, HEADER__, HeaderSpec, Header, HeaderForward, HeaderReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, HEADER, HEADER__, HeaderSpec, Header, HeaderForward, HeaderReverse);
 }
 
 mod __impl_envelope {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope, EnvelopeForward, EnvelopeReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ENVELOPE, ENVELOPE__, EnvelopeSpec, Envelope, EnvelopeForward, EnvelopeReverse);
 }
 
 mod __impl_envelopes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
+    vest_lib::impl_der!(tag(constructed), borrowed, ENVELOPES, ENVELOPES__, EnvelopesSpec, Envelopes);
 }
 
 mod __impl_features {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), owned, FEATURES, FEATURES__, FeaturesSpec, Features, FeaturesForward, FeaturesReverse);
+    vest_lib::impl_der!(tag(constructed), owned, FEATURES, FEATURES__, FeaturesSpec, Features, FeaturesForward, FeaturesReverse);
 }
 
 mod __impl_selection {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64)), borrowed, SELECTION, SELECTION__, SelectionSpec, Selection, SelectionForward, SelectionReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000002u64, 0x0000000000000000u64)), borrowed, SELECTION, SELECTION__, SelectionSpec, Selection, SelectionForward, SelectionReverse);
 }
 
 mod __impl_choice_envelope {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope, ChoiceEnvelopeForward, ChoiceEnvelopeReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, CHOICE_ENVELOPE, CHOICE_ENVELOPE__, ChoiceEnvelopeSpec, ChoiceEnvelope, ChoiceEnvelopeForward, ChoiceEnvelopeReverse);
 }
 
 mod __impl_color {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, COLOR, COLOR__, ColorSpec, Color, ColorForward, ColorReverse);
+    vest_lib::impl_der!(tag(primitive), owned, COLOR, COLOR__, ColorSpec, Color, ColorForward, ColorReverse);
 }
 
 mod __impl_identifier {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
+    vest_lib::impl_der!(tag(primitive), owned, IDENTIFIER, IDENTIFIER__, IdentifierSpec, Identifier);
 }
 
 mod __impl_measurement {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
+    vest_lib::impl_der!(tag(primitive), borrowed, MEASUREMENT, MEASUREMENT__, MeasurementSpec, Measurement);
 }
 
 mod __impl_open_value {
     use super::*;
 
-    vest_lib::impl_der!(untagged_any, borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
+    vest_lib::impl_der!(starts(asn1_start_any_non_eoc()), borrowed, OPEN_VALUE, OPEN_VALUE__, OpenValueSpec, OpenValue);
 }
 
 mod __impl_bmp_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
+    vest_lib::impl_der!(tag(primitive), owned, BMP_NAME, BMP_NAME__, BmpNameSpec, BmpName);
 }
 
 mod __impl_bmp_container {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer, BmpContainerForward, BmpContainerReverse);
+    vest_lib::impl_der!(tag(constructed), owned, BMP_CONTAINER, BMP_CONTAINER__, BmpContainerSpec, BmpContainer, BmpContainerForward, BmpContainerReverse);
 }
 
 mod __impl_metadata {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, METADATA, METADATA__, MetadataSpec, Metadata, MetadataForward, MetadataReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, METADATA, METADATA__, MetadataSpec, Metadata, MetadataForward, MetadataReverse);
 }
 
 mod __impl_inline_record_nested {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested, InlineRecordNestedForward, InlineRecordNestedReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, INLINE_RECORD_NESTED, INLINE_RECORD_NESTED__, InlineRecordNestedSpec, InlineRecordNested, InlineRecordNestedForward, InlineRecordNestedReverse);
 }
 
 mod __impl_inline_record_selected {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64)), owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected, InlineRecordSelectedForward, InlineRecordSelectedReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x000000000000000cu64, 0x0000000000000000u64)), owned, INLINE_RECORD_SELECTED, INLINE_RECORD_SELECTED__, InlineRecordSelectedSpec, InlineRecordSelected, InlineRecordSelectedForward, InlineRecordSelectedReverse);
 }
 
 mod __impl_inline_record {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord, InlineRecordForward, InlineRecordReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, INLINE_RECORD, INLINE_RECORD__, InlineRecordSpec, InlineRecord, InlineRecordForward, InlineRecordReverse);
 }
 
 mod __impl_automation_choice {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64)), borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000c00000003c00u64, 0x0000000000000000u64)), borrowed, AUTOMATION_CHOICE, AUTOMATION_CHOICE__, AutomationChoiceSpec, AutomationChoice, AutomationChoiceForward, AutomationChoiceReverse);
 }
 
 mod __impl_automation_sequence {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, AUTOMATION_SEQUENCE, AUTOMATION_SEQUENCE__, AutomationSequenceSpec, AutomationSequence, AutomationSequenceForward, AutomationSequenceReverse);
 }
 
 mod __impl_headers {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
+    vest_lib::impl_der!(tag(constructed), borrowed, HEADERS, HEADERS__, HeadersSpec, Headers);
 }

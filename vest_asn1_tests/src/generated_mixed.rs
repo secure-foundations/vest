@@ -7,7 +7,7 @@
 use vest_lib::asn1::*;
 use vest_lib::asn1::der_ord::{DerOrd, DerState};
 #[cfg(verus_only)]
-use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
 use vest_lib::asn1::tag::tag_num_from_uint;
 use vest_lib::asn1::modifiers::{implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, OPTIONAL, REQUIRED};
 use vest_lib::combinators::mapped::spec::{BiMap, SpecMap};
@@ -571,7 +571,7 @@ impl ORDERED {
 }
 
 /// BER format for ASN.1 `Outer`.
-type OUTER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<SHARED>, Pair<ImplicitFmt<Ref<CANONICAL>>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<ORDERED>>, Optional<Ref<vest_lib::asn1::ber::AnyTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>>>, BiMap<OuterForward, OuterReverse>>;
+type OUTER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<SHARED>, Pair<ImplicitFmt<Ref<CANONICAL>>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<ORDERED>>, Optional<Ref<vest_lib::asn1::ber::AnyTlvFmt>, Eof>>>>>, BiMap<OuterForward, OuterReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct OUTER(pub Class, pub u64);
@@ -582,7 +582,7 @@ impl OUTER {
     pub const fn schema() -> OUTER__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, EXPLICIT, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -590,13 +590,13 @@ impl OUTER {
                             REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
                             REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
                             OPTIONAL(Ref(ANY),
-                            BER_END)))),
+                            Eof)))),
                         ),
                     mapper: BiMap(OuterForward, OuterReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, EXPLICIT, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
@@ -604,7 +604,7 @@ impl OUTER {
                     REQUIRED(IMPLICIT(0u64, Ref(CANONICAL::Fmt)),
                     REQUIRED(EXPLICIT(1u64, Ref(ORDERED::Fmt)),
                     OPTIONAL(Ref(ANY),
-                    BER_END)))),
+                    Eof)))),
                 ),
             mapper: BiMap(OuterForward, OuterReverse),
         }
@@ -618,6 +618,7 @@ impl OUTER {
     {
         reveal(asn1_start_exact_uint);
         reveal(asn1_start_any_non_eoc);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(OUTER::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -628,13 +629,24 @@ impl OUTER {
         assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
         assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
         let __asn1_fmt_2 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_2.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            ((((((self.spec_inner()).inner).1).1).1).1).1;
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_2.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_2);
+        let __asn1_fmt_3 =
+            Ref(vest_lib::asn1::ber::ANY);
+        let __asn1_fmt_4 =
+            vest_lib::asn1::ber::ANY;
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        let __asn1_fmt_5 =
+            ((((((self.spec_inner()).inner).eoc_body()).1).1).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_3.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_3, __asn1_fmt_5);
         assert forall|output: <OuterForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -720,41 +732,41 @@ impl UNIVERSAL_LABEL {
 mod __impl_version {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, VERSION, VERSION__, VersionSpec, Version);
+    vest_lib::impl_der!(tag(primitive), owned, VERSION, VERSION__, VersionSpec, Version);
 }
 
 mod __impl_shared {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, SHARED, SHARED__, SharedSpec, Shared, SharedForward, SharedReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, SHARED, SHARED__, SharedSpec, Shared, SharedForward, SharedReverse);
 }
 
 mod __impl_canonical {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
+    vest_lib::impl_der!(tag(constructed), borrowed, CANONICAL, CANONICAL__, CanonicalSpec, Canonical);
 }
 
 mod __impl_ordered {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered, OrderedForward, OrderedReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ORDERED, ORDERED__, OrderedSpec, Ordered, OrderedForward, OrderedReverse);
 }
 
 mod __impl_outer {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, OUTER, OUTER__, OuterSpec, Outer, OuterForward, OuterReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, OUTER, OUTER__, OuterSpec, Outer, OuterForward, OuterReverse);
 }
 
 mod __impl_numeric_label {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
+    vest_lib::impl_ber!(tag(either), owned, NUMERIC_LABEL, NUMERIC_LABEL__, NumericLabelSpec, NumericLabel);
 }
 
 mod __impl_universal_label {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
+    vest_lib::impl_ber!(tag(either), owned, UNIVERSAL_LABEL, UNIVERSAL_LABEL__, UniversalLabelSpec, UniversalLabel);
 }

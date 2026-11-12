@@ -31,17 +31,19 @@ impl<'a> Analysis<'a> {
         let reveal_ty = &fmt_ident;
 
         let sound = quote! {
-            impl #generics SoundParser for #fmt_ident #generics {
-                proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+            impl #generics StrictParser for #fmt_ident #generics {
+                proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecParser>::spec_parse);
                     reveal(<#reveal_ty as SpecByteLen>::byte_len);
                     let fmt = #fmt_ident::#inner_ident(#(#wrapper_call_args),*);
                     broadcast use #lemma_unpack_pack, #lemma_wf;
 
                     assert(fmt.1.sound_inv());
-                    fmt.lemma_parse_sound_consumption(ibuf);
+                    assert(fmt.1.strict_inv());
+                    fmt.lemma_parse_strict_consumption(ibuf);
                 }
-
+            }
+            impl #generics SoundParser for #fmt_ident #generics {
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
                     reveal(<#reveal_ty as SpecParser>::spec_parse);
                     reveal(<#reveal_ty as Consistency>::consistent);
@@ -154,18 +156,15 @@ impl<'a> Analysis<'a> {
             self.gen_safe_parser_impl(&fmt_ident, &generics, &type_generics, &inner_expr, opaque);
         let productive =
             self.gen_productive_impl(&fmt_ident, &generics, &type_generics, &inner_expr, opaque);
-        let sound = if info.non_malleable {
-            self.gen_sound_parser_impl(
-                &fmt_ident,
-                &generics,
-                &type_generics,
-                &inner_expr,
-                opaque,
-                &lossless_certificate,
-            )
-        } else {
-            TokenStream::new()
-        };
+        let sound = self.gen_sound_parser_impl(
+            &fmt_ident,
+            &generics,
+            &type_generics,
+            &inner_expr,
+            opaque,
+            &lossless_certificate,
+            info.non_malleable,
+        );
         let non_tail = if info.non_tail {
             self.gen_non_tail_impl(&fmt_ident, &generics, &type_generics, &inner_expr, opaque)
         } else {
@@ -327,6 +326,7 @@ impl<'a> Analysis<'a> {
         inner_expr: &TokenStream,
         opaque: bool,
         mapper_certificate: &TokenStream,
+        strict: bool,
     ) -> TokenStream {
         let reveal_projection = self.model_projection_reveal(fmt_ident);
         let reveal_ty = quote! { #fmt_ident #type_generics };
@@ -345,18 +345,25 @@ impl<'a> Analysis<'a> {
         } else {
             quote! {}
         };
-        quote! {
-            impl #impl_generics SoundParser for #fmt_ident #type_generics {
-                proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
-                    #reveal_projection
-                    #reveal_spec_parse
-                    #reveal_byte_len
-                    let fmt = #inner_expr;
-                    #mapper_certificate
-                    assert(fmt.sound_inv());
-                    fmt.lemma_parse_sound_consumption(ibuf);
+        let strict_impl = strict.then(|| {
+            quote! {
+                impl #impl_generics StrictParser for #fmt_ident #type_generics {
+                    proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
+                        #reveal_projection
+                        #reveal_spec_parse
+                        #reveal_byte_len
+                        let fmt = #inner_expr;
+                        #mapper_certificate
+                        assert(fmt.sound_inv());
+                        assert(fmt.strict_inv());
+                        fmt.lemma_parse_strict_consumption(ibuf);
+                    }
                 }
-
+            }
+        });
+        quote! {
+            #strict_impl
+            impl #impl_generics SoundParser for #fmt_ident #type_generics {
                 proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
                     #reveal_projection
                     #reveal_spec_parse

@@ -365,8 +365,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for BoundedItemFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for BoundedItemFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
             reveal(<BoundedItemFmt as SpecByteLen>::byte_len);
@@ -376,9 +376,12 @@ mod derived_proofs {
                 BoundedItemSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for BoundedItemFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(BoundedItemSpec::into_structural);
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
@@ -492,8 +495,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for BoundedListFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for BoundedListFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
             reveal(<BoundedListFmt as SpecByteLen>::byte_len);
@@ -503,9 +506,12 @@ mod derived_proofs {
                 BoundedListSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for BoundedListFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(BoundedListSpec::into_structural);
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
@@ -615,7 +621,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<BoundedItemFmt as SpecParser>::spec_parse);
             reveal(<BoundedItem as DeepView>::deep_view);
@@ -626,6 +631,11 @@ mod exec_impls {
             let (n1, tag) = (U16Be).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, len) = (U16Be).parse(&rest)?;
+
+            proof {
+                (U16Be).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, body) = (Varied(len)).parse(&rest)?;
             let rest = rest.skip(n3);
@@ -684,7 +694,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<BoundedListFmt as SpecParser>::spec_parse);
             reveal(<BoundedList as DeepView>::deep_view);
@@ -693,6 +702,11 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, byte_len) = (U32Be).parse(&rest)?;
+
+            proof {
+                (U32Be).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, items) = (ExactLen(byte_len, Star(BoundedItemFmt))).parse(&rest)?;
             let rest = rest.skip(n2);

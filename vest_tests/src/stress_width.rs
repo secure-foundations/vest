@@ -1705,8 +1705,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for StructWidth16Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for StructWidth16Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
             reveal(<StructWidth16Fmt as SpecByteLen>::byte_len);
@@ -1716,9 +1716,12 @@ mod derived_proofs {
                 StructWidth16Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for StructWidth16Fmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(StructWidth16Spec::into_structural);
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
@@ -1843,8 +1846,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ChoiceWidth64Fmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ChoiceWidth64Fmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
             reveal(<ChoiceWidth64Fmt as SpecByteLen>::byte_len);
@@ -1854,9 +1857,12 @@ mod derived_proofs {
                 ChoiceWidth64Spec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ChoiceWidth64Fmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ChoiceWidth64Spec::into_structural);
             reveal(<ChoiceWidth64Fmt as SpecParser>::spec_parse);
@@ -2043,7 +2049,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<StructWidth16Fmt as SpecParser>::spec_parse);
             reveal(<StructWidth16 as DeepView>::deep_view);

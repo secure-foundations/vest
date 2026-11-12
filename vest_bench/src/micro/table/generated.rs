@@ -371,8 +371,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TableEntryFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TableEntryFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
             reveal(<TableEntryFmt as SpecByteLen>::byte_len);
@@ -382,9 +382,12 @@ mod derived_proofs {
                 TableEntrySpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TableEntryFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(TableEntrySpec::into_structural);
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
@@ -498,8 +501,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for TableFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for TableFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecParser>::spec_parse);
             reveal(<TableFmt as SpecByteLen>::byte_len);
@@ -509,9 +512,12 @@ mod derived_proofs {
                 TableSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for TableFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(TableSpec::into_structural);
             reveal(<TableFmt as SpecParser>::spec_parse);
@@ -621,7 +627,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TableEntryFmt as SpecParser>::spec_parse);
             reveal(<TableEntry as DeepView>::deep_view);
@@ -632,6 +637,11 @@ mod exec_impls {
             let (n1, key) = (Fixed::<32>).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, value_len) = (U32Be).parse(&rest)?;
+
+            proof {
+                (U32Be).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, value) = (Varied(value_len)).parse(&rest)?;
             let rest = rest.skip(n3);
@@ -690,7 +700,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<TableFmt as SpecParser>::spec_parse);
             reveal(<Table as DeepView>::deep_view);
@@ -701,6 +710,11 @@ mod exec_impls {
             let (n1, id) = (U64Be).parse(&rest)?;
             let rest = rest.skip(n1);
             let (n2, entry_count) = (U32Be).parse(&rest)?;
+
+            proof {
+                (U32Be).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n2);
             let (n3, entries) = (RepeatN(entry_count, TableEntryFmt)).parse(&rest)?;
             let rest = rest.skip(n3);

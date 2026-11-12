@@ -86,6 +86,80 @@ fn generated_header_records_compiler_version() {
         .contains("do not edit manually"));
 }
 
+#[test]
+fn nominal_kinds_describe_tag_forms_and_start_domains() {
+    let source = r#"
+        Kinds DEFINITIONS EXPLICIT TAGS ::= BEGIN
+            Flag ::= BOOLEAN
+            Record ::= SEQUENCE { flag Flag }
+            EmptyRecord ::= SEQUENCE {}
+            Payload ::= OCTET STRING
+            Alias ::= Payload
+            Limited ::= OCTET STRING (SIZE (1..4))
+            Retagged ::= [0] IMPLICIT Payload
+            Wrapped ::= [1] EXPLICIT Payload
+            Selection ::= CHOICE { flag BOOLEAN, count INTEGER }
+            OpenValue ::= ANY
+            OpenAlias ::= OpenValue
+            OpenChoice ::= CHOICE { value ANY }
+        END
+    "#;
+    for rule in [EncodingRules::Der, EncodingRules::Ber] {
+        let generated = compile_with_options(
+            source,
+            CodegenOptions {
+                encoding_rules: rule,
+            },
+        )
+        .unwrap();
+        let assert_kind = |name: &str, kind: &str| {
+            let name = format!(", {name}, ");
+            let invocation = generated
+                .lines()
+                .find(|line| line.contains("vest_lib::impl_") && line.contains(&name))
+                .expect("format has a macro invocation");
+            assert!(invocation.contains(&format!("!({kind},")), "{invocation}");
+        };
+        assert_kind("FLAG", "tag(primitive)");
+        for name in ["RECORD", "EMPTY_RECORD", "WRAPPED"] {
+            assert_kind(name, "tag(constructed)");
+        }
+        for name in ["PAYLOAD", "ALIAS", "LIMITED", "RETAGGED"] {
+            assert_kind(
+                name,
+                if rule == EncodingRules::Ber {
+                    "tag(either)"
+                } else {
+                    "tag(primitive)"
+                },
+            );
+        }
+        assert_kind(
+            "SELECTION",
+            "starts(asn1_start_mask(false, 0x0000000000000006u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))",
+        );
+        for name in ["OPEN_VALUE", "OPEN_ALIAS", "OPEN_CHOICE"] {
+            assert_kind(name, "starts(asn1_start_any_non_eoc())");
+        }
+        assert!(!generated.contains("tagged_"));
+        assert!(!generated.contains("untagged"));
+    }
+}
+
+#[test]
+fn rejects_empty_choice_instead_of_emitting_a_format_without_a_start_domain() {
+    for definition in [
+        "Value ::= CHOICE {}",
+        "Value ::= CHOICE { nested CHOICE {} }",
+    ] {
+        let source = format!("Example DEFINITIONS ::= BEGIN {definition} END");
+        let error = compile(&source).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("an empty CHOICE has no encoding"));
+    }
+}
+
 fn assert_uses_local_start_certificates(generated: &str) {
     assert!(!generated.contains("assert(disjoint_domains"));
     assert!(!generated.contains("broadcast use vest_lib::asn1::disjoint"));
@@ -150,7 +224,7 @@ END
     .unwrap();
 
     assert_uses_local_start_certificates(&generated);
-    assert!(generated.contains("impl_der!(untagged_mask("));
+    assert!(generated.contains("impl_der!(starts(asn1_start_mask("));
     assert!(generated.contains("borrowed, VALUE"));
     assert!(generated.contains("mod __impl_value {\n    use super::*;"));
     assert!(generated.contains("use Sum::Inl as L;"));
@@ -545,8 +619,8 @@ fn mixed_rules_assign_one_transitive_rule_per_definition() {
     assert!(generated.contains("type ORDERED__ = Mapped<vest_lib::asn1::der::SetFmt<"));
     assert!(generated.contains("pub type Version = i8;"));
     assert!(!generated.contains("VersionDer"));
-    assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SHARED"));
-    assert!(generated.contains("impl_ber!(tagged_exact(true), borrowed, OUTER"));
+    assert!(generated.contains("impl_der!(tag(constructed), borrowed, SHARED"));
+    assert!(generated.contains("impl_ber!(tag(constructed), borrowed, OUTER"));
 }
 
 #[test]
@@ -674,10 +748,13 @@ fn generates_ber_formats_with_owned_flattened_values() {
     assert!(generated.contains("pub type Bits = vest_lib::asn1::BitStringOwned;"));
     assert!(generated.contains("pub type Label = String;"));
     assert!(generated.contains("pub type OpenValue = vest_lib::asn1::AnyOwned;"));
-    assert!(!generated.contains("impl_der!(tagged_exact(true), owned, ITEM"));
-    assert!(generated.contains("impl_ber!(tagged_exact(true), owned, ITEM"));
-    assert!(generated.contains("BerEndFmt"));
-    assert!(generated.contains("BER_END"));
+    assert!(!generated.contains("impl_der!(tag(constructed), owned, ITEM"));
+    assert!(generated.contains("impl_ber!(tag(constructed), owned, ITEM"));
+    assert!(!generated.contains("BerEndFmt"));
+    assert!(!generated.contains("BER_END"));
+    assert!(generated.contains("Eof"));
+    assert!(generated.contains(".eoc_body()"));
+    assert!(!generated.contains("fn fields("));
     assert_uses_local_start_certificates(&generated);
 }
 
@@ -686,7 +763,7 @@ fn generates_ber_real_with_the_rule_specific_zero_copy_value() {
     let generated = compile_ber("Values DEFINITIONS ::= BEGIN Measurement ::= REAL END").unwrap();
     assert!(generated.contains("pub type Measurement<'a> = vest_lib::asn1::Real<'a, BER>;"));
     assert!(generated.contains("type MEASUREMENT__ = RealTlvFmt;"));
-    assert!(generated.contains("impl_ber!(tagged_exact(false), borrowed, MEASUREMENT"));
+    assert!(generated.contains("impl_ber!(tag(primitive), borrowed, MEASUREMENT"));
 }
 
 #[test]
@@ -718,8 +795,8 @@ fn generates_the_curated_cms_module_with_ber_and_canonical_der_substructures() {
     assert!(generated.contains("type CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::"));
     assert!(generated.contains("type ALGORITHM_IDENTIFIER__"));
     assert!(!generated.contains("ALGORITHM_IDENTIFIER_DER"));
-    assert!(generated.contains("impl_der!(tagged_exact(true), borrowed, SIGNED_ATTRIBUTES"));
-    assert!(generated.contains("impl_ber!(tagged_exact(true), owned, CONTENT_INFO"));
+    assert!(generated.contains("impl_der!(tag(constructed), borrowed, SIGNED_ATTRIBUTES"));
+    assert!(generated.contains("impl_ber!(tag(constructed), owned, CONTENT_INFO"));
 }
 
 #[test]

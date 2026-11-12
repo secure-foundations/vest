@@ -7,10 +7,9 @@
 use vest_lib::asn1::*;
 use vest_lib::asn1::der_ord::{DerOrd, DerState};
 #[cfg(verus_only)]
-use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
 use vest_lib::asn1::tag::tag_num_from_uint;
 use vest_lib::asn1::ber::{AnyTlvFmt, BitStringTlvFmt, BmpStringTlvFmt, BoolTlvFmt, DefaultFmt, Enumerated16TlvFmt, EnumeratedTlvFmt, Explicit, ExplicitFmt, GeneralizedTimeTlvFmt, Ia5StringTlvFmt, Implicit, ImplicitFmt, Integer16TlvFmt, Integer8TlvFmt, IntegerTlvFmt, NullTlvFmt, ObjectIdentifierTlvFmt, OctetStringTlvFmt, NumericStringTlvFmt, PrintableStringTlvFmt, RealTlvFmt, SequenceFmt, SequenceOfFmt, SetOfTlvFmt, TeletexStringTlvFmt, UniversalStringTlvFmt, UtcTimeTlvFmt, Utf8StringTlvFmt, ANY, BIT_STRING, BMP_STRING, BOOLEAN, CHOICE, DEFAULT, ENUMERATED, ENUMERATED16, EXPLICIT, EXPLICIT_APPLICATION, EXPLICIT_PRIVATE, GENERALIZED_TIME, IA5_STRING, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, INTEGER, INTEGER16, INTEGER8, NULL, NUMERIC_STRING, OBJECT_IDENTIFIER, OCTET_STRING, OPTIONAL, PRINTABLE_STRING, REAL, REQUIRED, SEQUENCE, SEQUENCE_OF, SET_OF, TELETEX_STRING, UNIVERSAL_STRING, UTC_TIME, UTF8_STRING};
-use vest_lib::asn1::ber::{BerEndFmt, BER_END};
 use vest_lib::combinators::mapped::spec::{BiMap, SpecMap};
 use vest_lib::combinators::*;
 use vest_lib::combinators::Eof;
@@ -3805,7 +3804,7 @@ impl CHOICE0 {
 }
 
 /// BER format for ASN.1 `Seq1`.
-type SEQ1__ = Mapped<SequenceFmt<Pair<Ref<SEQ0>, BerEndFmt>>, BiMap<Seq1Forward, Seq1Reverse>>;
+type SEQ1__ = Mapped<SequenceFmt<Pair<Ref<SEQ0>, Eof>>, BiMap<Seq1Forward, Seq1Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ1(pub Class, pub u64);
@@ -3820,7 +3819,7 @@ impl SEQ1 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ0::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq1Forward, Seq1Reverse),
                 }
@@ -3830,7 +3829,7 @@ impl SEQ1 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ0::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq1Forward, Seq1Reverse),
         }
@@ -3885,7 +3884,7 @@ impl CHOICE1 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(1u64, Ref(CHOICE0::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice1Forward as SpecMap>::Output| #[trigger]
@@ -3901,7 +3900,7 @@ impl CHOICE1 {
 }
 
 /// BER format for ASN.1 `Seq2`.
-type SEQ2__ = Mapped<SequenceFmt<Pair<Ref<SEQ1>, BerEndFmt>>, BiMap<Seq2Forward, Seq2Reverse>>;
+type SEQ2__ = Mapped<SequenceFmt<Pair<Ref<SEQ1>, Eof>>, BiMap<Seq2Forward, Seq2Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ2(pub Class, pub u64);
@@ -3916,7 +3915,7 @@ impl SEQ2 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ1::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq2Forward, Seq2Reverse),
                 }
@@ -3926,7 +3925,7 @@ impl SEQ2 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ1::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq2Forward, Seq2Reverse),
         }
@@ -3981,7 +3980,7 @@ impl CHOICE2 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(2u64, Ref(CHOICE1::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 2u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice2Forward as SpecMap>::Output| #[trigger]
@@ -3997,7 +3996,7 @@ impl CHOICE2 {
 }
 
 /// BER format for ASN.1 `Seq3`.
-type SEQ3__ = Mapped<SequenceFmt<Pair<Ref<SEQ2>, BerEndFmt>>, BiMap<Seq3Forward, Seq3Reverse>>;
+type SEQ3__ = Mapped<SequenceFmt<Pair<Ref<SEQ2>, Eof>>, BiMap<Seq3Forward, Seq3Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ3(pub Class, pub u64);
@@ -4012,7 +4011,7 @@ impl SEQ3 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ2::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq3Forward, Seq3Reverse),
                 }
@@ -4022,7 +4021,7 @@ impl SEQ3 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ2::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq3Forward, Seq3Reverse),
         }
@@ -4077,7 +4076,7 @@ impl CHOICE3 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(3u64, Ref(CHOICE2::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 3u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice3Forward as SpecMap>::Output| #[trigger]
@@ -4093,7 +4092,7 @@ impl CHOICE3 {
 }
 
 /// BER format for ASN.1 `Seq4`.
-type SEQ4__ = Mapped<SequenceFmt<Pair<Ref<SEQ3>, BerEndFmt>>, BiMap<Seq4Forward, Seq4Reverse>>;
+type SEQ4__ = Mapped<SequenceFmt<Pair<Ref<SEQ3>, Eof>>, BiMap<Seq4Forward, Seq4Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ4(pub Class, pub u64);
@@ -4108,7 +4107,7 @@ impl SEQ4 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ3::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq4Forward, Seq4Reverse),
                 }
@@ -4118,7 +4117,7 @@ impl SEQ4 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ3::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq4Forward, Seq4Reverse),
         }
@@ -4173,7 +4172,7 @@ impl CHOICE4 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(4u64, Ref(CHOICE3::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 4u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 4u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice4Forward as SpecMap>::Output| #[trigger]
@@ -4189,7 +4188,7 @@ impl CHOICE4 {
 }
 
 /// BER format for ASN.1 `Seq5`.
-type SEQ5__ = Mapped<SequenceFmt<Pair<Ref<SEQ4>, BerEndFmt>>, BiMap<Seq5Forward, Seq5Reverse>>;
+type SEQ5__ = Mapped<SequenceFmt<Pair<Ref<SEQ4>, Eof>>, BiMap<Seq5Forward, Seq5Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ5(pub Class, pub u64);
@@ -4204,7 +4203,7 @@ impl SEQ5 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ4::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq5Forward, Seq5Reverse),
                 }
@@ -4214,7 +4213,7 @@ impl SEQ5 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ4::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq5Forward, Seq5Reverse),
         }
@@ -4269,7 +4268,7 @@ impl CHOICE5 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(5u64, Ref(CHOICE4::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 5u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 5u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice5Forward as SpecMap>::Output| #[trigger]
@@ -4285,7 +4284,7 @@ impl CHOICE5 {
 }
 
 /// BER format for ASN.1 `Seq6`.
-type SEQ6__ = Mapped<SequenceFmt<Pair<Ref<SEQ5>, BerEndFmt>>, BiMap<Seq6Forward, Seq6Reverse>>;
+type SEQ6__ = Mapped<SequenceFmt<Pair<Ref<SEQ5>, Eof>>, BiMap<Seq6Forward, Seq6Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ6(pub Class, pub u64);
@@ -4300,7 +4299,7 @@ impl SEQ6 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ5::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq6Forward, Seq6Reverse),
                 }
@@ -4310,7 +4309,7 @@ impl SEQ6 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ5::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq6Forward, Seq6Reverse),
         }
@@ -4365,7 +4364,7 @@ impl CHOICE6 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(6u64, Ref(CHOICE5::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 6u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 6u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice6Forward as SpecMap>::Output| #[trigger]
@@ -4381,7 +4380,7 @@ impl CHOICE6 {
 }
 
 /// BER format for ASN.1 `Seq7`.
-type SEQ7__ = Mapped<SequenceFmt<Pair<Ref<SEQ6>, BerEndFmt>>, BiMap<Seq7Forward, Seq7Reverse>>;
+type SEQ7__ = Mapped<SequenceFmt<Pair<Ref<SEQ6>, Eof>>, BiMap<Seq7Forward, Seq7Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ7(pub Class, pub u64);
@@ -4396,7 +4395,7 @@ impl SEQ7 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ6::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq7Forward, Seq7Reverse),
                 }
@@ -4406,7 +4405,7 @@ impl SEQ7 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ6::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq7Forward, Seq7Reverse),
         }
@@ -4461,7 +4460,7 @@ impl CHOICE7 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(7u64, Ref(CHOICE6::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 7u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 7u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice7Forward as SpecMap>::Output| #[trigger]
@@ -4477,7 +4476,7 @@ impl CHOICE7 {
 }
 
 /// BER format for ASN.1 `Seq8`.
-type SEQ8__ = Mapped<SequenceFmt<Pair<Ref<SEQ7>, BerEndFmt>>, BiMap<Seq8Forward, Seq8Reverse>>;
+type SEQ8__ = Mapped<SequenceFmt<Pair<Ref<SEQ7>, Eof>>, BiMap<Seq8Forward, Seq8Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ8(pub Class, pub u64);
@@ -4492,7 +4491,7 @@ impl SEQ8 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ7::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq8Forward, Seq8Reverse),
                 }
@@ -4502,7 +4501,7 @@ impl SEQ8 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ7::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq8Forward, Seq8Reverse),
         }
@@ -4557,7 +4556,7 @@ impl CHOICE8 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(8u64, Ref(CHOICE7::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 8u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 8u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice8Forward as SpecMap>::Output| #[trigger]
@@ -4573,7 +4572,7 @@ impl CHOICE8 {
 }
 
 /// BER format for ASN.1 `Seq9`.
-type SEQ9__ = Mapped<SequenceFmt<Pair<Ref<SEQ8>, BerEndFmt>>, BiMap<Seq9Forward, Seq9Reverse>>;
+type SEQ9__ = Mapped<SequenceFmt<Pair<Ref<SEQ8>, Eof>>, BiMap<Seq9Forward, Seq9Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ9(pub Class, pub u64);
@@ -4588,7 +4587,7 @@ impl SEQ9 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ8::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq9Forward, Seq9Reverse),
                 }
@@ -4598,7 +4597,7 @@ impl SEQ9 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ8::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq9Forward, Seq9Reverse),
         }
@@ -4653,7 +4652,7 @@ impl CHOICE9 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(9u64, Ref(CHOICE8::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 9u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 9u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice9Forward as SpecMap>::Output| #[trigger]
@@ -4669,7 +4668,7 @@ impl CHOICE9 {
 }
 
 /// BER format for ASN.1 `Seq10`.
-type SEQ10__ = Mapped<SequenceFmt<Pair<Ref<SEQ9>, BerEndFmt>>, BiMap<Seq10Forward, Seq10Reverse>>;
+type SEQ10__ = Mapped<SequenceFmt<Pair<Ref<SEQ9>, Eof>>, BiMap<Seq10Forward, Seq10Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ10(pub Class, pub u64);
@@ -4684,7 +4683,7 @@ impl SEQ10 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ9::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq10Forward, Seq10Reverse),
                 }
@@ -4694,7 +4693,7 @@ impl SEQ10 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ9::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq10Forward, Seq10Reverse),
         }
@@ -4749,7 +4748,7 @@ impl CHOICE10 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(10u64, Ref(CHOICE9::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 10u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 10u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice10Forward as SpecMap>::Output| #[trigger]
@@ -4765,7 +4764,7 @@ impl CHOICE10 {
 }
 
 /// BER format for ASN.1 `Seq11`.
-type SEQ11__ = Mapped<SequenceFmt<Pair<Ref<SEQ10>, BerEndFmt>>, BiMap<Seq11Forward, Seq11Reverse>>;
+type SEQ11__ = Mapped<SequenceFmt<Pair<Ref<SEQ10>, Eof>>, BiMap<Seq11Forward, Seq11Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ11(pub Class, pub u64);
@@ -4780,7 +4779,7 @@ impl SEQ11 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ10::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq11Forward, Seq11Reverse),
                 }
@@ -4790,7 +4789,7 @@ impl SEQ11 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ10::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq11Forward, Seq11Reverse),
         }
@@ -4845,7 +4844,7 @@ impl CHOICE11 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(11u64, Ref(CHOICE10::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 11u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 11u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice11Forward as SpecMap>::Output| #[trigger]
@@ -4861,7 +4860,7 @@ impl CHOICE11 {
 }
 
 /// BER format for ASN.1 `Seq12`.
-type SEQ12__ = Mapped<SequenceFmt<Pair<Ref<SEQ11>, BerEndFmt>>, BiMap<Seq12Forward, Seq12Reverse>>;
+type SEQ12__ = Mapped<SequenceFmt<Pair<Ref<SEQ11>, Eof>>, BiMap<Seq12Forward, Seq12Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ12(pub Class, pub u64);
@@ -4876,7 +4875,7 @@ impl SEQ12 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ11::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq12Forward, Seq12Reverse),
                 }
@@ -4886,7 +4885,7 @@ impl SEQ12 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ11::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq12Forward, Seq12Reverse),
         }
@@ -4941,7 +4940,7 @@ impl CHOICE12 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(12u64, Ref(CHOICE11::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 12u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 12u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice12Forward as SpecMap>::Output| #[trigger]
@@ -4957,7 +4956,7 @@ impl CHOICE12 {
 }
 
 /// BER format for ASN.1 `Seq13`.
-type SEQ13__ = Mapped<SequenceFmt<Pair<Ref<SEQ12>, BerEndFmt>>, BiMap<Seq13Forward, Seq13Reverse>>;
+type SEQ13__ = Mapped<SequenceFmt<Pair<Ref<SEQ12>, Eof>>, BiMap<Seq13Forward, Seq13Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ13(pub Class, pub u64);
@@ -4972,7 +4971,7 @@ impl SEQ13 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ12::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq13Forward, Seq13Reverse),
                 }
@@ -4982,7 +4981,7 @@ impl SEQ13 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ12::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq13Forward, Seq13Reverse),
         }
@@ -5037,7 +5036,7 @@ impl CHOICE13 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(13u64, Ref(CHOICE12::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 13u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 13u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice13Forward as SpecMap>::Output| #[trigger]
@@ -5053,7 +5052,7 @@ impl CHOICE13 {
 }
 
 /// BER format for ASN.1 `Seq14`.
-type SEQ14__ = Mapped<SequenceFmt<Pair<Ref<SEQ13>, BerEndFmt>>, BiMap<Seq14Forward, Seq14Reverse>>;
+type SEQ14__ = Mapped<SequenceFmt<Pair<Ref<SEQ13>, Eof>>, BiMap<Seq14Forward, Seq14Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ14(pub Class, pub u64);
@@ -5068,7 +5067,7 @@ impl SEQ14 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ13::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq14Forward, Seq14Reverse),
                 }
@@ -5078,7 +5077,7 @@ impl SEQ14 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ13::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq14Forward, Seq14Reverse),
         }
@@ -5133,7 +5132,7 @@ impl CHOICE14 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(14u64, Ref(CHOICE13::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 14u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 14u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice14Forward as SpecMap>::Output| #[trigger]
@@ -5149,7 +5148,7 @@ impl CHOICE14 {
 }
 
 /// BER format for ASN.1 `Seq15`.
-type SEQ15__ = Mapped<SequenceFmt<Pair<Ref<SEQ14>, BerEndFmt>>, BiMap<Seq15Forward, Seq15Reverse>>;
+type SEQ15__ = Mapped<SequenceFmt<Pair<Ref<SEQ14>, Eof>>, BiMap<Seq15Forward, Seq15Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ15(pub Class, pub u64);
@@ -5164,7 +5163,7 @@ impl SEQ15 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ14::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq15Forward, Seq15Reverse),
                 }
@@ -5174,7 +5173,7 @@ impl SEQ15 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ14::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq15Forward, Seq15Reverse),
         }
@@ -5229,7 +5228,7 @@ impl CHOICE15 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(15u64, Ref(CHOICE14::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 15u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 15u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice15Forward as SpecMap>::Output| #[trigger]
@@ -5245,7 +5244,7 @@ impl CHOICE15 {
 }
 
 /// BER format for ASN.1 `Seq16`.
-type SEQ16__ = Mapped<SequenceFmt<Pair<Ref<SEQ15>, BerEndFmt>>, BiMap<Seq16Forward, Seq16Reverse>>;
+type SEQ16__ = Mapped<SequenceFmt<Pair<Ref<SEQ15>, Eof>>, BiMap<Seq16Forward, Seq16Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ16(pub Class, pub u64);
@@ -5260,7 +5259,7 @@ impl SEQ16 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ15::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq16Forward, Seq16Reverse),
                 }
@@ -5270,7 +5269,7 @@ impl SEQ16 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ15::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq16Forward, Seq16Reverse),
         }
@@ -5325,7 +5324,7 @@ impl CHOICE16 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(16u64, Ref(CHOICE15::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 16u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 16u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice16Forward as SpecMap>::Output| #[trigger]
@@ -5341,7 +5340,7 @@ impl CHOICE16 {
 }
 
 /// BER format for ASN.1 `Seq17`.
-type SEQ17__ = Mapped<SequenceFmt<Pair<Ref<SEQ16>, BerEndFmt>>, BiMap<Seq17Forward, Seq17Reverse>>;
+type SEQ17__ = Mapped<SequenceFmt<Pair<Ref<SEQ16>, Eof>>, BiMap<Seq17Forward, Seq17Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ17(pub Class, pub u64);
@@ -5356,7 +5355,7 @@ impl SEQ17 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ16::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq17Forward, Seq17Reverse),
                 }
@@ -5366,7 +5365,7 @@ impl SEQ17 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ16::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq17Forward, Seq17Reverse),
         }
@@ -5421,7 +5420,7 @@ impl CHOICE17 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(17u64, Ref(CHOICE16::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 17u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 17u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice17Forward as SpecMap>::Output| #[trigger]
@@ -5437,7 +5436,7 @@ impl CHOICE17 {
 }
 
 /// BER format for ASN.1 `Seq18`.
-type SEQ18__ = Mapped<SequenceFmt<Pair<Ref<SEQ17>, BerEndFmt>>, BiMap<Seq18Forward, Seq18Reverse>>;
+type SEQ18__ = Mapped<SequenceFmt<Pair<Ref<SEQ17>, Eof>>, BiMap<Seq18Forward, Seq18Reverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SEQ18(pub Class, pub u64);
@@ -5452,7 +5451,7 @@ impl SEQ18 {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SEQ17::Fmt),
-                            BER_END),
+                            Eof),
                         ),
                     mapper: BiMap(Seq18Forward, Seq18Reverse),
                 }
@@ -5462,7 +5461,7 @@ impl SEQ18 {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SEQ17::Fmt),
-                    BER_END),
+                    Eof),
                 ),
             mapper: BiMap(Seq18Forward, Seq18Reverse),
         }
@@ -5517,7 +5516,7 @@ impl CHOICE18 {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            EXPLICIT(18u64, Ref(CHOICE17::Fmt));
+            (__asn1_fmt_0).inner;
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 18u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 18u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert forall|output: <Choice18Forward as SpecMap>::Output| #[trigger]
@@ -5538,227 +5537,227 @@ impl CHOICE18 {
 mod __impl_seq0 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(false), owned, SEQ0, SEQ0__, Seq0Spec, Seq0);
+    vest_lib::impl_ber!(tag(primitive), owned, SEQ0, SEQ0__, Seq0Spec, Seq0);
 }
 
 mod __impl_choice0 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(false), owned, CHOICE0, CHOICE0__, Choice0Spec, Choice0);
+    vest_lib::impl_ber!(tag(primitive), owned, CHOICE0, CHOICE0__, Choice0Spec, Choice0);
 }
 
 mod __impl_seq1 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ1, SEQ1__, Seq1Spec, Seq1, Seq1Forward, Seq1Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ1, SEQ1__, Seq1Spec, Seq1, Seq1Forward, Seq1Reverse);
 }
 
 mod __impl_choice1 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)), owned, CHOICE1, CHOICE1__, Choice1Spec, Choice1, Choice1Forward, Choice1Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)), owned, CHOICE1, CHOICE1__, Choice1Spec, Choice1, Choice1Forward, Choice1Reverse);
 }
 
 mod __impl_seq2 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ2, SEQ2__, Seq2Spec, Seq2, Seq2Forward, Seq2Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ2, SEQ2__, Seq2Spec, Seq2, Seq2Forward, Seq2Reverse);
 }
 
 mod __impl_choice2 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)), owned, CHOICE2, CHOICE2__, Choice2Spec, Choice2, Choice2Forward, Choice2Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)), owned, CHOICE2, CHOICE2__, Choice2Spec, Choice2, Choice2Forward, Choice2Reverse);
 }
 
 mod __impl_seq3 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ3, SEQ3__, Seq3Spec, Seq3, Seq3Forward, Seq3Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ3, SEQ3__, Seq3Spec, Seq3, Seq3Forward, Seq3Reverse);
 }
 
 mod __impl_choice3 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)), owned, CHOICE3, CHOICE3__, Choice3Spec, Choice3, Choice3Forward, Choice3Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)), owned, CHOICE3, CHOICE3__, Choice3Spec, Choice3, Choice3Forward, Choice3Reverse);
 }
 
 mod __impl_seq4 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ4, SEQ4__, Seq4Spec, Seq4, Seq4Forward, Seq4Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ4, SEQ4__, Seq4Spec, Seq4, Seq4Forward, Seq4Reverse);
 }
 
 mod __impl_choice4 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)), owned, CHOICE4, CHOICE4__, Choice4Spec, Choice4, Choice4Forward, Choice4Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000001000000000u64, 0x0000000000000000u64)), owned, CHOICE4, CHOICE4__, Choice4Spec, Choice4, Choice4Forward, Choice4Reverse);
 }
 
 mod __impl_seq5 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ5, SEQ5__, Seq5Spec, Seq5, Seq5Forward, Seq5Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ5, SEQ5__, Seq5Spec, Seq5, Seq5Forward, Seq5Reverse);
 }
 
 mod __impl_choice5 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)), owned, CHOICE5, CHOICE5__, Choice5Spec, Choice5, Choice5Forward, Choice5Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000002000000000u64, 0x0000000000000000u64)), owned, CHOICE5, CHOICE5__, Choice5Spec, Choice5, Choice5Forward, Choice5Reverse);
 }
 
 mod __impl_seq6 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ6, SEQ6__, Seq6Spec, Seq6, Seq6Forward, Seq6Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ6, SEQ6__, Seq6Spec, Seq6, Seq6Forward, Seq6Reverse);
 }
 
 mod __impl_choice6 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)), owned, CHOICE6, CHOICE6__, Choice6Spec, Choice6, Choice6Forward, Choice6Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000004000000000u64, 0x0000000000000000u64)), owned, CHOICE6, CHOICE6__, Choice6Spec, Choice6, Choice6Forward, Choice6Reverse);
 }
 
 mod __impl_seq7 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ7, SEQ7__, Seq7Spec, Seq7, Seq7Forward, Seq7Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ7, SEQ7__, Seq7Spec, Seq7, Seq7Forward, Seq7Reverse);
 }
 
 mod __impl_choice7 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)), owned, CHOICE7, CHOICE7__, Choice7Spec, Choice7, Choice7Forward, Choice7Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000008000000000u64, 0x0000000000000000u64)), owned, CHOICE7, CHOICE7__, Choice7Spec, Choice7, Choice7Forward, Choice7Reverse);
 }
 
 mod __impl_seq8 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ8, SEQ8__, Seq8Spec, Seq8, Seq8Forward, Seq8Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ8, SEQ8__, Seq8Spec, Seq8, Seq8Forward, Seq8Reverse);
 }
 
 mod __impl_choice8 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)), owned, CHOICE8, CHOICE8__, Choice8Spec, Choice8, Choice8Forward, Choice8Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000010000000000u64, 0x0000000000000000u64)), owned, CHOICE8, CHOICE8__, Choice8Spec, Choice8, Choice8Forward, Choice8Reverse);
 }
 
 mod __impl_seq9 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ9, SEQ9__, Seq9Spec, Seq9, Seq9Forward, Seq9Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ9, SEQ9__, Seq9Spec, Seq9, Seq9Forward, Seq9Reverse);
 }
 
 mod __impl_choice9 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)), owned, CHOICE9, CHOICE9__, Choice9Spec, Choice9, Choice9Forward, Choice9Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000020000000000u64, 0x0000000000000000u64)), owned, CHOICE9, CHOICE9__, Choice9Spec, Choice9, Choice9Forward, Choice9Reverse);
 }
 
 mod __impl_seq10 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ10, SEQ10__, Seq10Spec, Seq10, Seq10Forward, Seq10Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ10, SEQ10__, Seq10Spec, Seq10, Seq10Forward, Seq10Reverse);
 }
 
 mod __impl_choice10 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)), owned, CHOICE10, CHOICE10__, Choice10Spec, Choice10, Choice10Forward, Choice10Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000040000000000u64, 0x0000000000000000u64)), owned, CHOICE10, CHOICE10__, Choice10Spec, Choice10, Choice10Forward, Choice10Reverse);
 }
 
 mod __impl_seq11 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ11, SEQ11__, Seq11Spec, Seq11, Seq11Forward, Seq11Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ11, SEQ11__, Seq11Spec, Seq11, Seq11Forward, Seq11Reverse);
 }
 
 mod __impl_choice11 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)), owned, CHOICE11, CHOICE11__, Choice11Spec, Choice11, Choice11Forward, Choice11Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000080000000000u64, 0x0000000000000000u64)), owned, CHOICE11, CHOICE11__, Choice11Spec, Choice11, Choice11Forward, Choice11Reverse);
 }
 
 mod __impl_seq12 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ12, SEQ12__, Seq12Spec, Seq12, Seq12Forward, Seq12Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ12, SEQ12__, Seq12Spec, Seq12, Seq12Forward, Seq12Reverse);
 }
 
 mod __impl_choice12 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)), owned, CHOICE12, CHOICE12__, Choice12Spec, Choice12, Choice12Forward, Choice12Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000100000000000u64, 0x0000000000000000u64)), owned, CHOICE12, CHOICE12__, Choice12Spec, Choice12, Choice12Forward, Choice12Reverse);
 }
 
 mod __impl_seq13 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ13, SEQ13__, Seq13Spec, Seq13, Seq13Forward, Seq13Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ13, SEQ13__, Seq13Spec, Seq13, Seq13Forward, Seq13Reverse);
 }
 
 mod __impl_choice13 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)), owned, CHOICE13, CHOICE13__, Choice13Spec, Choice13, Choice13Forward, Choice13Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000200000000000u64, 0x0000000000000000u64)), owned, CHOICE13, CHOICE13__, Choice13Spec, Choice13, Choice13Forward, Choice13Reverse);
 }
 
 mod __impl_seq14 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ14, SEQ14__, Seq14Spec, Seq14, Seq14Forward, Seq14Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ14, SEQ14__, Seq14Spec, Seq14, Seq14Forward, Seq14Reverse);
 }
 
 mod __impl_choice14 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)), owned, CHOICE14, CHOICE14__, Choice14Spec, Choice14, Choice14Forward, Choice14Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000400000000000u64, 0x0000000000000000u64)), owned, CHOICE14, CHOICE14__, Choice14Spec, Choice14, Choice14Forward, Choice14Reverse);
 }
 
 mod __impl_seq15 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ15, SEQ15__, Seq15Spec, Seq15, Seq15Forward, Seq15Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ15, SEQ15__, Seq15Spec, Seq15, Seq15Forward, Seq15Reverse);
 }
 
 mod __impl_choice15 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)), owned, CHOICE15, CHOICE15__, Choice15Spec, Choice15, Choice15Forward, Choice15Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000800000000000u64, 0x0000000000000000u64)), owned, CHOICE15, CHOICE15__, Choice15Spec, Choice15, Choice15Forward, Choice15Reverse);
 }
 
 mod __impl_seq16 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ16, SEQ16__, Seq16Spec, Seq16, Seq16Forward, Seq16Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ16, SEQ16__, Seq16Spec, Seq16, Seq16Forward, Seq16Reverse);
 }
 
 mod __impl_choice16 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)), owned, CHOICE16, CHOICE16__, Choice16Spec, Choice16, Choice16Forward, Choice16Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0001000000000000u64, 0x0000000000000000u64)), owned, CHOICE16, CHOICE16__, Choice16Spec, Choice16, Choice16Forward, Choice16Reverse);
 }
 
 mod __impl_seq17 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ17, SEQ17__, Seq17Spec, Seq17, Seq17Forward, Seq17Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ17, SEQ17__, Seq17Spec, Seq17, Seq17Forward, Seq17Reverse);
 }
 
 mod __impl_choice17 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)), owned, CHOICE17, CHOICE17__, Choice17Spec, Choice17, Choice17Forward, Choice17Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0002000000000000u64, 0x0000000000000000u64)), owned, CHOICE17, CHOICE17__, Choice17Spec, Choice17, Choice17Forward, Choice17Reverse);
 }
 
 mod __impl_seq18 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, SEQ18, SEQ18__, Seq18Spec, Seq18, Seq18Forward, Seq18Reverse);
+    vest_lib::impl_ber!(tag(constructed), owned, SEQ18, SEQ18__, Seq18Spec, Seq18, Seq18Forward, Seq18Reverse);
 }
 
 mod __impl_choice18 {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)), owned, CHOICE18, CHOICE18__, Choice18Spec, Choice18, Choice18Forward, Choice18Reverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0004000000000000u64, 0x0000000000000000u64)), owned, CHOICE18, CHOICE18__, Choice18Spec, Choice18, Choice18Forward, Choice18Reverse);
 }

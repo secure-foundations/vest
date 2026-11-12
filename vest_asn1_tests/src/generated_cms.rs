@@ -7,7 +7,7 @@
 use vest_lib::asn1::*;
 use vest_lib::asn1::der_ord::{DerOrd, DerState};
 #[cfg(verus_only)]
-use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
+use vest_lib::asn1::disjoint::{asn1_start_any_non_eoc, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start};
 use vest_lib::asn1::tag::tag_num_from_uint;
 use vest_lib::asn1::modifiers::{implicitly_tagged as Implicit, ImplicitFmt, CHOICE, IMPLICIT, IMPLICIT_APPLICATION, IMPLICIT_PRIVATE, OPTIONAL, REQUIRED};
 use vest_lib::combinators::mapped::spec::{BiMap, SpecMap};
@@ -8259,7 +8259,7 @@ impl<'a, 'x> Map<&'x AttributeCertificateV1Subject<'a>> for AttributeCertificate
 }
 
 /// BER format for ASN.1 `ContentInfo`.
-type CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<vest_lib::asn1::ber::AnyTlvFmt>>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<ContentInfoForward, ContentInfoReverse>>;
+type CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<vest_lib::asn1::ber::AnyTlvFmt>>, Eof>>>, BiMap<ContentInfoForward, ContentInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct CONTENT_INFO(pub Class, pub u64);
@@ -8270,25 +8270,25 @@ impl CONTENT_INFO {
     pub const fn schema() -> CONTENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, EXPLICIT, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(CONTENT_TYPE::Fmt),
                             REQUIRED(EXPLICIT(0u64, Ref(ANY)),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(ContentInfoForward, ContentInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, EXPLICIT, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, EXPLICIT, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(CONTENT_TYPE::Fmt),
                     REQUIRED(EXPLICIT(0u64, Ref(ANY)),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(ContentInfoForward, ContentInfoReverse),
         }
@@ -8349,7 +8349,7 @@ impl CONTENT_TYPE {
 }
 
 /// BER format for ASN.1 `SignedData`.
-type SIGNED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIERS>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<CERTIFICATE_SET>>, Optional<ImplicitFmt<Ref<REVOCATION_INFO_CHOICES>>, Pair<Ref<SIGNER_INFOS>, vest_lib::asn1::ber::BerEndFmt>>>>>>>, BiMap<SignedDataForward, SignedDataReverse>>;
+type SIGNED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIERS>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<CERTIFICATE_SET>>, Optional<ImplicitFmt<Ref<REVOCATION_INFO_CHOICES>>, Pair<Ref<SIGNER_INFOS>, Eof>>>>>>>, BiMap<SignedDataForward, SignedDataReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SIGNED_DATA(pub Class, pub u64);
@@ -8360,7 +8360,7 @@ impl SIGNED_DATA {
     pub const fn schema() -> SIGNED_DATA__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -8370,13 +8370,13 @@ impl SIGNED_DATA {
                             OPTIONAL(IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt)),
                             OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
                             REQUIRED(Ref(SIGNER_INFOS::Fmt),
-                            BER_END)))))),
+                            Eof)))))),
                         ),
                     mapper: BiMap(SignedDataForward, SignedDataReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -8386,7 +8386,7 @@ impl SIGNED_DATA {
                     OPTIONAL(IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt)),
                     OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
                     REQUIRED(Ref(SIGNER_INFOS::Fmt),
-                    BER_END)))))),
+                    Eof)))))),
                 ),
             mapper: BiMap(SignedDataForward, SignedDataReverse),
         }
@@ -8408,16 +8408,13 @@ impl SIGNED_DATA {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
-            REQUIRED(Ref(SIGNER_INFOS::Fmt),
-            vest_lib::asn1::ber::BER_END));
+            ((((((self.spec_inner()).inner).1).1).1).1).1;
         let __asn1_fmt_2 =
             IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_3 =
-            REQUIRED(Ref(SIGNER_INFOS::Fmt),
-            vest_lib::asn1::ber::BER_END);
+            (((((((self.spec_inner()).inner).1).1).1).1).1).1;
         let __asn1_fmt_4 =
             Ref(SIGNER_INFOS::Fmt);
         let __asn1_fmt_5 =
@@ -8434,6 +8431,31 @@ impl SIGNED_DATA {
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_6 =
+            IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_7 =
+            ((((((self.spec_inner()).inner).eoc_body()).1).1).1).1;
+        let __asn1_fmt_8 =
+            IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt));
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_9 =
+            (((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1;
+        let __asn1_fmt_10 =
+            Ref(SIGNER_INFOS::Fmt);
+        let __asn1_fmt_11 =
+            SIGNER_INFOS::Fmt;
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_8.asn1_start(), __asn1_fmt_9.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_8, __asn1_fmt_9);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_7.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_7);
         assert forall|output: <SignedDataForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -8536,7 +8558,7 @@ impl SIGNER_INFOS {
 }
 
 /// BER format for ASN.1 `EncapsulatedContentInfo`.
-type ENCAPSULATED_CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Optional<vest_lib::asn1::ber::ExplicitFmt<Ref<vest_lib::asn1::ber::OctetStringTlvFmt>>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse>>;
+type ENCAPSULATED_CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Optional<vest_lib::asn1::ber::ExplicitFmt<Ref<vest_lib::asn1::ber::OctetStringTlvFmt>>, Eof>>>, BiMap<EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ENCAPSULATED_CONTENT_INFO(pub Class, pub u64);
@@ -8547,25 +8569,25 @@ impl ENCAPSULATED_CONTENT_INFO {
     pub const fn schema() -> ENCAPSULATED_CONTENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, EXPLICIT, OCTET_STRING, SEQUENCE};
+                use vest_lib::asn1::ber::{EXPLICIT, OCTET_STRING, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(CONTENT_TYPE::Fmt),
                             OPTIONAL(EXPLICIT(0u64, Ref(OCTET_STRING)),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, EXPLICIT, OCTET_STRING, SEQUENCE};
+        use vest_lib::asn1::ber::{EXPLICIT, OCTET_STRING, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(CONTENT_TYPE::Fmt),
                     OPTIONAL(EXPLICIT(0u64, Ref(OCTET_STRING)),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse),
         }
@@ -8578,6 +8600,7 @@ impl ENCAPSULATED_CONTENT_INFO {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(ENCAPSULATED_CONTENT_INFO::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -8586,13 +8609,21 @@ impl ENCAPSULATED_CONTENT_INFO {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_1.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            ((((self.spec_inner()).inner).1).1).1;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_2 =
+            vest_lib::asn1::ber::EXPLICIT(0u64, Ref(vest_lib::asn1::ber::OCTET_STRING));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_3 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
         assert forall|output: <EncapsulatedContentInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -8605,7 +8636,7 @@ impl ENCAPSULATED_CONTENT_INFO {
 }
 
 /// BER format for ASN.1 `SignerInfo`.
-type SIGNER_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<SIGNER_IDENTIFIER>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIER>, Optional<ImplicitFmt<Ref<SIGNED_ATTRIBUTES>>, Pair<Ref<SIGNATURE_ALGORITHM_IDENTIFIER>, Pair<Ref<SIGNATURE_VALUE>, Optional<ImplicitFmt<Ref<UNSIGNED_ATTRIBUTES>>, vest_lib::asn1::ber::BerEndFmt>>>>>>>>, BiMap<SignerInfoForward, SignerInfoReverse>>;
+type SIGNER_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<SIGNER_IDENTIFIER>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIER>, Optional<ImplicitFmt<Ref<SIGNED_ATTRIBUTES>>, Pair<Ref<SIGNATURE_ALGORITHM_IDENTIFIER>, Pair<Ref<SIGNATURE_VALUE>, Optional<ImplicitFmt<Ref<UNSIGNED_ATTRIBUTES>>, Eof>>>>>>>>, BiMap<SignerInfoForward, SignerInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct SIGNER_INFO(pub Class, pub u64);
@@ -8616,7 +8647,7 @@ impl SIGNER_INFO {
     pub const fn schema() -> SIGNER_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -8627,13 +8658,13 @@ impl SIGNER_INFO {
                             REQUIRED(Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(SIGNATURE_VALUE::Fmt),
                             OPTIONAL(IMPLICIT(1u64, Ref(UNSIGNED_ATTRIBUTES::Fmt)),
-                            BER_END))))))),
+                            Eof))))))),
                         ),
                     mapper: BiMap(SignerInfoForward, SignerInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -8644,7 +8675,7 @@ impl SIGNER_INFO {
                     REQUIRED(Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(SIGNATURE_VALUE::Fmt),
                     OPTIONAL(IMPLICIT(1u64, Ref(UNSIGNED_ATTRIBUTES::Fmt)),
-                    BER_END))))))),
+                    Eof))))))),
                 ),
             mapper: BiMap(SignerInfoForward, SignerInfoReverse),
         }
@@ -8657,6 +8688,7 @@ impl SIGNER_INFO {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(SIGNER_INFO::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -8665,10 +8697,7 @@ impl SIGNER_INFO {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            REQUIRED(Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt),
-            REQUIRED(Ref(SIGNATURE_VALUE::Fmt),
-            OPTIONAL(IMPLICIT(1u64, Ref(UNSIGNED_ATTRIBUTES::Fmt)),
-            vest_lib::asn1::ber::BER_END)));
+            ((((((self.spec_inner()).inner).1).1).1).1).1;
         let __asn1_fmt_2 =
             Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt);
         let __asn1_fmt_3 =
@@ -8681,17 +8710,40 @@ impl SIGNER_INFO {
         assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_5 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_5.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((((((self.spec_inner()).inner).1).1).1).1).1).1).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_6 =
+            IMPLICIT(0u64, Ref(SIGNED_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_7 =
+            ((((((self.spec_inner()).inner).eoc_body()).1).1).1).1;
+        let __asn1_fmt_8 =
+            Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt);
+        let __asn1_fmt_9 =
+            SIGNATURE_ALGORITHM_IDENTIFIER::Fmt;
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        let __asn1_fmt_10 =
+            IMPLICIT(1u64, Ref(UNSIGNED_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_11 =
+            (((((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1).1).1;
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_10.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_10, __asn1_fmt_11);
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_7.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_7);
         assert forall|output: <SignerInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -8746,9 +8798,7 @@ impl SIGNER_IDENTIFIER {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(ISSUER_AND_SERIAL_NUMBER::Fmt),
-                IMPLICIT(0u64, Ref(SUBJECT_KEY_IDENTIFIER::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(ISSUER_AND_SERIAL_NUMBER::Fmt);
         let __asn1_fmt_3 =
@@ -8984,7 +9034,7 @@ impl SIGNATURE_VALUE {
 }
 
 /// BER format for ASN.1 `EnvelopedData`.
-type ENVELOPED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<ORIGINATOR_INFO>>, Pair<Ref<RECIPIENT_INFOS>, Pair<Ref<ENCRYPTED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<UNPROTECTED_ATTRIBUTES>>, vest_lib::asn1::ber::BerEndFmt>>>>>>, BiMap<EnvelopedDataForward, EnvelopedDataReverse>>;
+type ENVELOPED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<ORIGINATOR_INFO>>, Pair<Ref<RECIPIENT_INFOS>, Pair<Ref<ENCRYPTED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<UNPROTECTED_ATTRIBUTES>>, Eof>>>>>>, BiMap<EnvelopedDataForward, EnvelopedDataReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ENVELOPED_DATA(pub Class, pub u64);
@@ -8995,7 +9045,7 @@ impl ENVELOPED_DATA {
     pub const fn schema() -> ENVELOPED_DATA__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -9004,13 +9054,13 @@ impl ENVELOPED_DATA {
                             REQUIRED(Ref(RECIPIENT_INFOS::Fmt),
                             REQUIRED(Ref(ENCRYPTED_CONTENT_INFO::Fmt),
                             OPTIONAL(IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt)),
-                            BER_END))))),
+                            Eof))))),
                         ),
                     mapper: BiMap(EnvelopedDataForward, EnvelopedDataReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -9019,7 +9069,7 @@ impl ENVELOPED_DATA {
                     REQUIRED(Ref(RECIPIENT_INFOS::Fmt),
                     REQUIRED(Ref(ENCRYPTED_CONTENT_INFO::Fmt),
                     OPTIONAL(IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt)),
-                    BER_END))))),
+                    Eof))))),
                 ),
             mapper: BiMap(EnvelopedDataForward, EnvelopedDataReverse),
         }
@@ -9032,6 +9082,7 @@ impl ENVELOPED_DATA {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(ENVELOPED_DATA::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -9040,10 +9091,7 @@ impl ENVELOPED_DATA {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            REQUIRED(Ref(RECIPIENT_INFOS::Fmt),
-            REQUIRED(Ref(ENCRYPTED_CONTENT_INFO::Fmt),
-            OPTIONAL(IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt)),
-            vest_lib::asn1::ber::BER_END)));
+            ((((self.spec_inner()).inner).1).1).1;
         let __asn1_fmt_2 =
             Ref(RECIPIENT_INFOS::Fmt);
         let __asn1_fmt_3 =
@@ -9056,17 +9104,40 @@ impl ENVELOPED_DATA {
         assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_5 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_5.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((((self.spec_inner()).inner).1).1).1).1).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
         assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_6 =
+            IMPLICIT(0u64, Ref(ORIGINATOR_INFO::Fmt));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_7 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        let __asn1_fmt_8 =
+            Ref(RECIPIENT_INFOS::Fmt);
+        let __asn1_fmt_9 =
+            RECIPIENT_INFOS::Fmt;
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        let __asn1_fmt_10 =
+            IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_11 =
+            (((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1;
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_10.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_10, __asn1_fmt_11);
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_7.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_7);
         assert forall|output: <EnvelopedDataForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -9079,7 +9150,7 @@ impl ENVELOPED_DATA {
 }
 
 /// BER format for ASN.1 `OriginatorInfo`.
-type ORIGINATOR_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Optional<ImplicitFmt<Ref<CERTIFICATE_SET>>, Optional<ImplicitFmt<Ref<REVOCATION_INFO_CHOICES>>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OriginatorInfoForward, OriginatorInfoReverse>>;
+type ORIGINATOR_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Optional<ImplicitFmt<Ref<CERTIFICATE_SET>>, Optional<ImplicitFmt<Ref<REVOCATION_INFO_CHOICES>>, Eof>>>, BiMap<OriginatorInfoForward, OriginatorInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ORIGINATOR_INFO(pub Class, pub u64);
@@ -9090,25 +9161,25 @@ impl ORIGINATOR_INFO {
     pub const fn schema() -> ORIGINATOR_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             OPTIONAL(IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt)),
                             OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OriginatorInfoForward, OriginatorInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     OPTIONAL(IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt)),
                     OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OriginatorInfoForward, OriginatorInfoReverse),
         }
@@ -9121,6 +9192,7 @@ impl ORIGINATOR_INFO {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_start_union);
         reveal(asn1_starts_disjoint);
         reveal(ORIGINATOR_INFO::spec_inner);
@@ -9130,25 +9202,42 @@ impl ORIGINATOR_INFO {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            OPTIONAL(IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt)),
-            vest_lib::asn1::ber::BER_END);
+            (((self.spec_inner()).inner).1).1;
         let __asn1_fmt_2 =
             IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_3 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_3.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            ((((self.spec_inner()).inner).1).1).1;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
-        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64));
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_4 =
+            IMPLICIT(0u64, Ref(CERTIFICATE_SET::Fmt));
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_5 =
+            (((self.spec_inner()).inner).eoc_body()).1;
+        let __asn1_fmt_6 =
+            IMPLICIT(1u64, Ref(REVOCATION_INFO_CHOICES::Fmt));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_7 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_7.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_7);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
         assert forall|output: <OriginatorInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -9205,7 +9294,7 @@ impl RECIPIENT_INFOS {
 }
 
 /// BER format for ASN.1 `EncryptedContentInfo`.
-type ENCRYPTED_CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Pair<Ref<CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER>, Optional<ImplicitFmt<Ref<ENCRYPTED_CONTENT>>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<EncryptedContentInfoForward, EncryptedContentInfoReverse>>;
+type ENCRYPTED_CONTENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CONTENT_TYPE>, Pair<Ref<CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER>, Optional<ImplicitFmt<Ref<ENCRYPTED_CONTENT>>, Eof>>>>, BiMap<EncryptedContentInfoForward, EncryptedContentInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ENCRYPTED_CONTENT_INFO(pub Class, pub u64);
@@ -9216,27 +9305,27 @@ impl ENCRYPTED_CONTENT_INFO {
     pub const fn schema() -> ENCRYPTED_CONTENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(CONTENT_TYPE::Fmt),
                             REQUIRED(Ref(CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                             OPTIONAL(IMPLICIT(0u64, Ref(ENCRYPTED_CONTENT::Fmt)),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(EncryptedContentInfoForward, EncryptedContentInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(CONTENT_TYPE::Fmt),
                     REQUIRED(Ref(CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                     OPTIONAL(IMPLICIT(0u64, Ref(ENCRYPTED_CONTENT::Fmt)),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(EncryptedContentInfoForward, EncryptedContentInfoReverse),
         }
@@ -9249,6 +9338,7 @@ impl ENCRYPTED_CONTENT_INFO {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(ENCRYPTED_CONTENT_INFO::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -9258,13 +9348,21 @@ impl ENCRYPTED_CONTENT_INFO {
         assert(asn1_start_identity_uint(Class::ContextSpecific, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64)) by (bit_vector);
         assert(__asn1_fmt_0.asn1_start() == asn1_start_identity_uint(Class::ContextSpecific, 0u64));
         let __asn1_fmt_1 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_1.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((self.spec_inner()).inner).1).1).1).1;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_2 =
+            IMPLICIT(0u64, Ref(ENCRYPTED_CONTENT::Fmt));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_identity_uint(Class::ContextSpecific, 0u64));
+        let __asn1_fmt_3 =
+            (((((self.spec_inner()).inner).eoc_body()).1).1).1;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
         assert forall|output: <EncryptedContentInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -9410,15 +9508,7 @@ impl RECIPIENT_INFO {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(KEY_TRANS_RECIPIENT_INFO::Fmt),
-                CHOICE(
-                    CHOICE(
-                        IMPLICIT(1u64, Ref(KEY_AGREE_RECIPIENT_INFO::Fmt)),
-                        IMPLICIT(2u64, Ref(KEK_RECIPIENT_INFO::Fmt))),
-                    CHOICE(
-                        IMPLICIT(3u64, Ref(PASSWORD_RECIPIENT_INFO::Fmt)),
-                        IMPLICIT(4u64, Ref(OTHER_RECIPIENT_INFO::Fmt)))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(KEY_TRANS_RECIPIENT_INFO::Fmt);
         let __asn1_fmt_3 =
@@ -9525,7 +9615,7 @@ impl ENCRYPTED_KEY {
 }
 
 /// BER format for ASN.1 `KeyTransRecipientInfo`.
-type KEY_TRANS_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<RECIPIENT_IDENTIFIER>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, vest_lib::asn1::ber::BerEndFmt>>>>>, BiMap<KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse>>;
+type KEY_TRANS_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<RECIPIENT_IDENTIFIER>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, Eof>>>>>, BiMap<KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct KEY_TRANS_RECIPIENT_INFO(pub Class, pub u64);
@@ -9536,7 +9626,7 @@ impl KEY_TRANS_RECIPIENT_INFO {
     pub const fn schema() -> KEY_TRANS_RECIPIENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -9544,13 +9634,13 @@ impl KEY_TRANS_RECIPIENT_INFO {
                             REQUIRED(Ref(RECIPIENT_IDENTIFIER::Fmt),
                             REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                            BER_END)))),
+                            Eof)))),
                         ),
                     mapper: BiMap(KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -9558,7 +9648,7 @@ impl KEY_TRANS_RECIPIENT_INFO {
                     REQUIRED(Ref(RECIPIENT_IDENTIFIER::Fmt),
                     REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                    BER_END)))),
+                    Eof)))),
                 ),
             mapper: BiMap(KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse),
         }
@@ -9627,9 +9717,7 @@ impl RECIPIENT_IDENTIFIER {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(ISSUER_AND_SERIAL_NUMBER::Fmt),
-                IMPLICIT(0u64, Ref(SUBJECT_KEY_IDENTIFIER::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(ISSUER_AND_SERIAL_NUMBER::Fmt);
         let __asn1_fmt_3 =
@@ -9660,7 +9748,7 @@ impl RECIPIENT_IDENTIFIER {
 }
 
 /// BER format for ASN.1 `KeyAgreeRecipientInfo`.
-type KEY_AGREE_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<ORIGINATOR_IDENTIFIER_OR_KEY>>, Optional<vest_lib::asn1::ber::ExplicitFmt<Ref<USER_KEYING_MATERIAL>>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<RECIPIENT_ENCRYPTED_KEYS>, vest_lib::asn1::ber::BerEndFmt>>>>>>, BiMap<KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse>>;
+type KEY_AGREE_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<vest_lib::asn1::ber::ExplicitFmt<Ref<ORIGINATOR_IDENTIFIER_OR_KEY>>, Optional<vest_lib::asn1::ber::ExplicitFmt<Ref<USER_KEYING_MATERIAL>>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<RECIPIENT_ENCRYPTED_KEYS>, Eof>>>>>>, BiMap<KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct KEY_AGREE_RECIPIENT_INFO(pub Class, pub u64);
@@ -9671,7 +9759,7 @@ impl KEY_AGREE_RECIPIENT_INFO {
     pub const fn schema() -> KEY_AGREE_RECIPIENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, EXPLICIT, SEQUENCE};
+                use vest_lib::asn1::ber::{EXPLICIT, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -9680,13 +9768,13 @@ impl KEY_AGREE_RECIPIENT_INFO {
                             OPTIONAL(EXPLICIT(1u64, Ref(USER_KEYING_MATERIAL::Fmt)),
                             REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(RECIPIENT_ENCRYPTED_KEYS::Fmt),
-                            BER_END))))),
+                            Eof))))),
                         ),
                     mapper: BiMap(KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, EXPLICIT, SEQUENCE};
+        use vest_lib::asn1::ber::{EXPLICIT, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
@@ -9695,7 +9783,7 @@ impl KEY_AGREE_RECIPIENT_INFO {
                     OPTIONAL(EXPLICIT(1u64, Ref(USER_KEYING_MATERIAL::Fmt)),
                     REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(RECIPIENT_ENCRYPTED_KEYS::Fmt),
-                    BER_END))))),
+                    Eof))))),
                 ),
             mapper: BiMap(KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse),
         }
@@ -9716,9 +9804,7 @@ impl KEY_AGREE_RECIPIENT_INFO {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
-            REQUIRED(Ref(RECIPIENT_ENCRYPTED_KEYS::Fmt),
-            vest_lib::asn1::ber::BER_END));
+            (((((self.spec_inner()).inner).1).1).1).1;
         let __asn1_fmt_2 =
             Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt);
         let __asn1_fmt_3 =
@@ -9730,6 +9816,21 @@ impl KEY_AGREE_RECIPIENT_INFO {
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_4 =
+            vest_lib::asn1::ber::EXPLICIT(1u64, Ref(USER_KEYING_MATERIAL::Fmt));
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_5 =
+            (((((self.spec_inner()).inner).eoc_body()).1).1).1;
+        let __asn1_fmt_6 =
+            Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt);
+        let __asn1_fmt_7 =
+            KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
         assert forall|output: <KeyAgreeRecipientInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -9788,11 +9889,7 @@ impl ORIGINATOR_IDENTIFIER_OR_KEY {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(ISSUER_AND_SERIAL_NUMBER::Fmt),
-                CHOICE(
-                    IMPLICIT(0u64, Ref(SUBJECT_KEY_IDENTIFIER::Fmt)),
-                    IMPLICIT(1u64, Ref(ORIGINATOR_PUBLIC_KEY::Fmt))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(ISSUER_AND_SERIAL_NUMBER::Fmt);
         let __asn1_fmt_3 =
@@ -9836,7 +9933,7 @@ impl ORIGINATOR_IDENTIFIER_OR_KEY {
 }
 
 /// BER format for ASN.1 `OriginatorPublicKey`.
-type ORIGINATOR_PUBLIC_KEY__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<ALGORITHM_IDENTIFIER>, Pair<Ref<vest_lib::asn1::ber::BitStringTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OriginatorPublicKeyForward, OriginatorPublicKeyReverse>>;
+type ORIGINATOR_PUBLIC_KEY__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<ALGORITHM_IDENTIFIER>, Pair<Ref<vest_lib::asn1::ber::BitStringTlvFmt>, Eof>>>, BiMap<OriginatorPublicKeyForward, OriginatorPublicKeyReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ORIGINATOR_PUBLIC_KEY(pub Class, pub u64);
@@ -9847,25 +9944,25 @@ impl ORIGINATOR_PUBLIC_KEY {
     pub const fn schema() -> ORIGINATOR_PUBLIC_KEY__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, BIT_STRING, SEQUENCE};
+                use vest_lib::asn1::ber::{BIT_STRING, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(BIT_STRING),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OriginatorPublicKeyForward, OriginatorPublicKeyReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, BIT_STRING, SEQUENCE};
+        use vest_lib::asn1::ber::{BIT_STRING, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(BIT_STRING),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OriginatorPublicKeyForward, OriginatorPublicKeyReverse),
         }
@@ -9937,7 +10034,7 @@ impl RECIPIENT_ENCRYPTED_KEYS {
 }
 
 /// BER format for ASN.1 `RecipientEncryptedKey`.
-type RECIPIENT_ENCRYPTED_KEY__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<KEY_AGREE_RECIPIENT_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse>>;
+type RECIPIENT_ENCRYPTED_KEY__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<KEY_AGREE_RECIPIENT_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, Eof>>>, BiMap<RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct RECIPIENT_ENCRYPTED_KEY(pub Class, pub u64);
@@ -9948,25 +10045,25 @@ impl RECIPIENT_ENCRYPTED_KEY {
     pub const fn schema() -> RECIPIENT_ENCRYPTED_KEY__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(KEY_AGREE_RECIPIENT_IDENTIFIER::Fmt),
                             REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(KEY_AGREE_RECIPIENT_IDENTIFIER::Fmt),
                     REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse),
         }
@@ -10035,9 +10132,7 @@ impl KEY_AGREE_RECIPIENT_IDENTIFIER {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(ISSUER_AND_SERIAL_NUMBER::Fmt),
-                IMPLICIT(0u64, Ref(RECIPIENT_KEY_IDENTIFIER::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(ISSUER_AND_SERIAL_NUMBER::Fmt);
         let __asn1_fmt_3 =
@@ -10067,7 +10162,7 @@ impl KEY_AGREE_RECIPIENT_IDENTIFIER {
 }
 
 /// BER format for ASN.1 `RecipientKeyIdentifier`.
-type RECIPIENT_KEY_IDENTIFIER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<SUBJECT_KEY_IDENTIFIER>, Optional<Ref<vest_lib::asn1::ber::GeneralizedTimeTlvFmt>, Optional<Ref<OTHER_KEY_ATTRIBUTE>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse>>;
+type RECIPIENT_KEY_IDENTIFIER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<SUBJECT_KEY_IDENTIFIER>, Optional<Ref<vest_lib::asn1::ber::GeneralizedTimeTlvFmt>, Optional<Ref<OTHER_KEY_ATTRIBUTE>, Eof>>>>, BiMap<RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct RECIPIENT_KEY_IDENTIFIER(pub Class, pub u64);
@@ -10078,27 +10173,27 @@ impl RECIPIENT_KEY_IDENTIFIER {
     pub const fn schema() -> RECIPIENT_KEY_IDENTIFIER__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, GENERALIZED_TIME, SEQUENCE};
+                use vest_lib::asn1::ber::{GENERALIZED_TIME, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(SUBJECT_KEY_IDENTIFIER::Fmt),
                             OPTIONAL(Ref(GENERALIZED_TIME),
                             OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, GENERALIZED_TIME, SEQUENCE};
+        use vest_lib::asn1::ber::{GENERALIZED_TIME, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(SUBJECT_KEY_IDENTIFIER::Fmt),
                     OPTIONAL(Ref(GENERALIZED_TIME),
                     OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse),
         }
@@ -10111,6 +10206,7 @@ impl RECIPIENT_KEY_IDENTIFIER {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_start_union);
         reveal(asn1_starts_disjoint);
         reveal(RECIPIENT_KEY_IDENTIFIER::spec_inner);
@@ -10123,8 +10219,7 @@ impl RECIPIENT_KEY_IDENTIFIER {
         assert(asn1_start_exact_uint(Class::Universal, false, 24u64) == asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
         let __asn1_fmt_2 =
-            OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-            vest_lib::asn1::ber::BER_END);
+            ((((self.spec_inner()).inner).1).1).1;
         let __asn1_fmt_3 =
             Ref(OTHER_KEY_ATTRIBUTE::Fmt);
         let __asn1_fmt_4 =
@@ -10133,18 +10228,42 @@ impl RECIPIENT_KEY_IDENTIFIER {
         assert(asn1_start_exact_uint(Class::Universal, true, 16u64) == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
         let __asn1_fmt_5 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_5.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((self.spec_inner()).inner).1).1).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_3.asn1_start(), __asn1_fmt_5.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_3, __asn1_fmt_5);
-        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_2.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_2);
+        let __asn1_fmt_6 =
+            Ref(vest_lib::asn1::ber::GENERALIZED_TIME);
+        let __asn1_fmt_7 =
+            vest_lib::asn1::ber::GENERALIZED_TIME;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
+        let __asn1_fmt_8 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        let __asn1_fmt_9 =
+            Ref(OTHER_KEY_ATTRIBUTE::Fmt);
+        let __asn1_fmt_10 =
+            OTHER_KEY_ATTRIBUTE::Fmt;
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        let __asn1_fmt_11 =
+            (((((self.spec_inner()).inner).eoc_body()).1).1).1;
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_9.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_9, __asn1_fmt_11);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_8.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_8);
         assert forall|output: <RecipientKeyIdentifierForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -10191,7 +10310,7 @@ impl SUBJECT_KEY_IDENTIFIER {
 }
 
 /// BER format for ASN.1 `KEKRecipientInfo`.
-type KEK_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<KEK_IDENTIFIER>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, vest_lib::asn1::ber::BerEndFmt>>>>>, BiMap<KekRecipientInfoForward, KekRecipientInfoReverse>>;
+type KEK_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<KEK_IDENTIFIER>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, Eof>>>>>, BiMap<KekRecipientInfoForward, KekRecipientInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct KEK_RECIPIENT_INFO(pub Class, pub u64);
@@ -10202,7 +10321,7 @@ impl KEK_RECIPIENT_INFO {
     pub const fn schema() -> KEK_RECIPIENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -10210,13 +10329,13 @@ impl KEK_RECIPIENT_INFO {
                             REQUIRED(Ref(KEK_IDENTIFIER::Fmt),
                             REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                            BER_END)))),
+                            Eof)))),
                         ),
                     mapper: BiMap(KekRecipientInfoForward, KekRecipientInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -10224,7 +10343,7 @@ impl KEK_RECIPIENT_INFO {
                     REQUIRED(Ref(KEK_IDENTIFIER::Fmt),
                     REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                    BER_END)))),
+                    Eof)))),
                 ),
             mapper: BiMap(KekRecipientInfoForward, KekRecipientInfoReverse),
         }
@@ -10251,7 +10370,7 @@ impl KEK_RECIPIENT_INFO {
 }
 
 /// BER format for ASN.1 `KEKIdentifier`.
-type KEK_IDENTIFIER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::OctetStringTlvFmt>, Optional<Ref<vest_lib::asn1::ber::GeneralizedTimeTlvFmt>, Optional<Ref<OTHER_KEY_ATTRIBUTE>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<KekIdentifierForward, KekIdentifierReverse>>;
+type KEK_IDENTIFIER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::OctetStringTlvFmt>, Optional<Ref<vest_lib::asn1::ber::GeneralizedTimeTlvFmt>, Optional<Ref<OTHER_KEY_ATTRIBUTE>, Eof>>>>, BiMap<KekIdentifierForward, KekIdentifierReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct KEK_IDENTIFIER(pub Class, pub u64);
@@ -10262,27 +10381,27 @@ impl KEK_IDENTIFIER {
     pub const fn schema() -> KEK_IDENTIFIER__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, GENERALIZED_TIME, OCTET_STRING, SEQUENCE};
+                use vest_lib::asn1::ber::{GENERALIZED_TIME, OCTET_STRING, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(OCTET_STRING),
                             OPTIONAL(Ref(GENERALIZED_TIME),
                             OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(KekIdentifierForward, KekIdentifierReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, GENERALIZED_TIME, OCTET_STRING, SEQUENCE};
+        use vest_lib::asn1::ber::{GENERALIZED_TIME, OCTET_STRING, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OCTET_STRING),
                     OPTIONAL(Ref(GENERALIZED_TIME),
                     OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(KekIdentifierForward, KekIdentifierReverse),
         }
@@ -10295,6 +10414,7 @@ impl KEK_IDENTIFIER {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_start_union);
         reveal(asn1_starts_disjoint);
         reveal(KEK_IDENTIFIER::spec_inner);
@@ -10307,8 +10427,7 @@ impl KEK_IDENTIFIER {
         assert(asn1_start_exact_uint(Class::Universal, false, 24u64) == asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
         let __asn1_fmt_2 =
-            OPTIONAL(Ref(OTHER_KEY_ATTRIBUTE::Fmt),
-            vest_lib::asn1::ber::BER_END);
+            ((((self.spec_inner()).inner).1).1).1;
         let __asn1_fmt_3 =
             Ref(OTHER_KEY_ATTRIBUTE::Fmt);
         let __asn1_fmt_4 =
@@ -10317,18 +10436,42 @@ impl KEK_IDENTIFIER {
         assert(asn1_start_exact_uint(Class::Universal, true, 16u64) == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
         assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
         let __asn1_fmt_5 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_5.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((self.spec_inner()).inner).1).1).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_3.asn1_start(), __asn1_fmt_5.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_3, __asn1_fmt_5);
-        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_2.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_2);
+        let __asn1_fmt_6 =
+            Ref(vest_lib::asn1::ber::GENERALIZED_TIME);
+        let __asn1_fmt_7 =
+            vest_lib::asn1::ber::GENERALIZED_TIME;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 24u64));
+        let __asn1_fmt_8 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        let __asn1_fmt_9 =
+            Ref(OTHER_KEY_ATTRIBUTE::Fmt);
+        let __asn1_fmt_10 =
+            OTHER_KEY_ATTRIBUTE::Fmt;
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        let __asn1_fmt_11 =
+            (((((self.spec_inner()).inner).eoc_body()).1).1).1;
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_9.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_9, __asn1_fmt_11);
+        assert(asn1_start_union(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) == asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000001000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_6.asn1_start(), __asn1_fmt_8.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_6, __asn1_fmt_8);
         assert forall|output: <KekIdentifierForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -10341,7 +10484,7 @@ impl KEK_IDENTIFIER {
 }
 
 /// BER format for ASN.1 `PasswordRecipientInfo`.
-type PASSWORD_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<KEY_DERIVATION_ALGORITHM_IDENTIFIER>>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, vest_lib::asn1::ber::BerEndFmt>>>>>, BiMap<PasswordRecipientInfoForward, PasswordRecipientInfoReverse>>;
+type PASSWORD_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<KEY_DERIVATION_ALGORITHM_IDENTIFIER>>, Pair<Ref<KEY_ENCRYPTION_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCRYPTED_KEY>, Eof>>>>>, BiMap<PasswordRecipientInfoForward, PasswordRecipientInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct PASSWORD_RECIPIENT_INFO(pub Class, pub u64);
@@ -10352,7 +10495,7 @@ impl PASSWORD_RECIPIENT_INFO {
     pub const fn schema() -> PASSWORD_RECIPIENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -10360,13 +10503,13 @@ impl PASSWORD_RECIPIENT_INFO {
                             OPTIONAL(IMPLICIT(0u64, Ref(KEY_DERIVATION_ALGORITHM_IDENTIFIER::Fmt)),
                             REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                            BER_END)))),
+                            Eof)))),
                         ),
                     mapper: BiMap(PasswordRecipientInfoForward, PasswordRecipientInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -10374,7 +10517,7 @@ impl PASSWORD_RECIPIENT_INFO {
                     OPTIONAL(IMPLICIT(0u64, Ref(KEY_DERIVATION_ALGORITHM_IDENTIFIER::Fmt)),
                     REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-                    BER_END)))),
+                    Eof)))),
                 ),
             mapper: BiMap(PasswordRecipientInfoForward, PasswordRecipientInfoReverse),
         }
@@ -10395,9 +10538,7 @@ impl PASSWORD_RECIPIENT_INFO {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            REQUIRED(Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt),
-            REQUIRED(Ref(ENCRYPTED_KEY::Fmt),
-            vest_lib::asn1::ber::BER_END));
+            ((((self.spec_inner()).inner).1).1).1;
         let __asn1_fmt_2 =
             Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt);
         let __asn1_fmt_3 =
@@ -10409,6 +10550,21 @@ impl PASSWORD_RECIPIENT_INFO {
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_4 =
+            IMPLICIT(0u64, Ref(KEY_DERIVATION_ALGORITHM_IDENTIFIER::Fmt));
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_5 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        let __asn1_fmt_6 =
+            Ref(KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt);
+        let __asn1_fmt_7 =
+            KEY_ENCRYPTION_ALGORITHM_IDENTIFIER::Fmt;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_4.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_4, __asn1_fmt_5);
         assert forall|output: <PasswordRecipientInfoForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -10421,7 +10577,7 @@ impl PASSWORD_RECIPIENT_INFO {
 }
 
 /// BER format for ASN.1 `OtherRecipientInfo`.
-type OTHER_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OtherRecipientInfoForward, OtherRecipientInfoReverse>>;
+type OTHER_RECIPIENT_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, Eof>>>, BiMap<OtherRecipientInfoForward, OtherRecipientInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct OTHER_RECIPIENT_INFO(pub Class, pub u64);
@@ -10432,25 +10588,25 @@ impl OTHER_RECIPIENT_INFO {
     pub const fn schema() -> OTHER_RECIPIENT_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(OBJECT_IDENTIFIER),
                             REQUIRED(Ref(ANY),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OtherRecipientInfoForward, OtherRecipientInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OBJECT_IDENTIFIER),
                     REQUIRED(Ref(ANY),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OtherRecipientInfoForward, OtherRecipientInfoReverse),
         }
@@ -10477,7 +10633,7 @@ impl OTHER_RECIPIENT_INFO {
 }
 
 /// BER format for ASN.1 `DigestedData`.
-type DIGESTED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Pair<Ref<DIGEST>, vest_lib::asn1::ber::BerEndFmt>>>>>, BiMap<DigestedDataForward, DigestedDataReverse>>;
+type DIGESTED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<DIGEST_ALGORITHM_IDENTIFIER>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Pair<Ref<DIGEST>, Eof>>>>>, BiMap<DigestedDataForward, DigestedDataReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct DIGESTED_DATA(pub Class, pub u64);
@@ -10488,7 +10644,7 @@ impl DIGESTED_DATA {
     pub const fn schema() -> DIGESTED_DATA__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -10496,13 +10652,13 @@ impl DIGESTED_DATA {
                             REQUIRED(Ref(DIGEST_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(ENCAPSULATED_CONTENT_INFO::Fmt),
                             REQUIRED(Ref(DIGEST::Fmt),
-                            BER_END)))),
+                            Eof)))),
                         ),
                     mapper: BiMap(DigestedDataForward, DigestedDataReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -10510,7 +10666,7 @@ impl DIGESTED_DATA {
                     REQUIRED(Ref(DIGEST_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(ENCAPSULATED_CONTENT_INFO::Fmt),
                     REQUIRED(Ref(DIGEST::Fmt),
-                    BER_END)))),
+                    Eof)))),
                 ),
             mapper: BiMap(DigestedDataForward, DigestedDataReverse),
         }
@@ -10571,7 +10727,7 @@ impl DIGEST {
 }
 
 /// BER format for ASN.1 `EncryptedData`.
-type ENCRYPTED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<ENCRYPTED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<UNPROTECTED_ATTRIBUTES>>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<EncryptedDataForward, EncryptedDataReverse>>;
+type ENCRYPTED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<ENCRYPTED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<UNPROTECTED_ATTRIBUTES>>, Eof>>>>, BiMap<EncryptedDataForward, EncryptedDataReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ENCRYPTED_DATA(pub Class, pub u64);
@@ -10582,27 +10738,27 @@ impl ENCRYPTED_DATA {
     pub const fn schema() -> ENCRYPTED_DATA__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(CMS_VERSION::Fmt),
                             REQUIRED(Ref(ENCRYPTED_CONTENT_INFO::Fmt),
                             OPTIONAL(IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt)),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(EncryptedDataForward, EncryptedDataReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(CMS_VERSION::Fmt),
                     REQUIRED(Ref(ENCRYPTED_CONTENT_INFO::Fmt),
                     OPTIONAL(IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt)),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(EncryptedDataForward, EncryptedDataReverse),
         }
@@ -10615,6 +10771,7 @@ impl ENCRYPTED_DATA {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(ENCRYPTED_DATA::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -10623,13 +10780,21 @@ impl ENCRYPTED_DATA {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_1.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((self.spec_inner()).inner).1).1).1).1;
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_2 =
+            IMPLICIT(1u64, Ref(UNPROTECTED_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_3 =
+            (((((self.spec_inner()).inner).eoc_body()).1).1).1;
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_2.asn1_start(), __asn1_fmt_3.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_2, __asn1_fmt_3);
         assert forall|output: <EncryptedDataForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -10642,7 +10807,7 @@ impl ENCRYPTED_DATA {
 }
 
 /// BER format for ASN.1 `AuthenticatedData`.
-type AUTHENTICATED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<ORIGINATOR_INFO>>, Pair<Ref<RECIPIENT_INFOS>, Pair<Ref<MESSAGE_AUTHENTICATION_CODE_ALGORITHM>, Optional<ImplicitFmt<Ref<DIGEST_ALGORITHM_IDENTIFIER>>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<AUTH_ATTRIBUTES>>, Pair<Ref<MESSAGE_AUTHENTICATION_CODE>, Optional<ImplicitFmt<Ref<UNAUTH_ATTRIBUTES>>, vest_lib::asn1::ber::BerEndFmt>>>>>>>>>>, BiMap<AuthenticatedDataForward, AuthenticatedDataReverse>>;
+type AUTHENTICATED_DATA__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Optional<ImplicitFmt<Ref<ORIGINATOR_INFO>>, Pair<Ref<RECIPIENT_INFOS>, Pair<Ref<MESSAGE_AUTHENTICATION_CODE_ALGORITHM>, Optional<ImplicitFmt<Ref<DIGEST_ALGORITHM_IDENTIFIER>>, Pair<Ref<ENCAPSULATED_CONTENT_INFO>, Optional<ImplicitFmt<Ref<AUTH_ATTRIBUTES>>, Pair<Ref<MESSAGE_AUTHENTICATION_CODE>, Optional<ImplicitFmt<Ref<UNAUTH_ATTRIBUTES>>, Eof>>>>>>>>>>, BiMap<AuthenticatedDataForward, AuthenticatedDataReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct AUTHENTICATED_DATA(pub Class, pub u64);
@@ -10653,7 +10818,7 @@ impl AUTHENTICATED_DATA {
     pub const fn schema() -> AUTHENTICATED_DATA__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
@@ -10666,13 +10831,13 @@ impl AUTHENTICATED_DATA {
                             OPTIONAL(IMPLICIT(2u64, Ref(AUTH_ATTRIBUTES::Fmt)),
                             REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE::Fmt),
                             OPTIONAL(IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt)),
-                            BER_END))))))))),
+                            Eof))))))))),
                         ),
                     mapper: BiMap(AuthenticatedDataForward, AuthenticatedDataReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
@@ -10685,7 +10850,7 @@ impl AUTHENTICATED_DATA {
                     OPTIONAL(IMPLICIT(2u64, Ref(AUTH_ATTRIBUTES::Fmt)),
                     REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE::Fmt),
                     OPTIONAL(IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt)),
-                    BER_END))))))))),
+                    Eof))))))))),
                 ),
             mapper: BiMap(AuthenticatedDataForward, AuthenticatedDataReverse),
         }
@@ -10698,6 +10863,7 @@ impl AUTHENTICATED_DATA {
             Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
     {
         reveal(asn1_start_exact_uint);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(AUTHENTICATED_DATA::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -10706,14 +10872,7 @@ impl AUTHENTICATED_DATA {
         assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_1 =
-            REQUIRED(Ref(RECIPIENT_INFOS::Fmt),
-            REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE_ALGORITHM::Fmt),
-            OPTIONAL(IMPLICIT(1u64, Ref(DIGEST_ALGORITHM_IDENTIFIER::Fmt)),
-            REQUIRED(Ref(ENCAPSULATED_CONTENT_INFO::Fmt),
-            OPTIONAL(IMPLICIT(2u64, Ref(AUTH_ATTRIBUTES::Fmt)),
-            REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE::Fmt),
-            OPTIONAL(IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt)),
-            vest_lib::asn1::ber::BER_END)))))));
+            ((((self.spec_inner()).inner).1).1).1;
         let __asn1_fmt_2 =
             Ref(RECIPIENT_INFOS::Fmt);
         let __asn1_fmt_3 =
@@ -10726,11 +10885,7 @@ impl AUTHENTICATED_DATA {
         assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 1u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_5 =
-            REQUIRED(Ref(ENCAPSULATED_CONTENT_INFO::Fmt),
-            OPTIONAL(IMPLICIT(2u64, Ref(AUTH_ATTRIBUTES::Fmt)),
-            REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE::Fmt),
-            OPTIONAL(IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt)),
-            vest_lib::asn1::ber::BER_END))));
+            (((((((self.spec_inner()).inner).1).1).1).1).1).1;
         let __asn1_fmt_6 =
             Ref(ENCAPSULATED_CONTENT_INFO::Fmt);
         let __asn1_fmt_7 =
@@ -10743,9 +10898,7 @@ impl AUTHENTICATED_DATA {
         assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 2u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_9 =
-            REQUIRED(Ref(MESSAGE_AUTHENTICATION_CODE::Fmt),
-            OPTIONAL(IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt)),
-            vest_lib::asn1::ber::BER_END));
+            (((((((((self.spec_inner()).inner).1).1).1).1).1).1).1).1;
         let __asn1_fmt_10 =
             Ref(MESSAGE_AUTHENTICATION_CODE::Fmt);
         let __asn1_fmt_11 =
@@ -10759,11 +10912,9 @@ impl AUTHENTICATED_DATA {
         assert(__asn1_fmt_12.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
         assert(asn1_start_exact_uint(Class::ContextSpecific, true, 3u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64)) by (bit_vector);
         let __asn1_fmt_13 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_13.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            (((((((((((self.spec_inner()).inner).1).1).1).1).1).1).1).1).1).1;
+        assert(__asn1_fmt_13.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_12.asn1_start(), __asn1_fmt_13.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_12, __asn1_fmt_13);
         assert(__asn1_fmt_9.asn1_start() == asn1_start_identity_uint(Class::Universal, 4u64));
@@ -10778,6 +10929,61 @@ impl AUTHENTICATED_DATA {
         assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_14 =
+            IMPLICIT(0u64, Ref(ORIGINATOR_INFO::Fmt));
+        assert(__asn1_fmt_14.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
+        let __asn1_fmt_15 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        let __asn1_fmt_16 =
+            Ref(RECIPIENT_INFOS::Fmt);
+        let __asn1_fmt_17 =
+            RECIPIENT_INFOS::Fmt;
+        assert(__asn1_fmt_17.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(__asn1_fmt_16.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        let __asn1_fmt_18 =
+            IMPLICIT(1u64, Ref(DIGEST_ALGORITHM_IDENTIFIER::Fmt));
+        assert(__asn1_fmt_18.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 1u64));
+        let __asn1_fmt_19 =
+            (((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1;
+        let __asn1_fmt_20 =
+            Ref(ENCAPSULATED_CONTENT_INFO::Fmt);
+        let __asn1_fmt_21 =
+            ENCAPSULATED_CONTENT_INFO::Fmt;
+        assert(__asn1_fmt_21.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_20.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        let __asn1_fmt_22 =
+            IMPLICIT(2u64, Ref(AUTH_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_22.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 2u64));
+        let __asn1_fmt_23 =
+            (((((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1).1).1;
+        let __asn1_fmt_24 =
+            Ref(MESSAGE_AUTHENTICATION_CODE::Fmt);
+        let __asn1_fmt_25 =
+            MESSAGE_AUTHENTICATION_CODE::Fmt;
+        assert(__asn1_fmt_25.asn1_start() == asn1_start_identity_uint(Class::Universal, 4u64));
+        assert(__asn1_fmt_24.asn1_start() == asn1_start_identity_uint(Class::Universal, 4u64));
+        let __asn1_fmt_26 =
+            IMPLICIT(3u64, Ref(UNAUTH_ATTRIBUTES::Fmt));
+        assert(__asn1_fmt_26.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 3u64));
+        let __asn1_fmt_27 =
+            (((((((((((self.spec_inner()).inner).eoc_body()).1).1).1).1).1).1).1).1).1;
+        assert(__asn1_fmt_27.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000800000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_26.asn1_start(), __asn1_fmt_27.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_26, __asn1_fmt_27);
+        assert(__asn1_fmt_23.asn1_start() == asn1_start_identity_uint(Class::Universal, 4u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000400000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000001000000010u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_22.asn1_start(), __asn1_fmt_23.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_22, __asn1_fmt_23);
+        assert(__asn1_fmt_19.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_18.asn1_start(), __asn1_fmt_19.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_18, __asn1_fmt_19);
+        assert(__asn1_fmt_15.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_14.asn1_start(), __asn1_fmt_15.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_14, __asn1_fmt_15);
         assert forall|output: <AuthenticatedDataForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -11181,9 +11387,7 @@ impl REVOCATION_INFO_CHOICE {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(CERTIFICATE_LIST::Fmt),
-                IMPLICIT(1u64, Ref(OTHER_REVOCATION_INFO_FORMAT::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(CERTIFICATE_LIST::Fmt);
         let __asn1_fmt_3 =
@@ -11213,7 +11417,7 @@ impl REVOCATION_INFO_CHOICE {
 }
 
 /// BER format for ASN.1 `OtherRevocationInfoFormat`.
-type OTHER_REVOCATION_INFO_FORMAT__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse>>;
+type OTHER_REVOCATION_INFO_FORMAT__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, Eof>>>, BiMap<OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct OTHER_REVOCATION_INFO_FORMAT(pub Class, pub u64);
@@ -11224,25 +11428,25 @@ impl OTHER_REVOCATION_INFO_FORMAT {
     pub const fn schema() -> OTHER_REVOCATION_INFO_FORMAT__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(OBJECT_IDENTIFIER),
                             REQUIRED(Ref(ANY),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OBJECT_IDENTIFIER),
                     REQUIRED(Ref(ANY),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse),
         }
@@ -11323,15 +11527,7 @@ impl CERTIFICATE_CHOICES {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(CERTIFICATE::Fmt),
-                CHOICE(
-                    CHOICE(
-                        IMPLICIT(0u64, Ref(EXTENDED_CERTIFICATE::Fmt)),
-                        IMPLICIT(1u64, Ref(ATTRIBUTE_CERTIFICATE_V1::Fmt))),
-                    CHOICE(
-                        IMPLICIT(2u64, Ref(ATTRIBUTE_CERTIFICATE_V2::Fmt)),
-                        IMPLICIT(3u64, Ref(OTHER_CERTIFICATE_FORMAT::Fmt)))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(CERTIFICATE::Fmt);
         let __asn1_fmt_3 =
@@ -11436,7 +11632,7 @@ impl ATTRIBUTE_CERTIFICATE_V2 {
 }
 
 /// BER format for ASN.1 `OtherCertificateFormat`.
-type OTHER_CERTIFICATE_FORMAT__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OtherCertificateFormatForward, OtherCertificateFormatReverse>>;
+type OTHER_CERTIFICATE_FORMAT__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Pair<Ref<vest_lib::asn1::ber::AnyTlvFmt>, Eof>>>, BiMap<OtherCertificateFormatForward, OtherCertificateFormatReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct OTHER_CERTIFICATE_FORMAT(pub Class, pub u64);
@@ -11447,25 +11643,25 @@ impl OTHER_CERTIFICATE_FORMAT {
     pub const fn schema() -> OTHER_CERTIFICATE_FORMAT__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(OBJECT_IDENTIFIER),
                             REQUIRED(Ref(ANY),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OtherCertificateFormatForward, OtherCertificateFormatReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OBJECT_IDENTIFIER),
                     REQUIRED(Ref(ANY),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OtherCertificateFormatForward, OtherCertificateFormatReverse),
         }
@@ -11536,7 +11732,7 @@ impl CERTIFICATE_SET {
 }
 
 /// BER format for ASN.1 `IssuerAndSerialNumber`.
-type ISSUER_AND_SERIAL_NUMBER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<NAME>, Pair<Ref<CERTIFICATE_SERIAL_NUMBER>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse>>;
+type ISSUER_AND_SERIAL_NUMBER__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<NAME>, Pair<Ref<CERTIFICATE_SERIAL_NUMBER>, Eof>>>, BiMap<IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct ISSUER_AND_SERIAL_NUMBER(pub Class, pub u64);
@@ -11547,25 +11743,25 @@ impl ISSUER_AND_SERIAL_NUMBER {
     pub const fn schema() -> ISSUER_AND_SERIAL_NUMBER__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(NAME::Fmt),
                             REQUIRED(Ref(CERTIFICATE_SERIAL_NUMBER::Fmt),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(NAME::Fmt),
                     REQUIRED(Ref(CERTIFICATE_SERIAL_NUMBER::Fmt),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse),
         }
@@ -11660,7 +11856,7 @@ impl USER_KEYING_MATERIAL {
 }
 
 /// BER format for ASN.1 `OtherKeyAttribute`.
-type OTHER_KEY_ATTRIBUTE__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Optional<Ref<vest_lib::asn1::ber::AnyTlvFmt>, vest_lib::asn1::ber::BerEndFmt>>>, BiMap<OtherKeyAttributeForward, OtherKeyAttributeReverse>>;
+type OTHER_KEY_ATTRIBUTE__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<vest_lib::asn1::ber::ObjectIdentifierTlvFmt>, Optional<Ref<vest_lib::asn1::ber::AnyTlvFmt>, Eof>>>, BiMap<OtherKeyAttributeForward, OtherKeyAttributeReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct OTHER_KEY_ATTRIBUTE(pub Class, pub u64);
@@ -11671,25 +11867,25 @@ impl OTHER_KEY_ATTRIBUTE {
     pub const fn schema() -> OTHER_KEY_ATTRIBUTE__
         returns
             ({
-                use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+                use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(OBJECT_IDENTIFIER),
                             OPTIONAL(Ref(ANY),
-                            BER_END)),
+                            Eof)),
                         ),
                     mapper: BiMap(OtherKeyAttributeForward, OtherKeyAttributeReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{ANY, BER_END, OBJECT_IDENTIFIER, SEQUENCE};
+        use vest_lib::asn1::ber::{ANY, OBJECT_IDENTIFIER, SEQUENCE};
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(OBJECT_IDENTIFIER),
                     OPTIONAL(Ref(ANY),
-                    BER_END)),
+                    Eof)),
                 ),
             mapper: BiMap(OtherKeyAttributeForward, OtherKeyAttributeReverse),
         }
@@ -11703,6 +11899,7 @@ impl OTHER_KEY_ATTRIBUTE {
     {
         reveal(asn1_start_exact_uint);
         reveal(asn1_start_any_non_eoc);
+        reveal(asn1_start_empty);
         reveal(asn1_starts_disjoint);
         reveal(OTHER_KEY_ATTRIBUTE::spec_inner);
         lemma_asn1_start_exact_uint(self.0, true, self.1);
@@ -11713,13 +11910,24 @@ impl OTHER_KEY_ATTRIBUTE {
         assert(__asn1_fmt_1.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
         assert(__asn1_fmt_0.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
         let __asn1_fmt_2 =
-            vest_lib::asn1::ber::BER_END;
-        reveal(asn1_start_ber_boundary);
-        assert(asn1_start_ber_boundary() == asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
-        assert(__asn1_fmt_2.asn1_start() == asn1_start_ber_boundary());
-        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(true, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+            ((((self.spec_inner()).inner).1).1).1;
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(true, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
         assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_2.asn1_start()));
         lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_2);
+        let __asn1_fmt_3 =
+            Ref(vest_lib::asn1::ber::ANY);
+        let __asn1_fmt_4 =
+            vest_lib::asn1::ber::ANY;
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64));
+        let __asn1_fmt_5 =
+            ((((self.spec_inner()).inner).eoc_body()).1).1;
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0xfffffffffffffffeu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64, 0xffffffffffffffffu64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_3.asn1_start(), __asn1_fmt_5.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_3, __asn1_fmt_5);
         assert forall|output: <OtherKeyAttributeForward as SpecMap>::Output| #[trigger]
             self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
             if self.spec_inner().consistent(output) {
@@ -11873,9 +12081,7 @@ impl EXTENDED_CERTIFICATE_OR_CERTIFICATE {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(CERTIFICATE::Fmt),
-                IMPLICIT(0u64, Ref(EXTENDED_CERTIFICATE::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(CERTIFICATE::Fmt);
         let __asn1_fmt_3 =
@@ -11905,7 +12111,7 @@ impl EXTENDED_CERTIFICATE_OR_CERTIFICATE {
 }
 
 /// BER format for ASN.1 `ExtendedCertificate`.
-type EXTENDED_CERTIFICATE__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<EXTENDED_CERTIFICATE_INFO>, Pair<Ref<SIGNATURE_ALGORITHM_IDENTIFIER>, Pair<Ref<SIGNATURE>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<ExtendedCertificateForward, ExtendedCertificateReverse>>;
+type EXTENDED_CERTIFICATE__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<EXTENDED_CERTIFICATE_INFO>, Pair<Ref<SIGNATURE_ALGORITHM_IDENTIFIER>, Pair<Ref<SIGNATURE>, Eof>>>>, BiMap<ExtendedCertificateForward, ExtendedCertificateReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct EXTENDED_CERTIFICATE(pub Class, pub u64);
@@ -11916,27 +12122,27 @@ impl EXTENDED_CERTIFICATE {
     pub const fn schema() -> EXTENDED_CERTIFICATE__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(EXTENDED_CERTIFICATE_INFO::Fmt),
                             REQUIRED(Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt),
                             REQUIRED(Ref(SIGNATURE::Fmt),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(ExtendedCertificateForward, ExtendedCertificateReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(EXTENDED_CERTIFICATE_INFO::Fmt),
                     REQUIRED(Ref(SIGNATURE_ALGORITHM_IDENTIFIER::Fmt),
                     REQUIRED(Ref(SIGNATURE::Fmt),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(ExtendedCertificateForward, ExtendedCertificateReverse),
         }
@@ -11963,7 +12169,7 @@ impl EXTENDED_CERTIFICATE {
 }
 
 /// BER format for ASN.1 `ExtendedCertificateInfo`.
-type EXTENDED_CERTIFICATE_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<CERTIFICATE>, Pair<Ref<UNAUTH_ATTRIBUTES>, vest_lib::asn1::ber::BerEndFmt>>>>, BiMap<ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse>>;
+type EXTENDED_CERTIFICATE_INFO__ = Mapped<vest_lib::asn1::ber::SequenceFmt<Pair<Ref<CMS_VERSION>, Pair<Ref<CERTIFICATE>, Pair<Ref<UNAUTH_ATTRIBUTES>, Eof>>>>, BiMap<ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse>>;
 #[derive(Clone, Copy)]
 #[verifier::ext_equal]
 pub struct EXTENDED_CERTIFICATE_INFO(pub Class, pub u64);
@@ -11974,27 +12180,27 @@ impl EXTENDED_CERTIFICATE_INFO {
     pub const fn schema() -> EXTENDED_CERTIFICATE_INFO__
         returns
             ({
-                use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+                use vest_lib::asn1::ber::SEQUENCE;
                 Mapped {
                     inner:
                         SEQUENCE(
                             REQUIRED(Ref(CMS_VERSION::Fmt),
                             REQUIRED(Ref(CERTIFICATE::Fmt),
                             REQUIRED(Ref(UNAUTH_ATTRIBUTES::Fmt),
-                            BER_END))),
+                            Eof))),
                         ),
                     mapper: BiMap(ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse),
                 }
             }),
     {
-        use vest_lib::asn1::ber::{BER_END, SEQUENCE};
+        use vest_lib::asn1::ber::SEQUENCE;
         Mapped {
             inner:
                 SEQUENCE(
                     REQUIRED(Ref(CMS_VERSION::Fmt),
                     REQUIRED(Ref(CERTIFICATE::Fmt),
                     REQUIRED(Ref(UNAUTH_ATTRIBUTES::Fmt),
-                    BER_END))),
+                    Eof))),
                 ),
             mapper: BiMap(ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse),
         }
@@ -12488,9 +12694,7 @@ impl TIME {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(vest_lib::asn1::der::UTC_TIME),
-                Ref(vest_lib::asn1::der::GENERALIZED_TIME));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(vest_lib::asn1::der::UTC_TIME);
         let __asn1_fmt_3 =
@@ -12752,7 +12956,7 @@ impl NAME {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            Ref(RDN_SEQUENCE::Fmt);
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             RDN_SEQUENCE::Fmt;
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
@@ -12985,15 +13189,7 @@ impl DIRECTORY_STRING {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(Refined(vest_lib::asn1::der::TELETEX_STRING, Size::<true, 1, false, 0>)),
-                CHOICE(
-                    CHOICE(
-                        Ref(Refined(vest_lib::asn1::der::PRINTABLE_STRING, Size::<true, 1, false, 0>)),
-                        Ref(Refined(vest_lib::asn1::der::UNIVERSAL_STRING, Size::<true, 1, false, 0>))),
-                    CHOICE(
-                        Ref(Refined(vest_lib::asn1::der::UTF8_STRING, Size::<true, 1, false, 0>)),
-                        Ref(Refined(vest_lib::asn1::der::BMP_STRING, Size::<true, 1, false, 0>)))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(Refined(vest_lib::asn1::der::TELETEX_STRING, Size::<true, 1, false, 0>));
         let __asn1_fmt_3 =
@@ -13493,23 +13689,7 @@ impl GENERAL_NAME {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                IMPLICIT(0u64, Ref(OTHER_NAME::Fmt)),
-                CHOICE(
-                    CHOICE(
-                        CHOICE(
-                            IMPLICIT(1u64, Ref(vest_lib::asn1::der::IA5_STRING)),
-                            IMPLICIT(2u64, Ref(vest_lib::asn1::der::IA5_STRING))),
-                        CHOICE(
-                            IMPLICIT(3u64, Ref(OR_ADDRESS::Fmt)),
-                            vest_lib::asn1::der::EXPLICIT(4u64, Ref(NAME::Fmt)))),
-                    CHOICE(
-                        CHOICE(
-                            IMPLICIT(5u64, Ref(EDI_PARTY_NAME::Fmt)),
-                            IMPLICIT(6u64, Ref(vest_lib::asn1::der::IA5_STRING))),
-                        CHOICE(
-                            IMPLICIT(7u64, Ref(vest_lib::asn1::der::OCTET_STRING)),
-                            IMPLICIT(8u64, Ref(vest_lib::asn1::der::OBJECT_IDENTIFIER))))));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             IMPLICIT(0u64, Ref(OTHER_NAME::Fmt));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
@@ -14155,9 +14335,7 @@ impl COUNTRY_NAME_CHOICE {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 3, true, 3>)),
-                Ref(Refined(vest_lib::asn1::der::PRINTABLE_STRING, Size::<true, 2, true, 2>)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 3, true, 3>));
         let __asn1_fmt_3 =
@@ -14272,9 +14450,7 @@ impl ADMINISTRATION_DOMAIN_NAME_CHOICE {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 0, true, 16>)),
-                Ref(Refined(vest_lib::asn1::der::PRINTABLE_STRING, Size::<true, 0, true, 16>)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 0, true, 16>));
         let __asn1_fmt_3 =
@@ -14455,9 +14631,7 @@ impl PRIVATE_DOMAIN_NAME {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 1, true, 16>)),
-                Ref(Refined(vest_lib::asn1::der::PRINTABLE_STRING, Size::<true, 1, true, 16>)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(Refined(vest_lib::asn1::der::NUMERIC_STRING, Size::<true, 1, true, 16>));
         let __asn1_fmt_3 =
@@ -15362,9 +15536,7 @@ impl ATT_CERT_ISSUER {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                Ref(GENERAL_NAMES::Fmt),
-                IMPLICIT(0u64, Ref(V2_FORM::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             Ref(GENERAL_NAMES::Fmt);
         let __asn1_fmt_3 =
@@ -15849,9 +16021,7 @@ impl ATTRIBUTE_CERTIFICATE_V1_SUBJECT {
         let __asn1_fmt_0 =
             self.spec_inner();
         let __asn1_fmt_1 =
-            CHOICE(
-                vest_lib::asn1::der::EXPLICIT(0u64, Ref(ISSUER_SERIAL::Fmt)),
-                vest_lib::asn1::der::EXPLICIT(1u64, Ref(GENERAL_NAMES::Fmt)));
+            (__asn1_fmt_0).inner;
         let __asn1_fmt_2 =
             vest_lib::asn1::der::EXPLICIT(0u64, Ref(ISSUER_SERIAL::Fmt));
         assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, true, 0u64));
@@ -15917,743 +16087,743 @@ impl ATT_CERT_VERSION_V1 {
 mod __impl_content_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, CONTENT_INFO, CONTENT_INFO__, ContentInfoSpec, ContentInfo, ContentInfoForward, ContentInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, CONTENT_INFO, CONTENT_INFO__, ContentInfoSpec, ContentInfo, ContentInfoForward, ContentInfoReverse);
 }
 
 mod __impl_content_type {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(false), owned, CONTENT_TYPE, CONTENT_TYPE__, ContentTypeSpec, ContentType);
+    vest_lib::impl_ber!(tag(primitive), owned, CONTENT_TYPE, CONTENT_TYPE__, ContentTypeSpec, ContentType);
 }
 
 mod __impl_signed_data {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, SIGNED_DATA, SIGNED_DATA__, SignedDataSpec, SignedData, SignedDataForward, SignedDataReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, SIGNED_DATA, SIGNED_DATA__, SignedDataSpec, SignedData, SignedDataForward, SignedDataReverse);
 }
 
 mod __impl_digest_algorithm_identifiers {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, DIGEST_ALGORITHM_IDENTIFIERS, DIGEST_ALGORITHM_IDENTIFIERS__, DigestAlgorithmIdentifiersSpec, DigestAlgorithmIdentifiers);
+    vest_lib::impl_ber!(tag(constructed), borrowed, DIGEST_ALGORITHM_IDENTIFIERS, DIGEST_ALGORITHM_IDENTIFIERS__, DigestAlgorithmIdentifiersSpec, DigestAlgorithmIdentifiers);
 }
 
 mod __impl_signer_infos {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, SIGNER_INFOS, SIGNER_INFOS__, SignerInfosSpec, SignerInfos);
+    vest_lib::impl_ber!(tag(constructed), borrowed, SIGNER_INFOS, SIGNER_INFOS__, SignerInfosSpec, SignerInfos);
 }
 
 mod __impl_encapsulated_content_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, ENCAPSULATED_CONTENT_INFO, ENCAPSULATED_CONTENT_INFO__, EncapsulatedContentInfoSpec, EncapsulatedContentInfo, EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, ENCAPSULATED_CONTENT_INFO, ENCAPSULATED_CONTENT_INFO__, EncapsulatedContentInfoSpec, EncapsulatedContentInfo, EncapsulatedContentInfoForward, EncapsulatedContentInfoReverse);
 }
 
 mod __impl_signer_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, SIGNER_INFO, SIGNER_INFO__, SignerInfoSpec, SignerInfo, SignerInfoForward, SignerInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, SIGNER_INFO, SIGNER_INFO__, SignerInfoSpec, SignerInfo, SignerInfoForward, SignerInfoReverse);
 }
 
 mod __impl_signer_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64)), borrowed, SIGNER_IDENTIFIER, SIGNER_IDENTIFIER__, SignerIdentifierSpec, SignerIdentifier, SignerIdentifierForward, SignerIdentifierReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64)), borrowed, SIGNER_IDENTIFIER, SIGNER_IDENTIFIER__, SignerIdentifierSpec, SignerIdentifier, SignerIdentifierForward, SignerIdentifierReverse);
 }
 
 mod __impl_signed_attributes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, SIGNED_ATTRIBUTES, SIGNED_ATTRIBUTES__, SignedAttributesSpec, SignedAttributes);
+    vest_lib::impl_der!(tag(constructed), borrowed, SIGNED_ATTRIBUTES, SIGNED_ATTRIBUTES__, SignedAttributesSpec, SignedAttributes);
 }
 
 mod __impl_unsigned_attributes {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, UNSIGNED_ATTRIBUTES, UNSIGNED_ATTRIBUTES__, UnsignedAttributesSpec, UnsignedAttributes);
+    vest_lib::impl_ber!(tag(constructed), borrowed, UNSIGNED_ATTRIBUTES, UNSIGNED_ATTRIBUTES__, UnsignedAttributesSpec, UnsignedAttributes);
 }
 
 mod __impl_attribute {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE, ATTRIBUTE__, AttributeSpec, Attribute, AttributeForward, AttributeReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE, ATTRIBUTE__, AttributeSpec, Attribute, AttributeForward, AttributeReverse);
 }
 
 mod __impl_attribute_value {
     use super::*;
 
-    vest_lib::impl_der!(untagged_any, borrowed, ATTRIBUTE_VALUE, ATTRIBUTE_VALUE__, AttributeValueSpec, AttributeValue);
+    vest_lib::impl_der!(starts(asn1_start_any_non_eoc()), borrowed, ATTRIBUTE_VALUE, ATTRIBUTE_VALUE__, AttributeValueSpec, AttributeValue);
 }
 
 mod __impl_signature_value {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, SIGNATURE_VALUE, SIGNATURE_VALUE__, SignatureValueSpec, SignatureValue);
+    vest_lib::impl_ber!(tag(either), owned, SIGNATURE_VALUE, SIGNATURE_VALUE__, SignatureValueSpec, SignatureValue);
 }
 
 mod __impl_enveloped_data {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ENVELOPED_DATA, ENVELOPED_DATA__, EnvelopedDataSpec, EnvelopedData, EnvelopedDataForward, EnvelopedDataReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ENVELOPED_DATA, ENVELOPED_DATA__, EnvelopedDataSpec, EnvelopedData, EnvelopedDataForward, EnvelopedDataReverse);
 }
 
 mod __impl_originator_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ORIGINATOR_INFO, ORIGINATOR_INFO__, OriginatorInfoSpec, OriginatorInfo, OriginatorInfoForward, OriginatorInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ORIGINATOR_INFO, ORIGINATOR_INFO__, OriginatorInfoSpec, OriginatorInfo, OriginatorInfoForward, OriginatorInfoReverse);
 }
 
 mod __impl_recipient_infos {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, RECIPIENT_INFOS, RECIPIENT_INFOS__, RecipientInfosSpec, RecipientInfos);
+    vest_lib::impl_ber!(tag(constructed), borrowed, RECIPIENT_INFOS, RECIPIENT_INFOS__, RecipientInfosSpec, RecipientInfos);
 }
 
 mod __impl_encrypted_content_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ENCRYPTED_CONTENT_INFO, ENCRYPTED_CONTENT_INFO__, EncryptedContentInfoSpec, EncryptedContentInfo, EncryptedContentInfoForward, EncryptedContentInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ENCRYPTED_CONTENT_INFO, ENCRYPTED_CONTENT_INFO__, EncryptedContentInfoSpec, EncryptedContentInfo, EncryptedContentInfoForward, EncryptedContentInfoReverse);
 }
 
 mod __impl_encrypted_content {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, ENCRYPTED_CONTENT, ENCRYPTED_CONTENT__, EncryptedContentSpec, EncryptedContent);
+    vest_lib::impl_ber!(tag(either), owned, ENCRYPTED_CONTENT, ENCRYPTED_CONTENT__, EncryptedContentSpec, EncryptedContent);
 }
 
 mod __impl_unprotected_attributes {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, UNPROTECTED_ATTRIBUTES, UNPROTECTED_ATTRIBUTES__, UnprotectedAttributesSpec, UnprotectedAttributes);
+    vest_lib::impl_ber!(tag(constructed), borrowed, UNPROTECTED_ATTRIBUTES, UNPROTECTED_ATTRIBUTES__, UnprotectedAttributesSpec, UnprotectedAttributes);
 }
 
 mod __impl_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000001e00000000u64, 0x0000000000000000u64)), borrowed, RECIPIENT_INFO, RECIPIENT_INFO__, RecipientInfoSpec, RecipientInfo, RecipientInfoForward, RecipientInfoReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000001e00000000u64, 0x0000000000000000u64)), borrowed, RECIPIENT_INFO, RECIPIENT_INFO__, RecipientInfoSpec, RecipientInfo, RecipientInfoForward, RecipientInfoReverse);
 }
 
 mod __impl_encrypted_key {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, ENCRYPTED_KEY, ENCRYPTED_KEY__, EncryptedKeySpec, EncryptedKey);
+    vest_lib::impl_ber!(tag(either), owned, ENCRYPTED_KEY, ENCRYPTED_KEY__, EncryptedKeySpec, EncryptedKey);
 }
 
 mod __impl_key_trans_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEY_TRANS_RECIPIENT_INFO, KEY_TRANS_RECIPIENT_INFO__, KeyTransRecipientInfoSpec, KeyTransRecipientInfo, KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEY_TRANS_RECIPIENT_INFO, KEY_TRANS_RECIPIENT_INFO__, KeyTransRecipientInfoSpec, KeyTransRecipientInfo, KeyTransRecipientInfoForward, KeyTransRecipientInfoReverse);
 }
 
 mod __impl_recipient_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64)), borrowed, RECIPIENT_IDENTIFIER, RECIPIENT_IDENTIFIER__, RecipientIdentifierSpec, RecipientIdentifier, RecipientIdentifierForward, RecipientIdentifierReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000001u64, 0x0000000000000000u64)), borrowed, RECIPIENT_IDENTIFIER, RECIPIENT_IDENTIFIER__, RecipientIdentifierSpec, RecipientIdentifier, RecipientIdentifierForward, RecipientIdentifierReverse);
 }
 
 mod __impl_key_agree_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEY_AGREE_RECIPIENT_INFO, KEY_AGREE_RECIPIENT_INFO__, KeyAgreeRecipientInfoSpec, KeyAgreeRecipientInfo, KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEY_AGREE_RECIPIENT_INFO, KEY_AGREE_RECIPIENT_INFO__, KeyAgreeRecipientInfoSpec, KeyAgreeRecipientInfo, KeyAgreeRecipientInfoForward, KeyAgreeRecipientInfoReverse);
 }
 
 mod __impl_originator_identifier_or_key {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000300000001u64, 0x0000000000000000u64)), borrowed, ORIGINATOR_IDENTIFIER_OR_KEY, ORIGINATOR_IDENTIFIER_OR_KEY__, OriginatorIdentifierOrKeySpec, OriginatorIdentifierOrKey, OriginatorIdentifierOrKeyForward, OriginatorIdentifierOrKeyReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000300000001u64, 0x0000000000000000u64)), borrowed, ORIGINATOR_IDENTIFIER_OR_KEY, ORIGINATOR_IDENTIFIER_OR_KEY__, OriginatorIdentifierOrKeySpec, OriginatorIdentifierOrKey, OriginatorIdentifierOrKeyForward, OriginatorIdentifierOrKeyReverse);
 }
 
 mod __impl_originator_public_key {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ORIGINATOR_PUBLIC_KEY, ORIGINATOR_PUBLIC_KEY__, OriginatorPublicKeySpec, OriginatorPublicKey, OriginatorPublicKeyForward, OriginatorPublicKeyReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ORIGINATOR_PUBLIC_KEY, ORIGINATOR_PUBLIC_KEY__, OriginatorPublicKeySpec, OriginatorPublicKey, OriginatorPublicKeyForward, OriginatorPublicKeyReverse);
 }
 
 mod __impl_recipient_encrypted_keys {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, RECIPIENT_ENCRYPTED_KEYS, RECIPIENT_ENCRYPTED_KEYS__, RecipientEncryptedKeysSpec, RecipientEncryptedKeys);
+    vest_lib::impl_ber!(tag(constructed), borrowed, RECIPIENT_ENCRYPTED_KEYS, RECIPIENT_ENCRYPTED_KEYS__, RecipientEncryptedKeysSpec, RecipientEncryptedKeys);
 }
 
 mod __impl_recipient_encrypted_key {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, RECIPIENT_ENCRYPTED_KEY, RECIPIENT_ENCRYPTED_KEY__, RecipientEncryptedKeySpec, RecipientEncryptedKey, RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, RECIPIENT_ENCRYPTED_KEY, RECIPIENT_ENCRYPTED_KEY__, RecipientEncryptedKeySpec, RecipientEncryptedKey, RecipientEncryptedKeyForward, RecipientEncryptedKeyReverse);
 }
 
 mod __impl_key_agree_recipient_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, KEY_AGREE_RECIPIENT_IDENTIFIER, KEY_AGREE_RECIPIENT_IDENTIFIER__, KeyAgreeRecipientIdentifierSpec, KeyAgreeRecipientIdentifier, KeyAgreeRecipientIdentifierForward, KeyAgreeRecipientIdentifierReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, KEY_AGREE_RECIPIENT_IDENTIFIER, KEY_AGREE_RECIPIENT_IDENTIFIER__, KeyAgreeRecipientIdentifierSpec, KeyAgreeRecipientIdentifier, KeyAgreeRecipientIdentifierForward, KeyAgreeRecipientIdentifierReverse);
 }
 
 mod __impl_recipient_key_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, RECIPIENT_KEY_IDENTIFIER, RECIPIENT_KEY_IDENTIFIER__, RecipientKeyIdentifierSpec, RecipientKeyIdentifier, RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, RECIPIENT_KEY_IDENTIFIER, RECIPIENT_KEY_IDENTIFIER__, RecipientKeyIdentifierSpec, RecipientKeyIdentifier, RecipientKeyIdentifierForward, RecipientKeyIdentifierReverse);
 }
 
 mod __impl_subject_key_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, SUBJECT_KEY_IDENTIFIER, SUBJECT_KEY_IDENTIFIER__, SubjectKeyIdentifierSpec, SubjectKeyIdentifier);
+    vest_lib::impl_ber!(tag(either), owned, SUBJECT_KEY_IDENTIFIER, SUBJECT_KEY_IDENTIFIER__, SubjectKeyIdentifierSpec, SubjectKeyIdentifier);
 }
 
 mod __impl_kek_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEK_RECIPIENT_INFO, KEK_RECIPIENT_INFO__, KekRecipientInfoSpec, KekRecipientInfo, KekRecipientInfoForward, KekRecipientInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEK_RECIPIENT_INFO, KEK_RECIPIENT_INFO__, KekRecipientInfoSpec, KekRecipientInfo, KekRecipientInfoForward, KekRecipientInfoReverse);
 }
 
 mod __impl_kek_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEK_IDENTIFIER, KEK_IDENTIFIER__, KekIdentifierSpec, KekIdentifier, KekIdentifierForward, KekIdentifierReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEK_IDENTIFIER, KEK_IDENTIFIER__, KekIdentifierSpec, KekIdentifier, KekIdentifierForward, KekIdentifierReverse);
 }
 
 mod __impl_password_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, PASSWORD_RECIPIENT_INFO, PASSWORD_RECIPIENT_INFO__, PasswordRecipientInfoSpec, PasswordRecipientInfo, PasswordRecipientInfoForward, PasswordRecipientInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, PASSWORD_RECIPIENT_INFO, PASSWORD_RECIPIENT_INFO__, PasswordRecipientInfoSpec, PasswordRecipientInfo, PasswordRecipientInfoForward, PasswordRecipientInfoReverse);
 }
 
 mod __impl_other_recipient_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, OTHER_RECIPIENT_INFO, OTHER_RECIPIENT_INFO__, OtherRecipientInfoSpec, OtherRecipientInfo, OtherRecipientInfoForward, OtherRecipientInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, OTHER_RECIPIENT_INFO, OTHER_RECIPIENT_INFO__, OtherRecipientInfoSpec, OtherRecipientInfo, OtherRecipientInfoForward, OtherRecipientInfoReverse);
 }
 
 mod __impl_digested_data {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, DIGESTED_DATA, DIGESTED_DATA__, DigestedDataSpec, DigestedData, DigestedDataForward, DigestedDataReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, DIGESTED_DATA, DIGESTED_DATA__, DigestedDataSpec, DigestedData, DigestedDataForward, DigestedDataReverse);
 }
 
 mod __impl_digest {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, DIGEST, DIGEST__, DigestSpec, Digest);
+    vest_lib::impl_ber!(tag(either), owned, DIGEST, DIGEST__, DigestSpec, Digest);
 }
 
 mod __impl_encrypted_data {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ENCRYPTED_DATA, ENCRYPTED_DATA__, EncryptedDataSpec, EncryptedData, EncryptedDataForward, EncryptedDataReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ENCRYPTED_DATA, ENCRYPTED_DATA__, EncryptedDataSpec, EncryptedData, EncryptedDataForward, EncryptedDataReverse);
 }
 
 mod __impl_authenticated_data {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, AUTHENTICATED_DATA, AUTHENTICATED_DATA__, AuthenticatedDataSpec, AuthenticatedData, AuthenticatedDataForward, AuthenticatedDataReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, AUTHENTICATED_DATA, AUTHENTICATED_DATA__, AuthenticatedDataSpec, AuthenticatedData, AuthenticatedDataForward, AuthenticatedDataReverse);
 }
 
 mod __impl_auth_attributes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, AUTH_ATTRIBUTES, AUTH_ATTRIBUTES__, AuthAttributesSpec, AuthAttributes);
+    vest_lib::impl_der!(tag(constructed), borrowed, AUTH_ATTRIBUTES, AUTH_ATTRIBUTES__, AuthAttributesSpec, AuthAttributes);
 }
 
 mod __impl_unauth_attributes {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, UNAUTH_ATTRIBUTES, UNAUTH_ATTRIBUTES__, UnauthAttributesSpec, UnauthAttributes);
+    vest_lib::impl_ber!(tag(constructed), borrowed, UNAUTH_ATTRIBUTES, UNAUTH_ATTRIBUTES__, UnauthAttributesSpec, UnauthAttributes);
 }
 
 mod __impl_message_authentication_code {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, MESSAGE_AUTHENTICATION_CODE, MESSAGE_AUTHENTICATION_CODE__, MessageAuthenticationCodeSpec, MessageAuthenticationCode);
+    vest_lib::impl_ber!(tag(either), owned, MESSAGE_AUTHENTICATION_CODE, MESSAGE_AUTHENTICATION_CODE__, MessageAuthenticationCodeSpec, MessageAuthenticationCode);
 }
 
 mod __impl_digest_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, DIGEST_ALGORITHM_IDENTIFIER, DIGEST_ALGORITHM_IDENTIFIER__, DigestAlgorithmIdentifierSpec, DigestAlgorithmIdentifier);
+    vest_lib::impl_ber!(tag(constructed), borrowed, DIGEST_ALGORITHM_IDENTIFIER, DIGEST_ALGORITHM_IDENTIFIER__, DigestAlgorithmIdentifierSpec, DigestAlgorithmIdentifier);
 }
 
 mod __impl_signature_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, SIGNATURE_ALGORITHM_IDENTIFIER, SIGNATURE_ALGORITHM_IDENTIFIER__, SignatureAlgorithmIdentifierSpec, SignatureAlgorithmIdentifier);
+    vest_lib::impl_ber!(tag(constructed), borrowed, SIGNATURE_ALGORITHM_IDENTIFIER, SIGNATURE_ALGORITHM_IDENTIFIER__, SignatureAlgorithmIdentifierSpec, SignatureAlgorithmIdentifier);
 }
 
 mod __impl_key_encryption_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEY_ENCRYPTION_ALGORITHM_IDENTIFIER, KEY_ENCRYPTION_ALGORITHM_IDENTIFIER__, KeyEncryptionAlgorithmIdentifierSpec, KeyEncryptionAlgorithmIdentifier);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEY_ENCRYPTION_ALGORITHM_IDENTIFIER, KEY_ENCRYPTION_ALGORITHM_IDENTIFIER__, KeyEncryptionAlgorithmIdentifierSpec, KeyEncryptionAlgorithmIdentifier);
 }
 
 mod __impl_content_encryption_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER, CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER__, ContentEncryptionAlgorithmIdentifierSpec, ContentEncryptionAlgorithmIdentifier);
+    vest_lib::impl_ber!(tag(constructed), borrowed, CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER, CONTENT_ENCRYPTION_ALGORITHM_IDENTIFIER__, ContentEncryptionAlgorithmIdentifierSpec, ContentEncryptionAlgorithmIdentifier);
 }
 
 mod __impl_message_authentication_code_algorithm {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, MESSAGE_AUTHENTICATION_CODE_ALGORITHM, MESSAGE_AUTHENTICATION_CODE_ALGORITHM__, MessageAuthenticationCodeAlgorithmSpec, MessageAuthenticationCodeAlgorithm);
+    vest_lib::impl_ber!(tag(constructed), borrowed, MESSAGE_AUTHENTICATION_CODE_ALGORITHM, MESSAGE_AUTHENTICATION_CODE_ALGORITHM__, MessageAuthenticationCodeAlgorithmSpec, MessageAuthenticationCodeAlgorithm);
 }
 
 mod __impl_key_derivation_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, KEY_DERIVATION_ALGORITHM_IDENTIFIER, KEY_DERIVATION_ALGORITHM_IDENTIFIER__, KeyDerivationAlgorithmIdentifierSpec, KeyDerivationAlgorithmIdentifier);
+    vest_lib::impl_ber!(tag(constructed), borrowed, KEY_DERIVATION_ALGORITHM_IDENTIFIER, KEY_DERIVATION_ALGORITHM_IDENTIFIER__, KeyDerivationAlgorithmIdentifierSpec, KeyDerivationAlgorithmIdentifier);
 }
 
 mod __impl_revocation_info_choices {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, REVOCATION_INFO_CHOICES, REVOCATION_INFO_CHOICES__, RevocationInfoChoicesSpec, RevocationInfoChoices);
+    vest_lib::impl_ber!(tag(constructed), borrowed, REVOCATION_INFO_CHOICES, REVOCATION_INFO_CHOICES__, RevocationInfoChoicesSpec, RevocationInfoChoices);
 }
 
 mod __impl_revocation_info_choice {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)), borrowed, REVOCATION_INFO_CHOICE, REVOCATION_INFO_CHOICE__, RevocationInfoChoiceSpec, RevocationInfoChoice, RevocationInfoChoiceForward, RevocationInfoChoiceReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000200000000u64, 0x0000000000000000u64)), borrowed, REVOCATION_INFO_CHOICE, REVOCATION_INFO_CHOICE__, RevocationInfoChoiceSpec, RevocationInfoChoice, RevocationInfoChoiceForward, RevocationInfoChoiceReverse);
 }
 
 mod __impl_other_revocation_info_format {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, OTHER_REVOCATION_INFO_FORMAT, OTHER_REVOCATION_INFO_FORMAT__, OtherRevocationInfoFormatSpec, OtherRevocationInfoFormat, OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, OTHER_REVOCATION_INFO_FORMAT, OTHER_REVOCATION_INFO_FORMAT__, OtherRevocationInfoFormatSpec, OtherRevocationInfoFormat, OtherRevocationInfoFormatForward, OtherRevocationInfoFormatReverse);
 }
 
 mod __impl_certificate_choices {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000f00000000u64, 0x0000000000000000u64)), borrowed, CERTIFICATE_CHOICES, CERTIFICATE_CHOICES__, CertificateChoicesSpec, CertificateChoices, CertificateChoicesForward, CertificateChoicesReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000f00000000u64, 0x0000000000000000u64)), borrowed, CERTIFICATE_CHOICES, CERTIFICATE_CHOICES__, CertificateChoicesSpec, CertificateChoices, CertificateChoicesForward, CertificateChoicesReverse);
 }
 
 mod __impl_attribute_certificate_v2 {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ATTRIBUTE_CERTIFICATE_V2, ATTRIBUTE_CERTIFICATE_V2__, AttributeCertificateV2Spec, AttributeCertificateV2);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ATTRIBUTE_CERTIFICATE_V2, ATTRIBUTE_CERTIFICATE_V2__, AttributeCertificateV2Spec, AttributeCertificateV2);
 }
 
 mod __impl_other_certificate_format {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, OTHER_CERTIFICATE_FORMAT, OTHER_CERTIFICATE_FORMAT__, OtherCertificateFormatSpec, OtherCertificateFormat, OtherCertificateFormatForward, OtherCertificateFormatReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, OTHER_CERTIFICATE_FORMAT, OTHER_CERTIFICATE_FORMAT__, OtherCertificateFormatSpec, OtherCertificateFormat, OtherCertificateFormatForward, OtherCertificateFormatReverse);
 }
 
 mod __impl_certificate_set {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, CERTIFICATE_SET, CERTIFICATE_SET__, CertificateSetSpec, CertificateSet);
+    vest_lib::impl_ber!(tag(constructed), borrowed, CERTIFICATE_SET, CERTIFICATE_SET__, CertificateSetSpec, CertificateSet);
 }
 
 mod __impl_issuer_and_serial_number {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, ISSUER_AND_SERIAL_NUMBER, ISSUER_AND_SERIAL_NUMBER__, IssuerAndSerialNumberSpec, IssuerAndSerialNumber, IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, ISSUER_AND_SERIAL_NUMBER, ISSUER_AND_SERIAL_NUMBER__, IssuerAndSerialNumberSpec, IssuerAndSerialNumber, IssuerAndSerialNumberForward, IssuerAndSerialNumberReverse);
 }
 
 mod __impl_cms_version {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(false), borrowed, CMS_VERSION, CMS_VERSION__, CmsVersionSpec, CmsVersion);
+    vest_lib::impl_ber!(tag(primitive), borrowed, CMS_VERSION, CMS_VERSION__, CmsVersionSpec, CmsVersion);
 }
 
 mod __impl_user_keying_material {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, USER_KEYING_MATERIAL, USER_KEYING_MATERIAL__, UserKeyingMaterialSpec, UserKeyingMaterial);
+    vest_lib::impl_ber!(tag(either), owned, USER_KEYING_MATERIAL, USER_KEYING_MATERIAL__, UserKeyingMaterialSpec, UserKeyingMaterial);
 }
 
 mod __impl_other_key_attribute {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), owned, OTHER_KEY_ATTRIBUTE, OTHER_KEY_ATTRIBUTE__, OtherKeyAttributeSpec, OtherKeyAttribute, OtherKeyAttributeForward, OtherKeyAttributeReverse);
+    vest_lib::impl_ber!(tag(constructed), owned, OTHER_KEY_ATTRIBUTE, OTHER_KEY_ATTRIBUTE__, OtherKeyAttributeSpec, OtherKeyAttribute, OtherKeyAttributeForward, OtherKeyAttributeReverse);
 }
 
 mod __impl_message_digest {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, MESSAGE_DIGEST, MESSAGE_DIGEST__, MessageDigestSpec, MessageDigest);
+    vest_lib::impl_ber!(tag(either), owned, MESSAGE_DIGEST, MESSAGE_DIGEST__, MessageDigestSpec, MessageDigest);
 }
 
 mod __impl_signing_time {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0000000001800000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, SIGNING_TIME, SIGNING_TIME__, SigningTimeSpec, SigningTime);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0000000001800000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, SIGNING_TIME, SIGNING_TIME__, SigningTimeSpec, SigningTime);
 }
 
 mod __impl_countersignature {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, COUNTERSIGNATURE, COUNTERSIGNATURE__, CountersignatureSpec, Countersignature);
+    vest_lib::impl_ber!(tag(constructed), borrowed, COUNTERSIGNATURE, COUNTERSIGNATURE__, CountersignatureSpec, Countersignature);
 }
 
 mod __impl_extended_certificate_or_certificate {
     use super::*;
 
-    vest_lib::impl_ber!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, EXTENDED_CERTIFICATE_OR_CERTIFICATE, EXTENDED_CERTIFICATE_OR_CERTIFICATE__, ExtendedCertificateOrCertificateSpec, ExtendedCertificateOrCertificate, ExtendedCertificateOrCertificateForward, ExtendedCertificateOrCertificateReverse);
+    vest_lib::impl_ber!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, EXTENDED_CERTIFICATE_OR_CERTIFICATE, EXTENDED_CERTIFICATE_OR_CERTIFICATE__, ExtendedCertificateOrCertificateSpec, ExtendedCertificateOrCertificate, ExtendedCertificateOrCertificateForward, ExtendedCertificateOrCertificateReverse);
 }
 
 mod __impl_extended_certificate {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, EXTENDED_CERTIFICATE, EXTENDED_CERTIFICATE__, ExtendedCertificateSpec, ExtendedCertificate, ExtendedCertificateForward, ExtendedCertificateReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, EXTENDED_CERTIFICATE, EXTENDED_CERTIFICATE__, ExtendedCertificateSpec, ExtendedCertificate, ExtendedCertificateForward, ExtendedCertificateReverse);
 }
 
 mod __impl_extended_certificate_info {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_exact(true), borrowed, EXTENDED_CERTIFICATE_INFO, EXTENDED_CERTIFICATE_INFO__, ExtendedCertificateInfoSpec, ExtendedCertificateInfo, ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse);
+    vest_lib::impl_ber!(tag(constructed), borrowed, EXTENDED_CERTIFICATE_INFO, EXTENDED_CERTIFICATE_INFO__, ExtendedCertificateInfoSpec, ExtendedCertificateInfo, ExtendedCertificateInfoForward, ExtendedCertificateInfoReverse);
 }
 
 mod __impl_signature {
     use super::*;
 
-    vest_lib::impl_ber!(tagged_identity(false), owned, SIGNATURE, SIGNATURE__, SignatureSpec, Signature);
+    vest_lib::impl_ber!(tag(either), owned, SIGNATURE, SIGNATURE__, SignatureSpec, Signature);
 }
 
 mod __impl_algorithm_identifier {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ALGORITHM_IDENTIFIER, ALGORITHM_IDENTIFIER__, AlgorithmIdentifierSpec, AlgorithmIdentifier, AlgorithmIdentifierForward, AlgorithmIdentifierReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ALGORITHM_IDENTIFIER, ALGORITHM_IDENTIFIER__, AlgorithmIdentifierSpec, AlgorithmIdentifier, AlgorithmIdentifierForward, AlgorithmIdentifierReverse);
 }
 
 mod __impl_certificate {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, CERTIFICATE, CERTIFICATE__, CertificateSpec, Certificate, CertificateForward, CertificateReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, CERTIFICATE, CERTIFICATE__, CertificateSpec, Certificate, CertificateForward, CertificateReverse);
 }
 
 mod __impl_tbs_certificate {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, TBS_CERTIFICATE, TBS_CERTIFICATE__, TbsCertificateSpec, TbsCertificate, TbsCertificateForward, TbsCertificateReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, TBS_CERTIFICATE, TBS_CERTIFICATE__, TbsCertificateSpec, TbsCertificate, TbsCertificateForward, TbsCertificateReverse);
 }
 
 mod __impl_version {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, VERSION, VERSION__, VersionSpec, Version);
+    vest_lib::impl_der!(tag(primitive), owned, VERSION, VERSION__, VersionSpec, Version);
 }
 
 mod __impl_certificate_serial_number {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, CERTIFICATE_SERIAL_NUMBER, CERTIFICATE_SERIAL_NUMBER__, CertificateSerialNumberSpec, CertificateSerialNumber);
+    vest_lib::impl_der!(tag(primitive), borrowed, CERTIFICATE_SERIAL_NUMBER, CERTIFICATE_SERIAL_NUMBER__, CertificateSerialNumberSpec, CertificateSerialNumber);
 }
 
 mod __impl_validity {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, VALIDITY, VALIDITY__, ValiditySpec, Validity, ValidityForward, ValidityReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, VALIDITY, VALIDITY__, ValiditySpec, Validity, ValidityForward, ValidityReverse);
 }
 
 mod __impl_time {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000001800000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, TIME, TIME__, TimeSpec, Time, TimeForward, TimeReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000001800000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, TIME, TIME__, TimeSpec, Time, TimeForward, TimeReverse);
 }
 
 mod __impl_unique_identifier {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, UNIQUE_IDENTIFIER, UNIQUE_IDENTIFIER__, UniqueIdentifierSpec, UniqueIdentifier);
+    vest_lib::impl_der!(tag(primitive), borrowed, UNIQUE_IDENTIFIER, UNIQUE_IDENTIFIER__, UniqueIdentifierSpec, UniqueIdentifier);
 }
 
 mod __impl_subject_public_key_info {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, SUBJECT_PUBLIC_KEY_INFO, SUBJECT_PUBLIC_KEY_INFO__, SubjectPublicKeyInfoSpec, SubjectPublicKeyInfo, SubjectPublicKeyInfoForward, SubjectPublicKeyInfoReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, SUBJECT_PUBLIC_KEY_INFO, SUBJECT_PUBLIC_KEY_INFO__, SubjectPublicKeyInfoSpec, SubjectPublicKeyInfo, SubjectPublicKeyInfoForward, SubjectPublicKeyInfoReverse);
 }
 
 mod __impl_extensions {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, EXTENSIONS, EXTENSIONS__, ExtensionsSpec, Extensions);
+    vest_lib::impl_der!(tag(constructed), borrowed, EXTENSIONS, EXTENSIONS__, ExtensionsSpec, Extensions);
 }
 
 mod __impl_extension {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, EXTENSION, EXTENSION__, ExtensionSpec, Extension, ExtensionForward, ExtensionReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, EXTENSION, EXTENSION__, ExtensionSpec, Extension, ExtensionForward, ExtensionReverse);
 }
 
 mod __impl_name {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, NAME, NAME__, NameSpec, Name, NameForward, NameReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, NAME, NAME__, NameSpec, Name, NameForward, NameReverse);
 }
 
 mod __impl_rdn_sequence {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, RDN_SEQUENCE, RDN_SEQUENCE__, RdnSequenceSpec, RdnSequence);
+    vest_lib::impl_der!(tag(constructed), borrowed, RDN_SEQUENCE, RDN_SEQUENCE__, RdnSequenceSpec, RdnSequence);
 }
 
 mod __impl_relative_distinguished_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, RELATIVE_DISTINGUISHED_NAME, RELATIVE_DISTINGUISHED_NAME__, RelativeDistinguishedNameSpec, RelativeDistinguishedName);
+    vest_lib::impl_der!(tag(constructed), borrowed, RELATIVE_DISTINGUISHED_NAME, RELATIVE_DISTINGUISHED_NAME__, RelativeDistinguishedNameSpec, RelativeDistinguishedName);
 }
 
 mod __impl_attribute_type_and_value {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE_TYPE_AND_VALUE, ATTRIBUTE_TYPE_AND_VALUE__, AttributeTypeAndValueSpec, AttributeTypeAndValue, AttributeTypeAndValueForward, AttributeTypeAndValueReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE_TYPE_AND_VALUE, ATTRIBUTE_TYPE_AND_VALUE__, AttributeTypeAndValueSpec, AttributeTypeAndValue, AttributeTypeAndValueForward, AttributeTypeAndValueReverse);
 }
 
 mod __impl_attribute_type {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, ATTRIBUTE_TYPE, ATTRIBUTE_TYPE__, AttributeTypeSpec, AttributeType);
+    vest_lib::impl_der!(tag(primitive), owned, ATTRIBUTE_TYPE, ATTRIBUTE_TYPE__, AttributeTypeSpec, AttributeType);
 }
 
 mod __impl_directory_string {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000050181000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, DIRECTORY_STRING, DIRECTORY_STRING__, DirectoryStringSpec, DirectoryString, DirectoryStringForward, DirectoryStringReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000050181000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, DIRECTORY_STRING, DIRECTORY_STRING__, DirectoryStringSpec, DirectoryString, DirectoryStringForward, DirectoryStringReverse);
 }
 
 mod __impl_certificate_list {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, CERTIFICATE_LIST, CERTIFICATE_LIST__, CertificateListSpec, CertificateList, CertificateListForward, CertificateListReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, CERTIFICATE_LIST, CERTIFICATE_LIST__, CertificateListSpec, CertificateList, CertificateListForward, CertificateListReverse);
 }
 
 mod __impl_tbs_cert_list {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, TBS_CERT_LIST, TBS_CERT_LIST__, TbsCertListSpec, TbsCertList, TbsCertListForward, TbsCertListReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, TBS_CERT_LIST, TBS_CERT_LIST__, TbsCertListSpec, TbsCertList, TbsCertListForward, TbsCertListReverse);
 }
 
 mod __impl_revoked_certificates {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, REVOKED_CERTIFICATES, REVOKED_CERTIFICATES__, RevokedCertificatesSpec, RevokedCertificates);
+    vest_lib::impl_der!(tag(constructed), borrowed, REVOKED_CERTIFICATES, REVOKED_CERTIFICATES__, RevokedCertificatesSpec, RevokedCertificates);
 }
 
 mod __impl_revoked_certificate {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, REVOKED_CERTIFICATE, REVOKED_CERTIFICATE__, RevokedCertificateSpec, RevokedCertificate, RevokedCertificateForward, RevokedCertificateReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, REVOKED_CERTIFICATE, REVOKED_CERTIFICATE__, RevokedCertificateSpec, RevokedCertificate, RevokedCertificateForward, RevokedCertificateReverse);
 }
 
 mod __impl_general_names {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, GENERAL_NAMES, GENERAL_NAMES__, GeneralNamesSpec, GeneralNames);
+    vest_lib::impl_der!(tag(constructed), borrowed, GENERAL_NAMES, GENERAL_NAMES__, GeneralNamesSpec, GeneralNames);
 }
 
 mod __impl_general_name {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x00000039000001c6u64, 0x0000000000000000u64)), borrowed, GENERAL_NAME, GENERAL_NAME__, GeneralNameSpec, GeneralName, GeneralNameForward, GeneralNameReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x00000039000001c6u64, 0x0000000000000000u64)), borrowed, GENERAL_NAME, GENERAL_NAME__, GeneralNameSpec, GeneralName, GeneralNameForward, GeneralNameReverse);
 }
 
 mod __impl_other_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, OTHER_NAME, OTHER_NAME__, OtherNameSpec, OtherName, OtherNameForward, OtherNameReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, OTHER_NAME, OTHER_NAME__, OtherNameSpec, OtherName, OtherNameForward, OtherNameReverse);
 }
 
 mod __impl_edi_party_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, EDI_PARTY_NAME, EDI_PARTY_NAME__, EdiPartyNameSpec, EdiPartyName, EdiPartyNameForward, EdiPartyNameReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, EDI_PARTY_NAME, EDI_PARTY_NAME__, EdiPartyNameSpec, EdiPartyName, EdiPartyNameForward, EdiPartyNameReverse);
 }
 
 mod __impl_or_address {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, OR_ADDRESS, OR_ADDRESS__, OrAddressSpec, OrAddress, OrAddressForward, OrAddressReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, OR_ADDRESS, OR_ADDRESS__, OrAddressSpec, OrAddress, OrAddressForward, OrAddressReverse);
 }
 
 mod __impl_built_in_standard_attributes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, BUILT_IN_STANDARD_ATTRIBUTES, BUILT_IN_STANDARD_ATTRIBUTES__, BuiltInStandardAttributesSpec, BuiltInStandardAttributes, BuiltInStandardAttributesForward, BuiltInStandardAttributesReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, BUILT_IN_STANDARD_ATTRIBUTES, BUILT_IN_STANDARD_ATTRIBUTES__, BuiltInStandardAttributesSpec, BuiltInStandardAttributes, BuiltInStandardAttributesForward, BuiltInStandardAttributesReverse);
 }
 
 mod __impl_country_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, COUNTRY_NAME, COUNTRY_NAME__, CountryNameSpec, CountryName);
+    vest_lib::impl_der!(tag(constructed), borrowed, COUNTRY_NAME, COUNTRY_NAME__, CountryNameSpec, CountryName);
 }
 
 mod __impl_country_name_choice {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, COUNTRY_NAME_CHOICE, COUNTRY_NAME_CHOICE__, CountryNameChoiceSpec, CountryNameChoice, CountryNameChoiceForward, CountryNameChoiceReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, COUNTRY_NAME_CHOICE, COUNTRY_NAME_CHOICE__, CountryNameChoiceSpec, CountryNameChoice, CountryNameChoiceForward, CountryNameChoiceReverse);
 }
 
 mod __impl_administration_domain_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ADMINISTRATION_DOMAIN_NAME, ADMINISTRATION_DOMAIN_NAME__, AdministrationDomainNameSpec, AdministrationDomainName);
+    vest_lib::impl_der!(tag(constructed), borrowed, ADMINISTRATION_DOMAIN_NAME, ADMINISTRATION_DOMAIN_NAME__, AdministrationDomainNameSpec, AdministrationDomainName);
 }
 
 mod __impl_administration_domain_name_choice {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, ADMINISTRATION_DOMAIN_NAME_CHOICE, ADMINISTRATION_DOMAIN_NAME_CHOICE__, AdministrationDomainNameChoiceSpec, AdministrationDomainNameChoice, AdministrationDomainNameChoiceForward, AdministrationDomainNameChoiceReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, ADMINISTRATION_DOMAIN_NAME_CHOICE, ADMINISTRATION_DOMAIN_NAME_CHOICE__, AdministrationDomainNameChoiceSpec, AdministrationDomainNameChoice, AdministrationDomainNameChoiceForward, AdministrationDomainNameChoiceReverse);
 }
 
 mod __impl_network_address {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, NETWORK_ADDRESS, NETWORK_ADDRESS__, NetworkAddressSpec, NetworkAddress);
+    vest_lib::impl_der!(tag(primitive), borrowed, NETWORK_ADDRESS, NETWORK_ADDRESS__, NetworkAddressSpec, NetworkAddress);
 }
 
 mod __impl_x121_address {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, X121_ADDRESS, X121_ADDRESS__, X121AddressSpec, X121Address);
+    vest_lib::impl_der!(tag(primitive), borrowed, X121_ADDRESS, X121_ADDRESS__, X121AddressSpec, X121Address);
 }
 
 mod __impl_terminal_identifier {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, TERMINAL_IDENTIFIER, TERMINAL_IDENTIFIER__, TerminalIdentifierSpec, TerminalIdentifier);
+    vest_lib::impl_der!(tag(primitive), borrowed, TERMINAL_IDENTIFIER, TERMINAL_IDENTIFIER__, TerminalIdentifierSpec, TerminalIdentifier);
 }
 
 mod __impl_private_domain_name {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, PRIVATE_DOMAIN_NAME, PRIVATE_DOMAIN_NAME__, PrivateDomainNameSpec, PrivateDomainName, PrivateDomainNameForward, PrivateDomainNameReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x00000000000c0000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)), borrowed, PRIVATE_DOMAIN_NAME, PRIVATE_DOMAIN_NAME__, PrivateDomainNameSpec, PrivateDomainName, PrivateDomainNameForward, PrivateDomainNameReverse);
 }
 
 mod __impl_organization_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, ORGANIZATION_NAME, ORGANIZATION_NAME__, OrganizationNameSpec, OrganizationName);
+    vest_lib::impl_der!(tag(primitive), borrowed, ORGANIZATION_NAME, ORGANIZATION_NAME__, OrganizationNameSpec, OrganizationName);
 }
 
 mod __impl_numeric_user_identifier {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, NUMERIC_USER_IDENTIFIER, NUMERIC_USER_IDENTIFIER__, NumericUserIdentifierSpec, NumericUserIdentifier);
+    vest_lib::impl_der!(tag(primitive), borrowed, NUMERIC_USER_IDENTIFIER, NUMERIC_USER_IDENTIFIER__, NumericUserIdentifierSpec, NumericUserIdentifier);
 }
 
 mod __impl_personal_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, PERSONAL_NAME, PERSONAL_NAME__, PersonalNameSpec, PersonalName, PersonalNameForward, PersonalNameReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, PERSONAL_NAME, PERSONAL_NAME__, PersonalNameSpec, PersonalName, PersonalNameForward, PersonalNameReverse);
 }
 
 mod __impl_organizational_unit_names {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ORGANIZATIONAL_UNIT_NAMES, ORGANIZATIONAL_UNIT_NAMES__, OrganizationalUnitNamesSpec, OrganizationalUnitNames);
+    vest_lib::impl_der!(tag(constructed), borrowed, ORGANIZATIONAL_UNIT_NAMES, ORGANIZATIONAL_UNIT_NAMES__, OrganizationalUnitNamesSpec, OrganizationalUnitNames);
 }
 
 mod __impl_organizational_unit_name {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, ORGANIZATIONAL_UNIT_NAME, ORGANIZATIONAL_UNIT_NAME__, OrganizationalUnitNameSpec, OrganizationalUnitName);
+    vest_lib::impl_der!(tag(primitive), borrowed, ORGANIZATIONAL_UNIT_NAME, ORGANIZATIONAL_UNIT_NAME__, OrganizationalUnitNameSpec, OrganizationalUnitName);
 }
 
 mod __impl_built_in_domain_defined_attributes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTES, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTES__, BuiltInDomainDefinedAttributesSpec, BuiltInDomainDefinedAttributes);
+    vest_lib::impl_der!(tag(constructed), borrowed, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTES, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTES__, BuiltInDomainDefinedAttributesSpec, BuiltInDomainDefinedAttributes);
 }
 
 mod __impl_built_in_domain_defined_attribute {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTE, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTE__, BuiltInDomainDefinedAttributeSpec, BuiltInDomainDefinedAttribute, BuiltInDomainDefinedAttributeForward, BuiltInDomainDefinedAttributeReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTE, BUILT_IN_DOMAIN_DEFINED_ATTRIBUTE__, BuiltInDomainDefinedAttributeSpec, BuiltInDomainDefinedAttribute, BuiltInDomainDefinedAttributeForward, BuiltInDomainDefinedAttributeReverse);
 }
 
 mod __impl_extension_attributes {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, EXTENSION_ATTRIBUTES, EXTENSION_ATTRIBUTES__, ExtensionAttributesSpec, ExtensionAttributes);
+    vest_lib::impl_der!(tag(constructed), borrowed, EXTENSION_ATTRIBUTES, EXTENSION_ATTRIBUTES__, ExtensionAttributesSpec, ExtensionAttributes);
 }
 
 mod __impl_extension_attribute {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, EXTENSION_ATTRIBUTE, EXTENSION_ATTRIBUTE__, ExtensionAttributeSpec, ExtensionAttribute, ExtensionAttributeForward, ExtensionAttributeReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, EXTENSION_ATTRIBUTE, EXTENSION_ATTRIBUTE__, ExtensionAttributeSpec, ExtensionAttribute, ExtensionAttributeForward, ExtensionAttributeReverse);
 }
 
 mod __impl_attribute_certificate {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE_CERTIFICATE, ATTRIBUTE_CERTIFICATE__, AttributeCertificateSpec, AttributeCertificate, AttributeCertificateForward, AttributeCertificateReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE_CERTIFICATE, ATTRIBUTE_CERTIFICATE__, AttributeCertificateSpec, AttributeCertificate, AttributeCertificateForward, AttributeCertificateReverse);
 }
 
 mod __impl_attribute_certificate_info {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE_CERTIFICATE_INFO, ATTRIBUTE_CERTIFICATE_INFO__, AttributeCertificateInfoSpec, AttributeCertificateInfo, AttributeCertificateInfoForward, AttributeCertificateInfoReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE_CERTIFICATE_INFO, ATTRIBUTE_CERTIFICATE_INFO__, AttributeCertificateInfoSpec, AttributeCertificateInfo, AttributeCertificateInfoForward, AttributeCertificateInfoReverse);
 }
 
 mod __impl_att_cert_version {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), borrowed, ATT_CERT_VERSION, ATT_CERT_VERSION__, AttCertVersionSpec, AttCertVersion);
+    vest_lib::impl_der!(tag(primitive), borrowed, ATT_CERT_VERSION, ATT_CERT_VERSION__, AttCertVersionSpec, AttCertVersion);
 }
 
 mod __impl_holder {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, HOLDER, HOLDER__, HolderSpec, Holder, HolderForward, HolderReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, HOLDER, HOLDER__, HolderSpec, Holder, HolderForward, HolderReverse);
 }
 
 mod __impl_object_digest_info_digested_object_type {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, OBJECT_DIGEST_INFO_DIGESTED_OBJECT_TYPE, OBJECT_DIGEST_INFO_DIGESTED_OBJECT_TYPE__, ObjectDigestInfoDigestedObjectTypeSpec, ObjectDigestInfoDigestedObjectType, ObjectDigestInfoDigestedObjectTypeForward, ObjectDigestInfoDigestedObjectTypeReverse);
+    vest_lib::impl_der!(tag(primitive), owned, OBJECT_DIGEST_INFO_DIGESTED_OBJECT_TYPE, OBJECT_DIGEST_INFO_DIGESTED_OBJECT_TYPE__, ObjectDigestInfoDigestedObjectTypeSpec, ObjectDigestInfoDigestedObjectType, ObjectDigestInfoDigestedObjectTypeForward, ObjectDigestInfoDigestedObjectTypeReverse);
 }
 
 mod __impl_object_digest_info {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, OBJECT_DIGEST_INFO, OBJECT_DIGEST_INFO__, ObjectDigestInfoSpec, ObjectDigestInfo, ObjectDigestInfoForward, ObjectDigestInfoReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, OBJECT_DIGEST_INFO, OBJECT_DIGEST_INFO__, ObjectDigestInfoSpec, ObjectDigestInfo, ObjectDigestInfoForward, ObjectDigestInfoReverse);
 }
 
 mod __impl_att_cert_issuer {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, ATT_CERT_ISSUER, ATT_CERT_ISSUER__, AttCertIssuerSpec, AttCertIssuer, AttCertIssuerForward, AttCertIssuerReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000100000000u64, 0x0000000000000000u64)), borrowed, ATT_CERT_ISSUER, ATT_CERT_ISSUER__, AttCertIssuerSpec, AttCertIssuer, AttCertIssuerForward, AttCertIssuerReverse);
 }
 
 mod __impl_v2_form {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, V2_FORM, V2_FORM__, V2FormSpec, V2Form, V2FormForward, V2FormReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, V2_FORM, V2_FORM__, V2FormSpec, V2Form, V2FormForward, V2FormReverse);
 }
 
 mod __impl_issuer_serial {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ISSUER_SERIAL, ISSUER_SERIAL__, IssuerSerialSpec, IssuerSerial, IssuerSerialForward, IssuerSerialReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ISSUER_SERIAL, ISSUER_SERIAL__, IssuerSerialSpec, IssuerSerial, IssuerSerialForward, IssuerSerialReverse);
 }
 
 mod __impl_att_cert_validity_period {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATT_CERT_VALIDITY_PERIOD, ATT_CERT_VALIDITY_PERIOD__, AttCertValidityPeriodSpec, AttCertValidityPeriod, AttCertValidityPeriodForward, AttCertValidityPeriodReverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATT_CERT_VALIDITY_PERIOD, ATT_CERT_VALIDITY_PERIOD__, AttCertValidityPeriodSpec, AttCertValidityPeriod, AttCertValidityPeriodForward, AttCertValidityPeriodReverse);
 }
 
 mod __impl_attribute_certificate_v1 {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE_CERTIFICATE_V1, ATTRIBUTE_CERTIFICATE_V1__, AttributeCertificateV1Spec, AttributeCertificateV1, AttributeCertificateV1Forward, AttributeCertificateV1Reverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE_CERTIFICATE_V1, ATTRIBUTE_CERTIFICATE_V1__, AttributeCertificateV1Spec, AttributeCertificateV1, AttributeCertificateV1Forward, AttributeCertificateV1Reverse);
 }
 
 mod __impl_attribute_certificate_info_v1 {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(true), borrowed, ATTRIBUTE_CERTIFICATE_INFO_V1, ATTRIBUTE_CERTIFICATE_INFO_V1__, AttributeCertificateInfoV1Spec, AttributeCertificateInfoV1, AttributeCertificateInfoV1Forward, AttributeCertificateInfoV1Reverse);
+    vest_lib::impl_der!(tag(constructed), borrowed, ATTRIBUTE_CERTIFICATE_INFO_V1, ATTRIBUTE_CERTIFICATE_INFO_V1__, AttributeCertificateInfoV1Spec, AttributeCertificateInfoV1, AttributeCertificateInfoV1Forward, AttributeCertificateInfoV1Reverse);
 }
 
 mod __impl_attribute_certificate_v1_subject {
     use super::*;
 
-    vest_lib::impl_der!(untagged_mask(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000300000000u64, 0x0000000000000000u64)), borrowed, ATTRIBUTE_CERTIFICATE_V1_SUBJECT, ATTRIBUTE_CERTIFICATE_V1_SUBJECT__, AttributeCertificateV1SubjectSpec, AttributeCertificateV1Subject, AttributeCertificateV1SubjectForward, AttributeCertificateV1SubjectReverse);
+    vest_lib::impl_der!(starts(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000300000000u64, 0x0000000000000000u64)), borrowed, ATTRIBUTE_CERTIFICATE_V1_SUBJECT, ATTRIBUTE_CERTIFICATE_V1_SUBJECT__, AttributeCertificateV1SubjectSpec, AttributeCertificateV1Subject, AttributeCertificateV1SubjectForward, AttributeCertificateV1SubjectReverse);
 }
 
 mod __impl_att_cert_version_v1 {
     use super::*;
 
-    vest_lib::impl_der!(tagged_exact(false), owned, ATT_CERT_VERSION_V1, ATT_CERT_VERSION_V1__, AttCertVersionV1Spec, AttCertVersionV1);
+    vest_lib::impl_der!(tag(primitive), owned, ATT_CERT_VERSION_V1, ATT_CERT_VERSION_V1__, AttCertVersionV1Spec, AttCertVersionV1);
 }

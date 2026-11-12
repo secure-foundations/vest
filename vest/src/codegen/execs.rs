@@ -59,27 +59,28 @@ impl<'a> Analysis<'a> {
 
         // --- Parser impl ---
         {
-            out.block(format!("impl<'i> Parser<&'i [u8]> for {}", fmt_ident_str), |w| {
-                w.line(format!("type PT = {};", exec_ty_str));
-                w.blank_line();
-                // A lower bound on this format's encoded size, so that
-                // repetitions can size their result in one allocation. Purely a
-                // hint: the default of 1 would also be sound.
-                if let Some(min) = self.ctx.min_sizes.get(name).copied() {
-                    if min > 1 {
-                        w.block("fn min_byte_len(&self) -> usize", |w| {
-                            w.line(format!("{}", min));
-                        });
-                        w.blank_line();
+            out.block(
+                format!("impl<'i> Parser<&'i [u8]> for {}", fmt_ident_str),
+                |w| {
+                    w.line(format!("type PT = {};", exec_ty_str));
+                    w.blank_line();
+                    // A lower bound on this format's encoded size, so that
+                    // repetitions can size their result in one allocation. Purely a
+                    // hint: the default of 1 would also be sound.
+                    if let Some(min) = self.ctx.min_sizes.get(name).copied() {
+                        if min > 1 {
+                            w.block("fn min_byte_len(&self) -> usize", |w| {
+                                w.line(format!("{}", min));
+                            });
+                            w.blank_line();
+                        }
                     }
-                }
-                if scaffold.use_spinoff_prover {
-                    w.line("#[verifier::spinoff_prover]");
-                }
-                w.block("fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>", |w| {
+                    if scaffold.use_spinoff_prover {
+                        w.line("#[verifier::spinoff_prover]");
+                    }
+                    w.block("fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT>", |w| {
                     if scaffold.is_struct {
                         w.line("broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;");
-                        w.line("broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;");
                         w.blank_line();
                     }
                     w.reveal_stmt(&format!("<{} as SpecParser>::spec_parse", reveal_fmt));
@@ -96,7 +97,8 @@ impl<'a> Analysis<'a> {
                     self.emit_unsealed_projection_reveals(w, name);
                     emit_parser(w);
                 });
-            });
+                },
+            );
             out.blank_line();
         }
 
@@ -733,54 +735,59 @@ impl<'a> Analysis<'a> {
                         | StructField::Ordinary { label, combinator } => {
                             let n_ident = format_ident!("{}", n_var);
                             let label_ident = format_ident!("{}", label);
-                            let (parse_expr, recursive) = if let Some((member, ctx, access)) = rec {
-                                self.render_recursive_child_parse_expr(
-                                    combinator,
-                                    member,
-                                    ctx,
-                                    access,
-                                    quote! { &rest },
-                                )
-                            } else {
-                                let is_last_opt_or_vec = if idx == s.0.len() - 1 {
-                                    matches!(
-                                        self.ctx.resolve_alias(combinator),
-                                        Combinator::Option(_) | Combinator::Vec(_)
-                                    )
+                            let (parse_expr, recursive, sound_fmt) =
+                                if let Some((member, ctx, access)) = rec {
+                                    let (parse_expr, recursive) = self
+                                        .render_recursive_child_parse_expr(
+                                            combinator,
+                                            member,
+                                            ctx,
+                                            access,
+                                            quote! { &rest },
+                                        );
+                                    (parse_expr, recursive, None)
                                 } else {
-                                    false
-                                };
-                                let fmt_expr = if is_last_opt_or_vec {
-                                    match self.ctx.resolve_alias(combinator) {
-                                        Combinator::Option(vestir::OptionCombinator(inner)) => {
-                                            let inner_expr = self.render_exec_combinator_expr_impl(
-                                                inner,
-                                                param_defns,
-                                                CodegenMode::Parse,
-                                                false,
-                                            );
-                                            quote! { OptionalEnd(#inner_expr) }
+                                    let is_last_opt_or_vec = if idx == s.0.len() - 1 {
+                                        matches!(
+                                            self.ctx.resolve_alias(combinator),
+                                            Combinator::Option(_) | Combinator::Vec(_)
+                                        )
+                                    } else {
+                                        false
+                                    };
+                                    let fmt_expr = if is_last_opt_or_vec {
+                                        match self.ctx.resolve_alias(combinator) {
+                                            Combinator::Option(vestir::OptionCombinator(inner)) => {
+                                                let inner_expr = self
+                                                    .render_exec_combinator_expr_impl(
+                                                        inner,
+                                                        param_defns,
+                                                        CodegenMode::Parse,
+                                                        false,
+                                                    );
+                                                quote! { OptionalEnd(#inner_expr) }
+                                            }
+                                            Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
+                                                let inner_expr = self
+                                                    .render_exec_combinator_expr_impl(
+                                                        inner,
+                                                        param_defns,
+                                                        CodegenMode::Parse,
+                                                        false,
+                                                    );
+                                                quote! { RepeatTillEnd(#inner_expr) }
+                                            }
+                                            _ => unreachable!(),
                                         }
-                                        Combinator::Vec(vestir::VecCombinator::Vec(inner)) => {
-                                            let inner_expr = self.render_exec_combinator_expr_impl(
-                                                inner,
-                                                param_defns,
-                                                CodegenMode::Parse,
-                                                false,
-                                            );
-                                            quote! { RepeatTillEnd(#inner_expr) }
-                                        }
-                                        _ => unreachable!(),
-                                    }
-                                } else {
-                                    self.render_exec_combinator_expr_named(
-                                        combinator,
-                                        param_defns,
-                                        CodegenMode::Parse,
-                                    )
+                                    } else {
+                                        self.render_exec_combinator_expr_named(
+                                            combinator,
+                                            param_defns,
+                                            CodegenMode::Parse,
+                                        )
+                                    };
+                                    (quote! { (#fmt_expr).parse(&rest) }, false, Some(fmt_expr))
                                 };
-                                (quote! { (#fmt_expr).parse(&rest) }, false)
-                            };
                             if recursive && !seen_recursive {
                                 w.if_block("gas == 0", |w| {
                                     w.line("return Err(ParseError::recursion_limit_exceeded());");
@@ -790,6 +797,19 @@ impl<'a> Analysis<'a> {
                             w.push_multiline(render_ts(quote! {
                                 let (#n_ident, #label_ident) = #parse_expr?;
                             }));
+                            // Only dependent fields need consistency facts to construct later
+                            // formats or evaluate checked length expressions. A global broadcast
+                            // also unfolds every ordinary child's consistency unnecessarily.
+                            if matches!(field, StructField::Dependent { .. }) {
+                                if let Some(fmt_expr) = sound_fmt {
+                                    w.block("proof", |w| {
+                                        w.line(format!(
+                                            "({}).lemma_parse_sound_value(rest@);",
+                                            render_ts(fmt_expr)
+                                        ));
+                                    });
+                                }
+                            }
                             if let Some(pred) =
                                 self.gen_constraint_pred(combinator, quote! { #label_ident })
                             {

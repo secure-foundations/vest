@@ -1173,8 +1173,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for GenericHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for GenericHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(GenericHeaderSpec::into_structural);
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
             reveal(<GenericHeaderFmt as SpecByteLen>::byte_len);
@@ -1184,9 +1184,12 @@ mod derived_proofs {
                 GenericHeaderSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for GenericHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(GenericHeaderSpec::into_structural);
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
@@ -1311,8 +1314,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for PayloadWithHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for PayloadWithHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeaderFmt as SpecByteLen>::byte_len);
@@ -1322,9 +1325,12 @@ mod derived_proofs {
                 PayloadWithHeaderSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for PayloadWithHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(PayloadWithHeaderSpec::into_structural);
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
@@ -1438,8 +1444,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for OuterHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for OuterHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(OuterHeaderSpec::into_structural);
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
             reveal(<OuterHeaderFmt as SpecByteLen>::byte_len);
@@ -1449,9 +1455,12 @@ mod derived_proofs {
                 OuterHeaderSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for OuterHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(OuterHeaderSpec::into_structural);
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
@@ -1576,8 +1585,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for DeepNestedFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for DeepNestedFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(DeepNestedSpec::into_structural);
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
             reveal(<DeepNestedFmt as SpecByteLen>::byte_len);
@@ -1587,9 +1596,12 @@ mod derived_proofs {
                 DeepNestedSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for DeepNestedFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(DeepNestedSpec::into_structural);
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
@@ -1701,8 +1713,8 @@ mod derived_proofs {
         }
     }
 
-    impl<'i> SoundParser for NestedComplexFmt<'i> {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl<'i> StrictParser for NestedComplexFmt<'i> {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(NestedComplexSpec::into_structural);
             let fmt = Self::spec_inner(self.hdr_payload_spec());
             assert forall|input: NestedComplexInner|
@@ -1710,9 +1722,12 @@ mod derived_proofs {
                 NestedComplexSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl<'i> SoundParser for NestedComplexFmt<'i> {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(NestedComplexSpec::into_structural);
             let fmt = Self::spec_inner(self.hdr_payload_spec());
@@ -1810,8 +1825,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for CombinedExampleFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for CombinedExampleFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(CombinedExampleSpec::into_structural);
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
             reveal(<CombinedExampleFmt as SpecByteLen>::byte_len);
@@ -1821,9 +1836,12 @@ mod derived_proofs {
                 CombinedExampleSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for CombinedExampleFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(CombinedExampleSpec::into_structural);
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
@@ -1937,8 +1955,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for FinalMsgFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for FinalMsgFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(FinalMsgSpec::into_structural);
             reveal(NestedComplexSpec::into_structural);
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
@@ -1949,9 +1967,12 @@ mod derived_proofs {
                 FinalMsgSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for FinalMsgFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(FinalMsgSpec::into_structural);
             reveal(NestedComplexSpec::into_structural);
@@ -2065,7 +2086,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<GenericHeaderFmt as SpecParser>::spec_parse);
             reveal(<GenericHeader as DeepView>::deep_view);
@@ -2141,7 +2161,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<PayloadWithHeaderFmt as SpecParser>::spec_parse);
             reveal(<PayloadWithHeader as DeepView>::deep_view);
@@ -2155,6 +2174,11 @@ mod exec_impls {
             }
 
             let (n1, hdr) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
+
+            proof {
+                (Named("generic_header", GenericHeaderFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, body) = (Varied((hdr.payload_length - 4))).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -2217,7 +2241,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<OuterHeaderFmt as SpecParser>::spec_parse);
             reveal(<OuterHeader as DeepView>::deep_view);
@@ -2274,7 +2297,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<DeepNestedFmt as SpecParser>::spec_parse);
             reveal(<DeepNested as DeepView>::deep_view);
@@ -2290,6 +2312,11 @@ mod exec_impls {
             }
 
             let (n1, outer) = (Named("outer_header", OuterHeaderFmt)).parse(&rest)?;
+
+            proof {
+                (Named("outer_header", OuterHeaderFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, data) = (Varied((outer.inner.payload_length - 8))).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -2352,7 +2379,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<NestedComplexFmt as SpecParser>::spec_parse);
             reveal(<NestedComplex as DeepView>::deep_view);
@@ -2447,7 +2473,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<CombinedExampleFmt as SpecParser>::spec_parse);
             reveal(<CombinedExample as DeepView>::deep_view);
@@ -2465,6 +2490,11 @@ mod exec_impls {
             }
 
             let (n1, header) = (Named("generic_header", GenericHeaderFmt)).parse(&rest)?;
+
+            proof {
+                (Named("generic_header", GenericHeaderFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, body) = (Varied((self.total_len - header.payload_length))).parse(&rest)?;
             let rest = rest.skip(n2);
@@ -2532,7 +2562,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<FinalMsgFmt as SpecParser>::spec_parse);
             reveal(<FinalMsg as DeepView>::deep_view);
@@ -2549,6 +2578,10 @@ mod exec_impls {
 
             let (n1, total_len) = (U32Le).parse(&rest)?;
 
+            proof {
+                (U32Le).lemma_parse_sound_value(rest@);
+            }
+
             if !(total_len >= 16777215 &&total_len <= 4294967295) {
                 return Err(ParseError::predicate_failed());
             }
@@ -2561,6 +2594,11 @@ mod exec_impls {
             let (n3, hdr_payload) = (Named("payload_with_header", PayloadWithHeaderFmt)).parse(
                 &rest
             )?;
+
+            proof {
+                (Named("payload_with_header", PayloadWithHeaderFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n3);
             let (n4, nested) = (
                 Named("nested_complex", NestedComplexFmt { hdr_payload: hdr_payload })

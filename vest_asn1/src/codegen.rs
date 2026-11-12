@@ -210,7 +210,7 @@ impl<'a> Generator<'a> {
         ));
         output.line(format_args!("#[cfg(verus_only)]"));
         output.line(format_args!(
-            "use vest_lib::asn1::disjoint::{{asn1_start_any_non_eoc, asn1_start_ber_boundary, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start}};"
+            "use vest_lib::asn1::disjoint::{{asn1_start_any_non_eoc, asn1_start_empty, asn1_start_exact_uint, asn1_start_identity_uint, asn1_start_mask, asn1_start_union, asn1_starts_disjoint, lemma_asn1_start_exact_uint, lemma_asn1_start_identity_uint, lemma_disjoint_asn1_starts, HasAsn1Start}};"
         ));
         output.line(format_args!("use vest_lib::asn1::tag::tag_num_from_uint;"));
         if self.mixed_rules {
@@ -238,11 +238,7 @@ impl<'a> Generator<'a> {
                  }};",
                 self.options.encoding_rules.module()
             ));
-            if self.options.encoding_rules == EncodingRules::Ber {
-                output.line(format_args!(
-                    "use vest_lib::asn1::ber::{{BerEndFmt, BER_END}};"
-                ));
-            } else {
+            if self.options.encoding_rules == EncodingRules::Der {
                 output.line(format_args!("use vest_lib::asn1::der::{{SetFmt, SET}};"));
             }
         }
@@ -303,17 +299,8 @@ impl<'a> Generator<'a> {
         let names = &self.names[&definition.name];
         let rule = self.rules[&definition.name];
         let kind = match self.nominal_kind(definition)? {
-            NominalKind::TaggedExact { constructed } => {
-                format!("tagged_exact({constructed})")
-            }
-            NominalKind::TaggedIdentity { constructed } => {
-                format!("tagged_identity({constructed})")
-            }
-            NominalKind::UntaggedFinite(tags) => {
-                format!("untagged_mask({})", render_start_domain(&tags))
-            }
-            NominalKind::UntaggedAny => "untagged_any".to_string(),
-            NominalKind::Untagged => "untagged".to_string(),
+            NominalKind::Tag(form) => format!("tag({form})"),
+            NominalKind::Starts(domain) => format!("starts({})", render_start_domain(&domain)),
         };
         let ownership = if self.borrows[&definition.name] {
             "borrowed"
@@ -344,11 +331,13 @@ impl<'a> Generator<'a> {
     }
 }
 
-fn render_start_domain(tags: &[WireTag]) -> String {
-    render_start_certificate(&StartCertificate {
-        accepts_empty: false,
-        tags: Some(tags.iter().cloned().collect()),
-    })
+fn render_start_domain(domain: &TagDomain) -> String {
+    match domain {
+        TagDomain::Finite(tags) => {
+            render_start_certificate(&StartCertificate::finite(tags.clone()))
+        }
+        TagDomain::Open => "asn1_start_any_non_eoc()".to_string(),
+    }
 }
 
 fn render_start_certificate(domain: &StartCertificate) -> String {

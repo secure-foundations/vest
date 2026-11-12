@@ -1811,16 +1811,19 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for VersionIhlFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for VersionIhlFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecParser>::spec_parse);
             reveal(<VersionIhlFmt as SpecByteLen>::byte_len);
             let fmt = VersionIhlFmt::spec_inner();
             broadcast use lemma_version_ihl_unpack_pack, lemma_version_ihl_mapper_wf_in_out;
             assert(fmt.1.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.1.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for VersionIhlFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<VersionIhlFmt as SpecParser>::spec_parse);
             reveal(<VersionIhlFmt as Consistency>::consistent);
@@ -1929,16 +1932,19 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for CrossByteSpanFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for CrossByteSpanFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
             reveal(<CrossByteSpanFmt as SpecByteLen>::byte_len);
             let fmt = CrossByteSpanFmt::spec_inner();
             broadcast use lemma_cross_byte_span_unpack_pack, lemma_cross_byte_span_mapper_wf_in_out;
             assert(fmt.1.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.1.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for CrossByteSpanFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<CrossByteSpanFmt as SpecParser>::spec_parse);
             reveal(<CrossByteSpanFmt as Consistency>::consistent);
@@ -2047,16 +2053,19 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for PacketHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for PacketHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
             reveal(<PacketHeaderFmt as SpecByteLen>::byte_len);
             let fmt = PacketHeaderFmt::spec_inner();
             broadcast use lemma_packet_header_unpack_pack, lemma_packet_header_mapper_wf_in_out;
             assert(fmt.1.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.1.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for PacketHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<PacketHeaderFmt as SpecParser>::spec_parse);
             reveal(<PacketHeaderFmt as Consistency>::consistent);
@@ -2165,8 +2174,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ChoicePacketFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ChoicePacketFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketFmt as SpecByteLen>::byte_len);
@@ -2176,9 +2185,12 @@ mod derived_proofs {
                 ChoicePacketSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ChoicePacketFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ChoicePacketSpec::into_structural);
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
@@ -2292,8 +2304,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ClosedPacketHeaderFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ClosedPacketHeaderFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
             reveal(<ClosedPacketHeaderFmt as SpecByteLen>::byte_len);
             let fmt = ClosedPacketHeaderFmt::spec_inner();
@@ -2301,9 +2313,12 @@ mod derived_proofs {
                 lemma_closed_packet_header_unpack_pack,
                 lemma_closed_packet_header_mapper_wf_in_out;
             assert(fmt.1.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.1.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ClosedPacketHeaderFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(<ClosedPacketHeaderFmt as SpecParser>::spec_parse);
             reveal(<ClosedPacketHeaderFmt as Consistency>::consistent);
@@ -2416,8 +2431,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ClosedChoicePacketFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ClosedChoicePacketFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketFmt as SpecByteLen>::byte_len);
@@ -2427,9 +2442,12 @@ mod derived_proofs {
                 ClosedChoicePacketSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ClosedChoicePacketFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ClosedChoicePacketSpec::into_structural);
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
@@ -2543,8 +2561,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ChoicePacketPayloadFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ChoicePacketPayloadFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacketPayloadFmt as SpecByteLen>::byte_len);
@@ -2554,9 +2572,12 @@ mod derived_proofs {
                 ChoicePacketPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ChoicePacketPayloadFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ChoicePacketPayloadSpec::into_structural);
             reveal(<ChoicePacketPayloadFmt as SpecParser>::spec_parse);
@@ -2670,8 +2691,8 @@ mod derived_proofs {
         }
     }
 
-    impl SoundParser for ClosedChoicePacketPayloadFmt {
-        proof fn lemma_parse_sound_consumption(&self, ibuf: Seq<u8>) {
+    impl StrictParser for ClosedChoicePacketPayloadFmt {
+        proof fn lemma_parse_strict_consumption(&self, ibuf: Seq<u8>) {
             reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacketPayloadFmt as SpecByteLen>::byte_len);
@@ -2681,9 +2702,12 @@ mod derived_proofs {
                 ClosedChoicePacketPayloadSpec::lemma_into_from(input);
             }
             assert(fmt.sound_inv());
-            fmt.lemma_parse_sound_consumption(ibuf);
+            assert(fmt.strict_inv());
+            fmt.lemma_parse_strict_consumption(ibuf);
         }
+    }
 
+    impl SoundParser for ClosedChoicePacketPayloadFmt {
         proof fn lemma_parse_sound_value(&self, ibuf: Seq<u8>) {
             reveal(ClosedChoicePacketPayloadSpec::into_structural);
             reveal(<ClosedChoicePacketPayloadFmt as SpecParser>::spec_parse);
@@ -2940,7 +2964,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ChoicePacket as DeepView>::deep_view);
@@ -2949,6 +2972,11 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("packet_header", PacketHeaderFmt)).parse(&rest)?;
+
+            proof {
+                (Named("packet_header", PacketHeaderFmt)).lemma_parse_sound_value(rest@);
+            }
+
             let rest = rest.skip(n1);
             let (n2, payload) = (
                 Named("choice_packet_payload", ChoicePacketPayloadFmt { hdr: hdr })
@@ -3074,7 +3102,6 @@ mod exec_impls {
 
         fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
             broadcast use vest_lib::core::spec::SafeParser::lemma_parse_safe;
-            broadcast use vest_lib::core::spec::SoundParser::lemma_parse_sound_value;
 
             reveal(<ClosedChoicePacketFmt as SpecParser>::spec_parse);
             reveal(<ClosedChoicePacket as DeepView>::deep_view);
@@ -3083,6 +3110,13 @@ mod exec_impls {
             let rest = *ibuf;
 
             let (n1, hdr) = (Named("closed_packet_header", ClosedPacketHeaderFmt)).parse(&rest)?;
+
+            proof {
+                (Named("closed_packet_header", ClosedPacketHeaderFmt)).lemma_parse_sound_value(
+                    rest@
+                );
+            }
+
             let rest = rest.skip(n1);
             let (n2, payload) = (
                 Named("closed_choice_packet_payload", ClosedChoicePacketPayloadFmt { hdr: hdr })
